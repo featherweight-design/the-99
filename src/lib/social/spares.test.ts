@@ -2,7 +2,7 @@
 // grant to a pod, the friend's own membership of it, and the viewer's. Only the emitted SQL can show all
 // four are there; `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
-import { sharedPodsQuery, spareCount, spareGrantorsQuery } from "./spares";
+import { listSharedPods, sharedPodsQuery, spareCount, spareGrantorsQuery } from "./spares";
 
 const VIEWER = "user_viewer";
 
@@ -30,6 +30,19 @@ describe("sharedPodsQuery", () => {
     const q = sharedPodsQuery(VIEWER).toSQL();
     expect(q.sql).toMatch(/"pod_members"\."pod_id" = "pod_spare_shares"\."pod_id" and "pod_members"\."user_id" = \$\d+/);
     expect(q.sql).toMatch(/where "pod_spare_shares"\."user_id" = \$\d+/);
+  });
+});
+
+describe("listSharedPods (E5)", () => {
+  it("answers the shared-pods query's rows, read through the reader it is given", async () => {
+    const rows = [{ podId: "p1", name: "Table" }];
+    const calls: string[] = [];
+    const chain: Record<string, unknown> = {};
+    for (const m of ["from", "innerJoin", "where", "orderBy"]) chain[m] = () => { calls.push(m); return chain; };
+    chain.then = (resolve: (v: unknown) => void) => resolve(rows);
+    const reader = { select: () => chain, selectDistinct: () => chain } as never;
+    await expect(listSharedPods(VIEWER, reader)).resolves.toEqual(rows);
+    expect(calls).toEqual(["from", "innerJoin", "innerJoin", "where", "orderBy"]);
   });
 });
 

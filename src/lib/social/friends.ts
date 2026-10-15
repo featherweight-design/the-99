@@ -10,26 +10,30 @@
 import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
-import { resolveFriend } from "./access";
+import { resolveFriend, type Reader } from "./access";
+import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
 } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export type OwnProfile = { publicId: string; displayName: string; commander: ProfileCommander | null };
+
 /**
  * The viewer's profile, created on first use with the name the caller offers (the Clerk first name,
  * which the player can edit). A name that does not pass `cleanDisplayName` falls back to "Player", so a
  * first visit never fails on what Clerk holds.
  */
-export async function ensureProfile(viewerId: string, offeredName: unknown): Promise<{ publicId: string; displayName: string }> {
+export async function ensureProfile(viewerId: string, offeredName: unknown): Promise<OwnProfile> {
   const displayName = cleanDisplayName(offeredName) ?? "Player";
   await db.insert(socialProfiles).values({ userId: viewerId, displayName }).onConflictDoNothing();
   const [row] = await db
-    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName })
+    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, ...commanderColumns })
     .from(socialProfiles)
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .where(eq(socialProfiles.userId, viewerId));
-  return row;
+  return { publicId: row.publicId, displayName: row.displayName, commander: toCommander(row) };
 }
 
 export async function setDisplayName(viewerId: string, raw: unknown): Promise<boolean> {
@@ -79,17 +83,28 @@ export async function revokeInvite(viewerId: string, token: string, now = new Da
   return written.length > 0;
 }
 
+/**
+ * An OPEN link names its inviter and shows their face (D1): to anyone holding it, to the inviter
+ * themselves (`self`), and to a friend already (`alreadyFriends`, with `friendsSince`). An ENDED link
+ * carries its state and nothing else, so a forwarded or guessed link learns nobody's name (E6). The state
+ * is decided first: an ended link from a friend is an ended link.
+ */
 export type InviteView =
-  | { state: InviteState; inviterName: string; self: boolean; alreadyFriends: boolean }
+  | {
+      state: "open";
+      inviterName: string;
+      commander: ProfileCommander | null;
+      self: boolean;
+      alreadyFriends: boolean;
+      /** When the viewer and the inviter became friends; null unless `alreadyFriends`. */
+      friendsSince: Date | null;
+    }
+  | { state: Exclude<InviteState, "open"> }
   | null;
 
-/**
- * What the landing page may say about a token: its state and the inviter's display name, nothing about
- * their decks or collection. Null for a token that names nothing, which the page draws exactly as it
- * draws an ended one.
- */
-export async function readInvite(viewerId: string, token: string, now = new Date()): Promise<InviteView> {
-  const [row] = await db
+/** The landing's one statement. Apart so a test can render its SQL. */
+export function inviteQuery(viewerId: string, token: string, q: Reader = db) {
+  return q
     .select({
       inviterUserId: friendInvites.inviterUserId,
       expiresAt: friendInvites.expiresAt,
@@ -97,20 +112,57 @@ export async function readInvite(viewerId: string, token: string, now = new Date
       declinedAt: friendInvites.declinedAt,
       revokedAt: friendInvites.revokedAt,
       inviterName: socialProfiles.displayName,
-      alreadyFriends: sql<boolean>`exists (
-        select 1 from ${friendLinks} fl where fl.user_id = ${viewerId} and fl.friend_user_id = ${friendInvites.inviterUserId}
-      )`,
+      // Correlated, so aliased and qualified on both sides (AGENTS.md): unqualified, `user_id` would
+      // resolve inside the subquery and compare the link row to itself.
+      friendsSince: sql<Date | null>`(
+        select fl.created_at from ${friendLinks} fl
+        where fl.user_id = ${viewerId} and fl.friend_user_id = ${friendInvites}.inviter_user_id
+      )`.mapWith((v: string | null) => (v === null ? null : friendLinks.createdAt.mapFromDriverValue(v) as Date)),
+      ...commanderColumns,
     })
     .from(friendInvites)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendInvites.inviterUserId))
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .where(eq(friendInvites.token, token));
-  if (!row) return null;
+}
+
+/**
+ * What the landing page may say about a token: see `InviteView`. Nothing about the inviter's decks or
+ * collection, ever. Null for a token that names nothing, which the page draws exactly as it draws an
+ * ended one.
+ */
+export async function readInvite(viewerId: string, token: string, now = new Date()): Promise<InviteView> {
+  const [row] = await inviteQuery(viewerId, token);
+  return row ? shapeInvite(row, viewerId, now) : null;
+}
+
+/** The row as the landing may see it. Pure, so the ended states' stripping is tested without a database. */
+export function shapeInvite(row: Awaited<ReturnType<typeof inviteQuery>>[number], viewerId: string, now: Date): InviteView {
+  const state = inviteState(row, now);
+  if (state !== "open") return { state };
   return {
-    state: inviteState(row, now),
+    state,
     inviterName: row.inviterName,
+    commander: toCommander(row),
     self: row.inviterUserId === viewerId,
-    alreadyFriends: row.alreadyFriends,
+    alreadyFriends: row.friendsSince !== null,
+    friendsSince: row.friendsSince,
   };
+}
+
+export type OpenInvite = { token: string; createdAt: Date; expiresAt: Date };
+
+/** The viewer's own open links, oldest first (the soonest to expire leads), and only open ones (E3). */
+export function openInvitesQuery(viewerId: string, now: Date, q: Reader = db) {
+  return q
+    .select({ token: friendInvites.token, createdAt: friendInvites.createdAt, expiresAt: friendInvites.expiresAt })
+    .from(friendInvites)
+    .where(and(eq(friendInvites.inviterUserId, viewerId), openInvite(now)))
+    .orderBy(asc(friendInvites.createdAt), asc(friendInvites.token));
+}
+
+export async function listOpenInvites(viewerId: string, now = new Date(), q: Reader = db): Promise<OpenInvite[]> {
+  return openInvitesQuery(viewerId, now, q);
 }
 
 /** Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. */

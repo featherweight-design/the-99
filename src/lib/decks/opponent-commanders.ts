@@ -43,6 +43,24 @@ const SCAN = 40;
 
 const WUBRG = ["W", "U", "B", "R", "G"];
 
+/**
+ * The catalog's commanders as SQL: a SUPERSET of `isCommanderCandidate` (a legendary front or back, or "can
+ * be your commander" text) that is commander-legal and a game card. Every commander search narrows by this
+ * and lets `isCommanderCandidate` have the last word, so the profile picker's search offers what this one does.
+ */
+export function commanderSupersetWhere() {
+  return and(
+    eq(cards.commanderLegal, true),
+    isGameCardWhere(),
+    or(ilike(cards.typeLine, "%legendary%"), ilike(cards.oracleText, "%can be your commander%")),
+  )!;
+}
+
+/** A name that starts with what was typed leads, then name: a window cut at a limit is the same one every call. */
+export function commanderSearchOrder(query: string) {
+  return [desc(sql`${cards.name} ilike ${`${query.trim().replace(/[\\%_]/g, (m) => `\\${m}`)}%`}`), asc(cards.name)] as const;
+}
+
 export async function searchOpponentCommanders(query: unknown): Promise<OpponentCommanderHit[]> {
   if (typeof query !== "string") return [];
   const match = nameSearch(query);
@@ -62,14 +80,8 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
     })
     .from(cards)
     .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
-    .where(and(
-      match.where,
-      eq(cards.commanderLegal, true),
-      isGameCardWhere(),
-      or(ilike(cards.typeLine, "%legendary%"), ilike(cards.oracleText, "%can be your commander%")),
-    ))
-    // A name that starts with what was typed leads, then name: a window cut at SCAN is the same one every call.
-    .orderBy(desc(sql`${cards.name} ilike ${`${query.trim().replace(/[\\%_]/g, (m) => `\\${m}`)}%`}`), asc(cards.name))
+    .where(and(match.where, commanderSupersetWhere()))
+    .orderBy(...commanderSearchOrder(query))
     .limit(SCAN);
   const leads = rows.filter(isCommanderCandidate).slice(0, OPPONENT_COMMANDER_HITS);
   if (leads.length === 0) return [];

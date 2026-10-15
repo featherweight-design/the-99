@@ -8,15 +8,16 @@
  * `publicId` back into an account id for the module's own writes, and only for a current friend.
  * `check:social-reads` keeps the social tables out of every module but this directory.
  */
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
-import { isUuid } from "./rules";
+import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { isUuid, nextPodOwner } from "./rules";
 
 export type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
-export type Friend = { publicId: string; displayName: string; since: Date };
+export type Friend = { publicId: string; displayName: string; since: Date; commander: ProfileCommander | null };
 
 /**
  * The viewer's friends, by the viewer's own link rows. A friend with no profile row is not drawn (an
@@ -24,15 +25,22 @@ export type Friend = { publicId: string; displayName: string; since: Date };
  */
 export function friendsQuery(viewerId: string, q: Reader = db) {
   return q
-    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, since: friendLinks.createdAt })
+    .select({
+      publicId: socialProfiles.publicId,
+      displayName: socialProfiles.displayName,
+      since: friendLinks.createdAt,
+      ...commanderColumns,
+    })
     .from(friendLinks)
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .where(eq(friendLinks.userId, viewerId))
     .orderBy(asc(socialProfiles.displayName), asc(socialProfiles.publicId));
 }
 
 export async function listFriends(viewerId: string, q: Reader = db): Promise<Friend[]> {
-  return friendsQuery(viewerId, q);
+  const rows = await friendsQuery(viewerId, q);
+  return rows.map((r) => ({ publicId: r.publicId, displayName: r.displayName, since: r.since, commander: toCommander(r) }));
 }
 
 /** The account a `publicId` names, ONLY when it is the viewer's current friend. Anything else is null. */
@@ -51,8 +59,29 @@ export async function resolveFriend(viewerId: string, publicId: unknown, q: Read
   return row?.userId ?? null;
 }
 
-export type PodMember = { publicId: string; displayName: string; joinedAt: Date; isOwner: boolean; isYou: boolean };
-export type Pod = { id: string; name: string; isOwner: boolean; members: PodMember[] };
+export type PodMember = {
+  publicId: string;
+  displayName: string;
+  joinedAt: Date;
+  isOwner: boolean;
+  isYou: boolean;
+  /** The viewer's current friend. False for the viewer, and for a member a hand-on left (D3). */
+  isFriend: boolean;
+  /** Only for the viewer and the viewer's friends; a member who is neither stays name-only (D2). */
+  commander: ProfileCommander | null;
+};
+export type Pod = {
+  id: string;
+  name: string;
+  isOwner: boolean;
+  /** Owner first, then the viewer, then by name (G9). */
+  members: PodMember[];
+  /**
+   * Who holds the pod if the viewer, its owner, leaves (Q5): computed here because `nextPodOwner` breaks a
+   * tie by account id, which no client holds (E4). Null when the viewer is not the owner, or is alone.
+   */
+  nextOwner: { publicId: string; displayName: string } | null;
+};
 
 /** The pods the viewer is a member of: membership on the viewer IS the grant to read the pod. */
 export function viewerPodsQuery(viewerId: string, q: Reader = db) {
@@ -65,9 +94,14 @@ export function viewerPodsQuery(viewerId: string, q: Reader = db) {
 }
 
 const viewerMembership = alias(podMembers, "viewer_membership");
+const viewerFriend = alias(friendLinks, "viewer_friend");
 
-/** Every member of every pod the viewer belongs to, the viewer's own membership joined in the same
- *  statement, so no pod id from anywhere else can widen it. */
+/**
+ * Every member of every pod the viewer belongs to, the viewer's own membership joined in the same
+ * statement, so no pod id from anywhere else can widen it. The viewer's friendship with each member is
+ * joined there too, and a member's commander is joined only through it (or for the viewer): a member
+ * who is not the viewer's friend reads with no face (D2), whatever their profile holds.
+ */
 export function podMembersQuery(viewerId: string, q: Reader = db) {
   return q
     .select({
@@ -76,29 +110,63 @@ export function podMembersQuery(viewerId: string, q: Reader = db) {
       joinedAt: podMembers.joinedAt,
       publicId: socialProfiles.publicId,
       displayName: socialProfiles.displayName,
+      isFriend: sql<boolean>`${viewerFriend.userId} is not null`,
+      ...commanderColumns,
     })
     .from(podMembers)
     .innerJoin(viewerMembership, and(eq(viewerMembership.podId, podMembers.podId), eq(viewerMembership.userId, viewerId)))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, podMembers.userId))
+    .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, podMembers.userId)))
+    .leftJoin(commanderCard, and(
+      eq(commanderCard.oracleId, socialProfiles.commanderOracleId),
+      or(eq(podMembers.userId, viewerId), isNotNull(viewerFriend.userId)),
+    ))
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
+}
+
+type MemberRow = Awaited<ReturnType<typeof podMembersQuery>>[number];
+
+/** Owner, then the viewer, then by name (G9), then public id so two of one name never swap. */
+export function orderMembers<T extends { isOwner: boolean; isYou: boolean; displayName: string; publicId: string }>(
+  members: readonly T[],
+): T[] {
+  const rank = (m: T) => (m.isOwner ? 0 : m.isYou ? 1 : 2);
+  return [...members].sort((a, b) =>
+    rank(a) - rank(b)
+    || (a.displayName < b.displayName ? -1 : a.displayName > b.displayName ? 1 : 0)
+    || (a.publicId < b.publicId ? -1 : a.publicId > b.publicId ? 1 : 0));
+}
+
+/** The pod as the viewer sees it, from its rows. Pure, so the order, D2 and the next owner are tested
+ *  without a database. */
+export function shapePod(
+  pod: { id: string; name: string; ownerUserId: string },
+  rows: readonly MemberRow[],
+  viewerId: string,
+): Pod {
+  const isOwner = pod.ownerUserId === viewerId;
+  const next = isOwner ? nextPodOwner(rows, viewerId) : null;
+  const heir = next === null ? undefined : rows.find((r) => r.userId === next);
+  return {
+    id: pod.id,
+    name: pod.name,
+    isOwner,
+    members: orderMembers(rows.map((m) => ({
+      publicId: m.publicId,
+      displayName: m.displayName,
+      joinedAt: m.joinedAt,
+      isOwner: m.userId === pod.ownerUserId,
+      isYou: m.userId === viewerId,
+      isFriend: m.userId !== viewerId && m.isFriend,
+      commander: toCommander(m),
+    }))),
+    nextOwner: heir ? { publicId: heir.publicId, displayName: heir.displayName } : null,
+  };
 }
 
 export async function listPods(viewerId: string, q: Reader = db): Promise<Pod[]> {
   const mine = await viewerPodsQuery(viewerId, q);
   if (mine.length === 0) return [];
   const members = await podMembersQuery(viewerId, q);
-  return mine.map((p) => ({
-    id: p.id,
-    name: p.name,
-    isOwner: p.ownerUserId === viewerId,
-    members: members
-      .filter((m) => m.podId === p.id)
-      .map((m) => ({
-        publicId: m.publicId,
-        displayName: m.displayName,
-        joinedAt: m.joinedAt,
-        isOwner: m.userId === p.ownerUserId,
-        isYou: m.userId === viewerId,
-      })),
-  }));
+  return mine.map((p) => shapePod(p, members.filter((m) => m.podId === p.id), viewerId));
 }

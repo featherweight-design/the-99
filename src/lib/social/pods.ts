@@ -5,7 +5,7 @@
  * ownership or membership inside the statement or transaction that writes. A pod grants no visibility
  * of its own: what a member may see is decided by the reads that join it (spares, in PR 2).
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
@@ -76,6 +76,53 @@ export async function addMember(viewerId: string, podId: unknown, friendPublicId
     if (held.rows.length === 0) return false;
     await tx.insert(podMembers).values({ podId, userId: friendId }).onConflictDoNothing();
     return true;
+  });
+}
+
+/** The most friends one batch may name: a pod is a table, not a mailing list. */
+export const ADD_MEMBERS_MAX = 32;
+
+export type AddMembersResult =
+  | { ok: true; added: number }
+  | { ok: false; reason: "invalid" | "notOwner" | "notFriend" };
+
+/**
+ * The owner adds several friends at once (E11): ONE transaction, all or none. It takes `addMember`'s locks
+ * in `addMember`'s order, the pod row FOR UPDATE and then every friendship row FOR SHARE (in friend id
+ * order, so two batches lock them the same way round), and refuses the whole batch when any `publicId` is
+ * not the owner's friend at that moment. A friend already in the pod counts as added, as `addMember`
+ * answers for one; `added` is the number of rows actually written.
+ */
+export async function addMembers(viewerId: string, podId: unknown, friendPublicIds: unknown): Promise<AddMembersResult> {
+  if (!isId(podId) || !Array.isArray(friendPublicIds)) return { ok: false, reason: "invalid" };
+  if (!friendPublicIds.every(isId)) return { ok: false, reason: "invalid" };
+  // Lowercased before the dedupe: Postgres reads either case as the same uuid, so two spellings of one friend
+  // would otherwise count twice against the one friendship row that comes back.
+  const ids = [...new Set(friendPublicIds.map((id) => id.toLowerCase()))];
+  if (ids.length === 0 || ids.length > ADD_MEMBERS_MAX) return { ok: false, reason: "invalid" };
+  return db.transaction(async (tx) => {
+    const [pod] = await tx
+      .select({ id: pods.id })
+      .from(pods)
+      .where(and(eq(pods.id, podId), eq(pods.ownerUserId, viewerId)))
+      .for("update");
+    if (!pod) return { ok: false as const, reason: "notOwner" as const };
+    // Resolved on the owner's own links and held in the same statement: a friendship being ended waits for
+    // this batch, or this batch waits for it and finds the row gone.
+    const held = await tx
+      .select({ friendUserId: friendLinks.friendUserId })
+      .from(friendLinks)
+      .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+      .where(and(eq(friendLinks.userId, viewerId), inArray(socialProfiles.publicId, ids)))
+      .orderBy(asc(friendLinks.friendUserId))
+      .for("share", { of: friendLinks });
+    if (held.length !== ids.length) return { ok: false as const, reason: "notFriend" as const };
+    const written = await tx
+      .insert(podMembers)
+      .values(held.map((h) => ({ podId, userId: h.friendUserId })))
+      .onConflictDoNothing()
+      .returning({ userId: podMembers.userId });
+    return { ok: true as const, added: written.length };
   });
 }
 

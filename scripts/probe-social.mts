@@ -18,6 +18,9 @@ const A = `probe_social_a_${run}`;
 const B = `probe_social_b_${run}`;
 const C = `probe_social_c_${run}`;
 const D = `probe_social_d_${run}`;
+const E = `probe_social_e_${run}`;
+const F = `probe_social_f_${run}`;
+const G = `probe_social_g_${run}`;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -33,6 +36,7 @@ async function main() {
   const { sql } = await import("drizzle-orm");
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:social: database reports ${rows[0]?.b}, not ${named}`);
+  console.log(`branch ${named}`);
 
   const friends = await import("../src/lib/social/friends");
   const pods = await import("../src/lib/social/pods");
@@ -55,7 +59,7 @@ async function main() {
     const invite = await friends.createInvite(A);
     if (!invite.ok) throw new Error("createInvite refused the first invite");
     const view = await friends.readInvite(B, invite.token);
-    check("the landing read says who invited, and nothing else", view?.inviterName === "Alice" && view.state === "open" && !view.self && !view.alreadyFriends);
+    check("the landing read says who invited, and nothing else", view?.state === "open" && view.inviterName === "Alice" && !view.self && !view.alreadyFriends);
     check("an inviter cannot accept their own link", (await friends.redeemInvite(A, invite.token)).ok === false);
     const accepted = await friends.redeemInvite(B, invite.token);
     check("the friend accepts", accepted.ok && accepted.friend.publicId === a.publicId);
@@ -239,9 +243,112 @@ async function main() {
     check("unfriending dropped the grant row", (await grantRows()) === 0);
     await db.execute(sql`delete from decks where user_id = ${B}`);
     await db.execute(sql`delete from collection_items where user_id = ${B}`);
+
+    // ── Social R1 PR A: faces, the landing, open links, pod order and next owner, the batch add, the picker.
+    const commander = await import("../src/lib/social/commander");
+    const picker = await import("../src/lib/decks/commander-picker");
+    const { rows: leaders } = await db.execute<{ oracle_id: string; name: string }>(sql`
+      select oracle_id, name from cards
+      where commander_legal and layout = 'normal' and type_line like 'Legendary Creature%' and art_crop_uri is not null
+      order by oracle_id limit 3`);
+    const [L1, L2, L3] = leaders;
+    const { rows: lands } = await db.execute<{ oracle_id: string; name: string }>(sql`
+      select oracle_id, name from cards where type_line like 'Basic Land%' order by oracle_id limit 1`);
+    const e = await friends.ensureProfile(E, "Eve");
+    const f = await friends.ensureProfile(F, "Finn");
+    const g = await friends.ensureProfile(G, "Ada");
+    check("a new profile has no face", e.commander === null);
+    check("setCommander refuses a card that cannot lead a deck", (await commander.setCommander(E, lands[0].oracle_id)).ok === false);
+    check("and a malformed id", (await commander.setCommander(E, "nope")).ok === false);
+    check("setCommander saves a commander", (await commander.setCommander(E, L1.oracle_id)).ok);
+    const eNow = await friends.ensureProfile(E, "ignored");
+    check("the own profile carries the face", eNow.displayName === "Eve" && eNow.commander?.oracleId === L1.oracle_id
+      && eNow.commander.name === L1.name && eNow.commander.artCropUri !== null, JSON.stringify(eNow.commander));
+    check("an account with no profile has no face to set", (await commander.setCommander(`probe_social_none_${run}`, L1.oracle_id)).ok === false);
+    await commander.setCommander(F, L2.oracle_id);
+    await commander.setCommander(G, L3.oracle_id);
+    check("null clears a face", (await commander.setCommander(G, null)).ok && (await friends.ensureProfile(G, "x")).commander === null);
+    await commander.setCommander(G, L3.oracle_id);
+
+    // The landing: an open link names its inviter and shows the face; an ended one says only how it ended.
+    const inv = await friends.createInvite(E);
+    if (!inv.ok) throw new Error("createInvite refused");
+    const openView = await friends.readInvite(F, inv.token);
+    check("an open link names its inviter and shows their face", openView?.state === "open" && openView.inviterName === "Eve"
+      && openView.commander?.oracleId === L1.oracle_id && !openView.self && !openView.alreadyFriends && openView.friendsSince === null);
+    const ownView = await friends.readInvite(E, inv.token);
+    check("your own open link shows your own card", ownView?.state === "open" && ownView.self && ownView.commander?.oracleId === L1.oracle_id);
+    check("listOpenInvites lists the open link", (await friends.listOpenInvites(E)).map((t) => t.token).join() === inv.token);
+    check("and only the inviter's own", (await friends.listOpenInvites(F)).length === 0);
+    await friends.redeemInvite(F, inv.token);
+    check("an ended link carries its state and nothing else", JSON.stringify(await friends.readInvite(G, inv.token)) === `{"state":"redeemed"}`);
+    check("an ended link from a friend is ended, not already friends", JSON.stringify(await friends.readInvite(F, inv.token)) === `{"state":"redeemed"}`);
+    check("a used link leaves the open list", (await friends.listOpenInvites(E)).length === 0);
+    const inv2 = await friends.createInvite(E);
+    if (!inv2.ok) throw new Error("createInvite refused");
+    const since = (await access.listFriends(F)).find((x) => x.publicId === e.publicId)?.since;
+    const friendView = await friends.readInvite(F, inv2.token);
+    check("an open link from a friend says already friends, and since when", friendView?.state === "open" && friendView.alreadyFriends
+      && friendView.friendsSince instanceof Date && friendView.friendsSince.getTime() === since?.getTime(), String(friendView && "friendsSince" in friendView ? friendView.friendsSince : ""));
+    const inv3 = await friends.createInvite(E);
+    if (!inv3.ok) throw new Error("createInvite refused");
+    await friends.revokeInvite(E, inv3.token);
+    const stale = await friends.createInvite(E, new Date(Date.now() - 8 * 24 * 3600 * 1000));
+    if (!stale.ok) throw new Error("createInvite refused");
+    check("an expired link names nobody", JSON.stringify(await friends.readInvite(F, stale.token)) === `{"state":"expired"}`);
+    check("revoked and expired links leave the open list", (await friends.listOpenInvites(E)).map((t) => t.token).join() === inv2.token);
+    check("a friend row carries the friend's face", (await access.listFriends(F)).find((x) => x.publicId === e.publicId)?.commander?.oracleId === L1.oracle_id);
+
+    // Pods: the batch add is all or none; the order, isFriend, D2 and the next owner come from the server.
+    const table = await pods.createPod(E, "Table");
+    if (!table) throw new Error("createPod refused");
+    const memberCount = async () => (await access.listPods(E)).find((p) => p.id === table.id)?.members.length ?? 0;
+    check("a batch naming one stranger adds nobody", JSON.stringify(await pods.addMembers(E, table.id, [f.publicId, g.publicId])) === `{"ok":false,"reason":"notFriend"}`
+      && (await memberCount()) === 1);
+    const invG = await friends.createInvite(E);
+    if (!invG.ok) throw new Error("createInvite refused");
+    await friends.redeemInvite(G, invG.token);
+    check("a member who is not the owner cannot batch-add", (await pods.addMembers(F, table.id, [g.publicId])).ok === false);
+    check("a malformed batch is refused", JSON.stringify(await pods.addMembers(E, table.id, ["nope"])) === `{"ok":false,"reason":"invalid"}`);
+    check("the owner adds two friends at once", JSON.stringify(await pods.addMembers(E, table.id, [f.publicId, g.publicId, f.publicId])) === `{"ok":true,"added":2}`
+      && (await memberCount()) === 3);
+    check("adding them again writes nothing and still succeeds", JSON.stringify(await pods.addMembers(E, table.id, [g.publicId])) === `{"ok":true,"added":0}`);
+    const asOwner = (await access.listPods(E)).find((p) => p.id === table.id)!;
+    check("the owner's members: owner, then by name", asOwner.members.map((m) => m.displayName).join() === "Eve,Ada,Finn");
+    // F and G joined in one statement, so one joinedAt: the tie is broken by account id, which only the server holds.
+    const heir = [F, G].sort()[0] === F ? f : g;
+    check("the next owner is computed on the server", asOwner.nextOwner?.publicId === heir.publicId, JSON.stringify(asOwner.nextOwner));
+    const asFinn = (await access.listPods(F)).find((p) => p.id === table.id)!;
+    check("a member's view: owner, You, then by name", asFinn.members.map((m) => m.displayName).join() === "Eve,Finn,Ada");
+    const [eve, finn, ada] = asFinn.members;
+    check("isFriend per member", eve.isFriend && !finn.isFriend && finn.isYou && !ada.isFriend);
+    check("a friend and You show a face", eve.commander?.oracleId === L1.oracle_id && finn.commander?.oracleId === L2.oracle_id);
+    check("a member who is not your friend stays name-only (D2)", ada.commander === null);
+    check("a member has no next owner to see", asFinn.nextOwner === null);
+    check("nobody shares spares yet", (await spares.listSharedPods(F)).length === 0);
+    await spares.shareSparesWith(F, table.id, true);
+    check("listSharedPods lists the pod a member shares with", JSON.stringify(await spares.listSharedPods(F)) === JSON.stringify([{ podId: table.id, name: "Table" }])
+      && (await spares.listSharedPods(G)).length === 0);
+    check("the owner leaves", (await pods.leavePod(E, table.id)) === "handedOn");
+    const handed = (await access.listPods(heir === f ? F : G)).find((p) => p.id === table.id);
+    check("to the next owner listPods named", handed?.isOwner === true);
+
+    // The picker: the viewer's decks' commanders, newest first, a pair as two tiles, each once.
+    await db.execute(sql`insert into decks (user_id, name, commander_oracle_id, partner_oracle_id, created_at) values
+      (${E}, 'oldest', ${L1.oracle_id}, null, now() - interval '3 days'),
+      (${E}, 'pair', ${L2.oracle_id}, ${L3.oracle_id}, now() - interval '2 days'),
+      (${E}, 'again', ${L2.oracle_id}, null, now() - interval '1 day')`);
+    const tiles = await picker.listOwnDeckCommanders(E);
+    check("deck tiles: newest first, a pair as two, each once", tiles.map((t) => t.oracleId).join() === [L2, L3, L1].map((l) => l.oracle_id).join()
+      && tiles.every((t) => t.name.length > 0), JSON.stringify(tiles.map((t) => t.name)));
+    check("another player's decks are not offered", (await picker.listOwnDeckCommanders(F)).length === 0);
+    const hits = await picker.searchFaceCommanders(L1.name);
+    check("the search finds a commander by name, with art", hits.some((h) => h.oracleId === L1.oracle_id && h.artCropUri !== null), `${hits.length}`);
+    check("and offers no basic land", (await picker.searchFaceCommanders(lands[0].name)).every((h) => h.oracleId !== lands[0].oracle_id));
+    check("a one-letter query asks for nothing", (await picker.searchFaceCommanders("a")).length === 0);
   } finally {
     // Stamps last: every delete above fires the deferred stamp trigger, which writes them back.
-    const who = sql`(${A}, ${B}, ${C}, ${D})`;
+    const who = sql`(${A}, ${B}, ${C}, ${D}, ${E}, ${F}, ${G})`;
     await db.execute(sql`delete from friend_links where user_id in ${who} or friend_user_id in ${who}`);
     await db.execute(sql`delete from decks where user_id in ${who}`);
     await db.execute(sql`delete from collection_items where user_id in ${who}`);
