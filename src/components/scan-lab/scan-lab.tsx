@@ -80,6 +80,14 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   }, []);
 
   const start = useCallback(async () => {
+    const fail = (e: unknown) => {
+      running.current = false;
+      stream.current.close();
+      history.current = [];
+      setReading(null);
+      setStatus("error");
+      setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
+    };
     if (!indexBase) {
       setStatus("error");
       setError(copy.noIndex);
@@ -130,6 +138,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       const noCard = (t0: number, t1: number) => {
         history.current = [];
         setReading({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
+        // the preview shows what a tap would keep, which is now nothing
+        previewRef.current?.getContext("2d")?.clearRect(0, 0, EMBED_W, EMBED_H);
       };
       const loop = async () => {
         if (!running.current) return;
@@ -179,14 +189,14 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             noCard(t0, t1);
           }
         }
-        setTimeout(loop, 60);
+        setTimeout(tick, 60);
       };
-      void loop();
+      // Every iteration's rejection lands here, the timer's included: a frame that fails stops the
+      // scan and the camera, and leaves no reading a tap could save.
+      const tick = () => { loop().catch(fail); };
+      tick();
     } catch (e) {
-      running.current = false;
-      stream.current.close();
-      setStatus("error");
-      setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
+      fail(e);
     }
   }, [indexBase]);
 
