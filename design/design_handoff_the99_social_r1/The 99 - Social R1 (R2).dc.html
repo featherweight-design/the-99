@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R2 Social R1, calls and locks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.55;color:#959AAD;margin:0}
+.col{display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid #262A35;border-radius:12px;background:#12141B;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.n{display:grid;grid-template-columns:34px 1fr;gap:4px 0;font-size:13.5px;line-height:1.55;color:#B1B6C7}
+.n b{color:#E6E8F0;font-weight:600}
+.n i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#FF4D9A;padding-top:3px}
+.lk{display:grid;grid-template-columns:240px 1fr;gap:0;font-size:13px;line-height:1.5;color:#B1B6C7;border-top:1px solid #181C26}
+.lk span{padding:9px 0;border-bottom:1px solid #181C26}
+.lk span:nth-child(odd){color:#E6E8F0;font-weight:600;padding-right:16px}
+.g{display:grid;grid-template-columns:44px 1fr;font-size:13px;line-height:1.5;color:#B1B6C7}
+.g i{font-style:normal;font:500 11px 'IBM Plex Mono',monospace;color:#E0913C;padding-top:2px}
+.g span{padding-bottom:9px}
+code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;padding:1px 5px;border-radius:4px}
+.n2 i{color:#6FA368}
+</style>
+</helmet>
+<div style="width:1800px;min-height:1400px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+  <div class="col" style="gap:8px">
+    <span class="k">Social · round 1 of 3 · design R2 · Hugh’s R1 audit, 2026-10-15</span>
+    <h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif">R2: friend links, one place to be yourself, and your commander as your face</h1>
+    <p class="cap" style="max-width:1500px;font-size:14.5px;color:#B1B6C7">Hugh found R1 sound but plain, and the word invite misleading. R2 keeps every R1 call and lock, and changes four things. The wording now says <b style="color:#E6E8F0">Add a friend</b> and <b style="color:#E6E8F0">friend link</b>, and the route is <code>/friend/[token]</code>. Your name and your commander are set in one place only, the head of <code>/friends</code>. Each player may pick a <b style="color:#E6E8F0">signature commander</b>, and its art becomes their face everywhere a person is drawn. The friend request is drawn as a card. Pods are drawn as a table of art seats (Hugh’s pick). R1’s boards stay to the left for comparison, and every frame R2 does not redraw keeps R1’s layout with R2’s words and faces.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+    <div class="card">
+      <span class="k">What changed (R2)</span>
+      <div class="n n2">
+        <i>19</i><span><b>Friend links, not invites.</b> A link only adds an existing player as a friend, so the words never say invite. The button and dialog are <b>Add a friend</b>, the list is <b>Open friend links</b> and each row is a <b>Friend link</b>. The landing’s kicker is <b>Friend request</b>, and the path is <code>/friend/</code>. The function names in <code>friends.ts</code> can stay.</span>
+        <i>20</i><span><b>One place to set yourself.</b> The name line is gone from the dialog and the landing card (Hugh: no alias system). The name and the commander are set only in the head of <code>/friends</code>.</span>
+        <i>21</i><span><b>A signature commander, chosen, never inferred.</b> Press the face in the head, or Choose your commander while it is unset. The picker shows your own decks’ commanders first, then searches every commander in the catalog. One press picks, saves and closes. <b>Use initials instead</b> clears it. Unchosen, a face is initials, and nothing asks again.</span>
+        <i>22</i><span><b>The face is spent everywhere a person is drawn:</b> the head at 64px, friend rows at 40px with the commander’s name under the person’s, pod chips at 26px, the Add friends list, and the friend request card.</span>
+        <i>23</i><span><b>The friend request is a card.</b> Face up when the page may name the sender (open, already friends): the name bar, the art (which also tints the frame), the type line, and the rule of friendship in the text box. Face down (the 99’s back) whenever R1 said it names nobody. Your own link shows your own card. It arrives face down and flips face up when it may name the sender; Decline flips it back. The flip is drawn, looping, on the friend request board.</span>
+        <i>24</i><span><b>Pods: A, chips with faces, or B, the pod as a table</b> of art seats over a blur of the same art. Hugh picked <b>B, the table</b>. A stays on the board for reference.</span>
+        <i>25</i><span><b>Already friends spends the link</b> (Hugh, G4), and the app stays invite-only (Hugh, G3).</span>
+      </div>
+    </div>
+    <div class="col" style="gap:28px">
+      <div class="card">
+        <span class="k">One lock widens, by Hugh’s go-ahead</span>
+        <div class="lk">
+          <span>Name and public id only</span><span><b style="color:#E0913C">Widened:</b> a friend read now also returns the friend’s chosen commander (an oracle id) for its art and name. It is chosen on purpose and says nothing about their decks or collection. The picker’s deck row is the viewer’s own data, shown only to them.</span>
+          <span>No model calls</span><span>Unchanged. The picker is a catalog search.</span>
+          <span>Everything else</span><span>Unchanged from R1.</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="k">New gaps</span>
+        <div class="g">
+          <i>G11</i><span><code>social_profiles</code> needs a nullable <code>commander_oracle_id</code>, a writer (<code>setCommander</code>), and every friend and pod read in <code>src/lib/social/</code> to return it. The purge already removes the profile.</span>
+          <i>G12</i><span>Art: the catalog’s representative printing’s art crop for that oracle id, as the app already resolves for a commander. No player printing choice in this round.</span>
+          <i>G13</i><span>The picker searches the same commander set <code>/commanders</code> lists. Its deck row reads the viewer’s own decks’ commanders, newest first, up to eight; for a partner pair, each commander is its own tile.</span>
+          <i>G14</i><span>The route moves from <code>/invite/[token]</code> to <code>/friend/[token]</code>. G2 applies to the new path.</span>
+          <i>G15</i><span>Option B’s blur is a CSS filter over the seats’ own images, so it costs no extra request. Under reduced transparency it is dropped.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap">R2 boards: this one, Friends (desktop, phone), Friend link (desktop, phone), Friend request (desktop, phone), Pods A or B (both widths). Art is drawn from Scryfall by name for the boards only; names, commanders and dates are placeholders. No About entry this round (batched at launch).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1400}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

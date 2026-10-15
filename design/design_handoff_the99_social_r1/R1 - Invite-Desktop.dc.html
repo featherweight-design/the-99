@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invite dialog, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;position:relative;overflow:hidden}
+.pg{width:720px;margin:0 auto;padding:40px 0}
+.hd{display:flex;justify-content:space-between;align-items:flex-start}
+.h1{margin:0;font:700 28px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.me{margin:6px 0 0;font-size:14px;color:#959AAD}
+.me b{color:#E6E8F0}
+.bp{height:44px;padding:0 20px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+.bp.pend{background:#D33E7E;color:#0E0F14}
+.sh{margin-top:34px;padding-bottom:8px;border-bottom:1px solid #181C26}
+.empty{margin-top:14px;border:1px dashed #343843;border-radius:12px;padding:26px 28px;display:flex;flex-direction:column;gap:6px}
+.empty b{font:700 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.empty span{font-size:13.5px;line-height:1.55;color:#959AAD}
+.bd{position:absolute;inset:0;background:rgba(14,15,20,.72);z-index:3}
+.dlg{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:4;width:440px;box-sizing:border-box;background:#16181F;border:1px solid #262A35;border-radius:14px;box-shadow:0 30px 70px rgba(0,0,0,.6);padding:8px 8px 20px 24px}
+.dh{display:flex;align-items:center;justify-content:space-between}
+.dh h2{margin:0;font:700 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.x{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:15px;padding:0}
+.dsub{margin:0 16px 0 0;font-size:13.5px;line-height:1.5;color:#959AAD}
+.qrw{display:flex;flex-direction:column;align-items:center;gap:8px;margin:18px 16px 0 0}
+.qr{background:#F4F5F8;border-radius:10px;padding:16px;display:grid;grid-template-columns:repeat(29,6px);grid-auto-rows:6px}
+.qr.wait{opacity:.18}
+.qcap{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.lr{display:flex;gap:8px;margin:18px 16px 0 0}
+.lf{flex:1;min-width:0;height:40px;border-radius:6px;padding:0 12px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #262A35;font:12.5px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp{height:40px;padding:0 16px;border-radius:6px;border:0;background:#FF4D9A;color:#0E0F14;font:600 13px 'IBM Plex Sans',sans-serif;flex:none;display:flex;align-items:center;gap:6px}
+.cp.done{background:#20222A;color:#6FA368;border:1px solid #262A35}
+.meta{margin:10px 16px 0 0;font:11px 'IBM Plex Mono',monospace;color:#959AAD}
+.meta .soon{color:#E0913C}
+.nl{display:flex;align-items:center;gap:6px;margin:16px 16px 0 0;padding-top:12px;border-top:1px solid #181C26;font-size:13px;color:#959AAD}
+.nl b{color:#E6E8F0;font-weight:600}
+.tl{min-height:32px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.nf{display:flex;flex-direction:column;gap:8px;margin:16px 16px 0 0;padding-top:12px;border-top:1px solid #181C26}
+.nf label{font-size:13px;font-weight:600;color:#E6E8F0}
+.tf{height:40px;border-radius:6px;padding:0 12px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #FF4D9A;font-size:14px;color:#E6E8F0}
+.btns{display:flex;gap:8px}
+.bo{height:32px;padding:0 14px;border-radius:6px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:12.5px 'IBM Plex Sans',sans-serif}
+.bf{height:32px;padding:0 14px;border-radius:6px;border:0;background:#FF4D9A;color:#0E0F14;font:600 12.5px 'IBM Plex Sans',sans-serif}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:6;width:420px;box-sizing:border-box;display:flex;align-items:center;gap:14px;border-radius:10px;border:1px solid #262A35;background:#20222A;padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.toast span{flex:1;padding:8px 0;font-size:13.5px;color:#E6E8F0}
+.toast button{height:36px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:#FF4D9A;font:600 13px 'IBM Plex Sans',sans-serif}
+</style>
+</helmet>
+<div style="width:2760px;min-height:3080px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Call 03 · the invite · desktop 1300 · a modal dialog over /friends, the shipped dialog shell (useDialogA11y, the canvas mixed at 72%)</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">The QR code on top, the link under it, and when it stops working</h2>
+    <p class="cap" style="max-width:2200px">One press of Invite a friend makes one link (createInvite) and opens this dialog on it. The QR code leads, because the commonest case is a friend across the table pointing a phone at the screen; the link and Copy link sit under it for a text. The meta line says the two rules a link has: it works once, and when it expires. The last line is the only place the display name matters to the person about to see it, so it can be changed here, inline. Closing the dialog is ✕, Escape or the backdrop; the link stays open in the list either way.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Primary">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></span>
+            <span class="av" aria-hidden="true">HH</span>
+          </nav>
+          <main class="main">
+            <div class="pg">
+              <div class="hd"><div><h1 class="h1">Friends</h1><p class="me">Friends see you as <b>Hugh</b> · <span style="color:#FF4D9A">Change</span></p></div><button class="{{f.btnCls}}" type="button">{{f.btn}}</button></div>
+              <div class="sh"><span class="k">Friends · 0</span></div>
+              <div class="empty"><b>No friends yet</b><span>Friends are added by invite only: send a link, or show its QR code at the table. Nobody can find you by name.</span></div>
+            </div>
+          </main>
+          <sc-if value="{{f.dialog}}" hint-placeholder-val="{{true}}">
+            <div class="bd" aria-hidden="true"></div>
+            <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ih">
+              <div class="dh"><h2 id="ih">Invite a friend</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+              <p class="dsub">Show this at the table, or send the link. Whoever opens it first can accept.</p>
+              <div class="qrw">
+                <div class="qr" role="img" aria-label="QR code for the invite link">
+                  <sc-for list="{{qr}}" as="q" hint-placeholder-count="841"><i style="display:block;background:{{q.c}}"></i></sc-for>
+                </div>
+                <span class="qcap">Scan with a phone camera</span>
+              </div>
+              <div class="lr">
+                <input class="lf" type="text" readonly="readonly" aria-label="Invite link" value="https://the-99.dev/invite/k3JfQ9xV2mTn8LwPz4RbYa">
+                <button class="{{f.cpCls}}" type="button">{{f.cp}}</button>
+              </div>
+              <p class="meta" role="status">Works once · {{f.expires}}<sc-if value="{{f.soon}}" hint-placeholder-val="{{false}}"> · <span class="soon">under a day left</span></sc-if></p>
+              <sc-if value="{{f.nameLine}}" hint-placeholder-val="{{true}}">
+                <p class="nl">They’ll see you as <b>Hugh</b><span aria-hidden="true">·</span><button class="tl" type="button">Change</button></p>
+              </sc-if>
+              <sc-if value="{{f.editName}}" hint-placeholder-val="{{false}}">
+                <div class="nf">
+                  <label>Your name, as friends see it</label>
+                  <div class="tf" role="textbox" aria-label="Your name, as friends see it">Hugh H.|</div>
+                  <div class="btns"><button class="bo" type="button">Cancel</button><button class="bf" type="button">Save</button></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{f.toast}}" hint-placeholder-val="{{false}}">
+            <div class="toast" role="alert"><span>{{f.toastText}}</span><sc-if value="{{f.retry}}" hint-placeholder-val="{{true}}"><button type="button">Try again</button></sc-if></div>
+          </sc-if>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":3080}}'>
+class Component extends DCLogic {
+renderVals() {
+const N = 29, dark = '#0E0F14', light = 'transparent';
+let seed = 99;
+const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+const finder = (r, c, r0, c0) => { const y = r - r0, x = c - c0; if (y < 0 || x < 0 || y > 6 || x > 6) return null; if (y === 0 || y === 6 || x === 0 || x === 6) return true; if (y >= 2 && y <= 4 && x >= 2 && x <= 4) return true; return false; };
+const qr = [];
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+let v = finder(r, c, 0, 0); if (v === null) v = finder(r, c, 0, N - 7); if (v === null) v = finder(r, c, N - 7, 0);
+const sep = (r <= 7 && c <= 7) || (r <= 7 && c >= N - 8) || (r >= N - 8 && c <= 7);
+if (v === null) v = sep ? false : (r === 6 ? c % 2 === 0 : (c === 6 ? r % 2 === 0 : rnd() > 0.52));
+qr.push({ c: v ? dark : light });
+}
+const base = { dialog: true, btn: 'Invite a friend', btnCls: 'bp', cp: 'Copy link', cpCls: 'cp', expires: 'expires Thu, Oct 22', soon: false, nameLine: true, editName: false, toast: false, toastText: '', retry: true };
+const fr = (o) => Object.assign({}, base, o);
+const frames = [
+fr({ label: 'I1 · a new link', note: 'Opens with focus on ✕, the dialog convention, so a reader who opened it to show the code is not dropped into the field. The QR is 29 modules at 6px on a light plate with a 16px quiet zone, light in every theme because a camera needs dark on light.' }),
+fr({ label: 'I2 · Copy link pressed', cp: '✓ Copied', cpCls: 'cp done', note: 'The button names what happened for two seconds and the status line reads it out. Selecting the field by hand works too: it is a read-only input, never a div.' }),
+fr({ label: 'I3 · Show, on a link under a day from expiry', expires: 'expires Fri, Oct 16, 9:12 PM', soon: true, note: 'Show on an open link reopens the same dialog on that link. Under a day left, the expiry carries its time and the warning colour, matching the row.' }),
+fr({ label: 'I4 · Change, from inside the dialog', nameLine: false, editName: true, note: 'The same field as the page head, in place of the line. The name is the one thing the friend will see before they accept, so this is where it is worth checking.' }),
+fr({ label: 'I5 · making the link', dialog: false, btn: 'Making a link…', btnCls: 'bp pend', note: 'createInvite is one server round trip. The button holds its width, reads Making a link… and ignores a second press; the dialog opens when the token is back, so the code never draws for a link that does not exist.' }),
+fr({ label: 'I6 · the link could not be made', dialog: false, toast: true, toastText: 'We couldn’t make a link. Try again.', note: 'A thrown createInvite is the shared ToastFrame, role alert, with Try again. tooMany (a second tab won the race to 10) uses the same frame with no retry: You have 10 links open. Revoke one to make another.' })
+];
+return { frames, qr };
+}
+}
+</script>
+</body>
+</html>
