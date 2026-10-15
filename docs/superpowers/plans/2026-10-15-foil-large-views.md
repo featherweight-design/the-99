@@ -17,11 +17,12 @@ No feature switch, as in R1: the change is cosmetic, and it is gated by data (on
   outside the list's arrival queue, G8), marks the film span alone. The new rules hide only the film:
   `[data-foil][data-arrival="pending"|"failed"] { opacity: 0 }`.
 - **Never on the host.** The mark never goes on the host, and the face is never drawn through `ArtLayer`. Its global
-  `[data-arrival="pending"]` rule would hide the face.
+  `[data-arrival="pending"]` rule (under `prefers-reduced-motion: no-preference`) would hide the face for every reader
+  without reduced motion.
 - **Client only.** The modal stays client-mounted. The span is marked in a layout effect, before its first paint.
 - **Pinned by tests.** A component test asserts that the face's element carries no `data-arrival` in every arrival state.
-  `probe:foil-film` grows a background-face fixture that reads the face's computed opacity as 1 while the film is pending
-  (G17).
+  `probe:foil-film` grows a background-face fixture that reads the face's computed opacity as 1 while the film is pending,
+  done, failed and unmarked, under both motion preferences (G17).
 - **If cached art reports as not yet loaded** (`new Image().complete` false at once), only the film fades in. That is
   acceptable, and the probe records which happened.
 
@@ -48,8 +49,11 @@ Contact-sheet inventory: `docs/superpowers/inventories/foil-large-views.json`, w
   `preview.foil`, which a pick does not update. The back face needs its own `hasOwnBack` (G9). Each face carries its own
   film span, and its backface is hidden, so the film turns with the card.
 - The preloaded-`Image` arrival mark on the film span (the lock, above; G8).
-- The hover preview (`usePreviewRow`) and the peeks (`SiblingCard`, `NeighborPlate`) carry the finish and draw R1's still
-  tile film (G10).
+- The hover preview (`usePreviewRow`, drawn in `hover-preview.tsx`) and both peeks (`PhonePeek` and `NeighborPlate`, which
+  take the `SiblingCard` data type) carry the finish and draw R1's still tile film (G10). None of them draws an `<img>`: the
+  preview is a `div` with the art as `background`, and the peeks draw through `ArtLayer`. So R1's `img ~ [data-foil]` hold
+  cannot reach them either, and each gets the same film-span arrival mark as the details face, so the film never shows
+  over a plate whose art has not landed or failed.
 - Tests: the film's presence across the "Where details reads foil" table, and the face never marked.
   `probe:foil-film` gets the background-face fixture (G17). Contact sheet at both widths. Check the 80% strength on real
   pale full-art and borderless faces there (G15, R2-G1).
@@ -64,12 +68,14 @@ Contact-sheet inventory: `docs/superpowers/inventories/foil-large-views.json`, w
 - The flip: a turn removes the inline tilt values, so the reset wins. `data-turning` is set only under no-preference,
   because `onTurnSettled` never fires under reduced motion (G4).
 - **Desktop:** hover, gated on `pointerType` mouse or pen (G12). Keyboard focus plays R1's one 640ms sweep through a
-  `:has(> button:focus-visible)` rule on the tilt host (G6). The tilt angle is one constant (G11).
+  `:has(> button:focus-visible)` rule on the tilt host (G6). The zoom trigger moves inside the inner wrapper for that rule to
+  match, since today it is a sibling of the art in `modal-art-desktop`. The tilt angle is one constant (G11).
 - **Phone:** a 300ms hold inside the 10px swipe slop, then the swipe stands down. Armed on the card only, not on the
   peeks or the turn plate, and not at the full snap. Its release swallows the tap-to-teaser (G13). It is not armed under
   reduced motion (G7). The Details-Phone caption "No hover, no tilt." is not built; the spec is (G14).
 - **Zoom:** desktop only, since the phone zoom no longer exists (G5). It tilts on any press and move; a tap still closes.
-- Tests per rule above, mutation-checked.
+- Tests per rule above, mutation-checked. `probe:foil-film` adds the G17 checks this PR owns: `[data-turning]` against the
+  inline tilt values (G4), and the card's shadow under reduced motion (G3).
 - **Performance** (G16): the follow repaints the shadow, the glare and the film on each frame. A Chrome Performance trace
   of a 5-second hover goes in the PR body, with `measure:load` (deployed staging, slow profile) before and after, the
   card-details press included.
