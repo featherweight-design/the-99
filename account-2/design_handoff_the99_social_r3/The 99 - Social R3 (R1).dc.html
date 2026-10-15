@@ -29,7 +29,7 @@ a{color:#FF4D9A}
 .strip img{width:120px;height:84px;object-fit:cover;border-radius:10px;border:1px solid #262A35}
 </style>
 </helmet>
-<div style="width:1600px;min-height:1640px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="width:1600px;min-height:1760px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
     <div style="display:flex;flex-direction:column;gap:10px;max-width:1040px">
       <span class="k">Social line · round 3 of 3 · R1 · behind SOCIAL_GAMES_ENABLED (needs friends on) · phone and desktop · 2026-10-15</span>
@@ -63,7 +63,7 @@ a{color:#FF4D9A}
   </div>
 
   <div class="card">
-    <span class="k">Gaps for engineering and Hugh (G1–G8; also in README.md)</span>
+    <span class="k">Gaps for engineering and Hugh (G1–G9; also in README.md)</span>
     <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:40px">
       <sc-for list="{{gaps}}" as="g" hint-placeholder-count="8">
         <div class="g"><span class="{{g.cls}}">{{g.id}}</span><p class="a">{{g.t}}</p></div>
@@ -72,7 +72,7 @@ a{color:#FF4D9A}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1640}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1760}}'>
 class Component extends DCLogic {
 renderVals() {
 const calls = [
@@ -106,7 +106,8 @@ const gaps = [
 { id: 'G5', cls: 'gid h', t: 'For Hugh: a friend whose ACCOUNT was deleted keys each seat alone (assembleOpponents), so By friend shows one row per game under the same name. Drawn as is; a later read could expose a gone flag and fold or caption them.' },
 { id: 'G6', cls: 'gid', t: 'Partner commanders: a commander that can pair shows + partner under its seat, which opens the same search for the second. Described here, not drawn.' },
 { id: 'G7', cls: 'gid', t: 'The seat picker needs listFriendDecks per friend on open; fetch on pick (one friend), not on the form’s open, so a closed form reads nothing.' },
-{ id: 'G8', cls: 'gid', t: 'Copy goes to /copy-review (social-r3 · copy strings.ts). About entry 4 is batched at launch and not drawn here.' }
+{ id: 'G8', cls: 'gid', t: 'Copy goes to /copy-review (social-r3 · copy strings.ts). About entry 4 is batched at launch and not drawn here.' },
+{ id: 'G9', cls: 'gid', t: 'Commander image focus (Social R1 too): every commander picture here is a center crop of the art, which can cut off a face (Jace’s first crop lost his head). Players need to set the focus of their commander image. Engineering picks how; one way is a focus point stored per deck, applied as object-position everywhere that art shows: seat tiles, picker rows, matchup thumbs, History faces, and R1’s signature commander on friend faces, friend links and the request card.' }
 ];
 return { calls, locks, boards, gaps };
 }
