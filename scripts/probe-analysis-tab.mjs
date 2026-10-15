@@ -27,10 +27,13 @@
 //   ANALYSIS_TAB_ENABLED=true  pnpm dev          → PROBE_ANALYSIS_EXPECT=on   (the drawn layout)
 //   pnpm dev                                      → PROBE_ANALYSIS_EXPECT=off  (today's layout)
 //
+// The action counts are for a server with the Tuning switches off, as above: with Suggested changes on,
+// its own reads land in the same windows and the counts name them as extra calls.
+//
 // IT CLEARS THE WALKED DECK'S STORED READING before each width, and puts the row back as captured
 // in a `finally`. Since #874 a deck with a stored reading draws it on open, with no invitation,
-// and opening the tab calls one action — the stored peek — which answers `none` here. So the
-// counts below allow exactly that peek before the press. It writes nothing else. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// and opening the tab asks for the stored peek, which answers `none` here; since #912 it also reads
+// the overview. The counts below NAME each call (see `actionName`) and hold each window to what ships. It writes nothing else. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-analysis-tab.mjs
@@ -40,6 +43,9 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
+import { noteVariant } from "./lib/note-variant.mjs";
+import { tally } from "./lib/action-names.mjs";
+import { dropWrittenOverviews } from "./lib/overview-drop.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -130,6 +136,7 @@ async function findDeck(page) {
       PAGE,
       { timeout: 15_000 },
     )
+    // Swallowed on purpose: an empty list is what the caller reports ("a deck to walk", failed).
     .catch(() => {});
   return page.evaluate((scope) => {
     const root = document.querySelector(scope);
@@ -143,8 +150,9 @@ async function findDeck(page) {
 async function pickWidestDeck(page, hrefs) {
   for (const href of hrefs.slice(0, 6)) {
     await page.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
-    await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(500);
+    // A deck whose tab row never renders is skipped, and said so, rather than read as one with no Versions cell.
+    const up = await page.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 }).then(() => true, () => false);
+    if (!up) { console.log(`       (${href}: no tab row after 20s; skipped)`); continue; }
     const cells = await readTabs(page);
     if (cells.some((c) => /version/i.test(c.label) || /version/i.test(c.aria))) {
       return { href, widest: true };
@@ -172,6 +180,9 @@ const readTabs = (page) =>
 /** Where the Recommended mix strip is, relative to the tab row, and how many the Analysis panel holds. */
 const readStrip = (page) =>
   page.evaluate((scope) => {
+    // DRAWN means a visible box: width and height over zero, not `visibility: hidden`, and no
+    // `display: none` up the tree (`checkVisibility`). Presence in the DOM proves nothing.
+    const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
     const root = document.querySelector(scope);
     const strips = [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])];
     const tablist = root?.querySelector('[role="tablist"]');
@@ -183,11 +194,39 @@ const readStrip = (page) =>
       // Which side of the tab row each strip sits on. The spine is above it; the panel below.
       sides: strips.map((s) => {
         const r = s.getBoundingClientRect();
-        return { top: Math.round(r.top), height: Math.round(r.height), above: tabTop !== null && r.top < tabTop };
+        return { top: Math.round(r.top), height: Math.round(r.height), shown: shown(s), above: tabTop !== null && r.top < tabTop };
       }),
       tabTop: tabTop === null ? null : Math.round(tabTop),
     };
   }, PAGE);
+
+// THE ACTIONS' NAMES: each `next-action` id is named from this worktree's `next dev` manifest
+// (`lib/action-names.mjs`), so the counts below say which actions ran, not only how many.
+
+// The overview rows a press wrote, deleted with their ledger units in one statement (`lib/overview-drop.mjs`).
+async function dropWritten(sql, deckId, before) {
+  try {
+    return await dropWrittenOverviews(sql, deckId, before);
+  } catch (error) {
+    console.error(`cleanup: the overview written on ${deckId} was left behind:`, error.message);
+    failures += 1;
+    return 0;
+  }
+}
+
+// Waits until no new server action has been asked for `quietMs`, at most `maxMs`: a window is counted
+// once its calls have stopped, never after a fixed sleep that a slow server outruns. True when it settled.
+async function settleActions(page, posts, quietMs = 1_500, maxMs = 20_000) {
+  const start = Date.now();
+  let last = posts();
+  let since = Date.now();
+  while (Date.now() - start < maxMs) {
+    await page.waitForTimeout(100);
+    if (posts() !== last) { last = posts(); since = Date.now(); }
+    if (Date.now() - since >= quietMs) return true;
+  }
+  return false;
+}
 
 async function run() {
   // Global setup, once, before any page gets a testing token — the bot-protection bypass
@@ -218,6 +257,9 @@ async function run() {
     const sql = neon(DATABASE_URL);
     // On disk before the first delete, so a dead run or a failed restore cannot lose it.
     const restore = await holdProfile(sql, deckId);
+    // The deck's overview rows before the run: whatever a press writes past these is deleted again, in the
+    // `finally` as well as after each width.
+    const baseSynopses = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
     try {
     for (const { label, viewport } of WIDTHS) {
       await sql`delete from deck_profiles where deck_id = ${deckId}`;
@@ -238,7 +280,8 @@ async function run() {
         await ctx.close();
         continue;
       }
-      await p.waitForTimeout(800);
+      // Measured once the fonts have settled, not after a sleep: a late face moves every cell's edge.
+      await p.evaluate(() => document.fonts.ready);
 
       const tabs = await readTabs(p);
       const analysisAt = tabs.findIndex((t) => /analysis/i.test(t.label) || /analysis/i.test(t.aria));
@@ -282,7 +325,7 @@ async function run() {
       // Before the press: the strip is on the spine, at Your deck (#1310), and the panel is not up yet.
       const before = await readStrip(p);
       report(`${label}px · the strip is at Your deck, above the tabs`,
-        before.count === 1 && before.sides[0]?.above === true,
+        before.count === 1 && before.sides[0]?.shown === true && before.sides[0]?.above === true,
         `${before.count} strip(s), above the tabs: ${before.sides.filter((s) => s.above).length}`);
 
       // ── The profile payload, counted as SERVER-ACTION POSTS ─────────────────────────────
@@ -296,19 +339,9 @@ async function run() {
       // a session touch and a token refresh — either landing inside a counted window would
       // break a correct build. `probe-list-payloads.mjs` already filters this way.
       //
-      // THE BODY IS NOT CHECKED, and an earlier version of this comment said it was. Next
-      // serialises an action to a hashed id in the `next-action` header; its NAME appears
-      // nowhere in the request, so matching the body would never fire and the count would read
-      // 0 forever. What identifies the action instead is its OUTCOME, asserted below: a profile
-      // reply replaces the invitation with the re-ask, which no other action would do.
-      // BY ACTION ID, which is what Next actually sends. A server action is serialised to a
-      // hashed id in the `next-action` header — its NAME appears nowhere, so matching the body
-      // on "fetchDeckProfile" would never fire and the count would read 0 forever: a silent
-      // pass on "fetched nothing" and a failure on a working build.
-      //
-      // Collecting the distinct ids is what makes the count mean WHICH action rather than just
-      // how many. Only one action is reachable here while the reader presses tabs and the
-      // invitation, so exactly one distinct id is the assertion.
+      // BY ACTION ID, which is what Next sends: a server action is serialised to a hashed id in the
+      // `next-action` header, and its name appears nowhere in the request body. Each id is NAMED from
+      // the dev server's manifest (`actionName`), so a window's count says which actions ran.
       const actions = [];
       p.on("request", (r) => {
         if (r.method() !== "POST") return;
@@ -316,17 +349,49 @@ async function run() {
         if (id) actions.push(id);
       });
       const posts = () => actions.length;
+      // An observation window, deliberately a fixed one: nothing is pressed, so any call in it is a finding.
       await p.waitForTimeout(400);
       report(`${label}px · no action called before anything is pressed`, posts() === 0,
         `${posts()} action call(s) before the press`);
 
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(600);
+      // THE OPENING WINDOW CLOSES ON STATE, never on a sleep: the empty state is up and the credit note's read
+      // has answered (its frame, #1844, gives way to the note or to nothing), then no further call for 1.5s.
+      // A `fetchSynopsis` queued behind a slow stored peek is then counted here, not in the press's window.
+      const emptyUp = await onPage(p, '[data-testid="analysis-empty"]').first()
+        .waitFor({ state: "visible", timeout: 20_000 }).then(() => true, () => false);
+      const noteAnswered = emptyUp && await p.waitForFunction(
+        (scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 },
+      ).then(() => true, () => false);
+      report(`${label}px · the tab opens on its empty state, and the credit note's read answers`, emptyUp && noteAnswered,
+        !emptyUp ? "no visible empty state after 20s" : noteAnswered ? "the note's frame gave way" : "the frame was still waiting after 15s");
+      await settleActions(p, posts);
 
-      // The one call opening the tab may make is the stored peek, which computes nothing.
+      // Opening the tab makes exactly two reads, neither of which computes a profile: the stored peek
+      // (`fetchStoredDeckProfile`, #874: a stored reading draws on open) and the overview's read
+      // (`fetchSynopsis`, #912: the overview's state and what a write would cost, read while the tab is open).
       const peeked = posts();
-      report(`${label}px · opening the tab only asks for a stored reading`, peeked <= 1,
-        `${peeked} action call(s) after opening the tab`);
+      const opened = tally(actions.slice(0, peeked));
+      report(`${label}px · opening the tab asks for the stored reading and the overview, nothing else`,
+        opened === "fetchStoredDeckProfile×1, fetchSynopsis×1", opened);
+
+      // WHAT THE PRESS WILL DO, decided before it is made. A press writes the overview exactly when its
+      // credit note said it would (`pressWrites` in builder-shell, from `pressNote`, #916): the credit and
+      // free notes write; the check, used-up, paused and owner-share notes, and no note at all (the list
+      // already has its overview), write nothing. So the note is waited for (its frame, #1844, gives way
+      // to the note or to nothing once the read answers) and classified by its words (`noteVariant`,
+      // tested against the shipped copy). An unrecognised note fails rather than guessing. The wait for the note
+      // to settle is the opening window's own (above).
+      const noteText = await p.evaluate((scope) => {
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+        const note = document.querySelector(`${scope} #panel-analysis [data-testid='press-note']`);
+        return shown(note) ? note.textContent : "";
+      }, PAGE);
+      const variant = noteVariant(noteText);
+      const writes = variant === "credit" || variant === "free";
+      report(`${label}px · the press says what it will do (${variant}: ${writes ? "writes the overview" : "writes no overview"})`,
+        variant !== "unknown", JSON.stringify(noteText));
+      const synopsesBefore = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
 
       // ROUND 4 RULING 7: the verdict fires on analyse or commit and nowhere else. The tab draws
       // the invitation instead, and pressing THAT is what costs 630ms.
@@ -341,27 +406,39 @@ async function run() {
       // fixed 1.2s sleep failed a correct build whose reply was merely slow. The timeout is
       // well above the measured maximum, and the thing waited for is the state a reply
       // produces rather than an elapsed time.
-      await onPage(p, 'section[aria-label="Your bracket"]')
+      const boxShown = await onPage(p, 'section[aria-label="Your bracket"]')
         .first()
         .waitFor({ state: "visible", timeout: 15_000 })
-        .catch(() => {});
+        .then(() => true, () => false);
+      // A press that writes holds until the stand-in's overview lands (#916's first-press hold); either
+      // way the overview's read follows the reading it is keyed on (below), so it is given time to be asked.
+      if (writes) {
+        // VISIBLE, and reported: a wait that swallowed its timeout let the later checks read a hidden slot.
+        const landed = await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button")
+          .filter({ hasText: "View full overview" }).first().waitFor({ state: "visible", timeout: 90_000 }).then(() => true, () => false);
+        report(`${label}px · the overview the press wrote lands, visible`, landed,
+          landed ? "View full overview is shown" : "no visible View full overview after 90s");
+      }
+      // The press's window closes once its calls stop (the overview's re-reads trail the reading and the write).
+      const pressSettled = await settleActions(p, posts);
       const afterPress = posts();
-      report(`${label}px · pressing it fetches the profile once`, afterPress - peeked === 1,
-        `${afterPress - peeked} action call(s) after the press`);
-      report(`${label}px · and it was ONE action, not two different ones`,
-        new Set(actions.slice(peeked)).size === 1,
-        `${new Set(actions.slice(peeked)).size} distinct action id(s) after the press`);
+      // The press computes the profile ONCE (`fetchDeckProfile`), and the overview is read again
+      // (`fetchSynopsis`): its key carries the reading's `analyzedAt` and freshness (#912, `useDeckSynopsis`
+      // in builder-shell), so a reading settling re-asks whether a write is due and what it would cost.
+      // Designed, not a duplicate: measured 2026-10-15, its `wouldSpend` reads false before the reading and
+      // true after it. A press whose note said it writes also calls `writeSynopsis` once (#916), through the
+      // overview's stand-in, and the overview is read again when the write settles.
+      const pressed = tally(actions.slice(peeked, afterPress));
+      const pressWant = writes
+        ? "fetchDeckProfile×1, fetchSynopsis×2, writeSynopsis×1"
+        : "fetchDeckProfile×1, fetchSynopsis×1";
+      report(`${label}px · pressing it computes the profile once${writes ? ", writes the overview once" : ""} and re-reads the overview`,
+        pressSettled && pressed === pressWant, `${pressed} (want ${pressWant})${pressSettled ? "" : ", calls still arriving after 20s"}`);
 
-      // AND THE ACTION WAS THE PROFILE FETCH, proved by its OUTCOME rather than by its id.
-      //
-      // A count of one distinct opaque id says a single action ran; it cannot say WHICH, so a
-      // regression wiring this control to some other action would satisfy both checks above.
-      // Nothing observable carries the id, so the discriminator is the state only a profile
-      // reply can produce: the empty state is replaced by the bracket box (the consolidated tab
-      // draws no re-ask on a reading). An action that fetched something else would leave the
-      // empty state where it was.
+      // AND THE PROFILE REPLY LANDED: the empty state is replaced by the bracket box (the consolidated tab
+      // draws no re-ask on a reading). The count above names the call; this says its reply was drawn.
       const stillInviting = await onPage(p, '[data-testid="analysis-empty"]').count();
-      const box = await onPage(p, 'section[aria-label="Your bracket"]').count();
+      const box = boxShown ? await onPage(p, 'section[aria-label="Your bracket"]').count() : 0;
       report(`${label}px · and it was the PROFILE fetch, not merely an action`,
         stillInviting === 0 && box === 1,
         `empty state ${stillInviting}, bracket box ${box} — a profile reply replaces one with the other`);
@@ -372,32 +449,61 @@ async function run() {
       // state would still pass.
       const otherTab = analysisAt === 0 ? 1 : 0;
       await onPage(p, '[role="tab"]').nth(otherTab).click();
-      await p.waitForTimeout(300);
+      const left = await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis`), PAGE, { timeout: 10_000 })
+        .then(() => true, () => false);
+      report(`${label}px · leaving the tab unmounts the Analysis panel`, left, left ? "gone" : "still mounted after 10s");
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(600);
-      report(`${label}px · leaving the tab and returning does not re-fetch`,
-        posts() === afterPress,
-        `${posts()} call(s) total, ${posts() - afterPress} on the return`);
+      // The return's overview read holds the reading (`holdsOpening`) until it settles: wait, bounded, for the
+      // overview slot to show, then for the calls to stop, rather than sampling after a fixed sleep.
+      const backUp = await onPage(p, "#panel-analysis [data-testid='synopsis-overview']").first()
+        .waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false);
+      report(`${label}px · on the return the overview shows again`, backUp, backUp ? "visible" : "no visible overview after 30s");
+      await settleActions(p, posts);
+      // The profile is NOT fetched again: its hook lives in the shell. The overview's read runs while the tab
+      // is open and so asks again on a new visit (#912: `useDeckSynopsis` is active only on the Analysis view,
+      // and a new visit opens afresh), which reads its state and computes nothing.
+      const returned = tally(actions.slice(afterPress));
+      report(`${label}px · leaving the tab and returning re-reads only the overview, never the profile`,
+        returned === "fetchSynopsis×1", returned);
 
-      // NO SYNOPSIS SLOT at all until sub-project 6 (readiness finding 6): no placeholder line and
-      // no control that cannot write.
+      // THE OVERVIEW SLOT ships (#912, the deck overview on the Analysis tab; sub-project 6). Over a reading
+      // it is drawn in the panel. A press that wrote (above) leaves a written overview, opened through View
+      // full overview; a press that wrote nothing leaves what the deck had: View full overview over one
+      // written before, and no View full overview over none.
+      const [{ written }] = await sql`
+        select exists(
+          select 1 from deck_synopses where deck_id = ${deckId} and id = any(${synopsesBefore}::uuid[])
+            -- SHOWN, by readShownSynopsis's own predicate (src/lib/synopsis/generate.ts): done, and at
+            -- least one section accepted. A failed run, or one whose every section was refused, is not shown.
+            -- Restated here because that module reaches the app's db and cannot load in a probe.
+            and status = 'done' and content -> 'verdicts' @> '[{"status":"ok"}]'::jsonb
+        ) as written`;
+      const wantView = writes || written;
       const synopsis = await p.evaluate((scope) => {
-        const panel = document.querySelector(scope)?.querySelector("#panel-analysis");
-        const text = panel?.textContent ?? "";
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+        const slot = document.querySelector(scope)?.querySelector("#panel-analysis [data-testid='synopsis-overview']");
+        // Only what is SHOWN counts: a hidden slot, or a hidden button inside it, offers nothing.
+        const buttons = shown(slot) ? [...slot.querySelectorAll("button")].filter(shown).map((b) => b.textContent.trim()) : [];
         return {
-          placeholder: /No summary has been written|Overview/.test(text),
-          write: text.includes("Write one"),
+          slot: shown(slot),
+          absent: (slot?.textContent ?? "").includes("No overview has been written for this deck yet."),
+          write: buttons.includes("Write one"),
+          view: buttons.some((t) => t.includes("View full overview")),
         };
       }, PAGE);
-      report(`${label}px · no synopsis slot and no placeholder for one`, !synopsis.placeholder,
-        synopsis.placeholder ? "a placeholder is drawn" : "none drawn");
-      report(`${label}px · and no control that cannot work`, !synopsis.write,
-        synopsis.write ? "a Write one control is drawn" : "no write control");
+      report(`${label}px · the overview slot is drawn in the panel`, synopsis.slot,
+        synopsis.slot ? "drawn, visible" : "no visible synopsis-overview in #panel-analysis");
+      report(`${label}px · and ${wantView ? "offers View full overview" : "offers no overview to view"} (${writes ? "the press wrote one" : written ? "one was written before" : "none written"})`,
+        wantView ? synopsis.view && !synopsis.write && !synopsis.absent : !synopsis.view,
+        JSON.stringify({ writes, writtenBefore: written, ...synopsis }));
+      await dropWritten(sql, deckId, synopsesBefore);
 
-      const panel = await p.evaluate((scope) =>
-        Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);
+      const panel = await p.evaluate((scope) => {
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+        return shown(document.querySelector(scope)?.querySelector("#panel-analysis"));
+      }, PAGE);
       report(`${label}px · pressing it opens the Analysis panel`, panel,
-        panel ? "panel-analysis is in the document" : "no panel");
+        panel ? "panel-analysis is shown" : "no visible panel");
 
       const after = await readStrip(p);
       // EXACTLY ONE, with the Analysis tab open: the spine's (#1310). A second mount in the panel
@@ -405,7 +511,7 @@ async function run() {
       report(`${label}px · exactly one mix strip exists`, after.count === 1,
         `${after.count} strip(s)`);
       report(`${label}px · and it is above the tab row, at Your deck`,
-        after.count === 1 && after.sides[0]?.above === true,
+        after.count === 1 && after.sides[0]?.shown === true && after.sides[0]?.above === true,
         after.count === 1 ? `top ${after.sides[0].top} vs tabs ${after.tabTop}` : "not measurable");
       report(`${label}px · the Analysis tab draws no mix strip`,
         after.inPanel === 0,
@@ -413,6 +519,7 @@ async function run() {
       await ctx.close();
     }
     } finally {
+      await dropWritten(sql, deckId, baseSynopses);
       await restore();
     }
   } finally {

@@ -29,9 +29,10 @@
 // THE TAB AROUND THE BLOCK (Analysis tab handoff §2, PR B). Before a first reading the tab is one
 // empty state: a 150px ring of the five marks at 44px, 1 at twelve o'clock and on clockwise, the
 // heading in the display face, and Analyze with the provenance opener beside it at 1300 and under
-// it at 390. With a reading, the bracket box and the climb share a row at 1300 (2fr / 1fr, the
-// climb on the left) and stack box-first at 390; there is no Overview; the tab's own gutters are
-// 16 / 30. The Recommended mix is NOT in the tab: #1310 gave it one mount, at "Your deck", on the
+// it at 390. With a reading, the overview slot is drawn too (#912), and the grid places it: at 1300
+// the overview tops the left column (2fr) with the climb 26px under it, and the box spans both rows
+// on the right (1fr) from the overview's top; at 390 they stack overview, box, climb. The tab's own
+// gutters are 16 / 30. The Recommended mix is NOT in the tab: #1310 gave it one mount, at "Your deck", on the
 // spine above the tab row, Analysis on or off, so it is read there and asserted absent from the
 // panel. To reach the empty state the run CLEARS the
 // deck's stored reading before each width, and puts the row back as it was in a `finally`.
@@ -40,7 +41,9 @@
 // `greatest(...)` so it can only ever move forward. That is the convention
 // `probe-card-captions.mjs` set and records the reason for — the flag is true once this has
 // run, and clearing it would re-break every other probe on this account. And the walked deck's
-// `deck_profiles` row, deleted and rewritten by the press, then restored as captured. It touches
+// `deck_profiles` row, deleted and rewritten by the press, then restored as captured. The press also
+// writes the overview when its credit note says so (#916), through the stand-in, and that row is deleted
+// again with its ledger unit after each width and in the `finally` (`lib/overview-drop.mjs`). It touches
 // no deck, no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
@@ -54,6 +57,8 @@ import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { actionName } from "./lib/action-names.mjs";
+import { dropWrittenOverviews } from "./lib/overview-drop.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -138,7 +143,12 @@ async function signIn(page) {
 /** A deck to walk, asked of the page rather than named by an id that rots. */
 async function findDeck(page) {
   await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  // On state: a deck link (or the empty list) is drawn. Swallowed on purpose, since an empty result is what
+  // the caller reports.
+  await page.waitForFunction((scope) => {
+    const root = document.querySelector(scope);
+    return Boolean(root?.querySelector("a[href^='/decks/']")) || Boolean(root?.textContent?.includes("No decks"));
+  }, PAGE, { timeout: 15_000 }).catch(() => {});
   const hrefs = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
     return [...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
@@ -165,9 +175,10 @@ const rgb = (css) => (css.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
 
 async function walk(page, label, markPx, viewportWidth) {
   const block = onPage(page, 'section[aria-label="Your bracket"]').first();
-  const blocks = await block.count();
-  if (!(await report(`${label}px · the verdict block is drawn`, blocks > 0,
-      blocks > 0 ? "one block" : "no block after the profile arrived"))) {
+  // VISIBLE, not merely present: Playwright's `isVisible` wants a non-empty box and no `visibility: hidden`.
+  const drawn = await block.isVisible();
+  if (!(await report(`${label}px · the verdict block is drawn`, drawn,
+      drawn ? "one block, visible" : "no visible block after the profile arrived"))) {
     return;
   }
 
@@ -380,7 +391,7 @@ async function walk(page, label, markPx, viewportWidth) {
 }
 
 /** 2a, measured: the ring's geometry, the type, and where the opener sits beside Analyze. */
-async function walkEmpty(page, label, width) {
+async function walkEmpty(page, label, width, held) {
   const phone = width < 768;
   const e = await page.evaluate((scope) => {
     const root = document.querySelector(scope);
@@ -410,6 +421,15 @@ async function walkEmpty(page, label, width) {
       cta: { text: cta.textContent, h: Math.round(cb.height) },
       besides: Math.abs(cb.top + cb.height / 2 - (ob.top + ob.height / 2)) < 4 && ob.left > cb.right,
       below: ob.top >= cb.bottom - 1,
+      // The note's reserved frame while its read is out (#1844): drawn, with height, and EMPTY.
+      slot: (() => {
+        const el = empty.querySelector('[data-testid="press-note-slot"]');
+        const r = el?.getBoundingClientRect();
+        // `shown`: not `visibility: hidden` and no `display: none` up the tree. Its height is read apart,
+        // since the frame's width collapses to 0 at 390 (it is `md:w-[340px]`) while its two lines stand.
+        return el ? { h: Math.round(r.height), w: Math.round(r.width), text: el.textContent, shown: el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }) } : null;
+      })(),
+      note: Boolean(empty.querySelector('[data-testid="press-note"]')),
       grid: !!root.querySelector('section[aria-label="Your bracket"]'),
     };
   }, PAGE);
@@ -426,51 +446,76 @@ async function walkEmpty(page, label, width) {
     `${e.marks.length} marks at ${e.marks.map((m) => m.w).join("/")}px, first ${e.marks[0]?.n}`);
   report(`${label}px · the heading is the display face at ${phone ? 21 : 26}px`,
     e.h2.size === `${phone ? 21 : 26}px` && e.h2.family === e.h2.display, `${e.h2.size}, ${e.h2.family.split(",")[0]}`);
-  report(`${label}px · Analyze is a 44px press with the opener ${phone ? "under" : "beside"} it`,
-    e.cta.text === "Analyze" && e.cta.h >= 44 && (phone ? e.below : e.besides),
+  // Read while the note's read (`fetchSynopsis`) is HELD by the probe, so a fast read cannot stand in for the
+  // frame: a fresh, never-analyzed tab draws the note's frame from its first paint while that read is out
+  // (#1844), visible, with height and empty, and no note yet. With a frame in the row the opener takes its
+  // own line under the pair (frame 7a, #916), at 1300 as at 390, so a build that lost the frame puts the
+  // opener back beside the press at 1300 and fails.
+  report(`${label}px · with the note's read held, the note's frame is drawn, empty (#1844)`,
+    held() > 0 && e.slot !== null && e.slot.shown && e.slot.h > 0 && e.slot.text.trim() === "" && !e.note,
+    JSON.stringify({ readsHeld: held(), slot: e.slot, note: e.note }));
+  report(`${label}px · Analyze is a 44px press with the opener under it`,
+    e.cta.text === "Analyze" && e.cta.h >= 44 && e.below,
     `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
 }
 
-/** With a reading: the grid, the gutters, no Overview, and the mix at Your deck rather than in the tab (#1310). */
+/**
+ * With a reading: the grid, the gutters, the overview, and the mix at Your deck rather than in the tab (#1310).
+ * Since #912 the overview slot is drawn over a reading, and the grid places it: at 1300 the overview sits over
+ * the climb in the left column (2fr) and the box spans both rows on the right (1fr), so the climb starts under
+ * the overview, 26px below it, and the box's top is the overview's; at 390 the order is overview, box, climb.
+ */
 async function walkLayout(page, label, width) {
   const phone = width < 768;
   const l = await page.evaluate((scope) => {
+    // A box is used only when it is DRAWN: width and height over zero, not `visibility: hidden`, and no
+    // `display: none` up the tree. A hidden element's zero rect would otherwise pass as geometry.
+    const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+    const rectOf = (e) => (shown(e) ? e.getBoundingClientRect() : null);
     const root = document.querySelector(scope);
     const panel = root?.querySelector('[role="tabpanel"]#panel-analysis');
-    const box = panel?.querySelector('section[aria-label="Your bracket"]')?.getBoundingClientRect();
-    const climb = panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement?.getBoundingClientRect();
-    const findings = panel?.querySelector('[data-testid="findings-block"]')?.getBoundingClientRect();
+    const box = rectOf(panel?.querySelector('section[aria-label="Your bracket"]'));
+    const climb = rectOf(panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement);
+    const findings = rectOf(panel?.querySelector('[data-testid="findings-block"]'));
     // The mix strip: none in the panel, and one on the spine above the tab row (Your deck, #1310).
     const panelMix = panel?.querySelectorAll('section[aria-label="Recommended mix"]').length ?? null;
     const tabTop = root?.querySelector('[role="tablist"]')?.getBoundingClientRect().top ?? null;
     const spineMix = tabTop === null ? null : [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])]
-      .filter((m) => !panel?.contains(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
-    const pb = panel?.getBoundingClientRect();
+      .filter((m) => !panel?.contains(m) && shown(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
+    const pb = rectOf(panel);
+    const ov = rectOf(panel?.querySelector('[data-testid="synopsis-overview"]'));
     const name = panel?.querySelector('[data-testid="verdict-name"]');
     return box && climb && findings && pb ? {
       box: { l: box.left, r: box.right, t: box.top, b: box.bottom, w: box.width },
       climb: { l: climb.left, r: climb.right, t: climb.top, w: climb.width },
+      ov: ov ? { l: ov.left, t: ov.top, b: ov.bottom } : null,
       gutter: Math.round(findings.left - pb.left),
       panelMix,
       spineMix,
-      overview: /\bOverview\b/.test(panel.textContent ?? ""),
       nameSize: name ? getComputedStyle(name).fontSize : null,
       analyzed: panel.querySelector('[data-testid="verdict-analyzed"]')?.textContent ?? null,
     } : null;
   }, PAGE);
   if (!report(`${label}px · the reading draws its box, climb and findings`, l !== null, l ? "all three" : "one is missing")) return;
+  report(`${label}px · the overview slot is drawn on a reading (#912)`, l.ov !== null, l.ov ? "drawn" : "absent");
   if (phone) {
-    report(`${label}px · the box comes first, then the climb`, l.box.b <= l.climb.t + 1, `box ends ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
+    report(`${label}px · the overview first, then the box, then the climb`,
+      l.ov !== null && l.ov.b <= l.box.t + 1 && l.box.b <= l.climb.t + 1,
+      `overview ends ${l.ov ? Math.round(l.ov.b) : "-"}, box ${Math.round(l.box.t)} to ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
   } else {
     const ratio = l.climb.w / l.box.w;
-    report(`${label}px · the climb and the box share a row, 2fr / 1fr, climb on the left`,
-      l.climb.r <= l.box.l && Math.abs(l.climb.t - l.box.t) <= 2 && ratio > 1.8 && ratio < 2.2,
+    report(`${label}px · the climb and the box share the columns, 2fr / 1fr, climb on the left`,
+      l.climb.r <= l.box.l && ratio > 1.8 && ratio < 2.2,
       `climb ${Math.round(l.climb.w)}px, box ${Math.round(l.box.w)}px, ratio ${ratio.toFixed(2)}`);
+    // #912's grid: the overview over the climb on the left, the box spanning both rows from the overview's top.
+    report(`${label}px · the overview tops the left column, level with the box, and the climb starts 26px under it`,
+      l.ov !== null && Math.abs(l.ov.t - l.box.t) <= 2 && Math.abs(l.ov.l - l.climb.l) <= 1
+        && Math.abs(l.climb.t - l.ov.b - 26) <= 1,
+      l.ov ? `overview ${Math.round(l.ov.t)} to ${Math.round(l.ov.b)}, box from ${Math.round(l.box.t)}, climb from ${Math.round(l.climb.t)}` : "no overview");
   }
   report(`${label}px · the tab's gutter is ${phone ? 16 : 30}px`, l.gutter === (phone ? 16 : 30), `${l.gutter}px`);
   report(`${label}px · the Analysis tab draws no mix strip`, l.panelMix === 0, `${l.panelMix} in the panel`);
   report(`${label}px · the mix strip is at Your deck, above the tab row`, l.spineMix === 1, `${l.spineMix} above the tabs`);
-  report(`${label}px · no Overview section on a reading`, !l.overview, l.overview ? "drawn" : "absent");
   report(`${label}px · the name is ${phone ? 19 : 21}px, dated under it`,
     l.nameSize === `${phone ? 19 : 21}px` && /^analyzed /.test(l.analyzed ?? ""), `${l.nameSize}, "${l.analyzed}"`);
 }
@@ -548,6 +593,17 @@ async function run() {
     const sql = neon(DATABASE_URL);
     // Captured to DISK before the first delete, and put back in the `finally` whatever happens.
     const restore = await holdProfile(sql, deckId);
+    // Its Analyze press writes the overview when the credit note says so (#916), through the stand-in: every
+    // overview row past these is deleted with its ledger unit after each width and in the \`finally\`.
+    const baseSynopses = (await sql`select id from deck_synopses where deck_id = ${deckId}`).map((r) => r.id);
+    const dropWritten = async () => {
+      try {
+        await dropWrittenOverviews(sql, deckId, baseSynopses);
+      } catch (error) {
+        console.error(`cleanup: the overview written on ${deckId} was left behind:`, error.message);
+        failures += 1;
+      }
+    };
     try {
 
     for (const { label, viewport, markPx } of WIDTHS) {
@@ -567,7 +623,7 @@ async function run() {
         await ctx.close();
         continue;
       }
-      await p.waitForTimeout(600);
+      await p.evaluate(() => document.fonts.ready);
 
       const tabs = await p.evaluate((scope) => {
         const root = document.querySelector(scope);
@@ -585,26 +641,67 @@ async function run() {
 
       // REACHED BY A PRESS, never by a URL: the tab is client state and produces no address,
       // which is why the card mark shipped broken into a surface a URL sweep photographed.
-      await onPage(p, '[role="tab"]').nth(analysisAt).click();
-      await p.waitForTimeout(500);
-      await onPage(p, '[data-testid="analysis-empty"]').first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-      await walkEmpty(p, label, viewport.width);
+      // THE NOTE'S READ IS HELD while the empty state is walked: the first `fetchSynopsis` reply is kept
+      // from the page (named from the dev manifest, `lib/action-names.mjs`) and released after the walk.
+      let release;
+      const gate = new Promise((r) => { release = r; });
+      let readsHeld = 0;
+      const holdSynopsis = async (route) => {
+        const req = route.request();
+        const id = req.headers()["next-action"];
+        if (req.method() !== "POST" || !id || actionName(id) !== "fetchSynopsis") return route.fallback();
+        readsHeld += 1;
+        const response = await route.fetch();
+        const body = await response.text();
+        // Bounded: a walk that throws still releases below, and a gate never opened gives way after 60s.
+        await Promise.race([gate, new Promise((r) => setTimeout(r, 60_000))]);
+        // Swallowed on purpose: the page may have closed while the reply was held.
+        await route.fulfill({ response, body }).catch(() => {});
+      };
+      await p.route("**/*", holdSynopsis);
+      try {
+        await onPage(p, '[role="tab"]').nth(analysisAt).click();
+        // On STATE, never a sleep: the empty state is up AND the probe has intercepted the note's read (the
+        // read can be queued behind the stored peek after the empty state draws), with the gate still shut.
+        const emptyUp = await onPage(p, '[data-testid="analysis-empty"]').first()
+          .waitFor({ state: "visible", timeout: 20_000 }).then(() => true, () => false);
+        const deadline = Date.now() + 20_000;
+        while (readsHeld === 0 && Date.now() < deadline) await p.waitForTimeout(100);
+        report(`${label}px · the empty state is up and the note's read is held`, emptyUp && readsHeld > 0,
+          JSON.stringify({ emptyUp, readsHeld }));
+        await walkEmpty(p, label, viewport.width, () => readsHeld);
+      } finally {
+        release();
+        await p.unroute("**/*", holdSynopsis);
+      }
+      // Released, the read settles: the frame gives way to the note, or to nothing when the list already has
+      // its overview (`pressNote` returns null then). Either way the frame must go.
+      const settled = await p.waitForFunction(
+        (scope) => !document.querySelector(`${scope} [data-testid="analysis-empty"] [data-testid="press-note-slot"]`), PAGE, { timeout: 30_000 },
+      ).then(() => true, () => false);
+      report(`${label}px · released, the note's read settles and the frame gives way`, settled,
+        settled ? "gone" : "the frame was still waiting after 30s");
       const invite = onPageRole(p, "button", /^Analyze$/);
-      if ((await invite.count()) > 0) {
+      const canPress = (await invite.count()) > 0;
+      report(`${label}px · the empty state offers Analyze`, canPress, canPress ? "drawn" : "no Analyze press");
+      if (canPress) {
         await invite.first().click();
-        await onPage(p, 'section[aria-label="Your bracket"]')
+        const boxUp = await onPage(p, 'section[aria-label="Your bracket"]')
           .first()
           .waitFor({ state: "visible", timeout: 20_000 })
-          .catch(() => {});
+          .then(() => true, () => false);
+        report(`${label}px · pressing Analyze draws the bracket box`, boxUp, boxUp ? "visible" : "no visible box after 20s");
       }
 
       await walk(p, label, markPx, viewport.width);
       await walkLayout(p, label, viewport.width);
       await walkStale(p, sql, deckId, label, viewport.width);
       await ctx.close();
+      await dropWritten();
     }
     } finally {
       // PUT BACK AS IT WAS: the press rewrote the row, and a row that did not exist is removed.
+      await dropWritten();
       await restore();
     }
   } finally {

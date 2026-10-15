@@ -956,8 +956,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **It also walks the tab around the box** (Analysis tab handoff §2). Before a reading the tab
   is one empty state: a 150px ring of five 44px marks, 1 at twelve o'clock and running
   clockwise on a 50px radius, then the heading in the display face, then Analyze with the
-  provenance opener beside it at 1300 and under it at 390. With a reading, the climb and the box
-  share a row at 1300, 2fr to 1fr, and stack box-first at 390. The gutters are 16px and 30px.
+  provenance opener under it. It is read while the note's read is HELD: the probe keeps the first
+  `fetchSynopsis` reply from the page (`page.route`, the action named from the dev manifest by
+  `lib/action-names.mjs`) and releases it after the walk, so a fast read cannot stand in for the frame.
+  While held, the note's frame (`press-note-slot`, #1844) must be drawn, visible, with height and
+  empty, with no note yet, and with a frame in the row the opener takes its own line under the pair at
+  1300 as at 390 (frame 7a, #916). With the frame removed from the page the frame check fails at both
+  widths, and with the opener's row break undone the opener check fails at 1300. Its Analyze press
+  writes the overview when the note says so (#916), and that row is deleted with its ledger unit after
+  each width and in a `finally` (`lib/overview-drop.mjs`). With
+  a reading the overview slot is drawn too (#912), and its grid places the three: at 1300 the
+  overview tops the left column (2fr) with the climb 26px under it, and the box spans both rows on
+  the right (1fr) from the overview's top; at 390 they stack overview, box, climb. With the gap
+  expected at 0, the box expected before the overview, or the note's frame unseen, each of those
+  checks fails. The gutters are 16px and 30px.
   The Recommended mix is NOT in the tab: since #1310 the strip has one mount, at Your deck on the
   spine above the tab row, Analysis on or off, so the probe asserts the panel holds no strip and
   the spine holds one above the tabs (with either read pointed at the wrong place, both fail at
@@ -997,8 +1009,36 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:analysis-tab` walks the Analysis tab at 1300x900 and 390x844 against a STATED
   expectation, `PROBE_ANALYSIS_EXPECT=on|off`, never against what it finds: the tab second in the
-  row, the row inside the viewport, the action calls the tab and its Analyze press make, and the
-  Recommended mix strip. Since #1310 the strip has ONE mount, at Your deck on the spine above the
+  row, the row inside the viewport, the action calls the tab and its Analyze press make, the
+  overview slot, and the Recommended mix strip. **Each action call is NAMED** from the dev server's
+  own manifest (`.next/dev/server/server-reference-manifest.json`, id to export), so PROBE_BASE must
+  be a `next dev` started in this worktree, with the Tuning switches off. What ships: opening the tab
+  calls `fetchStoredDeckProfile` (#874) and `fetchSynopsis` (#912); the Analyze press calls
+  `fetchDeckProfile` once and `fetchSynopsis` again, because the overview's read is keyed on the
+  reading's `analyzedAt` and freshness (#912; its `wouldSpend` reads false before the reading and true
+  after); leaving the tab and returning calls `fetchSynopsis` alone (a new visit reads afresh), never
+  the profile. **What the press writes is decided before it is made**: a press writes the overview
+  exactly when its credit note said so (#916), so the probe waits for the note and classifies it by its
+  words (`noteVariant`). A credit or free note adds `writeSynopsis` once, through the overview's stand-in,
+  and one more `fetchSynopsis` when the write settles; any other note writes nothing. Over a reading the
+  overview slot is drawn in the panel (#912) and offers View full overview when this press wrote one or
+  one was SHOWN before (`readShownSynopsis`'s predicate: done, with at least one section accepted), and
+  nothing to view otherwise. On the local-dev fixture the note is the credit
+  note, so the writing branch is the one exercised; each overview the press writes is deleted again with
+  its ledger unit, in ONE statement (`lib/overview-drop.mjs`, so a failure rolls both back and stays
+  retryable), after each width and in a `finally`. **Drawn means a visible box**, in this probe and in
+  `probe:verdict-block`: width and height over zero, not `visibility: hidden`, and no `display: none` up
+  the tree (`checkVisibility`), never DOM presence; a hidden slot, or a hidden button in it, offers
+  nothing, and a wait for one fails rather than being swallowed. **Every window closes on STATE, never
+  on a sleep**: `probe:analysis-tab` counts the opening once the empty state is up and the note's read
+  has answered, and each window once its calls have stopped for 1.5s (bounded at 20s); the return waits,
+  bounded, for the overview to show again. `probe:verdict-block` walks the empty state only once the
+  note's read has been INTERCEPTED (it can queue behind the stored peek), always reopens the gate, and
+  then waits for the note's frame to give way, which covers a list that already has its overview (no
+  note at all). With the stored peek slowed by 3s both probes still pass; with the gate kept shut the
+  settle check fails, and with the View full overview filter misspelt the overview's wait fails. With the overview given `display: none`
+  or `visibility: hidden`, the slot checks fail in both probes at both widths. With the press expected to write nothing, or
+  each window widened or narrowed by one call, or the slot read in the wrong place, those checks fail. Since #1310 the strip has ONE mount, at Your deck on the spine above the
   tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
   the tab is opened, and none inside `#panel-analysis` (pointed at the whole page instead, the panel
   check reads 1; expecting the strip below the tabs, the spine check fails). It clears the walked
