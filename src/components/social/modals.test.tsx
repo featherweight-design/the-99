@@ -63,7 +63,7 @@ describe("CommanderPicker", () => {
     await type("av");
     expect(a.searchFaceCommandersAction).toHaveBeenCalledWith("av");
     const list = screen.getByRole("listbox");
-    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([AANG.name, BARAL.name]);
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([`${AANG.name}, White, Blue`, `${BARAL.name}, Blue`]);
     expect(screen.queryByRole("heading", { name: c.fromDecks })).toBeNull();
 
     let answer!: (v: unknown) => void;
@@ -99,6 +99,22 @@ describe("CommanderPicker", () => {
     render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
     await type("zzq");
     expect(screen.getByRole("status").textContent).toBe(c.noResults("zzq"));
+    // No listbox is drawn, so the combobox claims no popup and names none.
+    const box = screen.getByRole("combobox", { name: c.search });
+    expect(box.getAttribute("aria-expanded")).toBe("false");
+    expect(box.getAttribute("aria-controls")).toBeNull();
+  });
+
+  it("says each result's colors in words beside the pips, and colorless for none", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    const KOZ = { ...AANG, oracleId: "o-koz", name: "Kozilek", colorIdentity: [] };
+    a.searchFaceCommandersAction.mockResolvedValue({ ok: true, tiles: [AANG, KOZ] });
+    render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
+    await type("ko");
+    const options = screen.getAllByRole("option");
+    expect(options[0].textContent).toContain("White, Blue");
+    expect(options[1].textContent).toContain(c.colorless);
+    expect(screen.getByRole("combobox", { name: c.search }).getAttribute("aria-expanded")).toBe("true");
   });
 
   it("offers Use initials instead once a commander is set, which picks none", async () => {

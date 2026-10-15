@@ -36,6 +36,8 @@ export const socialCopy = {
     noResults: (q: string) => `No commander matches “${q}”.`,
     // Not drawn by the boards (E15): a search that failed, in the list's place, role alert. Typing asks again.
     searchFailed: "We couldn’t search commanders. Try again.",
+    /** Spoken beside a colorless commander's pips, which carry color alone. */
+    colorless: "Colorless",
     failed: "We couldn’t save your commander. Try again.", // toast, role alert
   },
 

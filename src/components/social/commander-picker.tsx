@@ -21,6 +21,7 @@ import { listDeckCommandersAction, searchFaceCommandersAction } from "../../app/
 import { SearchField } from "../ui/text-field";
 import { FadingImg } from "../ui/hydrated-art";
 import { IdentityPips } from "../commanders/commander-art";
+import { colorNames } from "../../lib/copy/color-labels";
 import { SocialModal } from "./social-modal";
 
 const c = socialCopy.commander;
@@ -133,6 +134,8 @@ export function CommanderPicker({
   }
 
   const deckTiles = deck.k === "done" ? deck.tiles : [];
+  // The listbox exists only while a search shows rows: an empty or failed search draws a line in its place.
+  const listShown = searching && !failed && !(fresh && tiles.length === 0 && !busy);
   return (
     <SocialModal title={c.title} sub={c.sub} closeLabel={socialCopy.page.close} onClose={onClose} initialFocusRef={search} returnFocusRef={returnFocusRef} tall width={520}>
       <SearchField
@@ -143,8 +146,8 @@ export function CommanderPicker({
         placeholder={c.search}
         aria-label={c.search}
         role="combobox"
-        aria-expanded={results !== null}
-        aria-controls={listId}
+        aria-expanded={listShown}
+        aria-controls={listShown ? listId : undefined}
         aria-activedescendant={fresh && tiles.length > 0 ? `${listId}-${Math.min(hl, tiles.length - 1)}` : undefined}
         autoComplete="off"
         // 16px at phone, or iOS zooms the page into the field.
@@ -173,6 +176,8 @@ export function CommanderPicker({
                     <Art tile={t} className="h-[40px] w-[56px] flex-none rounded-[6px]" />
                     <span className="min-w-0 truncate">{t.name}</span>
                     <span data-identity={t.colorIdentity.join("")} className="ml-auto flex flex-none pl-[8px]">
+                      {/* The pips are color alone; the names say it in words. */}
+                      <span className="sr-only">{", "}{t.colorIdentity.length > 0 ? colorNames(t.colorIdentity).join(", ") : c.colorless}</span>
                       <IdentityPips colorIdentity={t.colorIdentity} size={10} gap={3} />
                     </span>
                   </button>
