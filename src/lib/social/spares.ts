@@ -80,6 +80,8 @@ export function spareGrantDetailsQuery(viewerId: string, q: Reader = db) {
     .orderBy(asc(friendLinks.friendUserId));
 }
 
+type GrantDetails = Awaited<ReturnType<typeof spareGrantDetailsQuery>>[number];
+
 /** `max(0, owned − hard − soft)`: copies none of the owner's decks, committed or draft, is asking for. */
 export function spareCount(a: { owned: number; hard: number; soft: number }): number {
   return Math.max(0, a.owned - a.hard - a.soft);
@@ -115,16 +117,19 @@ export const MAX_SPARES_BATCH = 200;
  * than changing a figure.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
-  const models: (Awaited<ReturnType<typeof loadAvailability>> | null)[] = new Array(friends.length);
+  type Read = { grant: GrantDetails; model: Awaited<ReturnType<typeof loadAvailability>> };
+  const models: (Read | null)[] = new Array(friends.length);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, friends.length) }, async () => {
     for (let i = next++; i < friends.length; i = next++) {
       const friend = friends[i];
       const env = await resolveSwitchEnv(friend);
       models[i] = await db.transaction(async (tx) => {
-        const granting = await spareGrantorsQuery(viewerId, tx);
-        if (!granting.some((g) => g.userId === friend)) return null;
-        return loadAvailability(friend, { oracleIds: [...asked], env }, tx);
+        // The grant with its pods and face, read in the same snapshot as the model, so a row never names a
+        // pod the share stopped reaching the viewer through before the friend's rows were read.
+        const grant = (await spareGrantDetailsQuery(viewerId, tx)).find((g) => g.userId === friend);
+        if (!grant) return null;
+        return { grant, model: await loadAvailability(friend, { oracleIds: [...asked], env }, tx) };
       }, { isolationLevel: "repeatable read" });
     }
   }));
@@ -139,21 +144,21 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
   if (asked.length === 0) return [];
-  const grantors = await spareGrantDetailsQuery(viewerId);
+  const grantors = await spareGrantorsQuery(viewerId);
   // One claim model per friend, at most CLAIM_MODELS_AT_ONCE side by side: measured at ~100ms each on a
   // staging copy (`measure:friend-spares`), so a handful of friends costs about one model, not their sum,
   // and a large pod queues behind the bound rather than taking the whole connection pool.
   const models = await claimModelsFor(viewerId, grantors.map((g) => g.userId), asked);
   const out: FriendSpare[] = [];
-  grantors.forEach((g, i) => {
-    const model = models[i];
-    if (model === null) return;
+  for (const read of models) {
+    if (read === null) continue;
+    const g = read.grant;
     const friend: SpareFriend = { publicId: g.publicId, displayName: g.displayName, commander: toCommander(g), pods: g.pods };
-    for (const [oracleId, a] of model) {
+    for (const [oracleId, a] of read.model) {
       const spare = spareCount(a);
       if (spare > 0) out.push({ oracleId, friend, spare });
     }
-  });
+  }
   return out.sort((x, y) =>
     (x.oracleId < y.oracleId ? -1 : x.oracleId > y.oracleId ? 1 : 0)
     || (x.friend.displayName < y.friend.displayName ? -1 : x.friend.displayName > y.friend.displayName ? 1 : 0)
