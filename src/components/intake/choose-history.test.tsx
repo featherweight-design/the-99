@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { StrictMode } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ChooseHistoryPage, ChooseHistoryRow } from "../../lib/intake/history";
@@ -17,7 +19,9 @@ const B = row("b", "2026-10-02T09:00:00.000Z", { state: "nothing", thumbs: [], t
 const C = row("c", "2026-09-30T09:00:00.000Z", { picks: 1, thumbs: ["o1"], thumbArt: [null] });
 const firstPage = (rows: ChooseHistoryRow[], nextCursor: string | null = null): ChooseHistoryPage => ({ rows, nextCursor });
 
-beforeEach(() => { page.fn.mockReset(); });
+// jsdom draws no layout, so every element reads as not rendered (`offsetParent` null): this is how a test says "drawn".
+const drawn = vi.spyOn(HTMLElement.prototype, "offsetParent", "get");
+beforeEach(() => { page.fn.mockReset(); drawn.mockReturnValue(document.body); });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("ChooseHistory", () => {
@@ -99,6 +103,74 @@ describe("ChooseHistory", () => {
     page.fn.mockClear();
     await act(async () => { await vi.advanceTimersByTimeAsync(9000); });
     expect(page.fn).not.toHaveBeenCalled();
+  });
+
+  it("settles in place under React strict mode too, whose mount, cleanup, mount cycle must not stop the poll", async () => {
+    vi.useFakeTimers();
+    const live = row("z", "2026-10-14T10:00:00.000Z", { state: "reading", thumbs: [], thumbArt: [], picks: 0 });
+    page.fn.mockResolvedValue(firstPage([row("z", "2026-10-14T10:00:00.000Z", { picks: 8 })]));
+    render(<StrictMode><ChooseHistory layout="view" initial={firstPage([live])} /></StrictMode>);
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(screen.queryByText("reading")).toBeNull();
+  });
+
+  it("asks again only after the last read has returned, so a slow answer never overtakes a newer one", async () => {
+    vi.useFakeTimers();
+    let release: (p: ChooseHistoryPage) => void = () => {};
+    page.fn.mockImplementation(() => new Promise<ChooseHistoryPage>((r) => { release = r; }));
+    render(<ChooseHistory layout="view" initial={firstPage([row("z", "2026-10-14T10:00:00.000Z", { state: "reading", thumbs: [], thumbArt: [], picks: 0 })])} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(9500); });
+    expect(page.fn).toHaveBeenCalledTimes(1);
+    await act(async () => { release(firstPage([row("z", "2026-10-14T10:00:00.000Z", { picks: 8 })])); });
+    expect(screen.queryByText("reading")).toBeNull();
+  });
+
+  it("does not poll from the instance that is hidden (the phone's view and the column can both be mounted)", async () => {
+    vi.useFakeTimers();
+    drawn.mockReturnValue(null);
+    render(<ChooseHistory layout="view" initial={firstPage([row("z", "2026-10-14T10:00:00.000Z", { state: "reading", thumbs: [], thumbArt: [], picks: 0 })])} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(9000); });
+    expect(page.fn).not.toHaveBeenCalled();
+  });
+
+  it("draws dates in UTC on the server, where the reader's zone is unknown, so hydration cannot mismatch", () => {
+    const html = renderToString(<ChooseHistory layout="view" initial={firstPage([A])} />);
+    expect(html).toContain("Oct 13 · 9:40 PM");
+    expect(html).toContain("October 2026");
+    expect(html).toContain("words a. October 13, 9 picks.");
+  });
+
+  it("shows the loading state while a retry reads, then the list", async () => {
+    let release: (p: ChooseHistoryPage) => void = () => {};
+    page.fn.mockImplementation(() => new Promise<ChooseHistoryPage>((r) => { release = r; }));
+    render(<ChooseHistory layout="view" initial={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.getByText("Loading your past runs")).toBeTruthy());
+    await act(async () => { release(firstPage([A])); });
+    await waitFor(() => expect(screen.getByRole("link", { name: /words a/ })).toBeTruthy());
+    expect(screen.queryByText("Loading your past runs")).toBeNull();
+  });
+
+  it("fades the column's foot only while rows remain below it", () => {
+    const sh = vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(500);
+    const ch = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(200);
+    const col = render(<ChooseHistory layout="column" initial={firstPage([A, B, C])} />);
+    const nav = col.getByRole("navigation", { name: "Past runs" });
+    expect(nav.getAttribute("data-fade")).toBe("true");
+    nav.scrollTop = 300; // scrolled to the end: 500 - 300 - 200 = 0 left
+    fireEvent.scroll(nav);
+    expect(nav.hasAttribute("data-fade")).toBe(false);
+    col.unmount();
+    // The phone's view does not scroll inside itself, so it never fades.
+    const view = render(<ChooseHistory layout="view" initial={firstPage([A, B, C])} />);
+    expect(view.getByRole("navigation", { name: "Past runs" }).hasAttribute("data-fade")).toBe(false);
+    sh.mockRestore(); ch.mockRestore();
+  });
+
+  it("lists each month's runs as list items, so a screen reader counts them", () => {
+    render(<ChooseHistory layout="view" initial={firstPage([A, B, C])} />);
+    expect(screen.getAllByRole("list")).toHaveLength(2);
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
   it("never polls while no run is in flight", async () => {

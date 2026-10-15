@@ -41,7 +41,7 @@ export function ChooseHeader({
     >
       {trailing ? (
         <div className="flex min-h-[44px] items-center justify-between md:min-h-0">
-          <Link href={back.href} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          <Link href={back.href} className="flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--fg-faint)] no-underline md:min-h-0">
             {back.label}
             <PendingReporter href={back.href} />
           </Link>

@@ -5,14 +5,34 @@
 // Stored reads only: nothing here calls a model.
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { chooseHistoryPage } from "../../app/decks/new/choose/history-actions";
 import { helpMeChooseHistoryCopy as copy } from "../../lib/copy/help-me-choose-history";
 import { mergeFirstPage, type ChooseHistoryPage, type ChooseHistoryRow } from "../../lib/intake/history";
-import { FailureMark, historyDate, historyMonth } from "../decks/tuning-history";
+import { FailureMark } from "../decks/tuning-history";
 
 /** While a run is in flight the list re-reads its first page at the tools' own cadence. */
 const WATCH_MS = 3000;
+
+const noop = () => () => {};
+/**
+ * False for the server render and the hydrating render, true after: dates are drawn in the reader's own
+ * zone, which the server cannot know, so both first passes draw them in UTC (identical, no mismatch) and
+ * the zoned pass follows at once.
+ */
+function useZoned(): boolean {
+  return useSyncExternalStore(noop, () => true, () => false);
+}
+const zone = (zoned: boolean) => (zoned ? {} : { timeZone: "UTC" as const });
+/** `Oct 13 · 9:40 PM`, the deck History's own form. */
+const fmtDate = (iso: string, zoned: boolean) => {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...zone(zoned) });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", ...zone(zoned) });
+  return `${day} · ${time}`;
+};
+const fmtMonth = (iso: string, zoned: boolean) => new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric", ...zone(zoned) });
+const fmtDay = (iso: string, zoned: boolean) => new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", ...zone(zoned) });
 
 type More = "idle" | "loading" | "failed";
 
@@ -31,9 +51,20 @@ export function ChooseHistory({
   const [more, setMore] = useState<More>("idle");
   const column = layout === "column";
   const headingId = `choose-history-${layout}`;
+  const zoned = useZoned();
+  const root = useRef<HTMLElement>(null);
+  const scroller = useRef<HTMLElement>(null);
+  // The column scrolls inside itself, and its foot fades only while rows remain below.
+  const [fade, setFade] = useState(false);
+  const measure = () => {
+    const el = scroller.current;
+    setFade(!!el && column && el.scrollHeight - el.scrollTop - el.clientHeight > 2);
+  };
+  useEffect(measure, [rows, cursor, column]);
 
   async function reload() {
     setLoading(true);
+    setRows(null);
     try {
       const page = await chooseHistoryPage(null);
       setRows(page.rows);
@@ -62,28 +93,35 @@ export function ChooseHistory({
     }
   }
 
-  // A run in flight settles in place: re-read the first page while one is `reading`.
+  // A run in flight settles in place: re-read the first page while one is `reading`. One read at a time
+  // (a slow answer never overtakes a newer one), and only the instance that is drawn reads at all: the
+  // phone's view and the column can both be mounted, one of them hidden.
   const reading = rows?.some((r) => r.state === "reading") ?? false;
-  const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
   useEffect(() => {
     if (!reading) return;
+    let cancelled = false;
+    let inFlight = false;
     const timer = setInterval(async () => {
+      if (inFlight || root.current?.offsetParent === null) return;
+      inFlight = true;
       try {
         const page = await chooseHistoryPage(null);
-        if (alive.current) setRows((prev) => mergeFirstPage(prev ?? [], page.rows));
+        if (!cancelled) setRows((prev) => mergeFirstPage(prev ?? [], page.rows));
       } catch {
         // The next tick asks again; a failed poll leaves the rows as they are.
+      } finally {
+        inFlight = false;
       }
     }, WATCH_MS);
-    return () => clearInterval(timer);
+    return () => { cancelled = true; clearInterval(timer); };
   }, [reading]);
 
   const empty = rows !== null && rows.length === 0;
-  const sections = rows ? byMonth(rows) : [];
+  const sections = rows ? byMonth(rows, zoned) : [];
 
   return (
     <section
+      ref={root}
       aria-labelledby={headingId}
       data-testid={`choose-history-${layout}`}
       className={
@@ -99,8 +137,22 @@ export function ChooseHistory({
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{empty ? copy.subEmpty : copy.sub}</span>
       </div>
 
-      {rows === null ? (
-        <LoadFailed onRetry={reload} column={column} busy={loading} />
+      {rows === null && loading ? (
+        <div role="status" aria-busy="true" className="flex flex-col gap-[6px]">
+          <span className="sr-only">{copy.loading}</span>
+          {[86, 64, 78].map((w) => (
+            <div key={w} aria-hidden="true" className="anim-skeleton flex min-h-[60px] flex-col gap-[9px] rounded-[9px] border border-solid border-[color:var(--border)] bg-[color:var(--surface)] px-[12px] py-[11px]">
+              <span className="h-[11px] rounded-[4px] bg-[color:var(--elevated)]" style={{ width: `${w}%` }} />
+              <span className="flex items-center gap-[8px]">
+                <span className="h-[30px] w-[70px] rounded-[3px] bg-[color:var(--surface-raised)]" />
+                <span className="flex-1" />
+                <span className="h-[9px] w-[60px] rounded-[4px] bg-[color:var(--surface-raised)]" />
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : rows === null ? (
+        <LoadFailed onRetry={reload} column={column} busy={false} />
       ) : empty ? (
         <div
           data-testid="choose-history-empty"
@@ -112,15 +164,23 @@ export function ChooseHistory({
       ) : (
         <>
           <nav
+            ref={scroller}
+            onScroll={measure}
             aria-label={copy.listLabel}
-            className={`flex flex-col gap-[6px] ${column ? "max-h-[560px] overflow-y-auto overscroll-contain border-0 border-t border-solid border-t-[color:var(--border)] pt-[2px] [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]" : ""}`}
+            data-fade={fade || undefined}
+            className={`flex flex-col gap-[6px] ${column ? "max-h-[560px] overflow-y-auto overscroll-contain border-0 border-t border-solid border-t-[color:var(--border)] pt-[2px]" : ""}`}
+            style={fade ? { maskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)", WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)" } : undefined}
           >
             {sections.map(([month, list]) => (
               <div key={month} className="flex flex-col gap-[6px]">
                 <div className="px-[2px] pb-[4px] pt-[8px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{month}</div>
-                {list.map((row) => (
-                  <RunRow key={row.id} row={row} column={column} />
-                ))}
+                <ul className="m-0 flex list-none flex-col gap-[6px] p-0">
+                  {list.map((row) => (
+                    <li key={row.id}>
+                      <RunRow row={row} column={column} zoned={zoned} />
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
             {cursor ? (
@@ -146,11 +206,11 @@ export function ChooseHistory({
   );
 }
 
-function RunRow({ row, column }: { row: ChooseHistoryRow; column: boolean }) {
+function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean; zoned: boolean }) {
   const reading = row.state === "reading";
-  const date = reading ? copy.row.now : historyDate(row.at);
+  const date = reading ? copy.row.now : fmtDate(row.at, zoned);
   const tail = row.state === "nothing" ? copy.row.nothing : row.state === "ok" ? copy.row.picks(row.picks) : copy.row.reading;
-  const ariaDate = new Date(row.at).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const ariaDate = fmtDay(row.at, zoned);
   const label = reading
     ? copy.row.readingAria(row.words)
     : copy.row.aria(row.words, ariaDate, row.state === "nothing" ? copy.row.ariaNothing : copy.row.ariaPicks(row.picks));
@@ -216,10 +276,10 @@ function LoadFailed({ onRetry, column, busy }: { onRetry: () => void; column: bo
   );
 }
 
-function byMonth(rows: readonly ChooseHistoryRow[]): [string, ChooseHistoryRow[]][] {
+function byMonth(rows: readonly ChooseHistoryRow[], zoned: boolean): [string, ChooseHistoryRow[]][] {
   const out: [string, ChooseHistoryRow[]][] = [];
   for (const row of rows) {
-    const month = historyMonth(row.at);
+    const month = fmtMonth(row.at, zoned);
     const last = out[out.length - 1];
     if (last && last[0] === month) last[1].push(row);
     else out.push([month, [row]]);

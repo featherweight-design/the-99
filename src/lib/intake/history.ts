@@ -98,7 +98,8 @@ export function decodeKey(cursor: string | null | undefined): HistoryKey | null 
  * Folds a freshly read first page into the rows already drawn (the poll while a run is in flight).
  * A row the page returns replaces its drawn twin, an unseen one joins in order, and a drawn
  * `reading` row the page no longer returns is gone (it settled into a failure the list does not
- * keep, or was reaped). Settled rows older than the page are left as they are.
+ * keep, or was reaped; a run in flight is always the newest, so it is always on the first page).
+ * Settled rows older than the page are left as they are.
  */
 export function mergeFirstPage(drawn: readonly ChooseHistoryRow[], fresh: readonly ChooseHistoryRow[]): ChooseHistoryRow[] {
   const freshIds = new Set(fresh.map((r) => r.id));
