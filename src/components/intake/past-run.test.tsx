@@ -33,6 +33,20 @@ describe("PastRunMeta", () => {
     expect(renderToString(<PastRunMeta at="2026-10-13T21:40:00.000Z" titleId="t" />)).toContain("Oct 13 · 9:40 PM");
   });
 
+  it("leaves the heading as it found it when the meta goes, as on a move to live results", () => {
+    const { rerender } = render(
+      <>
+        <h1 id="t">Dinosaurs</h1>
+        <PastRunMeta at="2026-10-13T21:40:00.000Z" titleId="t" />
+      </>,
+    );
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(title.getAttribute("aria-label")).toContain("a past run");
+    rerender(<h1 id="t">Dinosaurs</h1>);
+    expect(title.hasAttribute("aria-label")).toBe(false);
+    expect(title.hasAttribute("tabindex")).toBe(false);
+  });
+
   it("does nothing to a title that is not there", () => {
     expect(() => render(<PastRunMeta at="2026-10-13T21:40:00.000Z" titleId="missing" />)).not.toThrow();
   });

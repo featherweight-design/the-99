@@ -4,7 +4,7 @@
 // panel's place, the group of picks that went, and the state for a run that will not open.
 
 import Link from "next/link";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import type { GonePick } from "../../lib/intake/past-run";
 import { ArtLayer } from "../ui/art-layer";
@@ -31,17 +31,20 @@ function metaDate(iso: string, zoned: boolean): string {
 }
 
 export function PastRunMeta({ at, titleId }: { at: string; titleId: string }) {
-  const done = useRef(false);
   const zoned = useZoned();
   useEffect(() => {
-    if (done.current) return;
-    done.current = true;
     const title = document.getElementById(titleId);
     if (!title) return;
     const day = new Date(at).toLocaleDateString("en-US", { month: "long", day: "numeric" });
     title.setAttribute("aria-label", `${title.textContent ?? ""}${copy.titleAria(day)}`);
     title.setAttribute("tabindex", "-1");
     title.focus({ preventScroll: true });
+    // The heading outlives this component when the page moves on to live results on the same route: it
+    // must not go on announcing a dated, read-only run.
+    return () => {
+      title.removeAttribute("aria-label");
+      title.removeAttribute("tabindex");
+    };
   }, [at, titleId]);
   return (
     <span data-testid="past-run-meta" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[11px]">
