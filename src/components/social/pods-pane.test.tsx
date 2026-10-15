@@ -283,6 +283,17 @@ describe("round 1: races and edges", () => {
     expect(box.hasAttribute("aria-busy")).toBe(false);
   });
 
+  it("reads a redraw that landed while a failed spares write was in flight", async () => {
+    let fail: (e: Error) => void = () => {};
+    m.share.mockReturnValueOnce(new Promise((_, rej) => { fail = rej; }));
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    await press(screen.getByRole("checkbox", { name: P.share }));
+    // Another tab shared it: the redraw says shared before this write fails.
+    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    await act(async () => fail(new Error("down")));
+    expect((screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
+  });
+
   it("closes only the Add dialog that started a write, not one reopened since", async () => {
     let done: (v: unknown) => void = () => {};
     m.add.mockReturnValueOnce(new Promise((res) => { done = res; }));

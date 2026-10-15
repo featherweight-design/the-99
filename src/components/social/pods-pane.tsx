@@ -104,20 +104,28 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
     }
   }
 
+  // A failed spares write lets go of its own value, so the box reads the server's latest: the page before the write,
+  // or a redraw that landed while it was in flight.
+  const drop = (podId: string) =>
+    setSharing((prev) => {
+      const next = { ...prev };
+      delete next[podId];
+      return next;
+    });
+
   async function share(podId: string, on: boolean) {
     if (sharePending.has(podId)) return;
-    const before = shared(podId);
     setSharing((prev) => ({ ...prev, [podId]: on }));
     setSharePending((prev) => new Set(prev).add(podId));
     try {
       const r = await shareSparesWithAction(podId, on);
       if (off(r)) router.refresh();
       else if (!r.ok) {
-        setSharing((prev) => ({ ...prev, [podId]: before }));
+        drop(podId);
         fail();
       }
     } catch {
-      setSharing((prev) => ({ ...prev, [podId]: before }));
+      drop(podId);
       fail();
     } finally {
       setSharePending((prev) => {
