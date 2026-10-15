@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import type { GonePick } from "../../lib/intake/past-run";
+import { ArtLayer } from "../ui/art-layer";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FailureMark, historyDate } from "../decks/tuning-history";
 
@@ -64,9 +65,10 @@ export function GonePicks({ picks }: { picks: readonly GonePick[] }) {
           >
             <span
               aria-hidden="true"
-              className="h-[34px] w-[24px] flex-none rounded-[3px] bg-[color:var(--elevated)] bg-cover bg-center opacity-[0.55]"
-              style={p.artCropUri ?? p.imageUri ? { backgroundImage: `url(${p.artCropUri ?? p.imageUri})` } : undefined}
-            />
+              className="relative h-[34px] w-[24px] flex-none overflow-hidden rounded-[3px] bg-[color:var(--elevated)] opacity-[0.55]"
+            >
+              {p.artCropUri ?? p.imageUri ? <ArtLayer src={(p.artCropUri ?? p.imageUri) as string} /> : null}
+            </span>
             <span className="flex min-w-0 flex-1 flex-col gap-[1px]">
               <CardDetailTrigger
                 oracleId={p.oracleId}
