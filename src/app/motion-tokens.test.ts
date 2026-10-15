@@ -8,6 +8,9 @@ import { OVERLAY_OUT_MS } from "../components/shell/pending-overlay";
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const CSS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "globals.css"), "utf8");
 
+const read = (...parts: string[]) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), ...parts), "utf8");
+const REDUCED_AT = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
+
 /** The declaration of one class, outside the reduced-motion block (the first rule of that selector). */
 const rule = (selector: string): string => {
   const m = new RegExp(`^${selector.replace(/[.[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "m").exec(CSS);
@@ -60,11 +63,18 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(rule(selector)).toBe(transition);
   });
 
-  it("leaves no motion class on a literal length or curve", () => {
+  it("leaves no motion class on a literal length or curve, in any rule outside the reduced-motion block", () => {
     const retimed = [".anim-menu-in", ".anim-zoom-in", ".anim-sheet-up", ".anim-rail-tag", ".anim-overlay-in", ".anim-overlay-out",
       ".anim-sheet-in", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-carousel-prev", ".anim-carousel-next",
       ".anim-card-turn", ".sheet-snap", ".band-dim", ".anim-quickadd-in"];
-    for (const selector of retimed) expect(rule(selector), selector).not.toMatch(/cubic-bezier|\d(ms|s)\b/);
+    for (const selector of retimed) {
+      const re = new RegExp(`^\\s*${selector.replace(/[.[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "gm");
+      for (const m of CSS.matchAll(re)) {
+        // Only the reduced-motion block may state a literal (its fades are 100ms with no wait).
+        if (m.index! > REDUCED_AT && REDUCED_AT !== -1) continue;
+        expect(m[1], selector).not.toMatch(/cubic-bezier|\d(ms|s)\b/);
+      }
+    }
   });
 
   it("holds the JS that waits on a fade to the CSS that draws it", () => {
@@ -77,6 +87,14 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(STACK_DROP_MS).toBeGreaterThanOrEqual(Math.round(rise * 0.6));
     expect(STACK_DROP_MS).toBeLessThanOrEqual(Math.round(rise * 0.7));
     expect(STACK_DROP_EASE).toBe(token("motion-ease-out"));
+    // The constant is what card-modal hands the Web Animations call: the ease-in it replaced must not come back.
+    expect(read("..", "components", "cards", "card-modal.tsx")).toMatch(/duration: STACK_DROP_MS, easing: STACK_DROP_EASE/);
+  });
+
+  it("gives the band's release spring the sheet snap's length and curve", () => {
+    const spring = /const SPRING = "transform (\d+ms) (cubic-bezier\([^)]*\))";/.exec(read("..", "components", "cards", "card-sheet-gesture.ts"));
+    expect(spring?.[1]).toBe(token("motion-quick"));
+    expect(spring?.[2]).toBe(token("motion-ease-out"));
   });
 
   it("keeps the overlay's fades under reduced motion, shortened to 100ms with no wait", () => {

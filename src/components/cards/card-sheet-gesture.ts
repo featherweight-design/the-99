@@ -213,7 +213,9 @@ export type CardSheetGestureOptions = {
   disabled?: boolean;
 };
 
-const SPRING = "transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+// The release spring: the same length and curve as `.sheet-snap` (`--motion-quick`, `--motion-ease-out`), which it hands to;
+// `motion-tokens.test.ts` holds the two together.
+const SPRING = "transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1)";
 
 /** Hands the card back to its snap's own CSS, which then eases to it (`card-grow`). */
 function clearCardDrag(stage: HTMLElement | null | undefined) {

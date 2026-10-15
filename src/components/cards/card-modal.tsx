@@ -966,7 +966,7 @@ export function CardModal({
     onMinimizedChange?.(startMinimized);
   }, [onMinimizedChange, startMinimized]);
   // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
-  // rule's beat and ease-in-out), and teaser to full keeps its shipped 240ms snap.
+  // rule's beat and ease-in-out), and teaser to full keeps the quick snap (`--motion-quick`).
   const [gentle, setGentle] = useState(false);
   const sheetFull = snap === "full";
   const setSnap = (next: SheetSnap) => {
@@ -1003,7 +1003,7 @@ export function CardModal({
   // not offered.
   const min = narrow && snap === "min" && !cramped;
   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
-  // 240ms rise reverses it rather than snapping the card to the top first (#1268). The rise class
+  // rise (a beat, then `--motion-duration`) reverses it rather than snapping the card to the top first (#1268). The rise class
   // stays on, still running, and this animation, being script-made, composites over it.
   useLayoutEffect(() => {
     const el = dialogRef.current;
@@ -2006,7 +2006,7 @@ export function CardModal({
 
   // THE PHONE'S ENTRANCE (STATES §Motion, "Phone commit"): a paged card arrives from where its
   // peek stood, at the peek's scale and opacity, plus wherever a swipe left the band, and settles
-  // in 240ms. Centre to centre is half the card, the 12px gap and half the peek (0.86875 of the
+  // after the beat, in `--motion-duration`. Centre to centre is half the card, the 12px gap and half the peek (0.86875 of the
   // card's own width, plus 12). Reduced motion draws it in place (`globals.css`).
   const phoneEnterX = enteredFrom === "next" || enteredFrom === "nextPeek"
     ? `calc(86.875% + 12px + ${enteredOffset}px)`

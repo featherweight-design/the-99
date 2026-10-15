@@ -289,7 +289,7 @@ export function Sheet({
         // reached this with a negative offset would be silently ignored rather
         // than caught.
         // `animation: none` while dragging. The default panel arrives under
-        // `anim-sheet-in`, which animates `transform` for 180ms — and a CSS
+        // `anim-sheet-in`, which animates `transform` for a beat and then `--motion-duration` — and a CSS
         // animation outranks a normal inline transform, so a drag begun inside
         // that window updated `dragY` while the panel sat still. Neither current
         // adopter uses the default class, so this is a trap set for the next one.

@@ -1068,7 +1068,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .band-dim { transition: opacity var(--motion-quick) var(--motion-ease-out); }
 /* The min snap (Hugh, 2026-10-13): the shelf shrinks to its title row and the card grows to fill
    the band. A move to or from it is gentle, on the motion rule's beat and ease-in-out, where
-   teaser to full keeps its 240ms snap above. The card's growth rides the same tokens. */
+   teaser to full keeps the quick snap above. The card's growth rides the same tokens. */
 .sheet-snap.sheet-gentle { transition: top var(--motion-duration) var(--motion-ease) var(--motion-delay); }
 .sheet-snap.sheet-gentle[data-dragging] { transition: none; }
 /* While a drag sizes the card it tracks the finger; the ease is for the settle after release. */

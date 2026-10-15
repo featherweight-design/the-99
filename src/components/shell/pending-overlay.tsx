@@ -51,7 +51,7 @@ export function PendingOverlay({
     };
   }, [boxRef]);
 
-  // Unmount once the 120ms fade has run. A timer rather than `animationend`, which never fires
+  // Unmount once the fade (`OVERLAY_OUT_MS`) has run. A timer rather than `animationend`, which never fires
   // where animations do not run and would leave the screen up over the new page.
   useEffect(() => {
     if (!leaving) return;
