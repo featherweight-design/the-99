@@ -5,8 +5,14 @@
 //   a/c. Nothing pops in. The tab holds its loader until the verdict, the overview, Suggested
 //        changes and the credit lines are ALL ready, and then paints them together: no part of the
 //        tab appears after another part has painted, least of all above it. Read by a
-//        MutationObserver installed before the tab is pressed, which stamps each part's first
-//        visible frame and where it sat.
+//        sampler installed before the tab is pressed, which stamps each part's first visible frame
+//        and where it sat.
+//        A deck NEVER analyzed is the exception, by #1465: its empty state draws at once and the
+//        credit note beside Analyze follows when its own read (`fetchSynopsis`) lands, about 0.7 to
+//        2s measured. Two loads prove it. On the first, that read's response is HELD by the probe,
+//        and the empty state must paint while it is held: it does not wait for the note. A frame
+//        comparison cannot prove that, since a fast response lands in the empty state's own frame on
+//        a correct build. On a second, unheld load the note must arrive within 2.5s of the empty state.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -39,6 +45,9 @@ if (!EMAIL.includes("+clerk_test")) throw new Error("PROBE_EMAIL must be a +cler
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const sql = neon(TARGET);
+// How long after a never-analyzed deck's empty state its credit note may land (#1465: measured at
+// about 0.7 to 2s, the note's own read).
+const NOTE_BOUND_MS = 2_500;
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -77,7 +86,10 @@ async function signIn(page) {
   return userId;
 }
 
-// Stamps, from before the tab is pressed, each part's first VISIBLE frame and its top edge.
+// Stamps, from before the tab is pressed, each part's first VISIBLE frame and its top edge. Sampled in
+// requestAnimationFrame, every part in one pass with the frame's own timestamp and a frame counter, so two
+// parts are "different frames" only when they were drawn in different painted frames. A MutationObserver
+// stamping each part with its own `performance.now()` could split one frame into two times.
 const OBSERVE = () => {
   const parts = {
     loader: "[data-opening-loader='drawn']",
@@ -92,17 +104,20 @@ const OBSERVE = () => {
   const seen = {};
   window.__parts = seen;
   const t0 = performance.now();
-  const look = () => {
+  let frame = 0;
+  const sample = (ts) => {
+    frame += 1;
     const panel = document.querySelector("#panel-analysis");
-    if (!panel) return;
-    for (const [name, sel] of Object.entries(parts)) {
-      if (seen[name]) continue;
-      const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
-      if (el) seen[name] = { at: Math.round(performance.now() - t0), top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
+    if (panel) {
+      for (const [name, sel] of Object.entries(parts)) {
+        if (seen[name]) continue;
+        const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
+        if (el) seen[name] = { at: Math.round(ts - t0), frame, top: Math.round(el.getBoundingClientRect().top + window.scrollY) };
+      }
     }
+    requestAnimationFrame(sample);
   };
-  new MutationObserver(look).observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
-  look();
+  requestAnimationFrame(sample);
 };
 
 async function deckFor(userId) {
@@ -191,16 +206,28 @@ async function run() {
       }, PAGE);
       report(at("the overview is among them, written"), Boolean(parts.overview) && written, JSON.stringify({ painted: parts.overview ?? null, written }));
 
-      // a, before any reading: the empty state and the credit note beside Analyze paint together.
-      // A deck never analyzed, so nothing is stored and only the overview's read is waited on.
+      // a, before any reading: the empty state first, then the credit note beside Analyze within
+      // NOTE_BOUND_MS of it (#1465: the empty state no longer waits on the note's read). A deck
+      // never analyzed, so nothing is stored.
       const [bare] = await sql`
         select d.id from decks d where d.user_id = ${userId}
           and not exists (select 1 from deck_profiles p where p.deck_id = d.id)
           and (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) >= 98
         order by d.name limit 1`;
       if (!bare) throw new Error("No unanalyzed whole deck to open.");
+      // The BOUND first, on a load with nothing held, so no hold can move it. It also names the synopsis
+      // read: Next sends a server action as a POST carrying its hashed id in `next-action`, and the one
+      // whose reply is a synopsis state (`fetchSynopsis`, recognised by its `wouldSpend` field) is the
+      // read the credit note waits on.
       const empty = await context.newPage();
       await empty.addInitScript(OBSERVE);
+      const synopsisIds = new Set();
+      empty.on("response", async (res) => {
+        const id = res.request().headers()["next-action"];
+        if (!id || res.request().method() !== "POST") return;
+        const body = await res.text().catch(() => "");
+        if (body.includes('"wouldSpend"')) synopsisIds.add(id);
+      });
       await empty.goto(`${BASE}/decks/${bare.id}`, { waitUntil: "domcontentloaded" });
       await empty.locator(`${PAGE} [role='tab']:visible`, { hasText: "Analysis" }).first().waitFor();
       await empty.waitForTimeout(1_500);
@@ -209,10 +236,48 @@ async function run() {
       await empty.locator(`${PAGE} [data-testid='analysis-empty']`).first().waitFor({ timeout: 60_000 });
       await empty.waitForTimeout(4_000);
       const bareParts = await empty.evaluate(() => window.__parts);
-      report(at("before a reading, the credit note arrives with the empty state"),
-        Boolean(bareParts.empty && bareParts.pressNote) && Math.abs(bareParts.pressNote.at - bareParts.empty.at) <= 50,
-        JSON.stringify(bareParts));
+      const noteLag = bareParts.empty && bareParts.pressNote ? bareParts.pressNote.at - bareParts.empty.at : null;
+      report(at(`before a reading, the credit note follows the empty state within ${NOTE_BOUND_MS / 1000}s`),
+        noteLag !== null && noteLag >= 0 && noteLag <= NOTE_BOUND_MS, `${noteLag ?? "no note"}ms after the empty state ${JSON.stringify(bareParts)}`);
       await empty.close();
+
+      // The ORDER, on a second load whose synopsis read is HELD: its reply is kept from the page until the
+      // empty state has been read. The empty state must paint while it is held, the note must not, and the
+      // note must arrive once it is released. A frame comparison cannot prove this: a fast reply lands in
+      // the empty state's own frame on a correct build.
+      const held = await context.newPage();
+      await held.addInitScript(OBSERVE);
+      let release;
+      const gate = new Promise((r) => { release = r; });
+      const caught = { held: 0 };
+      await held.route("**/*", async (route) => {
+        const req = route.request();
+        if (req.method() !== "POST" || !synopsisIds.has(req.headers()["next-action"])) return route.fallback();
+        caught.held += 1;
+        const response = await route.fetch();
+        const body = await response.text();
+        await gate;
+        await route.fulfill({ response, body }).catch(() => {});
+      });
+      await held.goto(`${BASE}/decks/${bare.id}`, { waitUntil: "domcontentloaded" });
+      await held.locator(`${PAGE} [role='tab']:visible`, { hasText: "Analysis" }).first().waitFor();
+      await held.waitForTimeout(1_500);
+      await held.evaluate(() => { for (const k of Object.keys(window.__parts)) delete window.__parts[k]; });
+      await pressTab(held, "Analysis");
+      const paintedHeld = await held.waitForFunction(() => Boolean(window.__parts.empty), null, { timeout: 30_000 })
+        .then(() => true, () => false);
+      // Long enough for the read to have been asked for and answered, were it not held.
+      await held.waitForTimeout(3_000);
+      const whileHeld = await held.evaluate(() => ({ ...window.__parts }));
+      report(at("the empty state paints while the credit note's read is held"),
+        synopsisIds.size > 0 && caught.held > 0 && paintedHeld && !whileHeld.pressNote,
+        JSON.stringify({ synopsisActions: synopsisIds.size, readsHeld: caught.held, parts: whileHeld }));
+      release();
+      const noteAfter = await held.waitForFunction(() => Boolean(window.__parts.pressNote), null, { timeout: 30_000 })
+        .then(() => true, () => false);
+      report(at("and the credit note arrives once the read is released"), noteAfter, noteAfter ? "drawn" : "never drawn");
+      await held.unrouteAll({ behavior: "ignoreErrors" });
+      await held.close();
 
       // d: one line of tabs with Analysis selected, on a deck with versions.
       const tops = await page.evaluate((scope) =>
