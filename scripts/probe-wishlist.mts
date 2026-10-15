@@ -60,9 +60,9 @@ async function main() {
     await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${B}, ${X}, 1, 'prb')`);
     const before = await stamp(B);
     check("B wants two X", (await wishlist.setWishlistQuantity(B, X, 2))?.status === "wanted");
-    check("B wants one Y", (await wishlist.setWishlistQuantity(B, Y))?.status === "wanted");
+    check("B wants one Y", (await wishlist.setWishlistQuantity(B, Y, 1))?.status === "wanted");
     check("a wishlist write moves the owner's stamp", (await stamp(B)) > before);
-    check("an unknown card writes nothing", (await wishlist.setWishlistQuantity(B, "00000000-0000-0000-0000-000000000000")) === null);
+    check("an unknown card writes nothing", (await wishlist.setWishlistQuantity(B, "00000000-0000-0000-0000-000000000000", 1)) === null);
     check("a quantity of 0 writes nothing", (await wishlist.setWishlistQuantity(B, X, 0)) === null);
     check("a quantity of 100 writes nothing", (await wishlist.setWishlistQuantity(B, X, 100)) === null);
 

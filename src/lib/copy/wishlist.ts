@@ -4,9 +4,15 @@
 // PR 3 brings the whole module; the tab (PR 4), card details' section (PR 5) and the friend page (PR 6) read it.
 // The spare strings are not here: they sit beside socialCopy with the Shopping work. No string here reaches a model.
 
-/** "A", "A and B", "A, B and C": the app's list join (no serial comma). */
-const joinNames = (names: readonly string[]) =>
-  names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+/** A run of text, drawn strong (500 or 600 in `--fg`) where the boards draw it bold. */
+export type CopyPart = { text: string; strong?: true };
+
+/** "A", "A and B", "A, B and C" (the app's list join, no serial comma), each name strong. */
+const joinNames = (names: readonly string[]): CopyPart[] =>
+  names.flatMap((name, i) => [
+    ...(i === 0 ? [] : [{ text: i === names.length - 1 ? " and " : ", " }]),
+    { text: name, strong: true as const },
+  ]);
 
 /** A card's short name for the phone's strip: before its first comma, and its front face alone. */
 const shortName = (name: string) => name.split(" // ")[0]!.split(", ")[0]!;
@@ -33,13 +39,27 @@ export const wishlistCopy = {
     emptyBody:
       "Cards you want that no deck is asking for, in any printing. Search above or press Add to wishlist in any card’s details, and a card leaves once you have enough.",
     // The one-time receipt strip (role status, bare ✕) naming the cards that left because the collection reached them.
-    collectedLeft: (names: readonly string[]) => `Collected since you last looked: ${joinNames(names)}. ${left(names.length)}`,
-    collectedLeftShort: (names: readonly string[]) => `Collected: ${joinNames(names.map(shortName))}. ${left(names.length)}`, // phone
+    // Parts, because the names are drawn strong.
+    collectedLeft: (names: readonly string[]): CopyPart[] => [
+      { text: "Collected since you last looked: " },
+      ...joinNames(names),
+      { text: `. ${left(names.length)}` },
+    ],
+    collectedLeftShort: (names: readonly string[]): CopyPart[] => [
+      { text: "Collected: " },
+      ...joinNames(names.map(shortName)),
+      { text: `. ${left(names.length)}` },
+    ], // phone
     dismiss: "Dismiss", // the strip's ✕, aria-label
   },
 
   tile: {
-    caption: (want: number, have: number) => `want ${want} · have ${have}`,
+    // `want 2 · have 1`, the want count strong (`--fg-body`).
+    caption: (want: number, have: number): CopyPart[] => [
+      { text: "want " },
+      { text: String(want), strong: true },
+      { text: ` · have ${have}` },
+    ],
   },
 
   details: {

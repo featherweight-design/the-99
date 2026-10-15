@@ -125,7 +125,7 @@ export type WantResult = { status: "wanted" | "held"; quantity: number; held: nu
  * collection already reaches, set new or lowered to what is held, leaves no line, and is NOT kept for the collected
  * strip: the player made that change in front of them, and the strip says what was collected "since you last looked".
  */
-export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown = 1): Promise<WantResult | null> {
+export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown): Promise<WantResult | null> {
   const quantity = cleanQuantity(rawQuantity);
   if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return null;
   return writeWant(viewerId, oracleId, () => quantity);

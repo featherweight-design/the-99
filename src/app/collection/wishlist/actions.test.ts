@@ -88,6 +88,13 @@ describe("wanting a card", () => {
     expect(await actions.setWishlistWantAction(CARD, 0)).toEqual({ ok: false, reason: "invalid" });
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
+
+  it("hands the stepper's count on as sent, so a missing count is the library's to refuse, never a 1", async () => {
+    m.setWishlistQuantity.mockResolvedValue(null);
+    expect(await actions.setWishlistWantAction(CARD, undefined)).toEqual({ ok: false, reason: "invalid" });
+    expect(m.setWishlistQuantity).toHaveBeenCalledWith("user_1", CARD, undefined);
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
 });
 
 describe("removing a card", () => {
