@@ -3,7 +3,7 @@
 // The card-scan lab's camera loop (`/lab/scan`). Everything runs on the device: the frame is drawn
 // to a canvas, the detector finds the four corners, the card is warped to 320x448, embedded, and
 // matched against the card index. Only a ✓/✗ tap sends anything, and a frame only with Keep this
-// frame ticked. Unstyled beyond the tokens: it is a measuring page with no design handoff.
+// frame ticked (the default). Unstyled beyond the tokens: it is a measuring page with no design handoff.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
@@ -80,7 +80,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     if (crop) ctx.putImageData(tensorToImage(crop, EMBED_W, EMBED_H), 0, 0);
     else ctx.clearRect(0, 0, EMBED_W, EMBED_H);
   }, [reading]);
-  const [keepFrame, setKeepFrame] = useState(false);
+  // On from the first tap and kept across taps, so a run of photos needs no box ticked. Unticking it, which is
+  // also kept, keeps every pixel on the device.
+  const [keepFrame, setKeepFrame] = useState(true);
   const [note, setNote] = useState<string | null>(null);
   const [taps, setTaps] = useState({ n: 0, right: 0 });
   const indexVersion = useRef("unknown");
@@ -241,7 +243,6 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
       setNote(copy.saved);
-      setKeepFrame(false);
     } else {
       setNote(copy.saveFailed);
     }
@@ -261,19 +262,22 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
         <section className="flex flex-col gap-[8px]" aria-live="polite">
-          <div className="flex gap-[12px]">
-            <canvas ref={previewRef} width={EMBED_W} height={EMBED_H} className="h-[168px] w-[120px] rounded-[6px]" />
-            <div className="flex min-w-0 flex-col gap-[4px] text-[14px]">
+          {/* A FIXED height, the tallest reading at 390 (two lines for each of the name, the figures, the timings and the
+              next guesses): the reading changes length every frame, and the controls under it must
+              never move while the camera runs. Each line is clamped, and the column clips what is left. */}
+          <div className="flex h-[188px] gap-[12px]">
+            <canvas ref={previewRef} width={EMBED_W} height={EMBED_H} className="h-[168px] w-[120px] shrink-0 rounded-[6px]" />
+            <div className="flex min-w-0 flex-col gap-[4px] overflow-hidden text-[14px]">
               {reading?.kind === "card" ? (
                 <>
                   <span className="text-[12px] text-[color:var(--fg-muted)]">{copy.guessing}</span>
-                  <strong className="text-[18px]">{reading.guesses[0]?.name}</strong>
-                  <span className="text-[12px] text-[color:var(--fg-muted)]">
+                  <strong className="line-clamp-2 text-[18px] leading-[1.25] [overflow-wrap:anywhere]">{reading.guesses[0]?.name}</strong>
+                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">
                     {reading.guesses[0]?.score.toFixed(3)} · +{reading.margin.toFixed(3)}
                     {reading.committed ? ` · ${copy.agreed(reading.agreed)}` : ""}
                   </span>
-                  <span className="text-[12px] text-[color:var(--fg-muted)]">{copy.timings(reading.detMs, reading.embMs, reading.matchMs)}</span>
-                  <span className="text-[12px] text-[color:var(--fg-muted)]">
+                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">{copy.timings(reading.detMs, reading.embMs, reading.matchMs)}</span>
+                  <span className="line-clamp-2 text-[12px] text-[color:var(--fg-muted)]">
                     {copy.runnersUp}: {reading.guesses.slice(1).map((g) => g.name).join(", ")}
                   </span>
                 </>
