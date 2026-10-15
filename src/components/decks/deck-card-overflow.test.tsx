@@ -373,6 +373,9 @@ describe("DeckCardOverflow · Export", () => {
     expect(screen.getByRole("button", { name: "Rename" })).toHaveProperty("disabled", true);
     land(read);
     const dialog = await screen.findByRole("dialog", { name: "Export deck" });
+    // The dialog is in the document before its effects run, and its Escape listener is one of them: an empty act
+    // flushes them, or the key lands before anything listens for it (about one run in three).
+    await act(async () => {});
     fireEvent.keyDown(dialog, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull());
     expect(document.activeElement).toBe(trigger("Atraxa Counters"));
