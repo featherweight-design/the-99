@@ -230,6 +230,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deck). The tile's root carries `TILE_FIELD`, a size container, and the corners round by `max(9px, 3.4cqw)`, so the
   fixed 9px that let the matte through at 480-767px (a ~361px tile wants 11px) no longer does. Needs
   `PRECONS_ENABLED` and seeded precons; writes nothing.
+- `pnpm probe:foil-film` proves what the foil film draws (foil handoff R1), against the BUILT stylesheet: run
+  `pnpm build` first (the stub-DB build will do). It loads the compiled CSS into a static page of five tiles in the
+  shipped markup and reads computed styles, with no server, no database and no sign-in: the film holds while the art
+  has no source, carries no arrival mark yet (art the server drew, before hydration), is `pending` (under either
+  motion preference: art still on its way shows nothing to lie over) or `failed`; it draws a 115° gradient once the art is in, foil and etched differ; the band sweeps only on
+  the hovered tile, never under reduced motion, and a phone (coarse pointer, no hover) never creates `::after`;
+  reduced transparency swaps the gradient for a 2px inset ring and forced colors drops it. Which tiles carry
+  `data-foil` is the component tests' half.
 - `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
   staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
   `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first

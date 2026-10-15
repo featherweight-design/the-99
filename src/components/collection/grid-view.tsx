@@ -181,9 +181,12 @@ export function GridView({
             )}
             {/* The 1px inner edge, drawn OVER the art. An inset shadow on this box would
                 paint under its img child and vanish. `rounded-[inherit]` keeps the edge on
-                the clip's rounded corners. */}
+                the clip's rounded corners. It carries the foil film too (`data-foil`, foil
+                handoff R1): the drawn printing's finish, when every copy held of it shares one, and only
+                over art: never over the identity plate a card with none draws. */}
             <span
               aria-hidden
+              data-foil={c.imageUri ? c.foil : undefined}
               className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             />
           </div>

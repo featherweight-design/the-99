@@ -51,3 +51,18 @@ describe("ReadOnlyCardTile", () => {
     expect(screen.getByRole("button", { name: /Relentless Rats, 3 copies/ })).toBeInTheDocument();
   });
 });
+
+// The foil film (foil handoff R1): a card every copy of which the box holds in foil.
+describe("ReadOnlyCardTile foil film", () => {
+  it("marks the ring span foil when the box's copies are all foil, and only over art", () => {
+    const { unmount } = tile(card({ printedFoil: true }));
+    expect(document.querySelector("[data-foil]")?.getAttribute("data-foil")).toBe("foil");
+    unmount();
+    tile(card({ printedFoil: true, imageUri: null }));
+    expect(document.querySelector("[data-foil]")).toBeNull();
+  });
+  it("draws no film for a card the box holds plain", () => {
+    tile(card({ printedFoil: false }));
+    expect(document.querySelector("[data-foil]")).toBeNull();
+  });
+});

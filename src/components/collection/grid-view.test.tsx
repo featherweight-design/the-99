@@ -296,3 +296,20 @@ describe("GridView price clause", () => {
     expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toContain("Mana Pool");
   });
 });
+
+// The foil film (foil handoff R1) rides the ring span over the art, read off the drawn printing.
+describe("GridView foil film", () => {
+  const film = () => document.querySelector("[data-foil]");
+  it("marks the ring span with the drawn printing's finish, over its art", () => {
+    renderTiles({ ...card, imageUri: "https://cards.example/t.jpg", foil: "etched" });
+    expect(film()?.getAttribute("data-foil")).toBe("etched");
+    expect(film()?.getAttribute("aria-hidden")).toBe("true");
+  });
+  it("draws no film for a plain card, nor over the plate of a card with no art", () => {
+    const { unmount } = renderTiles({ ...card, imageUri: "https://cards.example/t.jpg" });
+    expect(film()).toBeNull();
+    unmount();
+    renderTiles({ ...card, imageUri: null, foil: "foil" });
+    expect(film()).toBeNull();
+  });
+});

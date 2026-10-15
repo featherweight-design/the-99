@@ -90,7 +90,11 @@ describe("HydratedImg", () => {
 
 describe("deferred art's arrival", () => {
   // jsdom loads nothing, so each case says whether the image has settled when its source is set.
-  const settled = (complete: boolean) => vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(complete);
+  // A settled image is a loaded one unless `broken`: a complete image with no width never loaded.
+  const settled = (complete: boolean, broken = false) => {
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(broken ? 0 : 488);
+    return vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(complete);
+  };
   afterEach(() => vi.restoreAllMocks());
 
   it("holds a deferred img pending until it loads, then fades it in once", () => {
@@ -111,10 +115,17 @@ describe("deferred art's arrival", () => {
     const img = container.querySelector("img")!;
     bringIntoView();
     act(() => void img.dispatchEvent(new Event("error")));
-    expect(img.dataset.arrival).toBe("in");
+    expect(img.dataset.arrival).toBe("failed");
   });
 
-  it("draws art that has already settled (cached, or already broken) at once, with no fade", () => {
+  it("marks art that broke before it was armed as failed, never as loaded", () => {
+    settled(true, true);
+    const { container } = render(<HydratedImg src={SRC} alt="" />);
+    bringIntoView();
+    expect(container.querySelector("img")!.dataset.arrival).toBe("failed");
+  });
+
+  it("draws art that has already loaded (cached, or painted before hydration) at once, with no fade", () => {
     settled(true);
     const { container } = render(<HydratedImg src={SRC} alt="" />);
     bringIntoView();

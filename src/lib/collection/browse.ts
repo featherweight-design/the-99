@@ -80,6 +80,12 @@ export type BrowsePrinting = {
    */
   hasOwnBack?: boolean;
   /**
+   * Whether `imageUri` is THIS printing's own art rather than a representative or the card's
+   * oracle-level picture (`resolveImageUri`'s fallback tiers). The foil film reads it, so a film is
+   * never drawn over another printing's art. Absent means "not its own", as `hasOwnBack` does.
+   */
+  hasOwnArt?: boolean;
+  /**
    * THIS printing's frame-free crop — what a wash draws behind a commander sleeved from it.
    *
    * Printing-level for the same reason `backImageUri` is: `cards.art_crop_uri` is one
@@ -103,6 +109,18 @@ export type BrowsePrinting = {
 };
 
 export type Finish = "nonfoil" | "foil" | "etched";
+/** The finishes the foil film draws: `nonfoil` draws none. */
+export type FoilFinish = Exclude<Finish, "nonfoil">;
+
+/**
+ * The finish the foil film draws for a printing: foil (or etched) when every copy held of it has
+ * that finish, else none. A mixed holding draws nothing on the grid (audit ruling G8); card details
+ * names the split.
+ */
+export function soleFoilFinish(finishes: Partial<Record<Finish, number>>): FoilFinish | undefined {
+  const held = (Object.keys(finishes) as Finish[]).filter((f) => (finishes[f] ?? 0) > 0);
+  return held.length === 1 && held[0] !== "nonfoil" ? held[0] : undefined;
+}
 
 /** The printing a user chose to represent a card. Set code uppercased, as BrowsePrinting is. */
 export type PreferredPrinting = { setCode: string; collectorNumber: string };
@@ -140,6 +158,13 @@ export type BrowseCard = {
    * oracle name". Use `printedNameOf()` rather than testing this at each site.
    */
   printedName: string | null;
+  /**
+   * The finish every owned copy of the drawn printing shares, when it is foil or etched: the foil
+   * film over the tile's art (foil handoff R1). Off the SAME printing as `imageUri` (`cardArt`), so
+   * the film never lies over another printing's art. Absent for a plain or a mixed holding, which is
+   * nearly every card; never null, so the wire carries nothing for them.
+   */
+  foil?: FoilFinish;
   /**
    * Scryfall's layout word and, for the layouts that have one, the back face's
    * art (#363). Optional rather than `| null` required for the reason
@@ -312,6 +337,10 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
       counts.set(code, (counts.get(code) ?? 0) + p.quantity);
     }
     const list: BrowseListCard = { ...rest, setCounts: [...counts] };
+    // `cardArt` writes `foil` as an explicit undefined so a pick clears it, and React's server payload
+    // keeps an undefined key (`"$undefined"`) where JSON drops it: at a few thousand plain cards that
+    // is tens of kilobytes, so the list drops the key where there is no film.
+    if (list.foil === undefined) delete list.foil;
     // Set only when present: an absent key costs nothing on the wire, and `undefined` does.
     if (comboPartner) list.comboPartner = { name: comboPartner.name };
     return list;
@@ -613,6 +642,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       artCropUri: resolveArtCropUri(r),
       backImageUri: resolveBackImageUri(r),
       hasOwnBack: backImageIsOwn(r),
+      hasOwnArt: r.exactImageUri !== null,
       flavorName: resolveFlavorName(r),
     };
     const existing = byOracle.get(r.oracleId);
@@ -670,6 +700,8 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
       // so this can only ever set true onto true — belt and braces, in the same spirit,
       // and it means no future caller has to remember the pair travels together.
       seen.hasOwnBack ||= printing.hasOwnBack;
+      // The image coalesces above, and its provenance travels with it, for the same reason.
+      seen.hasOwnArt ||= printing.hasOwnArt;
       seen.artCropUri ??= printing.artCropUri;
       // NOT `??=`, unlike the two lines above. Two finishes of one printing normally
       // share a catalog id, but the import path already records that they can
@@ -754,12 +786,16 @@ function primaryPrinting(
  * client route. The list patches its own copy from this instead of refetching a payload
  * measured in megabytes, and the two answers cannot disagree because there is one rule.
  */
-export type CardArt = Pick<BrowseCard, "imageUri" | "printedName" | "primarySetCode">;
+export type CardArt = Pick<BrowseCard, "imageUri" | "printedName" | "primarySetCode" | "foil">;
 
 export function cardArt(cardName: string, printing: BrowsePrinting): CardArt {
   return {
     primarySetCode: printing.setCode,
     imageUri: printing.imageUri,
+    // Always the key, undefined when there is no film, so a pick laid over a foil row clears it.
+    // JSON drops an undefined value, so the wire carries nothing for a plain card.
+    // Only over the printing's own art: a fallback picture belongs to another printing.
+    foil: printing.hasOwnArt ? soleFoilFinish(printing.finishes) : undefined,
     // Exact equality, verbatim, per spec: a printing whose flavor name IS the
     // oracle name has not renamed anything, and normalising would silently
     // change which cards count as renamed.

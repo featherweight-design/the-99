@@ -321,9 +321,11 @@ export function DeckCardTile({
               </span>
             )}
             {/* The 1px inner edge, drawn OVER the art: an inset shadow on this box paints
-                under its img child. `rounded-[inherit]` keeps it on the clipped corners. */}
+                under its img child. `rounded-[inherit]` keeps it on the clipped corners. It
+                carries the foil film too (`data-foil`, foil handoff R1), only over art. */}
             <span
               aria-hidden
+              data-foil={card.imageUri ? card.foil : undefined}
               className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             />
           </CardDetailTrigger>

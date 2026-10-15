@@ -74,6 +74,30 @@ describe("useCollectionFields", () => {
     }
   });
 
+  // The foil film rides the same caption: a holding that stopped (or started) being all foil since the
+  // page was read moves no name and no set code, so the film is compared too, both ways.
+  it.each<[string, Partial<BrowseListCard>, Partial<BrowseListCard>]>([["stopped", { foil: "foil" }, {}], ["started", {}, { foil: "foil" }]])(
+    "reads the page again when the drawn printing's film %s since it was read",
+    async (_, page, now) => {
+      const onStale = vi.fn();
+      served[1] = card(1, page);
+      moved[1] = card(1, now);
+      try {
+        const list = rows();
+        const { result } = renderHook(() => useCollectionFields(list, list, onStale));
+        await waitFor(() => expect(answer).not.toBeNull());
+        await act(async () => answer!());
+        await waitFor(() => expect(result.current.resolve(list[1])).not.toBeNull());
+        await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+        // While the page reads again, the batch's art is drawn with the batch's film, never the page's.
+        expect(result.current.resolve(list[1])?.foil).toBe(now.foil);
+      } finally {
+        served[1] = card(1);
+        moved[1] = card(1, { imageUri: "https://cards.example/sld.jpg", printedName: "Renamed", primarySetCode: "SLD" });
+      }
+    },
+  );
+
   // A renamed card a search or a filter leaves out of `wanted` is still a row the page holds.
   // The route still fetches it (the batch fills spare slots from `all`), and its moved caption
   // must still mark the page stale even though no visible row asked for it.
