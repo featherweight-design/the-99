@@ -302,6 +302,19 @@ describe("sync (collection sync plan, PR 1)", () => {
       anchorConfirmedAt: "2026-10-02T12:00:00.000Z", missingFromAnchor: 7, raisingConflicts: 601 } });
   });
 
+  it("tags `edited` only the rows of conflicts answered File, never one answered App or left open, nor History's", async () => {
+    const conflictRow = (n: number, answer?: "app" | "file") => ({ ...review(n), key: `${A}|lea|${n}|nonfoil`, ...(answer ? { answer } : {}) });
+    const st = (quantity: number) => ({ quantity, scryfallId: null, condition: null });
+    const moved = (n: number) => ({ oracleId: A, setCode: "lea", collectorNumber: String(n), finish: "nonfoil", name: `Card ${n}`, before: st(3), after: st(2) });
+    stub.apply.mockResolvedValue({
+      status: "preview", raised: 0, lowered: 3, rows: [moved(1), moved(2), moved(3)], decks: [],
+      sync: { ...syncPreview, conflicts: [conflictRow(1, "file"), conflictRow(2, "app"), conflictRow(3)] },
+    });
+    const got = await previewUploadChange(UPLOAD, "sync", { pick: "everything", answers: { byKey: { k: "file" } } });
+    const rows = (got as { detail: { lists: { down: { rows: { collectorNumber: string; edited: boolean }[] } } } }).detail.lists.down.rows;
+    expect(rows.map((r) => [r.collectorNumber, r.edited])).toEqual([["1", true], ["2", false], ["3", false]]);
+  });
+
   it("previews Sync as unavailable, with its reason, when there is no base", async () => {
     stub.apply.mockResolvedValue({ status: "noBase", reason: "noRecord" });
     expect(await previewUploadChange(UPLOAD, "sync")).toMatchObject({ sync: { unavailable: "noRecord", planDigest: "", nothing: true } });

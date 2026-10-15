@@ -224,6 +224,16 @@ describe("matchRows and cardboard that is not a card", () => {
       expect(r.skipped).toHaveLength(1);
     });
 
+    it("counts the emblems among the skipped rows apart from tokens and art-series cards (G4)", () => {
+      const r = matchRows(
+        [row("Emblem", "em-1"), row("Emblem", "em-2"), row("Art Card", "art-1"), row("Treasure", "tp-1")],
+        catalog,
+        { skippedScryfallIds: ["em-1", "em-2", "art-1"], emblemScryfallIds: ["em-1", "em-2"], tokenPrintings: [{ scryfallId: "tp-1", tokenOracleId: TOKEN }] },
+      );
+      expect(r.skipped).toHaveLength(4);
+      expect(r.emblemCount).toBe(2);
+    });
+
     it("never takes a real card for a token, whatever the token index holds", () => {
       const r = matchRows([row("Sol Ring", "s-1")], catalog, { tokenPrintings: [{ scryfallId: "other", tokenOracleId: TOKEN }] });
       expect(r.tokenRows).toEqual([]);

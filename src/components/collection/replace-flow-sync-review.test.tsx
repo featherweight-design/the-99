@@ -204,4 +204,18 @@ describe("ReplaceFlow · the Sync review", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Your collection is unchanged, and this review is still here.");
     expect(screen.getByRole("button", { name: "Keep the app’s for all 3" }).getAttribute("aria-pressed")).toBe("true");
   });
+
+  it("clears the failure alert once a later re-read lands", async () => {
+    choiceReads();
+    await reachSyncReview();
+    fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
+    await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
+    confirmUpload.mockRejectedValueOnce(new Error("boom"));
+    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t sync that");
+    // A new answer re-reads; the fresh figures are not drawn under the old failure.
+    fireEvent.click(within(row("Esper Sentinel")).getByRole("radio", { name: "File ×2" }));
+    await screen.findByText(/overwrites 1 card /);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

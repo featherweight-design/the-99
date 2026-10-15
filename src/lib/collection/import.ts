@@ -98,7 +98,7 @@ export async function loadMatchInputs(
       .where(inArray(printings.scryfallId, chunk)));
   const skippedRows = await chunkedLookup(ids, (chunk) =>
     db
-      .select({ scryfallId: skippedPrintings.scryfallId })
+      .select({ scryfallId: skippedPrintings.scryfallId, layout: skippedPrintings.layout })
       .from(skippedPrintings)
       // Only the token layouts are REPORTED as skipped. A theme front or a plane is recorded
       // there too, since the ingest refuses it the same way, but a row naming one reads as
@@ -124,6 +124,7 @@ export async function loadMatchInputs(
     indexes: {
       printings: printingRows,
       skippedScryfallIds: skippedRows.map((r) => r.scryfallId),
+      emblemScryfallIds: skippedRows.filter((r) => r.layout === "emblem").map((r) => r.scryfallId),
       tokenPrintings: tokenRows,
       tokensRead,
       flavorNames,

@@ -49,11 +49,12 @@ export type UploadPreview = {
    */
   skippedByDesignCount: number;
   /**
-   * The rows of `skippedByDesignCount` that are tokens, so a Sync's issues panel can count emblems alone
-   * (collection sync README G4). Null when no token lookup ran (a paste, or no token catalog), where the two
-   * cannot be told apart; absent on a preview built before it existed.
+   * The rows of `skippedByDesignCount` that are emblems (not tokens, and not art-series cards), so a Sync's
+   * issues panel can count emblems alone (collection sync README G4). Null when no token lookup ran (a paste, or
+   * no token catalog): the file's tokens are then not recorded, and the panel keeps the shipped line. Absent on a
+   * preview built before it existed.
    */
-  skippedTokenCount?: number | null;
+  skippedEmblemCount?: number | null;
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
   filename: string;
@@ -86,7 +87,7 @@ async function buildPreview(args: {
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
-  const { matched, skipped, tokenRows, unmatched } = matchRows(rows, catalog, indexes);
+  const { matched, skipped, tokenRows, emblemCount, unmatched } = matchRows(rows, catalog, indexes);
 
   const pendingItems = aggregatePendingItems(matched);
   const matchedCardCount = totalQuantity(pendingItems);
@@ -131,7 +132,7 @@ async function buildPreview(args: {
     matchedCardCount,
     unmatchedRows: unmatchedPayload,
     skippedByDesignCount: skipped.length,
-    skippedTokenCount: indexes.tokensRead ? tokenRows.length : null,
+    skippedEmblemCount: indexes.tokensRead ? emblemCount : null,
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
     filename,

@@ -180,12 +180,12 @@ export function SyncReviewDetail({
           ink={f.decide > 0 ? "var(--warning)" : "var(--fg-faint)"}
           border={f.decide > 0 ? "var(--warning)" : undefined}
         />
-        <Tile n={f.take} label={s.tiles.file} ink="var(--success)" />
-        <Tile n={f.keep} label={s.tiles.kept} ink="var(--fg)" />
+        <Tile n={f.take} label={s.tiles.file} ink={f.take > 0 ? "var(--success)" : "var(--fg-faint)"} />
+        <Tile n={f.keep} label={s.tiles.kept} ink={f.keep > 0 ? "var(--fg)" : "var(--fg-faint)"} />
         <Tile n={f.nothing} label={s.tiles.nothing} ink="var(--fg)" />
       </div>
       {f.tokens > 0 && !f.nothingToSync ? (
-        <div className="flex items-start gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px_14px]">
+        <div className="flex items-start gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px_14px] md:items-center md:gap-[12px]">
           <span aria-hidden className="text-[15px] leading-[1.3] text-[color:var(--fg-faint)]">ⓘ</span>
           <span className="flex-1 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{s.tokensLine(f.tokens)}</span>
           <span className="hidden flex-none font-mono text-[12px] leading-[1.9] text-[color:var(--fg-muted)] md:inline">
@@ -205,7 +205,7 @@ export function SyncReviewDetail({
         />
       ) : null}
       {f.nothingToSync ? (
-        <p className="m-0 rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px_14px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
+        <p className="m-0 rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px_14px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
           {s.nothing}
         </p>
       ) : (
@@ -250,6 +250,9 @@ export function SyncConflicts({
   handle?: Ref<SyncConflictsHandle>;
 }) {
   const [all, setAll] = useState(false);
+  // The row a held confirm sent the reader to (P2): ringed until it is answered or focus leaves it, because the
+  // radio it focuses is visually hidden and a pointer press draws no :focus-visible.
+  const [ringKey, setRingKey] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const byKey = answers.byKey ?? {};
   // Pressed until any row changes by hand: a row press records a per-row answer only when it moves one.
@@ -269,6 +272,7 @@ export function SyncConflicts({
       }
       if (index >= SHOWN && !all) flushSync(() => setAll(true));
       const key = rows[index].key;
+      setRingKey(key);
       const row = [...(sectionRef.current?.querySelectorAll<HTMLElement>("[data-key]") ?? [])].find((el) => el.dataset.key === key);
       row?.scrollIntoView?.({ block: "center" });
       row?.querySelector<HTMLInputElement>("input")?.focus();
@@ -276,12 +280,13 @@ export function SyncConflicts({
   }), [rows, answers, all]);
 
   const answer = (key: string, side: SyncSide) => {
+    if (ringKey === key) setRingKey(null);
     if (answerFor(answers, key) === side) return;
     onAnswers({ ...answers, byKey: { ...byKey, [key]: side } });
   };
   const bulk = (side: SyncSide) => onAnswers({ all: side });
   const bulkClass = (side: SyncSide) =>
-    `min-h-[44px] w-full rounded-[8px] border px-[16px] text-[13px] font-semibold text-[color:var(--fg)] disabled:opacity-60 md:w-auto md:whitespace-nowrap ${
+    `min-h-[44px] w-full rounded-[8px] border px-[12px] text-[13px] font-semibold text-[color:var(--fg)] disabled:opacity-60 md:w-auto md:whitespace-nowrap md:px-[16px] ${
       pressed === side ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]"
     }`;
 
@@ -297,10 +302,13 @@ export function SyncConflicts({
           <h2 id="sync-conflicts-heading" className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">
             {s.listDecide(total)}
           </h2>
-          <p className="m-0 mt-[6px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">
-            {s.decideLede(since)} {s.decideLeft(left)}
-          </p>
-          <p role="status" className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] empty:hidden">
+          {/* After a bulk press its status line takes the lede's place (K3, P3), rather than sitting under it. */}
+          {pressed ? null : (
+            <p className="m-0 mt-[6px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">
+              {s.decideLede(since)} {s.decideLeft(left)}
+            </p>
+          )}
+          <p role="status" className="m-0 mt-[6px] text-[13px] leading-[1.5] text-[color:var(--fg-body)] empty:hidden">
             {pressed === "app" ? s.bulkDoneApp(total) : pressed === "file" ? s.bulkDoneFile(total) : ""}
           </p>
         </div>
@@ -331,6 +339,8 @@ export function SyncConflicts({
             answer={answerFor(answers, row.key)}
             onAnswer={(side) => answer(row.key, side)}
             disabled={disabled}
+            ringed={ringKey === row.key}
+            onLeave={ringKey === row.key ? () => setRingKey(null) : undefined}
           />
         ))}
       </div>
@@ -343,7 +353,7 @@ export function SyncConflicts({
           onClick={() => setAll(true)}
           className="self-start min-h-[44px] text-[13px] text-[color:var(--accent)] underline underline-offset-2"
         >
-          {c.showAll(total)}
+          {c.showAll(rows.length)}
         </button>
       ) : null}
     </section>
@@ -362,12 +372,18 @@ export function ConflictRow({
   answer,
   onAnswer,
   disabled,
+  ringed = false,
+  onLeave,
 }: {
   row: SyncReviewRow;
   since: string;
   answer: SyncSide | undefined;
   onAnswer: (side: SyncSide) => void;
   disabled: boolean;
+  /** Drawn with the accent ring: the row a held confirm focused (P2). */
+  ringed?: boolean;
+  /** Focus left the row. */
+  onLeave?: () => void;
 }) {
   // ×0, never `new`, on a conflict row (copy-review ruling): the row compares three counts.
   const was = count(row.base);
@@ -398,9 +414,14 @@ export function ConflictRow({
     <fieldset
       data-key={row.key}
       data-undecided={answer ? undefined : "true"}
-      className={`m-0 grid min-w-0 gap-[8px] rounded-[8px] border bg-[color:var(--surface)] p-[10px_12px] md:grid-cols-[minmax(0,1fr)_90px_128px_128px] md:items-center md:gap-[10px] md:p-[8px_12px] ${
-        answer ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)]"
-      }`}
+      data-ringed={ringed ? "true" : undefined}
+      onBlur={onLeave ? (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onLeave(); } : undefined}
+      className={`m-0 grid min-w-0 gap-[8px] rounded-[8px] border bg-[color:var(--surface)] md:grid-cols-[minmax(0,1fr)_90px_128px_128px] md:items-center md:gap-[10px] ${
+        // The 3px warning edge takes 2px more than the 1px border, so the left padding gives them back.
+        answer
+          ? "border-[color:var(--border)] p-[10px_12px] md:p-[8px_12px]"
+          : "border-[color:var(--border-strong)] border-l-[3px] border-l-[color:var(--warning)] p-[10px_12px_10px_10px] md:p-[8px_12px_8px_10px]"
+      } ${ringed ? "shadow-[0_0_0_2px_var(--accent)]" : ""}`}
     >
       <legend className="sr-only">{s.rowAria(name, since, was, count(row.app), count(row.file))}</legend>
       <div aria-hidden className="min-w-0">

@@ -91,8 +91,8 @@ export function ReviewScreen({
   const bar = syncData && change ? syncBar(syncFigures(syncData, change.decks)) : null;
   const sr = collectionEditCopy.upload.syncReview;
   // G4: on a Sync the tokens line says the file's tokens are recorded, so the issues panel counts emblems
-  // alone. Null when the preview could not tell tokens from emblems (no token lookup ran): the shipped line.
-  const emblems = syncData && preview.skippedTokenCount != null ? skippedByDesign - preview.skippedTokenCount : null;
+  // alone (art-series rows stay in the footer's skipped total). Null when no token lookup ran: the shipped line.
+  const emblems = syncData && preview.skippedEmblemCount != null ? preview.skippedEmblemCount : null;
   const skippedLine = (k: number) =>
     emblems !== null ? sr.emblemsSkipped(k) : `token and emblem ${k === 1 ? "row" : "rows"} skipped`;
   const skippedShown = emblems ?? skippedByDesign;

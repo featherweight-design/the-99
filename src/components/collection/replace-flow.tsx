@@ -263,7 +263,7 @@ export function ReplaceFlow({
           }
           const moved = syncMoved.current;
           syncMoved.current = false;
-          setChange((was) => was && { ...was, data: r, decks: r.decks, fresh: new Set(), changed: moved });
+          setChange((was) => was && { ...was, data: r, decks: r.decks, fresh: new Set(), changed: moved, failure: null });
         },
         () => {
           if (seq !== syncSeq.current) return;

@@ -12,7 +12,7 @@ import { SyncConflicts, syncBar, syncFigures, type SyncConflictsHandle, type Syn
 // Collection Sync, the review (plan PR 3): the tiles, the conflicts, the bulk rules, the bar and its held state.
 
 const preview: UploadPreview = {
-  uploadId: "up_1", matchedCardCount: 3401, unmatchedRows: [], skippedByDesignCount: 120, skippedTokenCount: 114,
+  uploadId: "up_1", matchedCardCount: 3401, unmatchedRows: [], skippedByDesignCount: 120, skippedEmblemCount: 4,
   parseErrors: [], currentCollectionCount: 4616, filename: "The Vault 10-14-26.csv", rowCount: 3570,
 };
 const empty = { total: 0, rows: [] as PreviewListRow[] };
@@ -96,6 +96,20 @@ describe("Sync review · the tiles", () => {
     expect((tile.firstElementChild as HTMLElement).style.color).toBe("var(--fg-faint)");
   });
 
+  it("inks `from the file` and `kept` faint at 0, as `to decide` is", () => {
+    renderReview(data({ counts: { taken: 0, kept: 0 }, kept: { rows: [], total: 0 } }));
+    const ink = (label: string) => (screen.getByText(label).parentElement!.firstElementChild as HTMLElement).style.color;
+    expect(ink("from the file")).toBe("var(--fg-faint)");
+    expect(ink("kept from The 99")).toBe("var(--fg-faint)");
+  });
+
+  it("inks `from the file` in success and `kept` in fg above 0", () => {
+    renderReview(data());
+    const ink = (label: string) => (screen.getByText(label).parentElement!.firstElementChild as HTMLElement).style.color;
+    expect(ink("from the file")).toBe("var(--success)");
+    expect(ink("kept from The 99")).toBe("var(--fg)");
+  });
+
   it("moves an answered conflict to its side: App into kept, File into from the file", () => {
     // 3 conflicts: one App, one File, one undecided.
     const f = syncFigures(data({ counts: { conflicts: 3, undecided: 1, answeredFile: 1, taken: 15 } }).sync!, []);
@@ -137,13 +151,15 @@ describe("Sync review · the lists", () => {
         {
           detail: {
             ...data().detail,
-            lists: { leaving: { total: 1, rows: [row("Swords to Plowshares", 1, 0, true)] }, down: empty, up: empty },
+            // Which rows are `edited` is the action's derivation (confirm-upload.test.ts); this draws what it says.
+            lists: { leaving: { total: 2, rows: [row("Swords to Plowshares", 1, 0, true), row("Arcane Signet", 1, 0)] }, down: empty, up: empty },
           },
         },
       ),
     );
     expect(screen.getByText("Taking the file’s count overwrites 2 cards you changed in the app since your Oct 2 upload.")).toBeTruthy();
     expect(within(screen.getByText("Swords to Plowshares").closest("li")!).getByText("edited")).toBeTruthy();
+    expect(within(screen.getByText("Arcane Signet").closest("li")!).queryByText("edited")).toBeNull();
   });
 
   it("names the stale pick at the head, with Change back to the choice (E5)", () => {
@@ -155,8 +171,10 @@ describe("Sync review · the lists", () => {
   });
 
   it("says `emblem rows skipped` on a Sync, counting emblems alone (G4)", () => {
+    // 120 skipped by design: 114 tokens, 4 emblems and 2 art-series rows. The line counts the 4, never 120 - 114.
     const { container } = renderReview(data());
-    expect(container.textContent).toMatch(/6\s*emblem rows skipped/);
+    expect(container.textContent).toMatch(/4\s*emblem rows skipped/);
+    expect(container.textContent).not.toMatch(/6\s*emblem rows skipped/);
     expect(container.textContent).not.toMatch(/token and emblem/);
   });
 });
@@ -187,8 +205,9 @@ describe("ConflictRow", () => {
     expect(radios.map((r) => r.closest("label")!.textContent)).toEqual(["App ×3", "File ×2"]);
     expect(radios.every((r) => !(r as HTMLInputElement).checked)).toBe(true);
     expect(radios[0].closest("label")!.className).toContain("h-[44px]");
-    // Unanswered: the 3px warning edge.
+    // Unanswered: the 3px warning edge, with 2px less left padding to keep the content where an answered row's sits.
     expect(group.className).toContain("border-l-[color:var(--warning)]");
+    expect(group.className).toContain("p-[10px_12px_10px_10px]");
   });
 
   it("answers a row by key, and drops the warning edge once answered", () => {
@@ -234,9 +253,12 @@ describe("Bulk presses are rules", () => {
     expect(onAnswers).toHaveBeenLastCalledWith({ all: "app" });
     expect(bulk.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("status").textContent).toBe("Kept the app’s count for all 98. You can still change any one.");
-    expect(screen.getByText(/All answered\./)).toBeTruthy();
-    // The rows Show all reveals are decided too.
-    fireEvent.click(screen.getByRole("button", { name: "Show all 98" }));
+    // The status line takes the lede's place (K3, P3); it does not sit under it.
+    expect(screen.queryByText(/All answered\./)).toBeNull();
+    expect(screen.queryByText(/still to decide|All answered/)).toBeNull();
+    // Show all reveals the 12 shipped rows, never the 98 it cannot draw; the rows it reveals are decided too.
+    expect(screen.queryByRole("button", { name: "Show all 98" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show all 12" }));
     expect(screen.getAllByRole("radio", { name: /^App/ }).every((r) => (r as HTMLInputElement).checked)).toBe(true);
     expect(screen.getByText("Showing the first 12 of 98. The buttons above apply to all 98.")).toBeTruthy();
 
@@ -244,6 +266,16 @@ describe("Bulk presses are rules", () => {
     expect(onAnswers).toHaveBeenLastCalledWith({ all: "app", byKey: { [rows[3].key]: "file" } });
     expect(bulk.getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByRole("status").textContent).toBe("");
+    // Unpressed, the lede is back.
+    expect(screen.getByText(/All answered\./)).toBeTruthy();
+  });
+
+  it("pads a phone bulk button 12 to the side, 16 from md up", () => {
+    render(<Host rows={[conflict(1)]} total={1} />);
+    const cls = screen.getByRole("button", { name: "Keep the app’s for all 1" }).className;
+    expect(cls).toContain("px-[12px]");
+    expect(cls).toContain("md:px-[16px]");
+    expect(cls).not.toMatch(/(^|\s)px-\[16px\]/);
   });
 });
 
@@ -291,6 +323,33 @@ describe("Sync review · the bar", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     const first = screen.getByRole("group", { name: /^Card 8,/ });
     expect(document.activeElement).toBe(within(first).getAllByRole("radio")[0]);
+    // The radio is visually hidden and a pointer press draws no :focus-visible, so the row itself is ringed (P2).
+    expect(first.getAttribute("data-ringed")).toBe("true");
+    expect(first.className).toContain("shadow-[0_0_0_2px_var(--accent)]");
+    expect(screen.getByRole("group", { name: /^Card 9,/ }).getAttribute("data-ringed")).toBeNull();
+    // Focus leaving the row takes the ring with it.
+    fireEvent.blur(within(first).getAllByRole("radio")[0], { relatedTarget: button });
+    expect(first.getAttribute("data-ringed")).toBeNull();
+    expect(first.className).not.toContain("shadow-[0_0_0_2px_var(--accent)]");
+  });
+
+  it("drops the ring once the ringed row is answered", () => {
+    function Harness() {
+      const ref = useRef<SyncConflictsHandle>(null);
+      const [answers, setAnswers] = useState<SyncAnswers>({});
+      return (
+        <>
+          <button type="button" onClick={() => ref.current?.focusFirstUndecided()}>held</button>
+          <SyncConflicts rows={[conflict(1)]} total={1} since="Oct 2" answers={answers} onAnswers={setAnswers} disabled={false} handle={ref} />
+        </>
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "held" }));
+    const group = screen.getByRole("group");
+    expect(group.getAttribute("data-ringed")).toBe("true");
+    fireEvent.click(within(group).getByRole("radio", { name: "File ×2" }));
+    expect(group.getAttribute("data-ringed")).toBeNull();
   });
 
   it("names what happens when no card moves: Sync N token changes", () => {
@@ -303,7 +362,8 @@ describe("Sync review · the bar", () => {
   it("states Nothing to sync and offers only the way back: no confirm, so no History entry (call 10)", () => {
     const onLeave = vi.fn();
     renderReview(data({ counts: { taken: 0 }, tokensChange: false, nothing: true }), controls({ onLeave }));
-    expect(screen.getByText("Nothing to sync. Your collection already has everything in this file, and its tokens are recorded.")).toBeTruthy();
+    const note = screen.getByText("Nothing to sync. Your collection already has everything in this file, and its tokens are recorded.");
+    expect(note.className).toContain("text-[color:var(--fg-muted)]");
     expect(screen.getByText("Nothing will change.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sync collection" })).toBeNull();

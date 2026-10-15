@@ -27,7 +27,7 @@
 // The server: `next start` of a build with the worktree's `.env`, started with
 //   COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true
 //
-// Written for PR 3 and not yet run by its author: browser probes are run by hand.
+// Written for PR 3 and run against it: it passes at 390 and 1300. Browser probes are run by hand, not in CI.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:collection-sync-ui
 import { neon } from "@neondatabase/serverless";
