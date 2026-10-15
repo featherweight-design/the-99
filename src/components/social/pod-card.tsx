@@ -51,7 +51,7 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
         ) : (
           <span
             data-testid="pod-seat-initials"
-            className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,var(--elevated),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
+            className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,color-mix(in_oklab,var(--elevated)_70%,var(--border-dashed)),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
           >
             {faceInitials(member.displayName)}
           </span>
@@ -104,6 +104,8 @@ export function PodCard({
         </span>
       </div>
       <ul
+        // An explicit list role: Safari drops a list's semantics once its marker is gone (`list-none`).
+        role="list"
         className="relative m-0 mr-[10px] mt-[8px] grid list-none grid-cols-3 gap-x-[10px] gap-y-[12px] p-0 md:mr-[12px] md:grid-cols-[repeat(5,116px)] md:gap-x-[12px] md:gap-y-[14px]"
         aria-label={pod.name}
       >
