@@ -1,6 +1,6 @@
 # The 99 — Proposed cuts About entry (design handoff, R1)
 
-`design_handoff_the99_proposed_cuts_about/` · 2026-10-15 · account 2 · **R1, awaiting Hugh's review.**
+`design_handoff_the99_proposed_cuts_about/` · 2026-10-15 · account 2 · **R1, approved by Hugh 2026-10-15.**
 
 A light addendum: one new About entry for Proposed cuts, which already ships with none. Source of truth:
 `docs/superpowers/design-briefs/2026-10-15-proposed-cuts-about.md` (branch `brief/proposed-cuts-about`). It follows
