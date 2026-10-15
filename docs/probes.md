@@ -1014,11 +1014,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the empty state with the credit note beside Analyze. They must all paint in ONE frame when the
   loader lets go, and nothing may paint at or above a part already on screen. The one exception is
   a deck never analyzed: since #1465 its empty state draws at once and the credit note follows when
-  its own read lands (about 0.7 to 2s; 1.1 to 1.9s measured on 2026-10-15), so that case asserts the
-  ORDER (the empty state in an earlier FRAME than the note, by the counter; the note sits inside it,
-  so the same frame means the empty state waited for the note again) and a BOUND (the note within
-  2.5s of it), not one frame. With the empty state hidden in the probe's own page until the note
-  exists, the order check fails at both widths; with a 0.5s bound, the bound check does. It also reads the
+  its own read (`fetchSynopsis`) lands, about 0.7 to 2s (1.1 to 1.9s measured on 2026-10-15). Two
+  loads prove it. An unheld load asserts the BOUND (the note within 2.5s of the empty state) and
+  names the synopsis read: the server action whose reply carries `wouldSpend`, by its `next-action`
+  id. A second load HOLDS that read's reply (`page.route`) and asserts the ORDER: the empty state
+  paints while it is held, the note does not, and the note arrives once it is released. A frame
+  comparison cannot prove the order, since a fast reply lands in the empty state's own frame on a
+  correct build. With the empty state hidden in the probe's own page until the note exists, the
+  order check fails at both widths; with a 0.5s bound, the bound check does. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
 
