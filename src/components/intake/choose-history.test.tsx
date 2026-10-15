@@ -44,8 +44,10 @@ describe("ChooseHistory", () => {
     const [first, second] = container.querySelectorAll<HTMLElement>("[data-history-run]");
     const thumbs = first.querySelectorAll<HTMLElement>("span[aria-hidden] > span");
     expect(thumbs).toHaveLength(3);
-    expect(thumbs[0].style.backgroundImage).toContain("https://x/1.jpg");
-    expect(thumbs[1].style.backgroundImage).toBe("");
+    // The art is a layer of its own inside the thumb (ArtLayer), only where the catalog has a picture.
+    const layer = (t: HTMLElement) => t.querySelector<HTMLElement>(":scope > *");
+    expect(layer(thumbs[0])?.style.backgroundImage).toContain("https://x/1.jpg");
+    expect(layer(thumbs[1])).toBeNull();
     expect(second.querySelectorAll("span[aria-hidden] > span")).toHaveLength(0);
   });
 
