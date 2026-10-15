@@ -14,7 +14,8 @@ const shortName = (name: string) => name.split(",")[0].trim();
 
 /** The name and the `· sub` a seat reads as: a friend by name with their deck or commander, anyone by their name or commander. */
 export function vsParts(seat: GameOpponent): { name: string; sub: string | null } {
-  const commander = seat.commander ? shortName(seat.commander.name) : null;
+  // A pair keeps both names, as the Matchups rows do.
+  const commander = seat.commander ? (seat.partner ? `${shortName(seat.commander.name)} + ${shortName(seat.partner.name)}` : shortName(seat.commander.name)) : null;
   if (seat.friend) return { name: seat.friend.name, sub: seat.deckName ?? commander };
   const label = seat.label?.trim() || null;
   if (label) return { name: label, sub: commander };
@@ -29,7 +30,7 @@ export function GameVsLine({ seats }: { seats: readonly GameOpponent[] }) {
       {seats.map((s) => {
         const { name, sub } = vsParts(s);
         return (
-          <span key={s.seat} className="inline-flex items-center gap-[6px] text-[12.5px] text-[color:var(--fg)] md:gap-[7px]">
+          <span key={s.seat} className="inline-flex max-w-full min-w-0 items-center gap-[6px] text-[12.5px] text-[color:var(--fg)] md:gap-[7px]">
             {s.won && (
               <span role="img" aria-label={gameMatchupsCopy.history.wonAria} className="inline-flex"><TrophyIcon size={13} /></span>
             )}
@@ -39,8 +40,8 @@ export function GameVsLine({ seats }: { seats: readonly GameOpponent[] }) {
             >
               {s.commander?.imageUri ? <ArtLayer src={s.commander.imageUri} style={{ backgroundPosition: "50% 20%" }} /> : initialsOf(name)}
             </span>
-            <span>{name}</span>
-            {sub && <span className="text-fg-faint">{`· ${sub}`}</span>}
+            <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
+            {sub && <span className="min-w-0 text-fg-faint [overflow-wrap:anywhere]">{`· ${sub}`}</span>}
           </span>
         );
       })}

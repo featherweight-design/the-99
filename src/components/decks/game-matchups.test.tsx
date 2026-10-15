@@ -7,6 +7,7 @@ import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { summarizeMatchups } from "../../lib/decks/matchups";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
+import { vsParts } from "./game-vs-line";
 import { gameMatchupsCopy } from "../../lib/copy/game-matchups";
 import { gameLogCopy } from "../../lib/copy/game-log";
 
@@ -149,5 +150,12 @@ describe("the History vs line", () => {
     expect(plain.length).toBeGreaterThan(0);
     // One game has seats, the other none: exactly one `vs` line exists on the page.
     expect(screen.getAllByText(gameMatchupsCopy.history.vs)).toHaveLength(1);
+  });
+
+  it("keeps both commanders of a recorded pair on the vs line", () => {
+    const thrasios = { oracleId: "th", name: "Thrasios, Triton Hero", imageUri: null };
+    expect(vsParts(seat({ commander: tymna, partner: thrasios }))).toEqual({ name: "Tymna the Weaver + Thrasios", sub: null });
+    expect(vsParts(seat({ commander: tymna, partner: thrasios, label: "Zed" }))).toEqual({ name: "Zed", sub: "Tymna the Weaver + Thrasios" });
+    expect(vsParts(seat({ commander: tymna }))).toEqual({ name: "Tymna the Weaver", sub: null });
   });
 });
