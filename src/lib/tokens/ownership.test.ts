@@ -9,7 +9,7 @@ vi.mock("../../db", () => ({
 }));
 
 import {
-  aggregateTokenRows, recordUploadTokens, tokenOwnershipState, tokenWritePlan, unmarkTokenOwned, writeUploadTokens, type TokenState,
+  aggregateTokenRows, planTokenWrite, preconSyncWrites, preconWant, recordUploadTokens, tokenOwnershipState, tokenWritePlan, unmarkTokenOwned, writeUploadTokens, type TokenState,
 } from "./ownership";
 
 const T1 = "11111111-1111-4111-8111-111111111111";
@@ -235,7 +235,7 @@ describe("tokenWritePlan", () => {
 
   it("Add would accumulate: the same export is a change under Add", () => {
     expect(tokenWritePlan("add", recorded, file)).toEqual([
-      { kind: "token", id: T1, from: 2, to: 4 },
+      { kind: "token", id: T1, from: 2, to: 4, source: "upload" },
       { kind: "printing", id: "pa", from: 2, to: 4 },
     ]);
   });
@@ -252,7 +252,7 @@ describe("tokenWritePlan", () => {
   it("additive takes a precon or hand row the file exceeds as an upload row at the file's count, once", () => {
     const precon = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "precon" }] });
     const five = [{ tokenOracleId: T1, quantity: 5 }];
-    expect(tokenWritePlan("additive", precon, five)).toEqual([{ kind: "token", id: T1, from: 2, to: 5 }]);
+    expect(tokenWritePlan("additive", precon, five)).toEqual([{ kind: "token", id: T1, from: 2, to: 5, source: "upload" }]);
     // After that write the row is the upload's at 5: the same file again changes nothing.
     expect(tokenWritePlan("additive", state({ owned: [{ tokenOracleId: T1, quantity: 5, source: "upload" }] }), five)).toEqual([]);
   });
@@ -261,7 +261,7 @@ describe("tokenWritePlan", () => {
     const more = state({ owned: [{ tokenOracleId: T1, quantity: 5, source: "upload" }, { tokenOracleId: T2, quantity: 1, source: "upload" }], uploadPrintings: [{ tokenPrintingId: "pa", quantity: 5 }] });
     expect(tokenWritePlan("additive", more, file)).toEqual([]);
     expect(tokenWritePlan("additive", state({ owned: [{ tokenOracleId: T1, quantity: 1, source: "upload" }] }), file)).toEqual([
-      { kind: "token", id: T1, from: 1, to: 2 },
+      { kind: "token", id: T1, from: 1, to: 2, source: "upload" },
       { kind: "printing", id: "pa", from: null, to: 2 },
     ]);
   });
@@ -269,14 +269,65 @@ describe("tokenWritePlan", () => {
   it("replace removes an upload row the file does not read, and sets a hand mark the file reads to an upload row", () => {
     const s = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "manual" }, { tokenOracleId: T2, quantity: 1, source: "upload" }], uploadPrintings: [{ tokenPrintingId: "pa", quantity: 2 }, { tokenPrintingId: "pb", quantity: 1 }] });
     expect(tokenWritePlan("replace", s, file)).toEqual([
-      { kind: "token", id: T1, from: 2, to: 2 },
-      { kind: "token", id: T2, from: 1, to: null },
+      { kind: "token", id: T1, from: 2, to: 2, source: "upload" },
+      { kind: "token", id: T2, from: 1, to: null, source: null },
       { kind: "printing", id: "pb", from: 1, to: null },
     ]);
   });
 
   it("a first read is a change, even of no tokens", () => {
     expect(tokenWritePlan("replace", state({ read: false }), [])).toEqual([{ kind: "read", id: "", from: null, to: null }]);
+  });
+});
+
+describe("planTokenWrite, the final state (round 3: the precon re-derivation a Replace runs)", () => {
+  const state = (over: Partial<TokenState> = {}): TokenState => ({ owned: [], uploadPrintings: [], read: true, ...over });
+  const precon5 = { id: "add-1", tokens: [{ tokenOracleId: T1, quantity: 5, printings: [{ tokenPrintingId: "pp", quantity: 5 }] }] };
+  // T1 held by an upload row at 2, a standing precon add claiming 5 beneath it; the file (tokens-only) omits T1.
+  const held = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "upload" }], preconAdds: [precon5] });
+  const file = [{ tokenOracleId: T2, quantity: 1 }];
+
+  it("plans the precon restoration: the dropped upload row comes back as the precon's 5, with its printings", () => {
+    const { final, changes } = planTokenWrite("replace", held, file);
+    expect(final.owned.get(T1)).toEqual({ quantity: 5, source: "precon", entryId: "add-1" });
+    expect([...final.preconPrintings]).toEqual([["pp", 5]]);
+    expect(changes).toContainEqual({ kind: "token", id: T1, from: 2, to: 5, source: "precon" });
+    expect(changes).toContainEqual({ kind: "preconPrinting", id: "pp", from: null, to: 5 });
+  });
+
+  it("plans a removal when the precon add no longer stands, so the two plans differ", () => {
+    const gone = planTokenWrite("replace", { ...held, preconAdds: [] }, file);
+    expect(gone.final.owned.has(T1)).toBe(false);
+    expect(gone.changes).toContainEqual({ kind: "token", id: T1, from: 2, to: null, source: null });
+    expect(gone.changes).not.toEqual(planTokenWrite("replace", held, file).changes);
+  });
+
+  it("leaves a precon claim beneath a row the file reads, as the insert skips a token another source holds", () => {
+    const { final } = planTokenWrite("replace", held, [{ tokenOracleId: T1, quantity: 2 }]);
+    expect(final.owned.get(T1)).toEqual({ quantity: 2, source: "upload", entryId: null });
+  });
+
+  it("re-derives no precon row outside a Replace", () => {
+    for (const mode of ["add", "additive"] as const) {
+      expect(planTokenWrite(mode, held, file).final.owned.get(T1)).toEqual({ quantity: 2, source: "upload", entryId: null });
+    }
+  });
+
+  it("is unchanged when the precon rows already stand as the adds claim", () => {
+    const standing = state({
+      owned: [{ tokenOracleId: T1, quantity: 5, source: "precon", entryId: "add-1" }],
+      preconPrintings: [{ tokenPrintingId: "pp", quantity: 5 }],
+      preconAdds: [precon5],
+    });
+    expect(planTokenWrite("replace", standing, []).changes).toEqual([]);
+  });
+
+  it("shares its rule with syncPreconTokens: preconWant sums over adds, attributing to the oldest", () => {
+    const want = preconWant([precon5, { id: "add-2", tokens: [{ tokenOracleId: T1, quantity: 1 }] }]);
+    expect([...want]).toEqual([[T1, { entryId: "add-1", quantity: 6 }]]);
+    expect(preconSyncWrites([{ id: T2, entryId: "x", quantity: 1 }], want)).toEqual({
+      fresh: [[T1, { entryId: "add-1", quantity: 6 }]], gone: [T2], updates: [],
+    });
   });
 });
 

@@ -17,8 +17,8 @@ import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
 import {
-  readTokenState, recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, tokenWritePlan,
-  type TokenChange, type TokenHolding, type TokenWriteMode,
+  planTokenWrite, readTokenState, recordUploadTokens, syncPreconTokens, tokenFinalEntries, tokenOwnershipTablesExist,
+  type TokenChange, type TokenFinal, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
 import { nothingToSync, planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
 import { readSyncBase } from "./sync-base";
@@ -627,18 +627,21 @@ const uploadOf = (change: CollectionChange) =>
 const syncTokenMode = (pick: SyncPick): TokenWriteMode => (pick === "additions" ? "additive" : "replace");
 
 /**
- * The digest of what a sync would write: every planned row's key, before and after, sorted by key, and
- * the token rows it would change. The preview returns it and the confirm sends it back, so a confirm
+ * The digest of what a sync would write: every planned row's key, before and after, sorted by key, the
+ * token rows it would change, and the FINAL token state it would leave (`planTokenWrite`, precon
+ * re-derivation included), so a change in the standing precon adds between preview and confirm moves it. The preview returns it and the confirm sends it back, so a confirm
  * whose re-plan under the lock differs from what the player reviewed refuses rather than writing it.
  */
 export function planDigest(
   rows: readonly (CollectionItemIdentity & { before: HistoryRowState | null; after: HistoryRowState | null })[],
   tokens: readonly TokenChange[],
+  tokenFinal: TokenFinal | null = null,
 ): string {
   const state = (s: HistoryRowState | null) => (s ? [s.quantity, s.scryfallId, s.condition] : null);
   const cards = rows.map((r) => [keyOf(r), state(r.before), state(r.after)] as const)
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-  return createHash("sha256").update(JSON.stringify({ cards, tokens })).digest("hex");
+  const final = tokenFinal ? tokenFinalEntries(tokenFinal) : null;
+  return createHash("sha256").update(JSON.stringify({ cards, tokens, final })).digest("hex");
 }
 
 /**
@@ -874,8 +877,9 @@ export async function applyCollectionChange(
           const merged = planSync({ base: base.anchor.items, app: current, file: items, pick: change.pick, answers: change.answers });
           plan = merged.rows;
           const tokenState = change.tokens ? await readTokenState(tx, userId) : null;
-          const tokenChanges = tokenState && change.tokens ? tokenWritePlan(syncTokenMode(change.pick), tokenState, change.tokens) : [];
-          const digest = planDigest(plan, tokenChanges);
+          const tokenPlan = tokenState && change.tokens ? planTokenWrite(syncTokenMode(change.pick), tokenState, change.tokens) : null;
+          const tokenChanges = tokenPlan?.changes ?? [];
+          const digest = planDigest(plan, tokenChanges, tokenPlan?.final ?? null);
           syncPreview = {
             counts: merged.counts,
             conflicts: merged.conflicts,

@@ -379,6 +379,15 @@ describe("planDigest", () => {
     expect(planDigest([row(A, 1, 2)], [{ kind: "token", id: "t", from: null, to: 1 }])).not.toBe(base);
     expect(planDigest([], [])).not.toBe(base);
   });
+
+  it("moves with the final token state alone, so a precon add reverted before the confirm is caught", () => {
+    const final = (source: string) => ({
+      owned: new Map([["t", { quantity: 5, source, entryId: null }]]), uploadPrintings: new Map<string, number>(), preconPrintings: new Map<string, number>(),
+    });
+    const tokens = [{ kind: "token" as const, id: "t", from: 2, to: 5 }];
+    expect(planDigest([row(A, 1, 2)], tokens, final("precon"))).not.toBe(planDigest([row(A, 1, 2)], tokens, final("upload")));
+    expect(planDigest([row(A, 1, 2)], tokens, final("precon"))).toBe(planDigest([row(A, 1, 2)], tokens, final("precon")));
+  });
 });
 
 // A Sync writes through `writeRows`, never Replace's delete-all, and re-reads its base under the lock.

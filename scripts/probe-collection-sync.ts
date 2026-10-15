@@ -23,6 +23,8 @@
 //      edit, then a Sync: the base is the restored upload and the edit is a conflict, not a removal taken.
 //   i  Only what it adds never lowers a token row of any source: a precon row of 5 against a file of 2 stays 5,
 //      a repeat writes nothing, and a file above it takes it as an upload row.
+//   j  A precon add reverted between a tokens-only Sync's preview and its confirm: the preview planned the
+//      precon's claim restored, the confirm refuses as stale and writes nothing, and a fresh preview applies.
 //
 // The thresholds staleness reads are printed, not asserted (G2: unmeasured).
 //
@@ -316,6 +318,36 @@ async function run() {
   const i3 = await sync(hFile, { pick: "additions", tokens: [tok(0, 7)] });
   check("i · a file above the precon row takes it as an upload row at the file's count", [i3.result.status, await tokenRows()],
     ["applied", ["0:upload=7", "1:upload=1", "2:upload=3"]]);
+
+  // ---- j. A precon add reverted between preview and confirm (round 3) ----------------------------------
+  // T1 is upload-owned at 1; a standing precon add claims 5 of it beneath. A tokens-only Sync that omits T1
+  // plans T1 restored as the precon's 5. Revert the add before the confirm and the confirm must refuse as stale:
+  // planned as before it would drop the upload row and find no precon claim to restore.
+  const [add] = await rows<{ id: string }>(
+    `insert into collection_history (id, user_id, kind, raised, lowered, source, precon_tokens)
+     values (gen_random_uuid(), $1, 'add', 0, 0, 'precon:ProbeSyncBox', $2::jsonb) returning id::text as id`,
+    [USER, JSON.stringify([{ tokenOracleId: T[1], quantity: 5 }])],
+  );
+  const jTokens = [tok(0, 7), tok(2, 3)];
+  const jUpload = await newUpload([], jTokens);
+  const jChange = syncChange(jUpload, [], { pick: "tokens", tokens: jTokens });
+  const pj = await preview(jChange);
+  check("j · the preview plans T1 restored as the precon's 5",
+    pj.sync!.tokenChanges.filter((t) => t.kind === "token").map((t) => [T.indexOf(t.id), t.to, t.source]), [[1, 5, "precon"]]);
+  const [revertOfAdd] = await rows<{ id: string }>(
+    "insert into collection_history (id, user_id, kind, raised, lowered, reverts_id) values (gen_random_uuid(), $1, 'revert', 0, 0, $2) returning id::text as id",
+    [USER, add.id],
+  );
+  await pool.query("update collection_history set reverted_by = $1 where id = $2", [revertOfAdd.id, add.id]);
+  const entriesBeforeJ = await entries();
+  const jConfirm = await confirm(jChange, pj.sync!.planDigest);
+  check("j · with the add reverted, the confirm refuses as stale and writes nothing",
+    [jConfirm.status, await tokenRows(), await entries() - entriesBeforeJ, await confirmed(jUpload)],
+    ["stale", ["0:upload=7", "1:upload=1", "2:upload=3"], 0, false]);
+  const pj2 = await preview(jChange);
+  check("j · previewed again, it plans T1 removed", pj2.sync!.tokenChanges.filter((t) => t.kind === "token").map((t) => [T.indexOf(t.id), t.to]), [[1, null]]);
+  check("j · and that confirm applies it", [(await confirm(jChange, pj2.sync!.planDigest)).status, await tokenRows()],
+    ["applied", ["0:upload=7", "2:upload=3"]]);
 }
 
 run()

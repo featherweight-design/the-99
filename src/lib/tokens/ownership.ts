@@ -72,71 +72,177 @@ export function printingCounts(holdings: readonly TokenHolding[]): TokenPrinting
  */
 export type TokenWriteMode = "replace" | "add" | "additive";
 
-/** The rows a token write reads before it writes, for `tokenWritePlan`. */
+/** The rows a token write reads before it writes, for `planTokenWrite`. */
 export type TokenState = {
-  /** Every ownership row the player has, any source. */
-  owned: { tokenOracleId: string; quantity: number; source: string }[];
+  /** Every ownership row the player has, any source. `entryId` is a precon row's add. */
+  owned: { tokenOracleId: string; quantity: number; source: string; entryId?: string | null }[];
   /** The player's `upload` printing rows. */
   uploadPrintings: TokenPrintingCount[];
+  /** The player's `precon` printing rows (absent: none). */
+  preconPrintings?: TokenPrintingCount[];
+  /**
+   * The precon adds whose cards still stand, oldest first, with the tokens each read (`standingPreconAdds`):
+   * what `syncPreconTokens` re-derives the precon rows from after a Replace (absent: none).
+   */
+  preconAdds?: readonly { id: string; tokens: readonly TokenHolding[] }[];
   /** Whether the account has a read marker. */
   read: boolean;
 };
 
-/** One row a token write would change: `to` null is a removal. */
-export type TokenChange = { kind: "token" | "printing" | "read"; id: string; from: number | null; to: number | null };
+/** One row a token write would change: `to` null is a removal; `source` is the row's source after it (token rows). */
+export type TokenChange = {
+  kind: "token" | "printing" | "preconPrinting" | "read";
+  id: string;
+  from: number | null;
+  to: number | null;
+  source?: string | null;
+};
+
+/** The token rows as a write would LEAVE them: ownership per token, and printing rows per source. */
+export type TokenFinal = {
+  owned: Map<string, { quantity: number; source: string; entryId: string | null }>;
+  uploadPrintings: Map<string, number>;
+  preconPrintings: Map<string, number>;
+};
 
 /**
- * What `writeUploadTokens` in `mode` would change, row by row, sorted: empty when it would change nothing
- * the player can see (the marker's upload id moving is not a change). What a Sync's "nothing to sync" and its
- * plan digest read, so a re-sync of the same file writes nothing (plan, probe case a).
+ * The precon claim the standing adds make, per token: counted over every add, attributed to the OLDEST.
+ * `syncPreconTokens` writes it and `planTokenWrite` plans it, so the two cannot disagree.
  */
-export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): TokenChange[] {
-  const out: TokenChange[] = [];
-  const owned = new Map(state.owned.map((o) => [o.tokenOracleId, o]));
-  const file = new Map(holdings.map((h) => [h.tokenOracleId, h.quantity]));
-  for (const [id, f] of file) {
-    const o = owned.get(id);
-    if (mode === "additive") {
-      // Never below ANY row's count, whatever its source: a row at or above the file stands as it is (a precon or
-      // hand mark included), and one below it becomes an upload row of what the file read (`writeUploadTokens`).
-      if (!o || f > o.quantity) out.push({ kind: "token", id, from: o?.quantity ?? null, to: f });
-      continue;
-    }
-    const held = o?.source === "upload" ? o.quantity : null;
-    const to = mode === "replace" ? f : (held ?? 0) + f;
-    if (held !== to) out.push({ kind: "token", id, from: o?.quantity ?? null, to });
-  }
-  if (mode === "replace") {
-    for (const o of state.owned) {
-      if (o.source === "upload" && !file.has(o.tokenOracleId)) out.push({ kind: "token", id: o.tokenOracleId, from: o.quantity, to: null });
+export function preconWant(adds: readonly { id: string; tokens: readonly TokenHolding[] }[]): Map<string, { entryId: string; quantity: number }> {
+  const want = new Map<string, { entryId: string; quantity: number }>();
+  for (const add of adds) {
+    for (const t of add.tokens) {
+      const at = want.get(t.tokenOracleId);
+      if (at) at.quantity += t.quantity;
+      else want.set(t.tokenOracleId, { entryId: add.id, quantity: t.quantity });
     }
   }
-  const printings = new Map(state.uploadPrintings.map((p) => [p.tokenPrintingId, p.quantity]));
-  const filePrintings = printingCounts(holdings);
-  for (const p of filePrintings) {
-    const held = printings.get(p.tokenPrintingId) ?? null;
-    const to = mode === "replace" ? p.quantity : mode === "additive" ? Math.max(held ?? 0, p.quantity) : (held ?? 0) + p.quantity;
-    if (held !== to) out.push({ kind: "printing", id: p.tokenPrintingId, from: held, to });
-  }
-  if (mode === "replace") {
-    const read = new Set(filePrintings.map((p) => p.tokenPrintingId));
-    for (const [id, q] of printings) if (!read.has(id)) out.push({ kind: "printing", id, from: q, to: null });
-  }
-  if (!state.read) out.push({ kind: "read", id: "", from: null, to: null });
-  const order = { read: 0, token: 1, printing: 2 } as const;
-  return out.sort((a, b) => order[a.kind] - order[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return want;
 }
 
-/** The rows `tokenWritePlan` compares against, read inside the caller's transaction. Null where the tables do not exist. */
+/**
+ * What `syncPreconTokens` does to the precon rows `have`, given `want`: the rows no standing add names go, a
+ * row whose add or count moved is updated, and a wanted token with no precon row is INSERTED, which the insert
+ * skips (`on conflict do nothing`) where another source already holds it.
+ */
+export function preconSyncWrites(
+  have: readonly { id: string; entryId: string | null; quantity: number }[],
+  want: ReadonlyMap<string, { entryId: string; quantity: number }>,
+) {
+  const held = new Set(have.map((h) => h.id));
+  return {
+    fresh: [...want].filter(([id]) => !held.has(id)),
+    gone: have.filter((h) => !want.has(h.id)).map((h) => h.id),
+    updates: have.flatMap((h) => {
+      const w = want.get(h.id);
+      return w && (w.entryId !== h.entryId || w.quantity !== h.quantity) ? [{ id: h.id, ...w }] : [];
+    }),
+  };
+}
+
+/**
+ * The FINAL token rows a confirm in `mode` would leave, and the rows that differ from today's (round 3): the
+ * upload's own write (`writeUploadTokens`), and after a Replace the precon re-derivation `recordUploadTokens`
+ * runs (`syncPreconTokens`, through the same `preconWant` and `preconSyncWrites`), so a precon add's claim that
+ * comes back under a dropped upload row is planned, and a change in the standing adds changes the plan. What a
+ * Sync's "nothing to sync" and its plan digest read: empty changes when nothing the player can see would move
+ * (the marker's upload id moving is not a change).
+ */
+export function planTokenWrite(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): { final: TokenFinal; changes: TokenChange[] } {
+  const owned: TokenFinal["owned"] = new Map(state.owned.map((o) => [o.tokenOracleId, { quantity: o.quantity, source: o.source, entryId: o.entryId ?? null }]));
+  const uploadPrintings = new Map(state.uploadPrintings.map((p) => [p.tokenPrintingId, p.quantity]));
+  const preconPrintings = new Map((state.preconPrintings ?? []).map((p) => [p.tokenPrintingId, p.quantity]));
+
+  // The upload's own write.
+  if (mode === "replace") {
+    for (const [id, o] of owned) if (o.source === "upload") owned.delete(id);
+    uploadPrintings.clear();
+  }
+  for (const h of holdings) {
+    const o = owned.get(h.tokenOracleId);
+    if (mode === "additive") {
+      // Never below ANY row's count: a row at or above the file stands exactly as it is.
+      if (!o || h.quantity > o.quantity) owned.set(h.tokenOracleId, { quantity: h.quantity, source: "upload", entryId: null });
+      continue;
+    }
+    const quantity = mode === "add" && o?.source === "upload" ? o.quantity + h.quantity : h.quantity;
+    owned.set(h.tokenOracleId, { quantity, source: "upload", entryId: null });
+  }
+  for (const p of printingCounts(holdings)) {
+    const held = uploadPrintings.get(p.tokenPrintingId) ?? 0;
+    uploadPrintings.set(p.tokenPrintingId, mode === "additive" ? Math.max(held, p.quantity) : held + p.quantity);
+  }
+
+  // After a Replace, the precon rows re-derived from the standing adds.
+  if (mode === "replace") {
+    const adds = state.preconAdds ?? [];
+    const have = [...owned].filter(([, o]) => o.source === "precon").map(([id, o]) => ({ id, entryId: o.entryId, quantity: o.quantity }));
+    const { fresh, gone, updates } = preconSyncWrites(have, preconWant(adds));
+    for (const id of gone) owned.delete(id);
+    for (const u of updates) owned.set(u.id, { quantity: u.quantity, source: "precon", entryId: u.entryId });
+    for (const [id, w] of fresh) if (!owned.has(id)) owned.set(id, { quantity: w.quantity, source: "precon", entryId: w.entryId });
+    preconPrintings.clear();
+    for (const p of printingCounts(adds.flatMap((a) => a.tokens))) preconPrintings.set(p.tokenPrintingId, p.quantity);
+  }
+
+  const changes: TokenChange[] = [];
+  const before = new Map(state.owned.map((o) => [o.tokenOracleId, o]));
+  for (const id of new Set([...before.keys(), ...owned.keys()])) {
+    const b = before.get(id);
+    const a = owned.get(id);
+    if (b?.quantity !== a?.quantity || b?.source !== a?.source) {
+      changes.push({ kind: "token", id, from: b?.quantity ?? null, to: a?.quantity ?? null, source: a?.source ?? null });
+    }
+  }
+  const diff = (kind: "printing" | "preconPrinting", was: readonly TokenPrintingCount[], now: Map<string, number>) => {
+    const w = new Map(was.map((p) => [p.tokenPrintingId, p.quantity]));
+    for (const id of new Set([...w.keys(), ...now.keys()])) {
+      if (w.get(id) !== now.get(id)) changes.push({ kind, id, from: w.get(id) ?? null, to: now.get(id) ?? null });
+    }
+  };
+  diff("printing", state.uploadPrintings, uploadPrintings);
+  diff("preconPrinting", state.preconPrintings ?? [], preconPrintings);
+  if (!state.read) changes.push({ kind: "read", id: "", from: null, to: null });
+  const order = { read: 0, token: 1, printing: 2, preconPrinting: 3 } as const;
+  changes.sort((a, b) => order[a.kind] - order[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { final: { owned, uploadPrintings, preconPrintings }, changes };
+}
+
+/** `planTokenWrite`'s changes alone. */
+export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings: readonly TokenHolding[]): TokenChange[] {
+  return planTokenWrite(mode, state, holdings).changes;
+}
+
+/** A final state as plain sorted entries, for a digest. */
+export function tokenFinalEntries(final: TokenFinal) {
+  const sorted = <V>(m: Map<string, V>) => [...m].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return {
+    owned: sorted(final.owned).map(([id, o]) => [id, o.quantity, o.source, o.entryId] as const),
+    uploadPrintings: sorted(final.uploadPrintings),
+    preconPrintings: sorted(final.preconPrintings),
+  };
+}
+
+/** The rows `planTokenWrite` starts from, read inside the caller's transaction. Null where the tables do not exist. */
 export async function readTokenState(runner: Runner, userId: string): Promise<TokenState | null> {
   if (!(await tokenOwnershipTablesExist(runner))) return null;
-  const owned = await runner.select({ tokenOracleId: tokenOwnership.tokenOracleId, quantity: tokenOwnership.quantity, source: tokenOwnership.source })
-    .from(tokenOwnership).where(eq(tokenOwnership.userId, userId));
-  const uploadPrintings = await runner.select({ tokenPrintingId: tokenPrintingHoldings.tokenPrintingId, quantity: tokenPrintingHoldings.quantity })
-    .from(tokenPrintingHoldings)
-    .where(and(eq(tokenPrintingHoldings.userId, userId), eq(tokenPrintingHoldings.source, "upload")));
+  const owned = await runner.select({
+    tokenOracleId: tokenOwnership.tokenOracleId, quantity: tokenOwnership.quantity, source: tokenOwnership.source, entryId: tokenOwnership.entryId,
+  }).from(tokenOwnership).where(eq(tokenOwnership.userId, userId));
+  const printings = await runner.select({
+    tokenPrintingId: tokenPrintingHoldings.tokenPrintingId, quantity: tokenPrintingHoldings.quantity, source: tokenPrintingHoldings.source,
+  }).from(tokenPrintingHoldings).where(eq(tokenPrintingHoldings.userId, userId));
   const read = await runner.select({ userId: tokenReads.userId }).from(tokenReads).where(eq(tokenReads.userId, userId));
-  return { owned, uploadPrintings, read: read.length > 0 };
+  const adds = await standingPreconAdds(userId, runner, { withTokens: true });
+  const of = (source: string) => printings.filter((p) => p.source === source).map(({ tokenPrintingId, quantity }) => ({ tokenPrintingId, quantity }));
+  return {
+    owned,
+    uploadPrintings: of("upload"),
+    preconPrintings: of("precon"),
+    preconAdds: adds.map((a) => ({ id: a.id, tokens: a.tokens })),
+    read: read.length > 0,
+  };
 }
 
 /** Anything that runs one statement: a transaction or the db. */
@@ -281,36 +387,25 @@ export async function writeUploadTokens(
 export async function syncPreconTokens(tx: Runner, userId: string, entryId?: string): Promise<string[]> {
   if (!(await tokenOwnershipTablesExist(tx))) return [];
   const adds = await standingPreconAdds(userId, tx, { withTokens: true });
-  const want = new Map<string, { entryId: string; quantity: number }>();
-  for (const add of adds) {
-    for (const t of add.tokens) {
-      const at = want.get(t.tokenOracleId);
-      if (at) at.quantity += t.quantity;
-      else want.set(t.tokenOracleId, { entryId: add.id, quantity: t.quantity });
-    }
-  }
+  // The rule is `preconWant` and `preconSyncWrites`, which `planTokenWrite` plans a Sync's tokens with too.
+  const want = preconWant(adds);
 
   const have = await tx.select({ id: tokenOwnership.tokenOracleId, entryId: tokenOwnership.entryId, quantity: tokenOwnership.quantity })
     .from(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon")));
-  const held = new Set(have.map((h) => h.id));
-  const fresh = [...want].filter(([id]) => !held.has(id));
+  const { fresh, gone, updates } = preconSyncWrites(have, want);
   // Joins first, before any ownership row is touched (`writeUploadTokens`, `markOwnedOnDeck`, the purge).
   // A token another source already holds has no join left, so clearing its joins here is a no-op.
   if (fresh.length > 0) {
     await tx.delete(deckTokenJoins).where(and(eq(deckTokenJoins.userId, userId), inArray(deckTokenJoins.tokenOracleId, fresh.map(([id]) => id))));
   }
-  const gone = have.filter((h) => !want.has(h.id)).map((h) => h.id);
   if (gone.length > 0) {
     await tx.delete(tokenOwnership).where(and(
       eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "precon"), inArray(tokenOwnership.tokenOracleId, gone),
     ));
   }
-  for (const h of have) {
-    const w = want.get(h.id);
-    if (w && (w.entryId !== h.entryId || w.quantity !== h.quantity)) {
-      await tx.update(tokenOwnership).set({ entryId: w.entryId, quantity: w.quantity, updatedAt: sql`now()` })
-        .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, h.id), eq(tokenOwnership.source, "precon")));
-    }
+  for (const u of updates) {
+    await tx.update(tokenOwnership).set({ entryId: u.entryId, quantity: u.quantity, updatedAt: sql`now()` })
+      .where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.tokenOracleId, u.id), eq(tokenOwnership.source, "precon")));
   }
   const marked = fresh.length === 0 ? [] : await tx.insert(tokenOwnership)
     .values(fresh.map(([id, w]) => ({ userId, tokenOracleId: id, quantity: w.quantity, source: "precon" as const, entryId: w.entryId })))
