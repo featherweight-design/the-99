@@ -6,7 +6,7 @@
 // the press's own pointerdown (never a harness wait, which re-checks on a backoff):
 //  - FEEDBACK: the first animation frame whose Stats tab is filled AND marked `aria-busy` comes within
 //    FEEDBACK_MS of the pointerdown, and before the view has changed. (The fill is read off the class list: the
-//    off segment's `active:bg-[var(--elevated)]` would satisfy a substring match.)
+//    off segment's `active:bg-[color:var(--elevated)]` would satisfy a substring match.)
 //  - THE SELECTION: in that same frame Tiles has let go of the selected fill (it never shares it with Stats).
 //  - THE MARK: the pending diamond (`[data-pending]`) is fully opaque in that tab, after its 120ms beat, while
 //    the read runs.
@@ -80,9 +80,9 @@ const ARM = () => {
     const tab = document.querySelector('[data-decks-view="stats"]');
     const landed = !!document.querySelector("[data-decks-stats]");
     if (s.at != null && s.feedback == null && tab?.getAttribute("aria-busy") === "true"
-        && tab.classList.contains("bg-[var(--elevated)]")) {
+        && tab.classList.contains("bg-[color:var(--elevated)]")) {
       s.feedback = performance.now();
-      s.tilesFilled = document.querySelector('[data-decks-view="tiles"]')?.classList.contains("bg-[var(--elevated)]") ?? null;
+      s.tilesFilled = document.querySelector('[data-decks-view="tiles"]')?.classList.contains("bg-[color:var(--elevated)]") ?? null;
       s.statsBefore = landed;
     }
     // Present is not drawn: the mark rides `.anim-pending-in`, which holds it at opacity 0 for 120ms.

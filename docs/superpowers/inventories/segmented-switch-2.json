@@ -1,0 +1,60 @@
+{
+  "feature": "Segmented switch, PR 2",
+  "note": "PR 2: the compact switches converge on SegmentedSwitch (size compact): /decks Tiles · Stats and the Lineup filter, the open precon's edition switch, the cart's By card / By deck (now a radiogroup; 30px from md, 2px lower than before). Admin Seg and Build from keep their own markup and take the shared keys; their rows are in segmented-switch-2-keys.json. The deck toolbar row is the PR 1 carry: the bar with DECK_STATS_ENABLED and DECK_NOTES_ENABLED OFF, where the arrangement cluster now wraps at phone. Needs a server with LINEUP_ENABLED, PRECONS_ENABLED, ALL_DECKS_CART_ENABLED and LIST_CACHE_ENABLED set to 'true', ADMIN_USER_IDS naming the signed-in account with ADMIN_ENV_LABEL, an account with two or more decks, and SWITCH_DECK a deck it owns (local-dev: d0000000-0000-4000-8000-00000000cafe).",
+  "clearAbout": true,
+  "shares": {
+    "module": "src/components/ui/segmented-switch.tsx",
+    "binding": "SegmentedSwitch"
+  },
+  "rows": [
+    {
+      "id": "decks-tiles",
+      "label": "/decks: Tiles · Stats, Tiles chosen",
+      "view": "src/components/decks/lineup/stats-view-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=tiles",
+          "wait": "[role=tablist]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "decks-stats",
+      "label": "/decks: Stats chosen, the Lineup filter beside it",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "precon-edition",
+      "label": "/decks/precons/[id]: the edition switch",
+      "view": "src/components/decks/precons/edition-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/AvengersAssembleCollectorSEdition_MSC",
+          "wait": "h1",
+          "settle": 2500,
+          "scrollTo": "[role=radiogroup]"
+        }
+      ]
+    },
+    {
+      "id": "cart-view",
+      "label": "/decks/shopping: By card / By deck, By deck chosen",
+      "view": "src/components/decks/cart/view-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping?view=deck",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

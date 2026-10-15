@@ -183,11 +183,11 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     fireEvent.click(stats);
     expect(stats).toHaveAttribute("aria-busy", "true");
     expect(stats.querySelector("[data-pending] .anim-pending-pip")).not.toBeNull();
-    expect(stats).toHaveClass("bg-[var(--elevated)]");
+    expect(stats).toHaveClass("bg-[color:var(--elevated)]");
     // The fill moves with the press: Tiles lets go in the same commit. `aria-selected` follows the panel shown, and
     // the tiles stay up under it.
     const tiles = screen.getByRole("tab", { name: "Tiles" });
-    expect(tiles).not.toHaveClass("bg-[var(--elevated)]");
+    expect(tiles).not.toHaveClass("bg-[color:var(--elevated)]");
     expect(stats).toHaveAttribute("aria-selected", "false");
     expect(tiles).toHaveAttribute("aria-selected", "true");
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
@@ -201,13 +201,13 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
     // While the read runs the fill has moved: Stats holds it and Tiles does not.
-    expect(screen.getByRole("tab", { name: "Tiles" })).not.toHaveClass("bg-[var(--elevated)]");
-    expect(screen.getByRole("tab", { name: "Stats" })).toHaveClass("bg-[var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Tiles" })).not.toHaveClass("bg-[color:var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Stats" })).toHaveClass("bg-[color:var(--elevated)]");
     await waitFor(() => expect(read.stats).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByRole("tab", { name: "Stats" }).querySelector("[data-pending]")).toBeNull());
     expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveAttribute("aria-busy");
     // Both fills revert together: Tiles is drawn selected again and Stats is not.
-    expect(screen.getByRole("tab", { name: "Tiles" })).toHaveClass("bg-[var(--elevated)]");
-    expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveClass("bg-[var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Tiles" })).toHaveClass("bg-[color:var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveClass("bg-[color:var(--elevated)]");
   });
 });

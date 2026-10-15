@@ -21,40 +21,31 @@ import { JobsBody } from "./jobs-card";
 import { WorthBody } from "./worth-card";
 import { RecencyBody } from "./recency-card";
 import { SpreadBody } from "./spread-card";
-import { onSegmentKeys } from "../../ui/segment-keys";
-import { SEGMENT, SEGMENT_OFF, SEGMENT_ON, viewPanelId, viewTabId } from "./stats-view-switch";
+import { viewPanelId, viewTabId } from "./stats-view-switch";
+import { SegmentedSwitch } from "../../ui/segmented-switch";
 
 const copy = decksStatsCopy;
 
 const FILTERS = ["all", "finished"] as const;
 
 /** One tab stop, arrows move the selection (the radiogroup contract). Drawn twice, for the two widths, so
- *  each copy's ids carry its width. */
+ *  each copy's ids carry its width. Full width at phone, the two segments sharing it. */
 function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (f: LineupFilter) => void; phone: boolean }) {
-  const idOf = (f: LineupFilter) => `stats-filter-${phone ? "phone" : "wide"}-${f}`;
   return (
-    <div
-      role="radiogroup"
-      aria-label={copy.filter.aria}
-      onKeyDown={(e) => onSegmentKeys(e, FILTERS, idOf, onFilter)}
-      className={`gap-[2px] rounded-[9px] border border-[color:var(--border-strong)] p-[2px] ${phone ? "grid grid-cols-2" : "flex flex-none"}`}
-    >
-      {FILTERS.map((f) => (
-        <button
-          key={f}
-          type="button"
-          role="radio"
-          id={idOf(f)}
-          aria-checked={filter === f}
-          tabIndex={filter === f ? 0 : -1}
-          data-stats-filter={f}
-          onClick={() => onFilter(f)}
-          className={`${SEGMENT} ${filter === f ? SEGMENT_ON : SEGMENT_OFF}`}
-        >
-          {f === "all" ? copy.filter.all : copy.filter.finished}
-        </button>
-      ))}
-    </div>
+    <SegmentedSwitch
+      kind="radio"
+      size="compact"
+      ariaLabel={copy.filter.aria}
+      value={filter}
+      onChange={onFilter}
+      fill={phone}
+      ids={{ tab: (f) => `stats-filter-${phone ? "phone" : "wide"}-${f}` }}
+      segments={FILTERS.map((f) => ({
+        value: f,
+        label: f === "all" ? copy.filter.all : copy.filter.finished,
+        data: { "data-stats-filter": f },
+      }))}
+    />
   );
 }
 
