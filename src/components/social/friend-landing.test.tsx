@@ -162,11 +162,10 @@ describe("a press while a failure toast stands", () => {
     render(<FriendLanding token={TOKEN} view={OPEN} />);
     arrive();
     await press(L.accept);
-    const retry = screen.getByRole("button", { name: L.retry });
+    expect(screen.getByRole("button", { name: L.retry })).toBeTruthy();
     await press(L.decline);
     expect(screen.queryByRole("alert")).toBeNull();
-    // Even a Try again pressed from the old render meets the guards as they stand now.
-    await act(async () => { fireEvent.click(retry); });
+    expect(screen.queryByRole("button", { name: L.retry })).toBeNull();
     expect(m.redeem).toHaveBeenCalledTimes(1);
     await act(async () => answer({ ok: true }));
     act(() => { vi.advanceTimersByTime(520); });

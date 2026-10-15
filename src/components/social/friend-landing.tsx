@@ -90,25 +90,13 @@ export function LandingColumn({
 export function FriendLanding({ token, view }: { token: string; view: LandingView }) {
   const router = useRouter();
   const { go } = usePendingPush();
-  const [shown, setShownState] = useState<Shown>(view);
-  // What is drawn and whether a write is in flight, read by the presses through refs: a toast's Try again runs a
-  // press from the render that failed, and must still meet the guards as they stand now, not as they stood then.
-  const live = useRef<Shown>(view);
-  const inFlight = useRef(false);
-  const setShown = (v: Shown) => {
-    live.current = v;
-    setShownState(v);
-  };
+  const [shown, setShown] = useState<Shown>(view);
   // The face the card was drawn with stays on its front once it turns back down, so the turn has a front to hide.
   const [face, setFace] = useState(() => faceOf(view));
   const named = face !== null;
   const [up, setUp] = useState(false);
   const [arrival, setArrival] = useState(true);
-  const [busy, setBusyState] = useState(false);
-  const setBusy = (on: boolean) => {
-    inFlight.current = on;
-    setBusyState(on);
-  };
+  const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
@@ -150,10 +138,10 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
   }
 
   async function accept() {
-    const now = live.current;
-    if (now.kind !== "open" || inFlight.current) return;
-    const { name, commander } = now;
-    // A new press retires the last failure's toast, and its Try again with it.
+    if (shown.kind !== "open" || busy) return;
+    const { name, commander } = shown;
+    // A new press retires the last failure's toast, and its Try again with it: a Try again runs the press from the
+    // render that failed, so it must never outlive a newer press.
     setToast(null);
     setBusy(true);
     try {
@@ -174,10 +162,10 @@ export function FriendLanding({ token, view }: { token: string; view: LandingVie
   }
 
   async function decline() {
-    const now = live.current;
-    if (now.kind !== "open" || inFlight.current) return;
-    const { name, commander } = now;
-    // A new press retires the last failure's toast, and its Try again with it.
+    if (shown.kind !== "open" || busy) return;
+    const { name, commander } = shown;
+    // A new press retires the last failure's toast, and its Try again with it: a Try again runs the press from the
+    // render that failed, so it must never outlive a newer press.
     setToast(null);
     setBusy(true);
     try {
