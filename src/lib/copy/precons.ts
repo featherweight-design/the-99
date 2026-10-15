@@ -361,7 +361,7 @@ export const preconsCopy = {
     /** S17: a box with a standing precon add, after the row's meta (`preconAddedDay`). Still pickable. */
     added: (date: string) => `✓ added ${date}`,
     /** S17: the plain note under such a box once ticked. */
-    addedAgain: (date: string) => `You added this box on ${date}. Adding it again adds a second copy of each card.`,
+    addedAgain: (date: string) => `You added this box on ${date}. Adding it again gives you a second copy of each card.`,
     leadNone: "Tick the boxes you own.",
     lead: (b: number, c: number, t: number) =>
       `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,
