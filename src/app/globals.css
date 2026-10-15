@@ -569,10 +569,10 @@ html { --rail-w: 62px; }
 html { --collection-head-h: 48px; }
 @media (min-width: 768px) { html { --collection-head-h: 149px; } }
 
-/* The phone header's height (`MobileHeader`: 20px above, 14px below, the 38px avatar, a 1px rule). A step that
+/* The phone header's height (`MobileHeader`: 20px above, 14px below, the account trigger's 44px (a 38px avatar in 3px of padding), a 1px rule). A step that
    scrolls inside its own frame and ends above its action bar (the upload flow) sizes that frame against it.
    Not a theme token, for the same reason as `--tabbar-h`. */
-html { --mobile-header-h: 73px; }
+html { --mobile-header-h: 79px; }
 
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    and the collection's confirm and issue dialogs. Copies of the same literal

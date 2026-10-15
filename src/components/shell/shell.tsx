@@ -84,7 +84,7 @@ export default async function Shell({
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
-      <div className="flex min-h-screen flex-1">
+      <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileHeader theme={theme} {...door} />
