@@ -1,9 +1,8 @@
 /**
- * The lock glyph (Locked, handoff R2 §The lock glyph): 11×13, drawn in CSS rather than an icon
- * font, so it takes the ink of whatever surface draws it.
+ * The lock glyph at a deck site (Locked, handoff R2 §The lock glyph), 11×14: the shared `Lock` at `md`, in the ink
+ * its tone rules pick, so it takes the colour of whatever surface draws it.
  *
- * TWO STATES. Closed: the arch is 7.5 tall, so both legs meet the body. Open: the arch is 4.5
- * tall and a 1.6×3.5 left leg runs from y 3.5 into the body, so only the right leg stops short.
+ * TWO STATES. Closed: both legs meet the body. Open: the right leg is lifted.
  *
  * TWO TONES, and the tone is the surface's rather than the card's. At rest a closed lock is
  * `--fg-body` and an open one `--fg-faint` (drawn by nothing since the desktop hover shortcut was
@@ -15,6 +14,8 @@
  * `aria-hidden`: the mark is never the only thing that says a card is locked. The climb names
  * the lock in its sentence, and the rows carry it in their description.
  */
+import { Lock } from "../ui/lock";
+
 export function LockMark({
   title,
   open = false,
@@ -37,20 +38,10 @@ export function LockMark({
       title={title}
       data-testid="lock-mark"
       data-lock-state={open ? "open" : "closed"}
-      className="relative inline-block h-[13px] w-[11px] flex-none"
+      className="inline-flex h-[14px] w-[11px] flex-none"
       style={{ color }}
     >
-      {/* The arch: 7 wide at left 2, no bottom edge. Closed, it is 7.5 tall so both legs meet the
-          body; open, 4.5, so both stop short and the left leg below closes the gap on its side. */}
-      <span
-        className={`absolute left-[2px] top-0 w-[7px] rounded-t-[3.5px] border-[1.6px] border-b-0 border-current ${
-          open ? "h-[4.5px]" : "h-[7.5px]"
-        }`}
-      />
-      {open && <span className="absolute left-[2px] top-[3.5px] h-[3.5px] w-[1.6px] bg-current" />}
-      {/* The body, filled, with the keyhole punched in the page's ground. */}
-      <span className="absolute left-0 top-[6.5px] h-[6.5px] w-[11px] rounded-[2px] bg-current" />
-      <span className="absolute left-[4.5px] top-[8.75px] h-[2px] w-[2px] rounded-full bg-[color:var(--bg)]" />
+      <Lock size="md" open={open} />
     </span>
   );
 }

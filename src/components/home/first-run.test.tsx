@@ -193,7 +193,16 @@ describe("FirstRunChecklist", () => {
     expect(line.className).toContain("md:flex");
     const heading = screen.getByRole("heading", { name: "Welcome to The 99" });
     expect(heading.nextElementSibling).toBe(line);
-    expect(line.querySelector('svg[stroke="var(--fg-locked)"]')).not.toBeNull();
+    const lock = line.querySelector<SVGElement>("svg[data-lock-size]")!;
+    expect(lock.dataset.lockSize).toBe("lg");
+    expect(lock.style.color).toBe("var(--fg-locked)");
+  });
+
+  it("draws every lock on this page, the step cards' included, in --fg-locked (a divider ink read 1.2 to 1.5:1)", () => {
+    const { container } = render(<FirstRunChecklist />);
+    const locks = [...container.querySelectorAll<SVGElement>("svg[data-lock-size]")];
+    expect(locks.length).toBeGreaterThanOrEqual(2);
+    for (const lock of locks) expect(lock.style.color).toBe("var(--fg-locked)");
   });
 
   it("marks Upload a CSV as the target of the nav's Go to step 1", () => {

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
-import { Padlock } from "./padlock";
+import { Lock } from "../ui/lock";
 import { PendingPip } from "./pending-pip";
 import { useRailTag } from "./rail-tag";
 import { useAboutSheetUp } from "./about-sheet-presence";
@@ -318,7 +318,7 @@ function RailLock({ pathname }: { pathname: string }) {
         aria-hidden="true"
         className="mt-[3px] flex flex-col items-center gap-[5px] touch-short:mt-0 touch-short:gap-[4px]"
       >
-        <Padlock stroke="var(--fg-locked)" />
+        <Lock size="lg" ink="var(--fg-locked)" />
         {/* The short rule sets LOCKED's line to the 10px V1 draws (audit V-E1). */}
         <span className="font-mono text-[8.5px] tracking-[0.1em] text-[color:var(--fg-locked)] uppercase touch-short:leading-[10px]">
           {lockCopy.railLabel}
@@ -439,7 +439,7 @@ function TabBracket() {
         data-lock-bracket-label
         className="absolute top-0 left-1/2 inline-flex -translate-x-1/2 items-center gap-[5px] whitespace-nowrap bg-[color:var(--surface-rail)] px-[7px] font-mono text-[9px] leading-[14px] tracking-[0.08em] text-[color:var(--fg-locked)] uppercase"
       >
-        <Padlock size="bracket" stroke="var(--fg-locked)" />
+        <Lock size="sm" ink="var(--fg-locked)" />
         {lockCopy.tabBracket}
       </span>
     </div>
