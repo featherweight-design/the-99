@@ -139,8 +139,13 @@ export function rgbaToTensor(rgba: ArrayLike<number>, w: number, h: number): Flo
   return out;
 }
 
-/** The quad's area in square pixels, unsigned: the same for either winding (shoelace formula). */
-export function quadArea(p: Pt[]): number {
+/**
+ * The card's area in square pixels, whatever order its four corners come in. The detector names
+ * opposite corners next to each other, and the shoelace formula over that order measures a crossed
+ * shape near zero, so the corners are put in order around the card first (`sortCorners`).
+ */
+export function quadArea(corners: Pt[]): number {
+  const p = sortCorners(corners);
   let a = 0;
   for (let i = 0; i < p.length; i++) {
     const q = p[(i + 1) % p.length];

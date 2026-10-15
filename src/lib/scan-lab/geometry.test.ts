@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyHomography, cardCorners, cornersFromDetector, homography, letterbox, sortCorners, warpToTensor } from "./geometry";
+import { applyHomography, cardCorners, cornersFromDetector, homography, letterbox, quadArea, sortCorners, warpToTensor } from "./geometry";
 
 describe("scan-lab geometry", () => {
   it("solves a homography that maps every source corner onto its target", () => {
@@ -84,5 +84,16 @@ describe("scan-lab geometry", () => {
       expect(t[y * 2]).toBeCloseTo(white, 4); // red plane, left column
       expect(t[y * 2 + 1]).toBeCloseTo(black, 4); // red plane, right column
     }
+  });
+});
+
+describe("quadArea", () => {
+  it("measures the card whatever order its corners come in, the detector's included", () => {
+    const tl = { x: 100, y: 100 }, tr = { x: 420, y: 100 }, br = { x: 420, y: 548 }, bl = { x: 100, y: 548 };
+    const area = 320 * 448;
+    expect(quadArea([tl, tr, br, bl])).toBeCloseTo(area);
+    // The detector's order: opposite corners side by side, a crossed shape to the shoelace formula.
+    expect(quadArea([tl, br, tr, bl])).toBeCloseTo(area);
+    expect(quadArea([br, tl, bl, tr])).toBeCloseTo(area);
   });
 });
