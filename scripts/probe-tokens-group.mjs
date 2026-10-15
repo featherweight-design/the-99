@@ -224,7 +224,7 @@ async function leg(browser, size, deckA, deckB, makerName) {
 
     // Shopping keeps its own Tokens group.
     await page.evaluate((k) => localStorage.removeItem(k), FOLD_KEY);
-    await onPageRole(page, "button", /^Shopping/).first().click();
+    await onPageRole(page, "tab", /^Shopping/).first().click();
     await page.waitForTimeout(800);
     const shopTokens = await page.locator("main").getByText("Probe Goblin").count();
     report(`${tag}: Shopping still draws its own Tokens group (the joined token)`, shopTokens > 0, `${shopTokens} mention(s)`);

@@ -179,7 +179,7 @@ for (const { label, width, height } of VIEWPORTS) {
   await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(800);
 
-  const shopping = page.getByRole("button", { name: /^Shopping \d+$/ });
+  const shopping = page.getByRole("tab", { name: /^Shopping \d+$/ });
   if ((await shopping.count()) === 0) {
     console.log("  no Shopping pill on this deck");
     await context.close();

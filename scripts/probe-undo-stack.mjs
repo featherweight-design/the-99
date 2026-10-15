@@ -373,7 +373,7 @@ try {
       await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "networkidle" });
       const groupBtn = onPage(page, "button:visible").filter({ hasText: "By type" }).first();
       if ((await groupBtn.count()) > 0) await groupBtn.click();
-      await onPage(page, "button:visible").filter({ hasText: /^Shopping/ }).first().click();
+      await onPage(page, "[role=tab]:visible").filter({ hasText: /^Shopping/ }).first().click();
 
       // Shopping opens on Price · Highest by default (#629) — the trigger's own
       // accessible name always carries the live selection (`"Sort the deck

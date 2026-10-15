@@ -27,7 +27,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 500
         }
@@ -44,7 +44,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-deck-stats]",
           "settle": 800
@@ -62,7 +62,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-deck-stats]",
           "settle": 800
@@ -85,7 +85,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-deck-stats]",
           "settle": 800
@@ -108,7 +108,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-colors-rows]",
           "scrollTo": "[data-stats-card=colors]",
@@ -127,7 +127,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-colors-rows]",
           "scrollTo": "[data-stats-card=colors]",
@@ -152,7 +152,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-average-basis]",
           "scrollTo": "[data-stats-card=average]",
@@ -171,7 +171,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-money-squares]",
           "scrollTo": "[data-stats-card=money]",
@@ -190,7 +190,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-results-beads]",
           "scrollTo": "[data-stats-card=results]",
@@ -209,7 +209,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-money-squares]",
           "scrollTo": "[data-stats-card=money]",
@@ -228,7 +228,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-money-squares]",
           "scrollTo": "[data-stats-card=money]",
@@ -247,7 +247,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Show the deck as stats",
           "wait": "[data-results-empty]",
           "scrollTo": "[data-stats-card=results]",

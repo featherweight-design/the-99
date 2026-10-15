@@ -6,7 +6,7 @@
 
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import type { DecksView } from "../../ui/view-cookie";
-import { onSegmentKeys } from "./segment-keys";
+import { onSegmentKeys } from "../../ui/segment-keys";
 
 const copy = decksStatsCopy.view;
 export const SEGMENT = "inline-flex h-[40px] items-center justify-center rounded-[7px] px-[13px] text-[13px] md:h-[30px]";

@@ -643,7 +643,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     const { revalidate } = renderBuilder([unowned]);
 
     await act(async () => {
-      screen.getByRole("button", { name: "Shopping 1" }).click();
+      screen.getByRole("tab", { name: "Shopping 1" }).click();
     });
 
     await act(async () => {

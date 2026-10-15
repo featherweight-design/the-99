@@ -81,7 +81,7 @@ function tree(cards: DeckDetailCard[], filter: "all" | "shopping", commander?: D
 }
 
 const slot = (name: string) => screen.queryByText(gotItCopy.slot.held(name));
-const pill = (n: number) => screen.getByRole("button", { name: `Shopping ${n}` });
+const pill = (n: number) => screen.getByRole("tab", { name: `Shopping ${n}` });
 
 async function buy(name: string, receipt: unknown = { tookCopy: [], stillNeeds: 0 }) {
   markBought.mockResolvedValueOnce({ applied: { id: "e0000000-0000-4000-8000-000000000001", receipt } });

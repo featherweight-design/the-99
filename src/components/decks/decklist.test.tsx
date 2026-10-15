@@ -1476,7 +1476,7 @@ describe("an unowned commander heads the Shopping list", () => {
 
     const rows = triggers();
     expect(rows).toHaveLength(3);
-    expect(screen.getByRole("button", { name: `Shopping ${rows.length}` })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: `Shopping ${rows.length}` })).toBeInTheDocument();
   });
 
   it("does not list an owned commander with a copy to spare", () => {
@@ -1485,7 +1485,7 @@ describe("an unowned commander heads the Shopping list", () => {
     expect(
       screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Shopping 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Shopping 1" })).toBeInTheDocument();
   });
 
   it("leaves the All view without the commander", () => {
@@ -1498,7 +1498,7 @@ describe("an unowned commander heads the Shopping list", () => {
       screen.queryByText(recommendationsCopy.shopping.commanderGroupLabel(1)),
     ).not.toBeInTheDocument();
     // The pill under All still counts what Shopping would show.
-    expect(screen.getByRole("button", { name: "Shopping 2" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Shopping 2" })).toBeInTheDocument();
   });
 });
 
@@ -1506,7 +1506,7 @@ describe("the Stats panel", () => {
   it("draws no Stats segment and no stats view with the switch off", () => {
     renderDecklist([rampOwned], { filter: "all" });
 
-    expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+    expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
 
@@ -1515,28 +1515,28 @@ describe("the Stats panel", () => {
 
     it("draws no Notes segment with the switch off, and the toolbar is the old one", () => {
       renderDecklist([rampOwned], { filter: "all" });
-      expect(screen.queryByRole("button", { name: /^Notes/ })).toBeNull();
+      expect(screen.queryByRole("tab", { name: /^Notes/ })).toBeNull();
     });
 
     it("draws All · Shopping | Notes with Stats off, counting open notes", () => {
       renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [noteOf("a", "one"), noteOf("b", "two")], done: [], readAt: 1 } });
-      expect(screen.getByRole("button", { name: "Notes, 2 open" })).toBeTruthy();
-      expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+      expect(screen.getByRole("tab", { name: "Notes, 2 open" })).toBeTruthy();
+      expect(screen.queryByRole("tab", { name: deckStatsCopy.segment.aria })).toBeNull();
     });
 
     it("says none yet at zero and draws no count", () => {
       renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [], done: [], readAt: 1 } });
-      expect(screen.getByRole("button", { name: "Notes, none yet" })).toBeTruthy();
+      expect(screen.getByRole("tab", { name: "Notes, none yet" })).toBeTruthy();
     });
 
     it("sits beside Stats when both switches are on, and pressing it swaps the list for the panel", () => {
       renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, notesEnabled: true, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
-      expect(screen.getByRole("button", { name: deckStatsCopy.segment.aria })).toBeTruthy();
-      fireEvent.click(screen.getByRole("button", { name: "Notes, 1 open" }));
+      expect(screen.getByRole("tab", { name: deckStatsCopy.segment.aria })).toBeTruthy();
+      fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
       expect(screen.getByText("water the plants")).toBeTruthy();
       expect(document.querySelector("[data-deck-stats]")).toBeNull();
       // Choosing a list segment returns to the list.
-      fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+      fireEvent.click(screen.getByRole("tab", { name: /^All/ }));
       expect(screen.queryByText("water the plants")).toBeNull();
     });
   });
@@ -1546,8 +1546,41 @@ describe("the Stats panel", () => {
     onTestFinished(() => window.localStorage.removeItem("the99:deck-panel"));
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+  });
+
+  it("ties the chosen tab to the panel it shows, a labelled tabpanel, on the list and on Stats", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    const panelOf = (tab: HTMLElement) => {
+      const id = tab.getAttribute("aria-controls");
+      expect(id).toBeTruthy();
+      const panel = document.getElementById(id!)!;
+      expect(panel.getAttribute("role")).toBe("tabpanel");
+      expect(panel.getAttribute("aria-labelledby")).toBe(tab.id);
+      return panel;
+    };
+    const all = screen.getByRole("tab", { name: /^All/ });
+    expect(screen.getByRole("tab", { name: /^Shopping/ }).getAttribute("aria-controls")).toBeNull();
+    expect(panelOf(all).textContent).toContain(rampOwned.name);
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+    const stats = screen.getByRole("tab", { name: deckStatsCopy.segment.aria });
+    expect(panelOf(stats).querySelector("[data-deck-stats]")).not.toBeNull();
+  });
+
+  it("keeps keyboard focus on the bar when arrowing into Stats and back to the list", () => {
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    const shopping = screen.getByRole("tab", { name: /^Shopping/ });
+    shopping.focus();
+    fireEvent.keyDown(shopping, { key: "ArrowRight" });
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    const stats = screen.getByRole("tab", { name: deckStatsCopy.segment.aria });
+    expect(document.activeElement).toBe(stats);
+    fireEvent.keyDown(stats, { key: "ArrowLeft" });
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: /^Shopping/ }));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
   });
 
   it("opens at the card a ledger's Stats link asks for, and scrolls it into view once", () => {
@@ -1563,7 +1596,7 @@ describe("the Stats panel", () => {
     // Focus lands on that card, not the body: the ledger that held it has unmounted.
     expect(document.activeElement).toBe(document.querySelector('[data-stats-card="jobs"]'));
     // Back to the list: the answered request does not reopen Stats.
-    fireEvent.click(screen.getAllByRole("button", { name: /^All/ })[0]);
+    fireEvent.click(screen.getAllByRole("tab", { name: /^All/ })[0]);
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
   });
@@ -1572,7 +1605,7 @@ describe("the Stats panel", () => {
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
 
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
 
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
     expect(screen.getAllByRole("figure")).toHaveLength(6);
@@ -1582,14 +1615,14 @@ describe("the Stats panel", () => {
   it("draws the curve from the passed cards plus the commanders, so an optimistic change moves it", () => {
     const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [{ cmc: 4, typeLine: "Legendary Creature", quantity: 1, manaCost: "{2}{G}{G}", colorIdentity: ["G"] }] } };
     renderDecklist([rampOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     const count = (cmc: number) => document.querySelector(`[data-curve-column="${cmc}"]`)!.querySelectorAll("[data-curve-square]").length;
     const before = count(2);
     expect(count(4)).toBe(1);
     cleanup();
 
     renderDecklist([rampOwned, drawOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(count(2)).toBe(before + 1);
     expect(count(4)).toBe(1);
   });
@@ -1598,7 +1631,7 @@ describe("the Stats panel", () => {
     const stats = { statsEnabled: true, filter: "all" as const, statsData: { commanders: [] } };
     const onLogGame = vi.fn();
     renderDecklist([rampOwned], { ...stats, onLogGame });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     fireEvent.click(screen.getByRole("button", { name: /Log a game in Games/ }));
     expect(onLogGame).toHaveBeenCalledTimes(1);
     cleanup();
@@ -1608,7 +1641,7 @@ describe("the Stats panel", () => {
       games: [{ result: "win", playedAt: new Date(), versionNumber: 1 }],
       versions: [{ number: 1, committedAt: new Date() }],
     });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(screen.getByRole("figure", { name: "Results, 1 game" })).toBeInTheDocument();
     expect(document.querySelector("[data-result-version='1']")).toHaveTextContent("1–0–0");
   });
@@ -1621,13 +1654,13 @@ describe("the Stats panel", () => {
     };
     const rowCount = (key: string) => document.querySelector(`[data-job-squares="${key}"]`)!.children.length;
     renderDecklist([rampOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(rowCount("ramp")).toBe(1);
     expect(rowCount("draw")).toBe(0);
     cleanup();
 
     renderDecklist([rampOwned, drawOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(rowCount("draw")).toBe(1);
   });
 
@@ -1647,20 +1680,20 @@ describe("the Stats panel", () => {
     };
     const you = (key: string) => document.querySelector(`[data-average-row="${key}"]`)!.getAttribute("aria-label");
     renderDecklist([rampOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     // Sol Ring is the one artifact; the commander is a creature the Average card leaves out.
     expect(you("artifact")).toBe("Artifacts: this deck 1, average 10, 9 fewer");
     expect(you("creature")).toBe("Creatures: this deck 0, average 26, 26 fewer");
     cleanup();
 
     renderDecklist([rampOwned, rampUnowned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(you("artifact")).toBe("Artifacts: this deck 2, average 10, 8 fewer");
   });
 
   it("keeps the Jobs card a shell when no labels were shipped", () => {
     renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], jobs: null } });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-job-row]")).toBeNull();
   });
 
@@ -1680,7 +1713,7 @@ describe("the Stats panel", () => {
     const addedForest = makeCard({ oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", role: "land", cmc: 0, quantity: 2 });
     const cell = (c: string) => document.querySelector(`[data-color-row="${c}"]`)!.getAttribute("aria-label");
     renderDecklist([dual, spell, rampOwned], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(cell("G")).toBe("Green, 3 pips, 75 percent; 1 source, 33 percent");
     expect(cell("U")).toBe("Blue, 1 pip, 25 percent; 1 source, 33 percent");
     expect(cell("C")).toBe("Colorless, 0 pips, 0 percent; 1 source, 0 lands and 1 other, 33 percent");
@@ -1688,20 +1721,20 @@ describe("the Stats panel", () => {
     cleanup();
 
     renderDecklist([dual, spell, addedForest], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(cell("G")).toBe("Green, 3 pips, 75 percent; 3 sources, 75 percent");
     expect(document.querySelector("[data-segment=nonland]")).toBeNull();
   });
 
   it("keeps the Colors card a shell when no land text was shipped", () => {
     renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: null, sources: {} } });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
 
   it("keeps the Colors card a shell when the non-land source read failed", () => {
     renderDecklist([rampOwned], { statsEnabled: true, filter: "all", statsData: { commanders: [], lands: {}, sources: null } });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(document.querySelector("[data-colors-rows]")).toBeNull();
   });
 
@@ -1713,7 +1746,7 @@ describe("the Stats panel", () => {
     const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: p(2500) } as never);
     const forest = makeCard({ ...basicLand, quantity: 10, price: p(5) } as never);
     renderDecklist([own, buy, forest], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     const money = () => document.querySelector('[data-stats-card="money"]')!;
     expect(money()).toHaveTextContent("$35.00");
     expect(money()).toHaveTextContent("1 copy, plus 10 basics");
@@ -1724,7 +1757,7 @@ describe("the Stats panel", () => {
 
     const another = makeCard({ oracleId: "buy2", name: "Buy 2", owned: false, price: p(400) } as never);
     renderDecklist([own, buy, another, forest], stats);
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     expect(money().querySelector('[data-money-figure="TO BUY"]')).toHaveTextContent("$29.00");
     expect(money().querySelectorAll('[data-money-square="toBuy"]')).toHaveLength(2);
   });
@@ -1733,7 +1766,7 @@ describe("the Stats panel", () => {
     const NOW = new Date("2026-10-05T09:00:00.000Z");
     const buy = makeCard({ oracleId: "buy", name: "Buy", owned: false, price: { cents: 2500, foilCents: null, etchedCents: null, asOf: NOW } } as never);
     renderDecklist([buy], { statsEnabled: true, filter: "all", newestAsOf: NOW, statsData: { commanders: [] } });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
     fireEvent.click(document.querySelector("[data-money-shop]")!);
     // The control returns to the list body; the filter itself is the page's to hold.
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
@@ -1741,8 +1774,8 @@ describe("the Stats panel", () => {
 
   it("returns to the list when All is pressed from Stats", () => {
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true });
-    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
-    fireEvent.click(screen.getByRole("button", { name: /^All\b/ }));
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+    fireEvent.click(screen.getByRole("tab", { name: /^All\b/ }));
 
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
@@ -1788,7 +1821,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
       tokens: read.status === "ok" ? read.tokens.map((t) => ({ ...t, joined: true })) : [],
     };
     renderDecklist([rampUnowned], { filter: "shopping" });
-    const pillWithout = screen.getByRole("button", { name: /^Shopping/ }).textContent;
+    const pillWithout = screen.getByRole("tab", { name: /^Shopping/ }).textContent;
     cleanup();
     renderDecklist([rampUnowned], { filter: "shopping", tokens: joined });
     expect(screen.getByText("1 · not in the deck’s count")).toBeTruthy();
@@ -1796,7 +1829,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
     const card = screen.getAllByText("Arcane Signet")[0];
     expect(card.compareDocumentPosition(screen.getByText("Food")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // A token never moves the deck's own count.
-    expect(screen.getByRole("button", { name: /^Shopping/ }).textContent).toBe(pillWithout);
+    expect(screen.getByRole("tab", { name: /^Shopping/ }).textContent).toBe(pillWithout);
   });
 
   it("draws the joined tokens on a deck with no card left to buy", () => {

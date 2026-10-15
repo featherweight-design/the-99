@@ -35,7 +35,7 @@ import { DeckStatsView } from "./deck-stats-view";
 import { DeckNotesPanel } from "./notes/deck-notes-panel";
 import { NO_NOTES, type DeckNotesView } from "../../lib/decks/notes-types";
 import { useDeckPanel } from "./deck-panel";
-import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
+import { DECK_VIEW_KEY, DeckBarPanel, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
 import {
   DECK_SORT_STORAGE_KEY,
@@ -746,6 +746,8 @@ export function Decklist({
     .filter((c) => !spentOracleIds.has(c.oracleId))
     .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
+  // Every branch below draws the bar as `key="deck-bar"` in a column `div`, so moving between the list, Stats and
+  // Notes keeps the same mounted bar and the tab an arrow key just focused.
   if (notesOpen) {
     // The picker's "In this deck" group: this deck's cards and its commanders, by the name the deck draws.
     const noteCards = [...cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null })),
@@ -753,6 +755,8 @@ export function Decklist({
     return (
       <div className="flex flex-col">
         <GroupToggle
+          key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -768,9 +772,11 @@ export function Decklist({
           notes={notes}
           {...lockProps}
         />
+        <DeckBarPanel value="notes">
         <HoverPreviewProvider>
           <DeckNotesPanel deckId={deckId} notes={notesData ?? NO_NOTES} deckCards={noteCards} />
         </HoverPreviewProvider>
+        </DeckBarPanel>
       </div>
     );
   }
@@ -779,6 +785,8 @@ export function Decklist({
     return (
       <div className="flex flex-col">
         <GroupToggle
+          key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -794,7 +802,9 @@ export function Decklist({
           notes={notes}
           {...lockProps}
         />
+        <DeckBarPanel value="stats">
         <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} onLogGame={onLogGame} />
+        </DeckBarPanel>
       </div>
     );
   }
@@ -1005,6 +1015,8 @@ export function Decklist({
       return (
         <div className="flex flex-col">
           <GroupToggle
+            key="deck-bar"
+            panels
             allCount={built}
             shoppingCount={shoppingCount}
             filter={filter}
@@ -1030,6 +1042,7 @@ export function Decklist({
             notes={notes}
             {...lockProps}
           />
+          <DeckBarPanel value={filter}>
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {keyLine}
           </div>
@@ -1068,6 +1081,7 @@ export function Decklist({
           <div className="px-[16px] pb-[4px] md:px-[26px]">
             <TokensShoppingGroup />
           </div>
+          </DeckBarPanel>
         </div>
       );
     }
@@ -1103,6 +1117,8 @@ export function Decklist({
         {standInsSheet}
         {gotItDoor}
         <GroupToggle
+          key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -1128,6 +1144,7 @@ export function Decklist({
           notes={notes}
             {...lockProps}
         />
+        <DeckBarPanel value={filter}>
 
         <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
           {keyLine}
@@ -1236,6 +1253,7 @@ export function Decklist({
                 : recommendationsCopy.shopping.footerSplit(String(n), String(missingN), String(spokenForN))}
           </div>
         </HoverPreviewProvider>
+        </DeckBarPanel>
       </div>
     );
   }
@@ -1249,6 +1267,8 @@ export function Decklist({
       {gotItDoor}
       {/* Toggle bar */}
       <GroupToggle
+        key="deck-bar"
+        panels
         allCount={built}
         shoppingCount={shoppingCount}
         filter={filter}
@@ -1274,6 +1294,7 @@ export function Decklist({
         notes={notes}
             {...lockProps}
       />
+      <DeckBarPanel value={filter}>
 
       {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
           which is the one view a printed card is never in — so the surface that
@@ -1374,6 +1395,7 @@ export function Decklist({
             provider, so the list is exactly itself wherever the switch is off. */}
         <TokensGroup />
       </HoverPreviewProvider>
+      </DeckBarPanel>
     </div>
   );
 }

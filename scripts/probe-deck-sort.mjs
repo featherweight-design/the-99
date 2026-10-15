@@ -417,7 +417,7 @@ async function run() {
       // A missing pill FAILS rather than skipping: a conditional here lets the
       // whole Shopping layout go unexercised, and lets the pill's disappearance
       // read as a pass.
-      const shopping = onPageRole(page, "button", /^Shopping \d+$/).first();
+      const shopping = onPageRole(page, "tab", /^Shopping \d+$/).first();
       if (await shopping.count() === 0) {
         failures += !report(`the toolbar draws a Shopping pill at ${width}`, false, "no pill");
       } else {
@@ -427,7 +427,8 @@ async function run() {
           const byRole = [...document.querySelectorAll("main button")].find(
             (e) => e.textContent.trim() === "By role",
           );
-          const cluster = byRole?.parentElement;
+          // By role sits in the grouping radiogroup, whose parent holds grouping and sort together.
+          const cluster = byRole?.closest("[role=radiogroup]")?.parentElement;
           if (!cluster) return null;
           // Measured INSIDE the cluster, against its own last control — not
           // against the row, whose right edge is far from a short final line and
@@ -459,7 +460,7 @@ async function run() {
             : `well ${shoppingGap.wellGone ? "absent" : "STILL DRAWN"},`
               + ` ${shoppingGap.gap}px held open inside the cluster past its last control`,
         );
-        const allPill = onPageRole(page, "button", /^All \d+$/).first();
+        const allPill = onPageRole(page, "tab", /^All \d+$/).first();
         if (await allPill.count() === 0) {
           failures += !report(`the toolbar draws an All pill at ${width}`, false, "no pill");
         } else {
@@ -513,7 +514,7 @@ async function run() {
       await page.waitForTimeout(400);
 
       // Shopping offers the third.
-      await onPageRole(page, "button", /^Shopping \d+$/).first().click();
+      await onPageRole(page, "tab", /^Shopping \d+$/).first().click();
       await page.waitForTimeout(1_200);
       await openSortPanel(page);
       const shoppingRows = await onPage(page, "[role=option]").count();

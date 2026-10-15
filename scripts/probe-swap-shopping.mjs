@@ -201,7 +201,7 @@ const line = (page) => onPage(page, '[data-testid="stand-in-limit"]:visible').fi
 
 async function openShopping(page, deckId) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  await onPageRole(page, "button", /^Shopping \d+/).first().click();
+  await onPageRole(page, "tab", /^Shopping \d+/).first().click();
   await line(page).waitFor({ state: "visible", timeout: 20_000 });
 }
 

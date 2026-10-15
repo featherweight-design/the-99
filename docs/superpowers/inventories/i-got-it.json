@@ -13,7 +13,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         }
@@ -30,7 +30,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -51,7 +51,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -86,7 +86,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -115,7 +115,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -180,7 +180,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -206,7 +206,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -237,7 +237,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -263,7 +263,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -294,7 +294,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },
@@ -326,7 +326,7 @@
           "settle": 1500
         },
         {
-          "clickRole": "button",
+          "clickRole": "tab",
           "name": "^Shopping",
           "settle": 800
         },

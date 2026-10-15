@@ -245,14 +245,14 @@ describe("optimistic deck list", () => {
     addCardToDeck.mockReturnValue(pending.promise);
 
     renderBuilder();
-    expect(screen.getByRole("button", { name: /All 1/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /All 1/ })).toBeInTheDocument();
 
     await addSolRing();
     await showTab(/your deck/i);
 
     // Sol Ring is unowned, so it moves both counts — one card built, one to buy.
-    expect(screen.getByRole("button", { name: /All 2/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Shopping 1/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /All 2/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Shopping 1/ })).toBeInTheDocument();
 
     await act(async () => { pending.resolve({ ok: true }); });
   });
@@ -303,6 +303,6 @@ describe("optimistic deck list", () => {
     // React drops the override when the transition ends; nothing explicitly
     // reverts it, which is the property worth pinning.
     expect(screen.queryByText("Artifacts")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /All 1/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /All 1/ })).toBeInTheDocument();
   });
 });

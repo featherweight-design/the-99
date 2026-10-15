@@ -368,7 +368,7 @@ async function run() {
       await visible(onPageRole(page, "button", /^List view$/)).click();
 
       // Shopping: Lock cards is absent.
-      const shopping = visible(onPageRole(page, "button", /^Shopping \d+$/));
+      const shopping = visible(onPageRole(page, "tab", /^Shopping \d+$/));
       if (await shopping.count()) {
         await shopping.click();
         await page.waitForTimeout(400);

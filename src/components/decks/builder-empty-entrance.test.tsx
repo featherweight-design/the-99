@@ -94,10 +94,10 @@ describe("empty builder", () => {
     );
     const hint = /ramp, draw, removal, and wipe slots first/i;
     expect(screen.getByText(hint)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Notes, 1 open" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
     expect(screen.queryByText(hint)).toBeNull();
     expect(screen.getByText("swap the mana rock")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^All/ }));
     expect(screen.getByText(hint)).toBeInTheDocument();
   });
 

@@ -1,9 +1,10 @@
 "use client";
 
-// Group Toggle — All/Shopping filter pills + By type / By role grouping pills.
+// Group Toggle — the deck toolbar: the panel switch (All · Shopping, and Stats · Notes behind their switches) and the
+// By type / By role grouping switch, both `SegmentedSwitch`.
 // §Decklist Group Toggle (design table).
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BULK_BUTTON_BASE, ClearAutoButton } from "./clear-auto";
 import { LockMark } from "./lock-mark";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -16,6 +17,7 @@ import {
   nextDeckSortState,
   type DeckSortDirection,
   type DeckSortKey,
+  DECK_GROUPING_ARIA,
   DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
@@ -28,6 +30,7 @@ import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
+import { SegmentedSwitch } from "../ui/segmented-switch";
 
 export type DeckView = "list" | "card";
 
@@ -40,6 +43,21 @@ export function isDeckView(value: string): value is DeckView {
 }
 
 export type DeckPanel = "list" | "stats" | "notes";
+
+/** The deck bar's tab and panel ids. One bar per page: the deck page draws one list. */
+const DECK_BAR_IDS = {
+  tab: (v: string) => `deck-bar-tab-${v}`,
+  panel: (v: string) => `deck-bar-panel-${v}`,
+};
+
+/** What the bar's chosen tab shows: the list (All or Shopping), Stats or Notes, as its labelled tabpanel. */
+export function DeckBarPanel({ value, children }: { value: string; children: ReactNode }) {
+  return (
+    <div role="tabpanel" id={DECK_BAR_IDS.panel(value)} aria-labelledby={DECK_BAR_IDS.tab(value)} className="flex flex-col">
+      {children}
+    </div>
+  );
+}
 
 /** Exported for the open precon's Card view switch, which is this well (precons R4 §6). */
 export const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
@@ -119,6 +137,11 @@ type GroupToggleProps = {
    * While `open`, every list tool steps aside, as for Stats.
    */
   notes?: { open: boolean; count: number; onChange: (open: boolean) => void };
+  /**
+   * The caller draws each tab's body as a `DeckBarPanel`, so the chosen tab names it in `aria-controls`.
+   * Off for a bar drawn alone (About's specimen), whose tabs control nothing on the page.
+   */
+  panels?: boolean;
 };
 
 /**
@@ -140,9 +163,6 @@ export function LockModeButton({ lockMode, onToggle }: { lockMode: boolean; onTo
   );
 }
 
-/** One segment of the Stats-on toolbar group (handoff 2a). Ink is set inline per segment. */
-const SEGMENT_BASE =
-  "flex min-h-[44px] flex-1 items-center justify-center gap-[6px] rounded-[6px] px-[14px] py-[6px] font-sans text-[14px] transition-[filter] hover:brightness-125 md:min-h-0 md:flex-none md:text-[13.5px]";
 
 export function GroupToggle({
   allCount,
@@ -171,13 +191,12 @@ export function GroupToggle({
   lockedAutoCount = 0,
   stats,
   notes,
+  panels = false,
 }: GroupToggleProps) {
   const statsOpen = stats?.open ?? false;
   const notesOpen = notes?.open ?? false;
   // A panel is open: the list tools step aside and neither list pill reads as chosen.
   const panelOpen = statsOpen || notesOpen;
-  // The segment owns the selection while a panel is open, so neither list pill reads as chosen.
-  const shown = panelOpen ? null : filter;
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
@@ -208,103 +227,50 @@ export function GroupToggle({
        column — left on the outer element they would centre the pills and turn
        the 7/10px pill gap into the gap above the strip. */
     <div className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:border-b-0">
-      {/* `flex-wrap`: at 390px the row carries two filter pills, two bulk auto
-          controls and two grouping pills, and without it the last of them is
+      {/* `flex-wrap`: at 390px the row carries the panel switch, two bulk auto
+          controls and the grouping switch, and without it the last of them is
           pushed off the edge. The auto cluster is one flex child, so it wraps
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
-        {/* "All N" filter pill. Selected is bone on `--elevated` with a
-            `--border-strong` ring — verbatim the active `By type` skin. No
-            accent fill anywhere on the builder's control bar: selection here is
-            said with the bone-on-elevated skin, never with a coloured ground.
-            Accent does still tint a border — the Shopping pill mixes 30% of it
-            into its idle ring below. */}
-        {stats || notes ? (
-          /* DECK_STATS_ENABLED / DECK_NOTES_ENABLED: One segmented group (handoff 2a): a single bordered container holding
-             All and Shopping, a hairline, then Stats. The selected segment is the filled raised pill;
-             Shopping keeps its warm ink selected or not. Full width at phone with the segments
-             sharing it (44px targets), content-width from `md:`. */
-          <div
-            role="group"
-            aria-label={deckStatsCopy.segment.groupAria}
-            data-toolbar-group
-            className="flex w-full items-stretch gap-[2px] rounded-[9px] border border-solid border-[color:var(--border-strong)] p-[3px] md:inline-flex md:w-auto"
-          >
-            {(
-              [
-                { key: "all", label: "All", count: allCount, selected: shown === "all", ink: "text-[color:var(--fg-muted)]", onClick: () => onFilterChange("all"), aria: undefined },
-                { key: "shopping", label: "Shopping", count: shoppingCount, selected: shown === "shopping", ink: "text-[color:var(--warning)]", onClick: () => onFilterChange("shopping"), aria: undefined },
-              ] as const
-            ).map((seg) => (
-              <button
-                key={seg.key}
-                type="button"
-                aria-pressed={seg.selected}
-                onClick={seg.onClick}
-                data-shopping-filter={seg.key === "shopping" ? "" : undefined}
-                className={`${SEGMENT_BASE} ${seg.selected && seg.key === "all" ? "text-[color:var(--fg)]" : seg.ink} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
-              >
-                {seg.label}{" "}
-                <span className="font-mono text-[11.5px]">{seg.count}</span>
-              </button>
-            ))}
-            <span aria-hidden data-toolbar-divider className="mx-[3px] my-[6px] w-px flex-none self-stretch bg-[color:var(--border-strong)]" />
-            {stats && (
-              <button
-                type="button"
-                aria-pressed={statsOpen}
-                aria-label={deckStatsCopy.segment.aria}
-                onClick={() => stats.onChange(true)}
-                className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
-              >
-                {deckStatsCopy.segment.stats}
-              </button>
-            )}
-            {notes && (
-              <button
-                type="button"
-                aria-pressed={notesOpen}
-                aria-label={notes.count > 0 ? deckNotesCopy.head.segmentAria(String(notes.count)) : deckNotesCopy.head.segmentAriaNone}
-                onClick={() => notes.onChange(true)}
-                className={`${SEGMENT_BASE} ${notesOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
-              >
-                {deckNotesCopy.head.segment}
-                {notes.count > 0 && <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{notes.count}</span>}
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-        <button
-          type="button"
-          onClick={() => onFilterChange("all")}
-          className={[
-            "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            shown === "all"
-              ? "text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
-          ].join(" ")}
-        >
-          All {allCount}
-        </button>
-
-        {/* "Shopping N" filter pill — idle: amber text with amber border */}
-        <button
-          type="button"
-          onClick={() => onFilterChange("shopping")}
-          data-shopping-filter=""
-          className={[
-            "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
-            shown === "shopping"
-              ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
-          ].join(" ")}
-        >
-          Shopping {shoppingCount}
-        </button>
-
-          </>
-        )}
+        {/* One segmented well (handoff 2a), a tablist since it swaps what the panel shows: All and Shopping,
+            then, behind a hairline, Stats and Notes when their switches are on (DECK_STATS_ENABLED /
+            DECK_NOTES_ENABLED). Shopping keeps its warm ink selected or not (the accent tone). Full width at
+            phone with the segments sharing it when the toolbar takes its explicit phone rows; content width
+            otherwise, and from `md:` either way. */}
+          <SegmentedSwitch
+            kind="tabs"
+            ariaLabel={deckStatsCopy.segment.groupAria}
+            tone="accent"
+            fill={phoneRows}
+            data={{ "data-toolbar-group": "" }}
+            ids={panels ? DECK_BAR_IDS : undefined}
+            value={statsOpen ? "stats" : notesOpen ? "notes" : filter}
+            onChange={(v) => {
+              if (v === "stats") stats?.onChange(true);
+              else if (v === "notes") notes?.onChange(true);
+              else onFilterChange(v);
+            }}
+            segments={[
+              { value: "all", label: "All", count: <span className="font-mono text-[11.5px]">{allCount}</span> },
+              {
+                value: "shopping",
+                label: "Shopping",
+                count: <span className="font-mono text-[11.5px]">{shoppingCount}</span>,
+                ink: "var(--warning)",
+                data: { "data-shopping-filter": "" },
+              },
+              ...(stats ? [{ value: "stats" as const, label: deckStatsCopy.segment.stats, ariaLabel: deckStatsCopy.segment.aria, divideBefore: true }] : []),
+              ...(notes
+                ? [{
+                    value: "notes" as const,
+                    label: deckNotesCopy.head.segment,
+                    ariaLabel: notes.count > 0 ? deckNotesCopy.head.segmentAria(String(notes.count)) : deckNotesCopy.head.segmentAriaNone,
+                    count: notes.count > 0 ? <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{notes.count}</span> : undefined,
+                    divideBefore: !stats,
+                  }]
+                : []),
+            ]}
+          />
 
         {statsOpen && (
           <span className="basis-full font-mono text-[10.5px] text-[color:var(--fg-faint)] md:basis-auto md:ml-auto">
@@ -438,7 +404,9 @@ export function GroupToggle({
           className={[
             phoneRows
               ? "contents md:flex md:items-center md:gap-[10px] md:grow-0 md:flex-none"
-              : "flex items-center gap-[7px] md:gap-[10px] md:grow-0 md:flex-none",
+              // Wraps at phone: with Stats and Notes off there are no phone rows, and the grouping well, sort and
+              // the view well do not fit 358px on one line. Desktop keeps one row.
+              : "flex flex-wrap items-center gap-[7px] md:flex-nowrap md:gap-[10px] md:grow-0 md:flex-none",
             // Growing is the phone's push of the view well to the right edge,
             // and NOTHING else — so it happens only when the well is drawn.
             // Under Shopping the well is absent and a growing cluster would
@@ -452,33 +420,18 @@ export function GroupToggle({
             phoneRows ? "order-5 md:order-none" : ""
           }`}
         >
-        {/* By type — active: dark pill with border | idle: plain muted text */}
-        {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
-        {/* Mobile idle:   px-6 py-4 no border; Desktop idle: px-13 py-5 border */}
-        <button
-          type="button"
-          onClick={() => onGroupingChange("type")}
-          className={
-            grouping === "type"
-              ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
-          }
-        >
-          {DECK_GROUPING_LABELS.type}
-        </button>
-
-        {/* By role — idle: no border mobile, 1px solid var(--border) desktop */}
-        <button
-          type="button"
-          onClick={() => onGroupingChange("role")}
-          className={
-            grouping === "role"
-              ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
-              : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
-          }
-        >
-          {DECK_GROUPING_LABELS.role}
-        </button>
+        {/* The grouping (segmented-switch plan, PR 1): the bar's own well in the quieter neutral tone, a
+            radiogroup since it changes how the list is arranged rather than which panel shows. No counts. */}
+        <SegmentedSwitch
+          kind="radio"
+          ariaLabel={DECK_GROUPING_ARIA}
+          value={grouping}
+          onChange={onGroupingChange}
+          segments={[
+            { value: "type", label: DECK_GROUPING_LABELS.type },
+            { value: "role", label: DECK_GROUPING_LABELS.role },
+          ]}
+        />
 
         {/* The order the rows inside those sections take. One mount of the
             panel `/collection`'s own Sort is, in single-select: `By type` names

@@ -238,7 +238,7 @@ try {
   await pool.query(`insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)`, [deckId, over.oracle_id]);
 
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  await onPageRole(page, "button", /^Shopping \d+/).first().click();
+  await onPageRole(page, "tab", /^Shopping \d+/).first().click();
   await onPageRole(page, "button", new RegExp(`^Cheaper stand-ins for ${over.name},`)).first().click();
   const line = page.getByRole("dialog", { name: "Cheaper stand-ins" }).locator('[data-testid="stand-in-row"] p').first();
   await line.waitFor({ timeout: 30_000 });
