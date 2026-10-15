@@ -52,6 +52,14 @@ describe("useDialogA11y closeOnEscape", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("leaves an Escape that cancels an IME composition to the field, and closes nothing", () => {
+    const { onClose } = renderWithElement();
+    const e = new KeyboardEvent("keydown", { key: "Escape", isComposing: true, cancelable: true });
+    window.dispatchEvent(e);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+  });
+
   it("ignores Escape when closeOnEscape is false", () => {
     const { onClose } = renderWithElement({ closeOnEscape: false });
     pressEscape();

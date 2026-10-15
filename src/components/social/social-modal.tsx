@@ -9,10 +9,37 @@
 // unless the caller names another control (the picker opens on its search). Closing returns focus to the opener,
 // or to `returnFocusRef` when the opener may be gone by then (a pick removes `Choose your commander`).
 
-import { useId, useRef, type ReactNode, type RefObject } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useSheetHost } from "../ui/sheet-host";
+
+/**
+ * The VISIBLE part of the window, as the phone sheet's frame. A phone's keyboard shrinks or pans the visual
+ * viewport and leaves the layout one (`vh`, `inset-0`) alone, so a sheet sized against the layout viewport puts
+ * its lower rows (and Use initials instead) behind the keyboard, and the arrow keys' scroll measures a body bottom
+ * the reader cannot see. The frame sits at `offsetTop` and is `height` tall, measured again on the visual
+ * viewport's resize and scroll, as the card tag picker's floating list is. The values reach CSS as two custom
+ * properties the phone classes read (desktop reads neither); with no visual viewport, nothing is set and the
+ * classes' fallbacks are the layout viewport.
+ */
+function useVisualViewportFrame(): CSSProperties | undefined {
+  const [box, setBox] = useState<{ top: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const measure = () =>
+      setBox((prev) => (prev && prev.top === vv.offsetTop && prev.height === vv.height ? prev : { top: vv.offsetTop, height: vv.height }));
+    measure();
+    vv.addEventListener("resize", measure);
+    vv.addEventListener("scroll", measure);
+    return () => {
+      vv.removeEventListener("resize", measure);
+      vv.removeEventListener("scroll", measure);
+    };
+  }, []);
+  return box ? ({ "--social-vv-top": `${box.top}px`, "--social-vv-h": `${box.height}px` } as CSSProperties) : undefined;
+}
 
 export function SocialModal({
   title,
@@ -41,14 +68,17 @@ export function SocialModal({
   const close = useRef<HTMLButtonElement>(null);
   const id = useId();
   useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
+  const visible = useVisualViewportFrame();
 
   const frame = (
     <div
       role="presentation"
+      data-social-modal-frame=""
+      style={visible}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10vh]"
+      className="fixed inset-0 z-50 flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10vh]"
     >
       <div
         ref={panel}
@@ -57,7 +87,7 @@ export function SocialModal({
         aria-labelledby={`${id}-title`}
         data-social-modal=""
         tabIndex={-1}
-        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "h-[86vh] md:h-auto md:max-h-[80vh]" : "max-h-[92vh]"} ${width === 520 ? "md:w-[520px]" : "md:w-[440px]"}`}
+        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--social-vv-h,100vh)*0.86)] md:max-h-[80vh]" : "max-md:max-h-[calc(var(--social-vv-h,100vh)*0.92)] md:max-h-[92vh]"} ${width === 520 ? "md:w-[520px]" : "md:w-[440px]"}`}
       >
         <div aria-hidden className="flex justify-center pt-[9px] pb-[2px] md:hidden">
           <span className="h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />

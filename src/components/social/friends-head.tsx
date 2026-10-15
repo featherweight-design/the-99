@@ -149,6 +149,8 @@ export function FriendsHead({
                 aria-describedby={`${id}-hint`}
                 onChange={(e) => setDraft(capName(e.target.value, DISPLAY_NAME_MAX))}
                 onKeyDown={(e) => {
+                  // Escape mid-composition cancels the IME's candidate, never the draft.
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === "Escape") {
                     e.preventDefault();
                     done(false);

@@ -76,6 +76,15 @@ describe("the head", () => {
     expect(screen.getByText("Hugh").tagName).toBe("B");
   });
 
+  it("keeps the field and its draft on an Escape that cancels an IME composition", () => {
+    draw();
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const field = screen.getByLabelText(socialCopy.page.nameField.label);
+    fireEvent.change(field, { target: { value: "ヒュー" } });
+    fireEvent.keyDown(field, { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText(socialCopy.page.nameField.label)).toHaveValue("ヒュー");
+  });
+
   it("toasts a name that could not be saved, and puts the old one back", async () => {
     a.setDisplayNameAction.mockResolvedValue({ ok: false, reason: "invalid" });
     draw();

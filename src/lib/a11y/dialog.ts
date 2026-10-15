@@ -654,6 +654,9 @@ export function useDialogA11y(
       if (activeDialog === null && dialogStack[dialogStack.length - 1] !== root) return;
 
       if (e.key === "Escape") {
+        // Escape while an IME is composing cancels its candidate (a search or a name typed in
+        // Japanese, say), never the dialog: it is the field's, so it is not swallowed either.
+        if (e.isComposing) return;
         // Swallowed either way: a dialog that refuses Escape should still stop
         // the key reaching whatever is behind it.
         e.preventDefault();

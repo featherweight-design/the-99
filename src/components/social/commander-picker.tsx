@@ -117,6 +117,8 @@ export function CommanderPicker({
   }, [listId, active]);
 
   function onKeyDown(e: React.KeyboardEvent) {
+    // An IME's Enter and arrows choose among its candidates; the picker acts only once composing is done.
+    if (e.nativeEvent.isComposing) return;
     if (!fresh || tiles.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();

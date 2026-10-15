@@ -7,6 +7,7 @@ const a = vi.hoisted(() => ({ listDeckCommandersAction: vi.fn(), searchFaceComma
 vi.mock("../../app/friends/actions", () => a);
 
 import { CommanderPicker } from "./commander-picker";
+import { SocialModal } from "./social-modal";
 import { socialCopy } from "../../lib/copy/social";
 
 const c = socialCopy.commander;
@@ -76,6 +77,20 @@ describe("CommanderPicker", () => {
     fireEvent.keyDown(box, { key: "ArrowDown" });
     fireEvent.keyDown(box, { key: "Enter" });
     expect(onPick).toHaveBeenCalledWith(BARAL);
+  });
+
+  it("leaves Enter and the arrows to an IME while it composes: no highlight moves and nothing is picked", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    a.searchFaceCommandersAction.mockResolvedValue({ ok: true, tiles: [AANG, BARAL] });
+    const onPick = vi.fn();
+    render(<CommanderPicker current={null} onPick={onPick} onClose={() => {}} />);
+    await type("av");
+    const box = screen.getByRole("combobox", { name: c.search });
+    fireEvent.keyDown(box, { key: "ArrowDown", isComposing: true });
+    fireEvent.keyDown(box, { key: "Enter", isComposing: true });
+    expect(onPick).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledWith(AANG);
   });
 
   it("says so when nothing matches", async () => {
@@ -176,5 +191,42 @@ describe("CommanderPicker", () => {
     expect(screen.getByRole("alert").textContent).toBe(c.searchFailed);
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("SocialModal on a phone with a keyboard up", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("holds its frame to the visual viewport, follows it as the keyboard moves it, and lets go on close", () => {
+    const vv = Object.assign(new EventTarget(), { offsetTop: 0, height: 800, offsetLeft: 0, width: 390 });
+    const remove = vi.spyOn(vv, "removeEventListener");
+    vi.stubGlobal("visualViewport", vv);
+    const { unmount } = render(
+      <SocialModal title="T" closeLabel="Close" onClose={() => {}} tall>
+        <p>body</p>
+      </SocialModal>,
+    );
+    const frame = document.querySelector<HTMLElement>("[data-social-modal-frame]")!;
+    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("0px");
+    expect(frame.style.getPropertyValue("--social-vv-h")).toBe("800px");
+    // The keyboard opens: the visual viewport shrinks and pans, the layout viewport does not.
+    act(() => {
+      Object.assign(vv, { height: 420, offsetTop: 60 });
+      vv.dispatchEvent(new Event("resize"));
+    });
+    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("60px");
+    expect(frame.style.getPropertyValue("--social-vv-h")).toBe("420px");
+    act(() => {
+      Object.assign(vv, { offsetTop: 120 });
+      vv.dispatchEvent(new Event("scroll"));
+    });
+    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("120px");
+    // The sheet and the frame read those values at phone width alone; the desktop dialog reads neither.
+    expect(frame.className).toContain("max-md:h-[var(--social-vv-h,100%)]");
+    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100vh)*0.86)]");
+    expect(screen.getByRole("dialog").className).not.toMatch(/(^|\s)h-\[86vh\]/);
+    unmount();
+    expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
+    expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
   });
 });
