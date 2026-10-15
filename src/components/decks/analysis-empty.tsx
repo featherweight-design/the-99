@@ -247,12 +247,17 @@ export function AnalysisEmpty({
                 390 a full allowance is one line and the reset, free, check and used-up notes two, so none
                 moves anything; at 1300 every note but two is two lines, inside the 44px button's row. The
                 used-up note (three lines at 1300) and the paused one (four at 1300, three at 390) grow
-                past it by their extra lines: 7px and 24px at 1300, 15px at 390. */}
+                past it by their extra lines: 7px and 24px at 1300, 15px at 390.
+                AND AT THE NOTE'S OWN WIDTH, 340px from md up (its old max, which every common note fills),
+                empty or not (PR #1844, round 1): an empty frame had no width, so it always fit beside
+                Analyze, while the note did not where the row is narrower than the button, the gap and
+                340px (768 to about 840 wide), and wrapped onto a row of its own: the hub dropped 46px. Now
+                the frame and the note sit on the same row, whichever that is. */}
             {noteFrame ? (
               <p
                 data-testid={shownNote ? "press-note" : "press-note-slot"}
                 aria-hidden={shownNote ? undefined : true}
-                className="m-0 min-h-[2lh] text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
+                className="m-0 min-h-[2lh] text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:w-[340px] md:text-left md:text-[11px]"
               >
                 {/* The button's description is the note's words, so the id sits on them alone and the
                     See which press stays outside it. A spent or paused line's `What uses credits?` link

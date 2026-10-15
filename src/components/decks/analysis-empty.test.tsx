@@ -42,6 +42,8 @@ describe("AnalysisEmpty's credit note frame", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} notePending />);
     const slot = screen.getByTestId("press-note-slot");
     expect(slot.className).toContain("min-h-[2lh]");
+    // Its width too, from md up: an empty frame with none fit beside Analyze where the note wraps (#1844).
+    expect(slot.className).toContain("md:w-[340px]");
     expect(slot.getAttribute("aria-hidden")).toBe("true");
     expect(slot.textContent).toBe("");
     // The row already takes the with-note layout: the opener on its own line under the pair.
@@ -52,6 +54,7 @@ describe("AnalysisEmpty's credit note frame", () => {
     const note = screen.getByTestId("press-note");
     expect(note).toBe(slot);
     expect(note.className).toContain("min-h-[2lh]");
+    expect(note.className).toContain("md:w-[340px]");
     expect(note.hasAttribute("aria-hidden")).toBe(false);
     expect(note.textContent).toBe(CREDIT);
     expect(note.nextElementSibling?.className).toContain("md:basis-full");

@@ -233,7 +233,13 @@ async function run() {
   // Set once the deck's own reading is held on disk; called last in the `finally`.
   let restoreProfile = null;
   try {
-    for (const width of [1300, 390]) {
+    // 1024, 900 and 800 are the desktop layout narrower than 1300 (PR #1844, round 1). At 800 Analyze, the
+    // 20px gap and the note's 340px do not fit one row (measured: the row is 440px), so the note wraps under
+    // the button; before its frame took the note's width as well, the empty frame fit beside the button and
+    // the hub dropped 46px when the note landed. 1024 and 900 keep the note beside the button. PROBE_WIDTHS
+    // narrows the list.
+    const widths = (process.env.PROBE_WIDTHS ?? "1300,1024,900,800,390").split(",").map(Number);
+    for (const width of widths) {
       const at = (s) => `${s} @ ${width}`;
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();

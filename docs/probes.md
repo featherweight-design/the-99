@@ -1092,7 +1092,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   named in the line, and an unrecognised note fails (`scripts/lib/note-variant.mjs`). The probe already
   stops on a note that does not write the overview, so in practice it walks the credit and free notes. Measured 2026-10-15 on local-dev, `held`, hub on: 0px
   at both widths; with the reservation removed, that check fails at both widths with the same 56 and
-  35.4px.
+  35.4px. **It walks five widths by default** (`PROBE_WIDTHS`, default `1300,1024,900,800,390`; PR
+  #1844 round 1): the reserved frame also takes the note's width, 340px from md up, because an empty
+  frame with no width fit beside Analyze where the note itself did not. At 800 the row is 440px, under
+  the button, the 20px gap and 340px, so the note wraps to a row of its own, and before the width was
+  reserved the hub dropped 46.1px there (1196.9 to 1243) while 1024 and 900 held. Measured 2026-10-15:
+  0px at all five; with the width reservation removed, 800 fails with that 46.1px and 1024 and 900 pass.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
