@@ -18,7 +18,7 @@ R4 (Hugh's audit of R3):
 - One glint for foil and etched, and one key entry, `foil`. At 12px the silver glint was not told apart from the
   rainbow, and etched is a foil finish. The tile film stays silver; the tooltip and spoken name still say "etched foil".
 - On the two-line rows the glint sits UNDER the ownership dot, at the head of line 2, so every name starts at the same
-  x. Beside the dot (R3) is drawn next to it on M-Main for Hugh's call (gap M8).
+  x. Approved by Hugh; beside the dot (R3) stays drawn on M-Main for the record.
 - Keys in the shipped phone layouts: /collection three columns (`phoneColumns={3}`), the deck key wraps, Shopping's own
   `ShoppingKey` is two columns above the deck key's marks.
 - Shopping's key is ONE grid (two columns on the phone, `ShoppingKey`'s layout; one wrapping row on desktop) holding
@@ -102,4 +102,4 @@ Drawn over the shipped pages, Kamigawa theme. Dashed pink outlines mark what thi
 - **M6** Closed (Hugh, R3): the busiest Shopping row's squeezed name is answered by the two-line row, not a name floor.
 - **M7** The two-line row makes the desktop All list nearly twice as long (about 60px rows against 34px, two columns).
   The precon's read-only list rows stay one line: they carry only the name, pips and printing, and nothing squeezes them.
-- **M8** Under the dot (R4, drawn everywhere) or beside it (R3) on the two-line rows: Hugh's call.
+- **M8** Closed (Hugh, 2026-10-15): under the dot.
