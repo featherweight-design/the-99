@@ -206,7 +206,7 @@ try {
 
     // No door on a card opened from All (F17): a deck alone does not mean Shopping.
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-    await onPageRole(page, "button", /^All \d+/).filter({ visible: true }).first().click();
+    await onPageRole(page, "tab", /^All \d+/).filter({ visible: true }).first().click();
     let card = await openRowCard(page, cut);
     await page.waitForTimeout(500);
     const doorsFromAll = await card.locator('[data-testid="stand-in-door"]').filter({ visible: true }).count();

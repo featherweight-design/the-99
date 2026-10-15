@@ -298,3 +298,14 @@ describe("GroupToggle's Notes provenance line", () => {
     expect(screen.getByText(deckNotesCopy.head.provenance("3"))).toBeInTheDocument();
   });
 });
+
+describe("GroupToggle panels", () => {
+  // About's specimen draws the bar alone: its tabs control nothing on the page, so they name no panel.
+  it("names no panel unless the caller draws them", () => {
+    const { unmount } = render(<GroupToggle {...props} filter="all" />);
+    expect(screen.getByRole("tab", { name: /^All/ }).getAttribute("aria-controls")).toBeNull();
+    unmount();
+    render(<GroupToggle {...props} filter="all" panels />);
+    expect(screen.getByRole("tab", { name: /^All/ }).getAttribute("aria-controls")).toBe("deck-bar-panel-all");
+  });
+});

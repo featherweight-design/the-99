@@ -137,6 +137,11 @@ type GroupToggleProps = {
    * While `open`, every list tool steps aside, as for Stats.
    */
   notes?: { open: boolean; count: number; onChange: (open: boolean) => void };
+  /**
+   * The caller draws each tab's body as a `DeckBarPanel`, so the chosen tab names it in `aria-controls`.
+   * Off for a bar drawn alone (About's specimen), whose tabs control nothing on the page.
+   */
+  panels?: boolean;
 };
 
 /**
@@ -186,6 +191,7 @@ export function GroupToggle({
   lockedAutoCount = 0,
   stats,
   notes,
+  panels = false,
 }: GroupToggleProps) {
   const statsOpen = stats?.open ?? false;
   const notesOpen = notes?.open ?? false;
@@ -237,7 +243,7 @@ export function GroupToggle({
             tone="accent"
             fill={phoneRows}
             data={{ "data-toolbar-group": "" }}
-            ids={DECK_BAR_IDS}
+            ids={panels ? DECK_BAR_IDS : undefined}
             value={statsOpen ? "stats" : notesOpen ? "notes" : filter}
             onChange={(v) => {
               if (v === "stats") stats?.onChange(true);

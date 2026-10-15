@@ -37,6 +37,19 @@ describe("notes on an empty deck", () => {
     expect(screen.getByText("the empty state")).toBeTruthy();
   });
 
+  it("ties the chosen tab to the panel it shows, on All and on Notes", () => {
+    mount(kept);
+    const panelOf = (tab: HTMLElement) => {
+      const panel = document.getElementById(tab.getAttribute("aria-controls") ?? "");
+      expect(panel?.getAttribute("role")).toBe("tabpanel");
+      expect(panel?.getAttribute("aria-labelledby")).toBe(tab.id);
+      return panel!;
+    };
+    expect(panelOf(screen.getByRole("tab", { name: /^All/ })).textContent).toContain("the empty state");
+    fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
+    expect(panelOf(screen.getByRole("tab", { name: "Notes, 1 open" })).textContent).toContain("swap the mana rock");
+  });
+
   it("draws the empty state alone when notes are switched off", () => {
     mount(kept, false);
     expect(screen.getByText("the empty state")).toBeTruthy();

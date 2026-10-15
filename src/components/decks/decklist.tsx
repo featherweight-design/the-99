@@ -756,6 +756,7 @@ export function Decklist({
       <div className="flex flex-col">
         <GroupToggle
           key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -785,6 +786,7 @@ export function Decklist({
       <div className="flex flex-col">
         <GroupToggle
           key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -1014,6 +1016,7 @@ export function Decklist({
         <div className="flex flex-col">
           <GroupToggle
             key="deck-bar"
+            panels
             allCount={built}
             shoppingCount={shoppingCount}
             filter={filter}
@@ -1115,6 +1118,7 @@ export function Decklist({
         {gotItDoor}
         <GroupToggle
           key="deck-bar"
+          panels
           allCount={built}
           shoppingCount={shoppingCount}
           filter={filter}
@@ -1264,6 +1268,7 @@ export function Decklist({
       {/* Toggle bar */}
       <GroupToggle
         key="deck-bar"
+        panels
         allCount={built}
         shoppingCount={shoppingCount}
         filter={filter}

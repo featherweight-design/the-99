@@ -427,7 +427,8 @@ async function run() {
           const byRole = [...document.querySelectorAll("main button")].find(
             (e) => e.textContent.trim() === "By role",
           );
-          const cluster = byRole?.parentElement;
+          // By role sits in the grouping radiogroup, whose parent holds grouping and sort together.
+          const cluster = byRole?.closest("[role=radiogroup]")?.parentElement;
           if (!cluster) return null;
           // Measured INSIDE the cluster, against its own last control — not
           // against the row, whose right edge is far from a short final line and
@@ -459,7 +460,7 @@ async function run() {
             : `well ${shoppingGap.wellGone ? "absent" : "STILL DRAWN"},`
               + ` ${shoppingGap.gap}px held open inside the cluster past its last control`,
         );
-        const allPill = onPageRole(page, "button", /^All \d+$/).first();
+        const allPill = onPageRole(page, "tab", /^All \d+$/).first();
         if (await allPill.count() === 0) {
           failures += !report(`the toolbar draws an All pill at ${width}`, false, "no pill");
         } else {
