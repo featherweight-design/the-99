@@ -21,7 +21,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 
 import { readSyncBase } from "../src/lib/collection/sync-base";
-import { planSync, staleness, STALE_REVERSAL_SHARE, SYNC_PICKS, type SyncHolding, type SyncPick } from "../src/lib/collection/sync";
+import { nothingToSync, planSync, staleness, STALE_REVERSAL_SHARE, SYNC_PICKS, type SyncHolding, type SyncPick } from "../src/lib/collection/sync";
 import { normalizeItems } from "../src/lib/collection/write";
 import { collectionItemKey } from "../src/lib/collection/key";
 import type { PendingItem } from "../src/lib/collection/pending";
@@ -46,7 +46,8 @@ async function main() {
     if (ro?.ro !== "on") throw new Error("the transaction is not read-only; stopping before any read");
     const tx = drizzle(client);
 
-    const base = await readSyncBase(MEASURE_USER_ID, tx);
+    // A measured upload already confirmed is measured against the base before it, as its own confirm read it.
+    const base = await readSyncBase(MEASURE_USER_ID, tx, UPLOAD_ID ? { excludeUploadId: UPLOAD_ID } : {});
     if ("unavailable" in base) {
       console.log(`Sync unavailable: ${base.unavailable}`);
       return;
@@ -97,7 +98,7 @@ async function main() {
     console.log(`rows a confirm would write (no conflict answered): ${plan.rows.length}, of which removals ${plan.rows.filter((r) => r.after === null).length}`);
     console.log(`stale: ${stale ?? "null"} (reversal share over ${STALE_REVERSAL_SHARE}, or nearer an earlier upload)`);
     console.log(`file tokens: ${tokens ? `${tokens.length} tokens, ${tokens.reduce((n, t) => n + t.quantity, 0)} copies` : "none read"} · token rows a confirm would change: ${tokenChanges.length}`);
-    console.log(`nothing to sync: ${plan.rows.length === 0 && tokenChanges.length === 0 && c.undecided === 0}`);
+    console.log(`nothing to sync: ${nothingToSync(plan, tokenChanges.length)}`);
 
     if (NAMES) {
       const ids = [...new Set([...plan.kept, ...plan.conflicts].map((r) => r.oracleId).concat(plan.rows.map((r) => r.oracleId)))];

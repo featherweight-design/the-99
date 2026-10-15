@@ -90,6 +90,15 @@ export type SyncCounts = {
   ignored: number;
 };
 
+/**
+ * Whether a sync has nothing to do: no card row to write, no token row to change, and no conflict left
+ * unanswered (an unanswered conflict is something to sync: the review has to ask it). What the preview's
+ * `nothing` and the confirm's `nothingToSync` read, and `measure:sync` prints.
+ */
+export function nothingToSync(plan: Pick<SyncPlan, "rows" | "counts">, tokenChanges: number): boolean {
+  return plan.rows.length === 0 && tokenChanges === 0 && plan.counts.undecided === 0;
+}
+
 /** A conflict or a kept holding, as the review lists it. */
 export type SyncReviewRow = CollectionItemIdentity & {
   key: string;

@@ -34,11 +34,17 @@ export type SyncBase =
 /** How many earlier uploads staleness compares the file with. */
 export const EARLIER_UPLOADS = 5;
 
-/** The newest anchor, beside whether the reader ever confirmed an upload at all. */
-export const anchorQuery = (userId: string) => sql`
+/**
+ * The newest anchor, beside whether the reader ever confirmed an upload at all. `excludeUploadId` is the
+ * upload being synced: the write stamps it confirmed BEFORE it reads the base, in the same transaction, so
+ * without it a first-ever upload would read itself as a confirmed upload with no anchor (`noRecord`) rather
+ * than `neverUploaded`, and a sync could read its own file as its base.
+ */
+export const anchorQuery = (userId: string, excludeUploadId?: string) => sql`
   select
     exists (
-      select 1 from csv_uploads c where c.user_id = ${userId} and c.confirmed_at is not null
+      select 1 from csv_uploads c where c.user_id = ${userId} and c.confirmed_at is not null${
+        excludeUploadId ? sql` and c.id <> ${excludeUploadId}::uuid` : sql``}
     ) as uploaded,
     a.id, a.confirmed_at, a.items
   from (select 1) one
@@ -48,7 +54,7 @@ export const anchorQuery = (userId: string) => sql`
     left join collection_history h
       on h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text
     where u.user_id = ${userId}
-      and u.confirmed_at is not null
+      and u.confirmed_at is not null${excludeUploadId ? sql` and u.id <> ${excludeUploadId}::uuid` : sql``}
       and (
         h.id is null
         or (
@@ -89,10 +95,14 @@ export function hasFullKeys(items: readonly PendingItem[]): boolean {
 
 const asDate = (v: Date | string) => (v instanceof Date ? v : new Date(v));
 
-export async function readSyncBase(userId: string, q: Runner = db): Promise<SyncBase> {
+export async function readSyncBase(
+  userId: string,
+  q: Runner = db,
+  opts: { excludeUploadId?: string } = {},
+): Promise<SyncBase> {
   const { rows: [head] } = await q.execute<{
     uploaded: boolean; id: string | null; confirmed_at: Date | string | null; items: PendingItem[] | null;
-  }>(anchorQuery(userId));
+  }>(anchorQuery(userId, opts.excludeUploadId));
   if (!head?.uploaded) return { unavailable: "neverUploaded" };
   if (!head.id || !head.confirmed_at || !Array.isArray(head.items) || !hasFullKeys(head.items)) {
     return { unavailable: "noRecord" };

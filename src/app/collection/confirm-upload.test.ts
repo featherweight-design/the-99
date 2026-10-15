@@ -320,6 +320,38 @@ describe("sync (collection sync plan, PR 1)", () => {
     expect(stub.invalidate).not.toHaveBeenCalled();
   });
 
+  it("lets a file with no matched cards but its tokens be synced under Only its tokens, in the preview and the confirm", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    stub.apply.mockResolvedValueOnce({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [], sync: { ...syncPreview, conflicts: [], kept: [] } });
+    expect(await previewUploadChange(UPLOAD, "sync", { pick: "tokens" })).toHaveProperty("sync.pick", "tokens");
+    expect(stub.apply.mock.calls[0][1]).toMatchObject({ kind: "sync", items: [], tokens, pick: "tokens" });
+    stub.apply.mockResolvedValueOnce(applied("upload_sync"));
+    await confirmUpload(UPLOAD, { mode: "sync", pick: "tokens", planDigest: "d" });
+    expect(stub.apply.mock.calls[1][1]).toMatchObject({ kind: "sync", items: [], tokens, pick: "tokens", expectedPlan: "d" });
+  });
+
+  it("still refuses no matched cards under Everything or Only what it adds, or with no tokens read, before any write", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    for (const pick of ["everything", "additions"] as const) {
+      await expect(previewUploadChange(UPLOAD, "sync", { pick })).rejects.toThrow("no matched cards");
+      await expect(confirmUpload(UPLOAD, { mode: "sync", pick, planDigest: "d" })).rejects.toThrow("no matched cards");
+    }
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens: [] } };
+    await expect(previewUploadChange(UPLOAD, "sync", { pick: "tokens" })).rejects.toThrow("no matched cards");
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [] } };
+    await expect(confirmUpload(UPLOAD, { mode: "sync", pick: "tokens", planDigest: "d" })).rejects.toThrow("no matched cards");
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("keeps Replace and Add refusing no matched cards, tokens or not", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    for (const mode of ["replace", "add"] as const) {
+      await expect(previewUploadChange(UPLOAD, mode)).rejects.toThrow("no matched cards");
+      await expect(confirmUpload(UPLOAD, { mode })).rejects.toThrow("no matched cards");
+    }
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
   it("answers each refusal the write gives, with no receipt and nothing invalidated", async () => {
     for (const [result, outcome] of [
       [{ status: "undecided", undecided: 3 }, { undecided: 3 }],

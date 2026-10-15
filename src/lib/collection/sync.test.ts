@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, nothingToSync, parseSyncOptions, planSync, quantitiesOf, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
 
@@ -275,4 +275,23 @@ describe("parseSyncOptions", () => {
   });
 
   it("caps the review at 500, the handoff's number", () => expect(SYNC_REVIEW_CAP).toBe(500));
+});
+
+describe("nothingToSync", () => {
+  it("is false with only an unanswered conflict and no token change: the review has to ask it", () => {
+    const p = one(1, 3, 2);
+    expect(p.rows).toEqual([]);
+    expect(p.counts.undecided).toBe(1);
+    expect(nothingToSync(p, 0)).toBe(false);
+  });
+
+  it("is true once that conflict is answered app, with no token change", () => {
+    expect(nothingToSync(one(1, 3, 2, "everything", { all: "app" }), 0)).toBe(true);
+  });
+
+  it("is false with a row to write, or a token row to change", () => {
+    expect(nothingToSync(one(2, 2, 4), 0)).toBe(false);
+    expect(nothingToSync(one(2, 2, 2), 1)).toBe(false);
+    expect(nothingToSync(one(2, 2, 2), 0)).toBe(true);
+  });
 });

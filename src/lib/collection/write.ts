@@ -20,7 +20,7 @@ import {
   readTokenState, recordUploadTokens, syncPreconTokens, tokenOwnershipTablesExist, tokenWritePlan,
   type TokenChange, type TokenHolding, type TokenWriteMode,
 } from "../tokens/ownership";
-import { planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
+import { nothingToSync, planSync, staleness, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "./sync";
 import { readSyncBase } from "./sync-base";
 
 /**
@@ -868,7 +868,8 @@ export async function applyCollectionChange(
         }
         case "sync": {
           // The base under this write's own lock, so no upload confirmed in between can move it.
-          const base = await readSyncBase(userId, tx);
+          // The base EXCLUDES this upload: it was stamped confirmed above, in this transaction.
+          const base = await readSyncBase(userId, tx, { excludeUploadId: change.uploadId });
           if ("unavailable" in base) throw new Refused({ status: "noBase", reason: base.unavailable });
           const merged = planSync({ base: base.anchor.items, app: current, file: items, pick: change.pick, answers: change.answers });
           plan = merged.rows;
@@ -885,7 +886,7 @@ export async function applyCollectionChange(
               base.earlier.map((e) => e.items),
             ),
             tokenChanges,
-            nothing: plan.length === 0 && tokenChanges.length === 0,
+            nothing: nothingToSync(merged, tokenChanges.length),
             planDigest: digest,
           };
           if (!opts.dryRun) {

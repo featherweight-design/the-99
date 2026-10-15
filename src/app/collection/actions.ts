@@ -235,6 +235,15 @@ export type UploadChangePreview = {
 
 const NO_MATCHED_CARDS = "Upload has no matched cards; refusing to replace collection";
 
+/**
+ * Whether an upload with no matched cards may still go ahead: only a Sync of its tokens alone, from a payload
+ * that read tokens. Under Everything an empty file would remove every untouched holding, and Replace and Add
+ * keep the refusal they always had.
+ */
+function tokensOnlySync(items: readonly PendingItem[], sync: { pick: SyncPick } | null, tokens: TokenHolding[] | undefined): boolean {
+  return items.length === 0 && sync?.pick === "tokens" && Array.isArray(tokens) && tokens.length > 0;
+}
+
 function parseMode(mode: unknown, env: NodeJS.ProcessEnv): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
@@ -281,8 +290,9 @@ export async function previewUploadChange(
   if (upload.confirmedAt) return null;
   const { pendingItems, tokens } = upload.previewPayload as { pendingItems: PendingItem[]; tokens?: TokenHolding[] };
   // The confirm refuses an upload with no matched cards; previewing it would draw an empty
-  // Replace as "removes everything", which the save would never do.
-  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
+  // Replace as "removes everything", which the save would never do. A Sync of the tokens alone is the one
+  // exception: it writes no card.
+  if (pendingItems.length === 0 && !tokensOnlySync(pendingItems, sync, tokens)) throw new Error(NO_MATCHED_CARDS);
   const [result, edits, editedKeys, totals, lastUpload] = await Promise.all([
     applyCollectionChange(
       userId,
@@ -381,7 +391,7 @@ export async function confirmUpload(
     parseErrors?: { line: number; reason: string }[];
   };
   const pendingItems = preview.pendingItems;
-  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
+  if (pendingItems.length === 0 && !tokensOnlySync(pendingItems, sync, preview.tokens)) throw new Error(NO_MATCHED_CARDS);
 
   // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read here
   // on main's path and under the write's own lock on the ledger's (below). These reads are

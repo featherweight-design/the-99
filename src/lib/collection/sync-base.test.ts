@@ -41,6 +41,20 @@ describe("the anchor query", () => {
   });
 });
 
+describe("the anchor query, excluding the upload being synced", () => {
+  const q = render(anchorQuery("user_1", "this-upload"));
+
+  it("leaves it out of both the uploaded check and the anchor, so a first upload reads neverUploaded", () => {
+    expect(q.sql).toContain("select 1 from csv_uploads c where c.user_id = $1 and c.confirmed_at is not null and c.id <> $2::uuid");
+    expect(q.sql).toContain("where u.user_id = $3 and u.confirmed_at is not null and u.id <> $4::uuid and (");
+    expect(q.params).toEqual(["user_1", "this-upload", "user_1", "this-upload"]);
+  });
+
+  it("excludes nothing when no upload is named", () => {
+    expect(render(anchorQuery("user_1")).sql).not.toContain("<>");
+  });
+});
+
 describe("the earlier query", () => {
   const q = render(earlierQuery("user_1", "anchor-id"));
 
@@ -75,6 +89,12 @@ describe("readSyncBase", () => {
     const { q, calls } = runner([{ uploaded: false, id: null, confirmed_at: null, items: null }]);
     expect(await readSyncBase("u", q)).toEqual({ unavailable: "neverUploaded" });
     expect(calls).toHaveLength(1);
+  });
+
+  it("passes the excluded upload to the anchor query", async () => {
+    const { q, calls } = runner([{ uploaded: false, id: null, confirmed_at: null, items: null }]);
+    expect(await readSyncBase("u", q, { excludeUploadId: "this-upload" })).toEqual({ unavailable: "neverUploaded" });
+    expect(dialect.sqlToQuery(calls[0]).params).toContain("this-upload");
   });
 
   it("is noRecord when every confirmed upload is skipped (an Add, a reverted one, a partial Sync)", async () => {

@@ -396,7 +396,19 @@ describe("the sync write, in the source", () => {
   });
 
   it("reads its base after the per-user lock, inside the transaction", () => {
-    expect(at("pg_advisory_xact_lock(hashtextextended(${userId}, 0))")).toBeLessThan(at("const base = await readSyncBase(userId, tx);"));
+    expect(at("pg_advisory_xact_lock(hashtextextended(${userId}, 0))")).toBeLessThan(at("const base = await readSyncBase(userId, tx, { excludeUploadId: change.uploadId });"));
+  });
+
+  it("reads its base without the upload it stamped confirmed just before, so a first upload is neverUploaded", () => {
+    const stamp = at(".set({ confirmedAt: sql`clock_timestamp()` })");
+    const read = at("const base = await readSyncBase(userId, tx, { excludeUploadId: change.uploadId });");
+    expect(stamp).toBeLessThan(read);
+    // The one call: no other read of the base inside the write.
+    expect(src.match(/readSyncBase\(/g)).toHaveLength(1);
+  });
+
+  it("decides nothing to sync by the one rule, which counts an unanswered conflict as something", () => {
+    at("nothing: nothingToSync(merged, tokenChanges.length),");
   });
 
   it("refuses undecided, a missing or other digest, and nothing to sync, only on a confirm", () => {

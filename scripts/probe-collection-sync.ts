@@ -18,6 +18,7 @@
 //   e  Anchors: after reverting the last Sync, the base is the one before it; after an Add, it does not move.
 //   f  Only what it adds: no removal or lowering is written, tokens are upserted to the greater count and
 //      none is deleted, and the base does not move.
+//   g  Only its tokens, from a file with no matched cards: the tokens are recorded and no card moves.
 //
 // The thresholds staleness reads are printed, not asserted (G2: unmeasured).
 //
@@ -86,11 +87,12 @@ async function run() {
   if (cards.length < 9) throw new Error("the catalog holds fewer than nine cards");
   const [A, B, C, D, E, G, H, X, BULK] = cards.map((c) => c.oracle_id);
 
+  // Armed before the first insert: the cleanup deletes only these preallocated ids, so a partial fixture is safe.
+  tokensMade = true;
   for (let i = 0; i < 3; i += 1) {
     await pool.query("insert into tokens (oracle_id, name, type_line, colors, layout) values ($1, $2, 'Token Creature', '{}', 'token')", [T[i], `Probe Sync ${i}`]);
     await pool.query("insert into token_printings (scryfall_id, token_oracle_id, set_code, collector_number, finishes) values ($1, $2, 'tsyn', $3, '{nonfoil}')", [P[i], T[i], String(i + 1)]);
   }
-  tokensMade = true;
   const tok = (i: number, quantity: number): TokenHolding => ({ tokenOracleId: T[i], quantity, printings: [{ tokenPrintingId: P[i], quantity }] });
 
   const at = (oracleId: string, quantity: number, cn = "1"): PendingItem =>
@@ -146,6 +148,12 @@ async function run() {
 
   // ---- a. Hugh's shape ------------------------------------------------------------------------------
   check("setup · Sync has no base before any upload", await anchorId(), "neverUploaded");
+  // The write stamps the upload confirmed before it reads the base, in its own transaction: a first-ever
+  // upload must still read as never uploaded, not as an upload with no record (round 1, finding 3).
+  const firstUpload = await newUpload([at(A, 1)]);
+  const first = await applyCollectionChange(USER, syncChange(firstUpload, [at(A, 1)]), { id: randomUUID(), dryRun: true, env: ENV });
+  check("setup · a sync preview of a first-ever upload is neverUploaded", first.status === "noBase" ? first.reason : first.status, "neverUploaded");
+  check("setup · and leaves it unconfirmed", await confirmed(firstUpload), false);
   const F = [at(A, 1), at(B, 2), at(C, 1)];
   await replace(F);
   await edit([{ oracleId: D, quantity: 1 }]);
@@ -182,7 +190,8 @@ async function run() {
   const bUpload = await newUpload(F2);
   const undecided = syncChange(bUpload, F2);
   const pu = await preview(undecided);
-  check("b · undecided: the preview counts it", [pu.sync!.counts.conflicts, pu.sync!.counts.undecided], [1, 1]);
+  check("b · undecided: the preview counts it, and does not call it nothing to sync",
+    [pu.sync!.counts.conflicts, pu.sync!.counts.undecided, pu.sync!.nothing], [1, 1, false]);
   const before = await entries();
   check("b · undecided: the confirm refuses and writes nothing",
     [(await confirm(undecided, pu.sync!.planDigest)).status, await count(X), await entries() - before, await confirmed(bUpload)],
@@ -261,6 +270,12 @@ async function run() {
   check("f · no removal or lowering is written; the addition is", [await count(A), await count(X), await count(G)], [1, 2, 1]);
   check("f · tokens take the greater, add the new, delete none", await tokenRows(), ["0:upload=2", "1:upload=1", "2:upload=1"].sort());
   check("f · the base does not move", await anchorId(), cAnchor);
+
+  // ---- g. Only its tokens, from a file with no matched cards ------------------------------------------
+  const cardsBeforeG = await rows<{ n: number }>("select coalesce(sum(quantity), 0)::int n from collection_items where user_id = $1", [USER]);
+  const g = await sync([], { pick: "tokens", tokens: [tok(2, 3)] });
+  check("g · a tokens-only file syncs its tokens under Replace's rule", [g.result.status, await tokenRows()], ["applied", ["2:upload=3"]]);
+  check("g · and writes no card", (await rows<{ n: number }>("select coalesce(sum(quantity), 0)::int n from collection_items where user_id = $1", [USER]))[0].n, cardsBeforeG[0].n);
 }
 
 run()
