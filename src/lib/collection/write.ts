@@ -239,6 +239,7 @@ export type ChangeOptions = {
 export type RaisedCard = {
   after: Availability;
   brought: number;
+  /** The reservations the card's "before" is granted with: as they stood before the write's own work. */
   reservations: { deckId: string; copies: number }[];
 };
 
@@ -698,6 +699,7 @@ export async function applyCollectionChange(
       // ---- 4. Today's rows, and the plan against them.
       let target: { rows: HistoryRow[] | null } | undefined;
       const ignoredDecks = new Set<string>();
+      let startRelease: PreconRelease | null = null;
       if (change.kind === "revert") {
         const [row] = await tx.select({
           rows: collectionHistory.rows,
@@ -725,8 +727,11 @@ export async function applyCollectionChange(
         target = row;
         // A precon's tokens go with its cards, and come back with them when a revert is reverted.
         await syncPreconTokens(tx, userId);
-        // And the copies a start with "I own this precon" reserved to its deck: they are leaving.
-        await releasePreconReservations(tx, userId, change.entryId);
+        // And the copies a start with "I own this precon" reserved to its deck: they are leaving. Locked here, in
+        // the order every reservation write takes them, and DROPPED only after the deck check reads its "before":
+        // read without them, the box's copies would go by seniority to older decks that are short of them, and the
+        // revert would warn that it leaves those decks short when they were short already.
+        startRelease = await lockPreconReservations(tx, userId, change.entryId);
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
@@ -824,6 +829,7 @@ export async function applyCollectionChange(
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
       const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered, env: opts.env }, tx) : null;
+      if (startRelease) await dropPreconReservations(tx, userId, startRelease);
       // ONE claims snapshot for the receipt's before and after. Claim writers (a commit, a deck
       // edit) take no collection lock, so two reads either side of the write could straddle another
       // deck's commit and credit this purchase with it. `before` is that same snapshot less the
@@ -903,6 +909,12 @@ export async function applyCollectionChange(
       const tokensMarked = preconTokens
         ? await syncPreconTokens(tx, userId, opts.id)
         : undefined;
+      // The reservations the arriving copies are placed against, read BEFORE the inside work: a start reserves
+      // the box's copies to its new deck in there, and "Went to" granted with those would hand the new deck an
+      // older copy in its "before" and credit the arriving one to the next deck in the queue.
+      const insideBefore = opts.placements && opts.inside && change.kind === "add"
+        ? await readRaisedReservations(tx, userId, raisedIds(plan))
+        : undefined;
       if (opts.inside && change.kind === "add") await opts.inside(tx);
 
       const moves = countMoves(rows);
@@ -921,7 +933,7 @@ export async function applyCollectionChange(
       if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
 
       // Where the arriving copies went, read before the entry is written so the entry keeps it (wentTo).
-      const raised = opts.placements ? await raisedCards(tx, userId, plan, opts.env) : undefined;
+      const raised = opts.placements ? await raisedCards(tx, userId, plan, opts.env, insideBefore) : undefined;
       if (raised) annotateWentTo(rows, wentByOracle(raised));
       await tx.update(collectionHistory)
         .set({ rows, ...moves })
@@ -955,23 +967,40 @@ export async function applyCollectionChange(
   }
 }
 
+/** The start's reservations a revert releases: each started deck and the cards locked for it. */
+type PreconRelease = { deckId: string; oracleIds: string[] }[];
+
 /**
- * Drops the reservations the start made for add `entryId` (`startPreconOwned`), each card's claim lock
- * first, sorted, as every reservation write takes it. Only the START's own: written in the deck's own
- * transaction, so stamped no later than the deck, while a copy the player gives that deck later through
- * the chooser is stamped after it and stays. Reverting that revert brings the copies back but not the
- * reservations: they then go where the claim model's order sends them.
+ * Takes the claim locks for the reservations the start made for add `entryId` (`startPreconOwned`), each
+ * card's lock sorted, as every reservation write takes it, and names what `dropPreconReservations` will
+ * drop. Two steps so a revert can read the deck check's "before" with the reservations still standing, under
+ * locks it took where it always took them. Null when the entry started no deck.
  */
-async function releasePreconReservations(tx: Tx, userId: string, entryId: string): Promise<void> {
+async function lockPreconReservations(tx: Tx, userId: string, entryId: string): Promise<PreconRelease | null> {
   const started = await tx.select({ id: decks.id }).from(decks)
     .where(and(eq(decks.userId, userId), eq(decks.preconAddEntryId, entryId)));
+  const release: PreconRelease = [];
   for (const deck of started) {
-    // The cards to lock, read before the locks only to name them: the delete below re-applies the
-    // timestamp bound under them, so a reservation the chooser replaced in between is never taken.
+    // The cards to lock, read before the locks only to name them: the delete re-applies the timestamp
+    // bound under them, so a reservation the chooser replaced in between is never taken.
     const ids = [...new Set((await tx.select({ oracleId: cardAssignments.oracleId }).from(cardAssignments)
       .where(and(eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id)))).map((r) => r.oracleId))].sort();
     if (ids.length === 0) continue;
     for (const id of ids) await lockCardClaims(tx, userId, id);
+    release.push({ deckId: deck.id, oracleIds: ids });
+  }
+  return release.length > 0 ? release : null;
+}
+
+/**
+ * Drops the reservations `lockPreconReservations` locked. Only the START's own: written in the deck's own
+ * transaction, so stamped no later than the deck, while a copy the player gives that deck later through
+ * the chooser is stamped after it and stays. Reverting that revert brings the copies back but not the
+ * reservations: they then go where the claim model's order sends them.
+ */
+async function dropPreconReservations(tx: Tx, userId: string, release: PreconRelease): Promise<void> {
+  for (const { deckId, oracleIds: ids } of release) {
+    const deck = { id: deckId };
     await tx.delete(cardAssignments).where(and(
       eq(cardAssignments.userId, userId), eq(cardAssignments.deckId, deck.id), inArray(cardAssignments.oracleId, ids),
       // In SQL, never through a JS Date: a Date keeps milliseconds, and a reservation stamped in the deck's own
@@ -981,30 +1010,59 @@ async function releasePreconReservations(tx: Tx, userId: string, entryId: string
   }
 }
 
-/**
- * Every card `plan` raised, read after the write in one claim-model read, with its reservations in
- * the model's order. A card no deck claims is left out: it went nowhere.
- */
-async function raisedCards(tx: Tx, userId: string, plan: Planned[], env: NodeJS.ProcessEnv): Promise<Record<string, RaisedCard>> {
+/** How many copies `plan` raised, by card. */
+function broughtBy(plan: Planned[]): Map<string, number> {
   const brought = new Map<string, number>();
   for (const p of plan) {
     const d = qty(p.after) - qty(p.before);
     if (d > 0) brought.set(p.oracleId, (brought.get(p.oracleId) ?? 0) + d);
   }
-  if (brought.size === 0) return {};
-  const ids = [...brought.keys()].sort();
-  // UNDER EVERY RAISED CARD'S CLAIM LOCK, which every reservation write takes first, so a pick in
-  // another tab cannot land between the allocation read and the reservation read below and pair one
-  // with the other's order. Sorted, so two writes locking overlapping cards take them in one order.
+  return brought;
+}
+
+/** The cards `plan` raised, sorted: the order every reservation write takes their claim locks in. */
+const raisedIds = (plan: Planned[]): string[] => [...broughtBy(plan).keys()].sort();
+
+type Reservations = Map<string, { deckId: string; copies: number }[]>;
+
+/**
+ * The reservations on `ids`, in the model's order, UNDER EACH CARD'S CLAIM LOCK, which every reservation
+ * write takes first, so a pick in another tab cannot land between this read and the allocation read
+ * beside it and pair one with the other's order. Sorted, so two writes locking overlapping cards take
+ * them in one order; a lock this transaction already holds is taken again for nothing.
+ */
+async function readRaisedReservations(tx: Tx, userId: string, ids: string[]): Promise<Reservations> {
   for (const id of ids) await lockCardClaims(tx, userId, id);
-  const availability = await loadAvailability(userId, { oracleIds: ids, env }, tx);
-  const reservations = new Map<string, { deckId: string; copies: number }[]>();
+  const reservations: Reservations = new Map();
+  if (ids.length === 0) return reservations;
   for (const r of await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
     .from(cardAssignments)
     .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, ids)))
     .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
     reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
   }
+  return reservations;
+}
+
+/**
+ * Every card `plan` raised, read after the write in one claim-model read. A card no deck claims is left
+ * out: it went nowhere. Each carries the reservations its "before" is granted with (`arrivalPlacement`):
+ * `prior` when the caller read them before work of its own reserved copies (a precon start), else the ones
+ * standing now.
+ */
+async function raisedCards(
+  tx: Tx,
+  userId: string,
+  plan: Planned[],
+  env: NodeJS.ProcessEnv,
+  prior?: Reservations,
+): Promise<Record<string, RaisedCard>> {
+  const brought = broughtBy(plan);
+  if (brought.size === 0) return {};
+  const ids = [...brought.keys()].sort();
+  // `prior` was read under these same cards' claim locks, which this transaction still holds.
+  const reservations = prior ?? await readRaisedReservations(tx, userId, ids);
+  const availability = await loadAvailability(userId, { oracleIds: ids, env }, tx);
   const out: Record<string, RaisedCard> = {};
   for (const [oracleId, after] of availability) {
     if (after.claims.length === 0) continue;
