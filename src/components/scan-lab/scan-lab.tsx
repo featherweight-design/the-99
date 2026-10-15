@@ -13,9 +13,10 @@ import {
 } from "../../lib/scan-lab/geometry";
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
+import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan-lab/steady";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
 import { TrueCardStep } from "./true-card-step";
-import { ScanControls, tensorToImage } from "./scan-controls";
+import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan-lab/models";
@@ -59,7 +60,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const sessions = useRef(sessionHolder<OrtSession>());
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [reading, setReading] = useState<Reading | null>(null);
+  // What the screen says: the steady reading (`steady.ts`), never a one-frame flicker.
+  const steady = useRef<SteadyState>(startSteady(0));
+  const [display, setDisplay] = useState<Display>(() => startSteady(0));
   // On from the first tap and kept across taps, so a run of photos needs no box ticked. Unticking it, which is
   // also kept, keeps every pixel on the device.
   const [keepFrame, setKeepFrame] = useState(true);
@@ -88,7 +91,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       stream.current.close();
       sessions.current.close();
       history.current = [];
-      setReading(null);
+      steady.current = startSteady(performance.now());
+      setDisplay(steady.current);
       setStatus("error");
       setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
     };
@@ -135,6 +139,14 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       if (!stream.current.holds(media)) return; // the page was left while the camera started
       setStatus("running");
       running.current = true;
+      steady.current = startSteady(performance.now());
+      setDisplay(steady.current);
+      // Each frame's reading goes through the dwell; the screen re-renders only when what it shows moved.
+      const publish = (r: Reading) => {
+        const next = nextSteady(steady.current, r, performance.now());
+        if (next.reading !== steady.current.reading || next.changedAt !== steady.current.changedAt) setDisplay(next);
+        steady.current = next;
+      };
       const frame = document.createElement("canvas");
       const square = document.createElement("canvas");
       square.width = square.height = DETECTOR_SIZE;
@@ -145,7 +157,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, t1: number) => {
         history.current = [];
-        setReading({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
+        publish({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
       };
       const loop = async () => {
         if (!running.current) return;
@@ -184,7 +196,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               const agreed = agreedRun(history.current, AGREE_MARGIN);
               const committed = agreement(history.current, AGREE_FRAMES, AGREE_MARGIN) !== null;
               // the crop and the verdict it produced are published together, as one reading
-              setReading({
+              publish({
                 kind: "card", crop, guesses, margin, agreed, committed,
                 detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
@@ -206,9 +218,10 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     }
   }, [indexBase]);
 
-  const record = useCallback(async (r: Reading | null, correct: boolean) => {
-    // one reading, the one the player was looking at (`ScanControls` holds it from the press): its verdict, its
-    // timings and its own crop
+  const record = useCallback(async (tap: Tap, correct: boolean) => {
+    // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
+    // one before a change the press came too soon to react to): its verdict, its timings and its own crop
+    const r = tap.reading;
     const crop = readingCrop(r);
     setMissed(null);
     const mine = ++tapSeq.current;
@@ -223,7 +236,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     const res = await fetch("/api/scan-lab/result", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(tapBody(r, correct, indexVersion.current, frame)),
+      body: JSON.stringify(tapBody(r, correct, indexVersion.current, frame, tap)),
     }).catch(() => null);
     if (res?.ok) {
       setTaps((t) => ({ n: t.n + 1, right: t.right + (correct ? 1 : 0) }));
@@ -251,7 +264,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <ScanControls reading={reading} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record}>
+        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}

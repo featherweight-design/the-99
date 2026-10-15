@@ -939,6 +939,13 @@
       "when": 1792090020723,
       "tag": "0133_phone_shopping_row_b_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 134,
+      "version": "7",
+      "when": 1792103573532,
+      "tag": "0134_scan_lab_tap_change",
+      "breakpoints": true
     }
   ]
 }

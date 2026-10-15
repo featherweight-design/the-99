@@ -26,9 +26,14 @@ export function readingCrop(r: Reading | null): Float32Array | null {
   return r?.kind === "card" ? r.crop : null;
 }
 
-/** The JSON body of a tap, read from one reading only. `frame` is that reading's crop, encoded. */
-export function tapBody(r: Reading | null, correct: boolean, indexVersion: string, frame: string | null) {
+/** The JSON body of a tap, read from one reading only. `frame` is that reading's crop, encoded. `at` is when the
+ * screen last changed before the press and what it showed then (`tapTarget`), which may be a later reading than `r`. */
+export function tapBody(
+  r: Reading | null, correct: boolean, indexVersion: string, frame: string | null,
+  at: { changedMsBeforeTap: number; shown: Reading | null },
+) {
   const card = r?.kind === "card" ? r : null;
+  const shown = at.shown?.kind === "card" ? at.shown : null;
   return {
     guessOracleId: card?.guesses[0]?.oracleId ?? null,
     correct,
@@ -41,6 +46,8 @@ export function tapBody(r: Reading | null, correct: boolean, indexVersion: strin
     agreedFrames: Math.min(card?.agreed ?? 0, 100),
     indexVersion,
     frame: card ? frame : null,
+    changedMsBeforeTap: at.changedMsBeforeTap,
+    shownOracleId: shown?.guesses[0]?.oracleId ?? null,
   };
 }
 

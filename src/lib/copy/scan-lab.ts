@@ -10,6 +10,7 @@ export const scanLabCopy = {
   failed: "The scanner didn’t load.",
   noCamera: "This browser can’t open the camera here.",
   noCard: "No card in view",
+  unsure: "Not sure yet", // no guess has held long enough to show (low light flickers)
   guessing: "Best guess",
   held: "Held for your tap", // replaces Best guess while a finger is on the controls
   agreed: (n: number) => `same answer on ${n} frames in a row`,
