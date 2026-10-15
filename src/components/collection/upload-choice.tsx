@@ -11,6 +11,7 @@ import { ADD_OVERLAP_NOTE_AT } from "../../lib/collection/upload-preview";
 import type { SyncUnavailable, UploadMode } from "../../app/collection/actions";
 import type { SyncPick } from "../../lib/collection/sync";
 import type { SyncNext, SyncNote } from "./sync-choice-view";
+import type { BuiltLeaving } from "../../lib/collection/built-leaving";
 import { GhostButton, PrimaryButton } from "../ui/button";
 
 export type ReplaceFacts = {
@@ -19,6 +20,8 @@ export type ReplaceFacts = {
   lastUploadAt: string | null;
   /** History reaches back to that upload, so the count can be quoted. */
   historyReaches: boolean;
+  /** S14: what a Replace takes from a collection built in the app, when the player never uploaded (no-collection entry). */
+  built?: BuiltLeaving | null;
 };
 
 /** The Sync card and what hangs off it, from the sync dry runs. Absent, the step is the shipped two-card one. */
@@ -57,7 +60,8 @@ const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
 function Warning({ facts }: { facts: ReplaceFacts }) {
   const c = collectionEditCopy.upload;
   let text: string | null = null;
-  if (facts.lastUploadAt === null) text = facts.editsSinceUpload > 0 ? c.choiceOverwriteNoUpload(facts.editsSinceUpload) : null;
+  if (facts.lastUploadAt === null && facts.built) text = c.replaceBuilt(facts.built.copies, facts.built.precons, facts.built.byHand);
+  else if (facts.lastUploadAt === null) text = facts.editsSinceUpload > 0 ? c.choiceOverwriteNoUpload(facts.editsSinceUpload) : null;
   else if (!facts.historyReaches) text = c.choiceOverwriteUnknown(day(facts.lastUploadAt));
   else text = facts.editsSinceUpload > 0 ? c.overwriteCount(facts.editsSinceUpload, day(facts.lastUploadAt)) : null;
   if (!text) return null;

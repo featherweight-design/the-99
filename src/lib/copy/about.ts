@@ -72,7 +72,7 @@ export function fillAllowance(text: string, limit: number, spell: (n: number) =>
   return text.split(ALLOWANCE_SLOT).join(spell(limit));
 }
 
-export const ABOUT_VERSION = 14;
+export const ABOUT_VERSION = 15;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -109,7 +109,8 @@ export type AboutSwitch =
   | 'TUNING_HUB_ENABLED'
   | 'LINEUP_ENABLED'
   | 'PROPOSED_CUTS_ENABLED'
-  | 'FIND_A_DECK_READ_ENABLED';
+  | 'FIND_A_DECK_READ_ENABLED'
+  | 'NO_COLLECTION_ENTRY_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -291,6 +292,37 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 1,
+  },
+  // A way in without a collection (plan `2026-10-15-no-collection-entry.md` PR 6, handoff
+  // `design_handoff_the99_no_collection_entry/about · start without a collection.ts`, R3). After `import`,
+  // following the line's own switch, which needs COLLECTION_EDIT_ENABLED. `since: 15` is the line's ONE bump,
+  // batched to its last PR. The precon sentence is a caption line of its own and the precon key a line of its own,
+  // so each follows PRECONS_ENABLED without the entry going dark. One caption at both widths.
+  {
+    id: 'start-without-a-collection',
+    switch: 'NO_COLLECTION_ENTRY_ENABLED',
+    chapter: '01',
+    title: 'Starting without a collection file',
+    route: '/collection',
+    opens: 'opens the empty Collection',
+    width: 'plate',
+    caption:
+      'No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nPick the precons you own and their cards go into your Collection at the box’s printings, tokens too.\nImport a deck you play and tick that you own its cards. Or add cards one at a time. A file can come later.',
+    captionLineSwitches: {
+      'Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.': 'PRECONS_ENABLED',
+    },
+    keys: [
+      'Commanders, Discover and Decks open once your Collection has a card in it.',
+      'Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.',
+      'An imported deck’s cards are added as one change, at the printings the list named.',
+      'Your first file asks whether it replaces or adds, and says what a replace would remove.',
+    ],
+    keySwitches: {
+      'Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.':
+        'PRECONS_ENABLED',
+    },
+    marksPending: true,
+    since: 15,
   },
   {
     id: 'upload-choice',
@@ -1089,7 +1121,12 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Paste Moxfield or MTGO text, or upload a CSV from ManaBox, Moxfield or Archidekt.',
       'Updating shows what the new list changes, and lets you keep cards it leaves out.',
       'A line we can’t match still comes over, flagged for you to fix.',
+      // No-collection entry, an ordinary edit riding the line's bump: the tick is drawn only with its switch.
+      'Own the deck you’re importing? Tick the box and its cards go into your Collection too.',
     ],
+    keySwitches: {
+      'Own the deck you’re importing? Tick the box and its cards go into your Collection too.': 'NO_COLLECTION_ENTRY_ENABLED',
+    },
     marksPending: true,
     since: 1,
   },
@@ -1137,8 +1174,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the precon list',
     width: 'plate',
     switch: 'PRECONS_ENABLED',
+    // R3's sentence (no-collection entry): the way in is the Add cards sheet's row, drawn only with the line's switch.
+    captionLineSwitches: {
+      'Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.':
+        'NO_COLLECTION_ENTRY_ENABLED',
+    },
     caption:
-      'Every Commander precon, from the first boxes in 2011 to the newest, is listed on Decks under Commander precons. Each shows its commander’s card and how many of its cards are already in your Collection. A Collector’s Edition with the same cards is listed once, under the plain edition, and its page switches between the two to show each edition’s own printings.\n\nOpen one to read its list, group by group, as rows or as cards. Say you own 74 of Eldrazi Unbound’s 85: start a deck from it and you get the whole list, in the box’s printings. Own the box? Select “I own this precon” when you start, and its cards and tokens go into your collection too.\n\nUpgrading a precon is how a lot of Commander decks begin.',
+      'Every Commander precon, from the first boxes in 2011 to the newest, is listed on Decks under Commander precons. Each shows its commander’s card and how many of its cards are already in your Collection. A Collector’s Edition with the same cards is listed once, under the plain edition, and its page switches between the two to show each edition’s own printings.\n\nOpen one to read its list, group by group, as rows or as cards. Say you own 74 of Eldrazi Unbound’s 85: start a deck from it and you get the whole list, in the box’s printings. Own the box? Select “I own this precon” when you start, and its cards and tokens go into your collection too.\nOwn a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.\n\nUpgrading a precon is how a lot of Commander decks begin.',
     keys: [
       'Any printing counts, as everywhere else. Basic lands are left out of the count.',
       'If one of your decks shares much of a precon’s list, the precon names it and counts what you share.',

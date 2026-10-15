@@ -346,8 +346,8 @@ export const preconsCopy = {
    */
   pick: {
     title: "Precons I own",
-    sub: "Tick every box you own. Its cards go into your collection at the box’s own printings, foils as foils, with its tokens. No deck is started.",
-    subPhone: "Tick every box you own. Its cards and tokens go into your collection. No deck is started.",
+    sub: "Tick every box you own. Its cards and tokens go into your collection at the box’s own printings, foils as foils, and no deck is started.",
+    subPhone: "Tick every box you own. Its cards and tokens go into your collection, and no deck is started.",
     backHome: "‹ Home",
     backCollection: "‹ Collection",
     /** The row's figure: `100 cards` on desktop, `100` at 390. */

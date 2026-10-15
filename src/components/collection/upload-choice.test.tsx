@@ -266,3 +266,30 @@ describe("UploadChoice · the stale file", () => {
     expect(screen.queryByRole("group")).toBeNull();
   });
 });
+
+describe("UploadChoice, S14: a first file over a collection built in the app (no-collection entry)", () => {
+  const never = { editsSinceUpload: 9, lastUploadAt: null, historyReaches: false };
+  const replaceWarning = () => screen.getAllByRole("radio")[0].textContent;
+
+  it("names what Replace takes and where it came from, in place of the overwrite count", () => {
+    render(<UploadChoice {...base} facts={{ ...never, built: { copies: 212, precons: 3, byHand: true } }} sync={sync({ unavailable: "neverUploaded", anchorAt: null })} picked={null} onPick={noop} />);
+    expect(replaceWarning()).toContain("⚠212 cards you added from 3 precons and by hand aren’t in this file and would leave. Revert can bring them back.");
+    expect(replaceWarning()).not.toContain("will be overwritten");
+  });
+
+  it("names one source alone, and a single card in the singular", () => {
+    const { unmount } = render(<UploadChoice {...base} facts={{ ...never, built: { copies: 1, precons: 1, byHand: false } }} picked={null} onPick={noop} />);
+    expect(replaceWarning()).toContain("1 card you added from 1 precon isn’t in this file and would leave.");
+    unmount();
+    render(<UploadChoice {...base} facts={{ ...never, built: { copies: 40, precons: 0, byHand: true } }} picked={null} onPick={noop} />);
+    expect(replaceWarning()).toContain("40 cards you added by hand aren’t in this file and would leave.");
+  });
+
+  it("reads as shipped when nothing leaves, or with the switch off (no `built` at all)", () => {
+    const { unmount } = render(<UploadChoice {...base} facts={{ ...never, built: null }} picked={null} onPick={noop} />);
+    expect(replaceWarning()).toContain("9 changes you made in the app will be overwritten.");
+    unmount();
+    render(<UploadChoice {...base} facts={never} picked={null} onPick={noop} />);
+    expect(replaceWarning()).toContain("9 changes you made in the app will be overwritten.");
+  });
+});

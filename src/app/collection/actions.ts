@@ -20,9 +20,10 @@ import {
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
-import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
+import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, readBuiltEntries } from "../../lib/collection/history";
+import { builtLeaving, type BuiltLeaving } from "../../lib/collection/built-leaving";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
@@ -246,6 +247,11 @@ export type UploadChangePreview = {
    * the retention window), `editsSinceUpload` undercounts and the screen must not quote a number.
    */
   historyReaches: boolean;
+  /**
+   * S14 (no-collection entry): a Replace by a player who has never uploaded, with the line's switch on: the copies
+   * it would take and where they came from, for Replace's warning. Null when nothing leaves; absent otherwise.
+   */
+  built?: BuiltLeaving | null;
   /** The four figures, the card lists behind them and an Add's overlap (collection edit §A). */
   detail: UploadPreviewDetail;
   /** Sync mode only. */
@@ -352,6 +358,10 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
+  // S14: only a Replace by a player with no upload to be "since", and only with the line's switch on.
+  const built = kind === "replace" && lastUpload === null && noCollectionEntryEnabled(env)
+    ? builtLeaving(result.rows, await readBuiltEntries(userId))
+    : undefined;
   const tagged = s
     ? new Set(s.conflicts.filter((r) => r.answer === "file").map((r) => r.key))
     : editedKeys;
@@ -360,6 +370,7 @@ export async function previewUploadChange(
     lowered: result.lowered,
     decks: result.decks,
     ...common,
+    ...(built !== undefined ? { built } : {}),
     detail: summarizeUploadPreview({
       rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys: tagged,
     }),

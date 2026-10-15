@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -50,6 +50,7 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
   it("ties exactly the launch entries to their switches, and the version to the rest", () => {
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["collection-add", "COLLECTION_EDIT_ENABLED"],
+      ["start-without-a-collection", "NO_COLLECTION_ENTRY_ENABLED"],
       ["upload-choice", "COLLECTION_EDIT_ENABLED"],
       ["all-decks-cart", "ALL_DECKS_CART_ENABLED"],
       ["added-copy", "ADDED_COPY_ENABLED"],
@@ -77,8 +78,8 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["decks-stats", "LINEUP_ENABLED"],
       ["notes", "DECK_NOTES_ENABLED"],
     ]);
-    // Versions 12 (collection edit), 13 (evidence benchmarks) and 14 (deck printings and I got it)
-    // added only switched entries, so
+    // Versions 12 (collection edit), 13 (evidence benchmarks), 14 (deck printings and I got it) and 15 (a way in
+    // without a collection) added only switched entries, so
     // the newest UNSWITCHED entry is still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
     // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
@@ -130,17 +131,20 @@ describe("an entry tied to a switch", () => {
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
     // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
-    // version, with no bump of their own.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts] = later.map((id) => launch.filter((e) => e.id === id));
+    // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 15, the no-collection
+    // entry line's one bump.
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
     expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...upcoming, ...deckTokens, ...notes, ...addedCopy, ...decksStats, ...fitsRead, ...proposedCuts].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]);
+    expect(startWithout.map((e) => e.since)).toEqual([15]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
+      "start-without-a-collection",
       "upload-choice",
       "all-decks-cart",
       "added-copy",
@@ -402,14 +406,59 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
     expect(on[on.indexOf("export") + 1]).toBe("deck-printings");
   });
 
-  it("is one bump: both at the current version, so the sheet counts its own two", () => {
+  it("is one bump: both at that launch's version, so the sheet counted its own two", () => {
     for (const id of ["shopping-got-it", "deck-printings"]) {
       const entry = aboutEntries.find((e) => e.id === id)!;
-      expect(entry.since, id).toBe(ABOUT_VERSION);
+      expect(entry.since, id).toBe(14);
       expect(entry.chapter, id).toBe("03");
       expect(entry.width, id).toBe("plate");
     }
-    expect(ABOUT_VERSION).toBe(14);
+    expect(ABOUT_VERSION).toBeGreaterThanOrEqual(14);
+  });
+});
+
+describe("a way in without a collection (no-collection entry PR 6: one bump, 15)", () => {
+  const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
+  const LINE = { COLLECTION_EDIT_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true" };
+  const drawn = (o: Record<string, string>, id: string) => visibleEntries(env(o)).find((e) => e.id === id);
+  const PRECON_LINE = "Pick the precons you own and their cards go into your Collection at the box’s printings, tokens too.";
+  const PRECON_KEY = "Each precon box is its own change in History, and Revert takes it back. Adding a box twice stacks its copies.";
+
+  it("is the line's one bump, in chapter 01 straight after import", () => {
+    const entry = aboutEntries.find((e) => e.id === "start-without-a-collection")!;
+    expect(entry.since).toBe(ABOUT_VERSION);
+    expect(ABOUT_VERSION).toBe(15);
+    const ids = visibleEntries(env(LINE)).map((e) => e.id);
+    expect(ids[ids.indexOf("import") + 1]).toBe("start-without-a-collection");
+  });
+
+  it("draws only with the line's switch, which needs collection editing", () => {
+    expect(drawn({ NO_COLLECTION_ENTRY_ENABLED: "true" }, "start-without-a-collection")).toBeUndefined();
+    expect(drawn({ COLLECTION_EDIT_ENABLED: "true" }, "start-without-a-collection")).toBeUndefined();
+    expect(drawn(LINE, "start-without-a-collection")).toBeDefined();
+  });
+
+  it("follows PRECONS_ENABLED line by line: the precon sentence and key go, and the rest reads whole", () => {
+    const off = drawn(LINE, "start-without-a-collection")!;
+    expect(off.caption).not.toContain(PRECON_LINE);
+    expect(off.caption).toBe("No export to upload? Plenty of us don’t have one. If your cards are a few precon boxes, a Moxfield list or a pile on the desk, start there.\n\nImport a deck you play and tick that you own its cards. Or add cards one at a time. A file can come later.");
+    expect(off.keys).not.toContain(PRECON_KEY);
+    expect(off.keys).toHaveLength(3);
+    const on = drawn({ ...LINE, PRECONS_ENABLED: "true" }, "start-without-a-collection")!;
+    expect(on.caption).toContain(PRECON_LINE);
+    expect(on.keys).toHaveLength(4);
+  });
+
+  it("gives deck-import its fourth key and precons R3's sentence only with the line's switch", () => {
+    const tick = "Own the deck you’re importing? Tick the box and its cards go into your Collection too.";
+    const r3 = "Own a few boxes and don’t want decks from them yet? Press Add cards in your Collection, then Pick them, and they’re added without starting anything.";
+    expect(drawn({ COLLECTION_EDIT_ENABLED: "true" }, "deck-import")!.keys).toHaveLength(3);
+    expect(drawn(LINE, "deck-import")!.keys).toEqual(expect.arrayContaining([tick]));
+    expect(drawn(LINE, "deck-import")!.keys).toHaveLength(4);
+    const shipped = drawn({ PRECONS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" }, "precons")!.caption;
+    expect(shipped).not.toContain(r3);
+    expect(shipped).toContain("go into your collection too.\n\nUpgrading");
+    expect(drawn({ ...LINE, PRECONS_ENABLED: "true" }, "precons")!.caption).toContain(`go into your collection too.\n${r3}\n\nUpgrading`);
   });
 });
 

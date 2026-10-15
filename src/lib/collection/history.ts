@@ -105,6 +105,19 @@ export async function editedKeysSinceUpload(userId: string): Promise<Set<string>
   return (await handChangesSinceUpload(userId)).keys;
 }
 
+/**
+ * Every standing hand entry the player has (an `add` or `edit` that no revert took back), with its source and
+ * rows: what `builtLeaving` attributes a first Replace's removals to (S14). Read only for a player who has never
+ * uploaded, so it is the whole of how their collection was built.
+ */
+export async function readBuiltEntries(userId: string): Promise<{ source: string | null; rows: HistoryRow[] | null }[]> {
+  const res = await db.execute<{ source: string | null; rows: HistoryRow[] | null }>(sql`
+    select source, rows from collection_history
+    where user_id = ${userId} and kind in ('add', 'edit') and reverted_by is null
+    order by seq`);
+  return res.rows;
+}
+
 /** How many entries one page of history holds. */
 export const HISTORY_PAGE_SIZE = 50;
 

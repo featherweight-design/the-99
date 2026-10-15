@@ -1,0 +1,398 @@
+{
+  "feature": "A way in without a collection, the whole line (handoff design_handoff_the99_no_collection_entry, R2 + R3; plan 2026-10-15-no-collection-entry.md, the route x viewport inventory)",
+  "clearAbout": true,
+  "note": "Needs COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. Each row's `account` names the state it needs: A zero cards and no decks, B the writes that build a collection from A, C a collection built in the app with no upload, D an account holding cards. The sheet runs every row at the phone width and then every row at desktop, so one run photographs one state's rows: run it once per state, on a fresh account each time. Rows marked WRITES add a deck or cards (s12, s10, s5, s19), and `clearAbout` marks the About gate seen and restores it afterwards: run any sheet that includes them on a scratch branch made from local-dev ONLY, never on local-dev, staging or production. Rows that write nothing may also run read-only against staging, except s14, whose Preview stores an unconfirmed upload. Steps press only controls inside <main>: the nav's locked-slot note is opened from the shell and is pinned by the nav tests. S4 (pending), S6, S7 and S11 (refusals) and the switch-off states (S15, S16) cannot be forced from a browser and are proved by component tests. The ways group's shared-component check lives in no-collection-entry-shared.json, because `check:shared` holds every row of an inventory with a `shares` block to that block.",
+  "out": "contact-sheets/no-collection-entry",
+  "rows": [
+    {
+      "id": "s1-first-run",
+      "label": "Home, first run: step 1 with the ways group under the upload, Collection open, three slots locked (S1)",
+      "view": "src/components/home/first-run-step-one.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-ways-group=step1]",
+          "settle": 1000
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s13-empty-collection",
+      "label": "/collection at zero cards: one Upload tile, then the ways group with Add cards (S13)",
+      "view": "src/components/collection/collection-empty-doors.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "[data-ways-group=empty]",
+          "settle": 1000
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "nav-zero-outside-first-run",
+      "label": "The nav at zero cards outside first run: Collection open, the well (desktop) and the bracket (phone) over Commanders, Discover and Decks. The note opens from a shell press the sheet cannot make; the nav tests pin its three forms",
+      "view": "src/components/shell/nav.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "commanders-empty",
+      "label": "/commanders at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
+      "view": "src/app/commanders/page.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "discover-empty",
+      "label": "/discover at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
+      "view": "src/app/discover/page.tsx",
+      "account": "A: zero cards, no decks",
+      "steps": [
+        {
+          "goto": "/discover",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "s8-unticked",
+      "label": "/decks/import, the box under Deck name, unticked (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s8-ticked",
+      "label": "/decks/import with a list, a name and the box ticked; the button keeps `Import N cards` (S8)",
+      "view": "src/components/decks/import-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "Kinnan Ramp"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s2-open",
+      "label": "/decks/precons?pick=own, nothing ticked: `Tick the boxes you own.` and the add held (S2)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s3-three",
+      "label": "Three boxes ticked: the foot's lead and `Add 3 boxes · N cards` (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(2) input[type=checkbox]"
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(3) input[type=checkbox]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s3-twin",
+      "label": "A twin ticked: Regular / Collector's Edition under its row (S3)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&q=Avengers",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "wait": "[role=radiogroup]",
+          "settle": 600
+        }
+      ],
+      "account": "A: zero cards, no decks"
+    },
+    {
+      "id": "s12-unticked-arrival",
+      "label": "/decks/[id] after an unticked import: the shipped one-line strip, now with the ✕ alone (S12) WRITES",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · unticked"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)"
+    },
+    {
+      "id": "home-zero-with-deck",
+      "label": "Home with a deck and no cards: `0 cards · 1 deck`, `Add your cards` the header's one action (S12)",
+      "view": "src/app/page.tsx",
+      "account": "B: zero cards, then the writes that build a collection (in this order)",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "s10-ticked-arrival",
+      "label": "/decks/[id] after a ticked import: the strip in three lines (head, the add with History, meta) and the ✕ alone (S10) WRITES",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/import",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "fill": "#import-paste",
+          "text": "1 Kinnan, Bonder Prodigy *CMDR*\n1 Arcane Signet\n1 Birds of Paradise"
+        },
+        {
+          "fill": "#import-deck-name",
+          "text": "PR2 sheet · ticked"
+        },
+        {
+          "click": "input[type=checkbox]",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Import \\d+ cards$"
+        },
+        {
+          "wait": "button[aria-label=Dismiss]",
+          "settle": 1500
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)"
+    },
+    {
+      "id": "s5-home-receipt",
+      "label": "Home after one box is added: the receipt strip over the dashboard, ✕ alone (S5). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add 1 box"
+        },
+        {
+          "wait": "[role=status] button[aria-label=Dismiss]",
+          "settle": 2000
+        }
+      ],
+      "account": "B: zero cards, then the writes that build a collection (in this order)"
+    },
+    {
+      "id": "s14-replace-built",
+      "label": "/collection/replace, first file over a collection built in the app: Sync's choice, nothing picked, Sync unavailable (never uploaded), Replace's warning naming the cards from precons and by hand that would leave (S14). Previewing stores an unconfirmed upload; no confirm is pressed",
+      "view": "src/components/collection/upload-choice.tsx",
+      "account": "C: a collection built in the app, never uploaded (state B leaves one)",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 10000
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "[role=radiogroup]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "s19-collection-receipt",
+      "label": "/collection after one box is added from Collection: the receipt strip under the tabs, ✕ alone (S19). WRITES one box",
+      "view": "src/components/home/precon-pick-receipt.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "click": "section:first-of-type li:nth-of-type(1) input[type=checkbox]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add 1 box"
+        },
+        {
+          "wait": "[role=status] button[aria-label=Dismiss]",
+          "settle": 2000
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "s18-sheet-row",
+      "label": "/collection, Add cards sheet, empty list: `Own precon boxes? Pick them ›` under the upload row on the phone, the only row on desktop (S18)",
+      "view": "src/components/collection/add-cards-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "e2-s17-pick-with-cards",
+      "label": "/decks/precons?pick=own&from=collection with cards: `‹ Collection`, `you own N of M` on every row, `✓ added <date>` on a box already added (E2, S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1200
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "s17-note",
+      "label": "A box already added, ticked: still pickable, with `You added this box on <date>. Adding it again adds a second copy of each card.` under it (S17)",
+      "view": "src/components/decks/precons/precon-pick-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?pick=own&from=collection",
+          "wait": "input[type=checkbox]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "checkbox",
+          "name": "✓ added",
+          "settle": 600
+        }
+      ],
+      "account": "D: holds cards"
+    },
+    {
+      "id": "about-start-without",
+      "label": "/about: the new entry `Starting without a collection file` with the ways group as its figure, one caption at both widths",
+      "view": "src/components/about/figures.tsx",
+      "account": "D: holds cards",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='start-without-a-collection']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='start-without-a-collection']"
+        }
+      ]
+    },
+    {
+      "id": "about-precons-edit",
+      "label": "/about: the precons entry with R3's sentence (`Press Add cards in your Collection, then Pick them…`)",
+      "view": "src/components/about/about-page.tsx",
+      "account": "D: holds cards",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "#precons",
+          "settle": 1200,
+          "scrollTo": "#precons"
+        }
+      ]
+    }
+  ]
+}
