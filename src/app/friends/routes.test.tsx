@@ -16,18 +16,31 @@ const m = vi.hoisted(() => ({
   ensureProfile: vi.fn(),
   listOpenInvites: vi.fn(),
   listFriends: vi.fn(),
+  redeemInviteAction: vi.fn(),
+  declineInviteAction: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
+vi.mock("next/navigation", () => ({
+  notFound: () => { throw new Error("NOT_FOUND"); },
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 vi.mock("@clerk/nextjs/server", () => ({ auth: m.auth, currentUser: m.currentUser }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "localhost:3313" }) }));
-vi.mock("@clerk/nextjs", () => ({ SignInButton: ({ children }: { children: React.ReactNode }) => children }));
+vi.mock("@clerk/nextjs", () => ({
+  SignInButton: ({ children, forceRedirectUrl }: { children: React.ReactNode; forceRedirectUrl?: string }) => (
+    <span data-testid="sign-in" data-return={forceRedirectUrl}>{children}</span>
+  ),
+}));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../lib/social/friends", () => ({
   readInvite: m.readInvite, ensureProfile: m.ensureProfile, listOpenInvites: m.listOpenInvites,
 }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends }));
-vi.mock("./actions", () => ({ spendFriendLinkAction: m.spendFriendLinkAction }));
+vi.mock("./actions", () => ({
+  spendFriendLinkAction: m.spendFriendLinkAction,
+  redeemInviteAction: m.redeemInviteAction,
+  declineInviteAction: m.declineInviteAction,
+}));
 
 import FriendsPage from "./page";
 import FriendLinkPage from "../friend/[token]/page";
@@ -84,6 +97,13 @@ describe("/friend/[token]", () => {
     render(await FriendLinkPage({ params: params() }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.landing.signedOutTitle);
     expect(screen.getByRole("button", { name: socialCopy.landing.signIn })).toBeTruthy();
+    expect(screen.getByText(socialCopy.landing.signedOutFine)).toBeTruthy();
+    // Face down and naming nobody: the back alone, and no Create an account (G3).
+    expect(screen.getByTestId("friend-card-back")).toBeTruthy();
+    expect(screen.queryByTestId("friend-card-front")).toBeNull();
+    expect(screen.queryByText(/create an account/i)).toBeNull();
+    // Signing in comes back to this link, so the card turns over for them.
+    expect(screen.getByTestId("sign-in").dataset.return).toBe(`/friend/${TOKEN}`);
     expect(m.requestSwitchEnv).not.toHaveBeenCalled();
     expect(m.readInvite).not.toHaveBeenCalled();
   });
@@ -95,7 +115,7 @@ describe("/friend/[token]", () => {
   });
 
   it("spends an open link from a friend after mount, and the render itself spends nothing", async () => {
-    m.readInvite.mockResolvedValue(open({ alreadyFriends: true }));
+    m.readInvite.mockResolvedValue(open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T12:00:00Z") }));
     const page = await FriendLinkPage({ params: params() });
     expect(m.spendFriendLinkAction).not.toHaveBeenCalled();
     render(page);
@@ -114,9 +134,33 @@ describe("/friend/[token]", () => {
     expect(m.spendFriendLinkAction).not.toHaveBeenCalled();
   });
 
-  it("reads nothing for a malformed token", async () => {
+  it("reads nothing for a malformed token, and draws it as a link that no longer works", async () => {
     render(await FriendLinkPage({ params: params("not-a-token") }));
     expect(m.readInvite).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.landing.endedTitle);
+  });
+
+  const L = socialCopy.landing;
+  it.each([
+    ["an open link", open(), L.openTitle("Ana")],
+    ["your own link", open({ self: true }), L.selfTitle],
+    ["a friend's link", open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T12:00:00Z") }), L.alreadyTitle("Ana")],
+    ["an expired link", { state: "expired" }, L.expiredTitle],
+    ["a redeemed link", { state: "redeemed" }, L.endedTitle],
+    ["a declined link", { state: "declined" }, L.endedTitle],
+    ["a revoked link", { state: "revoked" }, L.endedTitle],
+    ["no link", null, L.endedTitle],
+  ])("draws %s as its own card", async (_n, view, title) => {
+    m.readInvite.mockResolvedValue(view);
+    render(await FriendLinkPage({ params: params() }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(title);
+  });
+
+  it("names nobody on a link that has ended", async () => {
+    m.readInvite.mockResolvedValue({ state: "revoked" });
+    render(await FriendLinkPage({ params: params() }));
+    expect(screen.queryByTestId("friend-card-front")).toBeNull();
+    expect(screen.queryByText(/Ana/)).toBeNull();
   });
 });
 
