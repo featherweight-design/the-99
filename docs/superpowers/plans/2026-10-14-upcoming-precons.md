@@ -18,7 +18,10 @@ and `catalog_first_seen` (`src/lib/catalog/first-seen.ts`). Nothing calls them y
 - **About stays on its sheet this release** (G8, R1 H5): when the banner and the sheet are both due, both show.
   Moving About onto the banner is Phase 2 below, held.
 - **Defaults where Design drew one:**
-  - G2: a revealed commander links nowhere.
+  - G2: ~~a revealed commander links nowhere.~~ Reversed by Hugh, 2026-10-15 ("the previewed commanders are so
+    hard to see"): every revealed commander opens the shared card details on a press (Enter on the keyboard) and
+    draws the shared hover preview on desktop. In tiles a set's commanders are drawn in the decklists' own tile
+    shell and grid (`PRECON_TILES_CLASS`), at a decklist tile's size; in rows the opened row keeps its small strip.
   - G5: `new ·` lasts 14 days from each precon's arrival, the same for everyone.
   - G6: the banner window is 30 days.
 

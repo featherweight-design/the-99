@@ -181,7 +181,7 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
   };
   const announced: AnnouncedProps = {
     sets: [trc],
-    commanders: { trc: [{ oracleId: "chapel", name: "Christine Chapel, Combat Medic", colorIdentity: ["W"], imageUriSmall: null, collectorNumber: "78" }] },
+    commanders: { trc: [{ oracleId: "chapel", name: "Christine Chapel, Combat Medic", colorIdentity: ["W"], imageUriSmall: null, imageUri: null, collectorNumber: "78" }] },
     today: "2026-10-14",
     newCodes: [],
     opensByItself: false,

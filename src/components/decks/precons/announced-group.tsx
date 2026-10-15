@@ -3,7 +3,8 @@
 // The Announced group on `/decks/precons` (handoff `design_handoff_the99_upcoming_precons`, R2 C1–C3 over R1's
 // T and L rows; design table: Announced group, Set block, Revealed card, None plate, `new` tag, Jump). Commander
 // sets on the way, above the newest year, in Newest order only. An announced set is never a precon (STATES
-// rule 1): a dashed block with no tile shell, no figure, no link and no Start.
+// rule 1): a dashed block with no figure, no link and no Start. Its revealed commanders are cards, and open their
+// card details (Hugh, 2026-10-15): in tiles they are drawn in the decklists' own tile shell and grid.
 //
 // The head is a disclosure, CLOSED by default (rule 9: the group never pushes the decklists down unasked). It
 // opens by itself when it holds a set this reader has not been shown, or when the address names `#announced`
@@ -15,6 +16,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { PreconView } from "../../../lib/precons/list";
+import { CardDetailProvider } from "../../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../hover-preview";
 import { useStoredView } from "../../ui/use-stored-view";
 import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
 import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
@@ -124,8 +127,11 @@ export function AnnouncedGroup({
         {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
             matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
         <div className={`-mx-[4px] min-h-0 overflow-hidden px-[4px] ${open ? "-mb-[4px] pb-[4px]" : ""}`}>
+          {/* A revealed commander opens its card details and previews on hover, as every card thumb does. */}
+          <CardDetailProvider>
+          <HoverPreviewProvider>
           {view === "tiles" ? (
-            <ul className="m-0 flex list-none flex-col gap-[10px] p-0 pt-[10px]">
+            <ul className="m-0 flex list-none flex-col gap-[22px] p-0 pt-[10px]">
               {matches.map((m) => (
                 <AnnouncedSet key={m.set.code} match={m} today={today} isNew={newCodes.includes(m.set.code)} listed={listed[m.set.code] ?? null} />
               ))}
@@ -137,6 +143,8 @@ export function AnnouncedGroup({
               ))}
             </ul>
           )}
+          </HoverPreviewProvider>
+          </CardDetailProvider>
         </div>
       </div>
     </section>

@@ -5,6 +5,33 @@ import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
 import { ANNOUNCED_KEY, AnnouncedGroup, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
+import { AnnouncedSet } from "./announced-parts";
+import { PRECON_TILES_CLASS } from "./precon-grid";
+import { TILE_SHELL } from "../../ui/card-tile-caption";
+
+// The shared card-details trigger and hover-preview provider, passed through untouched but recorded, so a test can
+// say the revealed commanders are drawn by THOSE components (import identity) and with what.
+const shared = vi.hoisted(() => ({ triggers: [] as Array<Record<string, unknown>>, previewProviders: 0 }));
+vi.mock("../../cards/card-detail-provider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../cards/card-detail-provider")>();
+  return {
+    ...actual,
+    CardDetailTrigger: (props: Parameters<typeof actual.CardDetailTrigger>[0]) => {
+      shared.triggers.push(props as unknown as Record<string, unknown>);
+      return <span data-shared-trigger>{actual.CardDetailTrigger(props)}</span>;
+    },
+  };
+});
+vi.mock("../hover-preview", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../hover-preview")>();
+  return {
+    ...actual,
+    HoverPreviewProvider: (props: Parameters<typeof actual.HoverPreviewProvider>[0]) => {
+      shared.previewProviders += 1;
+      return <div data-shared-preview>{actual.HoverPreviewProvider(props)}</div>;
+    },
+  };
+});
 
 /** The group with its visit state held one level up, as the list view holds it. */
 function G(props: Omit<AnnouncedGroupProps, "visit">) {
@@ -16,7 +43,7 @@ const set = (code: string, name: string, releasesOn: string, over: Partial<Upcom
   code, name, releasesOn, released: false, cardCount: 40, parentName: null, arrivedAt: null, seen: false, ...over,
 });
 const commander = (n: number, name = `TRC commander ${n}`, colorIdentity = ["W"]): RevealedCommander => ({
-  oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, collectorNumber: String(n),
+  oracleId: `o${n}`, name, colorIdentity, imageUriSmall: `https://img/${n}.jpg`, imageUri: `https://img/normal/${n}.jpg`, collectorNumber: String(n),
 });
 const match = (s: UpcomingSet, commanders: RevealedCommander[], revealed = commanders.length): AnnouncedMatch => ({
   set: s, commanders, matched: commanders.length, revealed,
@@ -35,6 +62,8 @@ const region = (container: HTMLElement) => container.querySelector("#announced-s
 
 describe("AnnouncedGroup", () => {
   beforeEach(() => {
+    shared.triggers.length = 0;
+    shared.previewProviders = 0;
     window.localStorage.clear();
     window.history.replaceState(null, "", "/decks/precons");
     document.cookie = "precons_announced=; Max-Age=0; Path=/";
@@ -96,15 +125,65 @@ describe("AnnouncedGroup", () => {
     expect(head()).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("names every revealed card in text, with its full name and colors spoken (T4, T5)", () => {
+  it("names every revealed card as the control that opens it, its full name and colors spoken once (T4, T5)", () => {
     draw({ opensByItself: true });
     const [trcBlock, mdcBlock] = screen.getAllByTestId("announced-set");
-    expect(within(trcBlock).getAllByTestId("revealed-card")).toHaveLength(15);
-    expect(within(trcBlock).getByText("Christine Chapel, Combat Medic, White. Revealed commander.")).toBeInTheDocument();
+    expect(within(trcBlock).getAllByTestId("revealed-tile")).toHaveLength(15);
+    const chapel = within(trcBlock).getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+    expect(chapel).toHaveAttribute("data-testid", "revealed-press");
+    // Spoken once: the press carries the name, the drawn caption is hidden, and no sr-only sentence repeats it.
+    expect(within(trcBlock).queryByText(/Revealed commander\.$/)).toBeNull();
+    const caption = within(chapel.closest("li") as HTMLElement).getByText("Christine Chapel, Combat Medic");
+    expect(caption).toHaveAttribute("aria-hidden", "true");
+    expect(within(mdcBlock).getByRole("button", { name: "View details for Gargantos, the Endbringer, Black, Green. Revealed commander." })).toBeInTheDocument();
     expect(within(trcBlock).getByText("TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed")).toBeInTheDocument();
     expect(within(trcBlock).getByText("Nov 13, 2026 · in 30 days")).toBeInTheDocument();
     expect(within(mdcBlock).getByText("MDC · Apr 9, 2027 · in 6 months · 1 commander revealed")).toBeInTheDocument();
-    expect(within(mdcBlock).getByText("Gargantos, the Endbringer, Black, Green. Revealed commander.")).toBeInTheDocument();
+  });
+
+  describe("revealed commanders open card details (Hugh, 2026-10-15, reversing G2)", () => {
+    it("draws tiles in the precon list's own grid and tile shell", () => {
+      draw({ opensByItself: true });
+      const [trcBlock] = screen.getAllByTestId("announced-set");
+      const grid = within(trcBlock).getByTestId("revealed-tiles");
+      expect(grid.className).toBe(PRECON_TILES_CLASS);
+      for (const tile of within(grid).getAllByTestId("revealed-tile")) expect(tile.className.startsWith(`${TILE_SHELL} `)).toBe(true);
+      // Outside the dashed head, so the grid runs the list's full width, as the decklists' does.
+      expect(within(trcBlock).getByTestId("announced-set-head")).not.toContainElement(grid);
+    });
+
+    it("draws each one with the shared trigger and its hover preview, in tiles", () => {
+      draw({ opensByItself: true });
+      expect(shared.previewProviders).toBeGreaterThan(0);
+      const presses = screen.getAllByTestId("revealed-press");
+      expect(presses).toHaveLength(16);
+      for (const p of presses) {
+        expect(p.parentElement).toHaveAttribute("data-shared-trigger");
+        expect(p.closest("[data-shared-preview]")).not.toBeNull();
+      }
+      const chapel = shared.triggers.find((t) => t.oracleId === "o78")!;
+      expect(chapel).toMatchObject({ preview: true, imageUri: "https://img/normal/78.jpg", name: "Christine Chapel, Combat Medic" });
+      // Prev/Next pages the set's own commanders.
+      expect(chapel.siblings).toEqual(trcCards.map((c) => c.oracleId));
+    });
+
+    it("draws each one with the shared trigger in rows, at the strip's unchanged size", () => {
+      draw({ view: "rows", opensByItself: true });
+      const trcRow = screen.getAllByTestId("announced-row")[0];
+      fireEvent.click(within(trcRow).getByRole("button", { name: /Star Trek Commander/ }));
+      const chapel = within(trcRow).getByRole("button", { name: "View details for Christine Chapel, Combat Medic, White. Revealed commander." });
+      expect(chapel.parentElement).toHaveAttribute("data-shared-trigger");
+      expect(chapel.closest("[data-shared-preview]")).not.toBeNull();
+      expect(chapel.className).toContain("h-[106px] w-[76px]");
+      expect(chapel.className).toContain("md:h-[117px] md:w-[84px]");
+      expect(shared.triggers.find((t) => t.oracleId === "o78")).toMatchObject({ preview: true, imageUri: "https://img/normal/78.jpg" });
+    });
+
+    it("draws the art alone, unpressable, with the name spoken beside it, where there is no provider (About)", () => {
+      render(<ul><AnnouncedSet match={mdc} today="2026-10-14" isNew={false} listed={null} /></ul>);
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.getByText("Gargantos, the Endbringer, Black, Green. Revealed commander.")).toHaveClass("sr-only");
+    });
   });
 
   it("draws one plate for a set with none revealed (T2)", () => {
@@ -177,7 +256,7 @@ describe("AnnouncedGroup", () => {
     expect(window.localStorage.getItem(ANNOUNCED_KEY)).toBe("closed");
   });
 
-  describe("the strip as a keyboard stop", () => {
+  describe("the rows view's strip", () => {
     // jsdom lays nothing out: the strip's widths and the observer are stood in for.
     let wide = 0;
     beforeEach(() => {
@@ -187,27 +266,32 @@ describe("AnnouncedGroup", () => {
     });
     afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-    it("is a named region the keyboard reaches while it scrolls sideways", () => {
+    const openTrc = () => fireEvent.click(within(screen.getAllByTestId("announced-row")[0]).getByRole("button", { name: /Star Trek Commander/ }));
+
+    it("is a named region while it scrolls sideways, and no stop of its own: its cards are", () => {
       wide = 1200;
-      draw({ opensByItself: true });
+      draw({ view: "rows", opensByItself: true });
+      openTrc();
       const strip = screen.getByRole("region", { name: "15 revealed commanders" });
-      expect(strip).toHaveAttribute("tabindex", "0");
-      expect(strip.className).toContain("focus-visible:outline-[color:var(--accent)]");
+      expect(strip).not.toHaveAttribute("tabindex");
+      expect(within(strip).getAllByRole("button")).toHaveLength(15);
     });
 
     it("re-measures when a filter grows the strip without either box resizing (a search cleared)", () => {
       wide = 300;
       const one = match(trc.set, trc.commanders.slice(0, 1), 15);
-      const { rerender } = draw({ opensByItself: true, matches: [one] });
+      const { rerender } = draw({ view: "rows", opensByItself: true, matches: [one] });
+      openTrc();
       expect(screen.queryByRole("region", { name: /revealed commander/ })).toBeNull();
       wide = 1200;
-      rerender(<G matches={[trc]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
-      expect(screen.getByRole("region", { name: "15 revealed commanders" })).toHaveAttribute("tabindex", "0");
+      rerender(<G matches={[trc]} today="2026-10-14" newCodes={[]} opensByItself view="rows" listed={{}} />);
+      expect(screen.getByRole("region", { name: "15 revealed commanders" })).toBeInTheDocument();
     });
 
     it("is no stop at all once it wraps and fits", () => {
       wide = 300;
-      draw({ opensByItself: true });
+      draw({ view: "rows", opensByItself: true });
+      openTrc();
       const strips = screen.getAllByTestId("revealed-strip");
       expect(strips[0]).not.toHaveAttribute("tabindex");
       expect(strips[0]).not.toHaveAttribute("role");

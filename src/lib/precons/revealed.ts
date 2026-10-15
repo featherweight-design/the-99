@@ -20,6 +20,8 @@ export type RevealedPrinting = {
   colorIdentity: string[];
   typeLine: string;
   imageUriSmall: string | null;
+  /** The printing's normal render: the tile view's art and the hover preview's. */
+  imageUri: string | null;
   collectorNumber: string;
 };
 
@@ -72,8 +74,8 @@ export function revealedCommanders(rows: readonly RevealedPrinting[]): Record<st
   for (const [code, cardsIn] of bySet) {
     out[code] = [...cardsIn.values()]
       .sort((a, b) => compareCollectorNumbers(a.collectorNumber, b.collectorNumber) || (a.oracleId < b.oracleId ? -1 : 1))
-      .map(({ oracleId, name, colorIdentity, imageUriSmall, collectorNumber }) => ({
-        oracleId, name, colorIdentity, imageUriSmall, collectorNumber,
+      .map(({ oracleId, name, colorIdentity, imageUriSmall, imageUri, collectorNumber }) => ({
+        oracleId, name, colorIdentity, imageUriSmall, imageUri, collectorNumber,
       }));
   }
   return out;
@@ -108,6 +110,7 @@ export async function loadRevealedCommanders(codes: readonly string[], q: Reader
     colorIdentity: r.colorIdentity,
     typeLine: r.typeLine,
     imageUriSmall: r.imageUriSmall ?? r.imageUri,
+    imageUri: r.imageUri ?? r.imageUriSmall,
     collectorNumber: r.collectorNumber,
   })));
 }

@@ -46,6 +46,7 @@ const commander = (over: Partial<RevealedCommander>): RevealedCommander => ({
   name: "Card",
   colorIdentity: [],
   imageUriSmall: null,
+  imageUri: null,
   collectorNumber: "1",
   ...over,
 });
