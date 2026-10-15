@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { moveAccountToGroup } from "../../app/admin/accounts/actions";
@@ -64,14 +64,18 @@ function GroupSection({ page }: { page: AccountPage }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState(page.group?.id ?? "");
-  const [inFlight, setInFlight] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // A saved move closes the picker inside the refresh's transition, so the picker and the group link
+  // change together when the page redraws: closed at once, the link read the old group for a beat.
+  const [refreshing, startRefresh] = useTransition();
+  const inFlight = saving || refreshing;
   const [failure, setFailure] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmPreview | null>(null);
   const targetName = page.groups.find((g) => g.id === target)?.name ?? null;
 
   async function submit(confirmed?: number) {
     setFailure(null);
-    setInFlight(true);
+    setSaving(true);
     let result: MoveResult;
     try {
       result = await moveAccountToGroup(page.id, target || null, confirmed);
@@ -79,17 +83,19 @@ function GroupSection({ page }: { page: AccountPage }) {
       // A thrown action is a lost reply, not a refusal: the move may have committed before the reply was
       // lost, so this is never "nothing changed". Refresh to reconcile and say the outcome is unknown, as
       // the group editor does.
-      setInFlight(false);
+      setSaving(false);
       setConfirm(null);
       setFailure(adminCopy.groups.errors.unknown);
       router.refresh();
       return;
     }
-    setInFlight(false);
+    setSaving(false);
     if (result.ok) {
       setConfirm(null);
-      setOpen(false);
-      router.refresh();
+      startRefresh(() => {
+        setOpen(false);
+        router.refresh();
+      });
       return;
     }
     if (result.error === "confirm") {

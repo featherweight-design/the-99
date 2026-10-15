@@ -49,11 +49,15 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     setInFlight(null);
     if (result.ok) {
       setConfirm(null);
-      onSaved?.(p);
       confirmAfter.current = null;
       afterSave?.();
       setSettling(p);
-      startRefresh(() => router.refresh());
+      // The caller's own updates (a pending row handing back to its picker) ride in the same transition,
+      // so they commit with the redrawn page rather than ahead of it.
+      startRefresh(() => {
+        onSaved?.(p);
+        router.refresh();
+      });
     } else if (result.error === "confirm") {
       // A confirmed write saves later, from the dialog: keep what it should do then (and nothing
       // else's: a dialog for a set must never run a cancelled clear's callback).

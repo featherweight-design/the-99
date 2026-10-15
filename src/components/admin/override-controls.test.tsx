@@ -42,7 +42,7 @@ describe("AppWideControl", () => {
   });
 
   // The refresh the save starts is a transition, and the page is drawn with the old value until it
-  // lands. Released before then, On flipped back to Off for a beat and then to On (Hugh, 2026-10-15).
+  // lands. Released before then, On flipped back to Off for a beat and then to On (Hugh's report).
   it("keeps the saved option pressed until the refresh has drawn it", async () => {
     let land!: () => void;
     const landed = new Promise<void>((r) => (land = r));
