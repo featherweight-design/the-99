@@ -457,8 +457,8 @@ export function DiffRowOut({
    *  reserved box, because a row with nothing to decide should not hold a gap
    *  where a button would be. */
   action?: React.ReactNode;
-  /** Review page only: the copies this row lost, inside the row rather than on a
-   *  line under it repeating the name. */
+  /** The copies this row lost, inside the row rather than on a line under it repeating the name:
+   *  the review page, and a count drop in the update flow. */
   recount?: DiffRowRecount;
 } & DiffRowNameExtras) {
   const rowOpen = useRowOpen(card, siblings, review);
@@ -567,7 +567,7 @@ export function DiffRowIn({
   card: DiffRowCard;
   sourceLine: number | null;
   action?: React.ReactNode;
-  /** Review page only: the copies this row gained, inside the row. */
+  /** The copies this row gained, inside the row: the review page, and a count rise in the update flow. */
   recount?: DiffRowRecount;
   /** The review page's box, hover fill and pointer hint — see `DiffRowOut`. */
   review?: boolean;

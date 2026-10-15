@@ -239,3 +239,36 @@ describe("updateDeckFromList and the deck's version", () => {
     ).rejects.toThrow(/connection lost/);
   });
 });
+
+// Hugh, 2026-10-15: a count the list lowers is copies coming out, and Keep on it holds the deck's
+// own count. The apply re-plans from the text, so the kept id is the only thing that can stop the
+// requantify; without it, twelve Islands become nine.
+describe("updateDeckFromList and a kept count drop", () => {
+  const lowered = "1 Sol Ring\n9 Island";
+  const requantified = () =>
+    stub.state.updates.filter(
+      (u) => u.table === "deck_cards" && (u.values as { quantity?: number }).quantity !== undefined,
+    );
+
+  it("writes the lower count when the drop is not kept", async () => {
+    newest.mockResolvedValue(null);
+    await updateDeckFromList({ deckId: "deck-1", text: lowered, source: "paste", keep: [] });
+    expect(requantified().map((u) => u.values)).toEqual([{ quantity: 9 }]);
+  });
+
+  it("leaves the deck's count when the drop is kept", async () => {
+    newest.mockResolvedValue(null);
+    await updateDeckFromList({
+      deckId: "deck-1", text: lowered, source: "paste", keep: ["o-island"],
+    });
+    expect(requantified()).toEqual([]);
+  });
+
+  it("still writes a raised count whose id arrives in keep", async () => {
+    newest.mockResolvedValue(null);
+    await updateDeckFromList({
+      deckId: "deck-1", text: "1 Sol Ring\n14 Island", source: "paste", keep: ["o-island"],
+    });
+    expect(requantified().map((u) => u.values)).toEqual([{ quantity: 14 }]);
+  });
+});

@@ -38,8 +38,9 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
     out: [row("out-1"), row("out-2")],
     lockedOut: [],
     in: [row("in-1", { sourceLine: 4 })],
+    fewer: [],
+    more: [],
     unchanged: [row("same-1")],
-    recounted: [],
     unresolved: [],
     noChange: false,
     version: null,
@@ -449,40 +450,58 @@ describe("UpdateDiff provenance", () => {
       out: [row("out-1", { quantity: 12 })],
       in: [row("in-1", { quantity: 4, sourceLine: 4 })],
       unchanged: [],
-      recounted: [],
     });
     expect(screen.getByText(copy.landing("91", "83"))).toBeInTheDocument();
   });
 
-  // A quantity the diff reconciles without naming still moves the deck, and the
-  // figure compared to 99 is the one place that has to admit it.
-  it("carries the silently reconciled quantities into the landing figure", () => {
-    renderDiff({
-      built: 91,
-      out: [],
-      in: [],
-      recounted: [{ oracleId: "same-1", name: "Island", from: 12, to: 9 }],
-    });
-    expect(screen.getByText(copy.landing("91", "88"))).toBeInTheDocument();
+  // Hugh, 2026-10-15: Plains 6 → 3 beside three cards going in read `3 in, 0 out` over a deck
+  // that stayed at 99. A drop is copies out and a rise is copies in, so the figures add up.
+  const plains = { ...row("plains", { name: "Plains", typeLine: "Basic Land — Plains", quantity: 3 }), from: 6, to: 3 };
+  const goingIn = [row("in-1"), row("in-2"), row("in-3")];
+
+  it("counts a dropped count as copies out, in the chips, the heading and the button", () => {
+    renderDiff({ built: 99, out: [], in: goingIn, fewer: [plains] });
+    expect(screen.getByText(copy.landing("99", "99"))).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: copy.outHeading("3") })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: copy.inHeading("3") })).toBeInTheDocument();
+    expect(screen.getByText(copy.apply("3", "3"))).toBeInTheDocument();
   });
 
-  // Without this line the chips cannot be added up: a list that takes one card
-  // out and puts one in while dropping three Islands lands three below where
-  // the groups say it should, and nothing on the screen says why.
-  it("names every count it reconciles, so the landing figure can be checked", () => {
-    renderDiff({
-      recounted: [
-        { oracleId: "same-1", name: "Island", from: 7, to: 8 },
-        { oracleId: "same-2", name: "Mountain", from: 7, to: 6 },
-      ],
-    });
-    expect(
-      screen.getByText(copy.recounted("Island 7 → 8, Mountain 7 → 6")),
-    ).toBeInTheDocument();
+  it("draws the drop in the out group with both figures and the out group's own body", () => {
+    renderDiff({ built: 99, out: [], in: goingIn, fewer: [plains] });
+    const group = screen.getByRole("heading", { name: copy.outHeading("3") }).parentElement
+      ?.parentElement as HTMLElement;
+    expect(within(group).getByText(copy.recountedItem("", "6", "3").trim())).toBeInTheDocument();
+    expect(within(group).getByText(copy.outBodyFewer)).toBeInTheDocument();
   });
 
-  it("says nothing about counts when none moved", () => {
-    const { container } = renderDiff({ recounted: [] });
+  it("keeps the plain out body when no count drops", () => {
+    renderDiff();
+    expect(screen.getByText(copy.outBody)).toBeInTheDocument();
+    expect(screen.queryByText(copy.outBodyFewer)).toBeNull();
+  });
+
+  it("counts a raised count as copies in, drawn in the in group", () => {
+    const island = { ...row("island", { name: "Island", typeLine: "Basic Land — Island", quantity: 9 }), from: 7, to: 9 };
+    renderDiff({ built: 91, out: [], in: [], more: [island] });
+    const group = screen.getByRole("heading", { name: copy.inHeading("2") }).parentElement
+      ?.parentElement as HTMLElement;
+    expect(within(group).getByText(copy.recountedItem("", "7", "9").trim())).toBeInTheDocument();
+    expect(screen.getByText(copy.landing("91", "93"))).toBeInTheDocument();
+    expect(screen.getByText(copy.apply("2", "0"))).toBeInTheDocument();
+  });
+
+  it("keeping a drop keeps the deck's count, and hands its id to the apply", () => {
+    const { onApply } = renderDiff({ built: 99, out: [], in: goingIn, fewer: [plains] });
+    fireEvent.click(screen.getByRole("button", { name: copy.keepAria("Plains") }));
+    expect(screen.getByText(copy.apply("3", "0"))).toBeInTheDocument();
+    expect(screen.getByText(copy.summary("1", "102"))).toBeInTheDocument();
+    fireEvent.click(screen.getByText(copy.apply("3", "0")));
+    expect(onApply).toHaveBeenCalledWith(["plains"]);
+  });
+
+  it("no longer prints the new-counts line", () => {
+    const { container } = renderDiff({ fewer: [plains] });
     expect(container.textContent).not.toContain("new counts");
   });
 

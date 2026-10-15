@@ -50,8 +50,9 @@ const preview = {
     },
   ],
   in: [],
+  fewer: [],
+  more: [],
   unchanged: [],
-  recounted: [],
   unresolved: [],
   noChange: false,
 };

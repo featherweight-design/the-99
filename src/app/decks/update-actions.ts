@@ -12,6 +12,7 @@ import type { Availability } from "../../lib/decks/availability";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, resolveDeckListInput, type ImportNote } from "../../lib/decks/import";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
 import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
@@ -44,6 +45,10 @@ export type DeckUpdateChangedRow = DeckUpdateRow & {
   availability: Availability | null;
 };
 
+/** A card the list keeps at a different count, drawn in the group its change counts toward: a drop
+ *  in the out group, a rise in the in group. `quantity` is the count it lands on (`to`). */
+export type DeckUpdateRecountRow = DeckUpdateChangedRow & { from: number; to: number };
+
 export type DeckUpdatePreview = {
   ok: true;
   deckName: string;
@@ -61,12 +66,13 @@ export type DeckUpdatePreview = {
    */
   lockedOut: string[];
   in: DeckUpdateChangedRow[];
+  /** The cards whose count the list moves, out of `unchanged`: a count that drops is copies coming
+   *  out and one that rises is copies going in (Hugh, 2026-10-15), so the groups and their figures
+   *  carry them and the in and out figures add up to the landing one. A kept drop stays at `from`. */
+  fewer: DeckUpdateRecountRow[];
+  more: DeckUpdateRecountRow[];
+  /** In both, at the same count. */
   unchanged: DeckUpdateRow[];
-  /** The cards the list keeps but asks for a different number of, straight from
-   *  the planner. The landing figure has to carry them: it is compared to 99,
-   *  so it is the one number that cannot be off, while the group counts stay
-   *  row counts. */
-  recounted: DeckUpdatePlan["recounted"];
   unresolved: DeckUpdatePlan["unresolved"];
   noChange: boolean;
   /** The version the deck is sleeved as, or null for a brew. A versioned deck's
@@ -211,12 +217,25 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     };
   }
 
-  const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in }, env);
+  // The rows whose count moves leave `unchanged`: the groups draw them now, with both figures.
+  const moved = new Map(plan.recounted.map((r) => [r.oracleId, r]));
+  const recountRows = plan.unchanged.filter((r) => moved.has(r.oracleId));
+  const widened = await withFacts(
+    userId,
+    input.deckId,
+    { out: plan.out, in: plan.in, recount: recountRows },
+    env,
+  );
+  const recount = widened.recount.map((r) => ({
+    ...r,
+    from: moved.get(r.oracleId)!.from,
+    to: moved.get(r.oracleId)!.to,
+  }));
   const version = await newestVersion(input.deckId);
   // FAIL CLOSED, never the display read's empty set: this read decides what the review starts KEPT,
   // and a locked card that silently starts unticked is deleted by an Apply nobody touched. A failed
   // read fails the preview, which the player can retry; it never offers a destructive default.
-  const locked = neverCutEnabled(env) && plan.out.length > 0
+  const locked = neverCutEnabled(env) && (plan.out.length > 0 || recount.some((r) => r.to < r.from))
     ? await lockedOracleIds(input.deckId, userId, "throw")
     : new Set<string>();
   const printingPicks = await readModalPicks(userId, input.deckId, env);
@@ -229,10 +248,14 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     notes: parsed.notes,
     existingUnresolvedCount: existingUnresolved.length,
     out: widened.out,
-    lockedOut: widened.out.filter((r) => locked.has(r.oracleId)).map((r) => r.oracleId),
+    // A locked card whose count drops starts kept too: fewer copies is a cut of those copies.
+    lockedOut: [...widened.out, ...recount.filter((r) => r.to < r.from)]
+      .filter((r) => locked.has(r.oracleId))
+      .map((r) => r.oracleId),
     in: widened.in,
-    unchanged: plan.unchanged,
-    recounted: plan.recounted,
+    fewer: recount.filter((r) => r.to < r.from),
+    more: recount.filter((r) => r.to > r.from),
+    unchanged: plan.unchanged.filter((r) => !moved.has(r.oracleId)),
     unresolved: plan.unresolved,
     noChange: plan.noChange,
     version: version?.number ?? null,
@@ -256,15 +279,21 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
 async function withFacts(
   userId: string,
   deckId: string,
-  groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[] },
+  groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[]; recount: DeckUpdateRow[] },
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
   env: NodeJS.ProcessEnv,
-): Promise<{ out: DeckUpdateChangedRow[]; in: DeckUpdateChangedRow[] }> {
+): Promise<{
+  out: DeckUpdateChangedRow[];
+  in: DeckUpdateChangedRow[];
+  recount: DeckUpdateChangedRow[];
+}> {
   // Distinct ids, not rows: a basic land stacks, and nothing stops a plan from
   // naming the same card in both groups. Both reads below answer per card, so a
   // repeat only widens the bind list.
-  const oracleIds = [...new Set([...groups.out, ...groups.in].map((r) => r.oracleId))];
-  if (oracleIds.length === 0) return { out: [], in: [] };
+  const oracleIds = [
+    ...new Set([...groups.out, ...groups.in, ...groups.recount].map((r) => r.oracleId)),
+  ];
+  if (oracleIds.length === 0) return { out: [], in: [], recount: [] };
 
   const ownedRows = await db
     .selectDistinct({ oracleId: collectionItems.oracleId })
@@ -288,16 +317,19 @@ async function withFacts(
   const widen = (group: DeckUpdateRow[]): DeckUpdateChangedRow[] =>
     group.map((r) => ({
       ...r,
-      owned: have.has(r.oracleId),
+      // A basic is never bought (#628): owned, so it is never counted "to buy", the rule the
+      // draft's own rows hold (`draft-state.ts`).
+      owned: have.has(r.oracleId) || isBasicLand(r.typeLine),
       availability: availability?.get(r.oracleId) ?? null,
     }));
 
-  return { out: widen(groups.out), in: widen(groups.in) };
+  return { out: widen(groups.out), in: widen(groups.in), recount: widen(groups.recount) };
 }
 
 export type ApplyDeckUpdateInput = UpdateDeckInput & {
-  /** Oracle ids of removals the player chose to keep. The only thing the client
-   *  contributes to the write — everything else is re-derived from `text`. */
+  /** Oracle ids of removals the player chose to keep, and of count drops kept at the deck's own
+   *  count. The only thing the client contributes to the write — everything else is re-derived
+   *  from `text`. */
   keep: string[];
   /** The locked cards the preview SHOWED (its `lockedOut`). The apply re-reads the locks under the
    *  deck row lock and refuses when a card it would remove is locked now but was not shown locked:
@@ -463,6 +495,8 @@ export async function updateDeckFromList(
     const byQuantity = new Map<number, string[]>();
     for (const r of plan.unchanged) {
       if (now.get(r.oracleId) === r.quantity) continue;
+      // A kept drop stays at the deck's count; a rise has nothing to keep.
+      if (keep.has(r.oracleId) && r.quantity < (now.get(r.oracleId) ?? 0)) continue;
       const ids = byQuantity.get(r.quantity);
       if (ids) ids.push(r.oracleId);
       else byQuantity.set(r.quantity, [r.oracleId]);
