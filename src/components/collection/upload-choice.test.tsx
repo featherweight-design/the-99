@@ -158,7 +158,7 @@ describe("UploadChoice with Sync", () => {
 });
 
 describe("UploadChoice · a file with no matched card", () => {
-  const reason = "No card in this file matched, only tokens. There’s nothing here to replace or add.";
+  const reason = "Only tokens in this file matched. Replace and Add need at least one card.";
 
   it("draws Replace and Add unavailable with the reason in place of the figure, and names Sync at the foot", () => {
     const picks: string[] = [];

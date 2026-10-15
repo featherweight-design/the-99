@@ -81,7 +81,7 @@ export const collectionEditCopy = {
      * (new, for /copy-review) On the Replace and Add cards, unavailable, for a file with no matched card: one of
      * tokens alone, which only a Sync can take (its tokens).
      */
-    choiceNoCards: "No card in this file matched, only tokens. There’s nothing here to replace or add.",
+    choiceNoCards: "Only tokens in this file matched. Replace and Add need at least one card.",
     /**
      * (new, for /copy-review) No unreverted Replace or full Sync to compare against, or its file is too old to
      * read. No date: the ledger-base wording this replaced named the newest upload.
