@@ -14,7 +14,7 @@ import { requireUserId } from "../../../lib/auth";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { wishlistEnabled } from "../../../lib/wishlist/flag";
 import { clearWishlistLine, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
-import { dismissCollected } from "../../../lib/wishlist/collected";
+import { MAX_COLLECTED_NOTICES, dismissCollected } from "../../../lib/wishlist/collected";
 import { isUuid } from "../../../lib/uuid";
 
 type Off = { ok: false; reason: "off" };
@@ -74,17 +74,16 @@ export async function removeFromWishlistAction(oracleId: unknown): Promise<Remov
 
 export type DismissOutcome = { ok: true; dismissed: number } | Off | { ok: false; reason: "invalid" };
 
-/** As many notices as one strip can name; a longer list is refused rather than cut. */
-const MAX_SHOWN = 200;
 
 /**
  * The collected strip's ✕: forgets exactly the notices the strip drew, each sent back as its card id and the
- * `collectedAt` it was read with (an ISO string over the wire). Anything else in the list refuses the whole dismiss.
+ * `collectedAt` it was read with (an ISO string over the wire). The read draws at most `MAX_COLLECTED_NOTICES`, so a
+ * longer list, or anything malformed in it, refuses the whole dismiss.
  */
 export async function dismissCollectedAction(shown: unknown): Promise<DismissOutcome> {
   const userId = await wishlistReader();
   if (!userId) return OFF;
-  if (!Array.isArray(shown) || shown.length === 0 || shown.length > MAX_SHOWN) return { ok: false, reason: "invalid" };
+  if (!Array.isArray(shown) || shown.length === 0 || shown.length > MAX_COLLECTED_NOTICES) return { ok: false, reason: "invalid" };
   const notices: { oracleId: string; collectedAt: Date }[] = [];
   for (const n of shown) {
     const oracleId = (n as { oracleId?: unknown } | null)?.oracleId;

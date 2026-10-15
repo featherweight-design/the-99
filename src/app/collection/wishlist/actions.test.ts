@@ -20,7 +20,7 @@ vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("../../../lib/wishlist/wishlist", () => ({
   wantOneMore: m.wantOneMore, setWishlistQuantity: m.setWishlistQuantity, clearWishlistLine: m.clearWishlistLine,
 }));
-vi.mock("../../../lib/wishlist/collected", () => ({ dismissCollected: m.dismissCollected }));
+vi.mock("../../../lib/wishlist/collected", () => ({ dismissCollected: m.dismissCollected, MAX_COLLECTED_NOTICES: 200 }));
 
 import * as actions from "./actions";
 
