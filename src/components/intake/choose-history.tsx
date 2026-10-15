@@ -5,6 +5,7 @@
 // Stored reads only: nothing here calls a model.
 
 import Link from "next/link";
+import { ArtLayer } from "../ui/art-layer";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { chooseHistoryPage } from "../../app/decks/new/choose/history-actions";
 import { helpMeChooseHistoryCopy as copy } from "../../lib/copy/help-me-choose-history";
@@ -235,9 +236,10 @@ function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean
             {row.thumbs.map((id, i) => (
               <span
                 key={id}
-                className={`${thumb} rounded-[3px] bg-[color:var(--elevated)] bg-cover bg-center`}
-                style={row.thumbArt[i] ? { backgroundImage: `url(${row.thumbArt[i]})` } : undefined}
-              />
+                className={`${thumb} relative overflow-hidden rounded-[3px] bg-[color:var(--elevated)]`}
+              >
+                {row.thumbArt[i] ? <ArtLayer src={row.thumbArt[i]} /> : null}
+              </span>
             ))}
           </span>
         ) : null}
