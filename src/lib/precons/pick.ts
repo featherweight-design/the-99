@@ -67,7 +67,13 @@ export function resolvePick(requests: unknown, catalog: readonly { fileName: str
   return out;
 }
 
-export type PickOutcome = { rowFile: string; ok: true; entryId: string } | { rowFile: string; ok: false };
+/**
+ * A box's outcome. `unknown` is a box whose add threw: it may have committed with its answer lost, so it is neither
+ * added nor refused, and only a retry under the same id can say which.
+ */
+export type PickOutcome =
+  | { rowFile: string; ok: true; entryId: string }
+  | { rowFile: string; ok: false; unknown?: true };
 
 /**
  * One add per box, in order, each with its own id, so each is its own History entry. A box that refuses or throws
@@ -83,9 +89,11 @@ export async function runPickAdds(
     try {
       result = await add(b.fileName, b.actionId);
     } catch (error) {
-      // not a fallback: the box is reported as not added, and its id answers a retry if it did commit.
+      // Not a refusal: the add may have committed with its answer lost. Reported as unknown, so the caller holds the
+      // box and its edition until a retry under the same id says which.
       console.error("precons: a pick's box failed", error);
-      result = { ok: false, reason: "failed" };
+      out.push({ rowFile: b.rowFile, ok: false, unknown: true });
+      continue;
     }
     out.push(result.ok ? { rowFile: b.rowFile, ok: true, entryId: result.entryId } : { rowFile: b.rowFile, ok: false });
   }

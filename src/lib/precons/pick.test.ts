@@ -91,13 +91,16 @@ describe("the per-box run", () => {
     expect(writes).toEqual(["Abzan", "Temur"]);
   });
 
-  it("reports a box that throws as not added, and goes on", async () => {
+  // A box that throws may have committed with its answer lost: it is unknown, never a refusal, and the run goes on.
+  it("reports a box that throws as unknown, and goes on", async () => {
     const add = vi.fn(async (fileName: string, actionId: string): Promise<PreconAddResult> => {
       if (fileName === "Sultai") throw new Error("down");
       return { ok: true, entryId: actionId, cards: 1, copies: 1, foil: 0, placed: [], tokens: { marked: 0, names: [] } };
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
-    expect((await runPickAdds(three, add)).map((o) => o.ok)).toEqual([true, false, true]);
+    const out = await runPickAdds(three, add);
+    expect(out.map((o) => o.ok)).toEqual([true, false, true]);
+    expect(out[1]).toEqual({ rowFile: "Sultai", ok: false, unknown: true });
   });
 
   it("answers a retry with the same ids from the committed entries, adding nothing twice", async () => {

@@ -6,6 +6,7 @@ const addPrecons = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ addPrecons }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_1" }) }));
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: () => {} }));
@@ -27,6 +28,7 @@ const addButton = () => screen.getByRole("button", { name: /^Add|^Adding/ });
 const foot = () => addButton().parentElement!.textContent;
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   addPrecons.mockReset();
   push.mockReset();
   vi.stubGlobal("crypto", { ...crypto, randomUUID: (() => { let n = 0; return () => `00000000-0000-4000-8000-0000000000${String(++n).padStart(2, "0")}`; })() });
@@ -130,6 +132,34 @@ describe("Precons I own: refusals", () => {
     tick("Abzan Armor");
     fireEvent.click(addButton());
     await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e1"));
+  });
+
+  // A box whose add threw is unknown, not refused: it stays ticked and held, and the press says so.
+  it("holds a box whose outcome is unknown, and says it may have landed", async () => {
+    addPrecons.mockResolvedValueOnce([{ rowFile: "Abzan", ok: true, entryId: "e1" }, { rowFile: "Revival", ok: false, unknown: true }]);
+    draw();
+    tick("Abzan Armor");
+    tick("Revival Trance");
+    fireEvent.click(addButton());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t confirm the cards were added. Try again and they won’t be added twice.");
+    expect(screen.getByRole("checkbox", { name: /Revival Trance/, hidden: true }).closest("[inert]")).not.toBeNull();
+    expect(JSON.parse(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")!)).toEqual({
+      Revival: { edition: "regular", id: addPrecons.mock.calls[0][0][1].actionId },
+    });
+  });
+
+  // An answer lost to a reload: the box comes back ticked at its edition, held, and the retry goes out under its id.
+  it("restores an unknown box after a reload, under the id its add went out with", async () => {
+    window.sessionStorage.setItem("the99:precon-pick-attempts:user_1", JSON.stringify({ Revival: { edition: "collector", id: "11111111-1111-4111-8111-111111111111" } }));
+    draw();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t confirm the cards were added.");
+    expect(screen.getByRole("checkbox", { name: /Revival Trance/, hidden: true })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Revival Trance/, hidden: true }).closest("[inert]")).not.toBeNull();
+    addPrecons.mockResolvedValueOnce([{ rowFile: "Revival", ok: true, entryId: "e9" }]);
+    fireEvent.click(addButton());
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e9"));
+    expect(addPrecons.mock.calls[0][0]).toEqual([{ fileName: "Revival", edition: "collector", actionId: "11111111-1111-4111-8111-111111111111" }]);
+    expect(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")).toBeNull();
   });
 
   it("keeps the ticks when nothing landed, and an unknown outcome retries under the same ids", async () => {

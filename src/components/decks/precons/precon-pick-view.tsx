@@ -7,7 +7,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { addPrecons } from "../../../app/decks/precon-actions";
 import { preconsCopy, preconMonth } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
@@ -27,12 +28,44 @@ const copy = preconsCopy.pick;
 const NO_BOX: PreconBox = { copies: 0, tokens: 0, twin: null };
 const boxOf = (r: Row) => r.box ?? NO_BOX;
 
+/**
+ * The boxes whose outcome is unknown (a press or a box that threw), kept for this tab across a reload, by row: their
+ * edition and the id their add went out under. An add that threw may have committed with its answer lost, and only a
+ * retry under that id can say which, so a reload restores them ticked and held rather than letting a fresh id add the
+ * box again. Named by the signed-in account, as the precon start's own attempt is; storage can be absent or blocked,
+ * so every touch is guarded and memory alone stands in.
+ */
+type Attempts = Record<string, { edition: PickEdition; id: string }>;
+const attemptsKey = (account: string) => `the99:precon-pick-attempts:${account}`;
+function readAttempts(account: string | null | undefined): Attempts {
+  if (!account) return {};
+  try {
+    const raw = window.sessionStorage.getItem(attemptsKey(account));
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Attempts = {};
+    for (const [row, v] of Object.entries(parsed as Record<string, unknown>)) {
+      const a = v as { edition?: unknown; id?: unknown };
+      if ((a.edition === "regular" || a.edition === "collector") && typeof a.id === "string") out[row] = { edition: a.edition, id: a.id };
+    }
+    return out;
+  } catch { return {}; }
+}
+function writeAttempts(account: string | null | undefined, attempts: Attempts) {
+  if (!account) return;
+  try {
+    if (Object.keys(attempts).length === 0) window.sessionStorage.removeItem(attemptsKey(account));
+    else window.sessionStorage.setItem(attemptsKey(account), JSON.stringify(attempts));
+  } catch { /* a convenience here, never a requirement */ }
+}
+
 export function PreconPickView({ rows, entry, initial }: {
   rows: Row[];
   entry: PickEntry;
   initial: { q: string; colours: string[] };
 }) {
   const router = useRouter();
+  const { userId: account } = useAuth();
   const [q, setQ] = useState(initial.q);
   const [colours, setColours] = useState<string[]>(initial.colours);
   const [ticked, setTicked] = useState<ReadonlyMap<string, PickEdition>>(new Map());
@@ -86,6 +119,21 @@ export function PreconPickView({ rows, entry, initial }: {
 
   const say = (text: string) => setToast({ text, lift: foot.current?.offsetHeight ?? 0 });
 
+  // A reload after an unknown outcome: the boxes come back ticked at their editions, under the ids their adds went out
+  // with, and held until a press is answered (the account is known only once auth has loaded, so this runs then).
+  useEffect(() => {
+    const attempts = readAttempts(account);
+    const known = Object.entries(attempts).filter(([row]) => rows.some((r) => r.fileName === row));
+    if (known.length === 0) return;
+    for (const [row, a] of known) ids.current.set(`${row}:${a.edition}`, a.id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restored from session storage, which the server render cannot read: it can only arrive after mount
+    setTicked(new Map(known.map(([row, a]) => [row, a.edition])));
+    setUnsure(true);
+    say(preconsCopy.start.owned.addUnsure);
+    // Once per account: a later write is this page's own and needs no restoring.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account]);
+
   async function submit() {
     if (pending) return;
     // Held at zero (S2): the press moves focus to the search, the start of the list.
@@ -99,6 +147,8 @@ export function PreconPickView({ rows, entry, initial }: {
       if (!id) { id = crypto.randomUUID(); ids.current.set(key, id); }
       return { fileName: row.fileName, edition, actionId: id };
     });
+    // Kept before the press goes out, so an answer lost to a reload is still retried under the same ids.
+    writeAttempts(account, { ...readAttempts(account), ...Object.fromEntries(requests.map((r) => [r.fileName, { edition: r.edition, id: r.actionId }])) });
     setToast(null);
     setPending(true);
     let outcomes: PickOutcome[];
@@ -112,9 +162,14 @@ export function PreconPickView({ rows, entry, initial }: {
       add.current?.focus();
       return;
     }
-    setUnsure(false);
     const ok = outcomes.filter((o): o is Extract<PickOutcome, { ok: true }> => o.ok);
     const failed = outcomes.filter((o) => !o.ok);
+    // Answered boxes leave the kept attempts; a box whose outcome is still unknown stays, ticked and held.
+    const unknown = new Set(failed.filter((o) => "unknown" in o && o.unknown).map((o) => o.rowFile));
+    const kept = readAttempts(account);
+    for (const o of outcomes) if (!unknown.has(o.rowFile)) delete kept[o.rowFile];
+    writeAttempts(account, kept);
+    setUnsure(unknown.size > 0);
     for (const o of ok) ids.current.delete(`${o.rowFile}:${ticked.get(o.rowFile)}`);
     const nowLanded = [...landed, ...ok.map((o) => ({ rowFile: o.rowFile, entryId: o.entryId }))];
     if (failed.length === 0) {
@@ -130,8 +185,11 @@ export function PreconPickView({ rows, entry, initial }: {
     });
     setPending(false);
     const name = (file: string) => rows.find((r) => r.fileName === file)?.name ?? file;
-    // S6 when nothing landed; S7 names both, and retries nothing on its own.
-    say(ok.length === 0 ? preconsCopy.start.owned.addFailed : copy.partFailed(ok.map((o) => name(o.rowFile)), failed.map((o) => name(o.rowFile))));
+    // S6 when nothing landed; S7 names both, and retries nothing on its own. A box that may have landed says so instead:
+    // it is not refused, and its retry under the same id answers which.
+    say(unknown.size > 0 ? preconsCopy.start.owned.addUnsure
+      : ok.length === 0 ? preconsCopy.start.owned.addFailed
+      : copy.partFailed(ok.map((o) => name(o.rowFile)), failed.map((o) => name(o.rowFile))));
     add.current?.focus();
   }
 
