@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invite landing, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;position:relative;display:flex;justify-content:center}
+.card{margin-top:120px;width:460px;align-self:flex-start;box-sizing:border-box;border:1px solid #262A35;border-radius:14px;background:#12141B;padding:28px 30px 26px;display:flex;flex-direction:column;gap:10px}
+.iav{width:52px;height:52px;border-radius:14px;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 16px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;margin:4px 0 2px}
+.mark{width:52px;height:52px;border-radius:14px;border:1px dashed #343843;color:#6F7486;display:flex;align-items:center;justify-content:center;margin:4px 0 2px}
+.h1{margin:0;font:700 24px 'Chakra Petch',sans-serif;line-height:1.2;color:#E6E8F0}
+.bd{margin:0;font-size:14px;line-height:1.55;color:#B1B6C7}
+.nl{display:flex;align-items:center;gap:6px;margin:4px 0 0;font-size:13px;color:#959AAD}
+.nl b{color:#E6E8F0;font-weight:600}
+.tl{min-height:32px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.acts{display:flex;gap:10px;margin-top:10px}
+.b1{height:44px;padding:0 24px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif;text-decoration:none;display:flex;align-items:center}
+.b1.pend{background:#D33E7E}
+.b2{height:44px;padding:0 20px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font:500 14px 'IBM Plex Sans',sans-serif;text-decoration:none;display:flex;align-items:center}
+.fine{margin:6px 0 0;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.out{width:1300px;height:820px;flex:none;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box;background:radial-gradient(1000px 520px at 50% 8%,rgba(255,77,154,.10),transparent 70%),#0E0F14;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'IBM Plex Sans',sans-serif}
+.hero{display:flex;flex-direction:column;align-items:center;color:#E6E8F0;font:700 64px 'Chakra Petch',sans-serif;line-height:1}
+.hero i{font-style:normal;color:#FF4D9A;font-size:16px;letter-spacing:4px;margin-bottom:6px}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:6;width:420px;box-sizing:border-box;display:flex;align-items:center;gap:14px;border-radius:10px;border:1px solid #262A35;background:#20222A;padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.toast span{flex:1;padding:8px 0;font-size:13.5px;color:#E6E8F0}
+.toast button{height:36px;padding:0 12px;border:0;background:transparent;color:#FF4D9A;font:600 13px 'IBM Plex Sans',sans-serif}
+</style>
+</helmet>
+<div style="width:2760px;min-height:4000px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Call 06 · /invite/[token] · desktop 1300 · new route; signed in it sits in the shipped shell, signed out it takes the signed-out landing’s ground</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">One card answers every invite state, and only an open one names who sent it</h2>
+    <p class="cap" style="max-width:2200px">readInvite gives a state, the inviter’s display name, self and alreadyFriends. The card spends the name only where it helps the reader decide: an open invite, and already friends. An ended link names nobody, so a forwarded or guessed link learns nothing, and a bad token reads exactly as a used one (readInvite returns null for both cases the page cannot tell apart). Expired keeps its own line because “ask for a new one” is the useful answer there. Every ended card has one way on, Go to Friends.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <sc-if value="{{f.signedOut}}" hint-placeholder-val="{{false}}">
+          <section class="out" aria-labelledby="so">
+            <span class="hero" aria-hidden="true"><i>◆ ◆ ◆</i>99</span>
+            <p style="margin:16px 0 0;font:13px 'IBM Plex Mono',monospace;letter-spacing:.44em;color:#FF4D9A">THE NINETY-NINE</p>
+            <h1 id="so" style="margin:30px 0 0;font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0">Someone sent you a friend invite</h1>
+            <p style="margin:8px 0 0;font-size:15px;color:#B1B6C7">Sign in to see who it’s from and answer it.</p>
+            <a class="b1" href="#" style="margin-top:28px;padding:0 40px;height:48px;font-size:15px">Sign in</a>
+            <p class="fine" style="margin-top:18px;font-size:12px;letter-spacing:.04em">No account? The 99 is invite-only. Ask whoever sent this.</p>
+          </section>
+        </sc-if>
+        <sc-if value="{{f.signedIn}}" hint-placeholder-val="{{true}}">
+          <div class="dk">
+            <nav class="rail" aria-label="Primary">
+              <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+              <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span>
+              <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
+              <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></span>
+              <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></span>
+              <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></span>
+              <span class="av" aria-hidden="true">HH</span>
+            </nav>
+            <main class="main">
+              <section class="card" aria-labelledby="lh">
+                <span class="k">Friend invite</span>
+                <sc-if value="{{f.named}}" hint-placeholder-val="{{true}}"><span class="iav" aria-hidden="true">DA</span></sc-if>
+                <sc-if value="{{f.unnamed}}" hint-placeholder-val="{{false}}"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg></span></sc-if>
+                <h1 class="h1" id="lh">{{f.title}}</h1>
+                <sc-if value="{{f.body}}" hint-placeholder-val="{{true}}"><p class="bd">{{f.body}}</p></sc-if>
+                <sc-if value="{{f.nameLine}}" hint-placeholder-val="{{false}}"><p class="nl">Dave will see you as <b>Hugh</b><span aria-hidden="true">·</span><button class="tl" type="button">Change</button></p></sc-if>
+                <div class="acts">
+                  <sc-if value="{{f.a1}}" hint-placeholder-val="{{true}}"><button class="{{f.a1Cls}}" type="button">{{f.a1}}</button></sc-if>
+                  <sc-if value="{{f.a2}}" hint-placeholder-val="{{false}}"><a class="b2" href="#">{{f.a2}}</a></sc-if>
+                </div>
+                <sc-if value="{{f.fine}}" hint-placeholder-val="{{false}}"><p class="fine">{{f.fine}}</p></sc-if>
+              </section>
+            </main>
+            <sc-if value="{{f.toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="alert"><span>We couldn’t accept that invite. Try again.</span><button type="button">Try again</button></div></sc-if>
+          </div>
+        </sc-if>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":4000}}'>
+class Component extends DCLogic {
+renderVals() {
+const base = { signedOut: false, signedIn: true, named: false, unnamed: true, body: '', nameLine: false, a1: '', a1Cls: 'b2', a2: '', fine: '', toast: false };
+const fr = (o) => Object.assign({}, base, o);
+const ended = (label, title, body, note) => fr({ label, title, body, a2: 'Go to Friends', note });
+const frames = [
+fr({ label: 'L1 · signed out', signedOut: true, signedIn: false, note: 'The route is public (G2) and reads nothing while signed out: no name, no state. Sign in is Clerk’s, with this URL as its redirect, so the reader lands back here signed in. There is no Create an account: the app is invite-only and a friend invite is not an app invite (G3).' }),
+fr({ label: 'L2 · open · accept or decline', named: true, unnamed: false, title: 'Dave wants to be friends', body: 'Friends see each other’s display name and nothing else, until one of you shares more.', nameLine: true, a1: 'Accept', a1Cls: 'b1', a2: 'Decline', fine: 'Dave isn’t told if you decline.', note: 'The one state that names the inviter, by display name and initials only. Accept redeems the link and goes to /friends with the receipt (Friends board, F3). Decline spends it and draws L7. Neither asks again.' }),
+ended('L3 · expired', 'This invite has expired', 'Invite links last 7 days. Ask for a new one.', 'No name. Expired is the one ended state with a reason worth saying, because the remedy is plain.'),
+ended('L4 · redeemed · declined · revoked · not found', 'This invite link no longer works', 'A link works once, and only until it expires or is taken back. Ask for a new one.', 'One card for four states. Used by someone else, declined, taken back by its sender, and a token that names nothing all read the same, so guessing tokens tells a stranger nothing and a forwarded link does not say who opened it first.'),
+fr({ label: 'L5 · your own link', title: 'This is your own invite link', body: 'Send it to the friend you want to add. It works once, for the first person who opens it.', a1: 'Copy link', a1Cls: 'b1', a2: 'Go to Friends', note: 'self is true. Nothing to accept or decline (redeem refuses self, and the link stays open). Copy link is the likeliest reason to have opened it: checking it before sending.' }),
+fr({ label: 'L6 · already friends', named: true, unnamed: false, title: 'You and Dave are already friends', body: 'Nothing to accept. The link stays open for someone else until it expires.', a2: 'Go to Friends', note: 'alreadyFriends is known on read, so Accept is never offered. The link is not spent from here (G4): only the inviter can take it back, from their own list.' }),
+fr({ label: 'L7 · after Decline', title: 'Invite declined', body: 'Dave isn’t told. The link no longer works.', a2: 'Go to Home', note: 'The name the reader just saw is repeated once, to say it was not told. From here the link draws L4 for anyone, the decliner included.' }),
+fr({ label: 'L8 · Accept failed', named: true, unnamed: false, title: 'Dave wants to be friends', body: 'Friends see each other’s display name and nothing else, until one of you shares more.', nameLine: true, a1: 'Accept', a1Cls: 'b1', a2: 'Decline', toast: true, note: 'A thrown redeem keeps the card and raises the shared toast, role alert, with Try again. A redeem that answers ended (the link was used or revoked between the read and the press) is not an error: the card redraws as L4.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>
