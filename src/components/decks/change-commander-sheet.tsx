@@ -445,7 +445,7 @@ export function CandidateRow({
               <span style={{ borderBottom: "1px dotted var(--fg-faint)" }}>
                 {copy.sheet.figure(candidate.fit.n, candidate.fit.of, pair)}
               </span>
-              <Chevron open={open} style={{ color: "var(--fg-faint)" }} />
+              <Chevron kind="disclosure" open={open} style={{ color: "var(--fg-faint)" }} />
             </button>
             <GhostButton
               data-choose=""

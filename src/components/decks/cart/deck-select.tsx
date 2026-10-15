@@ -72,7 +72,7 @@ export function DeckSelect({
           onClick={() => setOpen((v) => !v)}
           className="flex h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden"
         >
-          <Chevron open={open} />
+          <Chevron kind="disclosure" open={open} />
         </button>
       </div>
       {/* The phone's page scrolls as one now (Hugh, 2026-10-13), so only this open list keeps a cap and scrolls

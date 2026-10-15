@@ -123,7 +123,7 @@ export function ComboPartnersDetail({
               </span>
               )}
             </span>
-            <Chevron className="flex-none" style={{ color: "var(--fg-faint)" }} />
+            <Chevron kind="disclosure" open={expanded} className="flex-none" style={{ color: "var(--fg-faint)" }} />
           </button>
         </h3>
         {/* THE `*` IS A SIBLING OF THE ROW, never nested inside it: a control inside a native

@@ -145,7 +145,7 @@ function HowRow({
               aria-hidden="true"
               className="flex h-[44px] w-[44px] flex-none items-center justify-end text-[color:var(--fg-faint)] min-[1000px]:h-auto min-[1000px]:w-[14px]"
             >
-              <Chevron open={open} />
+              <Chevron kind="disclosure" open={open} />
             </span>
           </button>
         </h3>

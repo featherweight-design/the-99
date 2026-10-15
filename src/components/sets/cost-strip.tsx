@@ -14,7 +14,7 @@ import { useRef, useState } from "react";
 import { formatCents } from "../../lib/decks/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import type { CostToComplete } from "../../lib/sets/cost";
-import { CHEVRON_CLASS } from "../ui/chevron";
+import { Chevron } from "../ui/chevron";
 
 export function CostStrip({
   cost,
@@ -126,11 +126,7 @@ export function CostStrip({
           ) : null}
           {/* The app's chevron size (H15 raised it from 11px, where it read as punctuation; bug
               batch 2026-10-12 set every chevron to one size, 13px). */}
-          <span aria-hidden="true" className={`shrink-0 font-mono ${CHEVRON_CLASS}`}
-            style={{ color: "var(--fg-muted)" }}
-          >
-            ▾
-          </span>
+          <Chevron kind="disclosure" className="shrink-0" style={{ color: "var(--fg-muted)" }} />
         </button>
       ) : null}
 
@@ -223,15 +219,15 @@ export function CostStrip({
           }}
           aria-expanded
           aria-label={setPageCopy.cost.collapseAria}
-          // Pinned where the collapsed row's ▾ was (H15): it used to wrap to a full-width
+          // Pinned where the collapsed row's chevron was (H15): it used to wrap to a full-width
           // row at the strip's foot, so the control that opened the strip moved the moment
           // it was pressed. The block above reserves its 44px.
-          // The glyph sits at the ▾'s own x, not centred in the 44px target: the ▾ ends at the
-          // collapsed row's 12px padding, so the ▴ ends there too.
+          // The glyph sits at the chevron's own x, not centred in the 44px target: it ends at the
+          // collapsed row's 12px padding, so the open chevron ends there too.
           className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-end pr-[12px]
                      font-mono text-[color:var(--fg-muted)] md:hidden"
         >
-          <span aria-hidden="true" className={CHEVRON_CLASS}>▴</span>
+          <Chevron kind="disclosure" open />
         </button>
       ) : null}
       </div>

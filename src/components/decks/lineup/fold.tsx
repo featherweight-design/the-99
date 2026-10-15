@@ -6,6 +6,7 @@
 // cards are open is remembered per device (G10), in the `useStoredView` shape with a cookie mirror so the
 // server draws the same cards the browser will. Instant, as every disclosure here is: no new motion.
 
+import { Chevron } from "../../ui/chevron";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { useStoredView } from "../../ui/use-stored-view";
 import { DECKS_STATS_OPEN_COOKIE } from "../../ui/view-cookie";
@@ -79,7 +80,7 @@ export function FoldCard({ id, title, denom, summary, open, onToggle, children }
           </span>
           {open ? null : <span id={`stats-${id}-summary`} data-stats-summary className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{summary}</span>}
         </span>
-        <span aria-hidden="true" className="flex h-[44px] w-[44px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)]">{open ? "▴" : "▾"}</span>
+        <span aria-hidden="true" className="flex h-[44px] w-[44px] flex-none items-center justify-center text-[color:var(--fg-muted)]"><Chevron kind="disclosure" open={open} /></span>
       </button>
       {open ? children : null}
     </section>

@@ -283,7 +283,7 @@ export function TokenRow({
               }}
               className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden"
             >
-              <Chevron open={open} />
+              <Chevron kind="disclosure" open={open} />
             </button>
           ) : null}
         </div>
@@ -301,7 +301,7 @@ export function TokenRow({
             onClick={() => setOpen((v) => !v)}
             className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:flex"
           >
-            <Chevron open={open} />
+            <Chevron kind="disclosure" open={open} />
           </button>
         ) : null}
       </div>

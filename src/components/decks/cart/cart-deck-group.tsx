@@ -71,7 +71,7 @@ export function CartDeckGroup({
                 : copy.selections.figureNoPrice(deck.copies)}
             </span>
             <span aria-hidden className="flex min-h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)]">
-              <Chevron open={expanded} />
+              <Chevron kind="disclosure" open={expanded} />
             </span>
           </button>
         </h3>

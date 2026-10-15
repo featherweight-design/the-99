@@ -5,6 +5,7 @@
 // more`, then the set's dots, code and date. The row is its own disclosure, closed every visit: a press opens its
 // cards under a dashed rule. A set with nothing revealed has no chevron and does not open.
 
+import { Chevron } from "../../ui/chevron";
 import { useState } from "react";
 import { preconDate, preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
@@ -52,7 +53,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
           </span>
           <span className="flex-none whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)] md:text-[12px]">
             {when}
-            {canOpen && <span aria-hidden className="ml-[4px] text-[color:var(--fg-faint)]">{open ? "▾" : "▸"}</span>}
+            {canOpen && <Chevron kind="disclosure" open={open} className="ml-[4px] text-[color:var(--fg-faint)]" />}
           </span>
         </span>
         <span className="truncate font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{namesLine(match)}</span>

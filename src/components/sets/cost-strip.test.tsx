@@ -291,7 +291,7 @@ describe("CostStrip — the accessible name with no send link", () => {
     // Pinned to the strip's top right, not wrapped to a full-width row at its foot.
     expect(close.className).toMatch(/absolute right-0 top-0/);
     expect(close.className).not.toMatch(/w-full/);
-    // The ▴ ends at the same 12px inset the ▾ does.
+    // The open chevron ends at the same 12px inset the closed one does.
     expect(close.className).toMatch(/justify-end pr-\[12px\]/);
     expect((container.querySelector("[data-set-cost]") as HTMLElement).className).toMatch(/\brelative\b/);
   });

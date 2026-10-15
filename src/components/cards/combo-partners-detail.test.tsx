@@ -28,6 +28,17 @@ describe("the card modal's combo block", () => {
     expect(empty.firstChild).toBeNull();
   });
 
+  it("turns its disclosure chevron with the header's expanded state", async () => {
+    render(<ComboPartnersDetail card={card([partner()])} />);
+    const header = screen.getByRole("button", { name: /Two-card combos/ });
+    const chevron = () => header.querySelector("[data-chevron=disclosure]");
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    expect(chevron()?.getAttribute("data-open")).toBe("false");
+    await open();
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+    expect(chevron()?.getAttribute("data-open")).toBe("true");
+  });
+
   it("names each partner and its state", async () => {
     render(
       <ComboPartnersDetail

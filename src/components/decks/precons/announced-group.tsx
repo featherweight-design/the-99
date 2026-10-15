@@ -10,6 +10,7 @@
 // (the banner's link), or while a filter is on and a set matches it (the reader asked); otherwise this browser's
 // last press holds (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
+import { Chevron } from "../../ui/chevron";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
@@ -108,7 +109,7 @@ export function AnnouncedGroup({
           {copy.heading}
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{count}</span>
           {hasNew && <span className={NEW_TAG}>{copy.newTag}</span>}
-          <span aria-hidden className="ml-auto font-mono text-[12px] text-[color:var(--fg-muted)]">{open ? "▾" : "▸"}</span>
+          <Chevron kind="disclosure" open={open} className="ml-auto text-[color:var(--fg-muted)]" />
         </button>
       </h2>
       {/* The controlled region. Closed, it keeps no height, no focus and no reading order (`inert`); the
