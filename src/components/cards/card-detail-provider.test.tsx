@@ -312,6 +312,46 @@ describe("CardDetailProvider", () => {
       expect(peek().outerHTML).not.toContain("collection-sol.jpg");
     });
 
+    // Foil handoff R2 (G10): the plate's film follows the printing it draws, not the opener's word for it.
+    it("draws the film of the printing the plate shows: the deck's foil pick, and none over a plain one", async () => {
+      const sol: BrowseCard = {
+        ...card("o-sol", "Sol Ring"),
+        printings: [
+          { setCode: "CMM", collectorNumber: "676", imageUri: "https://cards.scryfall.io/collection-sol.jpg", quantity: 1, finishes: { nonfoil: 1 }, hasOwnArt: true, flavorName: null },
+          { setCode: "LTC", collectorNumber: "284", imageUri: "https://cards.scryfall.io/deck-sol.jpg", quantity: 1, finishes: { foil: 1 }, hasOwnArt: true, flavorName: null },
+        ] as unknown as BrowseCard["printings"],
+        preferredPrinting: { setCode: "CMM", collectorNumber: "676" },
+      };
+      const film = () => peek().querySelector('[data-testid="sibling-foil-film"]');
+      const mountWith = (picks: Record<string, { setCode: string; collectorNumber: string }>) => render(
+        <CardDetailProvider
+          fetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          prefetchCard={async (id) => (id === "o-sol" ? sol : SIGNET)}
+          deckId="d1"
+          deckOracleIds={new Set(["o-signet", "o-sol"])}
+          deckPrintingPicks={picks}
+        >
+          <CardDetailTrigger
+            oracleId="o-signet"
+            name="Arcane Signet"
+            siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/collection-sol.jpg", foil: "foil" }]}
+          >
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      const { unmount } = mountWith({ "o-sol": { setCode: "LTC", collectorNumber: "284" } });
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("deck-sol.jpg"));
+      expect(film()).toHaveAttribute("data-foil", "foil");
+      unmount();
+      // The opener said foil, but the printing read for the plate is the Collection's plain one.
+      mountWith({});
+      await click(screen.getByText("Arcane Signet"));
+      await waitFor(() => expect(peek().outerHTML).toContain("collection-sol.jpg"));
+      await waitFor(() => expect(film()).toBeNull());
+    });
+
     const pickedSol = (deckFlavor: string | null): BrowseCard => ({
       ...card("o-sol", "Sol Ring"),
       printings: [

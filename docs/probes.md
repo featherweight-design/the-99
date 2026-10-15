@@ -256,6 +256,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the hovered tile, never under reduced motion, and a phone (coarse pointer, no hover) never creates `::after`;
   reduced transparency swaps the gradient for a 2px inset ring and forced colors drops it. Which tiles carry
   `data-foil` is the component tests' half.
+  R2's large views (PR 1, audit G17) add a row of BACKGROUND faces, each with its film span inside it marked `pending`,
+  `in`, `done`, `failed` or not at all, and three peeks (an `ArtLayer` div marked by the queue, then the still tile
+  film). Under both motion preferences the face's own computed opacity reads 1 in every state while only the film is
+  held (`pending`, `failed`); the large film draws at 80% with its `::before` 25% out each side; the peek's film follows
+  its layer's mark and never sweeps on hover; a phone plays one delayed band on a large film and none on a peek; and
+  reduced transparency and forced colors drop the large film too, the face still drawn. Its failure path was run:
+  marking the face itself `pending` reads opacity 0 under no-preference and fails the run.
 - `pnpm probe:art-layer` proves card art drawn as a CSS background fades in (card-art fades plan), on deployed
   staging only (`MEASURE_DEPLOYED=1`, signed in as `THE_99_E2E_AUDIT_USER_EMAIL` with a ticket from
   `THE_99_CLERK_SECRET_KEY_STAGING`; it reads pages and writes nothing). On a deck (`MEASURE_DECK_ID`, else the first

@@ -1107,7 +1107,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
 }
 
 /* The band exists only where it can play: a fine pointer, motion welcome. Phones never draw it. It
-   is defined under no-preference alone, so the reduced-motion list below needs no entry for it. */
+   is defined under no-preference alone, so the reduced-motion list below needs no entry for it. A
+   large film on a phone plays its own one band on landing (R2, below). */
 @keyframes foil-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-foil]::after {
@@ -1116,6 +1117,40 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   }
   :is(a, button):is(:hover, :focus-visible) [data-foil]::after {
     animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease);
+  }
+}
+
+/* Foil, large views (handoff R2). A large film is any [data-foil] with data-foil-size="large": the details
+   face(s) and the zoom card, at 80% strength and spread 1.5x. The peek, the neighbour plate and the hover preview keep
+   R1's tile film. The reduced-transparency and forced-colors rules below cover every [data-foil]. */
+[data-foil-size="large"]::before { inset: 0 -25%; opacity: .8; }
+
+/* A background face has no <img> for R1's hold to read, so its FILM carries its own arrival mark (`FoilFilm`:
+   `armArtArrival` on a preloaded Image of the face's own URL). Only the film is held; the face is never marked. The
+   hold applies under either motion preference, as R1's does; only the fade is motion's. */
+[data-foil][data-arrival="pending"], [data-foil][data-arrival="failed"] { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-foil][data-arrival="in"] { animation: art-in var(--motion-fade) var(--motion-ease); }
+}
+
+/* The peek's and the neighbour plate's art is an ArtLayer div queued in the modal's ArrivalOrder, not an <img>: the
+   film after it reads that layer's own mark, held while it travels or broke, fading in with it. */
+[data-arrival="pending"] ~ [data-foil], [data-arrival="failed"] ~ [data-foil] { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-arrival="in"] ~ [data-foil] { animation: art-in var(--motion-fade) var(--motion-ease); }
+}
+
+/* Mid views are still (R2 call 7): a neighbour plate is a button, and R1's hover band would otherwise play on it. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :is(a, button):is(:hover, :focus-visible) [data-foil][data-foil-still]::after { animation: none; }
+}
+
+/* Phone: one band when a large card lands (the film mounts), after the card's own entry. */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  [data-foil][data-foil-size="large"]::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(105deg, rgb(255 255 255 / 0) 30%, rgb(255 255 255 / .42) 50%, rgb(255 255 255 / 0) 70%);
+    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease) var(--motion-duration) both;
   }
 }
 

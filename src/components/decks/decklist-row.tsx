@@ -308,7 +308,7 @@ export function DecklistRow({
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
   // gesture the reader is already making across the row.
-  const previewHandlers = usePreviewRow(card.imageUri);
+  const previewHandlers = usePreviewRow(card.imageUri, card.foil);
   // The row body opens the card too, so resting on it prefetches the card as the name does.
   const intent = useCardIntent(card.oracleId, card.imageUri);
   // Two strings, because they answer different questions. The visible one is a

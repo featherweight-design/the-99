@@ -23,7 +23,8 @@ import {
   useState,
 } from "react";
 
-import { cssUrl } from "../../lib/collection/browse";
+import { cssUrl, type FoilFinish } from "../../lib/collection/browse";
+import { FoilFilm } from "../ui/foil-film";
 
 /** 252×352 is the handoff's figure and 63:88 exactly — the card's own ratio. */
 const WIDTH = 252;
@@ -86,15 +87,15 @@ const PRELOAD_DELAY = 50;
  * rows does not re-render the list once per frame.
  */
 /** `overSheet`: the row that opened it is inside a dialog, so the box paints above the sheet. */
-type PreviewTarget = { imageUri: string; box: PreviewBox; overSheet: boolean };
+type PreviewTarget = { imageUri: string; box: PreviewBox; overSheet: boolean; foil?: FoilFinish };
 type PreviewBox = { top: number; left: number };
 
 type PreviewApi = {
   /** Hover began on a row, at the pointer. Null `imageUri` is a no-op — see
    *  `usePreviewRow`. */
-  open: (imageUri: string | null | undefined, x: number, y: number, overSheet?: boolean) => void;
+  open: (imageUri: string | null | undefined, x: number, y: number, overSheet?: boolean, foil?: FoilFinish) => void;
   /** The pointer moved while a row is hovered: the row's card rides along for `waitForMove`'s arming move. */
-  move: (x: number, y: number, imageUri?: string | null, overSheet?: boolean) => void;
+  move: (x: number, y: number, imageUri?: string | null, overSheet?: boolean, foil?: FoilFinish) => void;
   close: () => void;
 };
 
@@ -185,7 +186,7 @@ export function HoverPreviewProvider({
   const armed = useRef(!waitForMove);
   const restAt = useRef<{ x: number; y: number } | null>(null);
   // The row under the pointer while the box waits to be armed, so the arming move can open it.
-  const hovered = useRef<{ imageUri: string | null | undefined; overSheet: boolean } | null>(null);
+  const hovered = useRef<{ imageUri: string | null | undefined; overSheet: boolean; foil?: FoilFinish } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The preload's own timer, separate from the box's: they fire at different
   // moments and either can be cancelled without touching the other.
@@ -236,8 +237,8 @@ export function HoverPreviewProvider({
       return true;
     };
     const api: PreviewApi = {
-      open: (imageUri, x, y, overSheet = false) => {
-        hovered.current = { imageUri, overSheet };
+      open: (imageUri, x, y, overSheet = false, foil) => {
+        hovered.current = { imageUri, overSheet, foil };
         if (!intent(x, y)) return;
         // A row whose card has no art has nothing to preview. Silence rather
         // than a plate: the preview exists to answer "which card is this", and
@@ -276,19 +277,21 @@ export function HoverPreviewProvider({
           // The pointer has moved since the delay began — a reader who set off
           // down the list does not want the box where they entered the row.
           const at = pending.current ?? { x, y };
-          setTarget({ imageUri, box: place(at.x, at.y), overSheet });
+          setTarget({ imageUri, box: place(at.x, at.y), overSheet, foil });
         };
         pending.current = { x, y };
         if (isOpen.current) show();
         else timer.current = setTimeout(show, OPEN_DELAY);
       },
-      move: (x, y, imageUri, overSheet = false) => {
+      move: (x, y, imageUri, overSheet = false, foil) => {
         if (!armed.current) {
           // The move names its own row: a leave the browser fires when the sheet's layout settles can
           // clear `hovered` before any move, and the arming move must still open the row it is on.
-          if (imageUri !== undefined) hovered.current = { imageUri, overSheet };
+          if (imageUri !== undefined) hovered.current = { imageUri, overSheet, foil };
           // The move that arms the box opens it for the row the pointer is on, as an entry would.
-          if (intent(x, y) && hovered.current) api.open(hovered.current.imageUri, x, y, hovered.current.overSheet);
+          if (intent(x, y) && hovered.current) {
+            api.open(hovered.current.imageUri, x, y, hovered.current.overSheet, hovered.current.foil);
+          }
           return;
         }
         pending.current = { x, y };
@@ -339,7 +342,11 @@ export function HoverPreviewProvider({
             boxShadow: "0 18px 40px -12px rgba(0, 0, 0, 0.72)",
             background: `center / cover no-repeat ${cssUrl(target.imageUri)}`,
           }}
-        />
+        >
+          {/* R1's tile film, still (foil handoff R2, G10): the box already rides the pointer. The box has no
+              <img> and sits in no list's queue, so the film carries its own preloaded mark (`FoilFilm`). */}
+          <FoilFilm finish={target.foil} src={target.imageUri} />
+        </div>
       )}
     </PreviewContext.Provider>
   );
@@ -350,20 +357,20 @@ export function HoverPreviewProvider({
  * provider, so a row rendered on its own — in a test, or on a surface that has
  * no preview — costs nothing and behaves as it always did.
  */
-export function usePreviewRow(imageUri: string | null | undefined) {
+export function usePreviewRow(imageUri: string | null | undefined, foil?: FoilFinish) {
   const api = useContext(PreviewContext);
   const onMouseEnter = useCallback(
     (e: React.MouseEvent<HTMLElement>) =>
-      api?.open(imageUri, e.clientX, e.clientY, e.currentTarget.closest('[role="dialog"]') !== null),
-    [api, imageUri],
+      api?.open(imageUri, e.clientX, e.clientY, e.currentTarget.closest('[role="dialog"]') !== null, foil),
+    [api, imageUri, foil],
   );
   // The box follows the pointer, so the row reports every move it sees. The
   // provider coalesces them to one write per frame — the handler itself does no
   // work beyond recording where the pointer is.
   const onMouseMove = useCallback(
     (e: React.MouseEvent<HTMLElement>) =>
-      api?.move(e.clientX, e.clientY, imageUri, e.currentTarget.closest('[role="dialog"]') !== null),
-    [api, imageUri],
+      api?.move(e.clientX, e.clientY, imageUri, e.currentTarget.closest('[role="dialog"]') !== null, foil),
+    [api, imageUri, foil],
   );
   const onMouseLeave = useCallback(() => api?.close(), [api]);
   if (!api) return {};

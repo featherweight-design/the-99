@@ -85,6 +85,7 @@ export function RowsView({
         <PreviewButton
           key={c.oracleId}
           imageUri={c.imageUri}
+          foil={c.imageUri ? c.foil : undefined}
           type="button"
           onClick={() => onOpen(c.oracleId)}
           // Never `disabled`, for the reason CardDetailTrigger states: disabling

@@ -1,0 +1,65 @@
+{
+  "feature": "Foil treatment R2 (large views), PR 1",
+  "note": "The film on card details, the zoom and the hover preview (foil handoff R2, PR 1; no tilt). On local-dev as the headless account, with the variables R1's inventory uses: FOIL_SEARCH is a card it holds in one printing, all foil (e.g. Ambush Viper), FOIL_DECK a deck holding one (d0000000-0000-4000-8000-00000000cafe holds Jeska's Will, all foil), and the precon row needs seeded precons (Avengers Assemble, MSC). Details opens on the foil card, so the large film is on its face at both widths; the phone also plays one band on landing, which a still does not show. Check the 80% strength on pale full-art and borderless faces here (audit G15, R2-G1): run it once more against a pull:staging copy of Hugh's Collector's Edition deck. The precon row's details shows the card's OWN resolution (call 6): a film only if the account holds that card all foil. The hover preview is desktop only.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "collection-details-foil",
+      "label": "/collection grid: card details on a card held all foil",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        { "goto": "/collection?view=grid&q=${FOIL_SEARCH}", "wait": "[data-foil]", "settle": 2500 },
+        { "click": "button:has([data-foil])", "settle": 500 },
+        { "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "collection-zoom-foil",
+      "label": "/collection: the zoom on a card held all foil",
+      "view": "src/components/cards/card-modal.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/collection?view=grid&q=${FOIL_SEARCH}", "wait": "[data-foil]", "settle": 2500 },
+        { "click": "button:has([data-foil])", "settle": 500 },
+        { "wait": "[role=dialog]", "settle": 800 },
+        { "click": "button[aria-label^=\"Look at\"]", "settle": 500 },
+        { "wait": "[data-testid=\"card-zoom-card\"]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "deck-details-foil",
+      "label": "/decks/[id] card view: card details on a card held all foil",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        { "goto": "/decks/${FOIL_DECK}", "wait": "button[aria-label=\"Card view\"]", "settle": 3000 },
+        { "clickRole": "button", "name": "Card view", "settle": 500 },
+        { "wait": "[data-foil]", "settle": 1500 },
+        { "click": "button:has([data-foil])", "settle": 500 },
+        { "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "precon-details",
+      "label": "/decks/precons/[fileName]?edition=collector: card details from a foil tile (the card's own resolution)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        { "goto": "/decks/precons/AvengersAssemble_MSC?edition=collector", "wait": "button[aria-label=\"Card view\"]", "settle": 2500 },
+        { "clickRole": "button", "name": "Card view", "settle": 500 },
+        { "wait": "[data-foil]", "settle": 1500 },
+        { "click": "button:has([data-foil])", "settle": 500 },
+        { "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "collection-hover-preview-foil",
+      "label": "/collection rows: the hover preview of a card held all foil",
+      "view": "src/components/decks/hover-preview.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/collection?view=rows&q=${FOIL_SEARCH}", "wait": "button[aria-busy]", "settle": 2500 },
+        { "hover": "button[aria-busy]", "settle": 600 },
+        { "wait": "[data-testid=\"hover-preview\"]", "settle": 800 }
+      ]
+    }
+  ]
+}
