@@ -64,7 +64,7 @@
         {
           "clickRole": "button",
           "name": "Dave",
-          "wait": "[role=dialog] h3",
+          "wait": "[role=dialog] button:has-text(\"Avengers Tempo\")",
           "settle": 1200
         }
       ]
@@ -100,7 +100,7 @@
         {
           "clickRole": "button",
           "name": "Jo",
-          "wait": "[role=dialog] h3",
+          "wait": "[role=dialog] li:has-text(\"Jo has no decks in The 99.\")",
           "settle": 1200
         }
       ]
