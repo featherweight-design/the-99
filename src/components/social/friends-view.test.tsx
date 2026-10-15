@@ -396,6 +396,18 @@ describe("the receipt after Accept (E10)", () => {
     fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
     expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
   });
+
+  it("drops the receipt when a redraw no longer resolves that friend, and keeps a closed one closed", () => {
+    const dave = { ...DAVE, since: NOW };
+    const { rerender } = draw({ accepted: dave, friends: [dave, JO] });
+    rerender(view({ accepted: null, friends: [JO] }));
+    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+    rerender(view({ accepted: JO, friends: [JO] }));
+    expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Jo"));
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: socialCopy.page.close }));
+    rerender(view({ accepted: JO, friends: [JO, DAVE] }));
+    expect(screen.queryByText(socialCopy.page.accepted("Jo"))).toBeNull();
+  });
 });
 
 describe("friend links", () => {
@@ -441,6 +453,41 @@ describe("friend links", () => {
       });
       expect(screen.getByRole("button", { name: socialCopy.page.invite }).getAttribute("aria-disabled")).toBeNull();
       expect(document.querySelectorAll("[data-link-row]")).toHaveLength(9);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("waits only what is left for a link put back by a failed revoke", async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      a.revokeInviteAction.mockRejectedValueOnce(new Error("down"));
+      const soon = link(9, new Date(NOW.getTime() + 60_000));
+      draw({ links: [...Array.from({ length: 9 }, (_, i) => link(i)), soon] });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50_000);
+      });
+      const rows = Array.from(document.querySelectorAll("[data-link-row]"));
+      await act(async () => fireEvent.click(within(rows[9] as HTMLElement).getByRole("button", { name: /^Revoke the link made/ })));
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(10);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(11_000);
+      });
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(9);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("drops every link that expired while the tab slept, on one late wake", async () => {
+    vi.useFakeTimers({ now: NOW });
+    try {
+      draw({ links: [link(1), link(2, new Date(NOW.getTime() + 60_000)), link(3, new Date(NOW.getTime() + 120_000))] });
+      vi.setSystemTime(NOW.getTime() + 200_000);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(1);
     } finally {
       vi.useRealTimers();
     }

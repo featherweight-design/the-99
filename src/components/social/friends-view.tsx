@@ -103,6 +103,14 @@ export function FriendsView({
   const face = useRef<HTMLButtonElement>(null);
   const [picking, setPicking] = useState(false);
   const [receipt, setReceipt] = useState(accepted);
+  // A redraw that resolves a different friend (or none: the friendship ended) replaces the receipt; the same one
+  // keeps a receipt the reader closed, closed.
+  const acceptedId = accepted?.publicId ?? null;
+  const [drawnAccepted, setDrawnAccepted] = useState(acceptedId);
+  if (acceptedId !== drawnAccepted) {
+    setDrawnAccepted(acceptedId);
+    setReceipt(accepted);
+  }
   const [removing, setRemoving] = useState<string | null>(null);
   const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
   const [revoked, setRevoked] = useState<ReadonlySet<string>>(new Set());
@@ -132,11 +140,18 @@ export function FriendsView({
   const listed = friends.filter((f) => !gone.has(f.publicId));
   const open = links.filter((l) => !revoked.has(l.token) && l.expiresAt.getTime() > now.getTime());
   const held = open.length >= maxLinks;
-  // Wake when the soonest open link expires, so it leaves the list and stops counting toward the ten.
+  // Wake when the soonest open link expires, so it leaves the list and stops counting toward the ten. The clock
+  // runs on from the server's draw by the client's elapsed time, both to schedule and on waking: a link put back
+  // after a failed revoke waits only what is left, and a tab woken late drops every link that expired meanwhile.
+  const drawnAt = useRef<{ server: number; client: number } | null>(null);
+  useEffect(() => {
+    drawnAt.current = { server: nowMs, client: Date.now() };
+  }, [nowMs]);
   const nextExpiry = Math.min(...open.map((l) => l.expiresAt.getTime()));
   useEffect(() => {
     if (!Number.isFinite(nextExpiry)) return;
-    const t = setTimeout(() => setExpiredAt(nextExpiry), Math.min(nextExpiry - now.getTime(), 2_147_483_647));
+    const clock = () => (drawnAt.current ? drawnAt.current.server + Date.now() - drawnAt.current.client : now.getTime());
+    const t = setTimeout(() => setExpiredAt(clock()), Math.max(0, Math.min(nextExpiry - clock(), 2_147_483_647)));
     return () => clearTimeout(t);
   }, [nextExpiry, now]);
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
