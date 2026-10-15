@@ -124,7 +124,7 @@ export function ThemePicker({
               onChange(value.slice(0, -1));
             }
           }}
-          className={`flex-1 min-w-[120px] h-[28px] px-[4px] ${AFFIX_INPUT} text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]`}
+          className={`flex-1 min-w-[120px] h-[28px] px-[4px] ${AFFIX_INPUT} text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]`}
         />
       </div>
       <ul

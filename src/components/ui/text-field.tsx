@@ -41,7 +41,7 @@ export const AFFIX_INPUT = "bg-transparent border-none outline-none shadow-none 
 const FIELD_CHROME =
   "rounded-lg bg-[color:var(--surface-sunken)] " +
   "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
-  "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--accent)]";
+  "placeholder:text-[color:var(--fg-placeholder)] caret-[color:var(--accent)]";
 
 // Dropped at runtime as well as in the types, exactly as button.tsx does it:
 // the type ban is erased at the JS boundary, so an untyped caller could still
@@ -155,7 +155,7 @@ export function SearchField({
             // beside whatever the caller passes as `trailing` — two adjacent
             // glyphs doing one job, one of them off-palette.
             "[&::-webkit-search-cancel-button]:appearance-none " +
-            "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
+            "text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]",
           className,
         )}
         ref={setRef}

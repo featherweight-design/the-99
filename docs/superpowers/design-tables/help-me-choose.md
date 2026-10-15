@@ -141,7 +141,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | font-size | 16px | 14px |
 | line-height | 1.55 | 1.55 |
 | value color | `--fg` | `--fg` |
-| placeholder color | `--fg-faint` | `--fg-faint` |
+| placeholder color | `--fg-placeholder` | `--fg-placeholder` |
 | copy key | `intake.wordsPlaceholder` | same |
 | interpretation | none while typing (no chips, no counts) | same |
 
@@ -237,7 +237,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 |---|---|---|
 | font-size | 16px | 13.5px |
 | padding | 0 4px | 0 4px |
-| color | picker open: `--fg` · else `--fg-faint` (placeholder) | same |
+| color | picker open: `--fg` · else `--fg-placeholder` (placeholder) | same |
 | border-left (caret) | picker open: 1.5px solid `--accent` · else — | same |
 | copy key | no themes `intake.themePlaceholder` · with themes "Add another…" (no key) | same |
 
@@ -285,7 +285,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 |---|---|---|
 | box | same as Theme field (min-height 44 / 40, padding 6px 10px, radius 9, `--surface-sunken`, 1px `--border-strong`) | same |
 | `$` | mono 14px `--fg-faint` | same |
-| value | mono 14px; `--fg` when set, else `--fg-faint` placeholder | same |
+| value | mono 14px; `--fg` when set, else `--fg-placeholder` placeholder | same |
 | copy key | placeholder `intake.budgetPlaceholder`, caption `intake.budgetCaption` | same |
 
 ### Bracket segments (Any · 1 · 2 · 3 · 4 · 5, `role="radio"`)

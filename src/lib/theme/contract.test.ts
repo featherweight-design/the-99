@@ -14,12 +14,12 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 43 keys, spelled out rather than derived from :root. Derived, a token
+// The 44 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
   "surface-inset", "elevated", "elevated-hover", "border", "border-strong",
-  "border-dashed", "fg", "fg-body", "fg-muted", "fg-faint", "fg-locked",
+  "border-dashed", "fg", "fg-body", "fg-muted", "fg-faint", "fg-placeholder", "fg-locked",
   "fg-disabled",
   "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
@@ -66,6 +66,9 @@ const ALIASES: Record<string, string> = {
 const INTENTIONAL_TWINS = [
   ["accent-dim", "accent-shadow"],
   ["accent-mid", "accent-strong"],
+  // A placeholder is the muted ink lifted only where a theme's own would miss 4.5:1 (Kamigawa, Phyrexia), so in the
+  // other four it repeats --fg-faint's hex on purpose, written out so a later --fg-faint change moves nothing here.
+  ["fg-faint", "fg-placeholder"],
 ];
 
 const SURFACES = [
@@ -99,7 +102,7 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 43 contract keys", () => {
+    it("declares exactly the 44 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 

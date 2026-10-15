@@ -129,7 +129,7 @@ export function TuningLimitsBox({
               // now-stale pending save is cancelled rather than left to land silently (round 2).
               onCapDraftInvalid();
             }}
-            className={`min-w-0 flex-1 ${AFFIX_INPUT} font-mono text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px]`}
+            className={`min-w-0 flex-1 ${AFFIX_INPUT} font-mono text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] md:text-[14px]`}
           />
         </div>
       </div>

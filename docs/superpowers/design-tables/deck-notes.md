@@ -140,7 +140,7 @@
 |---|---|---|
 | field | `input type=text`, min-h 48, pad 11 13, radius 8, `--surface-sunken`, 1px `--border-strong`, focus `--accent` | min-h 40, pad 9 12 |
 | text | 14 / 1.5 | 13.5 |
-| placeholder | `notes.add.placeholderShort` `--fg-faint` | `notes.add.placeholder` |
+| placeholder | `notes.add.placeholderShort` `--fg-placeholder` | `notes.add.placeholder` |
 | add button | hairline, h 48, pad 0 16, 14 / 500; disabled `--fg-disabled` | h 40, pad 0 14, 12.5 |
 | hint | none | mono 10 `--fg-locked` `notes.add.hint` / `.hintTyping` |
 | counter | mono 10, right, from focus; `--warning` at 120; `n / 140` | same |

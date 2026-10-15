@@ -305,7 +305,7 @@ export function IntakeForm({
               placeholder={copy.intake.budgetPlaceholder}
               // Whole dollars: a pasted `$1,500` reads as 1500, anything else is not a figure.
               onChange={(e) => setBudget(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
-              className={`flex-1 min-w-0 h-[28px] ${AFFIX_INPUT} font-mono text-[16px] md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]`}
+              className={`flex-1 min-w-0 h-[28px] ${AFFIX_INPUT} font-mono text-[16px] md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]`}
             />
           </div>
         </Field>
@@ -356,7 +356,7 @@ export function IntakeForm({
               onKeyDown={(e) => { picker.onKeyDown(e); }}
               className={[
                 "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
-                "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] outline-none",
+                "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] outline-none",
                 // Accent while the words will be read: a credit free, or a standing that could not be
                 // read (the press then draws plain, and the submit decides).
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",

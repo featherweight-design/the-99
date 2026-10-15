@@ -47,6 +47,10 @@
   --fg-body: #C0B8A6;
   --fg-muted: #A59C89;
   --fg-faint: #8B8270;
+  /* A field's placeholder: 4.5:1 on --surface-sunken in every theme. Written as hex, not var(--fg-faint), so a later
+     --fg-faint change does not move placeholders. Two themes lift it (Kamigawa, Phyrexia): their --fg-faint reads 4.02
+     and 4.20 there. */
+  --fg-placeholder: #8B8270;
   /* Every theme's --fg-locked clears the 3:1 floor on its own --surface with
      almost nothing to spare (3.02–3.05:1 across all six). Both tokens are
      per-theme, so an edit to one theme's --surface only endangers that theme —
@@ -125,6 +129,7 @@
   --fg-body: #B1B6C7;
   --fg-muted: #959AAD;
   --fg-faint: #6F7486;
+  --fg-placeholder: #7D8294;
   --fg-locked: #606476;
   --fg-disabled: #3D404E;
   --accent: #FF4D9A;
@@ -218,6 +223,7 @@
   --fg-body: #B6C2B3;
   --fg-muted: #98A695;
   --fg-faint: #808C7C;
+  --fg-placeholder: #808C7C;
   --fg-locked: #626E5E;
   --fg-disabled: #3E473A;
   --accent: #A3C445;
@@ -275,6 +281,7 @@
   --fg-body: #B5B2BB;
   --fg-muted: #9A96A0;
   --fg-faint: #78747E;
+  --fg-placeholder: #827E88;
   --fg-locked: #64616A;
   --fg-disabled: #403E45;
   --accent: #52827A;
@@ -334,6 +341,7 @@
   --fg-body: #B9B2C5;
   --fg-muted: #9C95A8;
   --fg-faint: #898395;
+  --fg-placeholder: #898395;
   --fg-locked: #6A6475;
   --fg-disabled: #443F4D;
   --accent: #AE88E6;
@@ -391,6 +399,7 @@
   --fg-body: #B3C0C2;
   --fg-muted: #95A4A6;
   --fg-faint: #7C8A8C;
+  --fg-placeholder: #7C8A8C;
   --fg-locked: #5F6D6E;
   --fg-disabled: #3B4647;
   --accent: #5C86C9;

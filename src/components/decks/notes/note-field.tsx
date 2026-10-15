@@ -80,7 +80,7 @@ export function NoteField({
             onBlur={() => { document.documentElement.removeAttribute("data-note-focus"); }}
             onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
             onKeyDown={onKeyDown}
-            className={`box-border h-[46px] w-full scroll-mt-[96px] rounded-[8px] py-[10px] pl-[12px] pr-[43px] font-sans text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:h-[38px] md:py-[8px] md:pl-[11px] md:pr-[39px] md:text-[13.5px] ${AFFIX_INPUT}`}
+            className={`box-border h-[46px] w-full scroll-mt-[96px] rounded-[8px] py-[10px] pl-[12px] pr-[43px] font-sans text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] md:h-[38px] md:py-[8px] md:pl-[11px] md:pr-[39px] md:text-[13.5px] ${AFFIX_INPUT}`}
           />
           {/* The tip anchors to this field, so on a phone it spans the field instead of the ⓘ's own box. */}
           <InfoTip
