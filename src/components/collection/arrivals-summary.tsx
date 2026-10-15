@@ -242,6 +242,11 @@ export function ArrivalsSummary({
             That case takes the neutral sentence. */}
         {nothingToReport
           ? tokensOnly && sync ? copy.summary.ledeTokensOnly(sync.tokens)
+            // A LOST SYNC RECEIPT STATES NO DECK OUTCOME. Its empty sections are absence, not a
+            // record that nothing cleared or went back on the buy list: a Sync can commit and
+            // leave a deck short with only the receipt's write failing. The Sync's own figures
+            // are stored on its upload, so those are said.
+            : sync && summary === null ? copy.summary.ledeNoReceiptSync(sync)
             : sync ? copy.summary.ledeNothingToReportSync(sync)
             : copy.summary.ledeNothingToReport
           : (summary?.contested.length ?? 0) > 0

@@ -333,6 +333,19 @@ describe("ArrivalsSummary after a Sync (collection sync call 7, ruling 3)", () =
     render(synced(null));
     expect(screen.getByText(copy.summary.headingNoReceiptSync)).toBeTruthy();
   });
+
+  it("a lost Sync receipt claims no deck outcome, and says the Sync's own figures", () => {
+    render(synced(null, sync({ kept: 2, decided: 1, tokens: 3, cards: 5 })));
+    const lede = copy.summary.ledeNoReceiptSync({ kept: 2, decided: 1, tokens: 3 });
+    expect(screen.getByText(lede)).toBeTruthy();
+    expect(lede).toContain("The 2 cards you changed in the app stayed as you had them. You decided 1. 3 tokens changed.");
+    expect(document.body.textContent).not.toMatch(/buy list|contested|Nothing your decks care about moved/);
+  });
+
+  it("a lost Replace receipt keeps the shipped nothing-to-report lede", () => {
+    render(<ArrivalsSummary summary={null} contested={[]} preview={null} filename="f.csv" stampDate="Oct 15, 2026" />);
+    expect(screen.getByText(copy.summary.ledeNothingToReport)).toBeTruthy();
+  });
 });
 
 describe("ArrivalsSummary — where an added copy goes", () => {

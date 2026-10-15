@@ -133,6 +133,16 @@ export const cardAssignmentsCopy = {
      * (new) A Sync that moved cards none of the decks care about. The shipped ending (`Your collection
      * is the new file.`) is false after a Sync, which kept the player's own changes; this says so.
      */
+    /**
+     * (new) A Sync whose receipt did not survive its write. Its deck outcome is unknown, so this states
+     * none (no purchase cleared, nothing owed, nothing contested would all be guesses), only the Sync's
+     * own stored figures: what it kept, what the player decided, the tokens it changed.
+     */
+    ledeNoReceiptSync: (sync: SyncLede) =>
+      "What it did to your decks was not saved." +
+      (sync.kept > 0 ? ` ${keptCards(sync.kept, "The")}.` : "") +
+      (sync.decided > 0 ? ` You decided ${fmt(sync.decided)}.` : "") +
+      tokensChanged(sync.tokens),
     ledeNothingToReportSync: (sync: SyncLede) =>
       "Nothing your decks care about moved. No purchase cleared, nothing went back on the buy list, " +
       "and no copy is contested." +
