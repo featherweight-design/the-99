@@ -6,9 +6,9 @@ import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
-  planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
+  planDigest, planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
-import { collectionEditEnabled } from "./edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "./edit-flag";
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
@@ -347,5 +347,82 @@ describe("the order a precon start's readouts are read in", () => {
     expect(read).toBeLessThan(inside);
     expect(inside).toBeLessThan(placed);
     expect(src).toContain("const reservations = prior ?? await readRaisedReservations(tx, userId, ids);");
+  });
+});
+
+describe("the collection sync switch", () => {
+  const env = (e: Record<string, string>) => e as unknown as NodeJS.ProcessEnv;
+  it("is on only with its own switch and collection editing, both the exact string 'true'", () => {
+    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" }))).toBe(true);
+    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "true" }))).toBe(false);
+    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "TRUE", COLLECTION_EDIT_ENABLED: "true" }))).toBe(false);
+    expect(collectionSyncEnabled(env({ COLLECTION_EDIT_ENABLED: "true" }))).toBe(false);
+  });
+});
+
+describe("planDigest", () => {
+  const row = (oracleId: string, before: number | null, after: number | null) => ({
+    ...id(oracleId),
+    before: before === null ? null : { quantity: before, scryfallId: "s1", condition: "NM" },
+    after: after === null ? null : { quantity: after, scryfallId: "s1", condition: "NM" },
+  });
+
+  it("does not depend on row order", () => {
+    expect(planDigest([row(A, 1, 2), row(B, null, 1)], [])).toBe(planDigest([row(B, null, 1), row(A, 1, 2)], []));
+  });
+
+  it("moves with any row's before or after, a printing attribute included, and with the token plan", () => {
+    const base = planDigest([row(A, 1, 2)], []);
+    expect(planDigest([row(A, 1, 3)], [])).not.toBe(base);
+    expect(planDigest([row(A, 2, 2)], [])).not.toBe(base);
+    expect(planDigest([{ ...row(A, 1, 2), after: { quantity: 2, scryfallId: "s1", condition: "LP" } }], [])).not.toBe(base);
+    expect(planDigest([row(A, 1, 2)], [{ kind: "token", id: "t", from: null, to: 1 }])).not.toBe(base);
+    expect(planDigest([], [])).not.toBe(base);
+  });
+
+  it("moves with the final token state alone, so a precon add reverted before the confirm is caught", () => {
+    const final = (source: string) => ({
+      owned: new Map([["t", { quantity: 5, source, entryId: null }]]), uploadPrintings: new Map<string, number>(), preconPrintings: new Map<string, number>(),
+    });
+    const tokens = [{ kind: "token" as const, id: "t", from: 2, to: 5 }];
+    expect(planDigest([row(A, 1, 2)], tokens, final("precon"))).not.toBe(planDigest([row(A, 1, 2)], tokens, final("upload")));
+    expect(planDigest([row(A, 1, 2)], tokens, final("precon"))).toBe(planDigest([row(A, 1, 2)], tokens, final("precon")));
+  });
+});
+
+// A Sync writes through `writeRows`, never Replace's delete-all, and re-reads its base under the lock.
+describe("the sync write, in the source", () => {
+  const src = readFileSync(join(process.cwd(), "src/lib/collection/write.ts"), "utf8");
+  const at = (needle: string) => {
+    const i = src.indexOf(needle);
+    expect(i, needle).toBeGreaterThanOrEqual(0);
+    return i;
+  };
+
+  it("deletes every row only for a replace", () => {
+    const branch = at('if (change.kind === "replace") {\n        await tx.delete(collectionItems)');
+    expect(src.indexOf("await tx.delete(collectionItems)", branch + 1)).toBe(src.lastIndexOf("await tx.delete(collectionItems)"));
+  });
+
+  it("reads its base after the per-user lock, inside the transaction", () => {
+    expect(at("pg_advisory_xact_lock(hashtextextended(${userId}, 0))")).toBeLessThan(at("const base = await readSyncBase(userId, tx, { excludeUploadId: change.uploadId });"));
+  });
+
+  it("reads its base without the upload it stamped confirmed just before, so a first upload is neverUploaded", () => {
+    const stamp = at(".set({ confirmedAt: sql`clock_timestamp()` })");
+    const read = at("const base = await readSyncBase(userId, tx, { excludeUploadId: change.uploadId });");
+    expect(stamp).toBeLessThan(read);
+    // The one call: no other read of the base inside the write.
+    expect(src.match(/readSyncBase\(/g)).toHaveLength(1);
+  });
+
+  it("decides nothing to sync by the one rule, which counts an unanswered conflict as something", () => {
+    at("nothing: nothingToSync(merged, tokenChanges.length),");
+  });
+
+  it("refuses undecided, a missing or other digest, and nothing to sync, only on a confirm", () => {
+    const guard = at("if (!opts.dryRun) {\n            if (merged.counts.undecided > 0)");
+    expect(guard).toBeLessThan(at("if (change.expectedPlan !== digest)"));
+    expect(at("if (change.expectedPlan !== digest)")).toBeLessThan(at('throw new Refused({ status: "nothingToSync" })'));
   });
 });

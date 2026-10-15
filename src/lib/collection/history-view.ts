@@ -62,7 +62,9 @@ export function entryTitle(
   reachesBack: Date,
 ): string {
   const c = collectionEditCopy.history;
-  if (entry.kind === "upload_replace" || entry.kind === "upload_add") return entry.uploadFilename ?? c.untitled;
+  if (entry.kind === "upload_replace" || entry.kind === "upload_add" || entry.kind === "upload_sync") {
+    return entry.uploadFilename ?? c.untitled;
+  }
   if (entry.kind === "revert") {
     const undone = entry.revertsId ? byId.get(entry.revertsId) : undefined;
     if (undone) return c.undid(entryTitle(undone, byId, reachesBack));

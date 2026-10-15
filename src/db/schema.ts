@@ -496,7 +496,7 @@ export const collectionHistory = pgTable("collection_history", {
   seq: bigserial("seq", { mode: "number" }).notNull().unique(),
   userId: text("user_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  kind: text("kind", { enum: ["upload_replace", "upload_add", "add", "edit", "revert"] }).notNull(),
+  kind: text("kind", { enum: ["upload_replace", "upload_add", "upload_sync", "add", "edit", "revert"] }).notNull(),
   // 'csv_uploads:<id>' | 'shopping:<deck id>' | null
   source: text("source"),
   // Null while the entry is being written inside its own transaction, and once pruned.
@@ -515,7 +515,7 @@ export const collectionHistory = pgTable("collection_history", {
   index("collection_history_user_created_idx").on(t.userId, t.createdAt.desc()),
   check(
     "collection_history_kind_check",
-    sql`${t.kind} in ('upload_replace', 'upload_add', 'add', 'edit', 'revert')`,
+    sql`${t.kind} in ('upload_replace', 'upload_add', 'upload_sync', 'add', 'edit', 'revert')`,
   ),
 ]);
 

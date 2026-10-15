@@ -63,6 +63,8 @@ describe("entryTitle", () => {
   it("titles an upload by its file, and falls back rather than printing a blank", () => {
     expect(entryTitle(entry({ kind: "upload_replace", uploadFilename: "manabox-oct.csv" }), none, reach)).toBe("manabox-oct.csv");
     expect(entryTitle(entry({ kind: "upload_add", uploadFilename: null }), none, reach)).toBe("Untitled change");
+    // A Sync is titled by its file, never by its first card: a tokens-only Sync names no card at all.
+    expect(entryTitle(entry({ kind: "upload_sync", uploadFilename: "The Vault.csv", firstName: "Sol Ring" }), none, reach)).toBe("The Vault.csv");
   });
   it("titles a hand change by its first card and how many more", () => {
     expect(entryTitle(entry({ rowCount: 100, source: "precon:Multiverse_Reforged", preconName: "Multiverse Reforged" }), none, reach)).toBe("Added from Multiverse Reforged");

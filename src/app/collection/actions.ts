@@ -1,10 +1,10 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "../../db";
-import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
+import { cardArtPreferences, cards, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
@@ -20,7 +20,8 @@ import {
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
+import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
+import { parseSyncOptions, SYNC_REVIEW_CAP, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -169,10 +170,47 @@ export type ConfirmOutcome =
   | { wouldShort: ShortDeck[] }
   /** Ledger path only: cards the catalog dropped since the preview. Nothing was written. */
   | { missingCard: string[] }
+  /** Sync only: conflicts no answer decides. Nothing was written. */
+  | { undecided: number }
+  /** Sync only: the plan moved since the preview (or none was sent). Nothing was written; preview again. */
+  | { stale: true }
+  /** Sync only: no base to merge against. Nothing was written. */
+  | { unavailable: SyncUnavailable }
+  /** Sync only: nothing would change. Nothing was written, and the upload is still unconfirmed. */
+  | { nothingToSync: true }
   | void;
 
-/** How an upload meets the collection: replace it whole, or add its counts to it. */
-export type UploadMode = "replace" | "add";
+/**
+ * How an upload meets the collection: replace it whole, add its counts to it, or sync it (take what the
+ * file changed since the last file, keep what the player changed; behind `COLLECTION_SYNC_ENABLED`).
+ */
+export type UploadMode = "replace" | "add" | "sync";
+
+export type SyncUnavailable = "neverUploaded" | "noRecord";
+
+/** A sync's extras on the preview (plan, PR 1). */
+export type UploadSyncPreview = {
+  /** Why Sync cannot run, or null when it can. With a reason, every figure below is empty. */
+  unavailable: SyncUnavailable | null;
+  pick: SyncPick;
+  counts: SyncCounts;
+  /** The first `SYNC_REVIEW_CAP` conflicts by key, and how many there are. */
+  conflicts: { rows: SyncReviewRow[]; total: number };
+  /** The first `SYNC_REVIEW_CAP` kept holdings by key, and how many there are. */
+  kept: { rows: SyncReviewRow[]; total: number };
+  stale: Staleness;
+  /** The tokens the file read: how many and how many copies. */
+  tokens: { count: number; copies: number };
+  /** Whether the confirm would record any token change. */
+  tokensChange: boolean;
+  /** No card and no token would change. */
+  nothing: boolean;
+  /** Sent back with the confirm as `planDigest`. Empty when unavailable. */
+  planDigest: string;
+};
+
+/** A sync's choices, as a client sends them. */
+export type SyncOptions = { pick?: SyncPick; answers?: SyncAnswers };
 
 /** What a confirm in `mode` would do, for the Replace/Add screen. Ledger path only. */
 export type UploadChangePreview = {
@@ -191,15 +229,40 @@ export type UploadChangePreview = {
   historyReaches: boolean;
   /** The four figures, the card lists behind them and an Add's overlap (collection edit §A). */
   detail: UploadPreviewDetail;
+  /** Sync mode only. */
+  sync?: UploadSyncPreview;
 };
 
 const NO_MATCHED_CARDS = "Upload has no matched cards; refusing to replace collection";
 
-function parseMode(mode: unknown): UploadMode {
+/**
+ * Whether an upload with no matched cards may still go ahead: only a Sync of its tokens alone, from a payload
+ * that read tokens. Under Everything an empty file would remove every untouched holding, and Replace and Add
+ * keep the refusal they always had.
+ */
+function tokensOnlySync(items: readonly PendingItem[], sync: { pick: SyncPick } | null, tokens: TokenHolding[] | undefined): boolean {
+  return items.length === 0 && sync?.pick === "tokens" && Array.isArray(tokens) && tokens.length > 0;
+}
+
+function parseMode(mode: unknown, env: NodeJS.ProcessEnv): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
+  // Behind its switch: off, a sync is refused as an unknown mode would be.
+  if (mode === "sync" && collectionSyncEnabled(env)) return "sync";
   throw new Error("unknown upload mode");
 }
+
+/** Each review row's card name, from the catalog where the file did not carry one. */
+async function namedRows(rows: SyncReviewRow[]): Promise<SyncReviewRow[]> {
+  const ids = [...new Set(rows.filter((r) => !r.name).map((r) => r.oracleId))];
+  if (ids.length === 0) return rows;
+  const names = new Map((await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)
+    .where(inArray(cards.oracleId, ids))).map((c) => [c.oracleId, c.name]));
+  return rows.map((r) => (r.name ? r : { ...r, name: names.get(r.oracleId) }));
+}
+
+const tokenTotals = (tokens: TokenHolding[] | undefined) =>
+  ({ count: tokens?.length ?? 0, copies: (tokens ?? []).reduce((n, t) => n + t.quantity, 0) });
 
 async function loadUpload(userId: string, uploadId: string) {
   const [upload] = await db.select().from(csvUploads)
@@ -215,54 +278,102 @@ async function loadUpload(userId: string, uploadId: string) {
 export async function previewUploadChange(
   uploadId: string,
   mode?: UploadMode,
+  syncOpts?: SyncOptions,
 ): Promise<UploadChangePreview | { missingCard: string[] } | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
-  const kind = parseMode(mode);
+  const kind = parseMode(mode, env);
+  const sync = kind === "sync" ? parseSyncOptions(syncOpts) : null;
   const upload = await loadUpload(userId, uploadId);
   // Already confirmed: there is nothing left to choose.
   if (upload.confirmedAt) return null;
-  const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  const { pendingItems, tokens } = upload.previewPayload as { pendingItems: PendingItem[]; tokens?: TokenHolding[] };
   // The confirm refuses an upload with no matched cards; previewing it would draw an empty
-  // Replace as "removes everything", which the save would never do.
-  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
+  // Replace as "removes everything", which the save would never do. A Sync of the tokens alone is the one
+  // exception: it writes no card.
+  if (pendingItems.length === 0 && !tokensOnlySync(pendingItems, sync, tokens)) throw new Error(NO_MATCHED_CARDS);
   const [result, edits, editedKeys, totals, lastUpload] = await Promise.all([
-    applyCollectionChange(userId, { kind, items: pendingItems, uploadId }, { id: randomUUID(), dryRun: true, env }),
+    applyCollectionChange(
+      userId,
+      sync ? { kind: "sync", items: pendingItems, uploadId, tokens, ...sync } : { kind: kind as "replace" | "add", items: pendingItems, uploadId },
+      { id: randomUUID(), dryRun: true, env },
+    ),
     editsSinceUpload(userId),
     // Only a Replace overwrites hand changes, so only it tags rows `edited`.
     kind === "replace" ? editedKeysSinceUpload(userId) : Promise.resolve(new Set<string>()),
     collectionTotals(userId),
     lastUploadConfirmedAt(userId),
   ]);
+  const common = {
+    editsSinceUpload: edits,
+    lastUploadAt: lastUpload?.toISOString() ?? null,
+    historyReaches: lastUpload !== null && Date.now() - lastUpload.getTime() < HISTORY_RETENTION_DAYS * 86_400_000,
+  };
   switch (result.status) {
     case "preview": break;
     // Confirmed by another request since the read above.
     case "alreadyConfirmed": return null;
     // The catalog dropped a card since the upload was matched; the confirm refuses it by name.
     case "missingCard": return { missingCard: result.names };
+    // Sync with no base: the card says why, and there is nothing to preview.
+    case "noBase":
+      return {
+        raised: 0, lowered: 0, decks: [], ...common,
+        detail: summarizeUploadPreview({ rows: [], holdings: totals.holdings, copies: totals.copies, editedKeys }),
+        sync: {
+          unavailable: result.reason, pick: sync!.pick,
+          counts: { taken: 0, kept: 0, agreed: 0, unchanged: 0, conflicts: 0, undecided: 0, answeredFile: 0, ignored: 0 },
+          conflicts: { rows: [], total: 0 }, kept: { rows: [], total: 0 }, stale: null,
+          tokens: tokenTotals(tokens), tokensChange: false, nothing: true, planDigest: "",
+        },
+      };
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
+  const s = result.sync;
   return {
     raised: result.raised,
     lowered: result.lowered,
     decks: result.decks,
-    editsSinceUpload: edits,
-    lastUploadAt: lastUpload?.toISOString() ?? null,
-    historyReaches: lastUpload !== null && Date.now() - lastUpload.getTime() < HISTORY_RETENTION_DAYS * 86_400_000,
+    ...common,
     detail: summarizeUploadPreview({
       rows: result.rows, holdings: totals.holdings, copies: totals.copies, editedKeys,
     }),
+    ...(s && sync
+      ? {
+          sync: {
+            unavailable: null,
+            pick: sync.pick,
+            counts: s.counts,
+            conflicts: { rows: await namedRows(s.conflicts.slice(0, SYNC_REVIEW_CAP)), total: s.conflicts.length },
+            kept: { rows: await namedRows(s.kept.slice(0, SYNC_REVIEW_CAP)), total: s.kept.length },
+            stale: s.stale,
+            tokens: tokenTotals(tokens),
+            tokensChange: s.tokenChanges.length > 0,
+            nothing: s.nothing,
+            planDigest: s.planDigest,
+          },
+        }
+      : {}),
   };
 }
 
 export async function confirmUpload(
   uploadId: string,
-  opts: { firstImport?: boolean; mode?: UploadMode; confirmShort?: ShortDeck[] } = {},
+  opts: {
+    firstImport?: boolean;
+    mode?: UploadMode;
+    confirmShort?: ShortDeck[];
+    /** Sync only: the pick and answers the preview was drawn with, and its `planDigest`, which is required. */
+    pick?: SyncPick;
+    answers?: SyncAnswers;
+    planDigest?: string;
+  } = {},
 ): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  const mode = parseMode(opts.mode);
+  const mode = parseMode(opts.mode, env);
+  const sync = mode === "sync" ? parseSyncOptions({ pick: opts.pick, answers: opts.answers }) : null;
   const ledger = collectionEditEnabled(env);
   if (mode === "add" && !ledger) throw new Error("adding an upload needs collection editing on");
   const upload = await loadUpload(userId, uploadId);
@@ -280,7 +391,7 @@ export async function confirmUpload(
     parseErrors?: { line: number; reason: string }[];
   };
   const pendingItems = preview.pendingItems;
-  if (pendingItems.length === 0) throw new Error(NO_MATCHED_CARDS);
+  if (pendingItems.length === 0 && !tokensOnlySync(pendingItems, sync, preview.tokens)) throw new Error(NO_MATCHED_CARDS);
 
   // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read here
   // on main's path and under the write's own lock on the ledger's (below). These reads are
@@ -313,7 +424,12 @@ export async function confirmUpload(
   if (ledger) {
     const result = await applyCollectionChange(
       userId,
-      { kind: mode, items: pendingItems, uploadId, tokens: preview.tokens },
+      sync
+        ? {
+            kind: "sync", items: pendingItems, uploadId, tokens: preview.tokens, ...sync,
+            expectedPlan: typeof opts.planDigest === "string" ? opts.planDigest : undefined,
+          }
+        : { kind: mode as "replace" | "add", items: pendingItems, uploadId, tokens: preview.tokens },
       {
         id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
         ownedCounts: true, env,
@@ -324,6 +440,10 @@ export async function confirmUpload(
       case "alreadyConfirmed": return;
       case "wouldShort": return { wouldShort: result.decks };
       case "missingCard": return { missingCard: result.names };
+      case "undecided": return { undecided: result.undecided };
+      case "stale": return { stale: true };
+      case "noBase": return { unavailable: result.reason };
+      case "nothingToSync": return { nothingToSync: true };
       case "applied": break;
       default: throw new Error(`upload confirm refused: ${result.status}`);
     }

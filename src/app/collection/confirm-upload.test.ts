@@ -15,6 +15,7 @@ const A = "11111111-1111-1111-1111-111111111111";
 const stub = vi.hoisted(() => ({
   upload: null as Record<string, unknown> | null,
   ledger: false,
+  sync: false,
   apply: vi.fn(),
   replace: vi.fn(),
   receipt: vi.fn(),
@@ -29,7 +30,10 @@ vi.mock("../../db", () => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
 vi.mock("next/server", () => ({ after: () => {} }));
-vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => stub.ledger }));
+vi.mock("../../lib/collection/edit-flag", () => ({
+  collectionEditEnabled: () => stub.ledger,
+  collectionSyncEnabled: () => stub.ledger && stub.sync,
+}));
 vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
   applyCollectionChange: stub.apply,
@@ -65,6 +69,7 @@ const applied = (kind: string) => ({
 beforeEach(() => {
   stub.upload = { id: UPLOAD, userId: "user_1", confirmedAt: null, previewPayload: { pendingItems: items } };
   stub.ledger = false;
+  stub.sync = false;
   for (const f of [stub.apply, stub.replace, stub.receipt, stub.invalidate]) f.mockReset();
   stub.replace.mockResolvedValue({ alreadyConfirmed: false, notEmpty: null });
 });
@@ -249,5 +254,114 @@ describe("previewUploadChange", () => {
     stub.upload = { ...stub.upload!, confirmedAt: new Date() };
     expect(await previewUploadChange(UPLOAD)).toBeNull();
     expect(stub.apply).not.toHaveBeenCalled();
+  });
+});
+
+describe("sync (collection sync plan, PR 1)", () => {
+  const counts = { taken: 1, kept: 2, agreed: 0, unchanged: 3, conflicts: 601, undecided: 0, answeredFile: 601, ignored: 0 };
+  const review = (n: number) => ({
+    oracleId: A, setCode: "lea", collectorNumber: String(n), finish: "nonfoil", key: `k${String(n).padStart(4, "0")}`, name: "Card", base: 1, app: 3, file: 2,
+  });
+  const syncPreview = {
+    counts, conflicts: Array.from({ length: 601 }, (_, i) => review(i)), kept: [review(9000), review(9001)],
+    stale: "noNewer", tokenChanges: [{ kind: "token", id: "t", from: null, to: 2 }], nothing: false, planDigest: "digest-1",
+  };
+  const tokens = [{ tokenOracleId: "11111111-1111-4111-8111-111111111111", quantity: 2 }, { tokenOracleId: "33333333-3333-4333-8333-333333333333", quantity: 3 }];
+  beforeEach(() => {
+    stub.ledger = true;
+    stub.sync = true;
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: items, tokens } };
+  });
+
+  it("is refused as an unknown mode with its switch off, by the preview and the confirm, before any write", async () => {
+    stub.sync = false;
+    await expect(previewUploadChange(UPLOAD, "sync")).rejects.toThrow("unknown upload mode");
+    await expect(confirmUpload(UPLOAD, { mode: "sync", planDigest: "d" })).rejects.toThrow("unknown upload mode");
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("previews with the pick and the answers, capping the lists at 500 and counting every row", async () => {
+    stub.apply.mockResolvedValue({ status: "preview", raised: 1, lowered: 0, rows: [], decks: [], sync: syncPreview });
+    const got = await previewUploadChange(UPLOAD, "sync", { pick: "everything", answers: { all: "file", byKey: { k1: "app", k2: "junk" as never } } });
+    const [, change, opts] = stub.apply.mock.calls[0];
+    expect(change).toEqual({ kind: "sync", items, uploadId: UPLOAD, tokens, pick: "everything", answers: { all: "file", byKey: { k1: "app" } } });
+    expect(opts.dryRun).toBe(true);
+    expect(got).toHaveProperty("sync.counts", counts);
+    expect(got).toHaveProperty("sync.conflicts.total", 601);
+    expect((got as { sync: { conflicts: { rows: unknown[] } } }).sync.conflicts.rows).toHaveLength(500);
+    expect(got).toHaveProperty("sync.kept.total", 2);
+    expect(got).toMatchObject({ sync: { unavailable: null, stale: "noNewer", tokens: { count: 2, copies: 5 }, tokensChange: true, nothing: false, planDigest: "digest-1" } });
+  });
+
+  it("previews Sync as unavailable, with its reason, when there is no base", async () => {
+    stub.apply.mockResolvedValue({ status: "noBase", reason: "noRecord" });
+    expect(await previewUploadChange(UPLOAD, "sync")).toMatchObject({ sync: { unavailable: "noRecord", planDigest: "", nothing: true } });
+  });
+
+  it("refuses an unknown pick", async () => {
+    await expect(previewUploadChange(UPLOAD, "sync", { pick: "most" as never })).rejects.toThrow("unknown sync pick");
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("confirms with the pick, the answers and the digest, through the ledger", async () => {
+    stub.apply.mockResolvedValue(applied("upload_sync"));
+    await confirmUpload(UPLOAD, { mode: "sync", pick: "additions", answers: { byKey: { k: "file" } }, planDigest: "digest-1" });
+    const [, change, opts] = stub.apply.mock.calls[0];
+    expect(change).toEqual({ kind: "sync", items, uploadId: UPLOAD, tokens, pick: "additions", answers: { byKey: { k: "file" } }, expectedPlan: "digest-1" });
+    expect(opts.dryRun).toBeUndefined();
+    expect(stub.invalidate).toHaveBeenCalledWith("user_1");
+  });
+
+  it("passes no digest through when none was sent, so the write refuses it as stale", async () => {
+    stub.apply.mockResolvedValue({ status: "stale", current: [] });
+    expect(await confirmUpload(UPLOAD, { mode: "sync" })).toEqual({ stale: true });
+    expect(stub.apply.mock.calls[0][1].expectedPlan).toBeUndefined();
+    expect(stub.receipt).not.toHaveBeenCalled();
+    expect(stub.invalidate).not.toHaveBeenCalled();
+  });
+
+  it("lets a file with no matched cards but its tokens be synced under Only its tokens, in the preview and the confirm", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    stub.apply.mockResolvedValueOnce({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [], sync: { ...syncPreview, conflicts: [], kept: [] } });
+    expect(await previewUploadChange(UPLOAD, "sync", { pick: "tokens" })).toHaveProperty("sync.pick", "tokens");
+    expect(stub.apply.mock.calls[0][1]).toMatchObject({ kind: "sync", items: [], tokens, pick: "tokens" });
+    stub.apply.mockResolvedValueOnce(applied("upload_sync"));
+    await confirmUpload(UPLOAD, { mode: "sync", pick: "tokens", planDigest: "d" });
+    expect(stub.apply.mock.calls[1][1]).toMatchObject({ kind: "sync", items: [], tokens, pick: "tokens", expectedPlan: "d" });
+  });
+
+  it("still refuses no matched cards under Everything or Only what it adds, or with no tokens read, before any write", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    for (const pick of ["everything", "additions"] as const) {
+      await expect(previewUploadChange(UPLOAD, "sync", { pick })).rejects.toThrow("no matched cards");
+      await expect(confirmUpload(UPLOAD, { mode: "sync", pick, planDigest: "d" })).rejects.toThrow("no matched cards");
+    }
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens: [] } };
+    await expect(previewUploadChange(UPLOAD, "sync", { pick: "tokens" })).rejects.toThrow("no matched cards");
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [] } };
+    await expect(confirmUpload(UPLOAD, { mode: "sync", pick: "tokens", planDigest: "d" })).rejects.toThrow("no matched cards");
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("keeps Replace and Add refusing no matched cards, tokens or not", async () => {
+    stub.upload = { ...stub.upload!, previewPayload: { pendingItems: [], tokens } };
+    for (const mode of ["replace", "add"] as const) {
+      await expect(previewUploadChange(UPLOAD, mode)).rejects.toThrow("no matched cards");
+      await expect(confirmUpload(UPLOAD, { mode })).rejects.toThrow("no matched cards");
+    }
+    expect(stub.apply).not.toHaveBeenCalled();
+  });
+
+  it("answers each refusal the write gives, with no receipt and nothing invalidated", async () => {
+    for (const [result, outcome] of [
+      [{ status: "undecided", undecided: 3 }, { undecided: 3 }],
+      [{ status: "noBase", reason: "neverUploaded" }, { unavailable: "neverUploaded" }],
+      [{ status: "nothingToSync" }, { nothingToSync: true }],
+    ] as const) {
+      stub.apply.mockResolvedValueOnce(result);
+      expect(await confirmUpload(UPLOAD, { mode: "sync", planDigest: "d" })).toEqual(outcome);
+    }
+    expect(stub.receipt).not.toHaveBeenCalled();
+    expect(stub.invalidate).not.toHaveBeenCalled();
   });
 });

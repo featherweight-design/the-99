@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { listColumns, revertDiffers } from "./history";
+import { handEntriesSince, listColumns, revertDiffers } from "./history";
 import { cartDecksOf } from "./deck-line";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
@@ -76,5 +76,18 @@ describe("cartDecksOf", () => {
   });
   it("is empty of names when every deck is gone", () => {
     expect(cartDecksOf(["x", "y"], living)).toEqual({ named: [], more: 0, gone: 2 });
+  });
+});
+
+describe("the overwrite anchor (collection sync, G7)", () => {
+  const text = new PgDialect().sqlToQuery(handEntriesSince("user_1")).sql.replace(/\s+/g, " ");
+
+  it("anchors on the newest confirmed upload whatever its kind, so a Sync moves it", () => {
+    expect(text).toContain("select u.id, u.confirmed_at from csv_uploads u where u.user_id = $1 and u.confirmed_at is not null order by u.confirmed_at desc limit 1");
+    expect(text).not.toMatch(/upload_(replace|add|sync)/);
+  });
+
+  it("counts hand entries only: no upload of any kind is an edit", () => {
+    expect(text).toContain("e.kind in ('add', 'edit', 'revert')");
   });
 });
