@@ -434,6 +434,7 @@ const OPENING_USERS: Record<string, string> = {
   "lib/collection/card-detail.ts": "the press itself: the printing the modal opens on",
   "lib/intake/rows.ts": "Help me choose's commander rows read the whole opening art beside the owned printing",
   "app/commanders/[slug]/page.tsx": "the synergy panel's unowned cards, beside its owned-printing read",
+  "lib/decks/opponent-commanders.ts": "the game log's anyone-seat search draws each unowned commander on the printing card details opens",
   "lib/decks/proxy-list.ts": "a proxy row names the set and rarity of the printing it draws, so it takes the whole printing",
 };
 
