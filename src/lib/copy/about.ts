@@ -72,7 +72,13 @@ export function fillAllowance(text: string, limit: number, spell: (n: number) =>
   return text.split(ALLOWANCE_SLOT).join(spell(limit));
 }
 
-export const ABOUT_VERSION = 15;
+/**
+ * Moves only for an entry with NO switch: a switched entry is announced by its own id when its switch flips, so its
+ * `since` is the version current when it ships and it bumps nothing (as `deck-tokens` did at 14). 15 was spent once
+ * (#1840 bumped it for the switched `start-without-a-collection`, then went back): a reader who loaded a page while
+ * it was live may have 15 written as their seen version, so the next bump is 16, never 15.
+ */
+export const ABOUT_VERSION = 14;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -295,8 +301,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // A way in without a collection (plan `2026-10-15-no-collection-entry.md` PR 6, handoff
   // `design_handoff_the99_no_collection_entry/about · start without a collection.ts`, R3). After `import`,
-  // following the line's own switch, which needs COLLECTION_EDIT_ENABLED. `since: 15` is the line's ONE bump,
-  // batched to its last PR. The precon sentence is a caption line of its own and the precon key a line of its own,
+  // following the line's own switch, which needs COLLECTION_EDIT_ENABLED. A switched entry, so it bumps nothing:
+  // `since: 14`, the version current when it shipped, and it is announced by its id when the switch flips. The precon sentence is a caption line of its own and the precon key a line of its own,
   // so each follows PRECONS_ENABLED without the entry going dark. One caption at both widths.
   {
     id: 'start-without-a-collection',
@@ -322,7 +328,7 @@ export const aboutEntries: readonly AboutEntry[] = [
         'PRECONS_ENABLED',
     },
     marksPending: true,
-    since: 15,
+    since: 14,
   },
   {
     id: 'upload-choice',
