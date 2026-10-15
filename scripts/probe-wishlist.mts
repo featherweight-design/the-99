@@ -138,6 +138,9 @@ async function main() {
     check("clearing a line that is not there says so", (await wishlist.clearWishlistLine(B, X)) === false);
     check("a cleared line is not collected", (await collected.loadCollectedNotices(B)).length === 0);
 
+    // Something for a former friend to NOT see: without a standing line the read below is empty whatever unfriend did.
+    check("B wants nine Y", (await wishlist.setWishlistQuantity(B, Y, 9)) === "wanted");
+    check("which A, still a friend, sees", (await loadFriendWishlist(A, b.publicId)).length === 1);
     await friends.unfriend(A, b.publicId);
     check("a former friend reads nothing", (await loadFriendWishlist(A, b.publicId)).length === 0);
   } finally {
