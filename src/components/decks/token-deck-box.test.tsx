@@ -21,8 +21,8 @@ const token = (over: Partial<DeckToken> = {}): DeckToken => ({
   oracleText: null, makers: [maker(1), maker(2)], state: "not", source: null, joined: false, picture: null, printingPick: null, price: null, ...over,
 });
 const read = (tokens: DeckToken[]): DeckTokensRead => ({ status: "ok", read: true, tokens, makerCount: 2, newestPriceAsOf: null });
-const draw = (tokens: DeckToken[], id = "t1") =>
-  render(<DeckTokensProvider deckId={DECK} read={read(tokens)}><TokenDeckBox oracleId={id} /></DeckTokensProvider>);
+const draw = (tokens: DeckToken[], id = "t1", onSelectCard?: (id: string) => void) =>
+  render(<DeckTokensProvider deckId={DECK} read={read(tokens)}><TokenDeckBox oracleId={id} onSelectCard={onSelectCard} /></DeckTokensProvider>);
 
 beforeEach(() => {
   stub.held.mockReset();
@@ -79,5 +79,20 @@ describe("TokenDeckBox", () => {
     draw([token()]);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Food token as in your collection" })); });
     expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Food token");
+  });
+
+  it("opens a maker through the sheet's own trail, so Close returns to the token", () => {
+    const select = vi.fn();
+    draw([token()], "t1", select);
+    fireEvent.click(screen.getByText("Maker 2"));
+    expect(select).toHaveBeenCalledWith("m2");
+    // The provider's open() clears the trail, which is what a maker opened from a deck page wants and this does not.
+    expect(stub.open).not.toHaveBeenCalled();
+  });
+
+  it("opens a maker through the provider where no sheet keeps a trail", () => {
+    draw([token()]);
+    fireEvent.click(screen.getByText("Maker 2"));
+    expect(stub.open).toHaveBeenCalled();
   });
 });

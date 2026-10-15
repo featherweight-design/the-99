@@ -13,6 +13,7 @@ import { Chevron } from "../ui/chevron";
 import { useCardDetailIfAny, useCardIntentIfAny, type SiblingCard } from "../cards/card-detail-provider";
 import { usePreviewRow } from "./hover-preview";
 import { ArtLayer } from "../ui/art-layer";
+import { useDeckTokens } from "./deck-tokens-context";
 import { TokenRefusalToast } from "./token-refusal-toast";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
@@ -56,24 +57,27 @@ const CONTROL = "rounded-[6px] text-[12px] disabled:opacity-60";
 
 /**
  * A token press: one write at a time, pending while it lands. A refusal and a throw (the session lapsed, the database
- * threw) say the same thing to the reader, and it is said as a deck toast (`TokenRefusalToast`): the caller draws
- * `toast` once, anywhere in what it renders, since the toast is fixed to the deck slot.
+ * threw) say the same thing to the reader, and it is said as a deck toast (`TokenRefusalToast`). The deck's
+ * `DeckTokensProvider` hosts the one toast every press of the deck shares (a newer refusal replaces the older); outside a
+ * provider the hook keeps its own, which the caller draws with `toast` (null inside a provider).
  */
 export function useTokenPress() {
-  const [refusal, setRefusal] = useState<{ name: string; key: number } | null>(null);
+  const ctx = useDeckTokens();
+  const [own, setOwn] = useState<{ name: string; key: number } | null>(null);
   const [pending, start] = useTransition();
+  const refuse = (name: string) => (ctx ? ctx.refuse(name) : setOwn({ name, key: Date.now() }));
   const press = (write: () => Promise<{ ok: boolean }>, name: string) => {
-    setRefusal(null);
+    setOwn(null);
     start(async () => {
       try {
         const r = await write();
-        if (!r.ok) setRefusal({ name, key: Date.now() });
+        if (!r.ok) refuse(name);
       } catch {
-        setRefusal({ name, key: Date.now() });
+        refuse(name);
       }
     });
   };
-  const toast = refusal ? <TokenRefusalToast key={refusal.key} name={refusal.name} onDone={() => setRefusal(null)} /> : null;
+  const toast = own ? <TokenRefusalToast key={own.key} name={own.name} onDone={() => setOwn(null)} /> : null;
   return { press, pending, toast };
 }
 

@@ -36,7 +36,7 @@ export function boxedOnDesktop(count: number): boolean {
   return boxedOnDesktopIn(count, makerColumns(count));
 }
 
-function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] }) {
+function Maker({ maker, siblings, onSelect }: { maker: TokenMaker; siblings: TokenMaker[]; onSelect?: (oracleId: string) => void }) {
   const { open } = useCardDetail();
   const intent = useCardIntent(maker.oracleId, maker.imageUri);
   const preview = usePreviewRow(maker.imageUri);
@@ -45,7 +45,7 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
       <button
         type="button"
         {...intent}
-        onClick={(e) => open(
+        onClick={(e) => onSelect ? onSelect(maker.oracleId) : open(
           maker.oracleId,
           siblings.map((m) => ({ oracleId: m.oracleId, name: m.name, imageUri: m.imageUri })),
           undefined,
@@ -65,8 +65,11 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
  * down the page: where the list can outgrow its cap, which is 6 names on a phone and 16 from md up
  * (`boxedOnPhone`, `boxedOnDesktop`).
  */
-export function TokenMakers({ makers, printingLine, layout = "row" }: {
+export function TokenMakers({ makers, printingLine, layout = "row", onSelect }: {
   makers: TokenMaker[]; printingLine: string | null;
+  /** Where the sheet that holds these can keep its own trail (a maker opened from a token's details stacks over it, and
+   *  Close returns to the token): the modal's `onSelectCard`. Omitted, a name opens through the provider, as on the deck page. */
+  onSelect?: (oracleId: string) => void;
   /** `box` is the `In this deck` box of a token's details: no row indent, the row's columns. */
   layout?: "row" | "box";
 }) {
@@ -90,7 +93,7 @@ export function TokenMakers({ makers, printingLine, layout = "row" }: {
         ) : null}
       </p>
       <ul className={`m-0 grid list-none grid-cols-1 gap-x-[18px] p-0 ${columns} ${box}`}>
-        {makers.map((m) => <Maker key={m.oracleId} maker={m} siblings={makers} />)}
+        {makers.map((m) => <Maker key={m.oracleId} maker={m} siblings={makers} onSelect={onSelect} />)}
         {/* The sticky 28px fade at the box's foot, drawn only where the box scrolls at that width. It takes its own
             28px at the end of the list rather than overlaying it, so a box that does not overflow (10 names in
             3 columns is about 120px under a 158px cap) never has text under the fade. */}

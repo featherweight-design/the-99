@@ -39,20 +39,33 @@ describe("TokenRefusalToast", () => {
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it("sits above a deck toast that is already up, and in the slot itself when none is", () => {
+  it("sits above a receipt already in the slot by that receipt's own height, and not above another refusal", () => {
     const { container } = render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-    expect(container.querySelector("[data-toast=deck]")!.className).not.toContain("114px");
+    expect(container.querySelector<HTMLElement>("[data-toast=deck]")!.style.translate).toBe("");
     cleanup();
+    // A receipt whose body wraps is taller than any fixed offset: the lift is what it measures, plus a gap.
     const receipt = document.createElement("div");
     receipt.setAttribute("data-toast", "deck");
+    receipt.getBoundingClientRect = () => ({ height: 187.2 }) as DOMRect;
     document.body.appendChild(receipt);
     try {
       render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
-      const alert = screen.getByRole("alert");
-      expect(alert.className).toContain("bottom-[calc(var(--tabbar-h,0px)+114px)]");
-      expect(alert.className).toContain("md:bottom-[120px]");
+      expect(screen.getByRole("alert").style.translate).toBe("0 -198px");
     } finally {
       receipt.remove();
+    }
+    cleanup();
+    // Another refusal in the slot is the one being replaced, never a receipt to sit above.
+    const other = document.createElement("div");
+    other.setAttribute("data-toast", "deck");
+    other.setAttribute("data-toast-kind", "token-refusal");
+    other.getBoundingClientRect = () => ({ height: 90 }) as DOMRect;
+    document.body.appendChild(other);
+    try {
+      render(<TokenRefusalToast name="Spirit" onDone={() => {}} />);
+      expect(screen.getByRole("alert").style.translate).toBe("");
+    } finally {
+      other.remove();
     }
   });
 });

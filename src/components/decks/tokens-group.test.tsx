@@ -157,6 +157,16 @@ describe("pressing", () => {
     expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.Food token");
   });
 
+  it("shows one refusal for the whole deck: a second failed press replaces the first", async () => {
+    stub.joined.mockResolvedValue({ ok: false });
+    draw(ok([token({ oracleId: "a", name: "Ally" }), token({ oracleId: "b", name: "Food" })]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Ally token/ })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].textContent).toContain("Food token");
+  });
+
   it("says so when a press was refused, and the row is unchanged", async () => {
     stub.joined.mockResolvedValue({ ok: false, reason: "notThisDeck" });
     draw(ok([token()]));
@@ -583,6 +593,9 @@ describe("the view", () => {
     ]));
     const feet = [...document.querySelectorAll<HTMLElement>("[data-token-foot]")].map((f) => f.textContent);
     expect(feet).toEqual(["Add to Shopping", "✓ In Shopping", "in your collection", "✓ I have one"]);
+    // `✓ In Shopping` is still the Shopping press: the toggle that takes the token off the list (the details box has no Shopping press).
+    const joined = document.querySelectorAll<HTMLElement>("[data-token-foot=shopping] button")[1];
+    expect(joined.getAttribute("aria-pressed")).toBe("true");
     // An ownership fact is a word, not a control.
     expect(document.querySelectorAll("[data-token-foot=owned] button")).toHaveLength(0);
   });

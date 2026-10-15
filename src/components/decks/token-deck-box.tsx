@@ -12,7 +12,7 @@ import { useDeckTokens } from "./deck-tokens-context";
 import { TokenMakers } from "./token-makers";
 import { printingLine, useTokenPress } from "./token-row";
 
-export function TokenDeckBox({ oracleId }: { oracleId: string }) {
+export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onSelectCard?: (oracleId: string) => void }) {
   const ctx = useDeckTokens();
   const { press, pending, toast } = useTokenPress();
   if (!ctx || ctx.read.status !== "ok") return null;
@@ -50,7 +50,7 @@ export function TokenDeckBox({ oracleId }: { oracleId: string }) {
         </button>
       )}
       {canOpen ? (
-        <TokenMakers layout="box" makers={token.makers} printingLine={printingLine(token, ctx.read.newestPriceAsOf)} />
+        <TokenMakers layout="box" makers={token.makers} printingLine={printingLine(token, ctx.read.newestPriceAsOf)} onSelect={onSelectCard} />
       ) : (
         <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{tokensCopy.row.noMaker}</p>
       )}

@@ -2619,7 +2619,7 @@ export function CardModal({
               )}
 
               {/* A token's own deck box: its hand mark, the cards that make it and its printing line. */}
-              {deckId && isToken && <TokenDeckBox oracleId={card.oracleId} />}
+              {deckId && isToken && <TokenDeckBox oracleId={card.oracleId} onSelectCard={onSelectCard} />}
 
               {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
                   promoted out of the grid into a full-width row below Rarity and Identity, so
