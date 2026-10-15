@@ -18,8 +18,42 @@ export const PICK_MAX = 250;
 export type PickEntry = "home" | "collection";
 export const pickEntry = (from: string | null | undefined): PickEntry => (from === "collection" ? "collection" : "home");
 export const PICK_ENTRY_HREF: Record<PickEntry, string> = { home: "/", collection: "/collection" };
+/** The way into the pick from Collection (no-collection entry S18): the Add cards sheet's empty state. */
+export const PICK_FROM_COLLECTION_HREF = `/decks/precons?${PICK_PARAM}=${PICK_VALUE}&from=collection`;
+
+/**
+ * Where an add lands (S5, S19): back on the page the pick was opened from, which draws the receipt the landed entries'
+ * ids claim. Home and Collection both draw it.
+ */
+export const pickReceiptHref = (entry: PickEntry, entryIds: readonly string[]) =>
+  `${PICK_ENTRY_HREF[entry]}?${PICK_RECEIPT_PARAM}=${entryIds.join(",")}`;
 
 export type PickEdition = "regular" | "collector";
+
+/**
+ * Each row's newest standing precon add (S17), as an ISO timestamp, keyed by the row's file: a row stands for its own
+ * box and its Collector's Edition twin, and an add of either marks it. Read from ONE read of the player's standing adds
+ * for the whole list (`standingPreconAdds`), never per row. Only a precon History entry marks a box: owning its cards
+ * some other way marks nothing. Pure.
+ */
+export function pickAddedOn(
+  rows: readonly { fileName: string; box?: PreconBox }[],
+  adds: readonly { fileName: string; createdAt: Date }[],
+): Record<string, string> {
+  const newest = new Map<string, Date>();
+  for (const a of adds) {
+    const at = newest.get(a.fileName);
+    if (!at || a.createdAt > at) newest.set(a.fileName, a.createdAt);
+  }
+  const out: Record<string, string> = {};
+  for (const r of rows) {
+    const own = newest.get(r.fileName);
+    const twin = r.box?.twin ? newest.get(r.box.twin.fileName) : undefined;
+    const at = own && twin ? (own > twin ? own : twin) : own ?? twin;
+    if (at) out[r.fileName] = at.toISOString();
+  }
+  return out;
+}
 
 /** The file a ticked box adds: its own, or its Collector's Edition twin's. Never both. */
 export function pickFile(rowFile: string, box: PreconBox, edition: PickEdition): string {

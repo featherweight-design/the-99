@@ -337,6 +337,23 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(trigger).toHaveFocus();
   });
+
+  // No-collection entry S18: the layout's decision reaches the sheet, whose row closes it as it opens the pick.
+  it("hands the sheet its precon row, which closes the sheet when pressed", async () => {
+    pathname = "/collection";
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled preconPick />);
+    fireEvent.click(screen.getByTestId("collection-add"));
+    const row = screen.getByRole("link", { name: "Own precon boxes? Pick them" });
+    expect(row).toHaveAttribute("href", "/decks/precons?pick=own&from=collection");
+    fireEvent.click(row);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("draws no precon row without the layout's decision", () => {
+    withSwitch(true);
+    fireEvent.click(screen.getByTestId("collection-add"));
+    expect(screen.queryByRole("link", { name: "Own precon boxes? Pick them" })).toBeNull();
+  });
 });
 
 describe("History tab", () => {

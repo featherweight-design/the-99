@@ -21,8 +21,8 @@ vi.mock("../../app/collection/edit-actions", () => ({
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("next/link", () => ({
   // A press runs `onNavigate` as the real Link does on a client navigation, and goes nowhere.
-  default: ({ href, children, onNavigate, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: () => void }) => (
-    <a href={href} onClick={(e) => { e.preventDefault(); onNavigate?.(); }} {...rest}>{children}</a>
+  default: ({ href, children, onNavigate, onClick, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: () => void }) => (
+    <a href={href} onClick={(e) => { onClick?.(e); e.preventDefault(); onNavigate?.(); }} {...rest}>{children}</a>
   ),
   useLinkStatus: () => ({ pending: false }),
 }));
@@ -384,3 +384,42 @@ describe("AddCardsSheet (add)", () => {
 });
 void OID2;
 void act;
+
+// No-collection entry S18: the way into Precons I own, one 52px row in the empty state at both widths.
+describe("AddCardsSheet (add): the precon row", () => {
+  const precon = () => screen.queryByRole("link", { name: `${copy.preconLead} ${copy.preconPress}` });
+  const upload = () => screen.getByRole("link", { name: `${copy.uploadLead} ${copy.uploadInstead}` });
+
+  it("is absent unless the host turns it on, and the empty state is as shipped", () => {
+    mount();
+    expect(precon()).toBeNull();
+    expect(upload()).toBeInTheDocument();
+  });
+
+  it("sits under the upload on the phone and is the only row on desktop, in the same 52px shape", () => {
+    mount({ preconPick: true });
+    const row = precon()!;
+    expect(row).toHaveAttribute("href", "/decks/precons?pick=own&from=collection");
+    // Upload first in document order; the upload is phone only, so on desktop the precon row stands alone.
+    expect(upload().compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(upload().className).toContain("md:hidden");
+    expect(row.className).not.toContain("md:hidden");
+    expect(row.className).toContain("min-h-[52px]");
+    expect(row.parentElement).toBe(upload().parentElement);
+  });
+
+  it("closes the sheet as it opens the pick", () => {
+    const { onClose } = mount({ preconPick: true });
+    fireEvent.click(precon()!);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves once the list has a line, as the upload row does", async () => {
+    mount({ preconPick: true });
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await screen.findByText(copy.listHeading(1));
+    expect(precon()).toBeNull();
+  });
+});

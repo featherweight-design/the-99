@@ -14,7 +14,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObjec
 import { createPortal } from "react-dom";
 import { addToCollection, loadPrintingChoices, searchCollectionCards } from "../../app/collection/edit-actions";
 import { useInertPage } from "../../lib/a11y/inert-page";
-import { useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
+import { leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
+import { PICK_FROM_COLLECTION_HREF } from "../../lib/precons/pick";
 import {
   canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, toPayload,
   type AddLineState,
@@ -38,6 +39,16 @@ import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = collectionEditCopy.add;
+
+/** A precon box, 16px, in the row's accent (S18). */
+function BoxIcon() {
+  return (
+    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M3 8l9-5 9 5v8l-9 5-9-5z" />
+      <path d="M3 8l9 5 9-5M12 13v8" />
+    </svg>
+  );
+}
 const SEARCH_DEBOUNCE_MS = 150;
 
 type Phase = "editing" | "saving" | "failed" | "saved";
@@ -51,6 +62,11 @@ export type AddCardsSheetProps =
       returnFocusRef?: RefObject<HTMLElement | null>;
       /** The collection's size before this session, for the saved state's `4,492 → 4,500`. */
       totalCards?: number;
+      /**
+       * The way into Precons I own (no-collection entry S18): a row in the empty state, at both widths. The host decides
+       * it from `PRECONS_ENABLED` and the line's own switch; absent, the empty state is as shipped.
+       */
+      preconPick?: boolean;
     }
   | {
       /** One card's holdings, one line each (collection edit R2 §C). */
@@ -71,6 +87,7 @@ function AddMode({
   onSaved,
   returnFocusRef,
   totalCards: totalCardsNow,
+  preconPick = false,
 }: Extract<AddCardsSheetProps, { mode: "add" }>) {
   // The size when the sheet opened: the head re-reads its figure after a save, and the saved state
   // reports the move from the old one.
@@ -415,6 +432,20 @@ function AddMode({
                 <span aria-hidden className="text-[color:var(--fg-faint)]">{"›"}</span>
                 <PendingReporter href="/collection/replace" />
               </Link>
+              {/* S18: the same shape, under the upload on the phone and the only row on desktop, where the upload is in
+                  the head. Closes the sheet as it opens the pick; the sheet's history entry stays under the new route. */}
+              {preconPick ? (
+                <Link
+                  href={PICK_FROM_COLLECTION_HREF}
+                  onClick={() => { leaveDialogsForNavigation(); onClose(); }}
+                  className="flex min-h-[52px] items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-[14px] md:mt-[4px]"
+                >
+                  <span className="flex text-[color:var(--accent)]"><BoxIcon /></span>
+                  <span className="flex-1">{copy.preconLead} <span className="text-[color:var(--accent)]">{copy.preconPress}</span></span>
+                  <span aria-hidden className="text-[color:var(--fg-faint)]">{"›"}</span>
+                  <PendingReporter href={PICK_FROM_COLLECTION_HREF} />
+                </Link>
+              ) : null}
             </div>
           ) : (
             <>

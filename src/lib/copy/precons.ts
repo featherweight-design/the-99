@@ -21,6 +21,13 @@ export const preconDay = (isoDate: string) =>
 export const preconAddedDate = (isoTimestamp: string) =>
   new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
+/**
+ * An add's moment as `Jun 30`: the pick's added mark and its note (no-collection entry S17). In UTC, so the server's
+ * render and the browser's hydration name the same day.
+ */
+export const preconAddedDay = (isoTimestamp: string) =>
+  new Date(isoTimestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
 /** `A`, `A and B`, `A, B and C`, then `A, B and 4 others`. */
 function names(xs: readonly string[]): string {
   if (xs.length <= 1) return xs[0] ?? "";
@@ -351,6 +358,10 @@ export const preconsCopy = {
     collector: "Collector’s Edition",
     collectorNote: "every card foil",
     landed: "✓ added just now",
+    /** S17: a box with a standing precon add, after the row's meta (`preconAddedDay`). Still pickable. */
+    added: (date: string) => `✓ added ${date}`,
+    /** S17: the plain note under such a box once ticked. */
+    addedAgain: (date: string) => `You added this box on ${date}. Adding it again adds a second copy of each card.`,
     leadNone: "Tick the boxes you own.",
     lead: (b: number, c: number, t: number) =>
       `${plural(b, "box", "boxes")} · ${plural(c, "card", "cards")}${t > 0 ? ` and ${plural(t, "token", "tokens")}` : ""}`,

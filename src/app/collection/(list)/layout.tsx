@@ -15,7 +15,8 @@
 // dedupe to one query per request; nothing is fetched twice.
 
 import { requireUserId } from "../../../lib/auth";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
+import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
@@ -31,7 +32,10 @@ export default async function CollectionListLayout({
 }) {
   const userId = await requireUserId();
   // The reader's resolved switches (`requestSwitchEnv`), not the environment alone.
-  const editEnabled = collectionEditEnabled(await requestSwitchEnv(userId));
+  const env = await requestSwitchEnv(userId);
+  const editEnabled = collectionEditEnabled(env);
+  // The Add cards sheet's way into Precons I own (no-collection entry S18): both switches, or the sheet is as shipped.
+  const preconPick = noCollectionEntryEnabled(env) && preconsEnabled(env);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),
@@ -44,7 +48,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );

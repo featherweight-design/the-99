@@ -33,6 +33,9 @@ import { collectionEditEnabled, noCollectionEntryEnabled } from "../../../lib/co
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
+import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
+import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
+import { PreconPickReceipt } from "../../../components/home/precon-pick-receipt";
 
 export default async function CollectionPage({
   searchParams,
@@ -92,7 +95,22 @@ export default async function CollectionPage({
   // carries, and a window draws 200 of about 2,800. The window is found by the browser's own steps
   // (`lib/collection/window`) over the same list, so the cards it draws first are the ones shipped
   // whole; the rest arrive in the background from `/api/collection-fields`.
-  const query = searchParamsToQuery(await searchParams);
+  const params = await searchParams;
+  const query = searchParamsToQuery(params);
+
+  // A precon pick opened from Collection lands here (no-collection entry S19) with the receipt under the tabs: Home's
+  // own strip and dismiss key, read per request from the ledger and only when the address claims one. Off, nothing.
+  let receipt: PickReceipt | null = null;
+  const claim = noCollectionEntryEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
+  if (claim !== undefined) {
+    try {
+      receipt = await readPickReceipt(userId, claim);
+    } catch (error) {
+      // not a fallback: the receipt is an extra, and the collection below draws whether or not it was read.
+      console.error("collection: the precon receipt could not be read", error);
+    }
+  }
+  const strip = receipt ? <PreconPickReceipt receipt={receipt} /> : null;
   const keep = pageWindowIds(cards, availability, (key) => query.get(key));
   const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
 
@@ -108,6 +126,7 @@ export default async function CollectionPage({
     const ways = noCollectionEntryEnabled(env) ? { precons: preconsEnabled(env) } : null;
     return (
       <section className="flex flex-col">
+        {strip}
         <EmptyState className="md:p-[48px]">
           <CardFan variant="mobile" className="mb-[22px] md:hidden" />
           <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
@@ -140,6 +159,7 @@ export default async function CollectionPage({
 
   return (
     <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h)-var(--collection-head-h))] md:min-h-[calc(100vh-var(--collection-head-h))]">
+      {strip}
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient
