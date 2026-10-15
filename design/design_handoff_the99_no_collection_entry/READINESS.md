@@ -73,3 +73,24 @@ which the About entry follows. Collection Sync's PR 2 lands before S14.
 
 New components the handoff draws without naming them: the "ways" group (step 1, the empty Collection, the About
 specimen), the pick-mode rows and foot, and Home's precon receipt.
+
+## Engineering re-audit of the R3 addendum (2026-10-15)
+
+**GREEN. The held phase is no longer held.** The addendum draws the way into Precons I own for a player who already
+has cards, and the audit checked each of its claims against the code on `main`:
+- **The way in (S18)** is one row in the Add cards sheet's empty state, beside the shipped `Have a file? / Upload it
+  instead` row (`collection-edit.ts:236-237`). On the phone the upload row stays first.
+- **Why the sheet, not the head:** the phone's head strip has room for one trailing control, and `+ Add` is it
+  (`collection-place-head.tsx:295`).
+- **The pick with cards (E2)** reuses the shipped `you own N of M` (`precons.ts:121`). G7 is settled.
+- **S17's `✓ added <date>`** reads the box's standing precon add, `standingPreconAdds` (`src/lib/precons/added.ts:50`,
+  which carries `createdAt`).
+- **S19** returns to Collection with the S5 receipt strip.
+- **The About precons edit** names the real path (`Press Add cards in your Collection, then Pick them`).
+- **Locks hold:** one `addPreconForUser` call per box, one History entry each, and upload first at both widths.
+
+**Engineering-resolvable, decided in the plan.**
+- The sheet row is gated on `PRECONS_ENABLED` and on the line's own switch.
+- `from=collection` decides the pick's back link and where Done lands.
+- The receipt on Collection uses the Home receipt's own dismiss key.
+- The added mark comes from one read of the player's standing precon adds for the whole list, not one read per row.
