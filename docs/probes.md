@@ -1026,7 +1026,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   nothing to view otherwise. On the local-dev fixture the note is the credit
   note, so the writing branch is the one exercised; each overview the press writes is deleted again with
   its ledger unit, in ONE statement (`lib/overview-drop.mjs`, so a failure rolls both back and stays
-  retryable), after each width and in a `finally`. With the press expected to write nothing, or
+  retryable), after each width and in a `finally`. **Drawn means a visible box**, in this probe and in
+  `probe:verdict-block`: width and height over zero, not `visibility: hidden`, and no `display: none` up
+  the tree (`checkVisibility`), never DOM presence; a hidden slot, or a hidden button in it, offers
+  nothing, and a wait for one fails rather than being swallowed. With the overview given `display: none`
+  or `visibility: hidden`, the slot checks fail in both probes at both widths. With the press expected to write nothing, or
   each window widened or narrowed by one call, or the slot read in the wrong place, those checks fail. Since #1310 the strip has ONE mount, at Your deck on the spine above the
   tab row, Analysis on or off: the probe asserts exactly one strip, above the tabs, before and after
   the tab is opened, and none inside `#panel-analysis` (pointed at the whole page instead, the panel

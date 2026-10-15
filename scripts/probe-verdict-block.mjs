@@ -170,9 +170,10 @@ const rgb = (css) => (css.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
 
 async function walk(page, label, markPx, viewportWidth) {
   const block = onPage(page, 'section[aria-label="Your bracket"]').first();
-  const blocks = await block.count();
-  if (!(await report(`${label}px · the verdict block is drawn`, blocks > 0,
-      blocks > 0 ? "one block" : "no block after the profile arrived"))) {
+  // VISIBLE, not merely present: Playwright's `isVisible` wants a non-empty box and no `visibility: hidden`.
+  const drawn = await block.isVisible();
+  if (!(await report(`${label}px · the verdict block is drawn`, drawn,
+      drawn ? "one block, visible" : "no visible block after the profile arrived"))) {
     return;
   }
 
@@ -419,7 +420,9 @@ async function walkEmpty(page, label, width, held) {
       slot: (() => {
         const el = empty.querySelector('[data-testid="press-note-slot"]');
         const r = el?.getBoundingClientRect();
-        return el ? { h: Math.round(r.height), w: Math.round(r.width), text: el.textContent, hidden: getComputedStyle(el).visibility === "hidden" } : null;
+        // `shown`: not `visibility: hidden` and no `display: none` up the tree. Its height is read apart,
+        // since the frame's width collapses to 0 at 390 (it is `md:w-[340px]`) while its two lines stand.
+        return el ? { h: Math.round(r.height), w: Math.round(r.width), text: el.textContent, shown: el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }) } : null;
       })(),
       note: Boolean(empty.querySelector('[data-testid="press-note"]')),
       grid: !!root.querySelector('section[aria-label="Your bracket"]'),
@@ -444,7 +447,7 @@ async function walkEmpty(page, label, width, held) {
   // own line under the pair (frame 7a, #916), at 1300 as at 390, so a build that lost the frame puts the
   // opener back beside the press at 1300 and fails.
   report(`${label}px · with the note's read held, the note's frame is drawn, empty (#1844)`,
-    held() > 0 && e.slot !== null && !e.slot.hidden && e.slot.h > 0 && e.slot.text.trim() === "" && !e.note,
+    held() > 0 && e.slot !== null && e.slot.shown && e.slot.h > 0 && e.slot.text.trim() === "" && !e.note,
     JSON.stringify({ readsHeld: held(), slot: e.slot, note: e.note }));
   report(`${label}px · Analyze is a 44px press with the opener under it`,
     e.cta.text === "Analyze" && e.cta.h >= 44 && e.below,
@@ -460,18 +463,22 @@ async function walkEmpty(page, label, width, held) {
 async function walkLayout(page, label, width) {
   const phone = width < 768;
   const l = await page.evaluate((scope) => {
+    // A box is used only when it is DRAWN: width and height over zero, not `visibility: hidden`, and no
+    // `display: none` up the tree. A hidden element's zero rect would otherwise pass as geometry.
+    const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+    const rectOf = (e) => (shown(e) ? e.getBoundingClientRect() : null);
     const root = document.querySelector(scope);
     const panel = root?.querySelector('[role="tabpanel"]#panel-analysis');
-    const box = panel?.querySelector('section[aria-label="Your bracket"]')?.getBoundingClientRect();
-    const climb = panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement?.getBoundingClientRect();
-    const findings = panel?.querySelector('[data-testid="findings-block"]')?.getBoundingClientRect();
+    const box = rectOf(panel?.querySelector('section[aria-label="Your bracket"]'));
+    const climb = rectOf(panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement);
+    const findings = rectOf(panel?.querySelector('[data-testid="findings-block"]'));
     // The mix strip: none in the panel, and one on the spine above the tab row (Your deck, #1310).
     const panelMix = panel?.querySelectorAll('section[aria-label="Recommended mix"]').length ?? null;
     const tabTop = root?.querySelector('[role="tablist"]')?.getBoundingClientRect().top ?? null;
     const spineMix = tabTop === null ? null : [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])]
-      .filter((m) => !panel?.contains(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
-    const pb = panel?.getBoundingClientRect();
-    const ov = panel?.querySelector('[data-testid="synopsis-overview"]')?.getBoundingClientRect() ?? null;
+      .filter((m) => !panel?.contains(m) && shown(m) && m.getBoundingClientRect().bottom <= tabTop + 0.5).length;
+    const pb = rectOf(panel);
+    const ov = rectOf(panel?.querySelector('[data-testid="synopsis-overview"]'));
     const name = panel?.querySelector('[data-testid="verdict-name"]');
     return box && climb && findings && pb ? {
       box: { l: box.left, r: box.right, t: box.top, b: box.bottom, w: box.width },

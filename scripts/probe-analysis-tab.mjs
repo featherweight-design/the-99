@@ -178,6 +178,9 @@ const readTabs = (page) =>
 /** Where the Recommended mix strip is, relative to the tab row, and how many the Analysis panel holds. */
 const readStrip = (page) =>
   page.evaluate((scope) => {
+    // DRAWN means a visible box: width and height over zero, not `visibility: hidden`, and no
+    // `display: none` up the tree (`checkVisibility`). Presence in the DOM proves nothing.
+    const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
     const root = document.querySelector(scope);
     const strips = [...(root?.querySelectorAll('section[aria-label="Recommended mix"]') ?? [])];
     const tablist = root?.querySelector('[role="tablist"]');
@@ -189,7 +192,7 @@ const readStrip = (page) =>
       // Which side of the tab row each strip sits on. The spine is above it; the panel below.
       sides: strips.map((s) => {
         const r = s.getBoundingClientRect();
-        return { top: Math.round(r.top), height: Math.round(r.height), above: tabTop !== null && r.top < tabTop };
+        return { top: Math.round(r.top), height: Math.round(r.height), shown: shown(s), above: tabTop !== null && r.top < tabTop };
       }),
       tabTop: tabTop === null ? null : Math.round(tabTop),
     };
@@ -305,7 +308,7 @@ async function run() {
       // Before the press: the strip is on the spine, at Your deck (#1310), and the panel is not up yet.
       const before = await readStrip(p);
       report(`${label}px · the strip is at Your deck, above the tabs`,
-        before.count === 1 && before.sides[0]?.above === true,
+        before.count === 1 && before.sides[0]?.shown === true && before.sides[0]?.above === true,
         `${before.count} strip(s), above the tabs: ${before.sides.filter((s) => s.above).length}`);
 
       // ── The profile payload, counted as SERVER-ACTION POSTS ─────────────────────────────
@@ -350,9 +353,15 @@ async function run() {
       // already has its overview), write nothing. So the note is waited for (its frame, #1844, gives way
       // to the note or to nothing once the read answers) and classified by its words (`noteVariant`,
       // tested against the shipped copy). An unrecognised note fails rather than guessing.
-      await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 })
-        .catch(() => {});
-      const noteText = await p.evaluate((scope) => document.querySelector(`${scope} #panel-analysis [data-testid='press-note']`)?.textContent ?? "", PAGE);
+      const noteAnswered = await p.waitForFunction((scope) => !document.querySelector(`${scope} #panel-analysis [data-testid='press-note-slot']`), PAGE, { timeout: 15_000 })
+        .then(() => true, () => false);
+      report(`${label}px · the credit note's read answers before the press`, noteAnswered,
+        noteAnswered ? "the note's frame gave way" : "the frame was still waiting after 15s");
+      const noteText = await p.evaluate((scope) => {
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+        const note = document.querySelector(`${scope} #panel-analysis [data-testid='press-note']`);
+        return shown(note) ? note.textContent : "";
+      }, PAGE);
       const variant = noteVariant(noteText);
       const writes = variant === "credit" || variant === "free";
       report(`${label}px · the press says what it will do (${variant}: ${writes ? "writes the overview" : "writes no overview"})`,
@@ -372,15 +381,18 @@ async function run() {
       // fixed 1.2s sleep failed a correct build whose reply was merely slow. The timeout is
       // well above the measured maximum, and the thing waited for is the state a reply
       // produces rather than an elapsed time.
-      await onPage(p, 'section[aria-label="Your bracket"]')
+      const boxShown = await onPage(p, 'section[aria-label="Your bracket"]')
         .first()
         .waitFor({ state: "visible", timeout: 15_000 })
-        .catch(() => {});
+        .then(() => true, () => false);
       // A press that writes holds until the stand-in's overview lands (#916's first-press hold); either
       // way the overview's read follows the reading it is keyed on (below), so it is given time to be asked.
       if (writes) {
-        await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button", { hasText: "View full overview" })
-          .first().waitFor({ timeout: 90_000 }).catch(() => {});
+        // VISIBLE, and reported: a wait that swallowed its timeout let the later checks read a hidden slot.
+        const landed = await onPage(p, "#panel-analysis [data-testid='synopsis-overview'] button", { hasText: "View full overview" })
+          .first().waitFor({ state: "visible", timeout: 90_000 }).then(() => true, () => false);
+        report(`${label}px · the overview the press wrote lands, visible`, landed,
+          landed ? "View full overview is shown" : "no visible View full overview after 90s");
       }
       await p.waitForTimeout(2_500);
       const afterPress = posts();
@@ -400,7 +412,7 @@ async function run() {
       // AND THE PROFILE REPLY LANDED: the empty state is replaced by the bracket box (the consolidated tab
       // draws no re-ask on a reading). The count above names the call; this says its reply was drawn.
       const stillInviting = await onPage(p, '[data-testid="analysis-empty"]').count();
-      const box = await onPage(p, 'section[aria-label="Your bracket"]').count();
+      const box = boxShown ? await onPage(p, 'section[aria-label="Your bracket"]').count() : 0;
       report(`${label}px · and it was the PROFILE fetch, not merely an action`,
         stillInviting === 0 && box === 1,
         `empty state ${stillInviting}, bracket box ${box} — a profile reply replaces one with the other`);
@@ -435,26 +447,30 @@ async function run() {
         ) as written`;
       const wantView = writes || written;
       const synopsis = await p.evaluate((scope) => {
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
         const slot = document.querySelector(scope)?.querySelector("#panel-analysis [data-testid='synopsis-overview']");
-        const buttons = [...(slot?.querySelectorAll("button") ?? [])].map((b) => b.textContent.trim());
+        // Only what is SHOWN counts: a hidden slot, or a hidden button inside it, offers nothing.
+        const buttons = shown(slot) ? [...slot.querySelectorAll("button")].filter(shown).map((b) => b.textContent.trim()) : [];
         return {
-          slot: Boolean(slot),
+          slot: shown(slot),
           absent: (slot?.textContent ?? "").includes("No overview has been written for this deck yet."),
           write: buttons.includes("Write one"),
           view: buttons.some((t) => t.includes("View full overview")),
         };
       }, PAGE);
       report(`${label}px · the overview slot is drawn in the panel`, synopsis.slot,
-        synopsis.slot ? "drawn" : "no synopsis-overview in #panel-analysis");
+        synopsis.slot ? "drawn, visible" : "no visible synopsis-overview in #panel-analysis");
       report(`${label}px · and ${wantView ? "offers View full overview" : "offers no overview to view"} (${writes ? "the press wrote one" : written ? "one was written before" : "none written"})`,
         wantView ? synopsis.view && !synopsis.write && !synopsis.absent : !synopsis.view,
         JSON.stringify({ writes, writtenBefore: written, ...synopsis }));
       await dropWritten(sql, deckId, synopsesBefore);
 
-      const panel = await p.evaluate((scope) =>
-        Boolean(document.querySelector(scope)?.querySelector("#panel-analysis")), PAGE);
+      const panel = await p.evaluate((scope) => {
+        const shown = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true }); };
+        return shown(document.querySelector(scope)?.querySelector("#panel-analysis"));
+      }, PAGE);
       report(`${label}px · pressing it opens the Analysis panel`, panel,
-        panel ? "panel-analysis is in the document" : "no panel");
+        panel ? "panel-analysis is shown" : "no visible panel");
 
       const after = await readStrip(p);
       // EXACTLY ONE, with the Analysis tab open: the spine's (#1310). A second mount in the panel
@@ -462,7 +478,7 @@ async function run() {
       report(`${label}px · exactly one mix strip exists`, after.count === 1,
         `${after.count} strip(s)`);
       report(`${label}px · and it is above the tab row, at Your deck`,
-        after.count === 1 && after.sides[0]?.above === true,
+        after.count === 1 && after.sides[0]?.shown === true && after.sides[0]?.above === true,
         after.count === 1 ? `top ${after.sides[0].top} vs tabs ${after.tabTop}` : "not measurable");
       report(`${label}px · the Analysis tab draws no mix strip`,
         after.inPanel === 0,
