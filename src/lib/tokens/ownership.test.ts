@@ -50,13 +50,13 @@ describe("aggregateTokenRows", () => {
 });
 
 function recorder() {
-  const log: { op: string; table: string; rows?: unknown[]; set?: Record<string, unknown>; where?: unknown }[] = [];
+  const log: { op: string; table: string; rows?: unknown[]; set?: Record<string, unknown>; where?: unknown; setWhere?: unknown }[] = [];
   const tx = {
     delete: (table: object) => ({ where: async (where?: unknown) => { log.push({ op: "delete", table: getTableName(table as never), where }); } }),
     insert: (table: object) => ({
       values: (rows: unknown[]) => ({
-        onConflictDoUpdate: async (arg: { set: Record<string, unknown> }) => {
-          log.push({ op: "upsert", table: getTableName(table as never), rows: Array.isArray(rows) ? rows : [rows], set: arg.set });
+        onConflictDoUpdate: async (arg: { set: Record<string, unknown>; setWhere?: unknown }) => {
+          log.push({ op: "upsert", table: getTableName(table as never), rows: Array.isArray(rows) ? rows : [rows], set: arg.set, setWhere: arg.setWhere });
         },
       }),
     }),
@@ -194,10 +194,24 @@ describe("writeUploadTokens, additive (a Sync under Only what it adds)", () => {
     expect(printing).toBe('greatest("token_printing_holdings"."quantity", excluded.quantity)');
   });
 
-  it("turns a hand mark it reads into an upload row", async () => {
+  it("updates a row of ANY source only when the file exceeds it: a precon or hand mark at or above the file stands as it is", async () => {
     const { tx, log } = recorder();
     await writeUploadTokens(tx, "u1", "up1", "additive", holdings);
-    expect(render(log.find((l) => l.op === "upsert" && l.table === "token_ownership")!.set!.source)).toBe("'upload'");
+    const own = log.find((l) => l.op === "upsert" && l.table === "token_ownership")!;
+    // No source test in the guard: a precon row of 5 against a file of 2 is not touched.
+    expect(render(own.setWhere)).toBe('excluded.quantity > "token_ownership"."quantity"');
+    // A row the file exceeds becomes the upload's, at the file's count.
+    expect(render(own.set!.source)).toBe("'upload'");
+    const printing = log.find((l) => l.op === "upsert" && l.table === "token_printing_holdings")!;
+    expect(render(printing.setWhere)).toBe('excluded.quantity > "token_printing_holdings"."quantity"');
+  });
+
+  it("Replace and Add carry no guard: they write as they always did", async () => {
+    for (const mode of ["replace", "add"] as const) {
+      const { tx, log } = recorder();
+      await writeUploadTokens(tx, "u1", "up1", mode, holdings);
+      expect(log.filter((l) => l.op === "upsert" && l.table !== "token_reads").every((l) => l.setWhere === undefined)).toBe(true);
+    }
   });
 
   it("does not let a standing precon add re-claim anything: nothing was dropped", async () => {
@@ -224,6 +238,23 @@ describe("tokenWritePlan", () => {
       { kind: "token", id: T1, from: 2, to: 4 },
       { kind: "printing", id: "pa", from: 2, to: 4 },
     ]);
+  });
+
+  it("additive never lowers a precon row: precon 5 with a file of 2 stays 5, and a repeat changes nothing", () => {
+    const precon = state({ owned: [{ tokenOracleId: T1, quantity: 5, source: "precon" }] });
+    const two = [{ tokenOracleId: T1, quantity: 2 }];
+    expect(tokenWritePlan("additive", precon, two)).toEqual([]);
+    expect(tokenWritePlan("additive", precon, two)).toEqual([]);
+    // Nor a hand mark at the file's count.
+    expect(tokenWritePlan("additive", state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "manual" }] }), two)).toEqual([]);
+  });
+
+  it("additive takes a precon or hand row the file exceeds as an upload row at the file's count, once", () => {
+    const precon = state({ owned: [{ tokenOracleId: T1, quantity: 2, source: "precon" }] });
+    const five = [{ tokenOracleId: T1, quantity: 5 }];
+    expect(tokenWritePlan("additive", precon, five)).toEqual([{ kind: "token", id: T1, from: 2, to: 5 }]);
+    // After that write the row is the upload's at 5: the same file again changes nothing.
+    expect(tokenWritePlan("additive", state({ owned: [{ tokenOracleId: T1, quantity: 5, source: "upload" }] }), five)).toEqual([]);
   });
 
   it("additive raises to the file's count and never lowers or removes", () => {

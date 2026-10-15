@@ -19,12 +19,27 @@ describe("the anchor query", () => {
     expect(q.sql).toContain("where u.user_id = $2");
     expect(q.sql).toContain("on h.user_id = u.user_id and h.source = 'csv_uploads:' || u.id::text");
     expect(q.sql).toContain("select 1 from csv_uploads c where c.user_id = $1 and c.confirmed_at is not null");
-    expect(q.params).toEqual(["user_1", "user_1"]);
+    expect(q.params).toEqual(["user_1", "user_1", "user_1"]);
   });
 
-  it("anchors on a confirmed upload with no entry, an unreverted Replace, or an unreverted Sync under Everything", () => {
+  it("anchors on a confirmed upload with no entry, or a standing Replace or Sync under Everything", () => {
     expect(q.sql).toContain("u.confirmed_at is not null");
-    expect(q.sql).toContain("h.id is null or ( h.reverted_by is null and ( h.kind = 'upload_replace' or (h.kind = 'upload_sync' and u.preview_payload -> 'syncSummary' ->> 'pick' = 'everything') ) )");
+    expect(q.sql).toContain("h.id is null or ( ( with recursive chain");
+    expect(q.sql).toContain(") and ( h.kind = 'upload_replace' or (h.kind = 'upload_sync' and u.preview_payload -> 'syncSummary' ->> 'pick' = 'everything') ) )");
+  });
+
+  it("decides standing by the revert chain's parity, as standingIds does: a revert of the revert restores the upload", () => {
+    // The chain starts at the entry's own reverted_by and follows each revert's reverted_by, one depth per revert found.
+    expect(q.sql).toContain("with recursive chain (next_id, depth) as ( select h.reverted_by, 0 union all select r.reverted_by, c.depth + 1 from chain c join collection_history r on r.id = c.next_id");
+    // Even reverts stand: none, or a revert that was itself reverted.
+    expect(q.sql).toContain("select max(c2.depth) % 2 = 0 from chain c2");
+    // No bare reverted_by test survives: that was the rule that skipped a restored upload.
+    expect(q.sql).not.toContain("h.reverted_by is null");
+  });
+
+  it("scopes every step of the chain to the reader", () => {
+    expect(q.sql).toContain("join collection_history r on r.id = c.next_id and r.user_id = $3 where c.depth < 1000");
+    expect(q.params[2]).toBe("user_1");
   });
 
   it("never anchors on an Add: no clause admits upload_add", () => {
@@ -47,7 +62,7 @@ describe("the anchor query, excluding the upload being synced", () => {
   it("leaves it out of both the uploaded check and the anchor, so a first upload reads neverUploaded", () => {
     expect(q.sql).toContain("select 1 from csv_uploads c where c.user_id = $1 and c.confirmed_at is not null and c.id <> $2::uuid");
     expect(q.sql).toContain("where u.user_id = $3 and u.confirmed_at is not null and u.id <> $4::uuid and (");
-    expect(q.params).toEqual(["user_1", "this-upload", "user_1", "this-upload"]);
+    expect(q.params).toEqual(["user_1", "this-upload", "user_1", "this-upload", "user_1"]);
   });
 
   it("excludes nothing when no upload is named", () => {

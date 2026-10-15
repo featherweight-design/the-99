@@ -16,7 +16,8 @@ import { quantitiesOf } from "./sync";
  *   - or is an `upload_sync` made under **Everything** (`preview_payload.syncSummary.pick`, stored by
  *     the Sync's own confirm). A Sync under **Only what it adds** or **Only its tokens** did not take
  *     the file's removals, so its file is not what the collection was reconciled to;
- * and whose entry has not been reverted (`reverted_by` is null). Never an Add: its cards read as the
+ * and whose entry still STANDS: never reverted, or reverted an even number of times along its revert chain
+ * (`uploadEntryStands`, the rule `standingIds` holds for precon adds). Never an Add: its cards read as the
  * app's side.
  *
  * Owner-scoped in its own SQL: both the upload and the entry are matched on the reader's id.
@@ -33,6 +34,27 @@ export type SyncBase =
 
 /** How many earlier uploads staleness compares the file with. */
 export const EARLIER_UPLOADS = 5;
+
+/**
+ * Whether the upload's ledger entry `h` still STANDS: the standing-effect rule of `standingIds`
+ * (`src/lib/precons/added.ts`), in SQL. Reverting an entry stamps its `reverted_by`, and reverting that revert
+ * restores its changes while the stamp stays, so an entry stands exactly when its revert chain (`h`, the entry
+ * that reverted it, the entry that reverted that, ...) holds an EVEN number of reverts. The chain is walked
+ * through `reverted_by`, owner-scoped at every step: a revert that is not the reader's (or is missing) ends the
+ * chain, as a revert missing from `standingIds`' links stands. Each entry is reverted at most once, by a later
+ * entry, so a chain is acyclic; the depth bound is a backstop, never a rule.
+ */
+export const uploadEntryStands = (userId: string) => sql`(
+          with recursive chain (next_id, depth) as (
+            select h.reverted_by, 0
+            union all
+            select r.reverted_by, c.depth + 1
+            from chain c
+            join collection_history r on r.id = c.next_id and r.user_id = ${userId}
+            where c.depth < 1000
+          )
+          select max(c2.depth) % 2 = 0 from chain c2
+        )`;
 
 /**
  * The newest anchor, beside whether the reader ever confirmed an upload at all. `excludeUploadId` is the
@@ -58,7 +80,7 @@ export const anchorQuery = (userId: string, excludeUploadId?: string) => sql`
       and (
         h.id is null
         or (
-          h.reverted_by is null
+          ${uploadEntryStands(userId)}
           and (
             h.kind = 'upload_replace'
             or (h.kind = 'upload_sync' and u.preview_payload -> 'syncSummary' ->> 'pick' = 'everything')

@@ -19,6 +19,10 @@
 //   f  Only what it adds: no removal or lowering is written, tokens are upserted to the greater count and
 //      none is deleted, and the base does not move.
 //   g  Only its tokens, from a file with no matched cards: the tokens are recorded and no card moves.
+//   h  A restored upload anchors: upload, revert, revert of the revert (its entry still `reverted_by`), an app
+//      edit, then a Sync: the base is the restored upload and the edit is a conflict, not a removal taken.
+//   i  Only what it adds never lowers a token row of any source: a precon row of 5 against a file of 2 stays 5,
+//      a repeat writes nothing, and a file above it takes it as an upload row.
 //
 // The thresholds staleness reads are printed, not asserted (G2: unmeasured).
 //
@@ -125,7 +129,7 @@ async function run() {
     const uploadId = await newUpload(items, tokens);
     const r = await applyCollectionChange(USER, { kind: "replace", items, uploadId, tokens }, { id: randomUUID(), env: ENV });
     if (r.status !== "applied") throw new Error(`replace refused: ${r.status}`);
-    return uploadId;
+    return { uploadId, entryId: r.entry.id };
   };
   const edit = (rowsToSet: { oracleId: string; quantity: number; cn?: string }[]) =>
     applyCollectionChange(USER, { kind: "edit", rows: rowsToSet.map((r) => ({ ...id(r.oracleId, r.cn), quantity: r.quantity })) }, { id: randomUUID(), env: ENV });
@@ -276,6 +280,42 @@ async function run() {
   const g = await sync([], { pick: "tokens", tokens: [tok(2, 3)] });
   check("g · a tokens-only file syncs its tokens under Replace's rule", [g.result.status, await tokenRows()], ["applied", ["2:upload=3"]]);
   check("g · and writes no card", (await rows<{ n: number }>("select coalesce(sum(quantity), 0)::int n from collection_items where user_id = $1", [USER]))[0].n, cardsBeforeG[0].n);
+
+  // ---- h. A restored upload anchors (round 2, finding 1) ----------------------------------------------
+  // Reverting a revert restores the upload's changes while its own entry keeps `reverted_by`: the base follows
+  // the revert chain's parity, as `standingIds` does for precon adds.
+  // H stays: it is the probe deck's commander, and a Replace dropping it would ask about the deck first.
+  const h1 = await replace([at(D, 1), at(E, 1), at(H, 1)]);
+  const h2 = await replace([at(D, 2), at(E, 1), at(G, 1), at(H, 1)]);
+  const r1 = await applyCollectionChange(USER, { kind: "revert", entryId: h2.entryId }, { id: randomUUID(), env: ENV });
+  check("h · reverting the upload moves the base back to the one before it", [r1.status, await count(G), await anchorId()], ["applied", 0, h1.uploadId]);
+  if (r1.status !== "applied") throw new Error("h's revert did not apply");
+  const r2 = await applyCollectionChange(USER, { kind: "revert", entryId: r1.entry.id }, { id: randomUUID(), env: ENV });
+  const [stamp] = await rows<{ by: string | null }>("select reverted_by::text by from collection_history where id = $1", [h2.entryId]);
+  check("h · reverting the revert restores the upload, whose entry still carries reverted_by",
+    [r2.status, await count(G), stamp.by !== null], ["applied", 1, true]);
+  check("h · and the restored upload anchors again", await anchorId(), h2.uploadId);
+  await edit([{ oracleId: G, quantity: 3 }]);
+  const hFile = [at(D, 2), at(E, 1), at(H, 1)];
+  const ph = await preview(syncChange(await newUpload(hFile), hFile));
+  check("h · the app's edit against the restored base is a conflict, not taken as a removal",
+    [ph.sync!.counts.conflicts, ph.sync!.counts.undecided, ph.sync!.counts.taken, ph.rows.length], [1, 1, 0, 0]);
+
+  // ---- i. Only what it adds never lowers a precon token (round 2, finding 2) ---------------------------
+  await pool.query(
+    "insert into token_ownership (user_id, token_oracle_id, quantity, source) values ($1, $2, 5, 'precon')", [USER, T[0]],
+  );
+  const iTokens = [tok(0, 2), tok(1, 1)];
+  const i1 = await sync(hFile, { pick: "additions", tokens: iTokens });
+  check("i · the preview plans only the new token's ownership row, never the precon's", i1.preview.sync!.tokenChanges.filter((t) => t.kind === "token").map((t) => [T.indexOf(t.id), t.to]), [[1, 1]]);
+  check("i · a precon row of 5 against a file of 2 stays 5, as the precon's", [i1.result.status, await tokenRows()],
+    ["applied", ["0:precon=5", "1:upload=1", "2:upload=3"]]);
+  const i2 = await sync(hFile, { pick: "additions", tokens: iTokens });
+  check("i · and a repeat sync changes nothing", [i2.preview.sync!.nothing, i2.result.status, await tokenRows()],
+    [true, "nothingToSync", ["0:precon=5", "1:upload=1", "2:upload=3"]]);
+  const i3 = await sync(hFile, { pick: "additions", tokens: [tok(0, 7)] });
+  check("i · a file above the precon row takes it as an upload row at the file's count", [i3.result.status, await tokenRows()],
+    ["applied", ["0:upload=7", "1:upload=1", "2:upload=3"]]);
 }
 
 run()

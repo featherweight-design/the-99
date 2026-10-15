@@ -96,8 +96,14 @@ export function tokenWritePlan(mode: TokenWriteMode, state: TokenState, holdings
   const file = new Map(holdings.map((h) => [h.tokenOracleId, h.quantity]));
   for (const [id, f] of file) {
     const o = owned.get(id);
+    if (mode === "additive") {
+      // Never below ANY row's count, whatever its source: a row at or above the file stands as it is (a precon or
+      // hand mark included), and one below it becomes an upload row of what the file read (`writeUploadTokens`).
+      if (!o || f > o.quantity) out.push({ kind: "token", id, from: o?.quantity ?? null, to: f });
+      continue;
+    }
     const held = o?.source === "upload" ? o.quantity : null;
-    const to = mode === "replace" ? f : mode === "additive" ? Math.max(held ?? 0, f) : (held ?? 0) + f;
+    const to = mode === "replace" ? f : (held ?? 0) + f;
     if (held !== to) out.push({ kind: "token", id, from: o?.quantity ?? null, to });
   }
   if (mode === "replace") {
@@ -167,9 +173,10 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
  *   Add: the upload's holdings are added to the upload rows; a manual row the upload also read becomes
  *     an upload row of exactly what the upload read.
  *   Additive (a Sync under **Only what it adds**, plan `2026-10-15-collection-sync.md`, ruling 2): the
- *     file is a whole export, so it is IDEMPOTENT rather than Add's accumulate. Each token and each token
- *     printing the file reads becomes an upload row of `greatest(held, file)`; a manual row it reads becomes
- *     an upload row of what the file read. Nothing is deleted, and an unchanged re-sync changes nothing.
+ *     file is a whole export, so it is IDEMPOTENT rather than Add's accumulate, and it never LOWERS a row of
+ *     any source. A token row (upload, manual or precon) at or above what the file reads stands exactly as it
+ *     is; one below it becomes an upload row of what the file read, `greatest(held, file)`. Each upload printing
+ *     row takes the greater too. Nothing is deleted, and an unchanged re-sync changes nothing.
  *
  * A token the upload read as HELD leaves every deck's Shopping list in the same transaction: owned means
  * owned for every deck, and nothing restores a join if the token is unmarked later (plan PR 5, audit
@@ -221,13 +228,17 @@ export async function writeUploadTokens(
         quantity: mode === "add"
           ? sql`case when ${tokenOwnership.source} = 'upload' then ${tokenOwnership.quantity} + excluded.quantity else excluded.quantity end`
           : mode === "additive"
-            ? sql`case when ${tokenOwnership.source} = 'upload' then greatest(${tokenOwnership.quantity}, excluded.quantity) else excluded.quantity end`
+            ? sql`greatest(${tokenOwnership.quantity}, excluded.quantity)`
             : sql`excluded.quantity`,
         source: sql`'upload'`,
         // A precon row the upload reads becomes the upload's, so reverting the precon no longer takes it.
         entryId: sql`null`,
         updatedAt: sql`now()`,
       },
+      // Additive never lowers a row of ANY source (round 2): a row at or above the file is left exactly as it is,
+      // its source and its precon entry included, and only a row the file exceeds becomes the upload's, at the
+      // file's count. So an unchanged re-sync updates nothing. `tokenWritePlan` holds the same rule.
+      ...(mode === "additive" ? { setWhere: sql`excluded.quantity > ${tokenOwnership.quantity}` } : {}),
     });
   }
   // The printings beside the tokens, the same way round: Replace starts from none, Add accumulates, Additive
@@ -244,6 +255,7 @@ export async function writeUploadTokens(
             : sql`${tokenPrintingHoldings.quantity} + excluded.quantity`,
           updatedAt: sql`now()`,
         },
+        ...(mode === "additive" ? { setWhere: sql`excluded.quantity > ${tokenPrintingHoldings.quantity}` } : {}),
       });
   }
   await tx.insert(tokenReads).values({ userId, uploadId }).onConflictDoUpdate({
