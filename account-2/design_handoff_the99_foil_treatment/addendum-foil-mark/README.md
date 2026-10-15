@@ -21,7 +21,9 @@ R4 (Hugh's audit of R3):
   x. Beside the dot (R3) is drawn next to it on M-Main for Hugh's call (gap M8).
 - Keys in the shipped phone layouts: /collection three columns (`phoneColumns={3}`), the deck key wraps, Shopping's own
   `ShoppingKey` is two columns above the deck key's marks.
-- Shopping's key names `cheaper stand-ins` and `a friend has a spare` separately; the phone row keeps one press.
+- Shopping's key is ONE grid (two columns on the phone, `ShoppingKey`'s layout; one wrapping row on desktop) holding
+  `cheaper stand-ins`, `friend has a spare`, `press to add` (was `bought it? press to add it`), `over $5`, then the
+  deck's marks (game changer, tutor, foil). The phone row keeps one press for stand-ins and spares.
 - No EDHREC figure on Shopping rows.
 - `short` and `in use` drawn as shipped (`OverGlyph` in `--danger` with its seam; `--avail-hard` diamond).
 
