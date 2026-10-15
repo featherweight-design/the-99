@@ -3,7 +3,7 @@
 `design/design_handoff_the99_foil_treatment/` · 2026-10-15 · visual-system addendum · mirrors `design_handoff_the99_deck_printings/`.
 Voice: Kitchen Table. Theme drawn: Kaldheim (First Frost), with all six on every surface board.
 
-**Status: R1, waiting on Hugh's audit.** Nothing here is on main.
+**Status: R1 approved (Hugh, LGTM, 2026-10-15).**
 
 **Source of truth:** `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` on branch `brief/foil-treatment` (not on main yet).
 Fixture: Avengers Assemble Collector's Edition (MSC), 100 cards, all foil.
@@ -195,3 +195,170 @@ transparency · forced colours · token (plain). Phone repeats the six that diff
 **Sequencing.** One PR: the CSS block, `data-foil` on three ring spans (deck, Collection, precon read-only; the token span
 untouched), the deck finish read, and `measure:load` tables in the body. Phone and desktop ship together. No new tokens,
 no new dependencies, no new strings.
+
+
+---
+
+## R2 · Large views (addendum, 2026-10-15)
+
+**Status: R2 drawn, waiting on Hugh's audit.** Nothing here goes to main until he approves.
+
+**Source of truth:** `docs/superpowers/design-briefs/2026-10-15-foil-large-views.md` on branch `brief/foil-large-views`.
+It builds on R1 (audited GREEN, handoff #1776; the build is #1784) and closes R1's G4.
+
+Canvas: `The 99 - Foil Treatment (R2).dc.html` (the calls, a live follow specimen, intensity, timing, locks, sizes and the
+CSS) plus `R2 - Details-Desktop`, `R2 - Details-Phone`, `R2 - Zoom`, `R2 - Preview` (hover preview, peeks, precons),
+`R2 - Motion` (every movement, looping) and `R2 - States`. Same canvas artifact as R1, below R1's boards. On the
+desktop boards, hover the first large card and move across it: the film follows.
+
+**No About entry, no bump, no strings.** Cosmetic (brief §About entry).
+
+### The design in one paragraph
+
+Card details, the zoom, the hover preview and the peeks carry R1's film over a foil copy's own art. On the two large
+faces (the details face and the zoom card) the film is R1's, at 80% strength and spread 1.5 times wider. On desktop it
+slides toward the pointer, up to a quarter of the card each way, and eases home when the pointer leaves; keyboard focus
+plays R1's one sweep instead. On a phone it is still, with one band of light when a card lands. The mid-size views (the
+hover preview, the phone peek, the desktop neighbour plate) keep R1's tile film, still. The face itself is drawn exactly
+as today and never waits: only the film carries an arrival mark.
+
+### The calls (brief §Open, in order)
+
+1. **Intensity at size.** R1’s film, at 80% strength and spread one and a half times wider. Same stops and colours, so a tile and its details read as one material. The wider spread keeps a 264 to 372px face from reading as stripes, and the lower strength keeps pale art from washing out.
+2. **Motion at size.** Desktop: the film follows the pointer across the face, up to a quarter of the card’s width each way, and eases home when the pointer leaves. Keyboard focus plays R1’s one 640ms sweep. Nothing loops.
+3. **Tilt on desktop.** No tilt. A tilt and the flip are both rotations of the same card, and the zoom adds its own perspective. The moving film is what reads as foil, and it composes with the flip for free.
+4. **The phone.** A still film, plus one R1 sweep when a card lands: details opening, a swipe settling, the zoom opening. No drag-follow. Device tilt stays out, because it needs the motion permission prompt.
+5. **Arrival on a background face.** The face never waits; only the film does. One preloaded Image marks the FILM span (the arming ArtLayer already uses). Cached art, which covers most opens, is marked done and the film is there at once. A cold open fades the film in over 300ms when the bytes land.
+6. **Precons in details.** Details keeps the card’s own resolution. Showing the box’s printing changes what details names, which is more than a cosmetic round should move. If you own the Collector’s Edition, your MSC copies resolve and carry the film anyway.
+7. **The peek and the hover preview.** Both get R1’s tile film, still, with no motion. The peek is mid-size and partly off screen; the preview already moves with the pointer, so a moving film on it is noise.
+8. **The flip.** The film rides both faces through the turn. Each face carries its own film and hides its own back, so the film turns with the card stock and the back is foil the moment it shows.
+9. **A mixed holding in details.** No film, the same rule as tiles: every owned copy of the shown printing is foil, or nothing. The picker’s finish filter is a way of finding a printing, not a statement about the face.
+
+### Where details reads "foil"
+
+Details already resolves the printing it shows; the film reads that same printing.
+
+| Opened from | Shown printing | Film when |
+|---|---|---|
+| A deck | the deck's held pick, else the Collection pick (`deckPrintingPicks`, `withDeckPick`) | every owned copy of it is foil (or etched) and the face is its own image |
+| The Collection | the card's preference, else the first printing with art | that printing's `finishes` hold only `foil` (or only `etched`) |
+| A precon's open view | the card's own resolution, unchanged (call 6) | as above; an unowned card never |
+| A pick in the picker | the picked printing | the film follows the pick, as R1's `cardArt` does on tiles |
+| A suggestion, a commander page, any card not held | | never |
+
+The face is "its own image" only when it comes from `resolved.imageUri` of a held printing. A face drawn from another
+printing or the oracle-level picture (`identityGradient` fallback included) gets no film.
+
+### The CSS (proposed; R1's block stays as built)
+
+```css
+/* Foil, large views (R2). A large film is any [data-foil] with data-foil-size="large": the
+   details face(s) and the zoom card. The peek, the neighbour plate and the hover preview keep R1's
+   tile film. R1's reduced-transparency and forced-colors rules already cover every [data-foil]. */
+[data-foil-size="large"]::before { inset: 0 -25%; opacity: .8; }
+
+/* A background face has no <img> to wait on, so the FILM carries its own arrival mark (armArtArrival
+   on a preloaded Image of the face's URL). The face itself is never held. */
+[data-foil][data-arrival="pending"], [data-foil][data-arrival="failed"] { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-foil][data-arrival="in"] { animation: art-in var(--motion-fade) var(--motion-ease); }
+}
+
+/* Desktop: the film follows the pointer. --foil-x (0..1) is written on pointermove by the art box. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [data-foil-size="large"]::before {
+    transform: translateX(calc((var(--foil-x, .5) - .5) * 33.333%));
+    transition: transform var(--motion-duration) var(--motion-ease);
+  }
+  :hover > [data-foil-size="large"]::before { transition-duration: var(--motion-quick); }
+  /* R1's band plays on keyboard focus only here; hover has the follow. */
+  :is(a, button):hover:not(:focus-visible) [data-foil-size="large"]::after { animation: none; }
+}
+
+/* Phone: one band when a card lands (the element mounts), after the card's own entry. */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  [data-foil][data-foil-size="large"]::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(105deg, rgb(255 255 255 / 0) 30%, rgb(255 255 255 / .42) 50%, rgb(255 255 255 / 0) 70%);
+    animation: foil-sweep calc(var(--motion-duration) * 2) var(--motion-ease) var(--motion-duration) both;
+  }
+}
+
+/* The peek's art is an ArtLayer div, not an <img>: R1's hold reads the mark on any sibling. */
+[data-arrival="pending"] ~ [data-foil], [data-arrival="failed"] ~ [data-foil] { opacity: 0; }
+```
+
+**The markup.** One film span per face, inside the face box, so it turns with the card:
+
+- **Details, single-faced:** the art box (`modal-art-desktop`, and the phone card) gets a child
+  `<span data-foil="foil" data-foil-size="large" class="pointer-events-none absolute inset-0 rounded-[inherit]">`.
+- **Two-faced:** `CardFaces` draws one film span inside each face div. Both sides hide their backs, so the film rides the
+  turn with no timing of its own.
+- **The zoom card:** the same, on `card-zoom-card` (or inside each zoom face).
+- **The follow:** the art box's existing zoom button (stretched over the art) writes `--foil-x` on `pointermove` (offsetX ÷
+  width) and removes it on `pointerleave`, only for a fine pointer under no-preference. No rAF, nothing while idle.
+- **The arrival mark:** one preloaded `Image` of the face's URL, armed with `armArtArrival`, marks the film span (`pending`,
+  `in`, `done`, `failed`). Cached art is `done` at once, so most opens show the film with the face.
+- **The hover preview:** `usePreviewRow(imageUri, finish)` carries the finish (Collection rows know it); the preview box
+  draws a tile-size film span with the same arrival mark. `synopsis-text` and `token-makers` pass none.
+- **The peek and the neighbour plate:** `SiblingCard` gains the finish; the `ArtLayer` gets a tile-size film span after it.
+
+### Timing (live motion can't show on a still canvas)
+
+| Motion | Value | Notes |
+|---|---|---|
+| Follow, pointer over the face | transform · 200ms (--motion-quick) · --motion-ease | Each pointermove writes `--foil-x` (0 to 1) on the art box; the film eases toward it. No rAF loop. |
+| Return, pointer leaves | transform · 320ms (--motion-duration) · --motion-ease | `--foil-x` is removed; the film settles back to centre. |
+| Travel | ±25% of the card’s width | translateX((x − .5) × 33.3%) of a film 150% wide. |
+| Keyboard focus, desktop | 640ms (2 × --motion-duration) · once | R1’s band, unchanged. Hover never plays it on a large view; the follow replaces it. |
+| Card lands, phone | 640ms · delay 320ms (--motion-duration) · once | Plays on mount (details opens, a swipe settles, the zoom opens), after the card’s own entry. |
+| Cold face arrives | opacity 0→1 · 300ms (--motion-fade) | The film only. The face itself is drawn as before, unfaded. |
+| Flip | none of its own | The film rides `anim-card-turn`. |
+| Pick a plain printing | none | The film leaves with the old face, at once. |
+| Reduced motion | no motion | Film still, centred. No follow, no sweep, no fade. |
+
+### Sizes, as built
+
+The brief's sizes differ from the code in two places; the boards draw what is built.
+
+| View | Size | Notes |
+|---|---|---|
+| Details face, desktop | 264 × 369 | Brief says 300 to 360. Built: `min(264px, …)` in `card-modal.tsx`. Drawn at 264. |
+| Details card, phone | up to 320 × 447 | `--card-w`, smaller on short screens or a stacked sheet. |
+| Zoom, desktop | 372 × 520 | Brief says close to viewport height. Built: `--zoom-w-md`, capped at 372. |
+| Zoom, phone | 318 × 444 | `--zoom-w`. |
+| Hover preview | 252 × 352 | `hover-preview.tsx`, desktop only. |
+| Phone peek | 236 × 330 | 0.7375 of `--card-w`; about 23px shows at each edge. |
+| Desktop neighbour plate | small | `NeighborPlate`, the desktop carousel’s neighbour; treated as a peek. |
+
+### The locks
+
+| Lock | How R2 holds it |
+|---|---|
+| Only real copies, only over that printing’s own art | Film only when every owned copy of the SHOWN printing is foil (or etched) and the face is that printing’s own image. Representative or oracle-level art, unowned cards and suggestions: never. |
+| No new image downloads | Gradients only. The film’s arrival mark reuses the face’s own URL, which the browser already fetches for the face. |
+| The face never waits for the film | The face stays a CSS background drawn at once. Only the film span carries an arrival mark. |
+| Reduced motion is static | The follow, the sweeps and the fade all sit under no-preference. The film still draws, centred. |
+| Reduced transparency and forced colours | R1’s rules already cover every `[data-foil]`: a 2px `--fg-muted` ring, and no film. |
+| No change to what details says | No strings. The finish line, the picker captions and the zoom caption are untouched. |
+| No per-frame JavaScript | One custom property per pointermove on one element; a CSS transition does the rest. Nothing runs while idle. |
+| No About entry | None, no bump. |
+
+### Gaps and open points (R2)
+
+- **R2-G1 Placeholder fixture.** As R1's G1: plates, not Scryfall art. The two-faced specimen uses Valki, God of Lies
+  (`KHM 114`) as a stand-in. Check the 80% strength on real pale full-art and borderless faces in the build's contact sheet.
+- **R2-G2 The brief's sizes.** Details is 264px wide on desktop (brief: 300 to 360) and the zoom is capped at 372 × 520
+  (brief: close to the viewport height). The calls hold at either size; if the zoom ever grows past about 500px wide,
+  re-check the strength.
+- **R2-G3 Precon asymmetry.** An unowned Collector's Edition shows the film on its open-view tile (R1: the edition is foil)
+  and none in details opened from it (your own copy decides). Accepted under call 6; drawn on `R2 - Preview`.
+- **R2-G4 Tilt.** Ruled out this round. If Hugh wants it later, it is a rotateY on an inner box that pauses while
+  `anim-card-turn` runs and eases back on leave; the film already follows, so tilt would add depth, not foil.
+- **R2-G5 The phone band replays on a remount.** A swipe or a pick that remounts the card replays its one band. A pick
+  to another foil printing is a new card in hand, so that reads right; a re-render that does not remount plays nothing.
+- **R2-G6 A cold face that arrives late.** The phone band waits 320ms; if the bytes take longer, the band plays while the
+  film is still held and is not seen. Accepted: the film still fades in.
+- **R2-G7 Light themes.** The brief asks for a light theme; there is none (R1's G7). All six dark themes are drawn.
+- **R2-G8 The finish on the preview and the peek.** Each needs its finish passed beside its art; that is engineering's
+  plumbing, with no schema change (`BrowsePrinting.finishes`, the deck's finish read from #1784).

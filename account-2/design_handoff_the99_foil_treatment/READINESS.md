@@ -1,6 +1,6 @@
 # READINESS — Foil treatment (R1)
 
-**🟡 R1, waiting on Hugh's audit.** Nothing here goes to main until he approves.
+**🟢 R1 approved (Hugh, LGTM, 2026-10-15).** Ready to build.
 
 ## Locks held
 
