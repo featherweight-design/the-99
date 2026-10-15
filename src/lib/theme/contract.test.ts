@@ -32,6 +32,8 @@ const CONTRACT = [
   // the foot of this file, NOT the duplicate check: that one rebuilds `seen` per
   // theme, so it can only ever compare keys within a single block.
   "fact",
+  // The foil glint's five stops, theme-independent for the same reason and pinned the same way.
+  "foil-glint-a", "foil-glint-b", "foil-glint-c", "foil-glint-d", "foil-glint-e",
   // The five bracket rungs, theme-independent for the same reason and pinned the
   // same way. Listed here so a theme block that omits one fails LOUDLY: a mark whose
   // ink resolves to nothing draws at the inherited colour, which is a legible glyph
@@ -250,6 +252,15 @@ describe("the display face", () => {
 // it — which the hue gate above pins. Listing them here would have failed for a
 // reason that is correct.
 describe("theme-independent tokens", () => {
+  it.each([
+    ["foil-glint-a", "#FF8CC6"], ["foil-glint-b", "#FFD66E"], ["foil-glint-c", "#8FEBD2"],
+    ["foil-glint-d", "#8CB4FF"], ["foil-glint-e", "#C79BFF"],
+  ])("declares one value for --%s in all six themes", (token, hex) => {
+    // The glint reads the same whatever theme the reader is in: its ink is the film's own colours.
+    const values = new Set(entries.map(([, tokens]) => tokens.get(token)));
+    expect([...values]).toEqual([hex]);
+  });
+
   it("declares one value for --fact in all six themes", () => {
     // A bracket fact is the FORMAT's vocabulary rather than this app's mood, so the
     // mark reads the same whatever theme the reader is in.

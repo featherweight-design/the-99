@@ -79,6 +79,13 @@
   --success: #6FA368;
   --warning: #DEAA29;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -141,6 +148,13 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -235,6 +249,13 @@
   --success: #5EA990;
   --warning: #E0913C;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -293,6 +314,13 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -353,6 +381,13 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -411,6 +446,13 @@
   --success: #6FA368;
   --warning: #E0913C;
   --fact: #8FA6BE;
+  /* The foil glint's ink, IDENTICAL IN EVERY THEME for the reason `--fact` is: it is the film's own colours (foil mark
+     addendum, R4), a fact about the card and not this app's mood. A 135-degree gradient over five stops. */
+  --foil-glint-a: #FF8CC6;
+  --foil-glint-b: #FFD66E;
+  --foil-glint-c: #8FEBD2;
+  --foil-glint-d: #8CB4FF;
+  --foil-glint-e: #C79BFF;
 
   /* Bracket ink — palette 2e Ignition, IDENTICAL IN EVERY THEME, for the reason
      `--fact` above is: a bracket is the FORMAT's vocabulary rather than this app's
@@ -1550,4 +1592,9 @@ html {
    less transparency, as the art wash is. */
 @media (prefers-reduced-transparency: reduce) {
   .pod-wash { display: none; }
+}
+
+/* The foil glint (foil mark addendum M1): forced colours draw it in CanvasText, since a gradient cannot survive them. */
+@media (forced-colors: active) {
+  .foil-glint path { fill: CanvasText; }
 }

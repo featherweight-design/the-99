@@ -22,6 +22,8 @@ import { CARD_FACTS, cardFactName, cardMarkCopy } from "../../lib/copy/card-mark
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { FoilMark } from "../cards/foil-mark";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { AvailabilityGlyphBox } from "../ui/availability-marker";
 import { MarkKey } from "../decks/mark-key";
@@ -50,6 +52,9 @@ const ENTRIES = [
     sample: <ComboGlyph />,
     word: comboAwarenessCopy.keyWord,
   },
+  // THE FOIL GLINT (foil mark addendum M1, R4): ONE entry for foil and etched, unconditional like the facts above, since an
+  // entry that defines a glyph claims nothing about any row. Drawn at its own 12px, the size the reader sees.
+  { id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key },
   // THE THREE AVAILABILITY STATES (collection surfaces, Call 3): the chip on the 3-up PHONE tile
   // dropped its word — "1 in a draft" is 81px of a 101px caption — and moved it here instead,
   // using the Availability filter's own labels rather than new words for the same three states.

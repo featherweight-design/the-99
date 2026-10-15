@@ -21,6 +21,10 @@ import { StartPrecon } from "./start-precon";
 import { LinkDeckButton, UnlinkPrecon } from "./precon-link-dialogs";
 import { DECK_VIEWS, isDeckView } from "../group-toggle";
 import { ReadOnlyCardTile } from "../read-only-card-tile";
+import { FoilMark } from "../../cards/foil-mark";
+import { MarkKey } from "../mark-key";
+import { cardMarkCopy } from "../../../lib/copy/card-mark";
+import { foilMarkCopy } from "../../../lib/copy/foil-mark";
 import { useStoredView } from "../../ui/use-stored-view";
 import { ViewToggle } from "../../ui/view-toggle";
 import { useState } from "react";
@@ -150,6 +154,9 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
     ...groups.flatMap(([label, g]) => [...g.map((c) => c.oracleId), ...(label === "Lands" ? basicIds : [])]),
     ...(hasLands ? [] : basicIds),
   ];
+  // The foil key follows the cards in view, exactly as the deck's marks do: a precon is a closed set, so the entry says what
+  // the tiles below draw (every copy of a card the box holds is foil, and only over art, the film's own rule).
+  const foilInView = [...commanders, ...groups.flatMap(([, g]) => g)].some((c) => c.imageUri && c.foil > 0 && c.foil === c.quantity);
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
@@ -264,6 +271,14 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
           </div>
         </header>
 
+        {card && foilInView ? (
+          <div className="px-[16px] pt-[10px] md:px-[26px]">
+            <MarkKey
+              marks={[{ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key }]}
+              regionAria={cardMarkCopy.keyRegionAria}
+            />
+          </div>
+        ) : null}
         {/* No gap: each group carries its own bottom margin. */}
         <HoverPreviewProvider className="flex flex-col px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {/* `deckId` is empty: a read-only row calls no deck action, which is all it is read for. */}

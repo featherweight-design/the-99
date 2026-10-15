@@ -1,0 +1,87 @@
+{
+  "feature": "The foil mark: one glint for foil and etched",
+  "note": "PR 1 of the foil mark (plan `2026-10-15-foil-mark.md`). The surfaces that draw `FoilGlint`: /collection's tile and row, the deck's Card-view tile, and the open precon's Card-view tile. PR 2 adds the two-line deck row and the precon list row.\n\nPRECONDITION, and it decides whether the sheet proves anything: the account must OWN a foil card whose printing has art. A glint draws only for a card whose every copy is foil, over art; part-foil, not owned and plain draw nothing, so a sheet taken on an arbitrary page photographs no glint and reads as coverage. Every /collection row searches for a known foil card first (`FOIL_CARD`); `FOIL_DECK` must be a deck that HOLDS one and `FOIL_PRECON` a precon id whose box lists foil copies. The deck's Card view is not addressable (the toggle lives in localStorage), so that row presses it, then waits for the caption.\n\nThe keys are in `foil-mark-key.json`, a file of their own: they draw `FoilMark`, not `FoilGlint`, and one `shares` block names one binding.\n\nSet `about_version_seen` first (see `card-captions.json`), or every cell redirects to /about and fails.",
+  "shares": {
+    "module": "src/components/cards/foil-mark.tsx",
+    "binding": "FoilGlint",
+    "note": "Every tile and row renders it as-is."
+  },
+  "rows": [
+    {
+      "id": "collection-grid",
+      "label": "/collection?view=grid: the glint first on a tile's meta line",
+      "view": "src/components/collection/grid-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=grid",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "${FOIL_CARD}",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "collection-rows",
+      "label": "/collection?view=rows: the glint after the count",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?view=rows",
+          "wait": "main, [role=main], h1",
+          "settle": 3000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "${FOIL_CARD}",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-card-view",
+      "label": "/decks/[id] Card view: the glint after the dot",
+      "view": "src/components/decks/deck-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "button[aria-label=\"Card view\"]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[class*=\"min-h-[50px]\"]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "precon-card-view",
+      "label": "/decks/precons/[id] Card view: the glint after the dot, for the box's foil copies",
+      "view": "src/components/decks/read-only-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/${FOIL_PRECON}",
+          "wait": "h1",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "Card view",
+          "settle": 500
+        },
+        {
+          "wait": "[class*=\"min-h-[50px]\"]",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}

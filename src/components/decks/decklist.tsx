@@ -66,6 +66,8 @@ import { MarkKey, type MarkKeyEntry } from "./mark-key";
 import { LockMark } from "./lock-mark";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { CardFactMark } from "../cards/card-fact-mark";
+import { FoilMark } from "../cards/foil-mark";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -311,6 +313,12 @@ export function buildMarkKeyEntries({
     // The premise was true and the conclusion was backwards: Card view is a surface that
     // shows cards, so the fix was to draw the mark on the tile rather than to remove the
     // words. Suppressing the key made Card view the one place a reader met neither.
+    // THE FOIL GLINT, one entry for foil and etched (foil mark addendum, R4), by the same rule the cards in view
+    // follow: a deck is a closed set, so the entry says what a tile below draws, and is absent when none does. In Card
+    // view only until the two-line row draws it under the dot (the next PR); a list row draws `· foil` nowhere today.
+    if (inCardView && shown.some((c) => c.imageUri && c.foil)) {
+      entries.push({ id: "foil", sample: <FoilMark finish="foil" silent />, word: foilMarkCopy.key });
+    }
     for (const fact of CARD_FACTS) {
       if (!shown.some((c) => c.facts?.includes(fact))) continue;
       entries.push({

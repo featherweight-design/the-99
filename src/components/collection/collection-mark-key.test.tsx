@@ -4,6 +4,7 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
 import { KEY_DIAMOND_BOX_PX, KEY_DIAMOND_OVER_PX } from "../ui/availability-marker";
 
 describe("the collection mark key", () => {
@@ -86,5 +87,12 @@ describe("the collection mark key", () => {
     render(<CollectionMarkKey />);
     const group = screen.getByRole("group");
     expect(group.className).toMatch(/(^|\s)grid grid-cols-3/);
+  });
+});
+
+describe("the collection mark key's foil entry", () => {
+  it("is one unconditional entry, for foil and etched alike", () => {
+    render(<CollectionMarkKey />);
+    expect(screen.getByText(foilMarkCopy.key)).toBeTruthy();
   });
 });

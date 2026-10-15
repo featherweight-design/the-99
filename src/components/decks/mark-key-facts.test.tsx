@@ -96,3 +96,24 @@ describe("the key's composition rule", () => {
     expect(ids(buildMarkKeyEntries({ cards, filter: "all", inCardView: false, shoppingKeyDraws: true }))).toContain("buy");
   });
 });
+
+describe("the key's foil entry", () => {
+  it("is named in Card view when a card in view is all foil over art, and not otherwise", () => {
+    const foil = card({ foil: "foil", imageUri: "https://cards.example/a.jpg" });
+    expect(ids(buildMarkKeyEntries({ cards: [foil], filter: "all", inCardView: true }))).toContain("foil");
+    expect(ids(buildMarkKeyEntries({ cards: [card({ imageUri: "https://cards.example/a.jpg" })], filter: "all", inCardView: true }))).not.toContain("foil");
+    // No art, so no film and no glint: the key does not claim a mark nothing draws.
+    expect(ids(buildMarkKeyEntries({ cards: [card({ foil: "foil", imageUri: null })], filter: "all", inCardView: true }))).not.toContain("foil");
+  });
+  it("is not named in List view or under Shopping until the row draws the glint (the two-line row's PR)", () => {
+    const foil = card({ foil: "foil", imageUri: "https://cards.example/a.jpg" });
+    expect(ids(buildMarkKeyEntries({ cards: [foil], filter: "all", inCardView: false }))).not.toContain("foil");
+  });
+  it("is one entry for etched as for foil", () => {
+    const entries = buildMarkKeyEntries({
+      cards: [card({ foil: "etched", imageUri: "https://cards.example/a.jpg" }), card({ oracleId: "o-2", foil: "foil", imageUri: "https://cards.example/b.jpg" })],
+      filter: "all", inCardView: true,
+    });
+    expect(ids(entries).filter((i) => i === "foil")).toHaveLength(1);
+  });
+});
