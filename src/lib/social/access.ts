@@ -60,7 +60,7 @@ const toFriend = (r: FriendRow): Friend =>
   ({ publicId: r.publicId, displayName: r.displayName, since: r.since, commander: toCommander(r) });
 
 export async function listFriends(viewerId: string, q: Reader = db): Promise<Friend[]> {
-  return (await friendsQuery(viewerId, q)).map(toFriend);
+  return sortFriends((await friendsQuery(viewerId, q)).map(toFriend));
 }
 
 /** The viewer's friend with this public id, or null: not a friend, no profile, or not an id at all. */
@@ -68,6 +68,17 @@ export async function loadFriend(viewerId: string, publicId: unknown, q: Reader 
   if (!isUuid(publicId)) return null;
   const [row] = await friendQuery(viewerId, publicId, q);
   return row ? toFriend(row) : null;
+}
+
+/**
+ * By name as a reader reads it (C4): the database's `order by` compares bytes under its C collation, which puts
+ * every capital before every lower-case letter (`Bob` before `alex`) and an accent after `z`. Sorted here as the
+ * pods pane sorts its pods, case- and accent-insensitive, the public id breaking a tie.
+ */
+export function sortFriends<T extends { displayName: string; publicId: string }>(friends: readonly T[]): T[] {
+  return [...friends].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, "en-US", { sensitivity: "base" })
+    || (a.publicId < b.publicId ? -1 : a.publicId > b.publicId ? 1 : 0));
 }
 
 /** The account a `publicId` names, ONLY when it is the viewer's current friend. Anything else is null. */

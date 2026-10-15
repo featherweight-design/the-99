@@ -2,7 +2,7 @@
 // statement. Only the emitted SQL can show that (the `built.test.ts` precedent), so each read's
 // qualified join and viewer predicate are asserted here, and `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
-import { friendQuery, friendsQuery, loadFriend, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, viewerPodsQuery } from "./access";
+import { friendQuery, friendsQuery, loadFriend, podMembersQuery, resolveFriend, resolveFriendQuery, shapePod, sortFriends, viewerPodsQuery } from "./access";
 
 const VIEWER = "user_viewer";
 
@@ -139,5 +139,13 @@ describe("shapePod", () => {
 
   it("names nobody when the owner is alone", () => {
     expect(shapePod({ ...pod, ownerUserId: VIEWER }, [row(VIEWER, "Me", T0, false)], VIEWER).nextOwner).toBeNull();
+  });
+});
+
+describe("sortFriends", () => {
+  it("sorts by name ignoring case and accents, the public id breaking a tie (C4)", () => {
+    const f = (displayName: string, publicId: string) => ({ displayName, publicId });
+    const out = sortFriends([f("zed", "p1"), f("Émile", "p2"), f("Bob", "p3"), f("alex", "p4"), f("bob", "p0")]);
+    expect(out.map((x) => `${x.displayName}:${x.publicId}`)).toEqual(["alex:p4", "bob:p0", "Bob:p3", "Émile:p2", "zed:p1"]);
   });
 });

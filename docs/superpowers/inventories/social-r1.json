@@ -1,5 +1,5 @@
 {
-  "feature": "Social R1 PR C: /friends head (face, name, commander picker), friends list with remove, open friend links with the hold at ten, and the Add a friend dialog and sheet (plan 2026-10-15-social-r1.md). PRs D and E add the request card and the pods.",
+  "feature": "Social R1 PR C: /friends head (face, name, commander picker), friends list with remove, open friend links with the hold at ten, and the Add a friend dialog and sheet (plan 2026-10-15-social-r1.md). The pods (PR E) draw between the friends and the open links; the request card is PR D's.",
   "clearAbout": true,
   "note": "Needs SOCIAL_FRIENDS_ENABLED=true. Rows carry a phase: each phase is one seeded state of the signed-in account, so run the sheet once per phase over that phase's rows. empty: no friends, no links, no commander. full: a commander, six friends (Dave befriended today, DAVE_PUBLIC_ID his public id), two open links, one under a day from expiry. held: as full, with ten open links. Seed only on a scratch branch. add-friend and making-link each make a link, so they run last in their phase; making-link throttles the page for the rest of its run.",
   "rows": [

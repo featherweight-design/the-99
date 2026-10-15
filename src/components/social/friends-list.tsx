@@ -20,7 +20,7 @@ import { Face } from "./face";
 const f = socialCopy.friends;
 
 export const SECTION_HEAD =
-  "m-0 flex min-h-[32px] items-center pb-[8px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)]";
+  "m-0 flex min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]";
 
 export function FriendsList({
   friends,
@@ -40,12 +40,12 @@ export function FriendsList({
   onRemove: (friend: Friend) => void;
 }) {
   return (
-    <section aria-labelledby="friends-head" className="mt-[34px]">
+    <section aria-labelledby="friends-head" className="mt-[24px] md:mt-[34px]">
       <h2 id="friends-head" className={SECTION_HEAD}>{f.head(friends.length)}</h2>
       {friends.length === 0 ? (
-        <div className="mt-[14px] flex flex-col gap-[6px] rounded-[12px] px-[20px] py-[22px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
-          <p className="m-0 font-display text-[17px] font-bold text-[color:var(--fg)]">{f.emptyTitle}</p>
-          <p className="m-0 max-w-[560px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">{f.emptyBody}</p>
+        <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
+          <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
+          <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{f.emptyBody}</p>
         </div>
       ) : (
         <ul className="m-0 list-none p-0">
@@ -102,10 +102,10 @@ function FriendRow({
     <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
       <Face name={friend.displayName} commander={friend.commander} size={40} />
       <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
-        <span className="truncate text-[14.5px] font-medium text-[color:var(--fg)]">{friend.displayName}</span>
+        <span className="truncate text-[15px] font-medium md:text-[14.5px] text-[color:var(--fg)]">{friend.displayName}</span>
         {friend.commander ? <span className="truncate text-[12px] text-[color:var(--fg-muted)]">{friend.commander.name}</span> : null}
       </div>
-      <span className={`flex-none font-mono text-[11px] ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
+      <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
         {f.since(since)}
       </span>
       <div ref={wrap} className="relative flex-none">
@@ -116,9 +116,13 @@ function FriendRow({
           aria-expanded={menu !== "closed"}
           aria-label={f.menuAria(friend.displayName)}
           onClick={() => setMenu((m) => (m === "closed" ? "menu" : "closed"))}
-          className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 text-[15px] tracking-[1px] text-[color:var(--fg-muted)] ${menu !== "closed" ? "bg-[color:var(--elevated)]" : "bg-transparent"}`}
+          className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 p-0 ${menu !== "closed" ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"}`}
         >
-          {"⋯"}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.7" />
+            <circle cx="12" cy="12" r="1.7" />
+            <circle cx="19" cy="12" r="1.7" />
+          </svg>
         </button>
         {menu !== "closed" ? (
           <MenuPanel label={f.menuAria(friend.displayName)} onDismiss={close}>
@@ -126,7 +130,7 @@ function FriendRow({
               <button
                 type="button"
                 onClick={() => setMenu("confirm")}
-                className="flex h-[40px] w-full cursor-pointer items-center border-0 bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--danger)] hover:bg-[color:var(--elevated)]"
+                className="flex h-[38px] w-full cursor-pointer items-center border-0 bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--danger)] hover:bg-[color:var(--elevated)]"
               >
                 {f.remove}
               </button>

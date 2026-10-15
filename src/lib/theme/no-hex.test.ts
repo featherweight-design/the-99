@@ -16,6 +16,9 @@ const ALLOWED = new Set([
   // The web app manifest is JSON a launcher reads, so its colours must be literals. `manifest.test.ts`
   // pins the value to the default theme's `--bg` read out of globals.css, so it cannot drift.
   "app/manifest.ts",
+  // A friend link's QR code is dark ink on a light plate in every theme, so a phone camera can read it; the ink
+  // is not chrome and must not follow a theme.
+  "components/social/add-friend-dialog.tsx",
   // The theme library's own tests are about hex values, so they contain them.
   "lib/theme/color.test.ts",
   "lib/theme/parse-css.test.ts",

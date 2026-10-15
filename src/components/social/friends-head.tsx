@@ -202,7 +202,7 @@ export function FriendsHead({
           }}
           aria-disabled={invitePending || held || undefined}
           aria-describedby={held ? `${id}-held` : undefined}
-          className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${held ? "opacity-45" : ""} max-md:h-[48px] max-md:text-[15px]`}
+          className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : invitePending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
         >
           {invitePending ? p.invitePending : p.invite}
         </button>
