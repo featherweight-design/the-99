@@ -15,8 +15,6 @@ export function tiltsOnHover(pointerType: string): boolean {
   return pointerType === "mouse" || pointerType === "pen";
 }
 
-const lifted = new WeakMap<HTMLElement, DOMRect>();
-
 const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5);
 
 /**
@@ -25,13 +23,13 @@ const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n))
  */
 export function liftTilt(host: HTMLElement, clientX: number, clientY: number): void {
   if (host.hasAttribute("data-turning") || prefersReducedMotion()) return;
-  // Measured as the lift starts, while the card is still flat, and reused for every move after: the box a tilted card
-  // reports is its rotated outline, and reading layout on every move is a cost the follow does not need.
-  let box = lifted.get(host);
-  if (!box || !host.hasAttribute("data-tilting")) {
-    box = host.getBoundingClientRect();
-    lifted.set(host, box);
-  }
+  // Read on every move, so a card that moved or resized mid-tilt (a carousel entrance, a resize) maps the pointer to
+  // where it is now. A tilted card's outline is skewed, but it turns about its centre, so the outline's centre is the
+  // card's; the size is the untransformed layout box (jsdom has none, so the outline stands in there).
+  const outline = host.getBoundingClientRect();
+  const width = host.offsetWidth || outline.width;
+  const height = host.offsetHeight || outline.height;
+  const box = { left: outline.left + outline.width / 2 - width / 2, top: outline.top + outline.height / 2 - height / 2, width, height };
   host.setAttribute("data-tilting", "");
   host.style.setProperty("--tilt-lift", "1");
   host.style.setProperty("--tilt-x", String(box.width > 0 ? clamp01((clientX - box.left) / box.width) : 0.5));

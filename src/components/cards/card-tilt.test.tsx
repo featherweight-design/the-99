@@ -107,7 +107,7 @@ describe("the stylesheet", () => {
   });
 
   it("plays R1's one band on keyboard focus of the host's own button, on a fine pointer with motion (G6)", () => {
-    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil-size="large"\]::after \{\s*animation: foil-sweep calc\(var\(--motion-duration\) \* 2\) var\(--motion-ease\);/);
+    expect(FINE).toMatch(/\[data-tilt\]:has\(> button:focus-visible\) \[data-foil\]\[data-foil-size="large"\]:is\(\[data-arrival="in"\], \[data-arrival="done"\]\)::after \{\s*animation: foil-sweep calc\(var\(--motion-duration\) \* 2\) var\(--motion-ease\);/);
   });
 
   it("drops the light under reduced transparency and forced colors", () => {
@@ -173,6 +173,17 @@ describe("desktop hover", () => {
     expect(tiltValues(host)).toMatchObject({ x: "1", y: "1" });
     fireEvent.pointerLeave(host, { pointerType: "mouse" });
     expect(tiltValues(host)).toEqual(FLAT);
+  });
+
+  it("maps the pointer to where the card is now, when it moves mid-tilt (a carousel entrance, a resize)", () => {
+    mount();
+    const host = sized(desktopHost());
+    fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 132, clientY: 92 });
+    expect(tiltValues(host)).toMatchObject({ x: "0.5", y: "0.25" });
+    // The card settles 132px to the right: the same pointer is now at its left edge.
+    host.getBoundingClientRect = () => ({ left: 132, top: 0, width: 264, height: 368, right: 396, bottom: 368, x: 132, y: 0, toJSON: () => ({}) });
+    fireEvent.pointerMove(host, { pointerType: "mouse", clientX: 132, clientY: 92 });
+    expect(tiltValues(host)).toMatchObject({ x: "0", y: "0.25" });
   });
 
   it("does nothing for touch at a desktop width (G12)", () => {
