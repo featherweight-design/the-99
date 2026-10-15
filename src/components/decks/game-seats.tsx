@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { hasRoom, seatCount, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
+import { ArtLayer } from "../ui/art-layer";
 import { SeatPicker } from "./seat-picker";
 
 const copy = gameSeatsCopy.seats;
@@ -19,16 +20,14 @@ const copy = gameSeatsCopy.seats;
 /** Your own seat: the deck's commander, tagged YOU, and not pressable. It makes the count legible. */
 export type YouSeat = { name: string; deckName: string; imageUri: string | null };
 
-const ART = "relative block h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[8px] md:h-[86px] md:w-[124px] md:rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--elevated)] bg-cover";
+const ART = "relative block h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[8px] md:h-[86px] md:w-[124px] md:rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--elevated)]";
 const ART_POSITION = "50% 20%";
 
 function Art({ uri, dim = false }: { uri: string | null; dim?: boolean }) {
   return (
-    <span
-      aria-hidden
-      className={ART}
-      style={{ ...(uri ? { backgroundImage: `url("${uri}")`, backgroundPosition: ART_POSITION } : {}), ...(dim ? { opacity: 0.78 } : {}) }}
-    />
+    <span aria-hidden className={ART} style={dim ? { opacity: 0.78 } : undefined}>
+      {uri && <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} />}
+    </span>
   );
 }
 

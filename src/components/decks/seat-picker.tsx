@@ -14,6 +14,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import { IdentityPips } from "../commanders/commander-art";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+import { ArtLayer } from "../ui/art-layer";
 import { Sheet, SheetHeader } from "../ui/sheet";
 import { SearchField } from "../ui/text-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -92,11 +93,9 @@ function Body({
               onClick={() => onPick(hit)}
               className="flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]"
             >
-              <span
-                aria-hidden
-                className="block h-[40px] w-[56px] shrink-0 rounded-[6px] bg-[color:var(--elevated)] bg-cover"
-                style={hit.imageUri ? { backgroundImage: `url("${hit.imageUri}")`, backgroundPosition: "50% 20%" } : undefined}
-              />
+              <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+                {hit.imageUri && <ArtLayer src={hit.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
+              </span>
               <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
               <IdentityPips colorIdentity={hit.colorIdentity} size={9} />
             </button>
