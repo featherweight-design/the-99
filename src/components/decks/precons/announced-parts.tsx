@@ -197,6 +197,9 @@ function RevealedTile({ card, siblings, hidden = false }: { card: RevealedComman
     <li
       className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors ${TILE_FOCUS_RING}`}
       data-testid="revealed-tile"
+      // `hidden` as well as `display: none`: the class's own display outranks the attribute, and card details' return
+      // focus walks out of a `[hidden]` opener to the disclosure that controls its grid.
+      hidden={hidden || undefined}
       style={hidden ? { display: "none" } : undefined}
     >
       <div

@@ -579,6 +579,31 @@ describe("Announced collapse (A1)", () => {
     expect(last.siblings).toHaveLength(15);
   });
 
+  it("hands card details' focus to Show all when the reader folds the set before an opened tile's read lands", async () => {
+    const { warmCardModal } = await import("../../cards/card-detail-provider");
+    await warmCardModal();
+    withColumns(2);
+    open(15);
+    fireEvent.click(toggle());
+    const later = screen.getByRole("button", { name: /View details for Card 5, White\. Revealed commander\./ });
+    later.focus();
+    await act(async () => { fireEvent.click(later); });
+    // Show fewer folds the opener away while its details are still in flight.
+    fireEvent.click(toggle());
+    expect(later.closest("li")).toHaveAttribute("hidden");
+    await act(async () => {
+      details.resolve!({
+        oracleId: "o205", name: "Card 5", typeLine: "Legendary Creature", manaCost: "{W}", cmc: 1, oracleText: null, keywords: [],
+        rarity: "rare", colorIdentity: ["W"], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [],
+        primarySetCode: "", preferredPrinting: null,
+      });
+    });
+    const dialog = await screen.findByRole("dialog", { name: /Card 5/ });
+    await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Card 5/ })).toBeNull());
+    expect(document.activeElement).toBe(toggle());
+  });
+
   it("leaves the hidden tiles out of the tab order", () => {
     withColumns(2);
     open(15);
