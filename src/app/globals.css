@@ -828,7 +828,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    schedule. */
 .anim-card-turn { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
 
-/* E9, staggered Show more (small-polish R2 §3): item n of the batch a `Show more` added fades in at the beat plus the stagger
+/* E9, staggered Show more (small-polish R2 §3): item n of the batch a `Show more` added fades in (on /collection's grid and rows today;
+   the grouped lists, the History, Help me choose and the tuning history, take `useRevealFrom` when they are next touched) at the beat plus the stagger
    times n (n capped at 11 by `useRevealFrom`, so a batch is fully in by 740ms), 200ms each on the shared curve, opacity only.
    `backwards`, so an item waits at 0 through its delay and then hands back to whatever opacity it has of its own (a pending
    tile's .55). The items already on screen carry no class and do not move. Reduced motion: 100ms with no wait. */

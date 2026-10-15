@@ -25,7 +25,9 @@ describe("E9: staggered Show more", () => {
   });
 
   it("shortens to 100ms with no wait under reduced motion", () => {
-    const reduced = CSS.slice(CSS.indexOf("@media (prefers-reduced-motion: reduce)"));
+    // The block itself: from where it opens to the first closing brace in column 0, so the rule cannot pass from elsewhere.
+    const at = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
+    const reduced = CSS.slice(at, CSS.indexOf("\n}\n", at));
     expect(reduced).toMatch(/\.anim-reveal \{ animation: reveal-in 100ms var\(--motion-ease\) backwards; \}/);
   });
 });
