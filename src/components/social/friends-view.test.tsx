@@ -16,6 +16,7 @@ vi.mock("../../app/friends/actions", () => a);
 
 import { FriendsView } from "./friends-view";
 import { socialCopy } from "../../lib/copy/social";
+import { TOAST_MS } from "../collection/edit-toast";
 
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
 
@@ -125,6 +126,100 @@ describe("the head", () => {
     expect(face.hasAttribute("data-picking")).toBe(false);
     expect(face.getAttribute("aria-label")).toBe(socialCopy.commander.changeAria(SOKKA.name));
     expect(document.activeElement).toBe(face);
+  });
+
+  it("puts back the saved name, not an unsaved one, when two pending renames both fail", async () => {
+    const answers: ((v: unknown) => void)[] = [];
+    a.setDisplayNameAction.mockImplementation(() => new Promise((r) => answers.push(r)));
+    draw();
+    for (const next of ["First", "Second"]) {
+      fireEvent.click(screen.getByRole("button", { name: "Change" }));
+      fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: next } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
+    }
+    expect(screen.getByText("Second").tagName).toBe("B");
+    await act(async () => answers[0]({ ok: false, reason: "invalid" }));
+    // The newer write is still in flight: its value stands.
+    expect(screen.getByText("Second").tagName).toBe("B");
+    await act(async () => answers[1]({ ok: false, reason: "invalid" }));
+    expect(screen.getByText("Hugh").tagName).toBe("B");
+    expect(screen.queryByText("First")).toBeNull();
+  });
+
+  it("puts back the saved face, not an unsaved one, when two pending picks both fail", async () => {
+    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA, AANG] });
+    const answers: ((v: unknown) => void)[] = [];
+    a.setCommanderAction.mockImplementation(() => new Promise((r) => answers.push(r)));
+    draw();
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
+    const sokka = await screen.findByRole("button", { name: SOKKA.name });
+    await act(async () => fireEvent.click(sokka));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) }));
+    const aang = await screen.findByRole("button", { name: AANG.name });
+    await act(async () => fireEvent.click(aang));
+    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
+    await act(async () => answers[0]({ ok: false }));
+    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
+    await act(async () => answers[1]({ ok: false }));
+    // No commander was ever saved: the face is the dashed tile again, not Sokka's.
+    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+    expect(screen.getAllByRole("button", { name: socialCopy.commander.choose })).toHaveLength(3);
+  });
+
+  it("leaves focus where the reader moved it when the name field blurs, and on Change only when it fell to the page", async () => {
+    a.setDisplayNameAction.mockReturnValue(new Promise(() => {}));
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    draw();
+    const frame = async () => act(async () => {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    // Escape removes the field and focus falls to the page: it goes back to Change.
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    fireEvent.keyDown(screen.getByLabelText(socialCopy.page.nameField.label), { key: "Escape" });
+    await frame();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Change" }));
+    // While editing, the reader presses the face: the field blurs to it, the picker opens and takes focus.
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    const field = screen.getByLabelText(socialCopy.page.nameField.label);
+    fireEvent.change(field, { target: { value: "New" } });
+    const face = screen.getAllByRole("button", { name: socialCopy.commander.choose })[0];
+    face.focus();
+    fireEvent.click(face);
+    await frame();
+    const search = screen.getByRole("combobox", { name: socialCopy.commander.search });
+    expect(document.activeElement).toBe(search);
+  });
+
+  it("holds the toast's window while it is hovered or holds focus, and runs it once both let go", async () => {
+    vi.useFakeTimers();
+    try {
+      a.setDisplayNameAction.mockResolvedValue({ ok: false, reason: "invalid" });
+      draw();
+      fireEvent.click(screen.getByRole("button", { name: "Change" }));
+      fireEvent.change(screen.getByLabelText(socialCopy.page.nameField.label), { target: { value: "New" } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.page.nameField.save })));
+      const toast = alert();
+      fireEvent.pointerEnter(toast);
+      fireEvent.focus(toast);
+      act(() => {
+        vi.advanceTimersByTime(TOAST_MS * 2);
+      });
+      expect(screen.queryByRole("alert")).not.toBeNull();
+      // The pointer leaves; focus still holds it.
+      fireEvent.pointerLeave(toast);
+      act(() => {
+        vi.advanceTimersByTime(TOAST_MS * 2);
+      });
+      expect(screen.queryByRole("alert")).not.toBeNull();
+      fireEvent.blur(toast, { relatedTarget: null });
+      act(() => {
+        vi.advanceTimersByTime(TOAST_MS + 500);
+      });
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("follows the server's redraw of the name and the face, keeping a pending name only until it lands", async () => {

@@ -100,6 +100,22 @@ export function CommanderPicker({
   const fresh = results !== null && results.q === q;
   const failed = fresh && results.failed && !busy;
 
+  // The modal's body is what scrolls, and a short one (a phone above its keyboard) can hold the row the arrow keys
+  // are on below its fold, where Enter would pick a commander the reader cannot see. That row is brought into view
+  // inside the body only, and only as far as it needs: never the page (`scrollIntoView` would move it), as the card
+  // tag picker does.
+  const active = fresh && tiles.length > 0 ? Math.min(hl, tiles.length - 1) : -1;
+  useEffect(() => {
+    if (active < 0) return;
+    const opt = document.getElementById(`${listId}-${active}`);
+    const body = opt?.closest<HTMLElement>("[data-social-modal-body]");
+    if (!opt || !body) return;
+    const o = opt.getBoundingClientRect();
+    const b = body.getBoundingClientRect();
+    if (o.top < b.top) body.scrollTop -= b.top - o.top;
+    else if (o.bottom > b.bottom) body.scrollTop += o.bottom - b.bottom;
+  }, [listId, active]);
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (!fresh || tiles.length === 0) return;
     if (e.key === "ArrowDown") {

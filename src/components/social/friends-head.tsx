@@ -60,8 +60,13 @@ export function FriendsHead({
     const next = draft.normalize("NFC").replace(/\s+/gu, " ").trim();
     setEditing(false);
     if (commit && next !== "" && next !== name) onRename(next);
-    // The field leaves; focus goes back to the Change that opened it, a frame on (once it is drawn again).
-    requestAnimationFrame(() => change.current?.focus());
+    // The field leaves; focus goes back to the Change that opened it, a frame on (once it is drawn again), but only
+    // when its leaving dropped focus to the page. A blur that moved focus somewhere (the face, which opens the picker,
+    // or anything else pressed while editing) keeps it there.
+    requestAnimationFrame(() => {
+      const at = document.activeElement;
+      if (at === null || at === document.body) change.current?.focus();
+    });
   }
 
   const faceButton = (

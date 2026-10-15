@@ -3,16 +3,25 @@
 // centre slot, 16px above the tab bar on a phone. One component for every refusal the social screens draw:
 // the name, the commander, a friend's removal, a link that could not be made (with `Try again`), the race to
 // ten (`tooMany`, no retry) and a decline (the request card's, PR D). It leaves after the shared toast's
-// window, held while it is pressed or hovered, and on its own action.
+// window, held while it is hovered or holds focus, and on its own action.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 
 export type SocialToastState = { id: number; text: string; retry?: { label: string; run: () => void } };
 
 export function SocialToast({ toast, onDone }: { toast: SocialToastState | null; onDone: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const { restart } = useToastClock(ref, toast !== null, onDone);
+  // Hover and focus hold the window separately, and it runs again only once both have let go.
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
+  // A toast that leaves under the pointer or with focus in it fires no leave, so its holds go with it, or the next
+  // toast would never count down.
+  if (!toast && (hover || focus)) {
+    setHover(false);
+    setFocus(false);
+  }
+  const { restart } = useToastClock(ref, toast !== null && !hover && !focus, onDone);
   // A new toast gets the whole window, whatever the last one spent.
   useEffect(() => {
     restart();
@@ -23,6 +32,7 @@ export function SocialToast({ toast, onDone }: { toast: SocialToastState | null;
       key={toast.id}
       frameRef={ref}
       role="alert"
+      onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
       title={toast.text}
       actions={toast.retry ? (
         <button

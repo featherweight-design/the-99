@@ -141,6 +141,33 @@ describe("CommanderPicker", () => {
     expect(onPick).toHaveBeenCalledWith(BARAL);
   });
 
+  it("brings the row the arrow keys reach into view, scrolling the modal's body and never the page", async () => {
+    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+    a.searchFaceCommandersAction.mockResolvedValueOnce({ ok: true, tiles: [AANG, BARAL] });
+    render(<CommanderPicker current={null} onPick={() => {}} onClose={() => {}} />);
+    await type("av");
+    const body = document.querySelector<HTMLElement>("[data-social-modal-body]")!;
+    expect(body).toBeTruthy();
+    const rect = (top: number, height: number) => ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON() {} }) as DOMRect;
+    // The body shows 100..300; the second row sits below its fold, at 320..372.
+    body.getBoundingClientRect = () => rect(100, 200);
+    const [first, second] = screen.getAllByRole("option");
+    first.getBoundingClientRect = () => rect(260, 52);
+    second.getBoundingClientRect = () => rect(320, 52);
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    body.scrollTop = 0;
+    const box = screen.getByRole("combobox", { name: c.search });
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    expect(body.scrollTop).toBe(72);
+    // Back up to a row above the fold: scrolled up exactly as far as it needs.
+    first.getBoundingClientRect = () => rect(60, 52);
+    fireEvent.keyDown(box, { key: "ArrowUp" });
+    expect(body.scrollTop).toBe(32);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
   it("says a search that failed in the list's place, and announces it", async () => {
     a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
     a.searchFaceCommandersAction.mockRejectedValue(new Error("down"));
