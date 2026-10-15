@@ -97,8 +97,8 @@ decelerating curve three motions argue for, so no literal is left.
 | `anim-sheet-up` (account sheet) | 180ms `(0.22,1,0.36,1)` | 0 + 320 `--motion-duration`, `--motion-ease` | The account menu at phone width: a menu, so no wait. 320 because it travels the screen. |
 | `anim-zoom-in` | 200ms `ease-out` | 0 + 200 `--motion-quick`, `--motion-ease` | Answer to a press. Same length, curve to the token. |
 | `anim-card-turn` | 320ms `(0.2,0.7,0.2,1)` | 0 + 320 `--motion-duration`, **`--motion-ease-out`** | **Kept.** Ease-in-out lingers at 90°, where the card is a sliver. |
-| `anim-stack-rise` | 240ms `(0.2,0.7,0.2,1)` | 100 + 320, `--motion-ease` | Arrival the reader caused. |
-| `anim-phone-card-enter` | 240ms `(0.2,0.7,0.2,1)` | 100 + 320, `--motion-ease` | Arrival the reader caused. |
+| `anim-stack-rise` | 240ms `(0.2,0.7,0.2,1)` | 100 + 320, **`--motion-ease-out`** | **Kept curve** (decision 1 below). Arrival the reader caused; durations on tokens. |
+| `anim-phone-card-enter` | 240ms `(0.2,0.7,0.2,1)` | 100 + 320, **`--motion-ease-out`** | **Kept curve** (decision 1 below). Arrival the reader caused; durations on tokens. |
 | `anim-carousel-prev/next` | 200ms `ease-out` | 0 + 200 `--motion-quick`, **`--motion-ease-out`** | **Kept curve.** Presses repeat; an eased start makes every press feel late. |
 | `anim-rail-tag` | 100ms `ease-out` | 0 + 200 `--motion-quick`, `--motion-ease` | Hover answer; the plan's "100ms reads as a blink". |
 | `anim-overlay-in` / `-out` | 150 / 120ms `ease-out` | 0 + 200 / 0 + 140, `--motion-ease` | The escalation screen already waits its own threshold before showing, so no extra wait. Still kept under reduced motion. |
@@ -208,3 +208,17 @@ never takes a warning color or a verdict word.
 | G5 | 4 | Whether the client can read the precons view cookie when the pending overlay draws. If it cannot, tiles is the default and a rows reader sees tiles until the page lands. |
 | G6 | 1 | The open state of `lg` is drawn but nothing uses it yet. |
 | G7 | 3 | E5 (a fade on route content after a loading screen) is not covered; the brief could not confirm its status. |
+
+## Decisions after R2 (engineering readiness audit, 2026-10-14)
+
+Taken by the orchestrator as Hugh's proxy; no Design round.
+
+1. **`anim-stack-rise` and `anim-phone-card-enter` keep the ratified curve.** R2 moved both to `--motion-ease`, but the
+   stacked-sheets handoff drew them on the sheet-snap curve, `(0.2,0.7,0.2,1)`, and `.sheet-snap` keeps it in this table. A
+   ratified curve is not retired by an inconsistency in a table, so both use `--motion-ease-out`, with the arrival timing
+   (100ms delay, 320ms duration) on tokens. This answers G2.
+2. **Overlay exit timer.** `pending-overlay.tsx` unmounts on a JS timer matched to `overlay-out`, so it moves to 140ms with the CSS.
+3. **Skeleton art ground is `--surface-sunken`**, the shipped precon tile's, not `--surface-raised`, so nothing changes color when the page lands.
+4. **The open precon keeps the shared decks loading screen.** Only the list gets the tile skeleton; the open precon route gets its own boundary so it does not inherit it.
+5. **The stack drop (card-modal's WAAPI exit, 200ms ease-in) takes the exit rule**: about two-thirds of its entrance, same curve.
+6. **E8's figures are listed by engineering in the plan**, starting with Home's collection kicker and commitments counts.
