@@ -245,7 +245,7 @@ recorded as KEY + ARGS; the text is /copy-review's.
 | Keep | 1px `#262A35`, transparent, `#B1B6C7` 13px; copy `folderCopy.del.cancel`; first, and focused on open | 12.5px |
 | Confirm | bg `#C6533F`, no border, `#0E0F14` 600 13px | 600 12.5px |
 | Leave, owner, others remain | heading `pods.leaveHeading(pod)`, body `pods.leaveOwnerBody(nextOwner.displayName)`, confirm `pods.leaveConfirm` | same |
-| Leave, member | `pods.leaveHeading(pod)`, `pods.leaveMemberBody(ownerDisplayName)`, `pods.leaveConfirm` (C1: wording disputed) | same |
+| Leave, member | `pods.leaveHeading(pod)`, `pods.leaveMemberBody(ownerDisplayName)` when the owner is the reader's friend, else `pods.leaveMemberStrangerBody(ownerDisplayName)` (C1, resolved by /copy-review in E2), `pods.leaveConfirm` | same |
 | Leave, last member | `pods.leaveHeading(pod)`, `pods.leaveLastBody`, confirm `pods.leaveLastConfirm` | same |
 | Delete (owner) | `pods.delHeading(pod)`, `pods.delBody`, `pods.delConfirm` | same |
 | After | the card leaves; no toast, no receipt; nobody is told | same |

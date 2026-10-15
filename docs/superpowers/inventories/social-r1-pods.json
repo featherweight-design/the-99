@@ -1,6 +1,6 @@
 {
-  "feature": "Social R1 PR E1: the pods table on /friends (handoff design_handoff_the99_social_r1 R2, R2 - Pods option B; plan 2026-10-15-social-r1.md, PR E)",
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true for the reader, and fixtures: the reader's friends Dave (Atraxa), Priya (no commander), Alex (Ghalta) and Zed (Krenko); a pod the reader owns with Dave, Priya and Alex; a pod Sam (not the reader's friend) owns with the reader and Dave, its spares shared; and a pod of the reader alone. The rows write nothing (the Add dialog and the create field are opened, never confirmed), but the fixtures are social rows: plant them on a scratch branch off local-dev ONLY. The empty state, the failure toasts and the Add empties are held by pods-pane.test.tsx.",
+  "feature": "Social R1 PR E: the pods table on /friends (E1) and its header menu (E2) (handoff design_handoff_the99_social_r1 R2, R2 - Pods option B; plan 2026-10-15-social-r1.md, PR E)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true for the reader, and fixtures: the reader's friends Dave (Atraxa), Priya (no commander), Alex (Ghalta) and Zed (Krenko); a pod the reader owns with Dave, Priya and Alex; a pod Sam (not the reader's friend) owns with the reader and Dave, its spares shared; and a pod of the reader alone. The rows write nothing (the Add dialog, the create field, the rename field and the confirms are opened, never confirmed), but the fixtures are social rows: plant them on a scratch branch off local-dev ONLY. The empty state, the failure toasts and the Add empties are held by pods-pane.test.tsx. The menu's keyboard, rename's commits and reverts, and every confirm's outcome are held by pod-menu.test.tsx.",
   "shares": {
     "module": "src/components/social/social-toast.tsx",
     "binding": "SocialToast",
@@ -34,6 +34,70 @@
         { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
         { "clickRole": "button", "name": "^New pod$", "wait": "#pod-new-name", "settle": 600 },
         { "scrollTo": "[data-testid=pods-pane]", "settle": 400 }
+      ]
+    },
+    {
+      "id": "menu-owner",
+      "label": "Pods: the owner's … menu, Rename, Leave pod and Delete pod (danger), open over the seats",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Thursday Night actions$", "wait": "[role=menu]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-menu]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "menu-member",
+      "label": "Pods: a member's … menu, Leave pod alone",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Adventurers actions$", "wait": "[role=menu]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-menu]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "rename",
+      "label": "Pods: Rename, the field in place of the header with Cancel and Save",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Thursday Night actions$", "wait": "[role=menu]", "settle": 500 },
+        { "clickRole": "menuitem", "name": "^Rename$", "wait": "[data-testid=pod-rename]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-rename]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "leave-owner",
+      "label": "Pods: Leave, as owner with others in it: the hand-on sentence, Keep focused",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Thursday Night actions$", "wait": "[role=menu]", "settle": 500 },
+        { "clickRole": "menuitem", "name": "^Leave pod$", "wait": "[data-testid=pod-confirm]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-confirm]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "leave-last",
+      "label": "Pods: Leave, as the last member: leaving deletes it",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Solo Table actions$", "wait": "[role=menu]", "settle": 500 },
+        { "clickRole": "menuitem", "name": "^Leave pod$", "wait": "[data-testid=pod-confirm]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-confirm]", "settle": 300 }
+      ]
+    },
+    {
+      "id": "delete",
+      "label": "Pods: Delete pod's confirm",
+      "view": "src/components/social/pods-pane.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-testid=pod-card]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Thursday Night actions$", "wait": "[role=menu]", "settle": 500 },
+        { "clickRole": "menuitem", "name": "^Delete pod$", "wait": "[data-testid=pod-confirm]", "settle": 500 },
+        { "scrollTo": "[data-testid=pod-confirm]", "settle": 300 }
       ]
     }
   ]

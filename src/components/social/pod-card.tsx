@@ -5,12 +5,17 @@
 // the row. The spares checkbox under the seats is the viewer's own grant to this pod (E5), seen by nobody else.
 //
 // A member's art is drawn only for the viewer and the viewer's friends (D2): the read hands a non-friend member over
-// with no commander, so their tile is initials whatever they chose. The header menu (rename, leave, delete) is E2's.
+// with no commander, so their tile is initials whatever they chose. The header carries the `…` menu (E2,
+// `pod-menu.tsx`), and Rename swaps the header for its field (§7).
 
+import { useEffect, useRef, useState } from "react";
 import type { Pod, PodMember } from "../../lib/social/access";
 import { socialCopy } from "../../lib/copy/social";
+import { capName, POD_NAME_MAX } from "../../lib/social/client-rules";
 import { FadingImg } from "../ui/hydrated-art";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { faceInitials } from "./face";
+import { PodMenu } from "./pod-menu";
 
 const copy = socialCopy.pods;
 
@@ -76,6 +81,78 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
   );
 }
 
+/**
+ * The header's rename field (§7). Save, Return or a blur away commits a valid name; an empty or unchanged one
+ * reverts, and so do Cancel and Escape. Cancel and Save keep focus in the field on press (`friends-head.tsx`'s
+ * guard): Safari never focuses a clicked button, so its blur arrives with no relatedTarget and would commit an
+ * edit Cancel meant to drop. Where a browser does move focus onto them, the relatedTarget check does the same.
+ */
+function PodRename({ name, onDone }: { name: string; onDone: (next: string | null, refocus: boolean) => void }) {
+  const [value, setValue] = useState(name);
+  const form = useRef<HTMLFormElement>(null);
+  const done = useRef(false);
+  // `refocus` is false for a blur: focus has already gone where the reader sent it.
+  const finish = (next: string | null, refocus = true) => {
+    if (done.current) return;
+    done.current = true;
+    onDone(next, refocus);
+  };
+  const commit = (refocus = true) => {
+    const clean = value.trim();
+    finish(clean && clean !== name ? clean : null, refocus);
+  };
+  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
+  return (
+    <form
+      ref={form}
+      data-testid="pod-rename"
+      className="relative flex flex-col gap-[8px] pr-[10px] pt-[10px] md:flex-row md:items-center md:pr-[6px] md:pt-[4px]"
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+      // On the form, so focus leaving from Cancel or Save (a reader who tabbed through them) commits too.
+      onBlur={(e) => {
+        if (!form.current?.contains(e.relatedTarget as Node | null)) commit(false);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && !e.nativeEvent.isComposing) {
+          e.stopPropagation();
+          finish(null);
+        }
+      }}
+    >
+      <div className={`box-border flex h-[46px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:flex-1 md:rounded-[6px] ${AFFIX_FOCUS}`}>
+        <input
+          autoFocus
+          aria-label={copy.nameLabel}
+          value={value}
+          onChange={(e) => setValue(capName(e.target.value, POD_NAME_MAX))}
+          autoComplete="off"
+          className={`h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] md:text-[14px] ${AFFIX_INPUT}`}
+        />
+      </div>
+      <div className="flex gap-[8px]">
+        <button
+          type="button"
+          onMouseDown={keepFocus}
+          onClick={() => finish(null)}
+          className="h-[44px] flex-1 cursor-pointer rounded-[8px] bg-transparent px-[14px] text-[14px] text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:flex-none md:rounded-[6px] md:text-[13px]"
+        >
+          {copy.cancel}
+        </button>
+        <button
+          type="submit"
+          onMouseDown={keepFocus}
+          className="h-[44px] flex-1 cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] text-[14px] font-semibold text-[color:var(--bg)] md:h-[40px] md:flex-none md:rounded-[6px] md:text-[13px]"
+        >
+          {copy.save}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function PodCard({
   pod,
   shared,
@@ -83,6 +160,10 @@ export function PodCard({
   onRemove,
   onAdd,
   onShare,
+  onRename,
+  onLeave,
+  onDelete,
+  leaveHeld = false,
   addRef,
 }: {
   pod: Pod;
@@ -92,20 +173,47 @@ export function PodCard({
   onRemove: (member: PodMember) => void;
   onAdd: () => void;
   onShare: (on: boolean) => void;
+  /** A new name, already checked as non-empty and changed; the pane writes it. */
+  onRename: (name: string) => void;
+  onLeave: () => Promise<boolean>;
+  onDelete: () => Promise<boolean>;
+  /** Leave waits: the pane is holding a removal of the heir the page last named. */
+  leaveHeld?: boolean;
   /** The Add seat, for the Add friends dialog to hand focus back to. */
   addRef?: (el: HTMLButtonElement | null) => void;
 }) {
   const n = pod.members.length;
   const owner = pod.members.find((m) => m.isOwner);
+  const [renaming, setRenaming] = useState(false);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  // Leaving the field by its own controls hands focus back to the `…` it was opened from, which the field replaced.
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (renaming || !refocus.current) return;
+    refocus.current = false;
+    menuTrigger.current?.focus();
+  }, [renaming]);
   return (
     <div data-testid="pod-card" className="relative mt-[12px] rounded-[12px] bg-[color:var(--surface-rail)] pb-[6px] pl-[14px] pr-[4px] pt-[4px] [border:1px_solid_var(--border-strong)] md:pb-[8px] md:pl-[18px] md:pr-[6px] md:pt-[6px]">
       <Wash members={pod.members} />
-      <div className="relative flex min-h-[44px] flex-wrap items-center gap-x-[10px] md:flex-nowrap">
-        <b className="min-w-0 truncate font-sans text-[15px] font-semibold text-[color:var(--fg)]">{pod.name}</b>
-        <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-          {pod.isOwner || !owner ? copy.metaOwn(n) : copy.metaOther(n, owner.displayName)}
-        </span>
-      </div>
+      {renaming ? (
+        <PodRename
+          name={pod.name}
+          onDone={(next, back) => {
+            refocus.current = back;
+            setRenaming(false);
+            if (next !== null) onRename(next);
+          }}
+        />
+      ) : (
+        <div className="relative flex min-h-[44px] flex-wrap items-center gap-x-[10px] md:flex-nowrap">
+          <b className="min-w-0 truncate font-sans text-[15px] font-semibold text-[color:var(--fg)]" data-testid="pod-name">{pod.name}</b>
+          <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {pod.isOwner || !owner ? copy.metaOwn(n) : copy.metaOther(n, owner.displayName)}
+          </span>
+          <PodMenu pod={pod} leaveHeld={leaveHeld} triggerRef={menuTrigger} onRename={() => setRenaming(true)} onLeave={onLeave} onDelete={onDelete} />
+        </div>
+      )}
       <ul
         // An explicit list role: Safari drops a list's semantics once its marker is gone (`list-none`).
         role="list"

@@ -209,3 +209,35 @@ Files: `src/components/social/pods-pane.tsx` (PP), `pod-card.tsx` (PC), `pod-add
    ever matters in real names.
 
 Agent 3 (confirm) is the author's re-check of items 1 and 2: FIXED. 0 gaps remain in scope.
+
+---
+
+# E2: the header menu (§3b trigger, §6, §7, §8)
+
+Agent 2 (verify), scoped to §3b's trigger, §6, §7, §8 and their state rows, against `pod-menu.tsx`, `pod-card.tsx`
+(the header and `PodRename`), `pods-pane.tsx` (the writes) and `delete-confirm.tsx`.
+
+**VERDICT: 0 visual gaps, 0 state gaps.** All seven states are reachable: owner menu, member menu, rename, leave
+handed on, leave as member, last leave and delete.
+
+Three notes for a call, none a gap:
+
+1. **Desktop row "38px tall, 13px" (§6).** Read as a 13px font, as `deck-sort-menu.tsx` draws its 38px rows; the
+   13px side padding holds at both widths.
+2. **The header's `min-height:44px` on desktop (§3b says none).** Kept from E1: the 44px trigger sets the row's
+   height either way, so it renders the same.
+3. **An owner of a pod with others and no `nextOwner`.** Not constructible: `shapePod` names the heir whenever the
+   owner has company. `leaveText` would fall to the member sentence there.
+
+Engineering's calls on the open items:
+
+- **C-7 (the card clips the menu): resolved in E1.** The wash carries its own clip, so the card does not, and the
+  panel opens over the seats and the cards below (contact sheet, `menu-owner` and `delete` at 390).
+- **Blur commits, and Cancel never does.** Cancel and Save hold focus in the field on press (`friends-head.tsx`'s
+  guard, since Safari never focuses a clicked button), and a blur onto either is theirs to answer; any other blur
+  commits a valid name or reverts. `shelf-menu.tsx` has no blur commit at all for this hazard.
+- **Keep is 44px at phone.** `DeleteConfirm` takes `phoneTall` (44px / 13px below `md`, 32px / 12.5px above), so
+  the deck, folder and game confirms are unchanged.
+- **After a leave or a delete, focus goes to New pod**, since the card that held it has left.
+
+Agent 3 (confirm): nothing to confirm. 0 gaps remain.
