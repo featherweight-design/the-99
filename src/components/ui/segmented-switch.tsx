@@ -95,7 +95,11 @@ export function SegmentedSwitch<T extends string>({
 }) {
   const sized = SIZES[size];
   // Under `scroll` a segment never shares or shrinks: the well scrolls instead.
-  const segment = scroll ? `${sized.segment.replace(/(^| )flex-1( |$)/, "$1$2")} flex-none` : sized.segment;
+  // Its focus ring is drawn INSIDE the segment: the scrolling well clips everything past its 2px padding, and the
+  // base ring sits 2px outside the element, so it lost its top, bottom and the end segments' outer edges.
+  const segment = scroll
+    ? `${sized.segment.replace(/(^| )flex-1( |$)/, "$1$2")} flex-none focus-visible:outline-offset-[-2px]`
+    : sized.segment;
   const share = fill && !scroll ? sized.fill : "";
   const base = useId();
   const idOf = (v: T) => (ids ? ids.tab(v) : `${base}-${v}`);

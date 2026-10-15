@@ -189,7 +189,14 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
           }}
         />
       </div>
-      <div role="tabpanel" id={`${groupIds}-panel-${active.group}`} aria-labelledby={`${groupIds}-tab-${active.group}`}>
+      {/* Focusable: its rows are text, so without it Tab passes from the chosen group straight to Show more, or
+          out of the panel when there is no more. */}
+      <div
+        role="tabpanel"
+        tabIndex={0}
+        id={`${groupIds}-panel-${active.group}`}
+        aria-labelledby={`${groupIds}-tab-${active.group}`}
+      >
         <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>
         {shown < active.rows.length ? (
           <button

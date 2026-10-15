@@ -102,6 +102,8 @@ describe("HistoryList", () => {
     expect(screen.getByRole("tabpanel").id).toBe(left.getAttribute("aria-controls"));
     expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(left.id);
     expect(screen.getByRole("tabpanel").querySelectorAll("li")).toHaveLength(8);
+    // Its rows are text: the panel is the tab stop that reaches them.
+    expect(screen.getByRole("tabpanel").tabIndex).toBe(0);
     expect(screen.getAllByText(/^Gone /)).toHaveLength(8);
     expect(screen.queryByText("Fresh 0")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show 30 more of 32" }));

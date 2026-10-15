@@ -204,7 +204,7 @@ async function run() {
 
       // The phone shows one column at a time; the cuts are the second segment.
       if (label === 390) {
-        const segment = onPage(page, 'button[aria-pressed="false"]').first();
+        const segment = onPage(page, '[role="tab"][aria-selected="false"]').first();
         if (await segment.count()) await segment.click();
       }
       await putBack(page, lockedCut.name);

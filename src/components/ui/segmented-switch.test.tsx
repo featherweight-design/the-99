@@ -19,12 +19,15 @@ describe("SegmentedSwitch", () => {
     for (const tab of screen.getAllByRole("tab")) {
       expect(tab.className.split(" ")).toContain("flex-none");
       expect(tab.className.split(" ")).not.toContain("flex-1");
+      // The ring is drawn inside: the scrolling well clips anything past its 2px padding.
+      expect(tab.className.split(" ")).toContain("focus-visible:outline-offset-[-2px]");
     }
     rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" scroll segments={SEGMENTS} value="a" onChange={() => {}} />);
     for (const tab of screen.getAllByRole("tab")) expect(tab.className.split(" ")).not.toContain("flex-1");
     rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" segments={SEGMENTS} value="a" onChange={() => {}} />);
     expect(screen.getByRole("tablist").className).not.toContain("overflow-x-auto");
     expect(screen.getAllByRole("tab")[0].className.split(" ")).toContain("flex-1");
+    expect(screen.getAllByRole("tab")[0].className).not.toContain("outline-offset-[-2px]");
   });
 
   it("is a tablist of tabs for a switch that swaps a panel, marking the chosen one selected", () => {
