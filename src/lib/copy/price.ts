@@ -43,7 +43,9 @@ export const priceCopy = {
     // Line 2, joined by the component with ' · '. `provenance` and
     // `provenanceUnpriced` are alternatives for the FIRST clause only —
     // `lastChecked` and `behind` follow either one unchanged.
-    provenance: "prices from Mana Pool",
+    // What the figure IS: each card's one priced printing (in stock, non-foil, then cheapest; How it works says
+    // so), one copy at a time. A Mana Pool cart can come to more (a friend's read $46 against our $40, 2026-10-15).
+    provenance: "cheapest single copies on Mana Pool",
     // Replaces `provenance` when no row on the list has a price. States the
     // absence rather than a check we cannot evidence, and keeps the same ink:
     // the feed has never stocked these, which is our gap and not the player's
@@ -52,6 +54,9 @@ export const priceCopy = {
     provenanceUnpriced: "no prices from Mana Pool for these",
     lastChecked: (when: string) => `last checked ${when}`,
     behind: "these are behind",
+    // Last on the line, and only beside a figure: why the cart the link builds can cost more than it. Mana Pool's
+    // cart optimizes for fewer packages, and adds shipping; daily drift is small (median $0.39 a deck over 6h).
+    cartNote: "a cart with shipping or fewer packages can cost more",
   },
 
   // ── The cheapest-printing line ────────────────────────────────────────

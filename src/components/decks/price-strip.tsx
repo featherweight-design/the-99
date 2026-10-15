@@ -139,6 +139,7 @@ export function PriceStrip({
             showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced,
             priceCopy.strip.lastChecked(dated.when),
             ...(dated.behind ? [priceCopy.strip.behind] : []),
+            ...(showFigure ? [priceCopy.strip.cartNote] : []),
           ].join(" · ")}
         </p>
         {/* The 44px is the ROW's height, never the link's box — the link stays
