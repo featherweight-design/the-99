@@ -1,4 +1,4 @@
-# The 99 — Foil treatment · R1 handoff package
+# The 99 — Foil treatment · handoff package (R1, R2)
 
 A still foil film over the art of foil copies on the deck Card view, the Collection grid and the precon open view, with one
 light sweep on desktop hover. Cosmetic: no About entry, no new strings, no new tokens.
@@ -30,4 +30,27 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-15-foil-treatment.md` (
 4. One recipe in all six themes; reduced transparency gets a solid 2px edge.
 5. Etched: a cool silver film.
 6. Mixed: no film. Every owned copy foil, or nothing.
-7. Large views: later.
+7. Large views: R2, below.
+
+## R2 · Large views (approved)
+
+| Read | For |
+|---|---|
+| **`The 99 - Foil Treatment (R2).dc.html`** | **The nine calls, a live follow, intensity, timing, locks, sizes and the CSS.** |
+| `R2 - Details-Desktop.dc.html`, `R2 - Details-Phone.dc.html` | Card details from a CE deck: rest, follow, focus, six themes, etched, mixed, plain pick, no own art, cold open, preferences. |
+| `R2 - Zoom.dc.html` | The zoom on both widths, a two-faced foil turning, preferences. |
+| `R2 - Preview.dc.html` | The hover preview, the neighbour plate, and a precon card in details. |
+| `R2 - Motion.dc.html` | Tilt, focus sweep, phone landing band, cold arrival, flip, looping. |
+| `R2 - States.dc.html`, `STATES-foil-large-views.md` | Every state. |
+| `README.md` §R2 | Calls, where details reads foil, the CSS, timing, sizes, gaps. |
+| `READINESS-r2.md` | R2, approved. |
+
+1. Intensity: R1's film at 80%, spread 1.5x.
+2. The film slides with the tilt; focus plays one sweep.
+3. Tilt: yes, 6°, the side under the pointer lifting, a card edge and a soft light, eased as one. Desktop on hover.
+4. Phone: hold 300ms then move to tilt; one band when a card lands.
+5. Cold face: the face never waits; the film fades in when the bytes land.
+6. Precons: details keeps the card's own resolution.
+7. Peek and preview: R1's tile film, still.
+8. Flip: the film rides both faces.
+9. Mixed: no film.
