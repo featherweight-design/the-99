@@ -77,7 +77,7 @@ const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] lg:m
 /**
  * Option B of the phone Shopping row (Social R2 PR 7; `PHONE_SHOPPING_ROW_B_ENABLED`). Below `lg` the shell
  * wraps in two lines by `order`: the dot, the name and the ✕ are line 1 (the name takes the width, the ✕ keeps
- * its 44px hit), a zero-height full-width break ends it, and line 2 is the meta line (which takes the width),
+ * its 44px hit), a zero-height full-width break ends it (its own flex line, so `gap-y` falls on both sides: 4px between the lines, a 96px row), and line 2 is the meta line (which takes the width),
  * the availability marker, ⇄ and the buy tag, each in a 44px line so no two hit areas overlap. The classes are
  * spelled whole so Tailwind sees them, and every one is `max-lg:`, so from `lg` the row is the one it was.
  */
@@ -818,7 +818,7 @@ export function DecklistRow({
             the two can never co-occur: a row saying at once that the player is
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
-        {tag === "proxy" && <ProxyTag variant="row" />}
+        {tag === "proxy" && (rowB ? <span className={B_BUY}><ProxyTag variant="row" /></span> : <ProxyTag variant="row" />)}
         {/* Below lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
             (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
             the name keeps the row's width, and the limit stays beside the price it is about. From
@@ -837,7 +837,7 @@ export function DecklistRow({
             {!pressable && overText ? <span className="sr-only lg:hidden">{overText}</span> : null}
           </span>
         ) : pressable ? buyTag : overText ? (
-          <span className="flex flex-none flex-col items-end gap-[2px]">
+          <span className={`flex flex-none flex-col items-end gap-[2px]${rowB ? ` ${B_MARK}` : ""}`}>
             <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}
             </span>

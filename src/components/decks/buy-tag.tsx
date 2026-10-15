@@ -379,7 +379,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         id={descriptionId}
         className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} group-focus-visible/buy:outline-2 group-focus-visible/buy:outline-offset-2 group-focus-visible/buy:[outline-style:solid] group-focus-visible/buy:outline-[color:var(--accent)] ${
           pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
-        }${foldOver ? " max-lg:bg-transparent" : ""}`}
+        }${foldOver && pressState === "rest" ? " max-lg:bg-transparent" : ""}`}
         style={{
           color: "var(--warning)",
           ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
