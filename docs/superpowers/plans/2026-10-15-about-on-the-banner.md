@@ -52,8 +52,11 @@ production.** If it is off there, production keeps the legacy redirect, and none
 - **On staging**, both accounts get the `Commander sets on the way` line on Home, unless their browser's sheet cookie
   already covers it.
 - **Every page but Home** shows nothing. The tab bar's locked-slot note opens at once, with no waiting.
-- **A first-run account** gets the checklist page's line, `What The 99 does: … on one page. Show me` (A3), in place of
-  the sheet's first-run card. No arrival lines draw there, as in phase 1.
+- **A first-run account** (About's own rule: version 0, no ids) gets the line `What The 99 does: … on one page. Show me`
+  (A3), in place of the sheet's first-run card. About's first run and Home's checklist are separate states
+  (`isFirstRun` reads About's seen state, Home's checklist reads no cards and no decks), so an account that imported
+  before ever opening `/about` gets A3 on the Dashboard. The line is drawn on whichever Home surface renders. No
+  arrival lines draw on the checklist, as in phase 1.
 
 ## PR boundaries
 
@@ -86,8 +89,15 @@ reverting PR A is the rollback.
   - It writes the arrival keys as before.
   - The client acknowledgement set from #1767 extends to About ids, so Back after ✕ or after a `/about` visit doesn't
     bring the line back.
-- **First run:** `FirstRunChecklist` draws the A3 line, Show me to `/about`. It has no ✕, since the checklist page is
-  itself the first-run surface and `/about` records the visit.
+- **Both Home surfaces draw About's notice, in whichever form it takes.** The two first-run states are independent
+  (`isFirstRun` in `src/lib/about/visible.ts` against `stats.uniqueCards === 0 && decks.length === 0` in
+  `src/app/page.tsx`), so each of the four combinations has a home:
+  - Dashboard, About behind: A1, or A2 with arrivals.
+  - Dashboard, About first run (imported before ever opening `/about`): the A3 line in the banner, with ✕. Its ✕
+    writes `markAboutVisited(ABOUT_VERSION, visible ids)`, which is what a visit to `/about` writes.
+  - Checklist, About first run: the A3 line, with no ✕, since the checklist is itself the first-run surface.
+  - Checklist, About behind (an account that read `/about` and then cleared its collection): the A1 line, with no ✕.
+  The checklist's payload carries the same About seen state as the Dashboard's.
 - **The proxy:**
   - With the switch on, `sheet()` no longer sets `x-about-sheet` and no longer writes the cookie.
   - The legacy branch (switch off) is untouched.
@@ -109,10 +119,12 @@ reverting PR A is the rollback.
     - the cookie suppression;
     - Back after ✕.
 
-### PR B: retire the sheet's code (after PR A has run for a week)
+### PR B: retire the sheet's code (a week after PR A is live in production, not a week after it merges)
 
+- **Moves first:** `sheetTitles` and its tests, from `about-sheet.tsx` to `src/lib/about/` (`ArrivalsBanner` imports it
+  today and PR A's About line reuses it). The banner's import moves with it, so the deletion breaks nothing.
 - **Deletes:**
-  - `AboutSheet` and its tests;
+  - `AboutSheet` and its other tests;
   - `about-sheet-presence.ts` and the tab-bar note's waiting rule (`nav.tsx`);
   - the `--about-sheet-h` reserve in `Shell` and `pending-overlay`;
   - the proxy's `sheet()` path;
@@ -130,14 +142,18 @@ reverting PR A is the rollback.
 | `/` | after ✕, no banner, and `/about` shows no new marks | ✓ | ✓ |
 | `/` | sheet cookie current, no About line | ✓ | ✓ |
 | `/` first run | A3 on the checklist | ✓ | ✓ |
+| `/` | A3 on the Dashboard (imported, `/about` never opened), ✕ writes seen | ✓ | ✓ |
+| `/` first run | A1 on the checklist (About behind, no cards) | ✓ | ✓ |
 | `/decks`, any non-Home route | no notice, no sheet | ✓ | ✓ |
 
 ## Risks and decisions I took
 
-- **Honoring the sheet cookie on release day** is my call, not Hugh's. Without it, every browser that already showed
-  and dismissed the current entries is told again on Home. The cost is one more input to the read. Hugh may overrule
-  it.
+- **Honoring the sheet cookie on release day** was my call, approved by the orchestrator as Hugh's proxy on
+  2026-10-15. Without it, every browser that already showed and dismissed the current entries is told again on Home.
+- **`ABOUT_SHEET_ENABLED` is `'true'` on both projects** (orchestrator, 2026-10-15). PR A also reads `/admin` for an
+  app-wide override, read only, before it ships.
 - **Reach drops** for a reader who never lands on Home. Hugh accepted that (Q1).
-- **Rollback** is a revert of PR A while PR B is unmerged, which is why the deletion waits a week.
+- **Rollback** is a revert of PR A while PR B is unmerged, which is why the deletion waits a week of PR A live in
+  production.
 - **`ABOUT_SHEET_ENABLED` keeps its name.** On, it now means "About's notice is a banner line on Home". Renaming a
   switch moves `flag_overrides` rows and the admin list for no reader-visible gain.
