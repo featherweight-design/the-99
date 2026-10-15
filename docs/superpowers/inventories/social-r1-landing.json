@@ -1,0 +1,188 @@
+{
+  "feature": "Social R1 PR D: the friend request card at /friend/[token] (handoff design_handoff_the99_social_r1 R2, boards R2 - Landing-Desktop and R2 - Landing-Phone, L2 to L7; plan 2026-10-15-social-r1.md, PR D)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true for the reader and the fixture links named in the rows: inviters Ana (Atraxa), Jo Bloggs (no commander), Bob (Korvold, a friend since 2026-10-02) and Cy, and the signed-in account's own link. The L6, L7 and Accept rows WRITE (opening a friend's link spends it; Decline and Accept spend theirs, and Accept writes a friendship), so each width has its own link: run the sheet on a scratch branch off local-dev ONLY, never on local-dev, staging or production. L1 (signed out) is photographed by hand, since the sheet signs in; L8 (a write that throws) and the switch-off state are held by the component and route tests.",
+  "shares": {
+    "module": "src/components/social/social-toast.tsx",
+    "binding": "SocialToast",
+    "note": "A failed accept or decline is the social screens' one toast (E15), the same component /friends draws its refusals with."
+  },
+  "out": "contact-sheets/social-r1-landing",
+  "rows": [
+    {
+      "id": "open",
+      "label": "L2 open: Ana's card face up (Atraxa art), Accept / Decline",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandOpenAna00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        }
+      ]
+    },
+    {
+      "id": "no-commander",
+      "label": "L2b no commander: Jo Bloggs, initials in the grey frame",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandNoCmdJo00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        }
+      ]
+    },
+    {
+      "id": "expired",
+      "label": "L3 expired: face down, dimmed, Go to Friends",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandExpired00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "redeemed",
+      "label": "L4 ended (redeemed): face down, no name",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandRedeemd00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "revoked",
+      "label": "L4 ended (revoked): face down, no name",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandRevoked00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "not-found",
+      "label": "L4 ended (not found): one card for every ended link",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandNoSuchLnk000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "self",
+      "label": "L5 own link: your card face up, Copy link",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandSelfLnk00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        }
+      ]
+    },
+    {
+      "id": "friends-d",
+      "label": "L6 already friends: Bob, Friend since Oct 2 (opening it spends it)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandFriendB00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "friends-p",
+      "label": "L6 already friends: Bob, Friend since Oct 2 (opening it spends it)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandFriendC00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "declined-d",
+      "label": "L7 declined: Decline pressed, the card turned back, Request declined",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandDeclAna00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Decline$",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "declined-p",
+      "label": "L7 declined: Decline pressed, the card turned back, Request declined",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandDeclAnb00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Decline$",
+          "wait": "#friend-landing-title",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "accepted",
+      "label": "Accept pressed: lands on /friends?accepted=<publicId> (the receipt is PR C2's)",
+      "view": "src/components/social/friend-landing.tsx",
+      "steps": [
+        {
+          "goto": "/friend/LandAcceptC00000000001",
+          "wait": "[data-testid=friend-card]",
+          "settle": 1400
+        },
+        {
+          "clickRole": "button",
+          "name": "^Accept$",
+          "settle": 2500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    }
+  ]
+}

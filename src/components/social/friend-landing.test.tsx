@@ -246,3 +246,14 @@ describe("landingView", () => {
     expect(friendsSinceLabel(new Date("2026-10-02T00:30:00Z"))).toBe("Oct 2");
   });
 });
+
+describe("the column", () => {
+  it("lands its heading and buttons with a card that turns, and draws an unturned card's at once", () => {
+    render(<FriendLanding token={TOKEN} view={OPEN} />);
+    expect(screen.getByRole("heading", { level: 1 }).className).toContain("friend-land-in");
+    expect(screen.getByRole("button", { name: L.accept }).parentElement?.className).toContain("friend-land-in");
+    cleanup();
+    render(<FriendLanding token={TOKEN} view={{ kind: "ended" }} />);
+    expect(screen.getByRole("heading", { level: 1 }).className).not.toContain("friend-land-in");
+  });
+});

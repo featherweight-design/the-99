@@ -67,17 +67,19 @@ export function LandingColumn({
   fine?: string;
   landing?: boolean;
 }) {
+  // Everything under the kicker lands with the card: the heading, the body, the buttons and the fine print.
+  const land = landing ? "friend-land-in" : "";
   return (
     <section aria-labelledby="friend-landing-title" className="flex w-full flex-col gap-[8px] text-center md:w-[380px] md:gap-[10px] md:text-left">
       <p className={`m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] max-md:hidden ${brand ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
-      <h1 id="friend-landing-title" className="m-0 font-display text-[21px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px]">
+      <h1 id="friend-landing-title" className={`m-0 font-display text-[21px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px] ${land}`}>
         {title}
       </h1>
-      {body && <p className="m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px]">{body}</p>}
-      <div className={`mt-[6px] flex flex-col gap-[8px] md:mt-[12px] md:flex-row md:gap-[10px] ${landing ? "friend-land-in" : ""}`}>{actions}</div>
-      {fine && <p className={`m-0 mt-[6px] font-mono text-[11px] text-[color:var(--fg-faint)] ${landing ? "friend-land-in" : ""}`}>{fine}</p>}
+      {body && <p className={`m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px] ${land}`}>{body}</p>}
+      <div className={`mt-[6px] flex flex-col gap-[8px] md:mt-[12px] md:flex-row md:gap-[10px] ${land}`}>{actions}</div>
+      {fine && <p className={`m-0 mt-[6px] font-mono text-[11px] text-[color:var(--fg-faint)] ${land}`}>{fine}</p>}
     </section>
   );
 }
