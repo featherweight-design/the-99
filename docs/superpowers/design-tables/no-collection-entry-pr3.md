@@ -53,7 +53,7 @@ named; — not built here, with where it is.
 
 | # | Property | Handoff | Built | |
 |---|---|---|---|---|
-| 22 | Where | Home's dashboard (the entry's destination) | `router.push` to `PICK_ENTRY_HREF[entry]` with `?precons=<entry ids>` | ✓ |
+| 22 | Where | Home's dashboard | `router.push` to Home with `?precons=<entry ids>` whichever page the pick was opened from: Home is the one page that reads the receipt. A pick that added nothing goes back to its entry | ✓ |
 | 23 | Strip | arrival band anatomy: `--surface-rail`, `✓` `--success`, `✕` alone, `role="status"` | `ArrivalBandShell` + `ArrivalDismiss` inside `role="status"` | ✓ |
 | 24 | Desktop text | `3 precons added to your collection:` (bold) `Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens.` `History`, 13.5px | `pick.receipt.head` / `body`, 13.5px; four or more read `A, B and 4 others` | ✓ |
 | 25 | Phone text | one line, mono 10.5: `3 precons added · 300 cards · History` | `pick.receipt.phone` | ✓ |

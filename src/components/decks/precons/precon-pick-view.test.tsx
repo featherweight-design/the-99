@@ -106,6 +106,32 @@ describe("Precons I own: refusals", () => {
     expect(addPrecons.mock.calls[1][0]).toEqual([{ fileName: "Sultai", edition: "regular", actionId: firstId }]);
   });
 
+  // A changed edition after an unknown outcome would go out under a new id and add the other box too: the list holds
+  // still until a press is answered, so the retry carries the same boxes under the same ids.
+  it("holds the ticks and editions while an outcome is unknown", async () => {
+    addPrecons.mockRejectedValueOnce(new Error("network"));
+    draw();
+    tick("Revival Trance");
+    fireEvent.click(addButton());
+    await screen.findByRole("alert");
+    expect(screen.getByRole("checkbox", { name: /Revival Trance/, hidden: true }).closest("[inert]")).not.toBeNull();
+    addPrecons.mockResolvedValueOnce([{ rowFile: "Revival", ok: false }]);
+    fireEvent.click(addButton());
+    await waitFor(() => expect(addPrecons).toHaveBeenCalledTimes(2));
+    expect(addPrecons.mock.calls[1][0]).toEqual(addPrecons.mock.calls[0][0]);
+    // Answered: the list is the reader's again.
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: /Revival Trance/ }).closest("[inert]")).toBeNull());
+  });
+
+  // Only Home draws the receipt, so a pick opened from Collection still lands there once boxes are added.
+  it("lands on Home with the receipt even when opened from Collection", async () => {
+    addPrecons.mockResolvedValueOnce([{ rowFile: "Abzan", ok: true, entryId: "e1" }]);
+    render(<PreconPickView rows={rows} entry="collection" initial={{ q: "", colours: [] }} />);
+    tick("Abzan Armor");
+    fireEvent.click(addButton());
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e1"));
+  });
+
   it("keeps the ticks when nothing landed, and an unknown outcome retries under the same ids", async () => {
     addPrecons.mockRejectedValueOnce(new Error("network"));
     draw();

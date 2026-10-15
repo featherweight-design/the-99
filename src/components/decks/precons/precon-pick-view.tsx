@@ -39,6 +39,9 @@ export function PreconPickView({ rows, entry, initial }: {
   // Boxes that landed this visit, in order, with their entries: the receipt Done and the way back carry.
   const [landed, setLanded] = useState<{ rowFile: string; entryId: string }[]>([]);
   const [pending, setPending] = useState(false);
+  // A press whose answer was lost may have added its boxes: the ticks and editions hold still until a press is answered,
+  // so the retry carries the same boxes under the same ids rather than a changed pick under new ones.
+  const [unsure, setUnsure] = useState(false);
   const [toast, setToast] = useState<{ text: string; lift: number } | null>(null);
   // One idempotency id per box and edition, kept across retries and dropped only once that box has landed, so a
   // retry after an unknown outcome is answered from the entry it wrote, and a box ticked again later adds again.
@@ -53,8 +56,11 @@ export function PreconPickView({ rows, entry, initial }: {
   const totals = pickTotals(picked.map((p) => ({ box: boxOf(p.row), edition: p.edition })));
   const landedFiles = new Set(landed.map((l) => l.rowFile));
   const dest = PICK_ENTRY_HREF[entry];
-  // Once a box has landed, the way out carries its receipt: Done, and the header's way back (the phone has no Done).
-  const out = landed.length > 0 ? `${dest}?${PICK_RECEIPT_PARAM}=${landed.map((l) => l.entryId).join(",")}` : dest;
+  // Once a box has landed, the way out carries its receipt to Home, the one page that draws it (S5), whichever page
+  // the pick was opened from; with nothing added it goes back where it came from.
+  const receiptHref = (entries: { entryId: string }[]) =>
+    `${PICK_ENTRY_HREF.home}?${PICK_RECEIPT_PARAM}=${entries.map((l) => l.entryId).join(",")}`;
+  const out = landed.length > 0 ? receiptHref(landed) : dest;
 
   function mirror(next: { q: string; colours: string[] }) {
     const live = new URLSearchParams(window.location.search);
@@ -101,17 +107,19 @@ export function PreconPickView({ rows, entry, initial }: {
     } catch {
       // It may have committed with its answer lost: the ticks and ids stay, so Try again cannot add a box twice.
       setPending(false);
+      setUnsure(true);
       say(preconsCopy.start.owned.addUnsure);
       add.current?.focus();
       return;
     }
+    setUnsure(false);
     const ok = outcomes.filter((o): o is Extract<PickOutcome, { ok: true }> => o.ok);
     const failed = outcomes.filter((o) => !o.ok);
     for (const o of ok) ids.current.delete(`${o.rowFile}:${ticked.get(o.rowFile)}`);
     const nowLanded = [...landed, ...ok.map((o) => ({ rowFile: o.rowFile, entryId: o.entryId }))];
     if (failed.length === 0) {
       // S5: every box written. The inputs stay locked while the destination loads.
-      router.push(`${dest}?${PICK_RECEIPT_PARAM}=${nowLanded.map((l) => l.entryId).join(",")}`);
+      router.push(receiptHref(nowLanded));
       return;
     }
     setLanded(nowLanded);
@@ -157,7 +165,7 @@ export function PreconPickView({ rows, entry, initial }: {
 
       <div
         aria-busy={pending}
-        inert={pending}
+        inert={pending || unsure}
         className={`flex flex-1 flex-col gap-[18px] p-[8px_16px_24px] md:mx-auto md:w-full md:max-w-[900px] md:px-0 ${pending ? "opacity-[.55]" : ""}`}
       >
         {groupByYear(shown).map((g) => (
