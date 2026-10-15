@@ -351,6 +351,15 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 
+  it.each(["noRecord", "neverUploaded"] as const)("a file of tokens alone with no base to sync against (%s) gets the prepare error, not a choice with nothing to pick", async (why) => {
+    previewChange.mockImplementation(async (_id: string, mode: string) =>
+      mode === "sync" ? syncData(4616, {}, { unavailable: why }, "") : plain(4616));
+    await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
+    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Review the sync →" })).toBeNull();
+  });
+
   it("an emptied collection with an anchor gets the choice, so Sync is reachable", async () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
       mode === "sync" ? syncData(3, { up: 3, before: 0 }, { taken: 3 }, "d-all") : plain(3));

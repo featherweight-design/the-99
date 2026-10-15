@@ -229,9 +229,10 @@ export function ReplaceFlow({
         if (missing && "missingCard" in missing)
           return settle({ datas: null, error: collectionEditCopy.shortWarning.catalogFailure(missing.missingCard), noRead: false });
         const syncData = isSyncRead(syncRead) ? syncRead : null;
-        // Nothing to offer: a file of no card whose token read failed too.
+        // Nothing to offer: a file of no card whose token read failed too, or found no base to sync against
+        // (Sync unavailable), where no card could be picked: the shipped preparation error, as before.
         if (noCards)
-          return settle(syncData
+          return settle(syncData && !syncData.sync.unavailable
             ? { datas: { replace: null, add: null, sync: syncData }, error: null, noRead: false }
             : { datas: null, error: collectionEditCopy.upload.prepareFailed, noRead: false });
         if (replace && "detail" in replace && add && "detail" in add)

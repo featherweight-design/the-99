@@ -340,7 +340,7 @@ export function UploadChoice({
   };
   const staleShown = Boolean(sync?.stale && since);
   // The mode the foot names: the pick, or Sync before one when it is the only card that can be picked.
-  const lead: UploadMode | null = picked ?? (noCards && sync ? "sync" : null);
+  const lead: UploadMode | null = picked ?? (noCards && sync && !syncOff ? "sync" : null);
   const syncNoteLine = sync && !syncOff && sync.note ? syncNoteText(sync.note, since) : null;
   const syncFigure =
     sync?.figure === "failed" ? c.prepareFailed : sync?.figure ? c.after(sync.figure.before, sync.figure.after) : c.preparing;
