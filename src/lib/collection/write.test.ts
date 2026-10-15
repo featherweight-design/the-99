@@ -425,6 +425,11 @@ describe("the sync write, in the source", () => {
     expect(src.match(/readSyncBase\(/g)).toHaveLength(1);
   });
 
+  it("stores the review's token figure and the entry's card rows on the sync's upload", () => {
+    at("storedSyncSummary(change.pick, syncPreview.counts, syncPreview.tokenChanges, rows.length)");
+    expect(src).not.toMatch(/change\.tokens\?\.length/);
+  });
+
   it("decides nothing to sync by the one rule, which counts an unanswered conflict as something", () => {
     at("nothing: nothingToSync(merged, tokenChanges.length),");
   });

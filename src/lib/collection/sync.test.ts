@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
+  answerFor, holdingDistance, changedTokenCount, missingFromAnchor, nothingToSync, parseSyncOptions, planSync, quantitiesOf, readSyncSummary, storedSyncSummary, STALE_REVERSAL_SHARE, staleness, SYNC_REVIEW_CAP,
   type SyncAnswers, type SyncHolding, type SyncPick,
 } from "./sync";
 import { planTokenWrite } from "../tokens/ownership";
@@ -360,5 +360,31 @@ describe("readSyncSummary", () => {
 
   it("reads a missing or malformed figure as 0, which draws no clause rather than a wrong one", () => {
     expect(readSyncSummary({ pick: "tokens", kept: 40, decided: "3", answeredFile: 0 })).toEqual({ kept: 40, decided: 0, tokens: 0 });
+  });
+});
+
+describe("storedSyncSummary", () => {
+  const counts = { kept: 4, conflicts: 3, undecided: 0, answeredFile: 1 };
+
+  it("stores the tokens the review counted, never the file's whole token list", () => {
+    // Two tokens move, one only changes source, and a printing row moves: the review says 2.
+    const changes = [
+      { kind: "token", id: "t1", from: 0, to: 2 },
+      { kind: "token", id: "t2", from: 3, to: null },
+      { kind: "token", id: "t3", from: 1, to: 1, source: "upload" },
+      { kind: "printing", id: "t1", from: 0, to: 2 },
+    ];
+    expect(storedSyncSummary("everything", counts, changes, 5)).toEqual({
+      pick: "everything", kept: 4, decided: 3, answeredFile: 1, tokens: 2, cards: 5,
+    });
+  });
+
+  it("stores no tokens when only a source or a printing row moved", () => {
+    expect(storedSyncSummary("tokens", counts, [{ kind: "token", id: "t3", from: 1, to: 1 }], 0).tokens).toBe(0);
+  });
+
+  it("reads back the cards it changed, and a summary stored before it existed has none", () => {
+    expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2, cards: 0 })).toEqual({ kept: 0, decided: 0, tokens: 2, cards: 0 });
+    expect(readSyncSummary({ pick: "everything", kept: 0, decided: 0, answeredFile: 0, tokens: 2 })).not.toHaveProperty("cards");
   });
 });
