@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -55,6 +55,27 @@ describe("the basics stepper on a decklist row", () => {
     expect(screen.getByRole("button", { name: copy.moreAria("Island", 7) })).toBeEnabled();
     expect(screen.queryByText("×6")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: addPanelCopy.row.removeCopyAria("Island", 6) })).not.toBeInTheDocument();
+  });
+
+  // One 34px line at every width (#1913): nothing in the stepper is taller than the row's 20px controls, and the − at 2 and
+  // the ✕ that takes its slot at 1 are the same 22px, so the stepper keeps its width across the step.
+  it("keeps the row one 34px line at 1 and at 2, with a coarse pointer's 44px hit past each control", () => {
+    const heights = (el: Element) => el.className.split(/\s+/).filter((c) => /^(min-)?h-\[|^w-\[/.test(c));
+    for (const quantity of [2, 1]) {
+      wrap(<DecklistRow deckId="d1" card={{ ...island, quantity }} newestAsOf={null} />);
+      const row = document.querySelector<HTMLElement>("[data-decklist-row]")!;
+      expect(row.className.split(/\s+/)).toContain("min-h-[34px]");
+      for (const el of row.querySelectorAll("button, input")) {
+        expect(el.className).not.toMatch(/(^|\s)(min-)?h-\[44px\]/);
+      }
+      const slot = quantity === 2
+        ? screen.getByRole("button", { name: copy.fewerAria("Island", 1) })
+        : screen.getByRole("button", { name: addPanelCopy.row.removeAria("Island") });
+      expect(heights(slot)).toEqual(expect.arrayContaining(["w-[22px]", "h-[20px]"]));
+      expect(slot.className).toContain("pointer-coarse:after:h-[max(44px,100%)]");
+      expect(field().className.split(/\s+/)).toContain("h-[20px]");
+      cleanup();
+    }
   });
 
   it("leaves a card that is not a basic its ✕", () => {
