@@ -39,6 +39,8 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -155,6 +157,8 @@ export function SpineDesktop({
   const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
   const over = built > bodySize;
   const toCut = built - bodySize;
+  // M3 (discovery R1): `Proposed cuts →` is the moment's control on a deck over its size, while the shortcut is drawn.
+  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut) });
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -639,6 +643,7 @@ export function SpineDesktop({
                   type="button"
                   data-shortcut="proposed-cuts"
                   onClick={onProposedCuts}
+                  {...cutsMoment}
                   className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent)]"
                 >
                   {tuningHubShortcutsCopy.proposedCuts}

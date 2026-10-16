@@ -14,6 +14,8 @@ import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import { useMomentHold } from "../../lib/moments/hold";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
@@ -380,6 +382,7 @@ export function AccountMenu({
   adminDoor = false,
   adminEnv,
   friends = false,
+  friendsMoment = false,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -389,6 +392,8 @@ export function AccountMenu({
   adminEnv?: string;
   /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
   friends?: boolean;
+  /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
+  friendsMoment?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -449,6 +454,12 @@ export function AccountMenu({
 
   const label = triggerLabel(identity.name);
   const isPopover = panel === "popover";
+  // The rail's trigger is a rail slot, which takes a left nib (bubble to its right); the phone header's points down.
+  const afterGame = useMomentAnchor("friends-after-game", {
+    eligible: friends && friendsMoment,
+    copy: momentsCopy.friendsAfterGame,
+    place: isPopover ? "right" : "below",
+  });
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // The popover has no backdrop, so an outside press is what dismisses it
@@ -487,6 +498,7 @@ export function AccountMenu({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={label}
+        {...afterGame}
         onClick={() => setOpen((v) => !v)}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.

@@ -34,6 +34,9 @@ import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import { useTopOffDraft } from "./use-top-off-draft";
 import { reveal } from "../../lib/ui/reveal";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 export interface LastSlotsStripProps {
   deckId: string;
@@ -165,6 +168,10 @@ function LastSlotsStripInner({
 }: LastSlotsStripProps) {
   const listId = useId();
   const doorRef = useRef<HTMLButtonElement>(null);
+  // M1 (discovery R1): the door is the moment's control while it is drawn, which is a deck under its size with
+  // cards left to offer. Registered only while the door is mounted, so the ref does the gating.
+  const doorMoment = useMomentAnchor("top-off", { eligible: openSlots > 0, copy: momentsCopy.topOff(openSlots) });
+  const doorRefs = useMergedRef(doorRef, doorMoment.ref);
   const isDesktop = useIsDesktop();
 
   const [open, setOpen] = useState(false);
@@ -543,7 +550,8 @@ function LastSlotsStripInner({
       ) : (
         <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">
           <button
-            ref={doorRef}
+            ref={doorRefs}
+            aria-describedby={doorMoment["aria-describedby"]}
             type="button"
             onClick={openList}
             aria-expanded={false}

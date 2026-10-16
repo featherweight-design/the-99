@@ -40,8 +40,18 @@ function onScreen(name: string, isIntersecting = true) {
   act(() => notify!([{ target: el, isIntersecting }]));
 }
 
-function Control({ id, name, eligible = true }: { id: MomentId; name: string; eligible?: boolean }) {
-  const anchor = useMomentAnchor(id, { eligible, copy: { tool: name, line: `opens ${name}.` } });
+function Control({
+  id,
+  name,
+  eligible = true,
+  fallback = false,
+}: {
+  id: MomentId;
+  name: string;
+  eligible?: boolean;
+  fallback?: boolean;
+}) {
+  const anchor = useMomentAnchor(id, { eligible, copy: { tool: name, line: `opens ${name}.` }, fallback });
   return (
     <button type="button" {...anchor}>
       {name}
@@ -77,6 +87,31 @@ afterEach(() => {
 });
 
 describe("MomentsProvider", () => {
+  it("a fallback control stands in only while the moment's own control is not drawn (audit resolution 2)", async () => {
+    const { rerender } = render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Analysis" fallback />
+        <Control id="top-off" name="Shortcut" />
+      </MomentsProvider>,
+    );
+    // The shortcut is drawn but off screen: the tab on screen waits for it rather than taking its moment.
+    onScreen("Analysis");
+    await advance(ARRIVE_MS);
+    expect(screen.queryByRole("note")).toBeNull();
+
+    // Not drawn (the shortcut gone, as when its gate is off): the tab carries the moment.
+    rerender(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Analysis" fallback />
+      </MomentsProvider>,
+    );
+    onScreen("Analysis");
+    // The covered control is looked at again each second.
+    await advance(1000);
+    const note = screen.getByRole("note", { name: "Analysis, a tip" });
+    expect(screen.getByRole("button", { name: "Analysis" }).getAttribute("aria-describedby")).toBe(note.id);
+  });
+
   it("arrives the tie window after its control comes on screen, as a named note the control points at", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
