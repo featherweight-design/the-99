@@ -33,7 +33,7 @@ export function StatsViewSwitch({ view, onView, busy = false, moment = false }: 
   // (the 4px diamond a nav press draws, after its 120ms beat). `aria-selected` still follows the view alone, and a
   // read that fails clears `busy`, so both fall back together.
   return (
-    <span {...lineupMoment} className="inline-flex">
+    <span {...lineupMoment} className="inline-flex rounded-[9px]">
     <SegmentedSwitch
       kind="tabs"
       size="compact"
