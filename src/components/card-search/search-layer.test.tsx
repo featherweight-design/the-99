@@ -17,7 +17,7 @@ function draw(over: Partial<Props>) {
   const props: Props = {
     bodyEl: host, query: "sol", searching: true, phase: "results", rows: [row], rowsFor: "sol", recentRows: [],
     recentsHeld: false, online: true, active: -1, returned: null, listboxId: "l", onPick: vi.fn(), onClear: vi.fn(),
-    onRetry: vi.fn(), onAnnounce: vi.fn(), onCardDismissed: vi.fn(), openCardRef: { current: null }, onReady: vi.fn(),
+    onRetry: vi.fn(), onAnnounce: vi.fn(), onCardDismissed: vi.fn(), onCardFailed: vi.fn(), recentsFailed: false, openCardRef: { current: null },
     ...over,
   };
   render(<SearchLayer {...props} />);
@@ -43,10 +43,17 @@ describe("the sheet's body", () => {
     expect(screen.getByText(collectionEditCopy.add.noResultsBody)).toBeTruthy();
   });
 
-  it("S7: offline names itself and hides the recent cards", () => {
+  it("S7: offline draws nothing here (the frame draws it) and hides the recent cards", () => {
     draw({ online: false, searching: false, recentsHeld: true, recentRows: [row] });
-    expect(screen.getByText(cardSearchCopy.offline.title)).toBeTruthy();
     expect(screen.queryByText(cardSearchCopy.recent.heading)).toBeNull();
+  });
+
+  it("a failed read of the recents' signals is S6 with Try again, never rows drawn as not owned", () => {
+    const p = draw({ searching: false, recentsHeld: true, recentsFailed: true });
+    expect(screen.getByRole("alert").textContent).toContain(collectionEditCopy.add.searchFailed);
+    expect(screen.queryByRole("option")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: cardSearchCopy.tryAgain }));
+    expect(p.onRetry).toHaveBeenCalledTimes(1);
   });
 
   it("S1 draws the empty state with no recent cards, S2 the list with Clear", () => {

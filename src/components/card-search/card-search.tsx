@@ -9,7 +9,6 @@
 // into load as one chunk on the reader's first intent (`SearchLayer`), so a page nobody searches from ships neither
 // card details nor the copy those states reuse. Until it lands the field types and the bar runs.
 
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -21,6 +20,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ComponentType,
   type KeyboardEvent,
   type RefObject,
   type ReactNode,
@@ -41,7 +41,6 @@ export const SEARCH_DEBOUNCE_MS = 150;
 export const SEARCH_MIN_CHARS = 2;
 
 const loadLayer = () => import("./search-layer");
-const SearchLayer = dynamic<SearchLayerProps>(() => loadLayer().then((m) => m.SearchLayer), { ssr: false });
 
 const LISTBOX_ID = "card-search-list";
 
@@ -93,8 +92,11 @@ const NO_SIGNALS: CardSignals = { owned: 0, decks: [], wishlist: false };
 
 export function CardSearchRoot({ userId, children }: { userId: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [layerWanted, setLayerWanted] = useState(false);
-  const [layerReady, setLayerReady] = useState(false);
+  // The results' chunk once it has arrived. Loaded by hand rather than through `next/dynamic`, so a load that fails
+  // (offline before the first search) is retried on the next intent or when the connection comes back.
+  const [Layer, setLayer] = useState<ComponentType<SearchLayerProps> | null>(null);
+  const loadingLayer = useRef(false);
+  const [recentsFailed, setRecentsFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [phase, setPhase] = useState<SearchPhase>("idle");
   const [rows, setRows] = useState<CardSearchRow[]>([]);
@@ -126,23 +128,36 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const searching = trimmed.length >= SEARCH_MIN_CHARS;
 
   const warmSearch = useCallback(() => {
-    setLayerWanted(true);
-    void loadLayer();
+    if (loadingLayer.current) return;
+    loadingLayer.current = true;
+    loadLayer()
+      .then((m) => setLayer(() => m.SearchLayer))
+      .catch(() => {
+        loadingLayer.current = false;
+      });
   }, []);
 
   const openSearch = useCallback(
     (opener: HTMLElement | null) => {
       openerRef.current = opener;
       setReturned(null);
-      setLayerWanted(true);
+      warmSearch();
       // Drawn in this press, then focused in it: a focus after an await or an effect leaves the keyboard down on iOS.
       flushSync(() => setOpen(true));
       inputRef.current?.focus();
       setRecents(readRecent(userId));
       setRecentSignals(null);
+      setRecentsFailed(false);
+      // An ordinary open reads the standing query again: copies, decks or wishes may have moved since.
+      setAttempt((n) => n + 1);
     },
-    [userId],
+    [userId, warmSearch],
   );
+
+  // Back online with the sheet up and the results' code still missing: fetch it now.
+  useEffect(() => {
+    if (open && online && Layer === null) warmSearch();
+  }, [open, online, Layer, warmSearch]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -156,16 +171,17 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   // The recents' signals, read fresh on each open (README call 5). Offline the list is hidden, so nothing is asked.
   useEffect(() => {
-    if (!open || !online || recentSignals !== null) return;
+    if (!open || !online || recentSignals !== null || recentsFailed) return;
     if (recents.length === 0) return;
     let live = true;
     cardSignalsAction(recents.map((r) => r.oracleId))
       .then((s) => live && setRecentSignals(s))
-      .catch(() => live && setRecentSignals({}));
+      // A failure is its own state (S6 with Try again), never a list of cards drawn as not owned.
+      .catch(() => live && setRecentsFailed(true));
     return () => {
       live = false;
     };
-  }, [open, online, recents, recentSignals]);
+  }, [open, online, recents, recentSignals, recentsFailed]);
 
   // The read: 150ms after the last key, from two characters, never offline (S7 re-runs it on `online`).
   useEffect(() => {
@@ -208,6 +224,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       const card = from[index];
       if (!card) return;
       setRecents(pushRecent(userId, card));
+      // The card joins the recents with the signals its row already holds, so it is not drawn as not owned later.
+      setRecentSignals((s) => (s ? { ...s, [card.oracleId]: { owned: card.owned, decks: card.decks, wishlist: card.wishlist } } : s));
       savedScroll.current = bodyRef.current?.scrollTop ?? 0;
       setReturned(card.oracleId);
       setActive(-1);
@@ -235,9 +253,27 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   // The reader closed the card: the search comes back as it was, the keyboard down and the field unfocused, with
   // the ring on the row that opened it (H3).
+  // Not past md, where no frame is drawn (a phone rotated while the card was up).
+  const desktopRef = useRef(desktop);
+  useEffect(() => {
+    desktopRef.current = desktop;
+  }, [desktop]);
   const onCardDismissed = useCallback(() => {
-    setOpen(true);
+    if (!desktopRef.current) setOpen(true);
   }, []);
+
+  // The card's read failed, so no card came up: the search comes back with the failure and Try again (S6).
+  const onCardFailed = useCallback(() => {
+    if (searching) setPhase("failed");
+    else setRecentsFailed(true);
+    if (!desktopRef.current) setOpen(true);
+  }, [searching]);
+
+  // The keyboard's place stays in view: `aria-activedescendant` moves no scroll of its own.
+  useEffect(() => {
+    if (!open || active < 0) return;
+    bodyRef.current?.querySelector(`#${CSS.escape(`${LISTBOX_ID}-${active}`)}`)?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
 
   useLayoutEffect(() => {
     const body = bodyRef.current;
@@ -296,8 +332,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setPhase((p) => (p === "failed" ? "idle" : p));
   }, []);
 
-  const retry = useCallback(() => setAttempt((n) => n + 1), []);
-  const busy = open && searching && online && (phase === "searching" || !layerReady);
+  const retry = useCallback(() => {
+    if (searching) setAttempt((n) => n + 1);
+    else setRecentsFailed(false);
+  }, [searching]);
+  const busy = open && searching && online && (phase === "searching" || Layer === null);
 
   const value = useMemo<CardSearchContextValue>(
     () => ({
@@ -343,8 +382,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     onRetry: retry,
     onAnnounce: setAnnouncement,
     onCardDismissed,
+    onCardFailed,
+    recentsFailed,
     openCardRef,
-    onReady: () => setLayerReady(true),
   };
 
   return (
@@ -357,38 +397,63 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
-      {layerWanted ? <SearchLayer {...layerProps} /> : null}
+      {Layer ? <Layer {...layerProps} /> : null}
     </CardSearchContext.Provider>
   );
 }
 
 /** The phone's full-screen sheet (S1 to S7's frame): the field row, the bar, and the host the results draw into. */
 function PhoneFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef } =
+  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  function onKey(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Escape") {
-      if (e.nativeEvent.isComposing) return;
-      e.preventDefault();
-      escape();
-      return;
+  // Native listeners on the sheet itself: the results are a portal owned by the layer, so their React events bubble
+  // through the layer and never reach this frame, while the DOM's own events do.
+  const escapeRef = useRef(escape);
+  useEffect(() => {
+    escapeRef.current = escape;
+  }, [escape]);
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (e.isComposing) return;
+        e.preventDefault();
+        escapeRef.current();
+        return;
+      }
+      if (e.key !== "Tab" || !sheet) return;
+      // A modal: Tab wraps inside it rather than walking into the page underneath.
+      const focusables = visibleFocusables(sheet);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const at = focusables.indexOf(document.activeElement as HTMLElement);
+      // Focus on something outside the tab stops (the row a card returned it to): step into them from there.
+      if (at === -1) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && at === 0) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && at === focusables.length - 1) {
+        e.preventDefault();
+        first.focus();
+      }
     }
-    if (e.key !== "Tab" || !sheetRef.current) return;
-    // A modal: Tab wraps inside it rather than walking into the page underneath.
-    const focusables = visibleFocusables(sheetRef.current);
-    if (focusables.length === 0) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
+    // Dragging the list lowers the keyboard (S4b): the field gives up focus, the query stays.
+    function onTouchMove() {
+      if (document.activeElement === inputRef.current) inputRef.current?.blur();
     }
-  }
+    sheet.addEventListener("keydown", onKey);
+    sheet.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      sheet.removeEventListener("keydown", onKey);
+      sheet.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [inputRef]);
 
   return (
     <div
@@ -397,14 +462,13 @@ function PhoneFrame() {
       aria-modal="true"
       aria-labelledby="card-search-heading"
       hidden={!isOpen}
-      onKeyDown={onKey}
       className="fixed inset-0 z-40 flex flex-col bg-[color:var(--bg)] md:hidden"
     >
       <h2 id="card-search-heading" className="sr-only">
         {cardSearchCopy.label}
       </h2>
       <div className="flex items-center gap-[6px] border-b border-b-[color:var(--border)] py-3 pr-2 pl-[14px] pt-[14px]">
-        {/* The app's one search field (\`SearchField\`): its ✕, its focus on the box, WebKit's own ✕ hidden. */}
+        {/* The app's one search field (`SearchField`): its ✕, its focus on the box, WebKit's own ✕ hidden. */}
         <SearchField
           ref={inputRef}
           containerClassName="h-11 min-w-0 flex-1 rounded-[10px] border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] pr-[6px] pl-[13px]"
@@ -441,14 +505,25 @@ function PhoneFrame() {
         </button>
       </div>
       {busy ? <SearchProgress /> : null}
+      {/* Offline is drawn here, not in the results' chunk, which may not have arrived (S7). */}
+      {online ? null : <SearchOffline />}
       <div
         ref={placeBody}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
-        // Dragging the list lowers the keyboard (S4b): the field gives up focus, the query stays.
-        onTouchMove={() => {
-          if (document.activeElement === inputRef.current) inputRef.current?.blur();
-        }}
       />
+    </div>
+  );
+}
+
+/** S7: offline, for either frame. The field still types, and the read runs by itself once back online. */
+export function SearchOffline() {
+  return (
+    <div className="mx-4 mt-[18px] flex flex-col gap-2 rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] p-[18px]">
+      <p className="flex items-center gap-2 text-[15.5px] font-semibold text-[color:var(--fg)]">
+        <span aria-hidden className="h-2 w-2 flex-none rounded-full bg-[color:var(--warning)]" />
+        {cardSearchCopy.offline.title}
+      </p>
+      <p className="text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{cardSearchCopy.offline.body}</p>
     </div>
   );
 }

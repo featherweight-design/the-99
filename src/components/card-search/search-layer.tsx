@@ -43,30 +43,47 @@ export type SearchLayerProps = {
   onRetry: () => void;
   onAnnounce: (text: string) => void;
   onCardDismissed: () => void;
+  /** A card the search opened never came up (its read failed). */
+  onCardFailed: () => void;
+  /** The recent cards' signals could not be read. */
+  recentsFailed: boolean;
   openCardRef: MutableRefObject<OpenCard | null>;
-  onReady: () => void;
 };
 
 export function SearchLayer(props: SearchLayerProps) {
-  const { onReady } = props;
-  useEffect(() => onReady(), [onReady]);
   return (
     <CardDetailProvider onDismiss={props.onCardDismissed}>
-      <Bridge openCardRef={props.openCardRef} />
+      <Bridge openCardRef={props.openCardRef} onCardFailed={props.onCardFailed} />
       {props.bodyEl ? createPortal(<SearchBody {...props} />, props.bodyEl) : null}
     </CardDetailProvider>
   );
 }
 
 /** Hands the provider's `open` to the shell's half, and closes the card on a navigation, never as a dismissal. */
-function Bridge({ openCardRef }: { openCardRef: MutableRefObject<OpenCard | null> }) {
-  const { open, close } = useCardDetail();
+function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<OpenCard | null>; onCardFailed: () => void }) {
+  const { open, close, pendingOracleId, openOracleId } = useCardDetail();
+  // The card asked for, and whether its read was seen in flight: a read that ends with no card drawn failed, and the
+  // provider says so only in its own live region, with no dialog and no dismissal to bring the search back.
+  const asked = useRef<{ id: string; pending: boolean } | null>(null);
   useEffect(() => {
-    openCardRef.current = (oracleId, siblings, art, opener) => open(oracleId, siblings, undefined, { art, opener });
+    openCardRef.current = (oracleId, siblings, art, opener) => {
+      asked.current = { id: oracleId, pending: false };
+      open(oracleId, siblings, undefined, { art, opener });
+    };
     return () => {
       openCardRef.current = null;
     };
   }, [open, openCardRef]);
+  useEffect(() => {
+    const a = asked.current;
+    if (!a) return;
+    if (openOracleId === a.id) asked.current = null;
+    else if (pendingOracleId === a.id) a.pending = true;
+    else if (a.pending && pendingOracleId === null) {
+      asked.current = null;
+      onCardFailed();
+    }
+  }, [pendingOracleId, openOracleId, onCardFailed]);
   // The shell outlives every page, so a card left open by a link inside it (a deck in Find a deck) would otherwise
   // stand over the next route.
   const pathname = usePathname();
@@ -102,20 +119,12 @@ function SearchBody(p: SearchLayerProps) {
     return () => window.clearTimeout(timer);
   }, [settled, p.rows.length, p.query, onAnnounce]);
 
-  if (!p.online) {
-    return (
-      <div className={BOX}>
-        <p className="flex items-center gap-2 text-[15.5px] font-semibold text-[color:var(--fg)]">
-          <span aria-hidden className="h-2 w-2 flex-none rounded-full bg-[color:var(--warning)]" />
-          {cardSearchCopy.offline.title}
-        </p>
-        <p className="text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{cardSearchCopy.offline.body}</p>
-      </div>
-    );
-  }
+  // Offline is the frame's own (it cannot wait for this chunk).
+  if (!p.online) return null;
 
   if (!p.searching) {
     if (!p.recentsHeld) return <Empty />;
+    if (p.recentsFailed) return <Failed onRetry={p.onRetry} />;
     if (p.recentRows.length === 0) return null;
     return (
       <>
@@ -136,20 +145,7 @@ function SearchBody(p: SearchLayerProps) {
     );
   }
 
-  if (p.phase === "failed") {
-    return (
-      <div className={BOX} role="alert">
-        <p className="text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{collectionEditCopy.add.searchFailed}</p>
-        <button
-          type="button"
-          onClick={p.onRetry}
-          className="mt-[6px] h-11 self-start rounded-[10px] border border-solid border-[color:var(--border-strong)] px-[18px] text-[14px] font-medium text-[color:var(--fg)]"
-        >
-          {cardSearchCopy.tryAgain}
-        </button>
-      </div>
-    );
-  }
+  if (p.phase === "failed") return <Failed onRetry={p.onRetry} />;
 
   if (stale) {
     // A later search keeps the rows it is replacing, at half strength under the bar; the first one draws skeletons.
@@ -202,6 +198,22 @@ function SearchBody(p: SearchLayerProps) {
         </p>
       ) : null}
     </>
+  );
+}
+
+/** S6: Add cards' failure sentence and Try again, as an alert. */
+function Failed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className={BOX} role="alert">
+      <p className="text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{collectionEditCopy.add.searchFailed}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-[6px] h-11 self-start rounded-[10px] border border-solid border-[color:var(--border-strong)] px-[18px] text-[14px] font-medium text-[color:var(--fg)]"
+      >
+        {cardSearchCopy.tryAgain}
+      </button>
+    </div>
   );
 }
 
