@@ -11,10 +11,10 @@
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { CODE_LENGTH } from "./rules";
 
-/** The key, or null when unset or too short to be one (32 bytes of hex is what each project holds). */
+/** The key: at least 32 bytes as hex (64 characters, what each project holds), else null. */
 export function inviteSecret(env: { INVITE_CODE_SECRET?: string }): string | null {
   const s = env.INVITE_CODE_SECRET;
-  return typeof s === "string" && s.length >= 32 ? s : null;
+  return typeof s === "string" && /^[0-9a-f]{64,}$/i.test(s) ? s : null;
 }
 
 function mac(secret: string, label: string, value: string): Buffer {

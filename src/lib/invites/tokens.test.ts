@@ -8,6 +8,8 @@ describe("invite secrets", () => {
   it("reads the key only when it is long enough to be one", () => {
     expect(inviteSecret({ INVITE_CODE_SECRET: KEY })).toBe(KEY);
     expect(inviteSecret({ INVITE_CODE_SECRET: "short" })).toBeNull();
+    expect(inviteSecret({ INVITE_CODE_SECRET: "a".repeat(32) })).toBeNull();
+    expect(inviteSecret({ INVITE_CODE_SECRET: "z".repeat(64) })).toBeNull();
     expect(inviteSecret({})).toBeNull();
   });
 
@@ -19,8 +21,10 @@ describe("invite secrets", () => {
     expect(qrToken("b".repeat(64), ID)).not.toBe(t);
   });
 
-  it("labels each use apart, so a token never equals a code's HMAC", () => {
-    expect(Buffer.from(qrToken(KEY, ID), "base64url").toString("hex")).not.toBe(codeHmac(KEY, ID, ""));
+  it("labels each use apart: over the SAME input, a token and a code's HMAC differ by their label alone", () => {
+    // codeHmac MACs `${id}:${code}`; a token MACs its id. Give the token that very string.
+    const same = `${ID}:012345`;
+    expect(Buffer.from(qrToken(KEY, same), "base64url").toString("hex")).not.toBe(codeHmac(KEY, ID, "012345"));
   });
 
   it("binds a code to its reservation", () => {

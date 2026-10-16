@@ -1,6 +1,7 @@
 /**
  * A sender's own invite count (plan `2026-10-16-invites.md`): their stock and the rows that may still hold, read in
- * one statement and counted by `inviteCount`. No caller beyond its tests and the probe until the sender's PRs.
+ * one repeatable-read snapshot (so a spend or an admin Set committing between the two reads cannot mix two moments)
+ * and counted by `inviteCount`. No caller beyond its tests and the probe until the sender's PRs.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
@@ -11,9 +12,9 @@ import { inviteCount, type HoldingRow, type InviteCount } from "./rules";
 export const OPEN_STATES = ["qr_open", "claimed", "reserved"] as const;
 
 export async function loadInviteCount(viewerId: string, now: Date = new Date()): Promise<InviteCount> {
-  const [balance, rows] = await Promise.all([
-    db.select({ held: inviteBalances.held }).from(inviteBalances).where(eq(inviteBalances.userId, viewerId)),
-    db
+  const [balance, rows] = await db.transaction(async (tx) => [
+    await tx.select({ held: inviteBalances.held }).from(inviteBalances).where(eq(inviteBalances.userId, viewerId)),
+    await tx
       .select({
         kind: inviteReservations.kind,
         state: inviteReservations.state,
@@ -22,6 +23,6 @@ export async function loadInviteCount(viewerId: string, now: Date = new Date()):
       })
       .from(inviteReservations)
       .where(and(eq(inviteReservations.userId, viewerId), inArray(inviteReservations.state, [...OPEN_STATES]))),
-  ]);
+  ] as const, { isolationLevel: "repeatable read", accessMode: "read only" });
   return inviteCount(balance[0]?.held ?? 0, rows as HoldingRow[], now);
 }
