@@ -140,7 +140,9 @@ const TWO_MD: LineSlots = {
   remove: "md:order-2",
   brk: "hidden md:block md:order-3 md:h-0 md:basis-full",
   meta: "md:order-5 md:flex-1 md:min-h-[26px] md:pl-[18px] md:overflow-hidden",
-  glint: "md:-ml-[18px] md:mr-[1px]",
+  // Below md an All row is the shipped column form (the pips line sits under the name, in the name block), so the glint
+  // steps back into the dot's column there too: the dot's 7px and its 9px gap, then 18px from md.
+  glint: "-ml-[16px] -mr-[1px] md:-ml-[18px] md:mr-[1px]",
   mark: "md:order-6",
   swap: "md:order-7",
   buyStack: "md:order-8 md:justify-center",
@@ -153,7 +155,9 @@ const TWO_LG: LineSlots = {
   remove: "lg:order-2",
   brk: "hidden lg:block lg:order-3 lg:h-0 lg:basis-full",
   meta: "lg:order-5 lg:flex-1 lg:min-h-[26px] lg:pl-[18px] lg:overflow-hidden",
-  glint: "lg:-ml-[18px] lg:mr-[1px]",
+  // From md, not lg: between md and lg a Shopping row is still the column form (the pips under the name), where the glint
+  // is in the name block and would otherwise sit at the name's x.
+  glint: "md:-ml-[18px] md:mr-[1px]",
   mark: "lg:order-6",
   swap: "lg:order-7",
   buyStack: "lg:order-8 lg:justify-center",
