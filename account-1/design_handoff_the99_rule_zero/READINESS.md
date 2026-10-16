@@ -1,11 +1,13 @@
 # READINESS — Rule 0 table check
 
-**🟡 R1, for Hugh's audit.** Every state in the brief is drawn at 390 and 1300. Two calls are Hugh's (G3, G7); the
-rest of the gaps are engineering's to confirm in the plan. Copy is owed to `/copy-review`.
+**🟢 Approved.** Hugh approved on 2026-10-16 with one change, taken as R2: desktop seats are one full-width row each
+(the chip with the name, larger art, a tinted and taller flagged row), so no seat sits beside a taller one. Home's table
+card and who sets each deck were confirmed as drawn and go to engineering with G3 and G7. The remaining gaps are
+engineering's to confirm in the plan (G10 added: Home's cache key). Copy is owed to `/copy-review`.
 
 ## Locks held
 
-| Lock | How R1 holds it |
+| Lock | How R2 holds it |
 |---|---|
 | 1. The read is `slotDeck` + `findings`, free | The shipped chip and the five counts; no model call anywhere; no credit chip. |
 | 2. A bracket or more from the rest is flagged | Measured from the table's middle (the band on the rail); a range from its nearer end; a two-seat difference is a split on both. |

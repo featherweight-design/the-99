@@ -275,6 +275,35 @@ CSS = B.CSS.replace(".wash-heroes{background-image:url(art/heroes.jpg)}", "") + 
 .ttable{position:relative;width:200px;height:120px;margin-bottom:8px}
 .ttable .tb{position:absolute;left:30px;top:30px;width:140px;height:62px;border-radius:31px;border:1.5px dashed var(--border-dashed)}
 .ttable .face{position:absolute;width:34px;height:34px;opacity:.55;filter:grayscale(.6)}
+
+/* R2: desktop seats are one full-width row each (Hugh, 2026-10-16, option A) */
+.drows{display:flex;flex-direction:column;gap:10px}
+.srw{position:relative;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-rail);overflow:hidden}
+.srw.you{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.srw.flag{border-color:color-mix(in oklab,var(--flag) 70%,transparent);background:color-mix(in srgb,var(--flag) 7%,var(--surface-rail))}
+.srw.you.flag{border-color:var(--accent)}
+.srw .wash{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.srw .wash img{position:absolute;inset:-30px;width:calc(100% + 60px);height:calc(100% + 60px);object-fit:cover;filter:blur(28px) saturate(1.25);opacity:.26}
+.srw .main{position:relative;display:grid;grid-template-columns:132px minmax(0,1fr) auto;align-items:center;gap:18px;padding:12px 16px 12px 12px}
+.srw.flag .main{padding-top:16px;padding-bottom:14px}
+.srw .art{width:132px;height:92px;border-radius:10px;overflow:hidden;box-shadow:0 10px 22px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);background:var(--surface-sunken)}
+.srw .art img{width:100%;height:100%;object-fit:cover;display:block}
+.srw .art.ini{display:flex;align-items:center;justify-content:center;font:700 26px 'Chakra Petch',sans-serif;color:var(--fg-muted);background:radial-gradient(120px 80px at 50% 40%,#262A35,var(--surface))}
+.srw .who{display:flex;flex-direction:column;gap:4px;min-width:0}
+.srw .nm{display:flex;align-items:baseline;gap:8px;font:600 16px 'IBM Plex Sans',sans-serif}
+.srw .nm small{font:10px 'IBM Plex Mono',monospace;font-weight:400;color:var(--fg-muted)}
+.srw .nm .yt{font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--accent)}
+.srw .dkn{font-size:14px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srw .cm{font:10.5px 'IBM Plex Mono',monospace;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srw .br{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:4px}
+.srw .br .sub{font:10px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.srw .rt{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.srw .more{position:relative;display:flex;flex-direction:column;gap:10px;padding:0 16px 14px 162px}
+.srw .why{padding:10px 12px;border-radius:9px;background:color-mix(in srgb,var(--flag) 10%,var(--surface-sunken));border:1px solid color-mix(in oklab,var(--flag) 35%,transparent);font-size:13px;line-height:1.55;color:var(--fg-body)}
+.srw .why b{color:var(--fg);font-weight:600}
+.srw .sug,.srw .wait{margin:0}
+.srw .ctl{position:relative;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 16px 8px 162px;margin-top:-8px}
+
 """
 
 # ---------- glyphs ----------

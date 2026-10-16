@@ -86,9 +86,9 @@ def board_desk():
         meta = m[0] if m else "colin"
         setter = meta.startswith("you")
         out.append(frame(lab.replace("T", "D", 1), table_desk(s, rd, meta=meta, h=DH.get(lab.replace("T", "D", 1), 1000), setter=setter), cap, width=1300))
-    body = ('<div class="bh"><span class="k">R1 · Rule 0 check · the read · desktop 1300 · Kamigawa theme</span>'
-            '<h2>Seats on the left, two across; the read holds the right column</h2>'
-            '<p class="cap" style="max-width:2600px">The same page in the shell: the read and Log this game stay in a 392px column so the seats can be scanned against it. Same seat card, same rules as the phone.</p></div>'
+    body = ('<div class="bh"><span class="k">R2 · Rule 0 check · the read · desktop 1300 · one seat per row</span>'
+            '<h2>One seat per row on the left; the read holds the right column</h2>'
+            '<p class="cap" style="max-width:2600px">R2 (Hugh, 2026-10-16): each seat is one full-width row, so no seat sits beside a taller one. Art, name, deck, commander and the chip read together; the flag tag sits over the five counts on the right; a flagged row is tinted in its ink and its reason opens under it. The read and Log this game stay in the 392px column. Same rules as the phone.</p></div>'
             f'<div class="frames">{"".join(out)}</div>')
     return doc("Rule 0 check, the read, desktop", body, 2780, 6000)
 

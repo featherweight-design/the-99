@@ -1,4 +1,4 @@
-# The 99 — Rule 0 table check · R1 handoff package (for audit)
+# The 99 — Rule 0 table check · R2 handoff package (approved)
 
 A pod surface: seat tonight's players from a pod, give each a deck, and read whether the table is balanced. Phone first
 and desktop. Behind its own switch (needs `SOCIAL_FRIENDS_ENABLED`); logging needs `SOCIAL_GAMES_ENABLED`.
@@ -12,12 +12,12 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-rule-zero-table-chec
 | **`The 99 - Rule Zero (R1).dc.html`** | **Start here: the four calls, the locks, the gaps.** |
 | `R1 - Entry-Phone.dc.html` / `R1 - Entry-Desktop.dc.html` | The pod card's row, a table open, Home's table card, switch off. |
 | `R1 - Setup-Phone.dc.html` / `R1 - Setup-Desktop.dc.html` | Who's playing, too few, a deck for each seat, a friend's decks. |
-| `R1 - Read-Phone.dc.html` / `R1 - Read-Desktop.dc.html` | Balanced, high, low, two outliers, split, ranges, drifted, not ready, read on the spot, not enough. |
-| `R1 - Swap-Phone.dc.html` / `R1 - Swap-Desktop.dc.html` | The suggestion, the swap, Change deck, another seat's view before and after. |
-| `R1 - Log-Phone.dc.html` / `R1 - Log-Desktop.dc.html` | Log this game, the pre-filled log, games off, expired. |
+| `R1 - Read-Phone.dc.html` / `R2 - Read-Desktop.dc.html` | Balanced, high, low, two outliers, split, ranges, drifted, not ready, read on the spot, not enough. |
+| `R1 - Swap-Phone.dc.html` / `R2 - Swap-Desktop.dc.html` | The suggestion, the swap, Change deck, another seat's view before and after. |
+| `R1 - Log-Phone.dc.html` / `R2 - Log-Desktop.dc.html` | Log this game, the pre-filled log, games off, expired. |
 | `README.md` | Each decision with its reason; the gap list. |
 | `STATES-rule-zero.md` | The matrix. |
-| `READINESS.md` | R1's verdict and what engineering needs. |
+| `READINESS.md` | The verdict and what engineering needs. |
 | `rule-zero · copy strings.ts` | Every new string, for `/copy-review`. |
 | `brand/` | The locked brand sheet. |
 

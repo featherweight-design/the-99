@@ -7,7 +7,7 @@ CALLS = [
     ("2", "The seat picker", "Open 2",
      "One sheet (phone) or dialog (desktop), two steps. <b>Who’s playing?</b> shows the pod’s members as the pod card’s own art seats, You already in; a tap seats or unseats; 2 to 8, with Next held and one line outside that. A member with <b>no decks</b> is dimmed and says so. Someone <b>not on the app</b> gets a dashed row into Add a friend › Invite someone new, unchanged. <b>Tonight’s decks</b> gives each seat a row: yours and your friends’ open their decks by name and commander (no bracket before the table exists); a member who isn’t your friend picks their own, since their decks are never listed to you. Set the table opens it for everyone."),
     ("3", "How the outlier and its drivers read", "Open 3, 5, 7",
-     "<b>The read</b> sits on top: a headline, one sentence, a <b>rail</b> of the five brackets with each seat’s face over its reading and a dashed band on the table’s middle, the counts key, and the honesty line with <b>How we make these decisions</b>. Then the seats, in the same order on every phone: art, name, deck, the shipped bracket chip and the five counts. <b>High</b> is amber with ▲ and <b>Above the table</b>; <b>low</b> is steel blue with ▼ and <b>Below the table</b>; a two-seat <b>split</b> is violet on both. A flagged seat names what puts it there in a sentence and lifts those counts. A zero is a dim count, never a clean bill. Seats not in the read say why: cards short of 100, over 100, being read, or waiting for its player."),
+     "<b>The read</b> sits on top: a headline, one sentence, a <b>rail</b> of the five brackets with each seat’s face over its reading and a dashed band on the table’s middle, the counts key, and the honesty line with <b>How we make these decisions</b>. Then the seats, in the same order on every phone (on desktop, R2: one full-width row per seat, so none sits beside a taller one): art, name, deck, the shipped bracket chip and the five counts. <b>High</b> is amber with ▲ and <b>Above the table</b>; <b>low</b> is steel blue with ▼ and <b>Below the table</b>; a two-seat <b>split</b> is violet on both. A flagged seat names what puts it there in a sentence and lifts those counts. A zero is a dim count, never a clean bill. Seats not in the read say why: cards short of 100, over 100, being read, or waiting for its player."),
     ("4", "How the suggestion reads", "Open 4, 6",
      "On the flagged seat, under its reason, on <b>its own player’s phone only</b>: <b>Closer to the table</b>, up to three of their own read decks nearest the table’s middle, each art, name, chip and one <b>Swap in</b>. One tap seats it, the read redraws, and the shared toast offers Undo. Other phones get it on their next check (20 seconds while open, and on refresh): the seat and the read carry a changed dot until seen. Any seat can also <b>Change deck</b> on its own seat."),
 ]
@@ -44,6 +44,7 @@ GAPS = [
     ("G7", "Hugh", "One open table per pod. Its setter changes who sits with Seats on the table; a second Rule 0 check while one is open opens that one."),
     ("G8", "Engineering", "Starting decks in setup: each seat starts on that player’s most recently played deck, else most recently edited."),
     ("G9", "Copy", "Every string is in rule-zero · copy strings.ts for /copy-review. No About entry (paused)."),
+    ("G10", "Engineering", "Home is cached per reader, and being seated by someone else does not move your stamp: the table card needs the table or seat state in Home’s cache key, as friend data carries friendGeneration."),
 ]
 
 def call_card(n, title, ref, body):
@@ -64,7 +65,7 @@ def board():
     arts = "".join(f'<span style="width:150px;height:80px;border-radius:10px;overflow:hidden;display:block;box-shadow:0 10px 24px rgba(0,0,0,.5)"><img src="art/{a}.jpg" alt="" style="width:100%;height:100%;object-fit:cover"></span>'
                    for a in ["ghalta", "zimone", "giada", "gisa"])
     head = ('<div style="display:flex;justify-content:space-between;gap:40px;align-items:flex-end"><div class="bh" style="max-width:1000px">'
-            '<span class="k">Rule 0 table check · R1 · behind its own switch (needs friends on) · phone and desktop · 2026-10-16</span>'
+            '<span class="k">Rule 0 table check · R2, approved · behind its own switch (needs friends on) · phone and desktop · 2026-10-16</span>'
             '<h2 style="font-size:36px;line-height:1.15">Rule 0 check: the pod becomes tonight’s table, and every phone at it reads the same spread</h2>'
             '<p class="cap" style="font-size:14px">Pick who’s playing from a pod and a deck for each seat. The page lays every seat’s bracket on one rail of five, '
             'names any deck a bracket or more from the middle, high or low, and what puts it there, and offers that player only their own decks that sit closer, '
@@ -83,7 +84,7 @@ def board():
         f'<span class="mono" style="color:var(--warning);font-size:12px">{g}</span><span class="mono" style="font-size:11px;color:var(--fg-faint)">{w}</span>'
         f'<p class="cap" style="color:var(--fg-body)">{t}</p></div>' for g, w, t in GAPS)
     body = (head + f'<div style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:28px;align-items:start">{left}<div style="display:flex;flex-direction:column;gap:18px">{right}</div></div>'
-            f'<div class="note" style="padding:18px 24px"><span class="k">Gaps for engineering and Hugh (G1 to G9, also in README.md)</span><div style="margin-top:8px">{gaps}</div></div>')
+            f'<div class="note" style="padding:18px 24px"><span class="k">Gaps for engineering and Hugh (G1 to G10, also in README.md)</span><div style="margin-top:8px">{gaps}</div></div>')
     return doc("Rule 0 check R1", body, 1700, 2600)
 
 PH, DH = {}, {}

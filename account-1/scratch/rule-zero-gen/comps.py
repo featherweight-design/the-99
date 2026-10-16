@@ -165,12 +165,66 @@ def table_phone(seats, rd, meta="colin", h=1500, setter=False, after="", overlay
             f'<div class="seats">{"".join(seat(s) for s in seats)}</div>{after}{lg}</div>')
     return phone(body, h=h, overlay=overlay, hd=hd, av=av, fixed=fixed)
 
+def seat_row(s):
+    """R2 desktop seat: one full-width row. Art, then name, deck, commander and the chip together; the flag tag
+    over the five counts on the right. The reason, the offer, or why the seat is waiting open under the row."""
+    flagcls = {"hi": " flag hi", "lo": " flag lo", "sp": " flag sp"}.get(s["flag"] or "", "")
+    cls = "srw" + (" you" if s["you"] else "") + flagcls
+    name = "You" if s["you"] else s["who"]
+    tag = f'<small>{s["tag"]}</small>' if s["tag"] else ""
+    you = '<span class="yt">YOU</span>' if s["you"] else ""
+    st = s["state"]
+    pick = st == "pick"
+    art = (f'<span class="art"><img src="art/{s["art"]}.jpg" alt=""></span>' if not pick
+           else f'<span class="art ini">{s["who"][:2].upper()}</span>')
+    wash = f'<span class="wash" aria-hidden="true"><img src="art/{s["art"]}.jpg" alt=""></span>' if not pick else ""
+    if pick:
+        deck = '<span class="dkn" style="color:var(--fg-muted)">Picking their deck</span><span class="cm">their seat joins the read when they do</span>'
+    else:
+        deck = f'<span class="dkn">{s["deck"]}</span><span class="cm">{s["cmd"]}</span>'
+    br, rt = "", ""
+    more = []
+    if st in ("ok", "stale"):
+        sub = []
+        if s["ans"]:
+            sub.append(f'declared {NAMES[s["ans"]]} · reads {" or ".join(NAMES[b] for b in s["permits"])}')
+        elif s["drift"]:
+            sub.append(f'declared {NAMES[s["drift"]]}, outside this reading · measured from {NAMES[s["permits"][0]]}')
+        elif len(s["permits"]) == 2:
+            near = s["permits"][0] if s.get("near", "low") == "low" else s["permits"][1]
+            sub.append(f'not declared · measured from {NAMES[near]}')
+        subs = "".join(f'<span class="sub">{x}</span>' for x in sub)
+        if st == "stale":
+            subs += '<span class="stale"><i></i>from before its last change</span>'
+        br = f'<span class="br">{chip(s["permits"], s["ans"], lg=True)}{subs}</span>'
+        rt = f'<span class="rt">{flagtag(s["flag"]) if s["flag"] else ""}{facts(s["f"], s["drivers"])}</span>'
+        if s["why"]:
+            more.append(f'<div class="why">{s["why"]}</div>')
+    elif st == "short":
+        more.append(f'<div class="wait"><b>{s["cards"]} of 100 cards.</b> A deck is read once it’s complete, so this seat is left out of the read for now.<div class="bar"><i style="width:{int(s["cards"])}%"></i></div></div>')
+    elif st == "over":
+        more.append(f'<div class="wait"><b>{s["cards"]} cards, over 100.</b> Its last reading is from before that change and isn’t used. Back at 100, it joins the read.</div>')
+    elif st == "reading":
+        more.append('<div class="wait" style="display:flex;align-items:center;gap:10px"><span class="spin" aria-hidden="true"></span><span><b>Reading this deck.</b> It’s at 100 and hasn’t been read before; this takes a second or two.</span></div>')
+    elif pick:
+        more.append(f'<div class="wait">{s["who"]} picks their own deck on their phone. Until then this seat is left out of the read.</div>')
+    if s["sug"]:
+        more.append(s["sug"])
+    main = f'<div class="main">{art}<span class="who"><span class="nm">{name}{you}{tag}</span>{deck}{br}</span>{rt}</div>'
+    more_html = f'<div class="more">{"".join(more)}</div>' if more else ""
+    ctl = ""
+    if s["own"] or s["changed"]:
+        chg = f'<span class="chg" style="margin-right:auto"><i></i>{s["changed"]}</span>' if s["changed"] else ""
+        btn = '<button class="lnk" type="button" style="min-height:36px;font-size:13px">Change deck</button>' if s["own"] else ""
+        ctl = f'<div class="ctl">{chg}{btn}</div>'
+    return f'<article class="{cls}" aria-label="{name}’s seat">{wash}{main}{more_html}{ctl}</article>'
+
 def table_desk(seats, rd, meta="colin", h=1000, setter=False, overlay="", logbtn=True, side_extra="", av="HH", fixed=False):
     right = '<button class="btn gho sm" type="button">Seats</button>' if setter else ""
     m = META[meta].replace("<br>", " · ")
     head = (f'<div class="dph"><div><div class="bk">‹ Friends</div><h1>Rule 0 check</h1><div class="meta">{m}</div></div>{right}</div>')
     lg = ('<button class="btn gho full" type="button">Log this game</button>' if logbtn else "")
-    body = (head + f'<div class="dbody"><div class="dseats">{"".join(seat(s, True) for s in seats)}</div>'
+    body = (head + f'<div class="dbody rows"><div class="drows">{"".join(seat_row(s) for s in seats)}</div>'
             f'<div class="dside">{rd}{side_extra}{lg}</div></div>')
     return desk(body, h=h, overlay=overlay, av=av, fixed=fixed)
 

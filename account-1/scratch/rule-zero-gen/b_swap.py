@@ -20,7 +20,7 @@ def own_sheet(desk=False):
           '<p class="shs">Nearest the table first. Everyone sees the change on their next look.</p>')
     body = f'<div class="shb" role="listbox" aria-label="Your decks" style="gap:2px">{lst}</div>'
     if desk:
-        return (f'<div class="anch" style="left:140px;top:470px"><div class="hd"><span>Your deck tonight</span><span>nearest first</span></div>'
+        return (f'<div class="anch" style="left:440px;top:592px"><div class="hd"><span>Your deck tonight</span><span>nearest first</span></div>'
                 f'<div role="listbox" aria-label="Your decks">{lst}</div></div>')
     return f'<div class="scrim" style="z-index:8"></div><div class="sh"><span class="grip"></span>{hd}{body}</div>'
 
@@ -100,8 +100,8 @@ def board_desk():
         d = table_desk(f["seats"], f["rd"], meta=f["meta"], h=DH.get(lab, 1000), setter=f["meta"].endswith("you"),
                        overlay=ov, av=f["av"])
         out.append(frame(lab, d, f["cap"], width=1300))
-    body = ('<div class="bh"><span class="k">R1 · Rule 0 check · the suggestion and the swap · desktop 1300</span>'
+    body = ('<div class="bh"><span class="k">R2 · Rule 0 check · the suggestion and the swap · desktop 1300 · one seat per row</span>'
             '<h2>The same offer on the seat; Change deck opens an anchored panel</h2>'
-            '<p class="cap" style="max-width:2700px">Desktop draws the same seat card, so the offer and its Swap in sit exactly where they do on the phone. Change deck opens the app’s anchored panel under the seat instead of a sheet; the toast sits bottom right.</p></div>'
+            '<p class="cap" style="max-width:2700px">Desktop draws each seat as one row (R2); the offer and its Swap in open under your own row, as on the phone. Change deck opens the app’s anchored panel under the seat instead of a sheet; the toast sits bottom right.</p></div>'
             f'<div class="frames">{"".join(out)}</div>')
     return doc("Rule 0 check, swap, desktop", body, 2780, 3000)

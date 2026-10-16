@@ -13,9 +13,9 @@ BOARDS = {  # module: [(fn, filename)]
     "b_main": [("board", "The 99 - Rule Zero (R1).dc.html")],
     "b_entry": [("board_phone", "R1 - Entry-Phone.dc.html"), ("board_desk", "R1 - Entry-Desktop.dc.html")],
     "b_setup": [("board_phone", "R1 - Setup-Phone.dc.html"), ("board_desk", "R1 - Setup-Desktop.dc.html")],
-    "b_read": [("board_phone", "R1 - Read-Phone.dc.html"), ("board_desk", "R1 - Read-Desktop.dc.html")],
-    "b_swap": [("board_phone", "R1 - Swap-Phone.dc.html"), ("board_desk", "R1 - Swap-Desktop.dc.html")],
-    "b_log": [("board_phone", "R1 - Log-Phone.dc.html"), ("board_desk", "R1 - Log-Desktop.dc.html")],
+    "b_read": [("board_phone", "R1 - Read-Phone.dc.html"), ("board_desk", "R2 - Read-Desktop.dc.html")],
+    "b_swap": [("board_phone", "R1 - Swap-Phone.dc.html"), ("board_desk", "R2 - Swap-Desktop.dc.html")],
+    "b_log": [("board_phone", "R1 - Log-Phone.dc.html"), ("board_desk", "R2 - Log-Desktop.dc.html")],
     "b_opts": [("board_desk", "R2 - Desktop-Options.dc.html")],
 }
 

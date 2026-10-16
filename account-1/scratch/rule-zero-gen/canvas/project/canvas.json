@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-10-16T22:30:00Z"
  },
- "title": "The 99 · Rule 0 check R1",
+ "title": "The 99 · Rule 0 check R2",
  "launch": {
   "view": "canvas"
  },
@@ -14,8 +14,8 @@
    "x": 0,
    "y": 300,
    "w": 1700,
-   "h": 2338,
-   "title": "Rule 0 check R1 · calls, locks, gaps"
+   "h": 2383,
+   "title": "Rule 0 check · calls, locks, gaps (R2, approved)"
   },
   "Entry-Phone.dc.html": {
    "x": 1780,
@@ -70,26 +70,26 @@
    "x": 0,
    "y": 9055,
    "w": 2780,
-   "h": 4832,
-   "title": "The read · desktop"
+   "h": 5007,
+   "title": "The read · desktop (R2, one seat per row)"
   },
   "Swap-Desktop.dc.html": {
    "x": 2860,
    "y": 9055,
    "w": 2780,
-   "h": 3160,
-   "title": "Suggestion and swap · desktop"
+   "h": 3106,
+   "title": "Suggestion and swap · desktop (R2)"
   },
   "Log-Desktop.dc.html": {
    "x": 0,
-   "y": 14307,
+   "y": 14482,
    "w": 4120,
    "h": 1248,
-   "title": "Log and expiry · desktop"
+   "title": "Log and expiry · desktop (R2)"
   },
   "Desktop-Options.dc.html": {
    "x": 0,
-   "y": 15975,
+   "y": 16150,
    "w": 2760,
    "h": 3451,
    "title": "R2 · desktop seat layout · A vs B"
@@ -140,15 +140,15 @@
   },
   "row5": {
    "x": 0,
-   "y": 14047,
+   "y": 14222,
    "text": "Desktop (1300): logging and expiry",
    "kind": "title1",
    "maxW": 4000
   },
   "row6": {
    "x": 0,
-   "y": 15715,
-   "text": "R2: desktop seat layout, option A vs option B",
+   "y": 15890,
+   "text": "R2: desktop seat layout, A vs B (Hugh picked A)",
    "kind": "title1",
    "maxW": 4000
   }

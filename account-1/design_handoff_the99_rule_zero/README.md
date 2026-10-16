@@ -1,4 +1,4 @@
-# The 99 — Rule 0 table check · design handoff, R1
+# The 99 — Rule 0 table check · design handoff, R2 (approved)
 
 A pod surface: pick who is playing tonight from a pod, give each seat a deck, and read whether the table is balanced.
 Behind a new switch that needs `SOCIAL_FRIENDS_ENABLED`. Logging from the table needs `SOCIAL_GAMES_ENABLED`. Phone
@@ -23,9 +23,9 @@ and its Across the table rows (Social R3), the shared toast, and Add a friend �
 | `The 99 - Rule Zero (R1).dc.html` | The calls, the locks, the gaps. Start here. |
 | `R1 - Entry-Phone.dc.html` / `R1 - Entry-Desktop.dc.html` | E1 to E4, F1 to F3: the pod card's row, a table open, Home's table card, switch off. |
 | `R1 - Setup-Phone.dc.html` / `R1 - Setup-Desktop.dc.html` | U1 to U4, V1 to V3: who's playing, too few, a deck for each seat, a friend's decks. |
-| `R1 - Read-Phone.dc.html` / `R1 - Read-Desktop.dc.html` | T1 to T10, D1 to D10: every shape of the read. |
-| `R1 - Swap-Phone.dc.html` / `R1 - Swap-Desktop.dc.html` | S1 to S6, W1 to W5: the suggestion, the swap, Change deck, another seat's view. |
-| `R1 - Log-Phone.dc.html` / `R1 - Log-Desktop.dc.html` | L1 to L4, H1 to H3: Log this game, the pre-filled log, games off, expired. |
+| `R1 - Read-Phone.dc.html` / `R2 - Read-Desktop.dc.html` | T1 to T10, D1 to D10: every shape of the read. |
+| `R1 - Swap-Phone.dc.html` / `R2 - Swap-Desktop.dc.html` | S1 to S6, W1 to W5: the suggestion, the swap, Change deck, another seat's view. |
+| `R1 - Log-Phone.dc.html` / `R2 - Log-Desktop.dc.html` | L1 to L4, H1 to H3: Log this game, the pre-filled log, games off, expired. |
 | `STATES-rule-zero.md` | Every brief state, where it is drawn, and its rule. |
 | `READINESS.md` | Verdict, locks held, what engineering needs. |
 | `rule-zero · copy strings.ts` | Every new string, for `/copy-review`. |
@@ -84,8 +84,11 @@ closer decks, one tap to swap. **Log this game** opens your seated deck's log wi
 ### 3. The read, the outlier and its drivers (Open 3)
 
 - **Page:** `Rule 0 check`, meta `Thursday night · set by Colin · 4 seated · open until 9:40 pm tomorrow`. Phone: the
-  read card, then the seats, then Log this game. Desktop: seats two across on the left, the read and Log this game in a
-  392px column on the right.
+  read card, then the seats, then Log this game. Desktop (R2): **one seat per
+  row** on the left, the read and Log this game in a 392px column on the right. A row is the art (132 × 92), then name,
+  deck, commander and the chip together, then the flag tag over the five counts at the right edge. A flagged row is
+  tinted in its flag ink and its reason opens under it across the row; your own flagged row also opens the offer there.
+  Nothing ever sits beside a taller seat, so rows never leave a gap (Hugh's note on R1's two-across grid, D7).
 - **The read card:** kicker `The read` with `updated just now`; a headline; one sentence; the **rail**; the counts key;
   the honesty line and **How we make these decisions →** (the shipped provenance opener and sheet).
 - **The rail:** five columns, Exhibition to cEDH, each with its chip mark and name. Each read seat is a 30px face over
@@ -151,9 +154,19 @@ closer decks, one tap to swap. **Log this game** opens your seated deck's log wi
 
 ### 8. Phone and desktop (Open 8)
 
-Every state is drawn at 390 (full pages, so nothing is cut off) and at 1300. The seat card is one component at both.
+Every state is drawn at 390 (full pages, so nothing is cut off) and at 1300. Phone seats are cards in one column;
+desktop seats are full-width rows (R2). Both carry the same parts in the same order.
 
 ---
+
+## R2 (Hugh, 2026-10-16)
+
+- **Desktop seats are one per row** (option A of the two drawn side by side on `design-assets`, `R2 - Desktop-Options`).
+  R1 drew them two across, and a seat with a reason or an offer left a gap beside the seat next to it.
+- Refinements taken with it: the chip sits with the name and deck rather than in its own column; the art is larger
+  (132 × 92) with a stronger commander wash; a flagged row is tinted in its ink and taller, so the outlier stands out.
+- The phone is unchanged. Entry, Setup and the phone boards stay R1.
+- Home's table card and who sets each deck were confirmed as drawn; Hugh takes both to engineering.
 
 ## Gaps
 
@@ -168,3 +181,4 @@ Every state is drawn at 390 (full pages, so nothing is cut off) and at 1300. The
 | G7 | One open table per pod; Rule 0 check on a pod with one open opens it. The setter changes who sits with Seats. | **Hugh** |
 | G8 | Setup's starting deck per seat: most recently played, else most recently edited. | Engineering |
 | G9 | Copy goes to `/copy-review` (`rule-zero · copy strings.ts`). No About entry, no `ABOUT_VERSION` bump (lock 13). | Copy |
+| G10 | Home is cached per reader, and being seated by someone else does not move your stamp: the table card needs the table (or seat) state in Home's `cachePageForUser` key, as friend data carries `friendGeneration`. | Engineering |

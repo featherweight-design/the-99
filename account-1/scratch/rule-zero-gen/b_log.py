@@ -85,7 +85,7 @@ def board_desk():
         ("H3 · expired", desk(expired(True), h=620, fixed=True), "Centered in the page."),
     ]
     out = [frame(l, h, c, width=1300) for l, h, c in D]
-    body = ('<div class="bh"><span class="k">R1 · Rule 0 check · logging, and after the night · desktop 1300</span>'
+    body = ('<div class="bh"><span class="k">R2 · Rule 0 check · logging, and after the night · desktop 1300 · one seat per row</span>'
             '<h2>The same, on desktop</h2></div>'
             f'<div class="frames">{"".join(out)}</div>')
     return doc("Rule 0 check, log and expiry, desktop", body, 4120, 1300)
