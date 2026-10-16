@@ -99,8 +99,11 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    `tour_seen_at` only when null, so a replay moves no stamp. On a first-run account the replay is the first-run tour.
    On an account with data, the dashboard Home, it runs on the real app:
    - Step 1 lights the Collection slot (rail or tab bar) instead of step 1's card, and drops the precon line.
-   - Steps 2 to 4 light the real, unlocked Commanders and Decks slots, keep their picture and drop the
-     `once your cards are in` captions for replay captions.
+   - Steps 2 to 4 light the real Commanders and Decks slots in the state the shell draws them. **A dashboard does not
+     mean unlocked navigation:** Home shows it for an account with decks but no collection cards, while the shell locks
+     whenever `uniqueCards === 0` (`src/components/shell/shell.tsx`). So the captions follow the shell's own `locked`,
+     handed to the tour. Locked, they keep the `once your cards are in` captions. Unlocked, they take the replay
+     captions. `probe:tour` covers a decks-only account.
    - Step 5 is unchanged. Step 6 lights the banner when its target is registered, else the centred fallback (R3 gap 6),
      and the Friends section when it is drawn.
    - The replay's own strings (step 1's body and the three captions) go to `/copy-review` with the rest. They are copy
@@ -133,17 +136,31 @@ Each of these closes a choice the handoff and the audits leave to engineering.
   takes over 400ms for Hugh's account (this plan's bar), the card falls back to `Open Friends →` and nothing else changes (R2 gap 3).
 - **The landing (E11, R2 gaps 7 and 11).** `useToolLanding()` on the deck page and on each tool's own page reads
   `?tool=<id>`, waits for the target to register, scrolls it into view, haloes it 2.4s with no bubble, spends the tool's
-  moment through `spendMomentAction` when one exists and `MOMENTS_ENABLED` is on, and strips the parameter through
-  `mirrorUrl`. A credit tool's target is its tile, never its run press. A deck gone since render lands on `/decks`.
-  Find a deck lands on `/collection?avail=free&tool=fits-your-decks`, and the next card details opened halo
+  moment when one exists and `MOMENTS_ENABLED` is on, and strips the parameter through `mirrorUrl`.
+  **The spend goes through the provider, not around it.** `MomentsProvider` exposes `suppressMoment(id)`, called before
+  the scroll, so no bubble can show for the moment the landing spends. It does three things:
+  - adds the id to its local spent set;
+  - cancels any pending delivery for that moment;
+  - calls the existing persistence path (`spendMomentAction`).
+
+  A credit tool's target is its tile, never its run press. **With the Tuning hub off** (`tuningHubEnabled` is false, as
+  it is with only one of the three tools on), there is no tile. Each directly mounted panel (Suggested changes,
+  Proposed cuts, Mana Balance) then registers that tool's target on its own head instead. Only Suggested changes falls
+  back to `AnalysisEmpty` when no reading is held: Proposed cuts and Mana Balance render without one
+  (`analysis-panel.tsx`). A deck gone since render lands on `/decks`.
+  Find a deck lands on `/collection?avail=free&tool=find-a-deck`, and the next card details opened halo
   `Find a deck for it` once.
 - **About's shape (C1, C5, R2 gaps 9, 10, 12, 13, 14).** Tools is the absence of `?tab`; `?tab=reference` is mirrored
   through `mirrorUrl`. The visit is recorded when what's new is drawn (the Reference tab, or `#new`), not when `/about`
   loads. An opened Reference entry leads with its screen's frame and the entry's halo box. Each entry keeps its specimen
-  until PR 7 retires them all at once, so no entry ever renders without a figure.
+  while `ABOUT_TOOLS_ENABLED` can be off, because the shipped `/about` (`about-page.tsx`, `FIGURES`) is the off branch
+  and must stay exactly as shipped, on production included. R2·7 retires the specimens and their fixtures only once
+  Hugh has turned the switch on in production and its off branch is removed with them.
 - **The ? (C4, E13, R2 gaps 5, 15 and 17).** The rail item sits above `OfflinePill` from `md`; the header press sits left
   of the account button below `md`. The panel is non-modal from `md`, a modal sheet below. The current screen is read
-  from the path and, on a deck, from the tab and view in the URL. Card details stacking is R2 gap 5 exactly.
+  from the path and, on a deck, from the builder's LIVE screen state, never the URL. `BuilderShell` changes the tab
+  with `setView`, Shopping with `setFilter` and Stats through `deckPanel`, and mirrors none of them to the address. It
+  publishes the current tab and view through a `BuilderScreenContext`, which R2·8's ? reads. Card details stacking is R2 gap 5 exactly.
 - **The tour (E18 to E22, R3 gaps 1, 4, 6, 13, 14).** `user_prefs.tour_seen_at timestamptz`, written once, only when null
   (`user_prefs` carries `user_data_touch`). Home's payload carries `tourDue` (`FIRST_RUN_TOUR_ENABLED` on, the checklist
   drawn, `tour_seen_at` null). The write moves the stamp, but flipping `FIRST_RUN_TOUR_ENABLED` moves nothing, so
@@ -159,7 +176,8 @@ Each of these closes a choice the handoff and the audits leave to engineering.
   (`src/components/commanders/guided-banner.tsx`) take `helpMeChoose:
   boolean`. The role cell's dash slot takes `onSuggest` under `tuningEnabled(env)` on a deck at its body size, and
   `consider →` keeps the slot when a shelf exists. `builder-shell` draws `balance mana →` and `Proposed cuts →` each on
-  its own switch; with the hub off each lands on the directly mounted panel, or `AnalysisEmpty` with no reading held.
+  its own switch; with the hub off each lands on the directly mounted panel's target (see The landing). Only N1 falls back to `AnalysisEmpty` with no reading
+  held.
   `MoneyCard` takes `overLimit: { count, limit } | null`, counted with `isOverLimit` over the rows `decklist.tsx`
   already uses, under `swapToolsEnabled(env)`. N1 and N3 land through `useToolLanding` (`?tool=suggested-changes`,
   `?tool=stand-ins`). **A tool's `?tool=` id is its registry id**, which is its moment id where it has one. The audits'
@@ -178,14 +196,14 @@ copy gaps (R2 gaps 2 and 14, R3 gaps 9, 10 and 16).
 |---|---|---|---|
 | R2·1a · The entry list moves | `aboutEntries` to `src/lib/copy/about-entries.ts`, a pure move with its importers repointed and the content hash unchanged | — | ~8 |
 | R2·1b · Entries | the three switches in the registry; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | R2·1a | ~12 |
-| R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares, Matchups and Stats for your decks; `pnpm probe:tool-landing` (below) for the deck tools | R2·1b | ~16 |
-| R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends and `/collection` (Find a deck); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests; `pnpm measure:friend-spares` run read-only on staging, its figure in the PR body; `probe:tool-landing` extended to these pages | R2·2 | ~16 |
+| R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares and Matchups; the panel targets with the hub off; `suppressMoment`; `pnpm probe:tool-landing` (below) for the deck tools | R2·1b | ~16 |
+| R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends, `/collection` (Find a deck) and `/decks?view=stats` (Stats for your decks, which lives in `DecksView`); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests; `pnpm measure:friend-spares` run read-only on staging, its figure in the PR body; `probe:tool-landing` extended to these pages | R2·2 | ~16 |
 | R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture, `shots.generated.ts`, the budget and coverage tests | R2·1b | ~6 plus images |
 | R2·5 · Tools | About's tabs; `ToolCard` in its five states, widths as drawn and heights a target, not fixed (R2 gap 13); the five groups at 1280 and the phone's sideways rows; Written for you, with the Overview line's switch edit (decision 3); the visit recorded on the Reference only | R2·3, R2·4 | ~14 |
 | R2·6a · Reference | entries by screen with the screens index; an opened entry with its frame; what's new; search over text; How it works last | R2·5 | ~12 |
 | R2·6b · The note and the banner | the note as the Reference's last row, its dialog at `md` and up and its sheet below (E17); the banner's new target (E14) | R2·6a | ~7 |
-| R2·7 · Retire the specimens | the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6a | deletions |
-| R2·8 · The ? | the rail item and the header press; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.`; `pnpm probe:help-panel` (below) | R2·6a | ~14 |
+| R2·7 · Retire the specimens | after Hugh turns `ABOUT_TOOLS_ENABLED` on in production: the switch's off branch, the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6b, the production flip | deletions |
+| R2·8 · The ? | the rail item and the header press; `BuilderScreenContext`; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.`; `pnpm probe:help-panel` (below) | R2·6a | ~14 |
 | R2·9 · The ? over card details | R2 gap 5's stack at `md` and up: the inert exemption, the layering, the Tab stop, the focus hand-off and Escape | R2·8 | ~6 |
 | R3·1a · Tour state | the switch in the registry; migration `tour_seen_at`; the spend action (written only when null); `tourDue` in Home's payload, with the cache-key test | R2·1b | ~8 |
 | R3·1b · The tour | the SVG overlay; `TourCard`; steps 1 to 6 on first-run Home, with step 6's fallback; `ThemePicker` `panel="tour"`; the visit taken; `pnpm probe:tour` (below) | R3·1a, R2·4, R2·6b | ~14 |
@@ -203,7 +221,7 @@ row's semicolons, unstacked.
 1. R2·1a, then R2·1b.
 2. Then R2·2, R2·4 and R3·1a in parallel.
 3. Then R2·3, R2·5, R2·6a and R2·6b in turn.
-4. Then R2·7 and R2·8 in parallel, then R2·9.
+4. Then R2·8, then R2·9. R2·7 waits for the production flip.
 5. R3·1b follows R2·4, R2·6b and R3·1a. R3·2 follows R3·1b.
 6. R3·3 follows R3·1b and the Friends Home PR, whichever lands last.
 
