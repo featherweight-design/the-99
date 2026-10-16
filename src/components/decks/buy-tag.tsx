@@ -118,7 +118,7 @@ function Tail({
           decimal point rather than on the word before it.
           FIGURE_SLOT is what that column actually needs — see the constant. */}
       <span
-        // `lg` reserves the slot from 1024px up only. Below it the Shopping row is two lines and
+        // `md` reserves the slot from 768px up only. Below it the Shopping row is two lines and
         // every pixel goes to the name, so the figure hugs the word (Hugh, 2026-09-26).
         className={reserveSlot === "md" ? "md:inline-block md:min-w-[46px] md:text-right" : undefined}
         style={{
@@ -374,7 +374,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         e.stopPropagation();
         if (pressState === "rest") onPress(e.currentTarget);
       }}
-      // The ring is the plate's, not the button's: below lg the button is the whole 44px stack.
+      // The ring is the plate's, not the button's: below md the button is the whole 44px hit.
       className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] md:before:hidden ${
         live ? "cursor-pointer" : "cursor-default"
       }`}

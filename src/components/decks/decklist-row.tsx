@@ -129,12 +129,10 @@ const FOLD = {
     plusMid: "hidden md:@min-[359px]:@max-[479px]:inline",
     plusTight: "hidden md:@max-[359px]:inline",
   },
-  // Shopping: every mark at the middle tier, and the `+N` too in the tight one.
+  // Shopping: every mark at the middle tier, and the `+N` too in the tight one (its only `+N` is the middle tier's).
   shopping: {
     all: "md:@max-[479px]:sr-only",
     plusMid: "hidden md:@min-[359px]:@max-[479px]:inline",
-    plusWide: "hidden",
-    plusTight: "hidden",
   },
 } as const;
 /** The availability marker's word drops to its glyph (and its count) at the middle tier in Shopping and the tight tier in All. */
@@ -373,8 +371,8 @@ export function DecklistRow({
   // column of 52px ones. Ragged is the failure the group boundary exists to
   // avoid; a little more space under one name is not.
   const inLandsGroup = card.cardTypeGroup === "Lands";
-  // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and an `over $X`, stacked
-  // on it below `lg` and beside it from `lg`. Shopping only, and only where the tools are on
+  // Over the deck's Shopping limit (swap tools): the buy tag gains an outline, and the words `over $X` ride its
+  // description and the key's item, never beside the price. Shopping only, and only where the tools are on
   // (`swapTools` is null otherwise).
   //
   // Never on a COMMANDER's Shopping row (H28): the stand-ins exist to cut the card, and a deck
@@ -616,9 +614,8 @@ export function DecklistRow({
     open(card.oracleId, siblings, undefined, { door: opensDoor, art: card.imageUri });
   }
 
-  // The buy tag, drawn alone or under `over $X` in the md-to-lg group. `reserveSlot` is the
-  // figure's own flag, not `inShopping`: the reserved slot exists to align the tag with the meta
-  // line, so with no meta line to align to there is nothing to reserve. From lg only, since below
+  // The buy tag. `reserveSlot` is the figure's own flag, not `inShopping`: the reserved slot exists to align the
+  // tag with the meta line, so with no meta line to align to there is nothing to reserve. From md only, since below
   // it the row is two lines and the figure hugs the word.
   const buyTag = (
     <BuyTag
@@ -644,7 +641,7 @@ export function DecklistRow({
         // Disabled while an undo for this card is in flight (A9): a second write would go stale.
         state: confirmOpen ? (gotIt.pending ? "pending" : "open") : gotIt.undoing.has(card.oracleId) ? "disabled" : "rest",
         cardName: fullName,
-        // Below lg the stack flips to `buy` over `over $X` with the feature on (finding 5).
+        // The words `over $X`, spoken in the tag's description (the outline is the sighted reader's form).
         under: overText,
       } : undefined}
     />
@@ -848,7 +845,7 @@ export function DecklistRow({
             answer, so a chip describing the copies competing for it contradicts
             the mark beside it, and the two views would disagree about one card
             one toggle apart. */}
-        {card.availability && tag !== "proxy" && (
+        {card.availability && availState !== "free" && tag !== "proxy" && (
           <span className={`inline-flex flex-none${withAt("mark")}`}>
           {/* The word folds to the glyph and its count at a narrow row (L3), and a glyph alone is a tooltip's job on a fine
               pointer: the marker's own spoken sentence, so the words stay one thing. */}

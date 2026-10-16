@@ -1956,6 +1956,13 @@ describe("DecklistRow, folding the marks", () => {
     expect(document.querySelector("[data-decklist-row]")!.parentElement!.className.split(/\s+/)).toContain("@container");
   });
 
+  it("draws no empty slot for a marker that draws nothing, which would add a flex gap before the tag", () => {
+    // A free card's availability is a summary the marker answers with null: its wrapper must not stand empty in the row.
+    const free = { ...(card as DeckDetailCard), owned: false, availability: { owned: 4, hard: 0, soft: 0, free: 4, claims: [] } };
+    renderRow(<DecklistRow deckId="d1" card={free} inShopping shoppingFigure={24} newestAsOf={null} />);
+    expect(Array.from(document.querySelectorAll("[data-decklist-row] span")).filter((el) => el.childElementCount === 0 && el.textContent === "" && el.className.includes("inline-flex flex-none"))).toHaveLength(0);
+  });
+
   it("folds the marker's word to its glyph, keeping a count and the spoken sentence", () => {
     const over = { ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -2, claims: [] } };
     renderRow(<DecklistRow deckId="d1" card={over} newestAsOf={null} />);
