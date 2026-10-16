@@ -14,6 +14,7 @@ BOARDS = {
     "b_deck": "R1 - Deck-Page.dc.html",
     "b_rows": "R1 - Rows.dc.html",
     "b_about": "The 99 - About · Card Search Entry.dc.html",
+    "b_opts": "R2 - Options.dc.html",
 }
 
 os.makedirs(OUT + "/art", exist_ok=True)
