@@ -44,9 +44,11 @@ export function useInviteWatch(tokens: readonly string[], onEnded: (ended: Invit
           const ended = left
             .map((t) => answered.get(t) ?? { token: t, open: false, friend: null })
             .filter((l) => !l.open);
-          if (ended.length > 0) {
+          // A watch that stopped while this answer was in flight records nothing: the watch that replaced it asks
+          // again, and reports what it finds.
+          if (ended.length > 0 && !stopped) {
             for (const l of ended) reported.current.add(l.token);
-            if (!stopped) latest.current(ended);
+            latest.current(ended);
           }
         }
       } catch {

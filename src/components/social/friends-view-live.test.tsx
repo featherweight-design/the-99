@@ -27,18 +27,20 @@ const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const fetchMock = vi.fn();
 
+const MO: Friend = { publicId: "p-mo", displayName: "Mo", since: NOW, commander: null };
+const view = (friends: Friend[] = [DAVE]) => (
+  <FriendsView
+    profile={{ publicId: "p-me", displayName: "Hugh", commander: null }}
+    friends={friends}
+    links={[]}
+    accepted={null}
+    origin="https://the-99.dev"
+    nowMs={NOW.getTime()}
+    maxLinks={10}
+  />
+);
 function draw() {
-  return render(
-    <FriendsView
-      profile={{ publicId: "p-me", displayName: "Hugh", commander: null }}
-      friends={[DAVE]}
-      links={[]}
-      accepted={null}
-      origin="https://the-99.dev"
-      nowMs={NOW.getTime()}
-      maxLinks={10}
-    />,
-  );
+  return render(view());
 }
 const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const answer = (open: boolean, friend: { publicId: string; displayName: string } | null) =>
@@ -117,5 +119,27 @@ describe("/friends watches a shown link", () => {
     await tick(10_000);
     act(() => window.dispatchEvent(new Event("focus")));
     expect(nav.refresh).toHaveBeenCalledTimes(2);
+  });
+  it("still draws the receipt when the redraw with the new friend lands before the poll's answer", async () => {
+    const { rerender } = draw();
+    await openDialog();
+    rerender(view([DAVE, MO]));
+    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    await tick(WATCH_MS);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+  });
+
+  it("keeps the receipt until a redraw lists the friend, and puts it away once a later one no longer does", async () => {
+    const { rerender } = draw();
+    await openDialog();
+    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    await tick(WATCH_MS);
+    rerender(view([DAVE]));
+    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    rerender(view([DAVE, MO]));
+    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    rerender(view([DAVE]));
+    expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
   });
 });

@@ -94,4 +94,17 @@ describe("useInviteWatch", () => {
     await act(async () => land({ ok: true, json: async () => ({ links: [{ token: A, open: false, friend: null }] }) }));
     expect(onEnded).not.toHaveBeenCalled();
   });
+  it("leaves a link for the next watch to report when an answer lands after the watched set changed", async () => {
+    const onEnded = vi.fn();
+    let land: (v: unknown) => void = () => {};
+    fetchMock.mockReturnValueOnce(new Promise((r) => { land = r; }));
+    const { rerender } = renderHook(({ t }) => useInviteWatch(t, onEnded), { initialProps: { t: [A] } });
+    await tick(WATCH_MS);
+    rerender({ t: [A, B] });
+    await act(async () => land({ ok: true, json: async () => ({ links: [{ token: A, open: false, friend: null }] }) }));
+    answer([{ token: A, open: false, friend: null }, { token: B, open: true, friend: null }]);
+    await tick(WATCH_MS);
+    expect(onEnded).toHaveBeenCalledTimes(1);
+    expect(onEnded).toHaveBeenCalledWith([{ token: A, open: false, friend: null }]);
+  });
 });

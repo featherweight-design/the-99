@@ -124,6 +124,10 @@ export function FriendsView({
   }));
   const [picking, setPicking] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(accepted);
+  // A receipt the watch made (below) is not in the URL, so the reconcile here does not reach it: it is put away
+  // once a redraw that listed its friend is followed by one that does not (the friendship ended). Until the first
+  // redraw lists them, it stands, since the refresh that brings their row may still be on its way.
+  const [watchReceiptListed, setWatchReceiptListed] = useState<boolean | null>(null);
   // A redraw that resolves a different friend (or none: the friendship ended) replaces the receipt; the same one
   // keeps a receipt the reader closed, closed.
   const acceptedId = accepted?.publicId ?? null;
@@ -131,6 +135,7 @@ export function FriendsView({
   if (acceptedId !== drawnAccepted) {
     setDrawnAccepted(acceptedId);
     setReceipt(accepted);
+    setWatchReceiptListed(null);
   }
   const [removing, setRemoving] = useState<string | null>(null);
   const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
@@ -140,6 +145,14 @@ export function FriendsView({
   const [drawnFriends, setDrawnFriends] = useState(friends);
   if (friends !== drawnFriends) {
     setDrawnFriends(friends);
+    if (receipt && watchReceiptListed !== null) {
+      const listed = friends.some((f) => f.publicId === receipt.publicId);
+      if (listed) setWatchReceiptListed(true);
+      else if (watchReceiptListed) {
+        setReceipt(null);
+        setWatchReceiptListed(null);
+      }
+    }
     setGone(new Set());
   }
   const [drawnLinks, setDrawnLinks] = useState(links);
@@ -180,18 +193,27 @@ export function FriendsView({
   // the friend row arrives without a refresh. A new friend turns the dialog into the receipt Accept draws; a
   // link that ended any other way (declined, revoked elsewhere, or a friend you already had) only redraws.
   const router = useRouter();
+  // Who was already a friend is judged against the list as it stood when each link started being watched, never
+  // the list at the answer: a focus redraw can land first and already hold the new friend.
+  const watched = shown ? [shown.token, ...open.map((l) => l.token)] : open.map((l) => l.token);
+  const watchedKey = watched.join(",");
   const listedIds = useRef(new Set<string>());
+  const before = useRef(new Map<string, Set<string>>());
   useEffect(() => {
     listedIds.current = new Set(friends.map((f) => f.publicId));
   }, [friends]);
+  useEffect(() => {
+    for (const t of watchedKey ? watchedKey.split(",") : []) if (!before.current.has(t)) before.current.set(t, listedIds.current);
+  }, [watchedKey]);
   const onEnded = useCallback((ended: InviteOutcome[]) => {
     router.refresh();
-    const made = ended.find((l) => l.friend && !listedIds.current.has(l.friend.publicId));
+    const made = ended.find((l) => l.friend && !(before.current.get(l.token) ?? listedIds.current).has(l.friend.publicId));
     if (!made?.friend) return;
     setReceipt(made.friend);
+    setWatchReceiptListed(listedIds.current.has(made.friend.publicId));
     setShown((s) => (s && ended.some((l) => l.token === s.token) ? null : s));
   }, [router]);
-  useInviteWatch(shown ? [shown.token, ...open.map((l) => l.token)] : open.map((l) => l.token), onEnded);
+  useInviteWatch(watched, onEnded);
   // Coming back to the window redraws the page, so anything that moved while it was away (a friend who accepted
   // on another device, a removal) arrives without a refresh.
   const focusedAt = useRef(0);
