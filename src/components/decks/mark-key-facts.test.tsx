@@ -143,6 +143,17 @@ describe("the key's combo entry", () => {
     expect(ids(entries)).not.toContain("combo");
   });
 
+  // A commander billed on Shopping is a row too: its mark is glossed even when no body row draws one.
+  it("names the combo mark for a commander's Shopping row", () => {
+    const entries = buildMarkKeyEntries({
+      cards: [card({ owned: true })],
+      commanderRows: [card({ oracleId: "cmd", owned: false, commander: true, comboPartner: { oracleId: "o-2", name: "Isochron Scepter" } } as Partial<DeckDetailCard>)],
+      filter: "shopping",
+      inCardView: false,
+    });
+    expect(ids(entries)).toContain("combo");
+  });
+
   it("draws no combo entry in Card view, whose tiles draw no combo mark", () => {
     const entries = buildMarkKeyEntries({ cards: [partnered], filter: "all", inCardView: true });
     expect(ids(entries)).not.toContain("combo");

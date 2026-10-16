@@ -532,8 +532,10 @@ export default async function DeckBuilderPage({
   const cards = detail.cards.map(withPrice).map((c) => ({ ...c, ...deckComboFields(c.oracleId, inDeckCombos) }));
   // The commanders carry a price for the same reason, and on the same rule: the Shopping list
   // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
-  const commander = withPrice(detail.commander);
-  const partner = detail.partner ? withPrice(detail.partner) : null;
+  const commander = { ...withPrice(detail.commander), ...deckComboFields(detail.commander.oracleId, inDeckCombos) };
+  const partner = detail.partner
+    ? { ...withPrice(detail.partner), ...deckComboFields(detail.partner.oracleId, inDeckCombos) }
+    : null;
   // Owned tiles only, for the reason the read above is scoped that way: an
   // unowned oracle id can never come back from the collection.
   //

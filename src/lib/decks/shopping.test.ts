@@ -126,6 +126,15 @@ describe("commanderShoppingRows", () => {
     expect(rows[0]).toMatchObject({ oracleId: "cmd", quantity: 1, owned: false, commander: true });
   });
 
+  // The combo mark rides the commander's row like any row's: its two-card partner in this deck.
+  it("carries the commander's in-deck combo partner onto its row", () => {
+    const partner = { oracleId: "p", name: "Isochron Scepter" };
+    const [row] = commanderShoppingRows(commander({ owned: false, comboPartner: partner, comboOtherPartners: 2 }), null, BODY);
+    expect(row).toMatchObject({ comboPartner: partner, comboOtherPartners: 2 });
+    const [plain] = commanderShoppingRows(commander({ owned: false }), null, BODY);
+    expect(plain.comboPartner).toBeNull();
+  });
+
   it("bills nothing for an owned commander with a copy to spare", () => {
     expect(commanderShoppingRows(commander({ owned: true, availability: yours }), null, BODY)).toEqual([]);
   });

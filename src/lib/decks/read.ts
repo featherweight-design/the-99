@@ -208,6 +208,10 @@ export type DeckCommander = {
   price?: PriceFact | null;
   /** Scryfall's converted cost, so a commander's Shopping row sorts by mana value like any row. */
   cmc?: number;
+  /** The commander's two-card combo partner in this deck, for its Shopping row's combo mark (`DeckDetailCard.comboPartner`). */
+  comboPartner?: { oracleId: string; name: string } | null;
+  /** How many OTHER in-deck partners that mark's tooltip is not naming. */
+  comboOtherPartners?: number;
 };
 
 export type DeckDetail = {

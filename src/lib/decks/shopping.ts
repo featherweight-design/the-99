@@ -96,6 +96,9 @@ export function commanderAsRow(c: DeckCommander): DeckDetailCard {
     auto: false,
     availability: c.availability ?? null,
     price: c.price ?? null,
+    // The combo mark, as on any row: the commander's two-card partner in this deck.
+    comboPartner: c.comboPartner ?? null,
+    ...(c.comboOtherPartners ? { comboOtherPartners: c.comboOtherPartners } : {}),
     manaCost: c.manaCost,
     imageUri: c.imageUri,
     // The decklist row's rule: an unowned card has no copy in hand to print a name.
