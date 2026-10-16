@@ -84,7 +84,7 @@
         {
           "clickRail": "Search all cards",
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "settle": 600
         }
       ],
@@ -102,7 +102,7 @@
         {
           "clickRail": "Search all cards",
           "searchType": "zqxzq",
-          "searchWait": "No card is named",
+          "searchWait": "No card is named “zqxzq”",
           "settle": 400
         }
       ],
@@ -120,7 +120,7 @@
         {
           "clickRail": "Search all cards",
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "searchPick": 0,
           "settle": 2500
         }
@@ -139,7 +139,7 @@
         {
           "clickRail": "Search all cards",
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "searchPick": 0,
           "settle": 2500
         },
