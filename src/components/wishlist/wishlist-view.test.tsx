@@ -64,8 +64,8 @@ describe("the list", () => {
     view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet", want: 3, have: 0 })] });
     const tiles = screen.getAllByTestId("wishlist-tile");
     expect(tiles).toHaveLength(2);
-    expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("want 2 · have 1");
-    expect(within(tiles[0]!).getByRole("button", { name: "View details for Sol Ring, want 2 · have 1" })).toBeInTheDocument();
+    expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("have 1 of 2");
+    expect(within(tiles[0]!).getByRole("button", { name: "View details for Sol Ring, have 1 of 2" })).toBeInTheDocument();
     expect(screen.getByText(wishlistCopy.page.meta(2))).toBeInTheDocument();
     expect(screen.queryByTestId("wishlist-empty")).toBeNull();
   });
@@ -84,7 +84,7 @@ describe("the list", () => {
     rerender(<WishlistView tiles={[tile({ want: 4 })]} notices={[]} hasFriend={false} />);
     const tiles = screen.getAllByTestId("wishlist-tile");
     expect(tiles).toHaveLength(1);
-    expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("want 4 · have 1");
+    expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("have 1 of 4");
   });
 
   it("sorts by name on request, newest first otherwise", () => {
@@ -151,15 +151,27 @@ describe("the search", () => {
     expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
   });
 
-  it("names each stepper by its card, and puts focus back in the field when a held step takes the stepper away", async () => {
+  it("floors the stepper at one more than held, so a step cannot remove the line", async () => {
     m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
-    m.setWant.mockResolvedValue({ ok: true, status: "held", want: 1, have: 1 });
+    view({ tiles: [tile()] });
+    const list = await search("sol");
+    const fewer = within(list).getByRole("button", { name: wishlistCopy.details.fewer });
+    expect(fewer).toHaveAttribute("aria-disabled", "true");
+    await act(async () => fireEvent.click(fewer));
+    expect(m.setWant).not.toHaveBeenCalled();
+    expect(within(list).getByTestId("want-stepper")).toBeInTheDocument();
+  });
+
+  it("names each stepper by its card, and puts focus back in the field when a held answer takes the stepper away", async () => {
+    // The collection reached the want elsewhere while the result stood: the write answers `held` and the line goes.
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });
+    m.setWant.mockResolvedValue({ ok: true, status: "held", want: 3, have: 3 });
     view({ tiles: [tile()] });
     const list = await search("sol");
     expect(within(list).getByRole("group", { name: "Sol Ring" })).toBeInTheDocument();
-    const fewer = within(list).getByRole("button", { name: wishlistCopy.details.fewer });
-    fewer.focus();
-    await act(async () => fireEvent.click(fewer));
+    const more = within(list).getByRole("button", { name: wishlistCopy.details.more });
+    more.focus();
+    await act(async () => fireEvent.click(more));
     expect(within(list).getByRole("button", { name: wishlistCopy.page.search.add })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: /search/i })).toHaveFocus();
   });

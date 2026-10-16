@@ -221,6 +221,7 @@ export function WishlistSearch({
                         <span aria-hidden className="hidden font-mono text-[11px] text-[color:var(--fg-muted)] md:inline md:text-[12.5px]">{copy.details.want}</span>
                         <WantStepper
                           value={want}
+                          min={r.owned + 1} // one more than held, so a step never removes the line (as card details)
                           onChange={(next) => void step(r, next)}
                           fewerLabel={copy.details.fewer}
                           moreLabel={copy.details.more}

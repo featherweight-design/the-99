@@ -607,12 +607,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/wishlist',
     width: 'plate',
     caption:
-      'Want a card that no deck is asking for yet? Put it on your wishlist. Press “Add to wishlist” in any card’s details, or search on the “Wishlist” tab of your Collection, and set how many you want. Any printing counts.\n\nOnce your Collection holds that many, the card leaves the list by itself, and the tab tells you once what left. Nothing piles up to clear.\n\nYour friends can see your wishlist, and you can see theirs: open a friend from “Friends”.',
+      'Want a card that no deck is asking for yet? Put it on your wishlist. Press “Add to wishlist” in any card’s details, or search on the “Wishlist” tab of your Collection, and set how many you want in all. Any printing counts.\n\nOnce your Collection holds that many, the card leaves the list by itself, and the tab tells you once what left. Nothing piles up to clear.\n\nYour friends can see your wishlist, and you can see theirs: open a friend from “Friends”.',
     captionLineSwitches: {
       'Your friends can see your wishlist, and you can see theirs: open a friend from “Friends”.': 'SOCIAL_FRIENDS_ENABLED',
     },
     keys: [
-      '“Add to wishlist” turns into a counter right where you pressed it, starting at one more than you have.',
+      '“Add to wishlist” turns into a counter right where you pressed it: the copies you want in all, never fewer than one more than you have.',
       'Copies in your decks count toward what you have.',
       'It stays apart from Shopping: a deck’s missing cards stay on that deck’s list.',
       'Friends see each card and how many you want, never how many you own.',

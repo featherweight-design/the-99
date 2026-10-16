@@ -78,6 +78,29 @@ describe("on the list", () => {
     expect(screen.getByRole("button", { name: c.more })).not.toHaveFocus();
   });
 
+  it("labels the stepper as the want in all, with what the collection holds after it", () => {
+    mount(3, 2);
+    expect(screen.getByText("want in all")).toBeInTheDocument();
+    expect(screen.getByText("you have 2")).toBeInTheDocument();
+  });
+
+  it("floors − at one more than held: at the floor it is disabled and writes nothing, so the line stays", () => {
+    mount(2, 1);
+    const fewer = screen.getByRole("button", { name: c.fewer });
+    expect(fewer).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(fewer);
+    expect(set).not.toHaveBeenCalled();
+    expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("2");
+  });
+
+  it("above the floor − steps down, never past it", () => {
+    mount(3, 1);
+    const fewer = screen.getByRole("button", { name: c.fewer });
+    expect(fewer).not.toHaveAttribute("aria-disabled");
+    fireEvent.click(fewer);
+    expect(set).toHaveBeenCalledWith(CARD, 2);
+  });
+
   it("a step writes the count and shows the server's answer, not its own guess", async () => {
     let answer!: (v: unknown) => void;
     set.mockReturnValue(new Promise((r) => { answer = r; }));
@@ -195,12 +218,12 @@ describe("writes never overlap", () => {
 });
 
 describe("focus when the line goes", () => {
-  it("a step down to what the collection holds puts focus on Add", async () => {
-    set.mockResolvedValue({ ok: true, status: "held", have: 1 });
+  it("a held answer (the collection reached the want elsewhere) puts focus on Add", async () => {
+    set.mockResolvedValue({ ok: true, status: "held", have: 3 });
     mount(2, 1);
-    const fewer = screen.getByRole("button", { name: c.fewer });
-    fewer.focus();
-    fireEvent.click(fewer);
+    const more = screen.getByRole("button", { name: c.more });
+    more.focus();
+    fireEvent.click(more);
     const addButton = await screen.findByRole("button", { name: c.add });
     await waitFor(() => expect(addButton).toHaveFocus());
   });
