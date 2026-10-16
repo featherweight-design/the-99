@@ -1,7 +1,8 @@
 /**
  * A sender's own invite count (plan `2026-10-16-invites.md`): their stock and the rows that may still hold, read in
  * one repeatable-read snapshot (so a spend or an admin Set committing between the two reads cannot mix two moments)
- * and counted by `inviteCount`. No caller beyond its tests and the probe until the sender's PRs.
+ * and counted by `inviteCount`. Never `accessMode: "read only"`: on the pooled connection it breaks the next transaction
+ * (`draft-state-snapshot.test.ts`). No caller beyond its tests and the probe until the sender's PRs.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
@@ -23,6 +24,6 @@ export async function loadInviteCount(viewerId: string, now: Date = new Date()):
       })
       .from(inviteReservations)
       .where(and(eq(inviteReservations.userId, viewerId), inArray(inviteReservations.state, [...OPEN_STATES]))),
-  ] as const, { isolationLevel: "repeatable read", accessMode: "read only" });
+  ] as const, { isolationLevel: "repeatable read" });
   return inviteCount(balance[0]?.held ?? 0, rows as HoldingRow[], now);
 }
