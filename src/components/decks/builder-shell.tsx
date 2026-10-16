@@ -1476,8 +1476,9 @@ export function BuilderShell({
     copy: momentsCopy.proposedCuts(built - bodySize),
     fallback: true,
   });
+  // A colorless deck gets no Mana Balance moment anywhere: the tool would only say there is no color to count.
   const manaTabMoment = useMomentAnchor("mana-balance", {
-    eligible: atSize && offAnalysis,
+    eligible: atSize && offAnalysis && coloredPip,
     copy: momentsCopy.manaBalance,
     fallback: true,
   });
@@ -1785,7 +1786,7 @@ export function BuilderShell({
               onBalanceMana={tuningHubEnabled && manaBalanceEnabled && coloredPip
                 ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
                 : undefined}
-              balanceMoment={atSize}
+              balanceMoment={atSize && coloredPip}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
