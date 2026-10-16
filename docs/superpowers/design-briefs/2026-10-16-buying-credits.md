@@ -7,7 +7,7 @@
 - `AGENTS.md`, under "Paid credits in the ledger" and "Stripe, the webhook half".
 - The code: `src/lib/model/allowance-rule.ts` (`Allowance`, `hasCredit`, `freeRoom`, `freeCount`), `src/lib/model/credit-rule.ts` (paid lots), `src/lib/payments/` (packs, fulfilment), `src/lib/copy/credits.ts` and `src/components/ui/credits-text.tsx` (the one credit line every spending surface draws).
 
-**What this brief asks.** Where buying lives, every state each piece has, and how each reads on phone and desktop. One Design round is proposed; the scope's §8 split into U1 and U2 is an engineering split, not a Design one.
+**What this brief asks.** Where buying lives, every state each piece has, and how each reads on phone and desktop. One Design round is proposed; the scope's §9 split into U1 and U2 is an engineering split, not a Design one.
 
 **No payment form is drawn.** Paying happens on Stripe's hosted Checkout page, which we do not design. Card details never touch this app. Our screens are everything before the hand-off and everything after the return.
 
@@ -62,7 +62,7 @@ Every spending surface draws one credit line through `CreditsText`: `4 of 5 left
 - **Out of free credits, paid credits left:** the press is NOT disabled; the next run spends a paid credit. Draw how the line says that a press now spends a paid credit, and how many are left (for example plan and pack together, or split). Today this state draws the free count at 0 and nothing else.
 - **Daily paid limit reached:** paid credits are banked but today's 20 are used. The press is disabled; the line says when it reopens. Different from "out of credits": the player has credits and must not be told they need to buy more.
 - **Blocked by a dispute:** a run can still spend free and banked credits that survived the revoke; only buying is blocked. Draw nothing new on the credit line for this; the block shows on the billing page (§5).
-- **Surfaces carrying the line today:** Suggested changes (tuning panel), the deck synopsis (overview), Proposed cuts, Help me choose's read (fits view), the intake read. Phone and desktop for each; engineering will hand over an inventory of routes and widths.
+- **Surfaces carrying the line today:** Suggested changes (tuning panel), the deck synopsis (overview), Proposed cuts, Help me choose's read (fits view), the intake read, and the analysis banner, method notice, empty analysis and read band. Phone and desktop for each; engineering will hand over an inventory of routes and widths.
 
 ### 2. The Credits and billing page
 
