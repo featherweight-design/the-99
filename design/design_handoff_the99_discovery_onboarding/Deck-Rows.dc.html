@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R1 · M5–M7 on rows and Shopping</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#95A4A6;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #2E3340;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9}
+.h .t{font-size:19px;font-weight:600;color:#C6D2D3}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 28px;max-width:1710px}
+.facts span{font-size:13px;line-height:1.5;color:#B3C0C2}
+.facts .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7C8A8C}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C;margin-bottom:8px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:3380px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R1 · card rows and Shopping · 1280 and 390 · Kaldheim</span>
+    <h2 class="disp" style="margin:0;font-size:28px">On a dense row the moment points at a mark the key already explains</h2>
+    <p class="cap">Rows as shipped today: one 34px line at every width (L1, and the phone since 2026-10-16). At 390 a row sits at the tight tier, so its marks fold and the availability word drops to its glyph. A row moment waits until the row is on screen: these frames are scrolled to it. The bubble covers the rows around the control and moves none of them. Near the right edge it is clamped 16px in, with the nib kept on the control.</p>
+  </div>
+
+  <section class="sec">
+    <div class="h"><span class="id">M5</span><span class="t">Cheaper stand-ins · the first Shopping row over the deck’s limit</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The first Shopping row whose price is over the deck’s limit: its buy tag is outlined (<span class="mono">over $10</span>).</span>
+      <span>That row’s <span class="mono">⇄</span> press (the other-ways press).</span>
+      <span><span class="mono">SWAP_TOOLS_ENABLED</span> · <span class="mono">stand-ins</span></span>
+      <span>Above the row, so it doesn’t cover the row’s own tag. Pressing ⇄ opens the stand-ins sheet as shipped.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · Shopping, scrolled to the rows</div><dc-import name="DeckDesk" state="full" view="shopping" moment="m5" scroll="300" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · Shopping, scrolled to the rows</div><dc-import name="DeckPhone" state="full" view="shopping" moment="m5" scroll="520" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M6</span><span class="t">Friends’ spares · the first spare marker the player sees</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The first spare marker on screen, on the first row that draws one.</span>
+      <span>That row’s other-ways press holding the spare glyph.</span>
+      <span><span class="mono">SOCIAL_FRIENDS_ENABLED</span> · <span class="mono">friend-spares</span></span>
+      <span>Pressing it opens the spares sheet (<span class="mono">Friends with a spare</span>) as shipped. Spares are view-only, so there is nothing to spend or change.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · Shopping, scrolled to the rows</div><dc-import name="DeckDesk" state="full" view="shopping" moment="m6" scroll="300" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · Shopping, scrolled to the rows</div><dc-import name="DeckPhone" state="full" view="shopping" moment="m6" scroll="480" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M7</span><span class="t">Card assignments · the first contested copy</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The first contested copy a list draws: here <span class="mono">none free</span>, the copy is held by another deck.</span>
+      <span>That row’s availability marker: the word at 1280, the glyph and count at 390.</span>
+      <span>None · no entry yet (<span class="mono">availability</span> is nearest; Hugh’s call)</span>
+      <span>The chooser itself (<span class="mono">Give the copy to</span>) lives on the import summary, the changes page and the I got it receipt, so the line explains the marker and says where the choice is made (G3).</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · All, scrolled to the row</div><dc-import name="DeckDesk" state="under" moment="m7" scroll="290" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · All, scrolled to the row</div><dc-import name="DeckPhone" state="under" moment="m7" scroll="560" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":3380}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

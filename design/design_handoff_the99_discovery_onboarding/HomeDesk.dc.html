@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Home at 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:1280px;height:860px;display:flex;background:#121217;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box">
+  <dc-import name="Rail" active="home" h="858" hint-size="62px,858px"></dc-import>
+  <main style="flex:1;min-width:0;position:relative;overflow:hidden">
+    <div style="padding:22px 26px 0;display:flex;align-items:flex-end;gap:16px">
+      <div style="flex:1"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:#7C8A8C;margin-bottom:7px">1,418 CARDS · READ TODAY</div><h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:28px;line-height:1">Welcome back</h1></div>
+      <span style="height:32px;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;color:#B3C0C2">↻ Update collection</span>
+      <span style="height:32px;display:flex;align-items:center;padding:0 14px;border-radius:8px;background:#C6D2D3;color:#121217;font-size:12.5px;font-weight:600">New deck</span>
+    </div>
+    <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+      <div role="region" aria-label="New in the app" style="margin:18px 26px 0;min-height:46px;padding:7px 8px 7px 14px;border-radius:10px;border:1px solid #2E3340;background:#181920;display:flex;align-items:center;gap:12px">
+        <span style="flex:none;width:22px;height:22px;border-radius:6px;background:rgba(92,134,201,.16);border:1px solid rgba(92,134,201,.45);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><span style="width:7px;height:7px;background:#5C86C9;transform:rotate(45deg)"></span></span>
+        <span style="flex:1;font-size:13.5px;color:#B3C0C2"><span style="color:#C6D2D3">2 new in About:</span> Scanning your cards, Commander sets on the way. <span style="color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px">Show me</span></span>
+        <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#7C8A8C;font-size:13px">✕</span>
+      </div>
+    </sc-if>
+    <div style="padding:20px 26px 26px;display:flex;gap:20px;align-items:flex-start">
+      <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:11px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C">READY TO BUILD</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+          <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
+            <div style="border-radius:14px;border:1px solid #1A1F2B;background:#1A1B22;overflow:hidden">
+              <div style="position:relative;height:288px"><img src="{{ h.art }}" alt="" style="width:100%;height:288px;object-fit:cover;display:block"><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(26,27,34,.95))"></div>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:12px"><div style="font-family:'Metamorphous',serif;font-size:18px">{{ h.name }}</div><div style="display:flex;align-items:center;margin-top:4px"><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#B3C0C2">{{ h.type }}</span><span style="height:22px;display:flex;align-items:center;padding:0 7px;border-radius:7px;background:#121217;border:1px solid #2E3340;font-family:'IBM Plex Mono',monospace;font-size:10.5px">{{ h.fit }}<span style="color:#7C8A8C">/100</span></span></div></div>
+              </div>
+              <div style="padding:14px;border-top:1px solid #1A1F2B;display:flex;flex-direction:column;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">{{ h.fits }} of your cards fit</span><span style="height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#C6D2D3;color:#121217;font-size:12.5px;font-weight:600">See the pool</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center"><span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">12 more scored 70 or better</span><span style="height:32px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;color:#B3C0C2">All commanders</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C">PICK UP WHERE YOU LEFT OFF</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#5F6D6E">last touched</span></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <sc-for list="{{ resume }}" as="r" hint-placeholder-count="2">
+            <div style="position:relative;flex:0 0 calc(50% - 6px);height:72px;border-radius:12px;border:1px solid #1A1F2B;background:#1A1B22;overflow:hidden;box-sizing:border-box">
+              <img src="{{ r.art }}" alt="" style="position:absolute;left:0;top:0;width:99px;height:72px;object-fit:cover">
+              <div style="position:absolute;left:116px;right:18px;top:8px;display:flex;flex-direction:column;gap:3px"><div style="display:flex"><span style="flex:1;font-family:'Metamorphous',serif;font-size:14.5px">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5F6D6E">{{ r.stamp }}</span></div><div style="display:flex;align-items:center;gap:8px"><span style="height:19px;display:flex;align-items:center;padding:0 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;{{ r.pill }}">{{ r.status }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#B3C0C2">{{ r.cmd }}</span></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:0 0 316px;display:flex;flex-direction:column;gap:11px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C;margin-top:4px">COMMITMENTS</span>
+        <div style="border-radius:14px;border:1px solid #1A1F2B;background:#1A1B22;padding:14px;display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#B3C0C2"><span>Cards in use</span><span style="font-family:'IBM Plex Mono',monospace;color:#5C86C9">214 of 1,418</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#B3C0C2"><span>Spoken for twice</span><span style="font-family:'IBM Plex Mono',monospace;color:#C6533F">2 cards</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#B3C0C2"><span>To buy, all decks</span><span style="font-family:'IBM Plex Mono',monospace;color:#C6D2D3">23 · $214.60</span></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><span style="height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;color:#B3C0C2">Review commitments</span><span style="height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;color:#B3C0C2">Shop all decks</span></div>
+        </div>
+        <sc-if value="{{ card }}" hint-placeholder-val="{{ true }}">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C;margin-top:4px">FRIENDS</span>
+          <div style="position:relative;border-radius:14px;border:1px solid #1A1F2B;background:#1A1B22;overflow:hidden">
+            <div style="position:relative;height:132px;background:radial-gradient(ellipse at 50% 60%,#22232B 0,#1A1B22 70%)">
+              <span style="position:absolute;left:50%;top:58%;width:196px;height:66px;transform:translate(-50%,-50%);border-radius:999px;border:1px dashed #424755;background:#16171D"></span>
+              <span style="position:absolute;left:50%;top:6px;width:42px;height:42px;margin-left:-21px;border-radius:999px;border:1.5px dashed #424755;background:#16171D;box-sizing:border-box"></span>
+              <span style="position:absolute;left:34px;top:58%;width:42px;height:42px;margin-top:-21px;border-radius:999px;border:1.5px dashed #424755;background:#16171D;box-sizing:border-box"></span>
+              <span style="position:absolute;right:34px;top:58%;width:42px;height:42px;margin-top:-21px;border-radius:999px;border:1.5px dashed #424755;background:#16171D;box-sizing:border-box"></span>
+              <img src="/_blob/2514dcb4e949cf9c978ea537242a7d8f" alt="Your seat: Sai, Master Thopterist" style="position:absolute;left:50%;bottom:6px;width:52px;height:52px;margin-left:-26px;border-radius:999px;object-fit:cover;box-shadow:0 0 0 2px #121217,0 0 0 3px #5C86C9">
+            </div>
+            <button type="button" aria-label="Dismiss" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border:0;padding:0;border-radius:6px;background:transparent;color:#7C8A8C;font-size:13px">✕</button>
+            <div style="padding:12px 14px 14px;border-top:1px solid #1A1F2B;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14.5px;font-weight:600">Play with friends</span>
+              <span style="font-size:12.5px;line-height:1.5;color:#B3C0C2">Add the people at your table. Seat them when you log a game, and see their spares when you shop.</span>
+              <span style="margin-top:6px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;font-weight:600;color:#C6D2D3">Add a friend</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"card":{"editor":"boolean","default":true},"banner":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const on = (v, d) => v === undefined ? d : !(v === false || v === 'false');
+    const pill = (ink, dashed) => `border:1px ${dashed ? 'dashed' : 'solid'} ${ink};background:color-mix(in srgb, ${ink} 16%, #121217);color:${ink}`;
+    return {
+      card: on(this.props.card, true), banner: on(this.props.banner, false),
+      heroes: [
+        { name: 'Zimone, Infinite Analyst', type: 'Legendary Creature — Human Wizard', fit: '84', fits: '212', art: '/_blob/1e7a14bfc4e03333d6be2fb3aadde14b' },
+        { name: 'Giada, Font of Hope', type: 'Legendary Creature — Angel', fit: '81', fits: '198', art: '/_blob/524ec1c0004c4ef11a99d742a5be1ab7' }
+      ],
+      resume: [
+        { name: 'Sai’s Workshop', stamp: 'played 2d ago', status: 'To buy', pill: pill('#5C86C9'), cmd: 'Sai, Master Thopterist', art: '/_blob/d668d776a53822c47ab4a96b849bee70' },
+        { name: 'Dina’s Garden', stamp: 'edited 5d ago', status: 'Building', pill: pill('#C6D2D3'), cmd: 'Dina, Essence Brewer', art: '/_blob/de928b813fe266dca8826e7305ccdd1d' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

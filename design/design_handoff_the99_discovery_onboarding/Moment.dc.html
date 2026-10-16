@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · the moment bubble</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div role="note" aria-label="{{ aria }}" style="{{ box }}">
+  <sc-if value="{{ up }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="{{ nibUp }}"></span></sc-if>
+  <sc-if value="{{ down }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ nibDown }}"></span></sc-if>
+  <sc-if value="{{ left }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ nibLeft }}"></span></sc-if>
+  <span aria-hidden="true" style="flex:none;width:6px;height:6px;background:#5C86C9;transform:rotate(45deg);margin-top:7px"></span>
+  <span style="flex:1;min-width:0"><b style="color:#C6D2D3;font-weight:600">{{ tool }}</b> {{ line }}</span>
+  <button type="button" aria-label="Dismiss" style="{{ x }}">✕</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tool":{"editor":"text","default":"Top off"},"line":{"editor":"text","default":"ranks your own cards for the last 12 slots. Nothing is added until you say so."},"nib":{"editor":"enum","options":["up","down","left","none"],"default":"up"},"nibx":{"editor":"int","default":94},"w":{"editor":"int","default":300},"phone":{"editor":"boolean","default":false},"$preview":{"width":360,"height":96}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const phone = p.phone === true || p.phone === 'true' || p.phone === '1';
+    const w = Number(p.w ?? (phone ? 358 : 300));
+    const nib = p.nib ?? 'up';
+    const nx = Number(p.nibx ?? 94);
+    const box = `position:relative;box-sizing:border-box;width:${w}px;display:flex;gap:10px;align-items:flex-start;` +
+      `background:#2D2E35;border:1px solid #2E3340;border-radius:10px;padding:10px ${phone ? 0 : 4}px 10px 12px;` +
+      `box-shadow:0 12px 30px rgba(0,0,0,.45);font-family:'IBM Plex Sans',sans-serif;font-size:${phone ? 13.5 : 13}px;line-height:1.45;color:#B3C0C2;text-align:left;white-space:normal;letter-spacing:normal;text-transform:none;font-weight:400`;
+    const nibBase = `position:absolute;left:${nx}px;width:10px;height:10px;background:#2D2E35;transform:rotate(45deg);`;
+    const nibUp = nibBase + 'top:-6px;border-left:1px solid #2E3340;border-top:1px solid #2E3340';
+    const nibDown = nibBase + 'bottom:-6px;border-right:1px solid #2E3340;border-bottom:1px solid #2E3340';
+    const nibLeft = `position:absolute;top:${nx}px;left:-6px;width:10px;height:10px;background:#2D2E35;transform:rotate(45deg);border-left:1px solid #2E3340;border-bottom:1px solid #2E3340`;
+    const x = phone
+      ? "flex:none;width:44px;height:44px;margin:-12px 0;border:0;padding:0;background:transparent;color:#7C8A8C;font-size:14px;border-radius:8px;font-family:'IBM Plex Sans',sans-serif"
+      : "flex:none;width:28px;height:28px;margin-top:-5px;border:0;padding:0;background:transparent;color:#7C8A8C;font-size:13px;border-radius:6px;font-family:'IBM Plex Sans',sans-serif";
+    return { tool: p.tool ?? 'Top off', line: p.line ?? '', box, nibUp, nibDown, nibLeft, up: nib === 'up', down: nib === 'down', left: nib === 'left', x, aria: (p.tool ?? 'Top off') + ', a tip' };
+  }
+}
+</script>
+</body>
+</html>
