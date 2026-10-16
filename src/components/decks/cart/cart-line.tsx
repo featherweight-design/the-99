@@ -9,6 +9,7 @@ import type { SelectedLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { OtherWaysPress } from "../../social/spare-markers";
 
 /**
  * The line's figure as one fact for the shared tag: the priced copies' sum (audit finding 9), each
@@ -48,6 +49,10 @@ export function CartLine({
   newestAsOf: Date | null;
 }) {
   const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
+  const fact = lineFact(line, newestAsOf);
+  // What the spares-only modal draws of the line: its card, art and the line's figure.
+  // A cart line carries the oracle name and no printing, so no printed name stands in for it.
+  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: null, imageUri: line.imageUri ?? null, price: fact };
   // I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted).
   const gotIt = useCartGotIt();
   const id = line.oracleId;
@@ -97,8 +102,11 @@ export function CartLine({
           <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.list.addedThisVisit(added)}</span>
         ) : null}
       </div>
-      <span className="mt-[3px] flex-none">
-        <BuyTag variant="row" reserveSlot price={lineFact(line, newestAsOf)} newestAsOf={newestAsOf} press={press} />
+      {/* S5: the spare glyph before the tag while a friend holds a spare, opening the spares-only modal. The cart has
+          no stand-ins, so the press never holds ⇄. */}
+      <span className="mt-[3px] flex flex-none items-center gap-[8px]">
+        <OtherWaysPress card={spareCard} standIn={false} standInAria="" limitFigure="" className="-my-[9px] md:my-0" />
+        <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} press={press} />
       </span>
     </li>
   );

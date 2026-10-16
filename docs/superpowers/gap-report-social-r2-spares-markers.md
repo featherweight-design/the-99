@@ -25,3 +25,10 @@ Agent 2 (verify) reported 3 visual gaps and 2 state gaps. Two visual gaps were f
 4. **A spare unshared mid-visit stays drawn until the next load.** The provider reads once per set of cards, and the
    spares-only modal draws that read. Spares are view-only and the stand-ins modal re-reads its own card, so the cost is
    one stale glyph; a re-read on every open would put a request behind each press.
+
+## PR B (the cart, S5)
+
+Checked against the table's cart section: the glyph-only press before each line's buy tag, the spares-only modal
+(hosted inside the cart's card-detail provider, which its card name opens), the key item beside the view switch in
+either view, and nothing at all with the switch off. No gaps. The contact sheet is
+`docs/superpowers/inventories/social-r2-spares-cart.json`, at 390 and 1300.
