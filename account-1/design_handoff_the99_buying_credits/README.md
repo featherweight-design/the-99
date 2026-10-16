@@ -18,9 +18,16 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-buying-credits.md` (
 | `R1 - Checkout-Return.dc.html` | §4 · R1–R6. |
 | `R1 - Blocked-and-Off.dc.html` | §5 (B1) and §6 (O1–O4). |
 | `R1 - Menu-and-Delete.dc.html` | §2's entry (A1–A3) and §7 (D1–D2). |
+| `R1b - Themes.dc.html` | The main screens in Low Sun, Witching Hour and First Frost. |
 | `STATES-buying-credits.md` | The state matrix, with what each state must not do. |
 | `READINESS.md` | The verdict and what blocks the build. |
 | `buying-credits · copy strings.ts` | Every new string, for /copy-review. |
+
+## R1b (Hugh's notes, 2026-10-16)
+
+- **Plan and pack cards are the same height wherever they sit side by side on desktop** (Billing-Page, Plan-and-Cancel, Checkout-Return, Blocked-and-Off, Themes), with each card's buy press pinned to its foot so the presses line up. Measured: every pair equal in height and top edge.
+- **Themes:** `R1b - Themes.dc.html` draws the Credits page, the offers, the out-of-credits line, the cancelled plan, the deletion warning and the desktop page in Low Sun (Amonkhet, the default), Witching Hour (Eldraine) and First Frost (Kaldheim), from each theme's shipped tokens and display face. Every color on these boards is now a theme token, including the plan and pack card fan, which R1 drew in fixed Neon Rain hexes.
+- Everything else approved as drawn. Three choices remain (listed at the top of the main board): cancel A or B, the menu entry A1 or A3, and the expiry lead time.
 
 ## The three open items, called
 

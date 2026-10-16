@@ -52,6 +52,14 @@ GAPS = [
     ("G11", "Every new string is a placeholder in <code>buying-credits · copy strings.ts</code>, for /copy-review.", "Note"),
 ]
 
+DECIDE = (
+    '<div class="note" style="max-width:1580px;border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,#111319)">'
+    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: three choices</b><ul>'
+    '<li><b>1 · Cancel: inline with undo, or a confirm sheet.</b> Board <code>§3 · The plan and cancelling it</code>, bottom section <code>Your pick: inline (A) or a confirm (B)</code>. Option A is what every other board draws.</li>'
+    '<li><b>2 · Where the menu entry sits.</b> Board <code>Menu entry and §7</code>, frames <code>A1</code> (a line under your email, the call) and <code>A3</code> (a new menu row, as the brief proposed).</li>'
+    '<li><b>3 · How early the expiry warning shows.</b> Drawn at 3 days. Board <code>§3 · The plan and cancelling it</code>, frame <code>K4</code>, and <code>§1 · The credit line</code>, frame <code>L7</code>. A number is enough.</li>'
+    '</ul><p class="cap" style="margin-top:8px">Theme check: board <code>R1b · Themes</code> shows the main screens in Low Sun, Witching Hour and First Frost.</p></div>')
+
 BOARDS = [
     ("R1 - Credit-Line", "§1 · the line in every state (L1–L8) on the CreditButton, 390 and desktop; the grammar"),
     ("R1 - Surfaces", "§1 · the line in place on the outline press and the synopsis row; the surface inventory"),
@@ -60,6 +68,7 @@ BOARDS = [
     ("R1 - Checkout-Return", "§4 · processing, added (pack, plan), still processing, cancelled, a re-read failed"),
     ("R1 - Blocked-and-Off", "§5 and §6 · blocked; switched off with nothing bought; the reduced page"),
     ("R1 - Menu-and-Delete", "§2’s entry and §7 · the menu line, the row option, the Manage account interstitial"),
+    ("R1b - Themes", "Round 1b · the main screens in Low Sun, Witching Hour and First Frost"),
 ]
 
 
@@ -73,7 +82,7 @@ def board():
                    "Brief: <code>docs/superpowers/design-briefs/2026-10-16-buying-credits.md</code>. Rulings closed, not reopened. "
                    "<b>The answer in one line:</b> when a reader runs out, the credit line they already read offers <code>Get more credits</code>; it leads to one Credits page "
                    "that shows what they have in the order it’s spent, sells the plan and a pack with their terms said before the press, and lets them cancel in one tap.")
-        + strip
+        + DECIDE + strip
         + '<div class="sec"><h3>The three open items, called</h3>' + table(CALLS, ["Open item", "Called", "Boards"]) + '</div>'
         + '<div class="sec"><h3>Rulings, and where each is honoured</h3>' + table(RULINGS, ["Ruling", "On screen", "Frames"]) + '</div>'
         + '<div class="sec"><h3>Constraints</h3>' + table(CONSTRAINTS, ["Constraint", "How"]) + '</div>'

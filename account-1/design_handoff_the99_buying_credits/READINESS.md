@@ -18,10 +18,12 @@
 - `Get more credits` sits on its own line under the credit line, only when nothing can be spent and payments are on.
 - The daily paid line shows on `/credits` from 15 of 20; the expiry warning 3 days out.
 
-**For Hugh**
+**R1b (2026-10-16):** card heights matched side by side on desktop; themes board added. Hugh approved everything else as drawn.
+
+**For Hugh** (also at the top of the main board, with the board and frame for each)
 1. **G10 · Cancel, A or B.** A is drawn everywhere. B adds one sheet with the same words.
 2. **G9 · Expiry lead time.** 3 days, as engineering proposed. Another number changes no drawing.
-3. **The menu entry** breaks no rule as called, but it's a new kind of line in the identity block. If you'd rather have the row (A3) despite the standing rule, say so.
+3. **The menu entry**, A1 (the call) or A3, on Menu-and-Delete.
 
 **Settle in the plan** (README gaps G1–G8)
 1. `creditsCopy` additions and the `Allowance` fields they need (paid used today, the paid limit, when paid is back, the plan's expiry).

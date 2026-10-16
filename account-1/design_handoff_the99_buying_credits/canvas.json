@@ -14,7 +14,7 @@
    "x": 0,
    "y": 0,
    "w": 1700,
-   "h": 2727,
+   "h": 2958,
    "title": "Buying credits R1 · calls, rulings, gaps"
   },
   "Credit-Line.dc.html": {
@@ -65,6 +65,13 @@
    "w": 2770,
    "h": 4187,
    "title": "Menu entry and §7 · the deletion warning"
+  },
+  "Themes.dc.html": {
+   "x": 5340,
+   "y": 0,
+   "w": 3600,
+   "h": 3092,
+   "title": "R1b · Themes: Low Sun, Witching Hour, First Frost"
   }
  },
  "order": [
@@ -75,7 +82,8 @@
   "Plan-and-Cancel.dc.html",
   "Checkout-Return.dc.html",
   "Blocked-and-Off.dc.html",
-  "Menu-and-Delete.dc.html"
+  "Menu-and-Delete.dc.html",
+  "Themes.dc.html"
  ],
  "notes": {},
  "designSystems": []

@@ -98,9 +98,9 @@ C = COPY
 ACC = "color:var(--accent)"
 
 CCSS = r"""
-:root{--accent-shadow:#843052;--fg-disabled:#3D404E}
+:root{--accent-shadow:#843052;--fg-disabled:#3D404E;--disp:'Chakra Petch',sans-serif}
 .crlk{color:var(--accent);text-decoration:underline;text-decoration-color:var(--accent-shadow);text-underline-offset:2px}
-.disp{font-family:'Chakra Petch',sans-serif}
+.disp{font-family:var(--disp)}
 .mono{font-family:'IBM Plex Mono',monospace}
 /* the shipped CreditButton */
 .cb{display:flex;align-items:stretch;height:44px;border-radius:8px;border:1px solid var(--accent);overflow:hidden;font:600 13px 'IBM Plex Sans',sans-serif;width:100%}
@@ -123,7 +123,7 @@ CCSS = r"""
 .pbtn.dis{background:transparent;border:1px solid var(--border-strong);color:var(--fg-disabled)}
 .dk .pbtn{height:40px;align-self:flex-start}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
-.panel h3{margin:0;font:600 17px 'Chakra Petch',sans-serif}
+.panel h3{margin:0;font:600 17px var(--disp)}
 .ph-sub{font:10.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
 .lead{font-size:12.5px;line-height:1.5;color:var(--fg-body);margin:5px 0 0;text-wrap:pretty}
 
@@ -131,17 +131,17 @@ CCSS = r"""
 .pg{padding:18px 16px 28px;display:flex;flex-direction:column;gap:22px}
 .dk .pg{padding:34px 48px 40px;gap:26px;max-width:1040px}
 .ptitle{display:flex;flex-direction:column;gap:6px}
-.ptitle h1{margin:0;font:700 26px 'Chakra Petch',sans-serif}
+.ptitle h1{margin:0;font:700 26px var(--disp)}
 .dk .ptitle h1{font-size:30px}
 .ptitle .sub{font:11px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px}
-.sech h2{margin:0;font:600 17px 'Chakra Petch',sans-serif}
+.sech h2{margin:0;font:600 17px var(--disp)}
 .dk .sech h2{font-size:19px}
 
 /* balance */
 .bal{display:flex;flex-direction:column;gap:12px}
 .tot{display:flex;align-items:baseline;gap:10px}
-.tot b{font:700 44px/1 'Chakra Petch',sans-serif;letter-spacing:-.01em}
+.tot b{font:700 44px/1 var(--disp);letter-spacing:-.01em}
 .tot span{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
 .cells{display:flex;align-items:stretch;gap:0;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden}
 .cell{flex:1;min-width:0;padding:12px 12px 13px;display:flex;flex-direction:column;gap:4px;position:relative}
@@ -170,7 +170,7 @@ CCSS = r"""
 .oc.warn{border-color:color-mix(in srgb,var(--warning) 60%,var(--border-strong))}
 .oc .top{display:flex;align-items:flex-start;gap:14px}
 .oc .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-.oc .tt h3{margin:0;font:700 19px 'Chakra Petch',sans-serif}
+.oc .tt h3{margin:0;font:700 19px var(--disp)}
 .oc .tt .pr{font:600 13px 'IBM Plex Mono',monospace;color:var(--fg)}
 .oc .st{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
 .oc .st.warn{color:var(--warning)}
@@ -190,9 +190,9 @@ CCSS = r"""
 /* the little brand-card fan on an offer */
 .fanc{position:relative;width:74px;height:70px;flex:none}
 .fanc span{position:absolute;top:4px;width:40px;height:56px;border-radius:5px;box-shadow:0 8px 18px rgba(0,0,0,.5)}
-.fanc .a{left:4px;background:#20222A;border:1.5px solid #262A35;transform:rotate(-14deg)}
-.fanc .b{left:17px;background:#1B1D25;border:1.5px solid #343843;transform:rotate(-3deg)}
-.fanc .c{left:30px;background:color-mix(in srgb,#FF4D9A 14%,#16181F);border:1.5px solid #FF4D9A;transform:rotate(9deg);display:flex;align-items:center;justify-content:center;font:700 16px 'Chakra Petch',sans-serif;color:#FF4D9A}
+.fanc .a{left:4px;background:var(--elevated);border:1.5px solid var(--border-strong);transform:rotate(-14deg)}
+.fanc .b{left:17px;background:var(--surface-raised);border:1.5px solid var(--border-dashed);transform:rotate(-3deg)}
+.fanc .c{left:30px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1.5px solid var(--accent);transform:rotate(9deg);display:flex;align-items:center;justify-content:center;font:700 16px var(--disp);color:var(--accent)}
 .fanc.cal .c{flex-direction:column;gap:0;line-height:1}
 .fanc.cal .c small{font:600 7px 'IBM Plex Mono',monospace;letter-spacing:.1em}
 .fanc.dim span{opacity:.45;filter:saturate(.3)}
@@ -248,7 +248,7 @@ CCSS = r"""
 .sht .grab{display:flex;justify-content:center;padding:9px 0 2px}
 .sht .grab i{width:40px;height:4px;border-radius:4px;background:var(--border-strong)}
 .mhead{display:flex;align-items:flex-start;gap:12px;padding:8px 18px 0}
-.mhead h2{margin:0;flex:1;min-width:0;padding-top:10px;font:700 18px 'Chakra Petch',sans-serif}
+.mhead h2{margin:0;flex:1;min-width:0;padding-top:10px;font:700 18px var(--disp)}
 .mhead .x{width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:15px;flex:none}
 .mbody{padding:6px 18px 0;display:flex;flex-direction:column;gap:12px}
 .mbody p{margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
@@ -304,6 +304,10 @@ CCSS = r"""
 .chip-k.ok{background:rgba(111,163,104,.14);color:var(--success)}
 .chip-k.warn{background:rgba(224,145,60,.14);color:var(--warning)}
 .chip-k.n{background:var(--elevated);color:var(--fg-muted)}
+
+.dk .offers>div{display:flex;flex-direction:column}
+.dk .offers>div>.oc,.dk .offers>div>.offers{flex:1}
+.dk .offers>.oc>.acts:last-child,.dk .offers>div>.oc>.acts:last-child{margin-top:auto}
 """
 
 kit.CSS = kit.CSS + CCSS
@@ -341,7 +345,7 @@ def getmore(new=True, desk=False):
 def rail(active=None, menu=False):
     slots = "".join(f'<span class="rsl{" on" if n == active else ""}">{nav_icon(n)}</span>'
                     for n in ["Home", "Collection", "Commanders", "Discover", "Decks"])
-    av = '<span class="rav" style="box-shadow:0 0 0 3px rgba(255,77,154,.25)">CO</span>' if menu else '<span class="rav">CO</span>'
+    av = '<span class="rav" style="box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)">CO</span>' if menu else '<span class="rav">CO</span>'
     return (f'<div class="rail"><span class="mk">{crown(6, 8.5, 3)}<span class="nn">99</span></span>'
             f'<span class="rsl" style="color:var(--fg-muted)">{ico_search(19, 1.5)}</span>'
             '<span style="width:24px;height:1px;background:var(--border-strong);margin:6px 0 10px"></span>'
@@ -417,7 +421,7 @@ def _plan_card(state, buy, new, pressed):
         return (f'<div class="oc{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
                 f'<span class="pr">{C["plan.price"]}</span></div>{fan(60, cal=True)}</div><ul>{fine}</ul>{acts}</div>')
     if state == "active":
-        press = ' style="box-shadow:0 0 0 2px rgba(255,77,154,.35)"' if pressed else ""
+        press = ' style="box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)"' if pressed else ""
         return (f'<div class="oc on{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
                 f'<span class="st">{C["plan.active"]}</span><span class="st" style="color:var(--fg)">{C["plan.activeLeft"]}</span></div>'
                 f'{fan(60, cal=True)}</div>'

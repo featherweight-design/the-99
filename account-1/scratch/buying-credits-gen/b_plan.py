@@ -47,7 +47,7 @@ def board():
                        "After the date the plan credits are gone, the Plan cell goes, and the card is the offer again. History keeps every month paid.")
                + '</div>')
     rest_dk = ('<div class="frames">'
-               + frame("K1 · desktop", dk_sec(plan_card("none", new=True), title="Get more credits", extra=sec("&nbsp;", pack_card(new=False))), "", width=1000)
+               + frame("K1 · desktop", '<div class="dk" style="height:auto;width:1000px;display:block;border-radius:14px"><div class="pg" style="padding:24px 28px 28px">' + sec("Get more credits", '<div class="offers">' + plan_card("none", new=True) + pack_card(new=False) + '</div>') + '</div></div>', "", width=1000)
                + frame("K4 · desktop", dk_sec(plan_card("soon"), extra=pk), "", width=1000)
                + frame("K5 · desktop", dk_sec(plan_card("due"), extra=pk), "", width=1000)
                + '</div>')
