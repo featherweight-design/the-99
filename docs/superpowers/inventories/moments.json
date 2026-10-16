@@ -1,18 +1,224 @@
 {
   "feature": "Discovery R1, the moments (plan 2026-10-16-moments.md). Rows land with the PR that mounts each moment: PR 1 is the foundation and draws nothing on its own.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED on and a fresh visit: clear localStorage's the99.moments.visit and the account's user_prefs.moments_spent before each row, or every row after the first finds its visit taken.",
+  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the six, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row).",
   "out": "contact-sheets/moments",
   "planned": [
-    { "pr": 2, "route": "/decks/[id]", "moments": ["M1 top-off", "M2 suggested-changes", "M3 proposed-cuts", "M4 mana-balance"] },
-    { "pr": 2, "route": "/decks/[id] Games", "moments": ["M10 matchups", "M11 friends-after-game"] },
-    { "pr": 3, "route": "/decks/[id] Shopping rows", "moments": ["M5 stand-ins", "M6 friend-spares", "M7 card-assignments"] },
-    { "pr": 3, "route": "card details (dialog / sheet)", "moments": ["M8 find-a-deck", "M9 wishlist"] },
-    { "pr": 4, "route": "/commanders (no decks)", "moments": ["M12 help-me-choose"] },
-    { "pr": 4, "route": "/decks (3+ decks)", "moments": ["M13 lineup"] },
-    { "pr": 4, "route": "/decks/new picker", "moments": ["M14 precons"] },
-    { "pr": 4, "route": "/collection/replace choice step", "moments": ["M15 collection-sync"] },
-    { "pr": "every", "route": "any route with MOMENTS_ENABLED off", "moments": [] }
+    {
+      "pr": 2,
+      "route": "/decks/[id]",
+      "moments": [
+        "M1 top-off",
+        "M2 suggested-changes",
+        "M3 proposed-cuts",
+        "M4 mana-balance"
+      ]
+    },
+    {
+      "pr": 2,
+      "route": "/decks/[id] Games",
+      "moments": [
+        "M10 matchups",
+        "M11 friends-after-game"
+      ]
+    },
+    {
+      "pr": 3,
+      "route": "/decks/[id] Shopping rows",
+      "moments": [
+        "M5 stand-ins",
+        "M6 friend-spares",
+        "M7 card-assignments"
+      ]
+    },
+    {
+      "pr": 3,
+      "route": "card details (dialog / sheet)",
+      "moments": [
+        "M8 find-a-deck",
+        "M9 wishlist"
+      ]
+    },
+    {
+      "pr": 4,
+      "route": "/commanders (no decks)",
+      "moments": [
+        "M12 help-me-choose"
+      ]
+    },
+    {
+      "pr": 4,
+      "route": "/decks (3+ decks)",
+      "moments": [
+        "M13 lineup"
+      ]
+    },
+    {
+      "pr": 4,
+      "route": "/decks/new picker",
+      "moments": [
+        "M14 precons"
+      ]
+    },
+    {
+      "pr": 4,
+      "route": "/collection/replace choice step",
+      "moments": [
+        "M15 collection-sync"
+      ]
+    },
+    {
+      "pr": "every",
+      "route": "any route with MOMENTS_ENABLED off",
+      "moments": []
+    }
   ],
-  "rows": []
+  "rows": [
+    {
+      "id": "m1-top-off",
+      "label": "/decks/[id], a deck under its size: M1 Top off on the strip's `Choose the last N ↓` door",
+      "view": "src/components/decks/last-slots-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${UNDER_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${UNDER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "button[aria-controls]:has-text('Choose the last')",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Top off, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m2-suggested-changes",
+      "label": "/decks/[id], a deck at its size: M2 Suggested changes on the Analysis tab",
+      "view": "src/components/decks/builder-shell.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FULL_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${FULL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Suggested changes, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m3-proposed-cuts",
+      "label": "/decks/[id], a deck over its size: M3 Proposed cuts on `Proposed cuts →` (else the Analysis tab)",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${OVER_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Proposed cuts, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m4-mana-balance",
+      "label": "/decks/[id], a deck at its size with M2 spent, on a later visit: M4 Mana Balance on the land cell's `balance mana →` (else the Analysis tab)",
+      "view": "src/components/decks/role-counter-cell.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FULL_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${FULL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Mana Balance, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m10-matchups",
+      "label": "/decks/[id] Games, three games logged with opponents: M10 Matchups on the `Split by` switch",
+      "view": "src/components/decks/game-matchups.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${GAMES_DECK}?view=games",
+          "wait": "[role=radiogroup]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${GAMES_DECK}?view=games",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[role=radiogroup]",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Matchups, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m11-friends-after-game",
+      "label": "any route, a game logged and no friend: M11 Friends after a game on the account button (rail at desktop, header at 390)",
+      "view": "src/components/shell/account-menu.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "h1, h2"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks",
+          "wait": "h1, h2",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Playing with friends?, a tip"
+        }
+      ]
+    }
+  ]
 }

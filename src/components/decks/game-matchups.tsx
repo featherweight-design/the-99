@@ -8,6 +8,8 @@
 // The section is absent with no games (the shipped empty state) and with the switch off (the panel is not given
 // a `matchups`).
 
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { gameMatchupsCopy } from "../../lib/copy/game-matchups";
 import { matchupRows, singleGameCaption, type MatchupRow, type MatchupSplit, type Thumb } from "../../lib/decks/matchup-rows";
@@ -89,6 +91,8 @@ function Row({ row }: { row: MatchupRow }) {
 
 export function GameMatchups({ matchups }: { matchups: Matchups }) {
   const [split, setSplit] = useState<MatchupSplit>("commanders");
+  // M10 (discovery R1): the switch is the moment's control from the deck's third logged game.
+  const splitMoment = useMomentAnchor("matchups", { eligible: matchups.games >= 3, copy: momentsCopy.matchups });
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const rows = matchups.recorded === 0 ? [] : matchupRows(matchups, split);
   const caption = singleGameCaption(rows);
@@ -112,7 +116,7 @@ export function GameMatchups({ matchups }: { matchups: Matchups }) {
         <span className="font-mono text-[10px] text-fg-locked">{copy.recorded(matchups.recorded, matchups.games)}</span>
         {matchups.recorded > 0 && (
           // One group at both widths: full width under the heading on the phone, at the heading's right from md.
-          <div role="radiogroup" aria-label={copy.split} className="order-last flex w-full gap-[2px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[3px] md:order-none md:ml-auto md:w-auto md:rounded-[9px]">
+          <div {...splitMoment} role="radiogroup" aria-label={copy.split} className="order-last flex w-full gap-[2px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[3px] md:order-none md:ml-auto md:w-auto md:rounded-[9px]">
             {SPLITS.map((s, i) => (
               <SplitButton key={s.value} on={split === s.value} label={s.label} buttonRef={(node) => { refs.current[i] = node; }} onKeyDown={onKey(i)} onPick={() => setSplit(s.value)} className="h-[38px] flex-1 text-[13px] md:h-[32px] md:flex-none md:px-[14px] md:text-[12.5px]" />
             ))}

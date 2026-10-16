@@ -47,6 +47,8 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 /** The label block's inset from the band's sides; its ramp reaches back out across it. */
 const BLOCK_INSET_X = 18;
@@ -92,6 +94,8 @@ export function SpineMobile({
   const bodySize = deckBodySize(partner !== null);
   const over = built > bodySize;
   const toCut = built - bodySize;
+  // M3 (discovery R1): `Proposed cuts →` is the moment's control on a deck over its size, while the shortcut is drawn.
+  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut) });
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -623,6 +627,7 @@ export function SpineMobile({
             type="button"
             data-shortcut="proposed-cuts"
             onClick={onProposedCuts}
+            {...cutsMoment}
             className="mx-auto flex h-[44px] items-center font-mono text-[11.5px] text-[var(--accent)]"
           >
             {tuningHubShortcutsCopy.proposedCuts}

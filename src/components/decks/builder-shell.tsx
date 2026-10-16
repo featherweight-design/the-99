@@ -122,6 +122,9 @@ import { NOTICES_PARAM } from "../../lib/notices/arrival";
 import type { DeckNotices } from "../../lib/notices/read";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { reveal } from "../../lib/ui/reveal";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
@@ -1459,6 +1462,29 @@ export function BuilderShell({
   );
   // The land cell offers Mana Balance only for a deck with a color to count (design table, R3).
   const coloredPip = hasColoredPip(cards, [deck.commander, ...(deck.partner ? [deck.partner] : [])]);
+  // The Analysis tab's moments (discovery R1). M2 at the deck's size; M3 over it and M4 at it, each standing in for its
+  // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
+  // Not while Analysis is the open tab: the tab is then where the reader already is.
+  const atSize = built === bodySize;
+  const offAnalysis = view !== "analysis";
+  const suggestedMoment = useMomentAnchor("suggested-changes", {
+    eligible: atSize && offAnalysis,
+    copy: momentsCopy.suggestedChanges,
+  });
+  const cutsTabMoment = useMomentAnchor("proposed-cuts", {
+    eligible: built > bodySize && offAnalysis,
+    copy: momentsCopy.proposedCuts(built - bodySize),
+    fallback: true,
+  });
+  // A colorless deck gets no Mana Balance moment anywhere: the tool would only say there is no color to count.
+  const manaTabMoment = useMomentAnchor("mana-balance", {
+    eligible: atSize && offAnalysis && coloredPip,
+    copy: momentsCopy.manaBalance,
+    fallback: true,
+  });
+  const analysisTabRef = useMergedRef(suggestedMoment.ref, cutsTabMoment.ref, manaTabMoment.ref);
+  const analysisTabDescribedBy =
+    suggestedMoment["aria-describedby"] ?? cutsTabMoment["aria-describedby"] ?? manaTabMoment["aria-describedby"];
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       freshEachVisit={freshEachVisit}
@@ -1760,6 +1786,7 @@ export function BuilderShell({
               onBalanceMana={tuningHubEnabled && manaBalanceEnabled && coloredPip
                 ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
                 : undefined}
+              balanceMoment={atSize && coloredPip}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
@@ -1784,6 +1811,7 @@ export function BuilderShell({
               })}
               view={view}
               onViewChange={setView}
+              anchor={{ view: "analysis", ref: analysisTabRef, describedBy: analysisTabDescribedBy }}
             >
               {view === "consider" && suggestions.length > 0 && (
                 <ConsiderToolbar

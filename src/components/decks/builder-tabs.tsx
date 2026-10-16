@@ -28,10 +28,13 @@ interface BuilderTabsProps {
   onViewChange: (view: BuilderView) => void;
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
+  /** A moment's anchor on one tab (discovery R1: the Analysis tab carries M2, and M3 and M4 when their shortcut is
+   *  not drawn): its ref, and the describedby the bubble sets while it shows. */
+  anchor?: { view: BuilderView; ref: (el: HTMLElement | null) => void; describedBy?: string };
 }
 
 function Tab({
-  id, panelId, label, count, selected, onSelect, accessibleName,
+  id, panelId, label, count, selected, onSelect, accessibleName, anchorRef, describedBy,
 }: {
   id: string;
   panelId: string;
@@ -40,9 +43,13 @@ function Tab({
   selected: boolean;
   onSelect: () => void;
   accessibleName: string;
+  anchorRef?: (el: HTMLElement | null) => void;
+  describedBy?: string;
 }) {
   return (
     <button
+      ref={anchorRef}
+      aria-describedby={describedBy}
       type="button"
       role="tab"
       id={id}
@@ -86,7 +93,7 @@ function Tab({
   );
 }
 
-export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsProps) {
+export function BuilderTabs({ tabs, view, onViewChange, children, anchor }: BuilderTabsProps) {
   return (
     <div
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
@@ -141,6 +148,8 @@ export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsP
               selected={view === tab.id}
               onSelect={() => onViewChange(tab.id)}
               accessibleName={tab.accessibleName}
+              anchorRef={anchor?.view === tab.id ? anchor.ref : undefined}
+              describedBy={anchor?.view === tab.id ? anchor.describedBy : undefined}
             />
           ))}
         </div>

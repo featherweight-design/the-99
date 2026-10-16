@@ -16,6 +16,7 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
+import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 
 /**
@@ -78,6 +79,11 @@ export default async function Shell({
   // read, and the provider is handed nothing, so no anchor registers.
   const moments = liveMoments(env);
   const spentMoments = moments.length > 0 ? await perfRead("shell.momentsSpent", () => readSpentMoments(userId)) : [];
+  // M11's condition (a game logged, no friend yet) is read only while that moment is live and unspent.
+  const friendsMoment =
+    moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
+      ? await perfRead("shell.friendsAfterGame", () => friendsAfterGameDue(userId))
+      : false;
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
@@ -93,9 +99,9 @@ export default async function Shell({
     <NavigationPendingProvider stall={stall}>
       <MomentsProvider live={moments} spent={spentMoments}>
       <div className="flex min-h-dvh flex-1">
-        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <MobileHeader theme={theme} {...door} />
+          <MobileHeader theme={theme} {...door} friendsMoment={friendsMoment} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,
