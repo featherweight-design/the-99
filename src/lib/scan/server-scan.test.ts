@@ -79,4 +79,14 @@ describe("serverScanner", () => {
     // card B replaces A with no empty frame: every frame before B settles answers nothing about A
     for (let i = 0; i < 3; i++) { clock += 150; last = s.frame(card(1.5), clock); expect(last.kind).not.toBe("match"); }
   });
+  it("keeps handing back a card's answer as its embedding drifts slowly, frame to frame, then holds", async () => {
+    let clock = 0;
+    const s = serverScanner(MODEL, { fetch: vi.fn(async () => ok()), wait: async () => {}, now: () => clock }, () => {});
+    let last: ServerState = { kind: "idle" };
+    for (const f of hold(card(0), 10)) { last = s.frame(f, clock); await flush(); clock += 150; }
+    // each frame within the same-card cosine of the last, ending far (cos < 0.85) from where it was asked
+    for (let i = 1; i <= 30; i++) { last = s.frame(card(i * 0.03), clock); clock += 150; }
+    for (let i = 0; i < 5; i++) { last = s.frame(card(0.9), clock); clock += 150; }
+    expect(last.kind).toBe("match");
+  });
 });

@@ -17,6 +17,8 @@ export type CardReading = {
   embMs: number;
   matchMs: number;
   totalMs: number;
+  /** The index the guesses came from (the device's, or the server's), so a tap records the one its reading used. */
+  index?: string;
 };
 export type NoCardReading = { kind: "none"; detMs: number; totalMs: number };
 export type Reading = CardReading | NoCardReading;
@@ -44,7 +46,7 @@ export function tapBody(
     embedMs: card?.embMs ?? null,
     matchMs: card?.matchMs ?? null,
     agreedFrames: Math.min(card?.agreed ?? 0, 100),
-    indexVersion,
+    indexVersion: card?.index ?? indexVersion,
     frame: card ? frame : null,
     changedMsBeforeTap: at.changedMsBeforeTap,
     shownOracleId: shown?.guesses[0]?.oracleId ?? null,

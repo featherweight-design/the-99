@@ -13,7 +13,7 @@ import {
 } from "../../lib/scan/geometry";
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan/reading";
-import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
+import { ageSteady, nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
 import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
 import { sessionHolder } from "../../lib/scan/sessions";
 import { TrueCardStep } from "./true-card-step";
@@ -294,14 +294,17 @@ export function ScanLab({ indexBase, serverModel = null }: {
                   const { guesses, margin, sure, index: served } = st.result;
                   const top = guesses[0]?.oracleId ?? "";
                   serverRun.current = serverRun.current?.oracleId === top ? { oracleId: top, n: serverRun.current.n + 1 } : { oracleId: top, n: 1 };
-                  // a tap saved from a server answer records the server's index, not the one on this device
-                  indexVersion.current = served;
+                  // the reading carries the server's index, so a tap on it records that one, not the device's
                   publish({
-                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure,
+                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure, index: served,
                     detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: Math.round(performance.now() - t0),
                   });
                 } else {
                   serverRun.current = null;
+                  // no answer for this frame: the screen may only lose what it shows, on time
+                  const aged = ageSteady(steady.current, performance.now());
+                  if (aged !== steady.current) setDisplay(aged);
+                  steady.current = aged;
                 }
                 setTimeout(tick, 60);
                 return;
@@ -310,7 +313,6 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 setTimeout(tick, 60);
                 return;
               }
-              indexVersion.current = index.meta.version;
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
@@ -319,7 +321,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
               const committed = agreement(history.current, AGREE_FRAMES, AGREE_MARGIN) !== null;
               // the crop and the verdict it produced are published together, as one reading
               publish({
-                kind: "card", crop, guesses, margin, agreed, committed,
+                kind: "card", crop, guesses, margin, agreed, committed, index: index.meta.version,
                 detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
             } else {
