@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Friends row on the first-run checklist</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="{{ s.root }}">
+  <sc-if value="{{ context }}" hint-placeholder-val="{{ true }}">
+    <div role="group" aria-label="Build the 99, opens once you pick a commander" style="{{ s.locked }}">
+      <span aria-hidden="true" style="{{ s.num }}">3</span>
+      <span style="{{ s.text }}"><span style="{{ s.lTitle }}">Build the 99</span><span style="{{ s.lReason }}">Opens once you pick a commander</span></span>
+      <svg width="11" height="13" viewBox="0 0 10 12" fill="none" stroke="{{ lockInk }}" stroke-width="1.3" aria-hidden="true"><rect x="1" y="5" width="8" height="6" rx="1.2"></rect><path d="M3 5V3.5a2 2 0 0 1 4 0V5"></path></svg>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ todo }}" hint-placeholder-val="{{ true }}">
+    <button type="button" style="{{ s.row }}">
+      <span aria-hidden="true" style="{{ s.slotTodo }}">+</span>
+      <span style="{{ s.text }}"><span style="{{ s.title }}">Add your friends</span><span style="{{ s.reason }}">Any time, cards or not. A friend joins from a link you send.</span></span>
+      <span aria-hidden="true" style="{{ s.chev }}">›</span>
+    </button>
+  </sc-if>
+
+  <sc-if value="{{ link }}" hint-placeholder-val="{{ false }}">
+    <button type="button" aria-label="Add your friends. Friend link open, 6 days left. Show the link" style="{{ s.row }}">
+      <span aria-hidden="true" style="{{ s.slotLink }}"><span style="{{ s.diamond }}"></span></span>
+      <span style="{{ s.text }}"><span style="{{ s.title }}">Add your friends</span><span style="{{ s.reasonMono }}">Friend link open · 6 days left</span></span>
+      <span aria-hidden="true" style="{{ s.trail }}">Show<span style="{{ s.chev }}">›</span></span>
+    </button>
+  </sc-if>
+
+  <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+    <a href="#" aria-label="Friends. You and Colin are friends. Open Friends" style="{{ s.rowDone }}">
+      <span aria-hidden="true" style="{{ s.slotDone }}">✓</span>
+      <span style="{{ s.text }}"><span style="{{ s.titleDone }}">Friends</span><span style="{{ s.reason }}">You and Colin are friends.</span></span>
+      <span aria-hidden="true" style="{{ s.trail }}"><img src="/_blob/b311963bd7a121936fdc47dbb9234cde" alt="" style="{{ s.disc }}"><span style="{{ s.chev }}">›</span></span>
+    </a>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["todo","link","done"],"default":"todo"},"phone":{"editor":"boolean","default":false},"context":{"editor":"boolean","default":true},"$preview":{"width":1162,"height":160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TH = {
+      amonkhet: { bg:'#14110E', surface:'#1E1A15', raised:'#211D18', rail:'#1A1611', inset:'#1B1712', elevated:'#29241F', border:'#2B241B', strong:'#3A3229', dashed:'#494037', fg:'#EDE6D8', body:'#C0B8A6', muted:'#A59C89', faint:'#8B8270', locked:'#6E6654', disabled:'#4A4033', accent:'#CF8745', rgb:'207,135,69', success:'#6FA368', srgb:'111,163,104', disp:"'Cinzel',serif", dw:600 },
+      kamigawa: { bg:'#0E0F14', surface:'#16181F', raised:'#191B22', rail:'#12141B', inset:'#13151C', elevated:'#20222A', border:'#181C26', strong:'#262A35', dashed:'#343843', fg:'#E6E8F0', body:'#B1B6C7', muted:'#959AAD', faint:'#6F7486', locked:'#606476', disabled:'#3D404E', accent:'#FF4D9A', rgb:'255,77,154', success:'#6FA368', srgb:'111,163,104', disp:"'Chakra Petch',sans-serif", dw:600 },
+      ixalan:   { bg:'#0E1310', surface:'#171E19', raised:'#1A221C', rail:'#121814', inset:'#141B16', elevated:'#212A23', border:'#1D2620', strong:'#2C3830', dashed:'#3B4A3F', fg:'#E0E7DE', body:'#B6C2B3', muted:'#98A695', faint:'#808C7C', locked:'#626E5E', disabled:'#3E473A', accent:'#A3C445', rgb:'163,196,69', success:'#5EA990', srgb:'94,169,144', disp:"'Trirong',serif", dw:600 },
+      phyrexia: { bg:'#0D0B0E', surface:'#151317', raised:'#18161A', rail:'#110F13', inset:'#131115', elevated:'#1E1C20', border:'#19161C', strong:'#262329', dashed:'#332F36', fg:'#E4E2E6', body:'#B5B2BB', muted:'#9A96A0', faint:'#78747E', locked:'#64616A', disabled:'#403E45', accent:'#52827A', rgb:'82,130,122', success:'#6FA368', srgb:'111,163,104', disp:"'Syncopate',sans-serif", dw:700 },
+      eldraine: { bg:'#120E17', surface:'#1B1821', raised:'#1F1C25', rail:'#15121B', inset:'#17141D', elevated:'#26232C', border:'#241D30', strong:'#342C41', dashed:'#443C52', fg:'#E4DEEE', body:'#B9B2C5', muted:'#9C95A8', faint:'#898395', locked:'#6A6475', disabled:'#443F4D', accent:'#AE88E6', rgb:'174,136,230', success:'#6FA368', srgb:'111,163,104', disp:"'Cormorant Garamond',serif", dw:600 },
+      kaldheim: { bg:'#121217', surface:'#1E1F26', raised:'#22232B', rail:'#181920', inset:'#1A1B22', elevated:'#2D2E35', border:'#1A1F2B', strong:'#2E3340', dashed:'#424755', fg:'#C6D2D3', body:'#B3C0C2', muted:'#95A4A6', faint:'#7C8A8C', locked:'#5F6D6E', disabled:'#3B4647', accent:'#5C86C9', rgb:'92,134,201', success:'#6FA368', srgb:'111,163,104', disp:"'Metamorphous',serif", dw:400 },
+    };
+    const p = this.props;
+    const t = TH[p.theme] || TH.amonkhet;
+    const on = (v, d) => v === undefined ? d : !(v === false || v === 'false');
+    const phone = on(p.phone, false);
+    const context = on(p.context, true);
+    const state = p.state || 'todo';
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const sans = "font-family:'IBM Plex Sans',sans-serif;";
+    const W = phone ? 358 : 1162;
+    // The shipped LockedStep's box, so the Friends row shares its rhythm: 56px floor on the phone, 15/18 padding at sm.
+    const box = `width:100%;box-sizing:border-box;display:flex;align-items:center;gap:${phone ? 12 : 14}px;min-height:56px;padding:${phone ? '14px 15px' : '15px 18px'};border-radius:14px;text-align:left;${sans}`;
+    const slot = `flex:none;width:22px;height:22px;box-sizing:border-box;border-radius:6px;display:flex;align-items:center;justify-content:center;`;
+    const s = {
+      root: `width:${W}px;box-sizing:border-box;display:flex;flex-direction:column;gap:${phone ? 18 : 20}px;${sans}`,
+      locked: box + `border:1px solid ${t.border};background:${t.rail}`,
+      num: slot + `border:1px solid ${t.border};${mono}font-size:11px;color:${t.disabled}`,
+      text: `flex:1;min-width:0;display:flex;flex-direction:column;gap:3px`,
+      lTitle: `font-family:${t.disp};font-weight:${t.dw};font-size:${phone ? 15 : 16}px;color:${t.locked}`,
+      lReason: `font-size:${phone ? 12 : 12.5}px;color:${t.locked}`,
+      row: box + `border:1px solid ${t.strong};background:${t.inset};cursor:pointer;color:${t.body}`,
+      rowDone: box + `border:1px solid ${t.border};background:${t.inset};text-decoration:none;color:${t.body}`,
+      slotTodo: slot + `border:1.5px dashed ${t.dashed};font-size:14px;font-weight:300;line-height:1;color:${t.muted}`,
+      slotLink: slot + `border:1.5px dashed rgba(${t.rgb},.7)`,
+      diamond: `width:6px;height:6px;background:${t.accent};transform:rotate(45deg)`,
+      slotDone: slot + `border:1px solid rgba(${t.srgb},.55);background:rgba(${t.srgb},.14);font-size:12px;color:${t.success}`,
+      title: `font-family:${t.disp};font-weight:${t.dw};font-size:${phone ? 15 : 16}px;color:${t.fg}`,
+      titleDone: `font-family:${t.disp};font-weight:${t.dw};font-size:${phone ? 15 : 16}px;color:${t.body}`,
+      reason: `font-size:${phone ? 12 : 12.5}px;line-height:1.45;color:${t.muted}`,
+      reasonMono: `${mono}font-size:11px;color:${t.muted}`,
+      trail: `flex:none;display:flex;align-items:center;gap:10px;font-size:12.5px;color:${t.body}`,
+      chev: `font-size:17px;line-height:1;color:${t.faint}`,
+      disc: `width:26px;height:26px;border-radius:999px;object-fit:cover;display:block;background:${t.elevated}`,
+    };
+    return { s, context, lockInk: t.locked, todo: state === 'todo', link: state === 'link', done: state === 'done' };
+  }
+}
+</script>
+</body>
+</html>

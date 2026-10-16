@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home at 1280: H1 to H4</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:2720px;height:2060px;box-sizing:border-box;padding:40px;background:#0B0B0D;font-family:'IBM Plex Sans',sans-serif;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:80px;row-gap:80px;align-content:start">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:14px;height:34px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.08em;color:#E8E8EC">{{ f.id }}</span>
+        <span style="font-size:15px;color:#E8E8EC">{{ f.title }}</span>
+        <span style="font-size:13.5px;color:#8E8E98">{{ f.note }}</span>
+      </div>
+      <div style="width:1280px;height:900px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #2A2A30">
+        <dc-import name="HomeDesk" theme="{{ theme }}" state="{{ f.state }}" banner="{{ f.banner }}" hint-size="1280px,900px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"$preview":{"width":2720,"height":2060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme || 'amonkhet',
+      frames: [
+        { id: 'H1', title: 'No friends', note: 'Your seat and three empty ones, one line, Add a friend. No link to /friends yet.', state: 'none', banner: false },
+        { id: 'H2', title: 'One friend, with the banner up', note: 'The banner keeps its place over both columns. Friends never moves above it.', state: 'one', banner: true },
+        { id: 'H3', title: 'Seven friends: the overflow', note: 'Three faces, then +4. The heading carries the count; All friends › is the way to the rest.', state: 'many', banner: false },
+        { id: 'H4', title: 'A friend link open, no friends yet', note: 'The link’s time left and Show sit under the line. The next empty seat carries the diamond.', state: 'pending', banner: false },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friends row on the checklist at 390, six themes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1500px;height:1500px;box-sizing:border-box;padding:40px;background:#0B0B0D;font-family:'IBM Plex Sans',sans-serif;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;gap:24px;padding-left:194px;height:40px;align-items:flex-end">
+    <sc-for list="{{ cols }}" as="c" hint-placeholder-count="3">
+      <span style="width:390px;display:flex;gap:10px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.08em;color:#E8E8EC">{{ c.id }}</span><span style="font-size:14px;color:#8E8E98">{{ c.title }}</span></span>
+    </sc-for>
+  </div>
+  <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <div style="width:170px;padding-top:18px;display:flex;flex-direction:column;gap:6px">
+        <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#8E8E98">{{ r.plane }}</span>
+      </div>
+      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+        <div style="{{ r.panel }}">
+          <dc-import name="ChecklistRow" theme="{{ r.key }}" state="{{ c.state }}" context="{{ true }}" phone="{{ true }}" hint-size="358px,150px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1500,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const THEMES = [
+      ['amonkhet', 'Low Sun', 'AMONKHET', '#14110E', '#3A3229', "'Cinzel',serif", 700],
+      ['kamigawa', 'Neon Rain', 'KAMIGAWA', '#0E0F14', '#262A35', "'Chakra Petch',sans-serif", 700],
+      ['ixalan', 'Canopy', 'IXALAN', '#0E1310', '#2C3830', "'Trirong',serif", 700],
+      ['phyrexia', 'Oil Haze', 'NEW PHYREXIA', '#0D0B0E', '#262329', "'Syncopate',sans-serif", 700],
+      ['eldraine', 'Witching Hour', 'WILDS OF ELDRAINE', '#120E17', '#342C41', "'Cormorant Garamond',serif", 700],
+      ['kaldheim', 'First Frost', 'KALDHEIM', '#121217', '#2E3340', "'Metamorphous',serif", 400],
+    ];
+    const cols = [
+      { id: 'not done', title: 'under step 3', state: 'todo' },
+      { id: 'link open', title: 'Show', state: 'link' },
+      { id: 'done', title: 'one friend', state: 'done' },
+    ];
+    const rows = THEMES.map(([key, name, plane, bg, strong, disp, dw]) => ({
+      key, name, plane,
+      nameStyle: `font-family:${disp};font-weight:${dw};font-size:20px;color:#E8E8EC`,
+      panel: `width:390px;box-sizing:border-box;padding:16px;border-radius:20px;background:${bg};box-shadow:0 0 0 1px ${strong}`,
+      cells: cols,
+    }));
+    return { cols, rows };
+  }
+}
+</script>
+</body>
+</html>

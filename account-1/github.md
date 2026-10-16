@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-16T23:55:00Z
+branch read this turn: main 33bb5af (handoffs social_r1, social_r2, social_r3, discovery_onboarding README-r3 + STATES-tour-and-need; `components/home/dashboard.tsx`, `first-run.tsx`, `resume-decks.tsx`, `ready-to-build.tsx`, `components/social/face.tsx`, `add-friend-dialog.tsx`, `friend-card.tsx`, `open-links.tsx`, `friends-head.tsx`, `use-invite-watch.ts`, `copy/social.ts`, `copy/refresh.ts`, `lib/social/access.ts`, `theme/themes.ts`, `app/globals.css`; briefs discovery-and-onboarding, invite-only-launch)
+
+### Updated in this project
+- **Friends on Home R1, for Hugh's audit.** `design_handoff_the99_social_r3/addendum-friends-home/`: Main (three calls, locks, gaps G1–G7), Home at 1280 (H1–H4) and 390 (P1–P4), checklist at 1280 (C1–C3) and 390 (CP1–CP3), the section and row in all six themes at both widths; README with decisions log, STATES, READINESS (G1, G2 are Hugh's), copy strings, canvas.json. Design canvas: "The 99 - Friends on Home R1". No PR until Hugh approves.
+
+### Earlier entry
 date: 2026-10-16T22:40:00Z
 branch read this turn: main 4009713 (brief `2026-10-16-rule-zero-table-check.md`, `lib/bracket/verdict-head.ts`, `findings.ts`, `components/decks/bracket-chip.tsx`, `bracket-mark.tsx`, `findings-block.tsx`, `provenance-panel.tsx`, `components/social/pod-card.tsx`, `pod-menu.tsx`, `copy/deck-analysis.ts`, `copy/social.ts`, `components/home/dashboard.tsx`; handoffs social_r1, social_r3, invites, analysis_tab)
 

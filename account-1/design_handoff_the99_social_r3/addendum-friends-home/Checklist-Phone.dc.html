@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First-run checklist at 390: CP1 to CP3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1380px;height:1220px;box-sizing:border-box;padding:40px;background:#0B0B0D;font-family:'IBM Plex Sans',sans-serif;display:flex;gap:60px;align-items:flex-start">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+    <div style="width:390px;display:flex;flex-direction:column;gap:12px">
+      <div style="height:84px;display:flex;flex-direction:column;gap:5px">
+        <span style="display:flex;gap:12px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.08em;color:#E8E8EC">{{ f.id }}</span><span style="font-size:15px;color:#E8E8EC">{{ f.title }}</span></span>
+        <span style="font-size:13px;line-height:1.45;color:#8E8E98">{{ f.note }}</span>
+      </div>
+      <div style="width:390px;border-radius:20px;overflow:hidden;box-shadow:0 0 0 1px #2A2A30">
+        <dc-import name="FirstRunPhone" theme="{{ theme }}" row="{{ f.row }}" hint-size="390px,1010px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"$preview":{"width":1380,"height":1220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme || 'amonkhet',
+      frames: [
+        { id: 'CP1', title: 'Not done', note: 'The whole row is the press, 56px tall. It opens Add a friend as the shipped sheet.', row: 'todo' },
+        { id: 'CP2', title: 'Not done, a link open', note: 'Show reopens that link’s sheet. A new link is made from /friends.', row: 'link' },
+        { id: 'CP3', title: 'Done', note: 'A newcomer who came in on a friend’s invite starts here: done on the first visit.', row: 'done' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
