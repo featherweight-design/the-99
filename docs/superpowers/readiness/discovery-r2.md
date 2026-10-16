@@ -65,7 +65,9 @@ needs another Design round. The resolutions below are binding on the plan unless
    - Cheaper stand-ins fits a deck with a price limit and at least one buy row priced over it, from the price read the
      Shopping total already makes.
    - Friends' spares fits when at least one friend shares spares with the reader and a missing card has a spare. Run it
-     once over the union of missing cards, capped at `MAX_SPARES_BATCH`.
+     once over the whole union of missing cards, with no cap. `MAX_SPARES_BATCH` limits one HTTP request to
+     `/api/friend-spares`, not the server reader, and a cap would drop a fitting deck whose only spare matches the
+     201st card. Eligibility calls `loadFriendSpares` directly; were it to go over HTTP, it would batch every id.
    - If that measures too slow, the card falls back to "needs no deck" with `Open Friends →`. Nothing else changes.
 4. **The Proposed cuts chip.** The shipped tile reads `free · look deeper 1 credit`, and G13 draws `free`.
    - **Resolution:** the card carries the shipped chip verbatim. G13's rule is "only where the app already shows a
@@ -73,8 +75,16 @@ needs another Design round. The resolutions below are binding on the plan unless
 5. **Card details' entries are out of reach while the dialog is open.** The dialog is modal and marks the rest of the
    page `inert` (`src/lib/a11y/inert-page.ts`), and that includes the rail and the header that hold the ?. At 390 the
    sheet also covers the header.
-   - **Resolution:** at 1280, the ? and the panel's portal host are exempt from the dialog's inert pass, so the panel
-     opens beside the dialog as H3 draws it.
+   - **Resolution:** at 1280, the ? opens the panel as its own dialog stacked over card details. Four parts:
+     - **Inert and layering:** the ? and the panel's portal host are exempt from the dialog's inert pass, and the ?
+       sits above the dialog's backdrop (which otherwise covers it), so a pointer reaches it.
+     - **Keyboard:** `useDialogA11y` keeps wrapping Tab, but the ? joins its cycle as one extra stop after the last
+       focusable in the dialog. The dialog stays `aria-modal`.
+     - **Focus and Escape:** opening the panel moves focus into it and hands the trap to it, so one trap is live at a
+       time. Escape closes the panel only and returns focus to the ?; a second Escape closes card details.
+     - **Why stacked, not a released trap:** releasing the trap for the ? would let Tab leave the dialog into a page
+       that is `inert` everywhere else. A stack keeps the dialog's contract whole, and the panel opens beside the
+       dialog as H3 draws it.
    - At 390, card details' entries are reached through Collection's ? (`Elsewhere in Collection`) and through search.
      Card details gains no control.
    - If Hugh wants a ? inside card details at 390, that is a small Design call for later. It does not block this round.
