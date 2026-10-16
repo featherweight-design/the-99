@@ -262,11 +262,14 @@ function AddMode({
     // Escape and Back close the scanner first, back to the list it fills.
     if (scanning) return closeScanner();
     if (discarding) return setDiscarding(false);
+    // A swap waiting on its printings cannot be called back, as a save cannot: the fix stays until it lands, so focus
+    // has a line to come back to.
+    if (swapping) return;
     if (fixing !== null) return setFixing(null);
     if (pickerFor !== null) return cancelPicker();
     if (dirty) return setDiscarding(true);
     onClose();
-  }, [saving, scanning, closeScanner, discarding, fixing, pickerFor, cancelPicker, dirty, onClose]);
+  }, [saving, swapping, scanning, closeScanner, discarding, fixing, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before

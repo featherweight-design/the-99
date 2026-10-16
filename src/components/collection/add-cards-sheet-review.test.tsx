@@ -235,5 +235,19 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     await waitFor(() => expect(screen.getByText(copy.summary(1, 2))).toBeTruthy());
     await waitFor(() => expect(document.activeElement?.closest("[data-line-id]")).toBeTruthy());
   });
+
+  it("keeps the fix open on Escape while a swap waits for its printings, then focus stays with it", async () => {
+    await scanned();
+    fireEvent.click(await screen.findByRole("button", { name: "Sol Ring", expanded: false }));
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    const tile = screen.getByRole("radio", { name: /Mind Stone/ });
+    tile.focus();
+    fireEvent.click(tile);
+    fireEvent.keyDown(tile, { key: "Escape" });
+    expect(screen.getByRole("group", { name: scan.fix.regionLabel })).toBeTruthy();
+    land([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: /Mind Stone/ })));
+  });
 });
 
