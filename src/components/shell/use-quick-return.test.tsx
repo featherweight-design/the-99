@@ -3,6 +3,7 @@
 import { act, render } from "@testing-library/react";
 import { StrictMode, useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useScrollLock } from "../../lib/a11y/dialog";
 import { isPageField, slidesInto, useQuickReturn } from "./use-quick-return";
 
 const nav = vi.hoisted(() => ({ path: "/collection" }));
@@ -11,10 +12,10 @@ vi.mock("next/navigation", () => ({ usePathname: () => nav.path }));
 
 function Probe() {
   const ref = useRef<HTMLElement>(null);
-  const { mode, slides } = useQuickReturn(ref);
+  const { mode, slides, under } = useQuickReturn(ref);
   return (
     <>
-      <header ref={ref} data-mode={mode} data-slides={String(slides)} />
+      <header ref={ref} data-mode={mode} data-slides={String(slides)} data-under={String(under)} />
       <main>
         <input aria-label="Add a card" />
         <input type="checkbox" aria-label="Owned" />
@@ -149,6 +150,38 @@ describe("useQuickReturn", () => {
     expect(header().dataset.mode).toBe("shown");
     expect(document.documentElement.style.getPropertyValue("--header-ms")).toBe("200ms");
     expect(document.documentElement.style.getPropertyValue("--header-offset")).toBe("79px");
+  });
+
+  // A sheet trapped in a sticky head's stacking context must still cover the header (Copilot round 6, the set page).
+  it("drops under every page layer while a sheet holds the scroll lock, and comes back up after", async () => {
+    function Locked({ open }: { open: boolean }) {
+      useScrollLock(open);
+      return null;
+    }
+    const { rerender } = render(
+      <>
+        <Probe />
+        <Locked open={false} />
+      </>,
+    );
+    await act(async () => vi.advanceTimersByTime(400));
+    expect(header().dataset.under).toBe("false");
+    rerender(
+      <>
+        <Probe />
+        <Locked open />
+      </>,
+    );
+    await act(async () => vi.advanceTimersToNextFrame());
+    expect(header().dataset.under).toBe("true");
+    rerender(
+      <>
+        <Probe />
+        <Locked open={false} />
+      </>,
+    );
+    await act(async () => vi.advanceTimersToNextFrame());
+    expect(header().dataset.under).toBe("false");
   });
 
   it("does not slide when it leaves the page by scrolling past it", async () => {

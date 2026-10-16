@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { scrollLocked } from "../../lib/a11y/dialog";
+import { SCROLL_LOCK_EVENT, scrollLocked } from "../../lib/a11y/dialog";
 import { appScrolling } from "../../lib/ui/reveal";
 import {
   AWAY_MS,
@@ -31,15 +31,21 @@ export type QuickReturnView = {
    * scrolled off, so a slide there would draw it sliding up across the screen.
    */
   slides: boolean;
+  /**
+   * A scroll lock is held: some sheet or modal is up. The header then drops under every page layer, because a sheet
+   * rendered inside a sticky page head (z-[2]) is trapped in that head's stacking context, and a header at its usual
+   * z-30 would paint over that sheet's scrim and stay pressable (Copilot round 6, the set page's filter sheet).
+   */
+  under: boolean;
 };
 
-export function slidesInto(next: QuickReturnMode, prev: QuickReturnView): boolean {
+export function slidesInto(next: QuickReturnMode, prev: Pick<QuickReturnView, "mode" | "slides">): boolean {
   return next === "shown" || (next === "away" && (prev.mode === "shown" || (prev.mode === "away" && prev.slides)));
 }
 
 export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickReturnView {
   const pathname = usePathname();
-  const [view, setView] = useState<QuickReturnView>({ mode: "page", slides: false });
+  const [view, setView] = useState<QuickReturnView>({ mode: "page", slides: false, under: false });
   const state = useRef<QuickReturnState>(INITIAL);
   const height = useRef(0);
   const settleUntil = useRef(0);
@@ -104,7 +110,12 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
         root.style.setProperty("--header-ease", away ? "cubic-bezier(0.4, 0, 1, 1)" : "var(--motion-ease-out)");
       }
       state.current = next;
-      setView((prev) => (prev.mode === next.mode ? prev : { mode: next.mode, slides: slidesInto(next.mode, prev) }));
+      const under = scrollLocked();
+      setView((prev) =>
+        prev.mode === next.mode && prev.under === under
+          ? prev
+          : { mode: next.mode, slides: prev.mode === next.mode ? prev.slides : slidesInto(next.mode, prev), under },
+      );
     };
     const schedule = () => {
       if (frame.current === null) frame.current = requestAnimationFrame(tick);
@@ -134,6 +145,7 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       if (link && link.pathname === location.pathname && link.hash) settle();
     };
     document.addEventListener("click", onClick, true);
+    window.addEventListener(SCROLL_LOCK_EVENT, schedule);
     window.addEventListener("popstate", settle);
     // An in-page anchor jump is the app's scroll too.
     window.addEventListener("hashchange", settle);
@@ -142,6 +154,7 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
     return () => {
       window.removeEventListener("scroll", schedule);
       document.removeEventListener("click", onClick, true);
+      window.removeEventListener(SCROLL_LOCK_EVENT, schedule);
       window.removeEventListener("popstate", settle);
       window.removeEventListener("hashchange", settle);
       document.removeEventListener("focusin", onFocusIn);

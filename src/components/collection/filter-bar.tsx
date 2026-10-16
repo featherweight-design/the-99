@@ -251,7 +251,10 @@ export function FilterBar({
     if (!edited) return; // only `wide` flipped — a resize or a mount into the compact branch.
     const el = restOffsetSentinelRef.current;
     if (!el) return;
-    const offset = el.offsetTop;
+    // Less a returned phone header's room, which the head rides under: the head lands under the header, not under it
+    // AND pushed down by it over the first results.
+    const headerRoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-offset")) || 0;
+    const offset = Math.max(0, el.offsetTop - headerRoom);
     if (window.scrollY <= offset) return;
     // A single later scroll — observed consistently, on a sort change, shortly after a plain
     // `scrollTo` here succeeds — pulls the page back to its pre-reset position. Its source

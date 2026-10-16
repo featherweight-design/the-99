@@ -64,6 +64,9 @@ export function scrollLocked(): boolean {
   return scrollLocks > 0;
 }
 
+/** Fired on `window` when the page's scroll lock is taken or released, which moves no scroll of its own. */
+export const SCROLL_LOCK_EVENT = "the99:scroll-lock";
+
 // Every mounted dialog's root, in mount order (H23 PR 2's pre-open review). Ownership of a
 // key is settled by DOM containment (`closest('[role="dialog"]')`) whenever focus is inside
 // one — the stack below decides only the AMBIGUOUS case, focus on neither dialog's subtree,
@@ -206,8 +209,10 @@ export function useScrollLock(locked: boolean) {
     }
     scrollLocks += 1;
     scrollLockMoved();
+    window.dispatchEvent(new Event(SCROLL_LOCK_EVENT));
     return () => {
       scrollLocks -= 1;
+      window.dispatchEvent(new Event(SCROLL_LOCK_EVENT));
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
         window.removeEventListener("wheel", blockUnlessScrollable);

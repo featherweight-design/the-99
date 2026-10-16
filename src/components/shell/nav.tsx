@@ -747,7 +747,7 @@ export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?
 
 export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: ThemeKey } & AdminDoorProps) {
   const ref = useRef<HTMLElement>(null);
-  const { mode, slides } = useQuickReturn(ref);
+  const { mode, slides, under } = useQuickReturn(ref);
   return (
     <>
     {/* Holds the header's room in the page, since the header itself is out of flow at every scroll. */}
@@ -755,7 +755,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: T
     <header
       ref={ref}
       data-quick-return={mode}
-      className={`${QUICK_RETURN[mode]} ${slides ? QUICK_RETURN_SLIDE[mode] : ""} md:hidden inset-x-0 top-0 z-30 flex items-center justify-between bg-[color:var(--bg)] px-5 pt-5 pb-[14px] motion-reduce:transition-none`}
+      className={`${QUICK_RETURN[mode]} ${slides ? QUICK_RETURN_SLIDE[mode] : ""} md:hidden inset-x-0 top-0 ${under ? "z-[1]" : "z-30"} flex items-center justify-between bg-[color:var(--bg)] px-5 pt-5 pb-[14px] motion-reduce:transition-none`}
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* Wordmark: gap 3px, items-end */}
