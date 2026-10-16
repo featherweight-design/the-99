@@ -358,6 +358,16 @@ Display-state names are the scanner's (PR 2 hook / `steady.ts`) as described by 
 | W2 Webcam sure (desktop) | as V3 | panel head + feed + guess row with `.bigd` | `camera.webcam`, `mode.*`, `camera.stop`, `view.add` |
 | W3 Webcam not sure (desktop) | as V6 | pick3 (270 wide) + side column | `view.notSure`, `view.sleeves`, `view.noneOfThese` |
 
+**Fast adds with no press, and Normal picks the printing in the camera** (Hugh, 2026-10-16, overriding the handoff's call 1,
+"nothing without a press"; no design round, the panels reuse shipped parts):
+
+| State | Triggering condition | Component rendered | Copy keys |
+|---|---|---|---|
+| V3f Sure, Fast | as V3, mode fast, not R1 | Sure guess, no press: a status line while the add lands, then V5 | `view.adding` |
+| R1f Duplicate, Fast | as R1, mode fast | Sure guess + `.okk` line, no press | `again.stillOn(x)`, `view.takeOut` |
+| R2f Second copy, Fast | as R2, mode fast | added by itself, as V3f | `view.adding` |
+| N1 Printing step, Normal | as V3 or R2 in mode normal, a Not sure pick, or Add another copy (R1) | card name + the shipped `PrintingRegion` (`role="choose"`, `row` on the phone, `grid` on the desktop) + Not this card; a pick goes to V5 at that printing | `view.loadingPrintings` while they load, `add.choose.intro(k)` / `introPhone(k)`, `view.notThis` |
+
 ## Ambiguities found
 
 1. Copy not in the copy file: V2 body "The name shows once the card stays the same for a moment.", V5 "{name} is on the list" / "Next card.", D7 "Nothing on the list yet" (may reuse shipped add copy) and the bare "Review" at 0. Need keys via /copy-review.

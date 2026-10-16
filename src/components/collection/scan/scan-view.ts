@@ -4,6 +4,8 @@
  * one of these per frame; `ScannerView` draws it and holds no state of its own beyond the press.
  */
 
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
+
 /** A card the server named, as the panel draws it. */
 export type ScanGuess = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
 
@@ -14,7 +16,12 @@ export type ScanPanel =
   | { kind: "unsure"; agreeing: 0 | 1 | 2 }
   | { kind: "sure"; guess: ScanGuess; held: boolean; again: null | { kind: "duplicate" | "second"; count: number } }
   | { kind: "added"; name: string }
-  | { kind: "notSure"; guesses: ScanGuess[]; sleeves: boolean };
+  | { kind: "notSure"; guesses: ScanGuess[]; sleeves: boolean }
+  /**
+   * Normal mode's printing step, in the camera (Hugh, 2026-10-16): the card read, and its printings once they load
+   * (`null` while they do). Picking one puts the card on the list at that printing.
+   */
+  | { kind: "choose"; guess: ScanGuess; choices: PrintingChoice[] | null };
 
 export type ScanScreen =
   | { kind: "blocked" }
@@ -33,7 +40,7 @@ export function outlineLook(screen: ScanScreen, torchOn = false): "dash" | "lit"
   if (screen.kind !== "scanning") return "dash";
   const p = screen.panel;
   // The light on (V9) reads green, as a sure answer does.
-  if (p.kind === "sure" || torchOn) return "ok";
+  if (p.kind === "sure" || p.kind === "choose" || torchOn) return "ok";
   // A dark frame is being read even before a card settles (V7, V8): the outline lights.
   if (screen.dark) return "lit";
   if (p.kind === "unsure") return p.agreeing === 0 ? "dash" : "lit";

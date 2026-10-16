@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import type { ScanGuess, ScanMode } from "./scan-view";
+import { loadPrintingChoices } from "../../../app/collection/edit-actions";
 import { ScannerView } from "./scanner-view";
 import { createOutlineStore } from "../../../lib/scan/outline";
 import { useFrameReader } from "./frame-reader";
 import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
-import { useCardScan, type CardScanDeps, type ScanCapture } from "./use-card-scan";
+import { useCardScan, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 
 const copy = collectionEditCopy.scan;
 
@@ -34,7 +35,7 @@ export function CardScanner({
   listed: ReadonlyMap<string, number>;
   /** Test seams; the detector and embedder are the scanner's own, loaded and released with it. */
   deps?: Partial<CardScanDeps> & Pick<PhotoReaderDeps, "decode" | "thumb">;
-  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture) => Promise<boolean>;
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => Promise<boolean>;
   onClose: () => void;
   /** None of these (V6): the scan is turned down and the sheet's search by name takes over. */
   onNoneOfThese: () => void;
@@ -51,13 +52,14 @@ export function CardScanner({
   // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
   const [outline] = useState(createOutlineStore);
   const readFrame = useFrameReader(outline);
-  const scanDeps = useMemo(() => ({ readFrame, ...deps }), [readFrame, deps]);
+  const scanDeps = useMemo(() => ({ readFrame, loadChoices: loadPrintingChoices, ...deps }), [readFrame, deps]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), NOTICE_MS);
     return () => clearTimeout(t);
   }, [notice]);
-  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, scanDeps, onAdd, onProblem, listed);
+  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss, choosePrinting, notThis } =
+    useCardScan(true, scanDeps, onAdd, onProblem, listed);
   const photos = usePhotoReader(scanDeps, onAdd, mode, onProblem);
   const picker = useRef<HTMLInputElement>(null);
   const choosePhotos = () => picker.current?.click();
@@ -141,6 +143,8 @@ export function CardScanner({
           dismiss();
           onNoneOfThese();
         }}
+        onChoosePrinting={choosePrinting}
+        onNotThis={notThis}
         onChoosePhotos={choosePhotos}
       />
     </>
