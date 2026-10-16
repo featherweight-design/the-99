@@ -178,5 +178,14 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     // Both are on the list: the pick did not write over the scanned card it never saw.
     await waitFor(() => expect(screen.getByText(copy.summary(2, 2))).toBeTruthy());
   });
+
+  it("closes the scanner when Save starts, so the receipt is the sheet's own state", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    // The desktop's Save stays pressable beside its open scanner.
+    fireEvent.click(await screen.findByRole("button", { name: copy.save(1) }));
+    await waitFor(() => expect(screen.queryByTestId("fake-scanner")).toBeNull());
+  });
 });
 

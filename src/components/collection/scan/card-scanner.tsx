@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { ScannerView } from "./scanner-view";
@@ -53,13 +53,25 @@ export function CardScanner({
   }, [notice]);
   const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, scanDeps, onAdd, onProblem, listed);
   // Focus moves into the scanner as it opens (its ✕, or Stop on the desktop), so a keyboard and a screen reader start
-  // there rather than on a press it covers. When the screen turns to the blocked one, the press that held focus is
-  // gone with the feed, so its ✕ takes focus again unless focus is still somewhere inside.
+  // there rather than on a press it covers. After that, when the press holding focus goes (a keyboard Add, a pick, the
+  // blocked screen replacing the feed), focus falls to the page and the ✕ takes it back. Only focus the scanner held:
+  // a press elsewhere, the desktop sheet's own controls included, is left alone.
+  const focusInside = useRef(true);
   useEffect(() => {
-    const root = document.querySelector<HTMLElement>("[data-testid=scanner]");
-    if (root?.contains(document.activeElement) && document.activeElement !== document.body) return;
-    root?.querySelector<HTMLElement>("[data-scan-close]")?.focus();
-  }, [screen.kind]);
+    const track = (e: FocusEvent) => {
+      const root = document.querySelector("[data-testid=scanner]");
+      focusInside.current = !!root && e.target instanceof Node && root.contains(e.target);
+    };
+    document.addEventListener("focusin", track);
+    return () => document.removeEventListener("focusin", track);
+  }, []);
+  const opened = useRef(false);
+  useEffect(() => {
+    const active = document.activeElement;
+    if (opened.current && (!focusInside.current || (active && active !== document.body))) return;
+    opened.current = true;
+    document.querySelector<HTMLElement>("[data-testid=scanner] [data-scan-close]")?.focus();
+  });
   return (
     <ScannerView
       layout={layout}

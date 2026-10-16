@@ -259,5 +259,19 @@ describe("useCardScan", () => {
     act(() => hook.result.current.cancelHold());
     expect(play).toHaveBeenCalled();
   });
+
+  it("turns the light on once for two presses before the camera answers the first", async () => {
+    let answer: () => void = () => {};
+    const applyConstraints = vi.fn(() => new Promise<void>((r) => (answer = r)));
+    const track = { stop: vi.fn(), getCapabilities: () => ({ torch: true }), applyConstraints };
+    const lit = { getTracks: () => [track], getVideoTracks: () => [track] } as unknown as MediaStream;
+    const { hook } = setup({ getUserMedia: async () => lit });
+    await waitFor(() => expect(hook.result.current.torch.available).toBe(true));
+    act(() => hook.result.current.toggleTorch());
+    act(() => hook.result.current.toggleTorch());
+    await act(async () => answer());
+    expect(applyConstraints).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.torch.on).toBe(true);
+  });
 });
 

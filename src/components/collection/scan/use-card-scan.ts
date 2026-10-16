@@ -90,6 +90,7 @@ export function useCardScan(
   const darkSince = useRef<number | null>(null);
   const [torch, setTorch] = useState<{ handle: Torch | null; on: boolean }>({ handle: null, on: false });
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
+  const torchBusy = useRef(false);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
   useEffect(() => {
@@ -246,9 +247,16 @@ export function useCardScan(
     setMode,
     toggleTorch: () => {
       const h = torch.handle;
-      if (!h?.available) return;
+      // One change at a time: a second press before the camera answers would ask for the same state again.
+      if (!h?.available || torchBusy.current) return;
+      torchBusy.current = true;
       const next = !torch.on;
-      void h.set(next).then((ok) => ok && setTorch((t) => ({ ...t, on: next })));
+      void h
+        .set(next)
+        .then((ok) => ok && setTorch((t) => ({ ...t, on: next })))
+        .finally(() => {
+          torchBusy.current = false;
+        });
     },
     hold: () => current && setHeld(current),
     cancelHold: () => setHeld(null),

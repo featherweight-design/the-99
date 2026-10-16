@@ -357,6 +357,8 @@ function AddMode({
     if (!canSave(lines) || saving || scanPending > 0) return;
     phaseRef.current = "saving";
     setPhase("saving");
+    // The desktop's scanner stays open beside Save; the save takes the sheet to its receipt, and the scanner goes.
+    setScanning(false);
     setNotice(null);
     const payload = toPayload(lines);
     const json = JSON.stringify(payload);
