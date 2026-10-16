@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-16T22:40:00Z
+branch read this turn: main 4009713 (brief `2026-10-16-rule-zero-table-check.md`, `lib/bracket/verdict-head.ts`, `findings.ts`, `components/decks/bracket-chip.tsx`, `bracket-mark.tsx`, `findings-block.tsx`, `provenance-panel.tsx`, `components/social/pod-card.tsx`, `pod-menu.tsx`, `copy/deck-analysis.ts`, `copy/social.ts`, `components/home/dashboard.tsx`; handoffs social_r1, social_r3, invites, analysis_tab)
+
+### Updated in this project
+- **Rule 0 table check R1, for Hugh's audit.** `design_handoff_the99_rule_zero/`: main board, Entry, Setup, Read, Swap, Log at phone and desktop (E1–E4, F1–F3, U1–U4, V1–V3, T1–T10, D1–D10, S1–S6, W1–W5, L1–L4, H1–H3); README (all eight open items called), STATES, READINESS (G3 and G7 are Hugh's), copy strings. No About entry (paused). Generator and the canvas export are in `scratch/rule-zero-gen/` for R2. Design canvas: "The 99 · Rule 0 check R1".
+
+### Earlier entry
 date: 2026-10-16T21:10:00Z
 branch read this turn: main 4009713 (brief `2026-10-16-buying-credits.md`, `ui/credits-text.tsx`, `ui/credit-button.tsx`, `copy/credits.ts`, `shell/account-menu.tsx`, `social/social-modal.tsx`, `decks/tuning-panel.tsx`, `decks/synopsis-controls.tsx`, `decks/cuts-free-count.tsx`, `app/not-found.tsx`, `theme/themes.ts`, `model/allowance-rule.ts`; tuning hub README/STATES)
 
