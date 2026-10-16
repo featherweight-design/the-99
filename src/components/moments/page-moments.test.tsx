@@ -90,17 +90,26 @@ describe("M12, Discover in the rail and the tab bar", () => {
 });
 
 describe("M13, the Stats switch", () => {
-  const sw = (moment: boolean, view: "tiles" | "stats" = "tiles") => <StatsViewSwitch view={view} onView={() => {}} moment={moment} />;
+  const sw = (moment: boolean, view: "tiles" | "stats" = "tiles", busy = false) => <StatsViewSwitch view={view} onView={() => {}} moment={moment} busy={busy} />;
   it("carries Stats with three decks or more, on Tiles", async () => {
     wrap(sw(true));
     await seen(screen.getByRole("tablist").parentElement!);
     expect(note(momentsCopy.lineup.tool)).toBeTruthy();
   });
+  it("closes once Stats is asked for, while it is still being read", async () => {
+    const { rerender } = wrap(sw(true));
+    await seen(screen.getByRole("tablist").parentElement!);
+    expect(note(momentsCopy.lineup.tool)).toBeTruthy();
+    rerender(<MomentsProvider live={ALL} spent={[]}>{sw(true, "tiles", true)}</MomentsProvider>);
+    await act(async () => { vi.advanceTimersByTime(500); });
+    expect(note(momentsCopy.lineup.tool)).toBeNull();
+  });
   it.each([
-    ["under three decks", false, "tiles"],
-    ["already on Stats", true, "stats"],
-  ] as const)("stays away %s", async (_, moment, view) => {
-    wrap(sw(moment, view));
+    ["under three decks", false, "tiles", false],
+    ["already on Stats", true, "stats", false],
+    ["while Stats is being read", true, "tiles", true],
+  ] as const)("stays away %s", async (_, moment, view, busy) => {
+    wrap(sw(moment, view, busy));
     await seen(screen.getByRole("tablist").parentElement!);
     expect(screen.queryByRole("note")).toBeNull();
   });

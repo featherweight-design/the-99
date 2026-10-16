@@ -22,12 +22,12 @@ export function StatsViewSwitch({ view, onView, busy = false, moment = false }: 
   onView: (v: DecksView) => void;
   /** Stats is being read for the first time this visit: the switch says so and ignores a second press. */
   busy?: boolean;
-  /** M13 (discovery R1): the reader has three decks or more and is on Tiles, so the switch carries Stats' moment. */
+  /** M13 (discovery R1): the reader has three decks or more and is on Tiles (Stats not yet asked for), so the switch carries Stats' moment. */
   moment?: boolean;
 }) {
   // On the switch as a group, as Matchups' is: one tab stop whichever segment holds it, so Tab from it reaches the
   // bubble's Dismiss and Esc hands focus back to that stop.
-  const lineupMoment = useMomentAnchor("lineup", { eligible: moment && view === "tiles", copy: momentsCopy.lineup });
+  const lineupMoment = useMomentAnchor("lineup", { eligible: moment && view === "tiles" && !busy, copy: momentsCopy.lineup });
   // A press shows in the frame it lands: the segment takes the chosen fill under the finger (`pressFill`) and keeps it
   // while Stats is read (`drawn`; Tiles gives it up in the same frame), with the shell's pending mark beside the label
   // (the 4px diamond a nav press draws, after its 120ms beat). `aria-selected` still follows the view alone, and a
