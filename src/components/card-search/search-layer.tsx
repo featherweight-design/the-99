@@ -92,8 +92,9 @@ function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<O
   return null;
 }
 
-const META = "px-4 pt-3 pb-1 font-mono text-[11.5px] text-[color:var(--fg-faint)]";
-const BOX = "mx-4 mt-[18px] flex flex-col gap-2 rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] p-[18px]";
+const META =
+  "px-4 pt-3 pb-1 font-mono text-[11.5px] text-[color:var(--fg-faint)] md:px-[14px] md:pt-2 md:pb-[6px] md:text-[10.5px] md:tracking-[0.14em] md:uppercase";
+const BOX = "mx-4 mt-[18px] flex flex-col gap-2 rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] p-[18px] md:mx-0 md:mt-0 md:gap-[6px] md:rounded-none md:border-0 md:bg-transparent md:px-4 md:pt-[14px] md:pb-3";
 const SKELETON_WIDTHS: ReadonlyArray<readonly [string, string]> = [
   ["62%", "40%"],
   ["48%", "30%"],
@@ -124,14 +125,14 @@ function SearchBody(p: SearchLayerProps) {
     if (p.recentRows.length === 0) return null;
     return (
       <>
-        <div className="flex items-center justify-between px-4 pt-[14px] pb-[6px]">
+        <div className="flex items-center justify-between px-4 pt-[14px] pb-[6px] md:px-[14px] md:pt-2">
           <h3 className="font-mono text-[10.5px] font-medium tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
             {cardSearchCopy.recent.heading}
           </h3>
           <button
             type="button"
             onClick={p.onClear}
-            className="min-h-9 text-[13.5px] font-medium text-[color:var(--accent)] underline underline-offset-[3px]"
+            className="min-h-9 text-[13.5px] font-medium md:min-h-0 md:text-[13px] text-[color:var(--accent)] underline underline-offset-[3px]"
           >
             {cardSearchCopy.recent.clear}
           </button>
@@ -162,12 +163,12 @@ function SearchBody(p: SearchLayerProps) {
           <div
             key={i}
             aria-hidden
-            className={`flex h-[72px] items-center gap-3 px-4 ${i === 0 ? "" : "border-t border-solid border-[color:var(--border)]"}`}
+            className={`flex h-[72px] items-center gap-3 px-4 md:h-[58px] md:px-[14px] ${i === 0 ? "" : "border-t border-solid border-[color:var(--border)]"}`}
           >
-            <span className="h-14 w-10 flex-none rounded-[4px] bg-[color:var(--surface-raised)]" />
+            <span className="h-14 w-10 flex-none rounded-[4px] bg-[color:var(--surface-raised)] md:h-[42px] md:w-[30px] md:bg-[color:var(--elevated)]" />
             <span className="flex flex-1 flex-col gap-[9px]">
-              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)]" style={{ width: a }} />
-              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)]" style={{ width: b }} />
+              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)] md:bg-[color:var(--elevated)]" style={{ width: a }} />
+              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)] md:bg-[color:var(--elevated)]" style={{ width: b }} />
             </span>
           </div>
         ))}
@@ -178,8 +179,8 @@ function SearchBody(p: SearchLayerProps) {
   if (p.rows.length === 0) {
     return (
       <div className={BOX}>
-        <p className="text-[15.5px] font-semibold text-[color:var(--fg)]">{collectionEditCopy.add.noResultsTitle(p.query)}</p>
-        <p className="text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{collectionEditCopy.add.noResultsBody}</p>
+        <p className="text-[15.5px] font-semibold text-[color:var(--fg)] md:text-[14.5px]">{collectionEditCopy.add.noResultsTitle(p.query)}</p>
+        <p className="text-[14px] leading-[1.6] text-[color:var(--fg-muted)] md:text-[13.5px] md:leading-[1.55]">{collectionEditCopy.add.noResultsBody}</p>
       </div>
     );
   }
@@ -201,12 +202,12 @@ function SearchBody(p: SearchLayerProps) {
 function Failed({ onRetry }: { onRetry: () => void }) {
   return (
     <div className={BOX} role="alert">
-      <p className="text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{collectionEditCopy.add.searchFailed}</p>
+      <p className="text-[14px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px] md:leading-[1.55]">{collectionEditCopy.add.searchFailed}</p>
       <button
         type="button"
         onClick={onRetry}
         data-card-search-retry
-        className="mt-[6px] h-11 self-start rounded-[10px] border border-solid border-[color:var(--border-strong)] px-[18px] text-[14px] font-medium text-[color:var(--fg)]"
+        className="mt-[6px] h-11 self-start rounded-[10px] border border-solid border-[color:var(--border-strong)] px-[18px] text-[14px] font-medium text-[color:var(--fg)] md:h-[34px] md:rounded-[8px] md:px-[14px] md:text-[13px]"
       >
         {cardSearchCopy.tryAgain}
       </button>
@@ -222,6 +223,10 @@ function Rows({
   listboxId,
   onPick,
 }: SearchLayerProps & { from: CardSearchRow[]; matchQuery: string }) {
+  // The keyboard's row stays in view as ↑ ↓ move it down a list that scrolls.
+  useEffect(() => {
+    if (active >= 0) document.getElementById(`${listboxId}-${active}`)?.scrollIntoView({ block: "nearest" });
+  }, [active, listboxId]);
   return (
     <div role="listbox" id={listboxId} aria-label={cardSearchCopy.label}>
       {from.map((row, i) => (
@@ -257,7 +262,7 @@ function Rows({
 function Empty() {
   const card = "absolute top-[14px] h-[100px] w-[70px] rounded-[8px] border-[1.5px] border-solid shadow-[0_10px_24px_rgba(0,0,0,0.5)]";
   return (
-    <div className="flex flex-col items-center gap-[10px] px-7 pt-11 text-center md:flex-row md:gap-4 md:px-6 md:py-6 md:text-left">
+    <div className="flex flex-col items-center gap-[10px] px-7 pt-11 text-center md:flex-row md:gap-[18px] md:px-[18px] md:py-[14px] md:text-left">
       {/* At 62% beside the sentence in the desktop dropdown (D2n); the box is sized to the scaled graphic. */}
       <div className="md:h-[93px] md:w-[124px] md:flex-none">
       <div className="relative h-[150px] w-[200px] md:origin-top-left md:scale-[0.62]" role="img" aria-hidden="true">
@@ -276,9 +281,9 @@ function Empty() {
         <span className="absolute top-[115px] left-[164px] h-[5px] w-[30px] origin-left rotate-45 rounded-[3px] bg-[color:var(--accent)]" />
       </div>
       </div>
-      <div className="flex flex-col items-center gap-[10px] md:items-start md:gap-1">
-        <p className="font-display text-[19px] font-bold text-[color:var(--fg)] md:text-[17px]">{cardSearchCopy.empty.title}</p>
-        <p className="max-w-[300px] text-[14.5px] leading-[1.6] text-pretty text-[color:var(--fg-muted)] md:text-[13.5px]">{cardSearchCopy.empty.body}</p>
+      <div className="flex flex-col items-center gap-[10px] md:items-start md:gap-[6px]">
+        <p className="font-display text-[19px] font-bold text-[color:var(--fg)] md:font-sans md:text-[14.5px] md:font-semibold">{cardSearchCopy.empty.title}</p>
+        <p className="max-w-[300px] text-[14.5px] leading-[1.6] text-pretty text-[color:var(--fg-muted)] md:text-[13.5px] md:leading-[1.55]">{cardSearchCopy.empty.body}</p>
       </div>
     </div>
   );

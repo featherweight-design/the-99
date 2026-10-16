@@ -41,7 +41,7 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch } =
+  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
@@ -75,6 +75,7 @@ function DesktopFrame() {
       if (isOpen) {
         // Already open: refocus the field, and leave the opener (where focus returns on close) as it was.
         inputRef.current?.focus();
+        inputRef.current?.select();
         return;
       }
       warmSearch();
@@ -83,6 +84,9 @@ function DesktopFrame() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mac, isOpen, openSearch, warmSearch, inputRef]);
+
+  // The foot line is D4's alone: results are up (D2, D2n and DD2 draw none).
+  const showFoot = searching && list.length > 0;
 
   return (
     <>
@@ -95,7 +99,7 @@ function DesktopFrame() {
         hidden={!isOpen}
         data-card-search-frame="desktop"
         // Its top is the slot's (73px under the mark: 14 + 39 + 20; the touch rail's are 69 and 61), 12px out from the rail.
-        className="fixed top-[73px] left-[calc(var(--rail-w)+12px)] z-40 flex max-h-[min(640px,calc(100dvh-96px))] w-[540px] flex-col rounded-[10px] border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] touch:top-[69px] touch-short:top-[61px]"
+        className="fixed top-[73px] left-[calc(var(--rail-w)+12px)] z-40 flex w-[540px] flex-col gap-2 touch:top-[69px] touch-short:top-[61px]"
       >
         <h2 id="card-search-heading-desktop" className="sr-only">
           {cardSearchCopy.label}
@@ -103,51 +107,62 @@ function DesktopFrame() {
         {/* The caret back to the rail's slot, as the lock note draws it. */}
         <span
           aria-hidden
-          className="absolute top-[15px] -left-[6px] h-[10px] w-[10px] rotate-45 border-b border-l border-solid border-[color:var(--accent)] bg-[color:var(--bg)]"
+          className="absolute top-[18px] -left-[6px] z-10 h-[10px] w-[10px] rotate-45 border-b border-l border-solid border-[color:var(--accent)] bg-[color:var(--bg)]"
         />
-        <SearchField
-          ref={inputRef}
-          containerClassName="h-[46px] min-w-0 flex-none rounded-none border-0 bg-transparent pr-[10px] pl-4"
-          className="text-[15px] whitespace-nowrap"
-          leading={
-            <span className="flex-none text-[color:var(--fg-muted)]">
-              <SearchGlyph size={18} />
-            </span>
-          }
-          trailing={
-            query === "" ? (
-              <kbd
-                aria-hidden
-                className="flex-none rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[7px] py-[2px] font-mono text-[11.5px] text-[color:var(--fg-faint)]"
-              >
-                {shortcut.label}
-              </kbd>
-            ) : null
-          }
-          role="combobox"
-          aria-expanded={list.length > 0}
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          aria-activedescendant={active >= 0 ? `${listboxId}-${active}` : undefined}
-          aria-keyshortcuts={shortcut.keys}
-          aria-label={cardSearchCopy.label}
-          placeholder={cardSearchCopy.label}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          enterKeyHint="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={onFieldKey}
-          onClear={() => setQuery("")}
-        />
-        {busy ? <SearchProgress /> : <div className="h-px bg-[color:var(--border)]" aria-hidden />}
-        <div ref={placeBody} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
-        <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-4 py-[9px] font-mono text-[11.5px] text-[color:var(--fg-faint)]">
-          <span>{cardSearchCopy.shortcutFoot(shortcut.label)}</span>
-          <span>{cardSearchCopy.keysHint}</span>
-        </p>
+        <div className="rounded-[10px] border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+          <SearchField
+            ref={inputRef}
+            containerClassName="h-[46px] min-w-0 gap-3 rounded-none border-0 bg-transparent pr-[10px] pl-4 focus-within:shadow-none"
+            className="text-[15px] whitespace-nowrap"
+            leading={
+              <span className="flex-none text-[color:var(--fg-muted)]">
+                <SearchGlyph size={18} />
+              </span>
+            }
+            trailing={
+              query === "" ? (
+                <kbd
+                  aria-hidden
+                  className="flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] px-[6px] py-[2px] font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
+                >
+                  {shortcut.label}
+                </kbd>
+              ) : null
+            }
+            role="combobox"
+            aria-expanded={list.length > 0}
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={active >= 0 ? `${listboxId}-${active}` : undefined}
+            aria-keyshortcuts={shortcut.keys}
+            aria-label={cardSearchCopy.label}
+            placeholder={cardSearchCopy.label}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onFieldKey}
+            onClear={() => setQuery("")}
+          />
+        </div>
+        {/* The dropdown: its own box under the field, the Wishlist panel's look (`.dres`). */}
+        <div className="flex max-h-[min(560px,calc(100dvh-170px))] flex-col overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[6px] shadow-[0_22px_50px_rgba(0,0,0,0.6)]">
+          {busy ? (
+            <div className="mb-1 flex-none">
+              <SearchProgress />
+            </div>
+          ) : null}
+          <div ref={placeBody} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
+          {showFoot ? (
+            <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+              <span>{cardSearchCopy.keysHint}</span>
+              <span>{cardSearchCopy.shortcutFoot(shortcut.label)}</span>
+            </p>
+          ) : null}
+        </div>
       </div>
     </>
   );

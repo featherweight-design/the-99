@@ -69,12 +69,12 @@ describe("the search on the desktop", () => {
     expect(frame()).toBeNull();
   });
 
-  it("is not modal, shows the shortcut until typing starts, and names it in the foot", async () => {
+  it("is not modal and shows the shortcut until typing starts, with no foot line before results", async () => {
     mount("MacIntel");
     await press({ metaKey: true });
     expect(frame()?.getAttribute("aria-modal")).toBeNull();
     expect(frame()?.textContent).toContain("⌘K");
-    expect(frame()?.textContent).toContain("⌘K opens this from anywhere");
+    expect(frame()?.textContent).not.toContain("opens this from anywhere");
     await act(async () => void fireEvent.change(combobox(), { target: { value: "s" } }));
     expect(frame()?.querySelector("kbd")).toBeNull();
   });

@@ -575,9 +575,9 @@ function useDesktop(): boolean {
   );
 }
 
-export function SearchGlyph({ size }: { size: number }) {
+export function SearchGlyph({ size, stroke = 1.6 }: { size: number; stroke?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" aria-hidden>
       <circle cx="8.6" cy="8.6" r="5.6" />
       <path d="M12.8 12.8 17 17" />
     </svg>

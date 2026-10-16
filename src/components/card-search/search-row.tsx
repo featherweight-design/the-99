@@ -77,24 +77,24 @@ export function SearchRow({
       onClick={(e) => onPick(e.currentTarget)}
       onKeyDown={onKey}
       data-card-search-row={row.oracleId}
-      className={`flex min-h-[72px] cursor-pointer md:min-h-[58px] items-center gap-3 rounded-[8px] py-2 pr-[10px] pl-4 outline-none ${
+      className={`flex min-h-[72px] cursor-pointer md:min-h-[58px] items-center gap-3 rounded-[8px] py-2 pr-[10px] pl-4 outline-none md:py-[7px] md:pr-[14px] md:pl-[14px] ${
         first ? "" : "border-t border-solid border-[color:var(--border)]"
       } ${active ? "bg-[color:var(--elevated)]" : ""} ${returned ? "shadow-[inset_0_0_0_2px_var(--accent)]" : ""}`}
     >
-      <span className="h-14 w-10 flex-none overflow-hidden md:h-[42px] md:w-[30px] rounded-[4px] bg-[color:var(--surface-sunken)] shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.35)]">
+      <span className="h-14 w-10 flex-none overflow-hidden md:h-[42px] md:w-[30px] rounded-[4px] md:rounded-[3px] bg-[color:var(--surface-sunken)] shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.35)]">
         {row.imageUri ? <FadingImg src={row.imageUri} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="line-clamp-2 text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)] md:text-[14px]">
+        <span className="line-clamp-2 md:line-clamp-1 text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)] md:text-[14px]">
           <Matched text={row.name} query={query} />
         </span>
         {row.flavorName ? (
-          <span className="truncate font-mono text-[11.5px] text-[color:var(--fg-muted)]">
+          <span className="truncate font-mono text-[11.5px] text-[color:var(--fg-muted)] md:text-[11px]">
             {addPanelCopy.quickAdd.rowFlavorNamePrefix}
             <Matched text={row.flavorName} query={query} />
           </span>
         ) : null}
-        <span className="flex min-w-0 font-mono text-[11.5px] whitespace-nowrap text-[color:var(--fg-faint)]">
+        <span className="flex min-w-0 font-mono text-[11.5px] whitespace-nowrap md:text-[11px] text-[color:var(--fg-faint)]">
           {row.owned > 0 ? (
             <span className="flex-none">
               <b className="font-medium text-[color:var(--fg-body)]">×{row.owned}</b>

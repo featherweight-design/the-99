@@ -546,13 +546,13 @@ function RailSearchSlot({ bind }: { bind: ReturnType<typeof useRailTag>["bind"] 
         className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
           search.isOpen
             ? "bg-elevated text-[color:var(--fg)]"
-            : "bg-transparent text-[color:var(--fg-muted)] hover:bg-elevated-hover"
+            : "bg-transparent text-[color:var(--fg-muted)] hover:bg-elevated hover:text-[color:var(--fg)]"
         }`}
       >
-        <SearchGlyph size={19} />
+        <SearchGlyph size={19} stroke={1.5} />
         <RailLabel label={cardSearchCopy.touchRailLabel} />
       </button>
-      <span aria-hidden className="mt-[2px] mb-[6px] h-px w-6 shrink-0 bg-[color:var(--border-strong)]" />
+      <span aria-hidden className="mt-[6px] mb-[6px] h-px w-6 shrink-0 bg-[color:var(--border-strong)]" />
     </>
   );
 }
