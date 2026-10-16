@@ -524,4 +524,71 @@ export const collectionEditCopy = {
     toast: (card: string, q: number) => `${card} removed · ${copies(q)}`,
     undo: "Undo",
   },
+  /**
+   * Card scanning (plan `2026-10-16-card-scan.md`, handoff `card-scan · copy strings.ts`, /copy-review 2026-10-16).
+   * The handoff's `index` block (D1–D5, a 27MB download and offline use) is gone: the server finds the card, so
+   * scanning needs a connection and there is nothing to download. The list, the printing step, the combined notice
+   * and the receipt are `add`'s.
+   */
+  scan: {
+    press: "Scan",
+    close: "Close the scanner",
+    /** A lookup that failed: a ToastFrame, and the viewfinder keeps scanning. */
+    lookupFailed: "Couldn’t check that card. Hold it up again.",
+    /** No connection: scanning needs one now, and search still works once it is back. */
+    offlineTitle: "You’re offline",
+    offlineBody: "Scanning needs a connection to check each card. Search works again once you’re back online.",
+    camera: {
+      blockedTitle: "The camera is blocked",
+      blockedBody: "Your browser isn’t letting The 99 use the camera. Allow it in your browser’s settings for this site, then press Scan again.",
+      photosLine: "Or choose photos you’ve already taken, one card in each.",
+      choosePhotos: "Choose photos",
+      noWebcamTitle: "No camera we can use",
+      noWebcamBody: "This computer has no webcam, or your browser is blocking it for this site. Photos work just as well: one card in each.",
+      webcam: "Webcam",
+      stop: "Stop",
+    },
+    mode: {
+      label: "Printing",
+      fast: "Fast",
+      normal: "Normal",
+      fastLine: "each card takes its first printing. You can change any of them on the list.",
+      normalLine: "you choose each card’s printing on the list, before you save.",
+    },
+    view: {
+      looking: "Hold a card inside the frame",
+      unsure: "Hold it still",
+      add: "Add to the list",
+      held: "Held",
+      notSure: "Not sure. Which is it?",
+      sleeves: "Sleeves and glare make this harder. Tilt the card away from the light.",
+      noneOfThese: "None of these",
+      darkTorch: "It’s dark, so cards read slowly. Turn on the light, top right.",
+      darkNoTorch: "It’s dark, so cards read slowly. Move closer to a lamp.",
+      light: "Light",
+      onList: (x: number) => `${n(x)} on the list`,
+      review: (x: number) => `Review ${n(x)}`,
+    },
+    again: {
+      stillOn: (x: number) => `✓ On the list · ×${n(x)}`,
+      addAnother: "Add another copy",
+      already: (x: number) => `×${n(x)} on the list already`,
+      addSecond: "Add a second copy",
+    },
+    fix: {
+      question: "Which card was it? These are the closest to your scan.",
+      yourScan: "Your scan",
+      onList: "On the list",
+      search: "Search for it instead",
+    },
+    photos: {
+      read: (x: number) => (x === 1 ? "1 photo read" : `${n(x)} photos read`),
+      sure: "Sure",
+      notSure: "Not sure",
+      pick: "Pick below",
+      photoOf: (i: number, t: number) => `photo ${i} of ${t}`,
+      addSure: (x: number) => (x === 1 ? "Add the sure one" : `Add the ${n(x)} sure ones`),
+      more: "Choose more photos",
+    },
+  },
 } as const;
