@@ -34,6 +34,7 @@ import { CommanderThumb } from "../ui/commander-thumb";
 import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
 import { PreconDoor } from "./precons/precon-door";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 const copy = deckImportCopy.commander;
 
@@ -307,6 +308,8 @@ export function CreatePicker(props: CreatePickerProps) {
     const id = revealRef.current;
     if (id === null) return;
     revealRef.current = null;
+    // The app's scroll, not the reader's (quick return).
+    noteAppScroll();
     document.querySelector(`[data-picker-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
   });
 

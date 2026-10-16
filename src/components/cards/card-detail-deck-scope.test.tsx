@@ -11,7 +11,10 @@ import { reveal } from "../../lib/ui/reveal";
 import type { DeckToken, DeckTokensRead } from "../../lib/tokens/read";
 
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),

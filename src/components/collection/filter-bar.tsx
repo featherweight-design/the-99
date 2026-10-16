@@ -39,6 +39,8 @@ import { FilterPanel } from "../ui/filter-panel";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { UNDER_HEADER } from "../ui/under-header";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 export { useIsDesktop };
 
@@ -249,7 +251,10 @@ export function FilterBar({
     if (!edited) return; // only `wide` flipped — a resize or a mount into the compact branch.
     const el = restOffsetSentinelRef.current;
     if (!el) return;
-    const offset = el.offsetTop;
+    // Less a returned phone header's room, which the head rides under: the head lands under the header, not under it
+    // AND pushed down by it over the first results.
+    const headerRoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-offset")) || 0;
+    const offset = Math.max(0, el.offsetTop - headerRoom);
     if (window.scrollY <= offset) return;
     // A single later scroll — observed consistently, on a sort change, shortly after a plain
     // `scrollTo` here succeeds — pulls the page back to its pre-reset position. Its source
@@ -271,6 +276,8 @@ export function FilterBar({
     window.addEventListener("keydown", stop);
     function reassert() {
       // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
+      // The app's scroll, not the reader's: quick return must not read the jump back up as a reason to return.
+      noteAppScroll();
       if (window.scrollY !== offset) window.scrollTo(0, offset);
       frames++;
       if (frames < 30) rafId = requestAnimationFrame(reassert);
@@ -292,7 +299,8 @@ export function FilterBar({
     const mq = window.matchMedia("(min-width: 900px)");
     const apply = () => {
       // 108/66, not the brief's provisional 102/60 — see the head's own comment below.
-      document.documentElement.style.scrollPaddingTop = mq.matches ? "66px" : "108px";
+      // Plus a returned phone header's room (card search plan PR B), which the head rides under.
+      document.documentElement.style.scrollPaddingTop = `calc(${mq.matches ? "66px" : "108px"} + var(--header-offset, 0px))`;
     };
     apply();
     mq.addEventListener("change", apply);
@@ -462,7 +470,7 @@ export function FilterBar({
       <div
         ref={headRef}
         className={[
-          "sticky top-0 z-[2] flex flex-col gap-[6px]",
+          `sticky ${UNDER_HEADER} z-[2] flex flex-col gap-[6px]`,
           "min-[900px]:flex-row min-[900px]:items-center min-[900px]:gap-[8px]",
           "border-0 border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)]",
           "px-[16px] pt-[8px] pb-[7px]",

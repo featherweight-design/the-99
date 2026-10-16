@@ -8,7 +8,10 @@ import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-regi
 import { reveal } from "../../lib/ui/reveal";
 
 // jsdom lays nothing out, so the scroll itself is `reveal`'s own test; here, what is revealed and when.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn(() => () => {}) }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(() => () => {}),
+}));
 const revealed = vi.mocked(reveal);
 
 const copy = printingPickerCopy.printing;

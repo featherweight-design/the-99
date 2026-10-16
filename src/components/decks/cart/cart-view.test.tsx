@@ -212,7 +212,8 @@ describe("CartView", () => {
     const { container } = render(<CartView cart={cart()} provenance={provenance} />);
     const controls = container.querySelector("[data-cart-controls]") as HTMLElement;
     expect(controls.className).toContain("sticky");
-    expect(controls.className).toContain("top-0");
+    // Under a returned phone header (card search plan PR B), which publishes the room it takes.
+    expect(controls.className).toContain("top-[var(--header-offset,0px)]");
     expect(controls.className).toContain("md:static");
     // The switch and the heading are the pinned block's members.
     expect(within(controls).getByRole("radiogroup", { name: copy.view.label })).toBeTruthy();

@@ -10,6 +10,7 @@
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import { useMomentHold } from "../../lib/moments/hold";
@@ -263,7 +264,11 @@ function AccountSheet(props: PanelProps) {
   const chipRef = useRef<HTMLElement | null>(null);
   useDialogA11y(ref, props.onClose, { initialFocusRef: chipRef });
 
-  return (
+  // Portalled to the body (card search plan PR B): the phone header that opens it is a fixed, translated layer while
+  // quick return has it back over the page, which would make it the backdrop's containing block and trap both under
+  // the tab bar.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <>
       <div
         // A visual dismiss target only — the sheet carries the semantics.
@@ -334,7 +339,8 @@ function AccountSheet(props: PanelProps) {
           <MenuItems {...props} />
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 

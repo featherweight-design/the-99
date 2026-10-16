@@ -4,6 +4,7 @@
 // export dialog, ConfirmModal, and the account menu.
 
 import { type RefObject, useEffect, useRef } from "react";
+import { noteAppScroll } from "../ui/reveal";
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -57,6 +58,14 @@ function scrollLockMoved() {
   for (const listener of scrollLockListeners) listener();
 }
 let overflowBeforeLock = "";
+
+/** Whether any dialog holds the page's scroll now (quick return freezes the phone header under one). */
+export function scrollLocked(): boolean {
+  return scrollLocks > 0;
+}
+
+/** Fired on `window` when the page's scroll lock is taken or released, which moves no scroll of its own. */
+export const SCROLL_LOCK_EVENT = "the99:scroll-lock";
 
 // Every mounted dialog's root, in mount order (H23 PR 2's pre-open review). Ownership of a
 // key is settled by DOM containment (`closest('[role="dialog"]')`) whenever focus is inside
@@ -200,8 +209,10 @@ export function useScrollLock(locked: boolean) {
     }
     scrollLocks += 1;
     scrollLockMoved();
+    window.dispatchEvent(new Event(SCROLL_LOCK_EVENT));
     return () => {
       scrollLocks -= 1;
+      window.dispatchEvent(new Event(SCROLL_LOCK_EVENT));
       if (scrollLocks === 0) {
         document.body.style.overflow = overflowBeforeLock;
         window.removeEventListener("wheel", blockUnlessScrollable);
@@ -368,7 +379,9 @@ function pinScrollY(y: number | null) {
       stop();
       return;
     }
-    // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
+    // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move. The app's
+    // scroll, not the reader's: quick return must not read it as travel.
+    noteAppScroll();
     if (window.scrollY !== offset) window.scrollTo(0, offset);
     frames += 1;
     if (frames < 30) rafId = requestAnimationFrame(reassert);

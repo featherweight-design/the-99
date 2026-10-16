@@ -5,7 +5,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 
 let pathname = "/";
 const push = vi.fn();

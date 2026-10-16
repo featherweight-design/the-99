@@ -53,6 +53,8 @@ import { useHeadCollapse } from "./use-head-collapse";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { SearchIcon } from "../ui/search-icon";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
+import { UNDER_HEADER } from "../ui/under-header";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 export type SetGridViewProps = {
   code: string;
@@ -706,7 +708,7 @@ export function SetGridView(props: SetGridViewProps) {
            became the phone's original defect at a second width — a ~300px header held over
            the grid for the 120px band past the threshold, measured at `top 0px` while the
            cards moved under it. The rule is one rule now. */
-        className={`${shy ? "sticky" : ""} top-0 z-[2] pb-[12px] pt-[10px]`}
+        className={`${shy ? "sticky" : ""} ${UNDER_HEADER} z-[2] pb-[12px] pt-[10px]`}
         style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
         {/* §31's collapsed bar: ONE row at 52px carrying where you are, how far along, and
@@ -764,6 +766,7 @@ export function SetGridView(props: SetGridViewProps) {
                 // the keyboard reader stayed on a button that was about to unmount.
                 openHead();
                 // Instant, not `reveal`: the next frame focuses the field, which must find the page at the top.
+                noteAppScroll();
                 window.scrollTo({ top: 0 });
                 // And on the next frame, once the open head has painted. The control they
                 // asked for is the field this button stands for; landing them anywhere

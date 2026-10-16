@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MOTION } from "./motion";
-import { reveal, scrollAt, scrollDuration, scrollTarget, type AxisGeometry } from "./reveal";
+import { appScrolling, reveal, scrollAt, scrollDuration, scrollTarget, type AxisGeometry } from "./reveal";
 
 function media(reduce: boolean) {
   vi.stubGlobal("matchMedia", (q: string) => ({ matches: reduce && q === "(prefers-reduced-motion: reduce)" }));
@@ -88,6 +88,64 @@ describe("reveal", () => {
     expect(box.scrollTop).toBeLessThan(1000);
     vi.advanceTimersByTime(MOTION.scrollMaxMs + 50);
     expect(box.scrollTop).toBe(1000);
+  });
+
+  // Quick return reads this, so a long reveal (a 100ms beat, then up to 700ms of scroll) never moves the header.
+  it("counts as the app's scroll for its whole run and a beat after, not a fixed window", () => {
+    media(false);
+    const { el } = scene();
+    vi.spyOn(performance, "now").mockImplementation(() => Date.now());
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "Date"] });
+    expect(appScrolling()).toBe(false);
+    reveal(el);
+    expect(appScrolling()).toBe(true);
+    // Past a fixed 300ms window, and still scrolling: the shortest scroll runs 320ms after the 100ms beat.
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.durationMs - 20);
+    expect(appScrolling()).toBe(true);
+    vi.advanceTimersByTime(MOTION.scrollMaxMs + 200);
+    expect(appScrolling()).toBe(false);
+  });
+
+  it("counts a reduced-motion jump for a beat after it", () => {
+    media(true);
+    const { el } = scene();
+    vi.spyOn(performance, "now").mockImplementation(() => Date.now());
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "Date"] });
+    reveal(el);
+    expect(appScrolling()).toBe(true);
+    vi.advanceTimersByTime(150);
+    expect(appScrolling()).toBe(false);
+  });
+
+  it("stops counting a beat after the reader cancels it", () => {
+    media(false);
+    const { el } = scene();
+    vi.spyOn(performance, "now").mockImplementation(() => Date.now());
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "Date"] });
+    reveal(el);
+    vi.advanceTimersByTime(MOTION.delayMs + 50);
+    window.dispatchEvent(new Event("wheel"));
+    expect(appScrolling()).toBe(true);
+    vi.advanceTimersByTime(150);
+    expect(appScrolling()).toBe(false);
+  });
+
+  // A returned phone header publishes its room as the root's scroll padding; a reveal of the window lands below it,
+  // as a native scroll into view would.
+  it("honours the root's scroll padding when it scrolls the window", () => {
+    media(true);
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    document.documentElement.style.scrollPaddingTop = "79px";
+    Object.defineProperty(document.documentElement, "scrollHeight", { value: 5000, configurable: true });
+    el.getBoundingClientRect = () => ({ top: 1000, left: 0, width: 100, height: 100 }) as DOMRect;
+    el.getClientRects = () => [el.getBoundingClientRect()] as unknown as DOMRectList;
+    const to = vi.fn();
+    window.scrollTo = to as unknown as typeof window.scrollTo;
+    reveal(el);
+    document.documentElement.style.scrollPaddingTop = "";
+    expect(to).toHaveBeenCalled();
+    expect(JSON.stringify(to.mock.calls.at(-1))).toContain("921");
   });
 
   it("jumps under reduced motion, with no beat", () => {

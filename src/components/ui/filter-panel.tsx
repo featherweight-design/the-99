@@ -36,6 +36,7 @@ import { SearchField } from "./text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "./use-is-desktop";
 import { Chevron } from "./chevron";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 export type FilterPanelOption = {
   /**
@@ -394,6 +395,8 @@ export function FilterPanel({
     if (!activeCode || !listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(`[data-code="${activeCode}"]`);
     // Instant, not `reveal`: it follows the keyboard, and an eased scroll would trail each key.
+    // The app's scroll, not the reader's (quick return).
+    noteAppScroll();
     el?.scrollIntoView({ block: "nearest" });
   }, [activeCode]);
 

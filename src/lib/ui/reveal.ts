@@ -106,6 +106,11 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
     const root = document.documentElement;
     viewSize = axis === "y" ? window.innerHeight : window.innerWidth;
     max = axis === "y" ? root.scrollHeight - viewSize : root.scrollWidth - viewSize;
+    // The page's own scroll padding, as a native scroll into view honours it: a returned phone header's room
+    // (`--header-offset`) and Collection's pinned head, so a revealed target lands below both.
+    const pad = axis === "y" ? parseFloat(getComputedStyle(root).scrollPaddingTop) || 0 : 0;
+    viewStart = pad;
+    viewSize -= pad;
   }
   const from = read(node, axis);
   const to = scrollTarget(
@@ -123,6 +128,31 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
 }
 
 let active: (() => void) | null = null;
+
+/**
+ * Until when the page's scroll is the app's, not the reader's (quick return, card search plan PR B): the whole of a
+ * running reveal, and a beat after it ends or is cancelled, since the scroll event of its last write lands after it.
+ * Quick return reads it so a reveal never brings the header back or sends it away.
+ */
+const TRAILING_MS = 100;
+let appScrollUntil = 0;
+
+/** Whether a reveal is moving the page now, or moved it within the last beat. */
+export function appScrolling(now: number = performance.now()): boolean {
+  return active !== null || now < appScrollUntil;
+}
+
+const settled = () => {
+  appScrollUntil = performance.now() + TRAILING_MS;
+};
+
+/**
+ * Marks a scroll the app makes by hand (`window.scrollTo`, outside `reveal`) as the app's, for a beat after this call.
+ * A loop that scrolls over several frames calls it on each one.
+ */
+export function noteAppScroll(): void {
+  settled();
+}
 
 /** Keys that come on the way to a character rather than instead of one: a capital's Shift, a
  *  layout's AltGraph, a dead accent key, an IME's composition. */
@@ -158,6 +188,7 @@ export function reveal(
 
   if (prefersReducedMotion()) {
     for (const t of plan()) write(t.node, t.axis, t.to);
+    settled();
     return () => {};
   }
 
@@ -169,6 +200,7 @@ export function reveal(
     timer = frame = null;
     for (const type of CANCEL_EVENTS) window.removeEventListener(type, onInput, true);
     if (active === stop) active = null;
+    settled();
   };
   // Typing into a field inside the target is the reader using what was brought to them (the note
   // field whose picker opened the reveal), not the reader going elsewhere, so it lets the scroll run.
