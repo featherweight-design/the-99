@@ -36,6 +36,8 @@ export type ScannerViewProps = {
   onCancelHold: () => void;
   onPick: (oracleId: string) => void;
   onNoneOfThese: () => void;
+  /** The photos path (card-scan PR 5). Absent, the blocked screens offer no Choose photos press, since nothing reads one. */
+  onChoosePhotos?: () => void;
 };
 
 export function ScannerView(p: ScannerViewProps) {
@@ -432,6 +434,11 @@ function CameraBlocked(p: ScannerViewProps) {
           <CameraIcon size={44} radius={12} />
           <b className="font-display text-[18px] font-bold text-[color:var(--fg)]">{copy.camera.noWebcamTitle}</b>
           <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.camera.noWebcamBody}</p>
+          {p.onChoosePhotos && (
+            <button type="button" onClick={p.onChoosePhotos} className={BIG_DESK}>
+              {copy.camera.choosePhotos}
+            </button>
+          )}
         </div>
       </section>
     );
@@ -449,7 +456,15 @@ function CameraBlocked(p: ScannerViewProps) {
         </span>
         <h3 className="m-0 font-display text-[24px] font-bold text-[color:var(--fg)]">{copy.camera.blockedTitle}</h3>
         <p className="m-0 text-[15px] leading-[1.6] text-[color:var(--fg-body)]">{copy.camera.blockedBody}</p>
+        {p.onChoosePhotos && <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{copy.camera.photosLine}</p>}
       </div>
+      {p.onChoosePhotos && (
+        <div className="flex flex-col gap-[10px] px-[22px] pb-[22px] pt-[14px]">
+          <button type="button" onClick={p.onChoosePhotos} className={BIG_OUTLINE}>
+            {copy.camera.choosePhotos}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

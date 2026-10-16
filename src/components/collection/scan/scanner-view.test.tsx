@@ -162,6 +162,17 @@ describe("ScannerView", () => {
     expect(screen.getByRole("button", { name: copy.view.add })).toBeTruthy();
   });
 
+  it("offers Choose photos on a blocked camera only when the photos path is given (PR 5)", () => {
+    draw({ screen: { kind: "blocked" } });
+    expect(screen.queryByRole("button", { name: copy.camera.choosePhotos })).toBeNull();
+    document.body.innerHTML = "";
+    const onChoosePhotos = vi.fn();
+    draw({ screen: { kind: "blocked" }, onChoosePhotos });
+    expect(screen.getByText(copy.camera.photosLine)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.camera.choosePhotos }));
+    expect(onChoosePhotos).toHaveBeenCalled();
+  });
+
   it("names the desktop's blocked webcam", () => {
     draw({ layout: "desk", screen: { kind: "blocked" } });
     expect(screen.getByText(copy.camera.noWebcamTitle)).toBeTruthy();
