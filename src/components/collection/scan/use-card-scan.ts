@@ -126,7 +126,11 @@ export function useCardScan(
         wait: (ms) => (depsRef.current.wait ?? ((x: number) => new Promise<void>((r) => setTimeout(r, x))))(ms),
         now,
       },
-      setServer,
+      // A match is published only through `frame()`'s answer, which checks it against the card still in view: one
+      // that lands after its card left would otherwise be addable until the next read.
+      (s) => {
+        if (s.kind !== "match") setServer(s);
+      },
     );
     (async () => {
       let failures = 0;
@@ -185,16 +189,24 @@ export function useCardScan(
   const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList: listed, lastAdded, dismissed };
   const screen = scanScreen(inputs);
 
+  // One add at a time: a second tap while the first waits for its printings would add the card again unasked.
+  const committing = useRef(false);
   // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
   const commit = useCallback(
     async (g: ScanGuess) => {
-      setHeld(null);
-      if (!(await onAdd(g, mode))) {
-        onProblem("notAdded");
-        return;
+      if (committing.current) return;
+      committing.current = true;
+      try {
+        setHeld(null);
+        if (!(await onAdd(g, mode))) {
+          onProblem("notAdded");
+          return;
+        }
+        setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
+        setAdded({ name: g.name, imageUri: g.imageUri });
+      } finally {
+        committing.current = false;
       }
-      setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
-      setAdded({ name: g.name, imageUri: g.imageUri });
     },
     [onAdd, mode, onProblem],
   );

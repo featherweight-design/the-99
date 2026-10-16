@@ -168,4 +168,40 @@ describe("useCardScan", () => {
       vi.useRealTimers();
     }
   });
+
+  it("adds once for two taps while the first add is still waiting on its printings", async () => {
+    const { hook, onAdd } = setup();
+    let land: (v: boolean) => void = () => {};
+    onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    act(() => hook.result.current.add());
+    act(() => hook.result.current.add());
+    await act(async () => land(true));
+    expect(onAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it("never offers an answer that arrives after its card has left the frame", async () => {
+    let answer: (r: Response) => void = () => {};
+    const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
+    const other = new Float32Array(EMBED_DIM);
+    other[1] = 1;
+    // Card A until its lookup is asked for, then one frame of card B, then no further frame at all: the answer for A
+    // lands while B is in view and has not settled, and nothing after it re-checks.
+    let left = false;
+    const readFrame = async (): Promise<FrameRead> => {
+      await new Promise((r) => setTimeout(r, 5));
+      if (fetch.mock.calls.length === 0) return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      if (!left) {
+        left = true;
+        return { frame: { kind: "card", embedding: other }, cardInView: true, dark: false };
+      }
+      return new Promise<FrameRead>(() => {});
+    };
+    const { hook } = setup({ fetch: fetch as unknown as typeof globalThis.fetch, readFrame });
+    await waitFor(() => expect(left).toBe(true), { timeout: 4000 });
+    await new Promise((r) => setTimeout(r, 20));
+    await act(async () => answer(new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
+  });
 });

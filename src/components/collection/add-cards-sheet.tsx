@@ -134,6 +134,11 @@ function AddMode({
   const [pulse, setPulse] = useState<{ id: string; n: number } | null>(null);
   // The scanner over the sheet (phone) or in place of the search (desktop), card-scan PR 3.
   const [scanning, setScanning] = useState(false);
+  // Whether the scanner is still up when a scanned add's printings answer: it says its own failures, the sheet the rest.
+  const scanningRef = useRef(false);
+  useEffect(() => {
+    scanningRef.current = scanning;
+  }, [scanning]);
   // Scanned adds whose printings are still loading: the printing step waits for them before it asks.
   const [scanPending, setScanPending] = useState(0);
   // The line whose printing is being asked for: the one opened, else (Normal mode's scanned lines wait for theirs)
@@ -153,7 +158,9 @@ function AddMode({
   const choosing = lines.find((l) => l.printing === null) ?? null;
   const blocked = choosing !== null || loadingCard !== null;
   const saving = phase === "saving";
-  const searchDisabled = blocked || saving;
+  // A scanned card still loading its printings lands on the list later: a search pick in the meantime would build
+  // from a list without it, and drop it.
+  const searchDisabled = blocked || saving || scanPending > 0;
   const trimmed = query.trim();
 
   // The debounced search. A ticket drops an answer that a newer keystroke has outdated.
@@ -280,8 +287,11 @@ function AddMode({
     } finally {
       setScanPending((n) => n - 1);
     }
-    // The scanner says this one, over its own feed; the sheet's notice would sit under it on a phone.
-    if (choices.length === 0 || listRead()) return false;
+    if (choices.length === 0 || listRead()) {
+      // The scanner says this one, over its own feed, while it is up; once it has closed the sheet says it.
+      if (choices.length === 0 && !scanningRef.current) setNotice({ text: copy.printingsFailed, kind: "error" });
+      return false;
+    }
     const id = crypto.randomUUID();
     // As a search pick does, a scanned card clears the query: its results would cover the printing step it may open.
     setQuery("");

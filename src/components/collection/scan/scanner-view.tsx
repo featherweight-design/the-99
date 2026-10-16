@@ -334,12 +334,15 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
       type="button"
       data-held={held ? "" : undefined}
       onPointerDown={(e) => {
+        // Only the primary button holds and adds: a right-click opens the context menu and nothing else.
+        if (e.button !== 0) return;
         // A touch captures the pointer to the button, so sliding off would never leave it: let go of the capture,
         // and the finger's leave cancels the hold as the design asks.
         if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
         p.onHold();
       }}
       onPointerUp={(e) => {
+        if (e.button !== 0) return;
         const r = e.currentTarget.getBoundingClientRect();
         const inside = r.width === 0 || (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
         if (inside) p.onAdd();

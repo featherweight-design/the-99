@@ -135,4 +135,24 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
     expect(document.querySelector<HTMLInputElement>("input")!.value).toBe("");
   });
+
+  it("holds the search while a scanned card is still landing, so a search pick cannot drop it", async () => {
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>(() => {}));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(document.querySelector<HTMLInputElement>("input")!.disabled).toBe(true));
+  });
+
+  it("says a scanned card could not be added when its printings fail after the scanner closed", async () => {
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    land([]);
+    expect(await screen.findByRole("alert")).toHaveTextContent(copy.printingsFailed);
+  });
 });

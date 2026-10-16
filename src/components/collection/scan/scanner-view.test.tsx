@@ -191,4 +191,13 @@ describe("guideLook", () => {
     expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true }, true)).toBe("ok");
     expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true })).toBe("lit");
   });
+
+  it("ignores a right-click on Add: the context menu opens and nothing is held or added", () => {
+    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    const add = screen.getByRole("button", { name: copy.view.add });
+    fireEvent.pointerDown(add, { button: 2 });
+    fireEvent.pointerUp(add, { button: 2 });
+    expect(p.onHold).not.toHaveBeenCalled();
+    expect(p.onAdd).not.toHaveBeenCalled();
+  });
 });
