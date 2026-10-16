@@ -122,7 +122,9 @@ function Card({
   const titleId = useId();
   const reasonId = useId();
   const off = unavailable !== undefined;
-  const syncMoment = useMomentAnchor("collection-sync", { eligible: moment && !off, copy: momentsCopy.collectionSync });
+  // Picked, however it was picked (a press, Space or Enter, an arrow from a sibling), the card has done what the tip
+  // was for, so it stops being the anchor and the tip closes with it.
+  const syncMoment = useMomentAnchor("collection-sync", { eligible: moment && !off && !picked, copy: momentsCopy.collectionSync });
   return (
     <div
       {...syncMoment}
@@ -137,9 +139,7 @@ function Card({
       onKeyDown={(e) => {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
-          // Through the card's own click, so a key picks exactly as a press does, and anything listening for the press
-          // (a moment's bubble, which a press dismisses) hears it.
-          if (!off) e.currentTarget.click();
+          if (!off) onPick();
         }
       }}
       // R2: on desktop the radio sits on the title row and everything below runs the card's full

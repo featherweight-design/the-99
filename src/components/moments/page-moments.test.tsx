@@ -2,7 +2,8 @@
 // gives it, and shows the bubble once on screen. The rules themselves are the provider's tests.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import type { UploadMode } from "../../app/collection/actions";
 import { ARRIVE_MS, MomentsProvider } from "./moments-provider";
 import { MOMENTS, type MomentId } from "../../lib/moments/registry";
 import { momentsCopy } from "../../lib/copy/moments";
@@ -130,14 +131,20 @@ describe("M15, the Sync card", () => {
     await seen(card());
     expect(card().getAttribute("aria-describedby")).toBe(note(momentsCopy.collectionSync.tool)?.id);
   });
-  it.each(["Enter", " "])("picks Sync and closes the tip on %j, as a press does", async (key) => {
-    const onPick = vi.fn();
-    wrap(<UploadChoice {...base} sync={sync()} picked={null} onPick={onPick} />);
+  function Choice() {
+    const [picked, setPicked] = useState<UploadMode | null>(null);
+    return <UploadChoice {...base} sync={sync()} picked={picked} onPick={setPicked} />;
+  }
+  it.each([
+    ["Enter on the card", () => card(), "Enter"],
+    ["Space on the card", () => card(), " "],
+    ["an arrow from Add", () => document.querySelector("[data-choice=add]")!, "ArrowRight"],
+  ] as const)("closes the tip once Sync is picked by %s", async (_, from, key) => {
+    wrap(<Choice />);
     await seen(card());
     expect(note(momentsCopy.collectionSync.tool)).toBeTruthy();
-    act(() => { fireEvent.keyDown(card(), { key }); });
-    expect(onPick).toHaveBeenCalledTimes(1);
-    expect(onPick).toHaveBeenCalledWith("sync");
+    act(() => { fireEvent.keyDown(from(), { key }); });
+    expect(card().getAttribute("aria-checked")).toBe("true");
     await act(async () => { vi.advanceTimersByTime(500); });
     expect(note(momentsCopy.collectionSync.tool)).toBeNull();
   });
