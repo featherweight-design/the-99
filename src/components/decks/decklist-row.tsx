@@ -38,6 +38,8 @@ import { ComboMark } from "../cards/combo-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { cardMarkCopy, type CardFact } from "../../lib/copy/card-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
@@ -457,6 +459,12 @@ export function DecklistRow({
   const spokenFor = inShopping && isSpokenFor(card);
   // One answer, one slot — see `deckRowTag`.
   const tag = deckRowTag(card, spokenFor);
+  // M7 (discovery R1): the marker is Card assignments' moment while it draws `short`, a copy another deck holds; never
+  // `none free`, which no commit can answer (audit resolution 1).
+  const assignMoment = useMomentAnchor("card-assignments", {
+    eligible: availState === "over" && tag !== "proxy",
+    copy: momentsCopy.cardAssignments,
+  });
   const pressable = gotIt !== null && inShopping && tag === "buy";
   const confirmOpen = pressable && gotIt.openFor === card.oracleId;
   const passMark = usePassMark();
@@ -782,11 +790,11 @@ export function DecklistRow({
             the mark beside it, and the two views would disagree about one card
             one toggle apart. */}
         {card.availability && availState !== "free" && tag !== "proxy" && (
-          <span className="inline-flex flex-none">
+          <span {...assignMoment} className="inline-flex flex-none">
           {/* The word folds to the glyph and its count at a narrow row (L3), and a glyph alone is a tooltip's job: the marker's
               own spoken sentence, so the words stay one thing. On touch a tap opens it, as on the `+N` (d9, 2026-10-16), and the
               tap goes no further; its 44px hit is drawn past the marker. */}
-          <FactTooltip tapOnTouch sentence={markerSentence ?? undefined}>
+          <FactTooltip tapOnTouch holdMoments sentence={markerSentence ?? undefined}>
           <AvailabilityMarker bareOne
             foldWord={inShopping ? WORD_FOLD.shopping : WORD_FOLD.all}
             availability={card.availability}

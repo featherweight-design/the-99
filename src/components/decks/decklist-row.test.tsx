@@ -53,7 +53,8 @@ const { loadStandInsAction } = vi.hoisted(() => ({ loadStandInsAction: vi.fn(asy
 vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, setShoppingLimitAction: vi.fn() }));
 
 // The shell mounts Consider, whose degraded banner refreshes the route.
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), usePathname: () => "/decks/d1" }));
+vi.mock("../../app/moments-actions", () => ({ spendMomentAction: async () => {} }));
 
 // I got it's confirm reads its choices and writes through these; the row tests only open it.
 vi.mock("../../app/collection/edit-actions", () => ({ loadPrintingChoices: vi.fn(async () => []) }));
@@ -295,6 +296,49 @@ describe("DecklistRow availability marker (#43)", () => {
       />,
     );
     expect(screen.getByText("short 1")).toBeInTheDocument();
+  });
+
+  // M7 (discovery R1): the marker is Card assignments' moment while it draws `short`, and never `none free`.
+  describe("Card assignments' moment", () => {
+    let notify: ((entries: { target: Element; isIntersecting: boolean }[]) => void) | null = null;
+    class FakeObserver {
+      constructor(cb: (entries: { target: Element; isIntersecting: boolean }[]) => void) {
+        notify = cb;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.stubGlobal("IntersectionObserver", FakeObserver);
+      window.localStorage.clear();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      notify = null;
+    });
+    async function mountWith(availability: Availability) {
+      const { MomentsProvider, ARRIVE_MS } = await import("../moments/moments-provider");
+      renderRow(
+        <MomentsProvider live={["card-assignments"]} spent={[]}>
+          <DecklistRow deckId="d1" card={{ ...card, availability }} newestAsOf={null} />
+        </MomentsProvider>,
+      );
+      const anchor = screen.getByText("short").closest("span.inline-flex.flex-none")!;
+      act(() => notify!([{ target: anchor, isIntersecting: true }]));
+      await act(async () => {
+        vi.advanceTimersByTime(ARRIVE_MS);
+      });
+      return anchor;
+    }
+    it("arrives on a `short` marker", async () => {
+      const { momentsCopy } = await import("../../lib/copy/moments");
+      const anchor = await mountWith(avail(-1, ["Atraxa"]));
+      const bubble = screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.cardAssignments.tool) });
+      expect(anchor.getAttribute("aria-describedby")).toBe(bubble.id);
+    });
   });
 
   // The quiet-failure half of the degraded ruling.

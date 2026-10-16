@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R1, the moments (plan 2026-10-16-moments.md). Rows land with the PR that mounts each moment: PR 1 is the foundation and draws nothing on its own.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the six, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row).",
+  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row).",
   "out": "contact-sheets/moments",
   "planned": [
     {
@@ -217,6 +217,143 @@
         {
           "settle": 900,
           "waitNote": "Playing with friends?, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m5-stand-ins",
+      "label": "/decks/[id] Shopping, a row over the deck's limit: M5 Cheaper stand-ins on its ⇄ press",
+      "view": "src/components/social/spare-markers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${STANDIN_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${STANDIN_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-testid=other-ways]",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Cheaper stand-ins, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m6-friend-spares",
+      "label": "/decks/[id] Shopping, a row a friend holds a spare of (swap tools off, or no row over the limit): M6 on its other-ways press",
+      "view": "src/components/social/spare-markers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${SPARE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-testid=other-ways]",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "A friend has a spare, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m7-card-assignments",
+      "label": "/decks/[id], a row whose copy another deck holds: M7 Card assignments on its `short` marker",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHORT_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${SHORT_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "span:text-is('short')",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Short, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m8-find-a-deck",
+      "label": "card details from /collection, an owned card no deck uses: M8 Find a deck on the door",
+      "view": "src/components/cards/fits-door.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${UNUSED_CARD}",
+          "wait": "[role=dialog]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/collection?card=${UNUSED_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Find a deck, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m9-wishlist",
+      "label": "card details from /collection, a card the reader does not own: M9 Wishlist on `Add to wishlist`",
+      "view": "src/components/wishlist/card-wishlist.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${UNOWNED_CARD}",
+          "wait": "[role=dialog]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/collection?card=${UNOWNED_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Wishlist, a tip"
         }
       ]
     }
