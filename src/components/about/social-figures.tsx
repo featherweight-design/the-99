@@ -211,7 +211,7 @@ export function FriendSparesFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <SwapToolsProvider deckId="about-figure" deckName="HD - Kratos" storedLimitCents={400}>
-        <StaticSparesProvider spares={FRIEND_SPARES}>
+        <StaticSparesProvider spares={FRIEND_SPARES} newestAsOf={SPARES_AS_OF}>
           <div className="flex flex-col gap-[18px]">
             <div className="flex flex-col">
               {[DEMAND_ANSWERS, VALAKUT].map((card) => (

@@ -119,12 +119,20 @@ export function SparesSheetHost() {
  * The provider's value over spares already in hand: no read and no modal, and a press opens nothing. For a figure that
  * draws the rows' spare glyph over fixtures (the About entry for friends' spares), where the page reads no friend.
  */
-export function StaticSparesProvider({ spares, children }: { spares: readonly FriendSpare[]; children: React.ReactNode }) {
+export function StaticSparesProvider({
+  spares,
+  newestAsOf,
+  children,
+}: {
+  spares: readonly FriendSpare[];
+  newestAsOf: Date | null;
+  children: React.ReactNode;
+}) {
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, opened: null, open: () => {}, close: () => {} };
-  }, [spares]);
+    return { byCard, opened: null, open: () => {}, close: () => {}, newestAsOf };
+  }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }
 
@@ -240,7 +248,7 @@ export function SparesSheetBody({
   spares,
   newestAsOf,
 }: {
-  card: DeckDetailCard;
+  card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
 }) {
