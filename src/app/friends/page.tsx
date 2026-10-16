@@ -13,8 +13,8 @@ import { requireUserId } from "../../lib/auth";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { ensureProfile, listOpenInvites } from "../../lib/social/friends";
-import { listFriends, listPods } from "../../lib/social/access";
+import { ensureProfile, loadFriendsAndLinks } from "../../lib/social/friends";
+import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
 import { PodsPane } from "../../components/social/pods-pane";
 import { MAX_OPEN_INVITES } from "../../lib/social/rules";
@@ -29,10 +29,10 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
   const user = await currentUser();
-  const [profile, friends, links, pods, shared] = await Promise.all([
+  // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
+  const [profile, { friends, links }, pods, shared] = await Promise.all([
     ensureProfile(userId, user?.firstName),
-    listFriends(userId),
-    listOpenInvites(userId, now),
+    loadFriendsAndLinks(userId, now),
     listPods(userId),
     listSharedPods(userId),
   ]);

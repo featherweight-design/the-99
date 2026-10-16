@@ -107,4 +107,17 @@ describe("useInviteWatch", () => {
     expect(onEnded).toHaveBeenCalledTimes(1);
     expect(onEnded).toHaveBeenCalledWith([{ token: A, open: false, friend: null }]);
   });
+  it("asks in batches of at most ten, so the shown link beside ten open ones is never refused", async () => {
+    const tokens = Array.from({ length: 11 }, (_, i) => `tok${String(i).padStart(19, "0")}`);
+    fetchMock.mockImplementation(async (url: string) => {
+      const asked = new URL(url, "http://x").searchParams.get("t")!.split(",");
+      return { ok: true, json: async () => ({ links: asked.map((t) => ({ token: t, open: t !== tokens[10], friend: null })) }) };
+    });
+    const onEnded = vi.fn();
+    renderHook(() => useInviteWatch(tokens, onEnded));
+    await tick(WATCH_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [url] of fetchMock.mock.calls) expect(new URL(url, "http://x").searchParams.get("t")!.split(",").length).toBeLessThanOrEqual(10);
+    expect(onEnded).toHaveBeenCalledWith([{ token: tokens[10], open: false, friend: null }]);
+  });
 });

@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import type { InviteOutcome } from "../../lib/social/friends";
+import { MAX_OPEN_INVITES } from "../../lib/social/client-rules";
 
 export const WATCH_MS = 4000;
 
@@ -35,26 +36,31 @@ export function useInviteWatch(tokens: readonly string[], onEnded: (ended: Invit
       const left = watched.filter((t) => !reported.current.has(t));
       if (left.length === 0) return;
       inFlight = new AbortController();
-      try {
-        const res = await fetch(`/api/friend-invites?t=${left.join(",")}`, { signal: inFlight.signal, cache: "no-store" });
-        if (res.ok) {
+      const signal = inFlight.signal;
+      const ended: InviteOutcome[] = [];
+      // The route answers at most MAX_OPEN_INVITES tokens, and the shown link beside ten open ones is eleven, so
+      // the watch asks in batches; a token a successful batch leaves out is no longer the reader's open link.
+      for (let i = 0; i < left.length && !stopped; i += MAX_OPEN_INVITES) {
+        const batch = left.slice(i, i + MAX_OPEN_INVITES);
+        try {
+          const res = await fetch(`/api/friend-invites?t=${batch.join(",")}`, { signal, cache: "no-store" });
+          if (!res.ok) continue;
           const { links } = (await res.json()) as { links: InviteOutcome[] };
           const answered = new Map(links.map((l) => [l.token, l]));
-          // A token the answer leaves out is no longer the reader's open link either (it is gone).
-          const ended = left
-            .map((t) => answered.get(t) ?? { token: t, open: false, friend: null })
-            .filter((l) => !l.open);
-          // A watch that stopped while this answer was in flight records nothing: the watch that replaced it asks
-          // again, and reports what it finds.
-          if (ended.length > 0 && !stopped) {
-            for (const l of ended) reported.current.add(l.token);
-            latest.current(ended);
+          for (const t of batch) {
+            const l = answered.get(t) ?? { token: t, open: false, friend: null };
+            if (!l.open) ended.push(l);
           }
+        } catch {
+          // A failed batch (offline, aborted) changes nothing; the next poll asks again.
         }
-      } catch {
-        // A failed poll (offline, aborted) changes nothing; the next one asks again.
-      } finally {
-        inFlight = null;
+      }
+      inFlight = null;
+      // A watch that stopped while an answer was in flight records nothing: the watch that replaced it asks
+      // again, and reports what it finds.
+      if (ended.length > 0 && !stopped) {
+        for (const l of ended) reported.current.add(l.token);
+        latest.current(ended);
       }
       schedule();
     }

@@ -10,8 +10,8 @@ export { DISPLAY_NAME_MAX, POD_NAME_MAX };
 
 /** Seven days, single-use (Q2). */
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-/** Open invites one account may hold at once. */
-export const MAX_OPEN_INVITES = 10;
+/** Open invites one account may hold at once (defined client-side, where the watch batches by it). */
+export { MAX_OPEN_INVITES } from "./client-rules";
 
 /** 128 random bits as base64url: 22 characters, unguessable, so the link needs no attempt cap (Q1). */
 export function newInviteToken(): string {

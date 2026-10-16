@@ -10,7 +10,7 @@
 import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
-import { resolveFriend, type Reader } from "./access";
+import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
 import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
@@ -163,6 +163,19 @@ export function openInvitesQuery(viewerId: string, now: Date, q: Reader = db) {
 
 export async function listOpenInvites(viewerId: string, now = new Date(), q: Reader = db): Promise<OpenInvite[]> {
   return openInvitesQuery(viewerId, now, q);
+}
+
+/**
+ * /friends' friends and open links read from ONE snapshot. Read apart, a redemption committing between the two
+ * reads gives a redraw with the old friends and without the link, which drops the link from the page's watch
+ * before the new friend's row has arrived.
+ */
+export async function loadFriendsAndLinks(viewerId: string, now = new Date()): Promise<{ friends: Friend[]; links: OpenInvite[] }> {
+  return db.transaction(async (tx) => {
+    const friends = await listFriends(viewerId, tx);
+    const links = await listOpenInvites(viewerId, now, tx);
+    return { friends, links };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
 export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: string } | null };
