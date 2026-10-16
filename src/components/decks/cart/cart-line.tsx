@@ -9,6 +9,8 @@ import type { SelectedLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { TwoFacedMark } from "../../cards/two-faced-mark";
+import { frontFaceName } from "../../../lib/cards/faces";
 import { OtherWaysPress } from "../../social/spare-markers";
 
 /**
@@ -52,7 +54,7 @@ export function CartLine({
   const fact = lineFact(line, newestAsOf);
   // What the spares-only modal draws of the line: its card, art and the line's figure.
   // A cart line carries the oracle name and no printing, so no printed name stands in for it.
-  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: null, imageUri: line.imageUri ?? null, price: fact };
+  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact };
   // I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted).
   const gotIt = useCartGotIt();
   const id = line.oracleId;
@@ -77,8 +79,9 @@ export function CartLine({
             preview
             className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
           >
-            {line.name}
+            {frontFaceName(line.name, line.layout)}
           </CardDetailTrigger>
+          <TwoFacedMark layout={line.layout} />
           {line.commander ? (
             <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
               {copy.list.commander}

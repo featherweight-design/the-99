@@ -881,8 +881,9 @@ export function printedNameOf(card: Pick<BrowseCard, "name" | "printedName">): s
  * on one piece of card stock, so cutting them would drop half of a name the row
  * shows whole today — the same reason `isTwoFaced` asks the layout word instead
  * of looking for the mark. A card with no printed name is returned
- * byte-identically, `//` and all: today's rows print the full oracle string and
- * the control state must not move.
+ * byte-identically, `//` and all: the surfaces still reading this one draw no
+ * `//` mark, so a front face alone would hide the back. The deck list, which
+ * draws the mark, cuts every two-faced name through `deckRowName` instead.
  */
 export function printedFaceName(
   card: Pick<BrowseCard, "name" | "printedName" | "layout">,

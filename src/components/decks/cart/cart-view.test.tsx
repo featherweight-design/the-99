@@ -559,3 +559,30 @@ describe("CartView, friends' spares by deck and on selection", () => {
     }
   });
 });
+
+// A two-faced card's line prints its front face beside the `//` mark, by card and by deck (d9, 2026-10-16); the press keeps
+// the whole name, and so does the Mana Pool line the checkout builds.
+describe("CartView, a two-faced card's line", () => {
+  const mdfc = cart({
+    lines: [
+      { oracleId: "reidane", name: "Reidane, God of the Worthy // Valkmira, Protector's Shield", layout: "modal_dfc",
+        commander: false, owned: 0, heldElsewhere: 0,
+        rows: [{ deckId: "gishath", quantity: 1, cents: 90, state: "priced", commander: false, held: 0, finish: null }] },
+    ],
+  });
+
+  it("prints the front face and the mark by card", () => {
+    render(<CartView cart={mdfc} provenance={provenance} />);
+    const [item] = list().getAllByRole("listitem");
+    expect(within(item).getByText("Reidane, God of the Worthy")).toBeTruthy();
+    expect(within(item).queryByText(/Valkmira/)).toBeNull();
+    expect(within(item).getByText("two-faced card")).toBeTruthy();
+  });
+
+  it("prints the front face and the mark by deck", () => {
+    render(<CartView cart={mdfc} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.getAllByText("Reidane, God of the Worthy").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Valkmira/)).toBeNull();
+    expect(screen.getAllByText("two-faced card").length).toBeGreaterThan(0);
+  });
+});

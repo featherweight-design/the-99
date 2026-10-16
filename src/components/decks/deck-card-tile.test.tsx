@@ -239,6 +239,13 @@ describe("DeckCardTile printed name", () => {
     expect(container.querySelector("[title]")).toBeNull();
   });
 
+  // An UNRENAMED two-faced card is captioned the same way since d9's ruling (2026-10-16): front face beside the `//` mark.
+  it("captions an unrenamed two-faced card with its front face", () => {
+    renderTile(<DeckCardTile deckId="d1" card={{ ...card, name: "Delver of Secrets // Insectile Aberration", printedName: null, layout: "transform" } as DeckDetailCard} />);
+    expect(screen.getByText("Delver of Secrets")).toBeInTheDocument();
+    expect(screen.queryByText(/Insectile Aberration/)).not.toBeInTheDocument();
+  });
+
   it("carries the full printed name on the trigger at one copy", () => {
     renderTile(<DeckCardTile deckId="d1" card={{ ...renamed, quantity: 1 } as DeckDetailCard} />);
     expect(

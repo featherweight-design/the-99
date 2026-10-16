@@ -45,6 +45,16 @@ export function faceNames(name: string): { front: string; back: string } {
 }
 
 /**
+ * What a row or a tile PRINTS for a card's name: the front face of a two-faced card, beside the `//` mark that says
+ * there is a back (d9, 2026-10-16: the row drew `A // B` and then the mark as well), and the whole name of any other.
+ * Gated on the layout word, as the mark is, so `Fire // Ice` keeps both halves. The full name stays in the accessible
+ * name, the tooltip and card details.
+ */
+export function frontFaceName(name: string, layout: string | null | undefined): string {
+  return isTwoFaced(layout) ? faceNames(name).front : name;
+}
+
+/**
  * The front face's half of a printed mana cost.
  *
  * Scryfall carries no top-level cost for the two-sided layouts, but it does for

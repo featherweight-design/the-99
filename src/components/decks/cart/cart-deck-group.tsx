@@ -11,6 +11,8 @@ import { BuyTag } from "../buy-tag";
 import { lineFact } from "./cart-line";
 import { Chevron } from "../../ui/chevron";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { TwoFacedMark } from "../../cards/two-faced-mark";
+import { frontFaceName } from "../../../lib/cards/faces";
 import { OtherWaysPress } from "../../social/spare-markers";
 import { Checkbox } from "../../ui/checkbox";
 
@@ -97,8 +99,9 @@ export function CartDeckGroup({
                       preview
                       className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
                     >
-                      {line.name}
+                      {frontFaceName(line.name, line.layout)}
                     </CardDetailTrigger>
+                    <TwoFacedMark layout={line.layout} />
                     {own.commander ? (
                       <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{copy.list.commander}</span>
                     ) : null}
@@ -115,7 +118,7 @@ export function CartDeckGroup({
                 {/* S5: the spare glyph before the tag, as the By card line draws it. */}
                 <span className="mt-[3px] flex flex-none items-center gap-[8px]">
                   <OtherWaysPress
-                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: null, imageUri: line.imageUri ?? null, price: fact }}
+                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact }}
                     standIn={false}
                     standInAria=""
                     limitFigure=""

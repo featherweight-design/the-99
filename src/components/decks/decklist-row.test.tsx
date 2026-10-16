@@ -63,6 +63,7 @@ vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought: vi.fn() }));
 vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 
 const { DecklistRow } = await import("./decklist-row");
+const { HoverPreviewProvider } = await import("./hover-preview");
 const { GotItProvider } = await import("./got-it");
 const { commanderAsRow } = await import("../../lib/decks/shopping");
 const { DeckPageSwitches } = await import("./deck-page-switches");
@@ -1719,13 +1720,15 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
   });
 
-  it("shows a two-face card's front face on the phone and the whole name from md", () => {
+  // From md too since d9's ruling (2026-10-16): the row prints the front face beside the `//` mark, never `A // B` and the mark.
+  it("shows a two-face card's front face on the phone and from md, the whole name only in its accessible name", () => {
     const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
     inB(<DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     const front = screen.getByText("Delver of Secrets", { selector: "span.md\\:hidden" });
-    const whole = screen.getByText("Delver of Secrets // Insectile Aberration", { selector: "span.hidden" });
+    const fromMd = screen.getByText("Delver of Secrets", { selector: "span.hidden" });
     expect(front).toBeInTheDocument();
-    expect(whole.className).toContain("md:inline");
+    expect(fromMd.className).toContain("md:inline");
+    expect(screen.queryByText("Delver of Secrets // Insectile Aberration")).toBeNull();
     // The trigger's accessible name stays the whole card.
     expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Delver of Secrets // Insectile Aberration") })).toBeInTheDocument();
   });
@@ -1762,7 +1765,7 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(row().querySelector("span[aria-hidden='true'].flex-none.w-\\[22px\\]")).toBeNull();
   });
 
-  it("cuts a recounted two-face card's phone label to the front face, and keeps the whole one from md", () => {
+  it("cuts a recounted two-face card's label to the front face, on the phone and from md", () => {
     const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
     renderRow(
       <PendingChangeProvider value={{ moves: new Map([[dfc.oracleId, { from: 1, to: 2 }]]) }}>
@@ -1773,7 +1776,7 @@ describe("DecklistRow, phone Shopping row option B", () => {
     );
     const phone = document.querySelector<HTMLElement>("span.md\\:hidden[aria-hidden='true']")!;
     expect(phone.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
-    expect(document.querySelector("span.hidden.md\\:inline")!.textContent).toContain("Insectile Aberration");
+    expect(document.querySelector("span.hidden.md\\:inline")!.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
   });
 
   it("gives a two-face commander's Shopping row its front face from the catalog layout, and draws no new mark", () => {
@@ -2017,10 +2020,11 @@ describe("DecklistRow, folding the marks", () => {
     expect(Array.from(document.querySelectorAll("[data-decklist-row] span")).filter((el) => el.childElementCount === 0 && el.textContent === "" && el.className.includes("inline-flex flex-none"))).toHaveLength(0);
   });
 
-  it("folds the marker's word to its glyph, keeping a count and the spoken sentence", () => {
+  // From the middle tier in All too (d9, 2026-10-16), as in Shopping: at 900 a row reading `1 in a draft` cut a 20-character name.
+  it("folds an All row's marker word to its glyph at the middle tier, keeping a count and the spoken sentence", () => {
     const over = { ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -2, claims: [] } };
     renderRow(<DecklistRow deckId="d1" card={over} newestAsOf={null} />);
-    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("md:@max-[359px]:hidden"));
+    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("md:@max-[479px]:hidden"));
     expect(folded.length).toBeGreaterThan(0);
     // The count stays outside the folded span, and the sentence is read in full.
     expect(document.querySelector("[data-decklist-row]")!.textContent).toContain("2");
@@ -2137,5 +2141,69 @@ describe("DecklistRow, the combo mark", () => {
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
     expect(glyphWrap.className.split(/\s+/)).toContain("md:sr-only");
     expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+  });
+});
+
+// THE +N SUPPRESSES THE ROW'S PREVIEW (d9, 2026-10-16): the chip's tooltip lists the folded marks, and the card would cover the
+// rows under it. Entering the chip closes the preview; leaving it for the name opens it again.
+describe("DecklistRow, the +N and the row's preview", () => {
+  const heavy = {
+    ...(card as DeckDetailCard),
+    imageUri: "https://cards.example/sol-ring.jpg",
+    facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"],
+  } as DeckDetailCard;
+  const preview = () => screen.queryByTestId("hover-preview");
+  const chip = () => Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span.flex-none")).find((el) => /^\+\d$/.test(el.textContent ?? ""))!;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q === "(hover: hover)", media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("closes the preview while the pointer is on the +N, and opens it again on leaving for the name", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <HoverPreviewProvider>
+          <DecklistRow deckId="d1" card={heavy} newestAsOf={null} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    const row = document.querySelector<HTMLElement>("[data-decklist-row]")!;
+    fireEvent.mouseEnter(row, { clientX: 100, clientY: 100 });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).not.toBeNull();
+
+    // Moving within the row: React derives enter and leave from over/out, so the pointer comes from (and goes back to) the name.
+    const name = row.querySelector<HTMLElement>("button")!;
+    fireEvent.mouseOut(name, { clientX: 140, clientY: 100, relatedTarget: chip() });
+    fireEvent.mouseMove(chip(), { clientX: 141, clientY: 100 });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).toBeNull();
+
+    fireEvent.mouseOut(chip(), { clientX: 120, clientY: 100, relatedTarget: name });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).not.toBeNull();
+  });
+});
+
+// A two-faced card's All row prints its front face beside the `//` mark (d9, 2026-10-16), and a split card keeps both halves.
+describe("DecklistRow, a two-faced card's name", () => {
+  it("prints the front face and the mark, with the whole name as the press's name", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, name: "Reidane, God of the Worthy // Valkmira, Protector's Shield", layout: "modal_dfc" } as DeckDetailCard} newestAsOf={null} />);
+    expect(screen.getByText("Reidane, God of the Worthy")).toBeInTheDocument();
+    expect(screen.queryByText(/Valkmira, Protector's Shield/)).toBeNull();
+    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Reidane, God of the Worthy // Valkmira, Protector's Shield") })).toBeInTheDocument();
+  });
+
+  it("keeps both halves of a split card, which has one face", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice", layout: "split" } as DeckDetailCard} newestAsOf={null} />);
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
   });
 });

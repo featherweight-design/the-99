@@ -1,0 +1,44 @@
+{
+  "feature": "Card row polish after the one-line row's close-out (d9, 2026-10-16): All's middle tier folds the availability word, the +N holds off the row's card preview, and a two-faced card prints its front face beside the // mark",
+  "note": "Against the audit account's real decks (HD - Gods: seven two-faced cards and availability words; HD - Avatar Aang: Enlightened Tutor and Mystical Tutor carry two marks each). Run on a scratch branch of local-dev: a first visit writes the About gate. 900 is All's middle tier on the two-column grid (rows are 383px), 800 the tight one (333px), 1300 the wide one (583px).",
+  "widths": [
+    { "label": "md-800", "width": 800, "height": 1000 },
+    { "label": "md-900", "width": 900, "height": 1000 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "all-row-word",
+      "label": "/decks/[id] All: a row carrying an availability marker, its word folded to the glyph and count at 800 and 900, whole at 1300",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${GODS_DECK}", "wait": "main, [role=main], h1", "settle": 1500 },
+        { "goto": "/decks/${GODS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has-text(\"in a draft\")", "settle": 400 }
+      ]
+    },
+    {
+      "id": "all-row-two-faced",
+      "label": "/decks/[id] All: a two-faced card's row, its front face beside the // mark at every width",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${GODS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has-text(\"Reidane, God of the Worthy\")", "settle": 400 }
+      ]
+    },
+    {
+      "id": "all-row-plus-hover",
+      "label": "/decks/[id] All at 900 (the middle tier): a fine pointer on Enlightened Tutor's +1, the tooltip listing the folded mark and no card preview over it",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${AANG_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has-text(\"Enlightened Tutor\")", "settle": 400 },
+        { "hover": "[data-decklist-row]:has-text(\"Enlightened Tutor\") span.md\\:\\@min-\\[359px\\]\\:\\@max-\\[479px\\]\\:inline", "settle": 1200 }
+      ],
+      "widths": ["md-900"]
+    }
+  ]
+}

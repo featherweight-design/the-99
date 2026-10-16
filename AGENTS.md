@@ -790,9 +790,11 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   draws no pips and no EDHREC figure from `md`; All draws no other-ways press at any width (the press, `OtherWaysPress`, is Shopping's, 26px with
   `md:-my-[3px]` so the row stays 34px). **The marks fold by the row's own width** (`FOLD`, a container query on `DecklistRow`'s wrapper, `@container`,
   from `md` only): wide is 479px and up, middle 359 to 479, tight under 359. All: the 4th mark and beyond at every width, every mark after the first at the
-  middle tier, every mark at the tight one, and the availability word drops to its glyph (and a count) at the tight one; Shopping: every mark and the word at
+  middle tier, every mark at the tight one, and the availability word drops to its glyph (and a count) from the middle tier (d9, 2026-10-16); Shopping: every mark and the word at
   the middle tier, and the `+N` too at the tight one. A folded mark is `sr-only`, never `display: none`, so a screen reader keeps it; the `+N` spans
-  (one per tier) are aria-hidden, bare mono in `--fact`, and a fine pointer's tooltip lists what they hold (`FactTooltip`'s `lines`). The auto tag, the lock
+  (one per tier) are aria-hidden, bare mono in `--fact`, and a fine pointer's tooltip lists what they hold (`FactTooltip`'s `lines`), and while the pointer is on one the row's card preview is held off (`plusPointer`), so the tooltip is not covered. A two-faced card's
+  row, tile and cart line print its front face beside the `//` mark (`frontFaceName`), never the whole `A // B` and the mark; the whole name stays the
+  press's accessible name and the Mana Pool line's. The auto tag, the lock
   mark and the ownership slot never fold. **The glint takes a filled dot's place from `md`** (centred on its 8px slot; a dashed or proxied row, and a stepper
   row, draw none there) and sits under the dot on the phone's meta line, the pips at the name's x (`PHONE_GLINT`). A basic land's stepper row and a read-only
   precon row stay as they were. `over $N` folds into the buy tag's outline at every width, with its words in the tag's description and the key's item.

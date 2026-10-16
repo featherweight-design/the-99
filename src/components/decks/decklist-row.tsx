@@ -8,7 +8,8 @@ import { useId, useState } from "react";
 import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedNameOf } from "../../lib/collection/browse";
+import { deckRowName } from "../../lib/decks/row-name";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -139,8 +140,11 @@ const FOLD = {
     plusMid: "hidden md:@min-[359px]:@max-[479px]:inline",
   },
 } as const;
-/** The availability marker's word drops to its glyph (and its count) at the middle tier in Shopping and the tight tier in All. */
-const WORD_FOLD = { all: "md:@max-[359px]:hidden", shopping: "md:@max-[479px]:hidden" } as const;
+/**
+ * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
+ * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
+ */
+const WORD_FOLD = { all: "md:@max-[479px]:hidden", shopping: "md:@max-[479px]:hidden" } as const;
 
 /** Phone pips ride the meta line at their own size, plain and uncapped — there
  *  the line is theirs alone and has the width to spend. Desktop takes the shared
@@ -260,7 +264,7 @@ export function DecklistRow({
     deckId,
     oracleId: card.oracleId,
     quantity: card.quantity,
-    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
+    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(deckRowName(card), n)),
   });
   // `from N`: the committed figure, when the count on screen is not it. The stepper prints the new count, so the
   // shipped `6 → 8` pair keeps only its left half (STATES rule 7). A card the version did not hold (`from` 0)
@@ -312,13 +316,27 @@ export function DecklistRow({
   ];
   const markFold = (i: number): string =>
     inShopping ? FOLD.shopping.all : i >= 3 ? FOLD.all.fourth : i >= 1 ? FOLD.all.afterFirst : FOLD.all.all;
+  // The whole row is the preview's trigger (#351), so the handlers go on the
+  // shell rather than on the name — the name is the modal's trigger, and a
+  // preview that only opened over it would be a second, smaller target for a
+  // gesture the reader is already making across the row.
+  const previewHandlers = usePreviewRow(card.imageUri, card.foil);
+  // THE +N SUPPRESSES THE ROW'S PREVIEW while the pointer is on it (d9, 2026-10-16): its tooltip lists the folded marks, and the
+  // 252x352 card would cover the rows under it. Entering the chip closes the preview, its moves never reach the row's, and leaving
+  // it (back to the name) opens it again; leaving the row from the chip closes it after, on the row's own leave. The chip takes
+  // no focus (aria-hidden, no hit area), and the preview is a pointer gesture only, so there is no focus half.
+  const plusPointer = {
+    onMouseEnter: () => previewHandlers.onMouseLeave?.(),
+    onMouseMove: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
+    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => previewHandlers.onMouseEnter?.(e),
+  };
   const plusN = (fromIndex: number, className: string) => {
     const folded = marks.slice(fromIndex);
     if (folded.length === 0) return null;
     return (
       // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
-      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`}>
+      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`} {...plusPointer}>
         <FactTooltip
           lines={folded.map((m) =>
             m.kind === "fact" ? (
@@ -447,18 +465,15 @@ export function DecklistRow({
   const hasMetaLine = shellHasMeta || twoLine;
   // The SHELL keeps the original condition (a land with no figure is 44px on the phone), and `rowB` forces only the markup.
   const rowShell = shellHasMeta ? ROW_SHELL_META : ROW_SHELL;
-  // The whole row is the preview's trigger (#351), so the handlers go on the
-  // shell rather than on the name — the name is the modal's trigger, and a
-  // preview that only opened over it would be a second, smaller target for a
-  // gesture the reader is already making across the row.
-  const previewHandlers = usePreviewRow(card.imageUri, card.foil);
   // The row body opens the card too, so resting on it prefetches the card as the name does.
   const intent = useCardIntent(card.oracleId, card.imageUri);
   // Two strings, because they answer different questions. The visible one is a
   // front face and may clip; the accessible one is whole and never does. The
   // modal — one tap away on this very name — is the recovery path for the clip.
-  const displayName = printedFaceName(card);
+  // The front face of a two-faced card, beside the `//` mark the row draws for it (d9, 2026-10-16): the whole oracle string
+  // and the mark said the back face twice, and cost the row half its name. The full name is the trigger's accessible name.
   const fullName = printedNameOf(card);
+  const displayName = deckRowName(card);
   // Option B's phone name: the front face of a two-face card, from the name the row speaks (a printed name when the
   // player owns a renamed copy). From `md` the row prints what it printed. Null for a one-face card.
   const frontFace = isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(fullName).front : null;
@@ -1136,7 +1151,7 @@ function HeldSlot({ card, rowShell }: { card: DeckDetailCard; rowShell: string }
       <div data-decklist-row data-held-slot className={`${rowShell} bg-surface-sunken border border-dashed border-border-strong`}>
         <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />
         <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12px] text-fg-locked">
-          {gotItCopy.slot.held(printedFaceName(card))}
+          {gotItCopy.slot.held(deckRowName(card))}
         </span>
       </div>
     </div>
@@ -1170,7 +1185,7 @@ function UndoRow({
               receipt replaces does — and as the list's own order does. A
               receipt calling a renamed printing by its oracle name sits in the
               list by one name and announces itself by another. */}
-          {addPanelCopy.undo.removed(printedFaceName(card))}
+          {addPanelCopy.undo.removed(deckRowName(card))}
         </span>
         {/* Absent once the undo has been refused: the message below tells the
             player where to go instead. */}
@@ -1183,7 +1198,7 @@ function UndoRow({
               bg-transparent border-0 md:border-b md:border-b-accent-shadow md:border-accent-shadow
               text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
               text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
-            aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}
+            aria-label={addPanelCopy.undo.actionAria(deckRowName(card))}
           >
             {addPanelCopy.undo.action}
           </button>
