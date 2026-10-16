@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
-import { ADDED_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
+import { ADDED_MS, DARK_HOLD_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
 const unit = () => {
@@ -94,9 +94,38 @@ describe("useCardScan", () => {
     expect([...store.values()]).toEqual(["normal"]);
   });
 
-  it("calls a frame dark only once dark frames have held for a second", async () => {
-    const { hook } = setup({}, { frame: { kind: "none" }, cardInView: false, dark: true });
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ kind: "scanning", dark: true }), { timeout: 4000 });
+  it("calls a frame dark only once dark frames have held for a second, and a bright frame starts the wait over", async () => {
+    let clock = 0;
+    let dark = true;
+    const reads = { n: 0 };
+    const { hook } = setup({
+      now: () => clock,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads.n++;
+        return { frame: { kind: "none" }, cardInView: false, dark };
+      },
+    });
+    const after = async (n: number) => {
+      const at = reads.n;
+      await waitFor(() => expect(reads.n).toBeGreaterThanOrEqual(at + n));
+    };
+    await after(3);
+    clock = DARK_HOLD_MS - 1;
+    await after(2);
+    expect(hook.result.current.screen).toMatchObject({ dark: false });
+    clock = DARK_HOLD_MS + 10;
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ dark: true }));
+    dark = false;
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ dark: false }));
+    // Dark again: the hold starts from this frame, not the first one.
+    dark = true;
+    await after(3);
+    clock = DARK_HOLD_MS * 2;
+    await after(2);
+    expect(hook.result.current.screen).toMatchObject({ dark: false });
+    clock = DARK_HOLD_MS * 3 + 20;
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ dark: true }));
   });
 
   it("reads on past a not-sure answer turned down with None of these", async () => {

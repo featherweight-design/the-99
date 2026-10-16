@@ -43,11 +43,6 @@ export function CardScanner({
     // A refusal (signed out, switch off) and a failure read the same to a player: the card was not checked.
     setNotice(offline ? copy.offlineBody : copy.lookupFailed);
   }, []);
-  // Focus moves into the scanner as it opens (its ✕, or Stop on the desktop), so a keyboard and a screen reader start
-  // there rather than on a press it covers or one that went away.
-  useEffect(() => {
-    document.querySelector<HTMLElement>("[data-testid=scanner] [data-scan-close]")?.focus();
-  }, []);
   // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
   const readFrame = useFrameReader();
   const scanDeps = useMemo(() => ({ readFrame, ...deps }), [readFrame, deps]);
@@ -57,6 +52,14 @@ export function CardScanner({
     return () => clearTimeout(t);
   }, [notice]);
   const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, scanDeps, onAdd, onProblem, listed);
+  // Focus moves into the scanner as it opens (its ✕, or Stop on the desktop), so a keyboard and a screen reader start
+  // there rather than on a press it covers. When the screen turns to the blocked one, the press that held focus is
+  // gone with the feed, so its ✕ takes focus again unless focus is still somewhere inside.
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>("[data-testid=scanner]");
+    if (root?.contains(document.activeElement) && document.activeElement !== document.body) return;
+    root?.querySelector<HTMLElement>("[data-scan-close]")?.focus();
+  }, [screen.kind]);
   return (
     <ScannerView
       layout={layout}

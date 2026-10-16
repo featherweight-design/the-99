@@ -31,6 +31,9 @@ export function useFrameReader(): (video: HTMLVideoElement) => Promise<FrameRead
   }, []);
 
   return useCallback(async (video: HTMLVideoElement): Promise<FrameRead> => {
+    // No picture yet (the camera is still being asked for, or was refused): nothing to read, and no reason to load the
+    // runtime and both models for a scanner that may never get one.
+    if (!video.videoWidth || !video.videoHeight) return { frame: { kind: "none" }, cardInView: false, dark: false };
     if (!pipe.current) {
       const held = sessionHolder<OrtSession>();
       sessions.current = held;
