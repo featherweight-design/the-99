@@ -255,7 +255,7 @@ describe("the card's outline", () => {
     expect(outlineEl().querySelector("polygon")?.getAttribute("points")).toBe("120.0,240.0 280.0,240.0 280.0,560.0 120.0,560.0");
   });
 
-  it("draws nothing with no card in view, and nothing without a store", () => {
+  it("draws nothing while the store holds no card (a view given no store at all is the first test above)", () => {
     draw({ outline: createOutlineStore() });
     expect(screen.queryByTestId("scan-outline")).toBeNull();
   });
