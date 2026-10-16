@@ -1,6 +1,6 @@
 import { isUuid } from "../uuid";
-import type { Reading } from "./reading";
-import type { Display } from "./steady";
+import type { Reading } from "../scan/reading";
+import type { Display } from "../scan/steady";
 
 // The lab's cadence log: with "Log every frame" on, the lab records what each frame read, and what the screen showed,
 // for `CADENCE_MS` without a tap, so low-light flicker and the dwell can be measured over time rather than at the one

@@ -10,10 +10,10 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
-import { EMBED_H, EMBED_W } from "../../lib/scan-lab/geometry";
-import { readingCrop } from "../../lib/scan-lab/reading";
+import { EMBED_H, EMBED_W } from "../../lib/scan/geometry";
+import { readingCrop } from "../../lib/scan/reading";
 import { Checkbox } from "../ui/checkbox";
-import { sameAnswer, tapTarget, type Display } from "../../lib/scan-lab/steady";
+import { sameAnswer, tapTarget, type Display } from "../../lib/scan/steady";
 
 /** A verdict's target: the reading it is recorded against, what was on screen at the press, and how long before. */
 export type Tap = ReturnType<typeof tapTarget>;

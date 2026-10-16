@@ -1,4 +1,5 @@
 import type { Reading } from "./reading";
+import { nextTrack, startTrack, type Tracked } from "./track";
 
 // What the lab SHOWS, as opposed to what the camera read last. In low light the top-1 flickers between cards from one
 // frame to the next, and a verdict can land on a guess that replaced the right one as the finger came down (Hugh,
@@ -7,12 +8,7 @@ import type { Reading } from "./reading";
 // top-1 for `LOSE_MS` and nothing else has held, the screen says it is unsure (a null reading) rather than keep a guess
 // nothing supports. A frame with no card is a reading like any other: it too must hold to clear the screen.
 
-/** How long a new top-1 must hold before it replaces the guess on screen. The loop reads a frame every ~150-300ms on a
- * phone (two model runs and a 60ms pause), so a change shows on the fourth to sixth frame of an unbroken run, never
- * sooner than the second. */
-export const DWELL_MS = 700;
-/** How long the guess on screen may go unseen before the screen falls to unsure. */
-export const LOSE_MS = 2 * DWELL_MS;
+export { DWELL_MS, LOSE_MS } from "./track";
 /** A verdict pressed within this long of the guess on screen changing is recorded against the guess before it. */
 export const CHANGE_GRACE_MS = 700;
 
@@ -25,12 +21,8 @@ export type Display = {
   before: Reading | null;
 };
 
-export type SteadyState = Display & {
-  /** A different top-1 and when its unbroken run began. */
-  candidate: { key: string; since: number } | null;
-  /** When the reading on screen was last the camera's own top-1. */
-  seenAt: number;
-};
+/** The display and the dwell under it: the tracker (`track.ts`) keyed by the top-1 card. */
+export type SteadyState = Display & { track: Tracked<Reading> };
 
 const keyOf = (r: Reading): string => (r.kind === "card" ? (r.guesses[0]?.oracleId ?? "none") : "none");
 
@@ -40,22 +32,14 @@ export function sameAnswer(a: Reading | null, b: Reading | null): boolean {
 }
 
 export function startSteady(now: number): SteadyState {
-  return { reading: null, changedAt: now, before: null, candidate: null, seenAt: now };
+  const track = startTrack<Reading>(now);
+  return { reading: null, changedAt: now, before: null, track };
 }
 
 /** The display after one more reading arrives at `now`. Pure. */
 export function nextSteady(s: SteadyState, r: Reading, now: number): SteadyState {
-  const key = keyOf(r);
-  // The same answer as the screen: keep it, with this frame's own figures and crop.
-  if (s.reading !== null && keyOf(s.reading) === key) return { ...s, reading: r, candidate: null, seenAt: now };
-  const candidate = s.candidate?.key === key ? s.candidate : { key, since: now };
-  if (now - candidate.since >= DWELL_MS) {
-    return { reading: r, changedAt: now, before: s.reading, candidate: null, seenAt: now };
-  }
-  if (s.reading !== null && now - s.seenAt >= LOSE_MS) {
-    return { reading: null, changedAt: now, before: s.reading, candidate, seenAt: now };
-  }
-  return { ...s, candidate };
+  const track = nextTrack(s.track, r, now, (a, b) => keyOf(a) === keyOf(b));
+  return { reading: track.value, changedAt: track.changedAt, before: track.before, track };
 }
 
 /** What a verdict pressed at `pressAt` is recorded against, and how long before the press the screen last changed. A

@@ -19,8 +19,8 @@ const ORT = process.env.ORT_WEB_DIR;
 if (!S || !ORT) throw new Error("set CARD_SCAN_DIR and ORT_WEB_DIR");
 const WT = fileURLToPath(new URL("../../../", import.meta.url));
 const ort = await import(pathToFileURL(`${ORT}/dist/ort.node.min.mjs`).href);
-const { cornersFromDetector, rgbaToTensor, warpToTensor } = await import(`${WT}src/lib/scan-lab/geometry.ts`);
-const { normalise, parseIndex, topOracles } = await import(`${WT}src/lib/scan-lab/match.ts`);
+const { cornersFromDetector, rgbaToTensor, warpToTensor } = await import(`${WT}src/lib/scan/geometry.ts`);
+const { normalise, parseIndex, topOracles } = await import(`${WT}src/lib/scan/match.ts`);
 ort.env.wasm.numThreads = 1;
 console.log("load", os.loadavg().map((x) => x.toFixed(0)).join(" "), "ort-web", ort.env.versions?.web);
 
