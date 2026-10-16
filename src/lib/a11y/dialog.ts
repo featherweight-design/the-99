@@ -22,7 +22,7 @@ const FOCUSABLE =
 // directions: Tab from the last control tries to focus an inert first element and
 // lands nowhere, and Shift+Tab from the first is never wrapped, so focus escapes the
 // dialog entirely.
-function visibleFocusables(root: HTMLElement): HTMLElement[] {
+export function visibleFocusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
       el.getClientRects().length > 0 &&
@@ -35,6 +35,27 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 // Module-level because the lock is a property of the page, not of any one
 // dialog: every hook instance has to see the same count.
 let scrollLocks = 0;
+const scrollLockListeners = new Set<() => void>();
+
+/**
+ * How many surfaces hold the page right now, and a subscription to its changes. A moment (discovery R1) never arrives
+ * while a sheet or dialog is open over the page, and this counter is the one place every such surface already reports
+ * to (`lib/moments/hold.ts`).
+ */
+export function scrollLockCount(): number {
+  return scrollLocks;
+}
+
+export function subscribeScrollLock(listener: () => void): () => void {
+  scrollLockListeners.add(listener);
+  return () => {
+    scrollLockListeners.delete(listener);
+  };
+}
+
+function scrollLockMoved() {
+  for (const listener of scrollLockListeners) listener();
+}
 let overflowBeforeLock = "";
 
 // Every mounted dialog's root, in mount order (H23 PR 2's pre-open review). Ownership of a
@@ -178,6 +199,7 @@ export function useScrollLock(locked: boolean) {
       window.addEventListener("touchmove", blockUnlessScrollable, { passive: false });
     }
     scrollLocks += 1;
+    scrollLockMoved();
     return () => {
       scrollLocks -= 1;
       if (scrollLocks === 0) {
@@ -186,6 +208,7 @@ export function useScrollLock(locked: boolean) {
         window.removeEventListener("touchstart", rememberTouchStart);
         window.removeEventListener("touchmove", blockUnlessScrollable);
       }
+      scrollLockMoved();
     };
   }, [locked]);
 }

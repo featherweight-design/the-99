@@ -964,6 +964,25 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `loadDeckOpponents` returns a deck's seats and matchups, or null when the switch is off, there are no games or the read
   failed (logged, never thrown). None has a caller beyond its tests and the probe until the form (PR 2) and the Games tab (PR 4).
 
+- **Moments** (discovery R1, plan `2026-10-16-moments.md`, handoff `design_handoff_the99_discovery_onboarding/`), behind
+  `MOMENTS_ENABLED` (`'true'` on staging, unset on production; PR 1 is the foundation and mounts no moment). A moment is a
+  one-time bubble beside a control a reader has not used. Fifteen (M16, Home's Friends card, became a permanent
+  Friends section on Home, not a moment), in a FIXED ORDER that breaks ties
+  (`src/lib/moments/registry.ts`), each also following its tool's switch (`liveMoments`, from the reader's resolved env;
+  none live with the switch off, and the shell then reads nothing). `pickMoment` is the pure rule: one per visit, spent
+  never returns, Mana Balance only after Suggested changes is spent.
+  The spent set is `user_prefs.moments_spent`, append-only, written only when it adds an id (`spendMomentWrite`), since
+  `user_prefs` carries the stamp trigger. A VISIT is client-side, in `localStorage` so two tabs make one, ended by 30
+  minutes away (`lib/moments/visit.ts`). The shell mounts `MomentsProvider`, which watches every control registered
+  through `useMomentAnchor` with one IntersectionObserver, opens a 600ms tie window on the first on screen, and draws
+  `MomentBubble` (a portal at z 35, under every sheet, dialog, menu and toast; inside the topmost modal for a control in
+  card details). Nothing arrives while a surface is open over the page, read two ways: `dialog.ts`'s scroll-lock
+  counter and `useMomentHold` (the desktop account popover, every `ToastFrame`), and the DOM, where any drawn
+  `aria-modal`, `role="dialog"` or `role="menu"` counts, since many surfaces lock nothing; a covered control is looked
+  at again each second. A bubble the reader closes
+  is spent at once, one the page tears down only after a second on screen, through `spendMomentAction`, which re-checks
+  the id is live for the reader. Every moment is spoken once through the provider's one polite live region.
+
 - **Stuck-loader reports** (`NAV_STALL_LOG_ENABLED`, a plumbing switch; `'true'` on staging, off on production
   until Hugh turns it on). A loading screen still up 8 seconds (`STALL_AFTER_MS`) sends ONE report per navigation to
   `POST /api/nav-stall` (signed in, the switch re-checked for the reader, a 2KB cap, always 204), which logs one

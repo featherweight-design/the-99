@@ -11,6 +11,7 @@
 // this toast with a detail line, a body, History and an in-toast Undo, held on hover and focus.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useMomentHold } from "../../lib/moments/hold";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { RevertConfirm } from "./revert-confirm";
@@ -113,6 +114,8 @@ export function ToastFrame({
    */
   onHold?: (kind: "hover" | "focus", on: boolean) => void;
 }) {
+  // A toast up over the page keeps every moment off it until it closes (moments plan, E6); the specimen does not.
+  useMomentHold(placement !== "inline");
   const holds = onHold
     ? {
         onPointerEnter: () => onHold("hover", true),

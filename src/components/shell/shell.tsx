@@ -14,6 +14,9 @@ import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { socialFriendsEnabled } from "../../lib/social/flag";
+import { liveMoments } from "../../lib/moments/live";
+import { readSpentMoments } from "../../lib/moments/spent";
+import { MomentsProvider } from "../moments/moments-provider";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -71,6 +74,10 @@ export default async function Shell({
   };
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
+  // The moments live for this reader and the ones already spent (discovery R1). Off, or none live, the spent set is not
+  // read, and the provider is handed nothing, so no anchor registers.
+  const moments = liveMoments(env);
+  const spentMoments = moments.length > 0 ? await perfRead("shell.momentsSpent", () => readSpentMoments(userId)) : [];
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
@@ -84,6 +91,7 @@ export default async function Shell({
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
+      <MomentsProvider live={moments} spent={spentMoments}>
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -103,6 +111,7 @@ export default async function Shell({
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>
+      </MomentsProvider>
     </NavigationPendingProvider>
     </div>
   );

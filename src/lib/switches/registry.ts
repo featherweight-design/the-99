@@ -48,6 +48,7 @@ export const SWITCHES = [
   { name: "LINEUP_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
   { name: "MANA_BALANCE_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
+  { name: "MOMENTS_ENABLED", kind: "feature" },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "NEVER_CUT_ENABLED", kind: "feature" },
   { name: "NOTICES_ENABLED", kind: "feature" },
