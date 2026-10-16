@@ -322,7 +322,7 @@ export function CollectionPlaceHead({
             aria-haspopup="dialog"
             aria-label={compact ? collectionEditCopy.head.add : undefined}
             data-testid="collection-add-phone"
-            className={`md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center text-[13px] text-[color:var(--accent)] ${compact ? "min-w-[44px] justify-center" : "px-[10px]"}`}
+            className={`md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center text-[13px] text-[color:var(--accent)] ${compact ? "h-[44px] w-[44px] self-center justify-center" : "px-[10px]"}`}
           >
             <span aria-hidden className={compact ? "text-[18px]" : "mr-[6px] text-[15px]"}>+</span>
             {compact ? null : collectionEditCopy.head.addShort}

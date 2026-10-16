@@ -330,7 +330,8 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     const add = screen.getByTestId("collection-add-phone");
     expect(add).toHaveAccessibleName("Add cards");
     expect(add).not.toHaveTextContent("Add");
-    expect(add.className).toContain("min-w-[44px]");
+    expect(add.className).toContain("w-[44px]");
+    expect(add.className).toContain("self-center");
     expect(within(strip()).getByTestId("collection-tab-cards").className).toContain("px-[7px]");
   });
 
