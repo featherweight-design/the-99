@@ -16,9 +16,9 @@ vi.mock("../../app/collection/actions", () => ({
 
 const settle = vi.fn();
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
-let sheet: { onSaved?: (n: number) => void; onClose: () => void } | null = null;
+let sheet: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean } | null = null;
 vi.mock("../collection/add-cards-sheet", () => ({
-  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void }) => {
+  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean }) => {
     sheet = p;
     return <div role="dialog" aria-label="Add cards sheet" />;
   },
@@ -218,5 +218,11 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     const holder = [...container.querySelectorAll("div")].find((d) => d.className.includes("gap-[11px]") && d.className.includes("p-[16px_16px_20px]"));
     expect(holder).toBeTruthy();
     expect(holder?.className).toContain("sm:p-[20px_28px_26px]");
+  });
+
+  it("hands the sheet the reader's scan switch, so a first card can be scanned", () => {
+    render(<FirstRunChecklist addByHand scan />);
+    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    expect(sheet?.scan).toBe(true);
   });
 });

@@ -44,14 +44,16 @@ export async function lookupGuesses(embedding: Float32Array, model: string): Pro
         const hit = (
           await tx.execute(sql`
             select n.oracle_id::text as "oracleId", n.scryfall_id::text as "scryfallId",
-                   coalesce(c.name, '') as name, n.distance::float8 as distance
+                   coalesce(c.name, '') as name, coalesce(c.type_line, '') as "typeLine",
+                   coalesce(p.image_uri, c.image_uri) as "imageUri", n.distance::float8 as distance
             from (
               select s.oracle_id, s.scryfall_id, s.embedding <=> ${vec}::halfvec(256) as distance
               from scan_index s
               ${exclude}
               order by s.embedding <=> ${vec}::halfvec(256)
               limit 1
-            ) n left join cards c on c.oracle_id = n.oracle_id`)
+            ) n left join cards c on c.oracle_id = n.oracle_id
+              left join printings p on p.scryfall_id = n.scryfall_id`)
         ).rows[0] as NearRow | undefined;
         if (!hit) break;
         rows.push(hit);

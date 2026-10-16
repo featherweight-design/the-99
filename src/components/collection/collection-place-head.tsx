@@ -103,6 +103,7 @@ export function CollectionPlaceHead({
   editEnabled = false,
   historyHasEntries = false,
   preconPick = false,
+  scan = false,
   wishlistEnabled = false,
 }: {
   stats: { totalCards: number; uniqueCards: number };
@@ -121,6 +122,8 @@ export function CollectionPlaceHead({
   historyHasEntries?: boolean;
   /** The Add cards sheet's way into Precons I own (no-collection entry S18), decided by the layout from the switches. */
   preconPick?: boolean;
+  /** `CARD_SCAN_ENABLED` for the reader, read by the layout: the Add cards sheet's Scan press (card-scan PR 3). */
+  scan?: boolean;
   /** `SOCIAL_WISHLIST_ENABLED` for the reader, read by the layout: the Wishlist tab, fifth. */
   wishlistEnabled?: boolean;
 }) {
@@ -344,6 +347,7 @@ export function CollectionPlaceHead({
           returnFocusRef={addTrigger}
           totalCards={stats.totalCards}
           preconPick={preconPick}
+          scan={scan}
           onSaved={() => {
             savedWhileOpen.current = true;
             reread();

@@ -12,7 +12,9 @@ const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
 const C = "33333333-3333-4333-8333-333333333333";
 const D = "44444444-4444-4444-8444-444444444444";
-const row = (oracleId: string, distance: number, scryfallId = `${oracleId.slice(0, 8)}-p`) => ({ oracleId, name: oracleId.slice(0, 1), scryfallId, distance });
+const row = (oracleId: string, distance: number, scryfallId = `${oracleId.slice(0, 8)}-p`) => ({
+  oracleId, name: oracleId.slice(0, 1), scryfallId, typeLine: "Artifact", imageUri: `https://img/${scryfallId}`, distance,
+});
 
 describe("decodeEmbedding", () => {
   it("reads 256 little-endian float32 at unit length", () => {
@@ -41,7 +43,10 @@ describe("decodeEmbedding", () => {
 describe("poolGuesses", () => {
   it("keeps one guess per card, its best row, best first, three at most, with the margin of the first two", () => {
     const r = poolGuesses([row(A, 0.1, "a1"), row(A, 0.05, "a2"), row(B, 0.2), row(C, 0.3), row(D, 0.4)]);
-    expect(r.guesses.map((g) => [g.oracleId, g.scryfallId])).toEqual([[A, "a2"], [B, "22222222-p"], [C, "33333333-p"]]);
+    expect(r.guesses.map((g) => [g.oracleId, g.scryfallId, g.imageUri])).toEqual([
+      [A, "a2", "https://img/a2"], [B, "22222222-p", "https://img/22222222-p"], [C, "33333333-p", "https://img/33333333-p"],
+    ]);
+    expect(r.guesses[0].typeLine).toBe("Artifact");
     expect(r.guesses[0].score).toBeCloseTo(0.95);
     expect(r.margin).toBeCloseTo(0.15);
   });

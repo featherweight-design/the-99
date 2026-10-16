@@ -45,10 +45,14 @@ export function vectorLiteral(v: Float32Array): string {
   return `[${Array.from(v).join(",")}]`;
 }
 
-/** One nearest row, as the query returns it: the row's card, printing and cosine DISTANCE (pgvector's `<=>`). */
-export type NearRow = { oracleId: string; name: string; scryfallId: string; distance: number };
+/**
+ * One nearest row, as the query returns it: the row's card, printing and cosine DISTANCE (pgvector's `<=>`), with
+ * what the scanner draws for it: the card's type line and that printing's image (the card's own when the printing
+ * has none).
+ */
+export type NearRow = { oracleId: string; name: string; scryfallId: string; typeLine: string; imageUri: string | null; distance: number };
 
-export type Guess = { oracleId: string; name: string; scryfallId: string; score: number };
+export type Guess = { oracleId: string; name: string; scryfallId: string; typeLine: string; imageUri: string | null; score: number };
 
 export type MatchAnswer = { guesses: Guess[]; margin: number | null };
 
@@ -62,7 +66,9 @@ export function poolGuesses(rows: NearRow[]): MatchAnswer {
   for (const r of rows) {
     const score = Math.min(1, Math.max(-1, 1 - r.distance));
     const prev = best.get(r.oracleId);
-    if (!prev || score > prev.score) best.set(r.oracleId, { oracleId: r.oracleId, name: r.name, scryfallId: r.scryfallId, score });
+    if (!prev || score > prev.score) {
+      best.set(r.oracleId, { oracleId: r.oracleId, name: r.name, scryfallId: r.scryfallId, typeLine: r.typeLine, imageUri: r.imageUri, score });
+    }
   }
   const guesses = [...best.values()].sort((a, b) => b.score - a.score).slice(0, MAX_GUESSES);
   return { guesses, margin: guesses.length >= 2 ? guesses[0].score - guesses[1].score : null };

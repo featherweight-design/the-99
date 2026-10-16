@@ -5,9 +5,9 @@ const settle = vi.fn();
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: (...a: unknown[]) => settle(...a) }));
 
 // The sheet is exercised by its own tests; here it only has to open, report a save, and close.
-let sheetProps: { onSaved?: (n: number) => void; onClose: () => void } | null = null;
+let sheetProps: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean } | null = null;
 vi.mock("./add-cards-sheet", () => ({
-  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void }) => {
+  AddCardsSheet: (p: { onSaved?: (n: number) => void; onClose: () => void; scan?: boolean }) => {
     sheetProps = p;
     return <div role="dialog" aria-label="Add cards sheet" />;
   },
@@ -55,5 +55,11 @@ describe("CollectionEmptyDoors", () => {
     expect(settle).not.toHaveBeenCalled();
     act(() => sheetProps!.onClose());
     expect(settle).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands the sheet the reader's scan switch, so a first card can be scanned", () => {
+    render(<CollectionEmptyDoors scan />);
+    fireEvent.click(screen.getByRole("button", { name: /Add cards/ }));
+    expect(sheetProps?.scan).toBe(true);
   });
 });

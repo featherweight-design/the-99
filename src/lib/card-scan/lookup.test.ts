@@ -35,13 +35,13 @@ beforeEach(() => {
 
 describe("lookupGuesses", () => {
   it("reads in one repeatable-read transaction, each guess the nearest row of a card not already guessed", async () => {
-    stub.answers = [[], [META], [{ oracleId: A, scryfallId: "a1", name: "A", distance: 0.1 }], [{ oracleId: B, scryfallId: "b1", name: "B", distance: 0.3 }], []];
+    stub.answers = [[], [META], [{ oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", distance: 0.1 }], [{ oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, distance: 0.3 }], []];
     const r = await lookupGuesses(vec, SCAN_MODEL);
     expect(stub.opts).toEqual({ isolationLevel: "repeatable read" });
     expect(r).toEqual({
       kind: "ok",
       index: "all-20261014",
-      answer: { guesses: [{ oracleId: A, scryfallId: "a1", name: "A", score: 0.9 }, { oracleId: B, scryfallId: "b1", name: "B", score: 0.7 }], margin: expect.closeTo(0.2) },
+      answer: { guesses: [{ oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", score: 0.9 }, { oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, score: 0.7 }], margin: expect.closeTo(0.2) },
     });
     expect(text(0).sql).toContain("hnsw.iterative_scan");
     expect(text(0).sql).toContain("'lock_timeout', '2s'");
@@ -51,6 +51,8 @@ describe("lookupGuesses", () => {
     expect(text(4).params).toContain(`{${A},${B}}`);
     // The nearest row is ordered over scan_index alone, so the planner can keep the HNSW index.
     expect(text(2).sql).toMatch(/from scan_index s\s+order by s\.embedding <=>/);
+    // The printing's own image first, the card's when the printing has none.
+    expect(text(2).sql).toContain("coalesce(p.image_uri, c.image_uri)");
   });
 
   it("refuses a model the index was not built by, and reads no rows", async () => {

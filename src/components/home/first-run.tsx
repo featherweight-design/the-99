@@ -96,9 +96,12 @@ export function FirstRunChecklist({
   addByHand = false,
   about = null,
   ways = null,
+  scan = false,
 }: {
   addByHand?: boolean;
   about?: AboutLine | null;
+  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  scan?: boolean;
   /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
   ways?: { precons: boolean } | null;
 }) {
@@ -148,7 +151,7 @@ export function FirstRunChecklist({
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_20px] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
             open (D11, 5a); the fan is drawn here and handed in. */}
-        <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} ways={ways} />
+        <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} ways={ways} scan={scan} />
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
