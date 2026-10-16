@@ -168,4 +168,14 @@ describe("/friends watches a shown link", () => {
     expect(nav.refresh).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
   });
+  it("welcomes a friend who left and comes back through a watched link", async () => {
+    const later = new Date("2026-10-22T21:41:00Z");
+    const links = [{ token: TOKEN, createdAt: NOW, expiresAt: later }];
+    const { rerender } = render(view([DAVE, MO], links));
+    await tick(WATCH_MS);
+    rerender(view([DAVE], links));
+    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    await tick(WATCH_MS);
+    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+  });
 });
