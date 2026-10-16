@@ -347,7 +347,7 @@ const WIDTH_CLASS = {
   760: "md:w-[760px] ",
 } as const;
 
-/** A card: its art, its name under it, and a press that opens the card modal on top. */
+/** A card: its art, its name under it, and a press that opens the card modal on top. A tile draws no hover preview (Hugh, 2026-10-16 UTC). */
 export function ReceiptTile({
   card,
   art,
@@ -368,7 +368,6 @@ export function ReceiptTile({
       name={name}
       siblings={siblings}
       imageUri={drawn?.imageUri ?? null}
-      preview
       testId="receipt-tile"
       // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
       className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}

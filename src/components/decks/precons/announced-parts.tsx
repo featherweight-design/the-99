@@ -4,10 +4,12 @@
 // card, Strip, None plate, `new` tag, Jump): a revealed commander, the strip of them, the empty plate, the set
 // block in tiles, and the meta lines' words.
 //
-// A revealed commander opens its card details on a press and draws the hover preview, as every card thumb in the
-// app does (`CardDetailTrigger` with `preview`; Hugh, 2026-10-15, reversing G2's "links nowhere"). In tiles each
+// A revealed commander opens its card details on a press (`CardDetailTrigger`; Hugh, 2026-10-15, reversing G2's
+// "links nowhere"). In ROWS the opened row's small strip also draws the hover preview, as every card thumb in a row
+// does (`preview`); in TILES it draws none (Hugh, 2026-10-16 UTC, superseding that reversal for tiles: a tile's art is already about the size of one, and the
+// rule is no hover preview in tile view; `hover-art.test.ts` fails any `*Tile` component that draws one). In tiles each
 // set's commanders are drawn as the precon list's own tiles, in its own grid (`PRECON_TILES_CLASS`), so they are
-// the decklists' size; in rows the opened row keeps the small strip. Outside a `CardDetailProvider` (About's
+// the decklists' size. Outside a `CardDetailProvider` (About's
 // specimen) a commander is drawn as before, unpressable.
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -186,8 +188,8 @@ export const TILE_FOCUS_RING =
 /**
  * One revealed commander in tiles: the precon tile's shell, art box and caption (`PreconTile`'s anatomy), holding
  * a card rather than a precon. As on `PreconTile`, the WHOLE tile is the press: the name in the caption is the
- * control, and its `::after` is stretched over the tile, so the art and the caption both open it and hover anywhere
- * on it draws the preview. One accessible name, the press's.
+ * control, and its `::after` is stretched over the tile, so the art and the caption both open it. No hover preview: a
+ * tile's art is the size of one already. One accessible name, the press's.
  */
 function RevealedTile({ card, siblings, hidden = false }: { card: RevealedCommander; siblings: readonly string[]; hidden?: boolean }) {
   const identity = card.colorIdentity.length > 0 ? card.colorIdentity : ["C"];
@@ -227,7 +229,6 @@ function RevealedTile({ card, siblings, hidden = false }: { card: RevealedComman
             name={card.name}
             siblings={siblings}
             imageUri={art}
-            preview
             ariaLabel={spokenName(card, true)}
             testId="revealed-press"
             // A block that truncates itself (a button is never inline, so the caption's own ellipsis cannot reach
