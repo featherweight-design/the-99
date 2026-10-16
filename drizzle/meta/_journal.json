@@ -967,6 +967,13 @@
       "when": 1792119340597,
       "tag": "0137_card_scan_index",
       "breakpoints": true
+    },
+    {
+      "idx": 138,
+      "version": "7",
+      "when": 1792171709736,
+      "tag": "0138_card_search_switch",
+      "breakpoints": true
     }
   ]
 }

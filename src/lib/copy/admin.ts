@@ -507,6 +507,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   CARD_SCAN_ENABLED: { label: "Card scanning", description: "Scan cards with the camera into Add cards." },
+  CARD_SEARCH_ENABLED: { label: "Card search", description: "Look up any card by name from any page: the phone header’s icon, the rail’s slot and ⌘K." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
   COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought, Collection sync, No-collection entry and Card scanning need it." },
   COLLECTION_SYNC_ENABLED: { label: "Collection sync", description: "Sync an upload: take what the file changed and keep your own edits." },

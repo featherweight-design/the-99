@@ -57,6 +57,7 @@
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
+    "probe:card-search": "tsx scripts/probe-card-search.mts",
     "probe:card-scan-match": "tsx scripts/probe-card-scan-match.mts",
     "probe:upcoming-precons": "tsx scripts/probe-upcoming-precons.mts",
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",

@@ -18,6 +18,12 @@ export function nameSearch(query: string): {
   where: SQL;
   /** The flavor name to show beside a row, or null when the row's own name matched. */
   shownFlavor: (name: string, flavorName: string | null) => string | null;
+  /**
+   * How well the NAME matched, for a caller that orders best first (card search, handoff G3): 0 when it starts
+   * with the query, 1 when a word in it does (after a space, a hyphen or a slash), 2 for any other match,
+   * a flavor-name-only match included. The other callers order by name and do not read it.
+   */
+  rank: SQL<number>;
 } | null {
   const q = query.trim();
   if (q.length < 2 || q.length > 100) return null;
@@ -34,6 +40,12 @@ export function nameSearch(query: string): {
     // Dropped when the title itself matched: the flavor name is there to explain a row
     // whose name does not contain what the player typed, and nothing else.
     shownFlavor: (name, flavorName) => (name.toLowerCase().includes(lowerQuery) ? null : flavorName),
+    rank: sql<number>`case
+      when ${cards.name} ilike ${`${escaped}%`} then 0
+      when ${cards.name} ilike ${`% ${escaped}%`} or ${cards.name} ilike ${`%-${escaped}%`}
+        or ${cards.name} ilike ${`%/${escaped}%`} then 1
+      else 2
+    end`,
   };
 }
 
