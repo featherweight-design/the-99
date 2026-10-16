@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#FF4D9A}
+.board{box-sizing:border-box;padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.55;color:#959AAD;margin:0;text-wrap:pretty}
+.cap b{color:#E6E8F0;font-weight:600}
+.new{outline:1.5px dashed rgba(255,77,154,.55);outline-offset:3px;border-radius:4px}
+.fr{display:flex;flex-direction:column;gap:12px}
+.m{font-family:'IBM Plex Mono',monospace}
+/* desktop page */
+.dk{flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;color:#E6E8F0}
+.rail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:8px;border-right:1px solid #181C26}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px;font:700 21px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:9px;letter-spacing:1px;margin-bottom:3px}
+.slot{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.slot.on{background:#20222A;color:#E6E8F0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 26px 30px}
+.chd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-top:24px}
+.chd h1{margin:0;font:700 28px 'Chakra Petch',sans-serif;line-height:40px}
+.stats{font:12.5px 'IBM Plex Mono',monospace;color:#6F7486;margin-top:2px}
+.hbtn{display:inline-flex;align-items:center;height:40px;padding:0 16px;border:1px solid #262A35;border-radius:9px;color:#E6E8F0;font:600 14px 'IBM Plex Sans',sans-serif;white-space:nowrap}
+.tabs{display:flex;gap:26px;padding-top:12px;border-bottom:1px solid #181C26}
+.tab{display:flex;align-items:flex-end;gap:7px;height:42px;padding:0 2px 11px;border-bottom:2px solid transparent;font-size:15px;color:#959AAD;white-space:nowrap}
+.tab.on{border-bottom-color:#FF4D9A;color:#E6E8F0;font-weight:500}
+.tab small{font:12.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.tab.on small{color:#FF4D9A}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:16px}
+.ctl .rt{margin-left:auto;display:flex;align-items:center;gap:12px}
+.seg{display:inline-flex;align-items:center;gap:2px;padding:4px;border:1px solid #262A35;border-radius:12px}
+.sg{height:38px;padding:0 16px;border-radius:9px;display:flex;align-items:center;gap:8px;font-size:15px;color:#B1B6C7;white-space:nowrap}
+.sg small{font:12.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.sg.on{background:#20222A;color:#E6E8F0;font-weight:500}
+.sg.on.sh,.sg.on.sh small{color:#E0913C}
+.vbar{width:1px;height:24px;background:#343843;margin:0 4px}
+.dd{display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:9px;background:#191B22;font:500 14px 'IBM Plex Sans',sans-serif;white-space:nowrap}
+.yours{font:12px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap}
+.strip{margin-top:14px;border:1px solid #181C26;border-radius:12px;padding:14px 18px;display:flex;flex-direction:column;gap:5px}
+.key{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;padding:12px 4px 0}
+.ki{display:flex;align-items:center;gap:7px;font:10.5px 'IBM Plex Mono',monospace;line-height:1.5;color:#6F7486;white-space:nowrap}
+.ki .bg{border-radius:3px;padding:0 4px;color:#E0913C;background:rgba(224,145,60,.13)}
+.ki .bg.ol{background:transparent;box-shadow:inset 0 0 0 1px #E0913C}
+.ki .sw{width:18px;text-align:center;font-size:15px;line-height:1;color:#E0913C}
+.ki .sp{width:18px;display:flex;justify-content:center;color:#8FA6BE}
+.gh{display:flex;align-items:baseline;gap:10px;margin-top:18px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #181C26}
+.gh b{font:600 17px 'IBM Plex Sans',sans-serif}
+.gh span{font:12.5px 'IBM Plex Mono',monospace;color:#6F7486}
+/* glint, marks, pips */
+.gl{display:inline-block;flex:none;width:12px;height:12px;clip-path:polygon(50% 3%,52% 10%,54% 16%,57% 21%,59% 26%,62% 30%,66% 34%,70% 38%,74% 41%,79% 43%,84% 46%,90% 48%,97% 50%,90% 52%,84% 54%,79% 57%,74% 59%,70% 62%,66% 66%,62% 70%,59% 74%,57% 79%,54% 84%,52% 90%,50% 97%,48% 90%,46% 84%,43% 79%,41% 74%,38% 70%,34% 66%,30% 62%,26% 59%,21% 57%,16% 54%,10% 52%,3% 50%,10% 48%,16% 46%,21% 43%,26% 41%,30% 38%,34% 34%,38% 30%,41% 26%,43% 21%,46% 16%,48% 10%);background:linear-gradient(135deg,#FF8CC6 24%,#FFD66E 38%,#8FEBD2 50%,#8CB4FF 62%,#C79BFF 76%)}
+.fm{display:block;flex:none;width:16px;height:16px;color:#8FA6BE;filter:drop-shadow(0 0 3px rgba(143,166,190,.45))}
+.pips{display:flex;gap:3px;justify-content:flex-end}
+.pip{display:flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);font:600 8px 'IBM Plex Mono',monospace;font-style:normal;color:#17181C}
+.pip.n{background:#B9BCC6}.pip.W{background:#E9E0C2}.pip.U{background:#4A7FC0}.pip.B{background:#4A4448}.pip.R{background:#C8553D}.pip.G{background:#5F9F5F}
+/* the one-line row (desktop) */
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 20px}
+.cell{container-type:inline-size;min-width:0}
+.r{display:flex;align-items:center;gap:10px;min-height:34px;padding:7px 9px;border-radius:7px;background:#12141B}
+.r.ov{box-shadow:inset 0 0 0 1px #752619}
+.r.hv{background:#181A21}
+.ow{width:8px;height:8px;flex:none;display:flex;align-items:center;justify-content:center}
+.dt{width:8px;height:8px;border-radius:50%;flex:none;background:#6FA368}
+.dt.no{background:transparent;border:1px dashed #606476}
+.ow .gl{margin:-2px}
+.lr{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px}
+.nm{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;line-height:20px;color:#E6E8F0}
+.tf,.qt{flex:none;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.mk{display:flex;align-items:center;gap:6px;flex:none}
+.pn{display:none;flex:none;font:500 11px 'IBM Plex Mono',monospace;color:#8FA6BE}
+.pp{width:72px;flex:none;display:flex;justify-content:flex-end}
+.sl{flex:none;display:flex;justify-content:flex-end}
+.mr{flex:none;display:inline-flex;align-items:center;gap:5px;font:11.5px 'IBM Plex Mono',monospace;white-space:nowrap}
+.mr.use{color:#DF8AA7}
+.mr.sh{color:#C26755}
+.dm{display:block;width:7px;height:7px;transform:rotate(45deg);background:#FF4D9A;flex:none}
+.og{position:relative;display:block;width:12px;height:8px;flex:none}
+.og b{position:absolute;top:1px;left:0;width:6px;height:6px;transform:rotate(45deg);background:#C6533F}
+.og b+b{left:5px;box-shadow:0 0 0 1.2px #12141B}
+.pr{flex:none;height:26px;margin:-3px 0;display:flex;align-items:center;gap:6px;padding:0 7px;border:1px solid #262A35;border-radius:6px}
+.pr .sw{font:14px 'IBM Plex Mono',monospace;line-height:1;color:#E0913C}
+.pr .sp{display:flex;color:#8FA6BE}
+.by{width:84px;flex:none;display:flex;justify-content:flex-end}
+.tag{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;border-radius:4px;padding:1px 5px;font:9.5px 'IBM Plex Mono',monospace;line-height:15px;color:#E0913C;background:rgba(224,145,60,.13);white-space:nowrap}
+.tag i{font-style:normal;min-width:46px;text-align:right;color:#B1B6C7}
+.tag.ol{background:transparent;box-shadow:inset 0 0 0 1px #E0913C}
+.tag.c{gap:0}
+.x{flex:none;width:22px;text-align:center;font-size:13px;color:#343843}
+.lk{flex:none;width:14px;display:flex;justify-content:center;color:#959AAD}
+/* the drop order: the row's own width decides (container query on the cell) */
+@container (max-width:479px){
+.va .f2,.va .f3{display:none}
+.va .p1{display:inline}
+.vs .mk{display:none}
+.vs .p0{display:inline}
+.vs .mr .w{display:none}
+}
+@container (max-width:359px){
+.va .f1{display:none}
+.va .p1{display:none}
+.va .p0{display:inline}
+.va .mr .w{display:none}
+.vs .p0{display:none}
+}
+/* annotation */
+.tip{position:absolute;z-index:3;background:#20222A;border:1px solid #262A35;border-radius:6px;padding:7px 10px;font:12px 'IBM Plex Sans',sans-serif;color:#B1B6C7;white-space:nowrap;box-shadow:0 10px 24px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:5px}
+.tip span{display:flex;align-items:center;gap:7px}
+.note{background:#12141B;border:1px solid #20222A;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.note b{font-weight:600;color:#E6E8F0}
+.note p{margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7}
+table.t{border-collapse:collapse;width:100%;font-size:13px}
+table.t td,table.t th{border-top:1px solid #20222A;padding:9px 14px 9px 0;text-align:left;vertical-align:top;color:#B1B6C7;line-height:1.5}
+table.t th{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F7486;border-top:0}
+table.t td:first-child{color:#E6E8F0;white-space:nowrap}
+code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#191B22;border-radius:4px;padding:1px 5px}
+/* phone (390), the shipped rows */
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;color:#E6E8F0}
+.phd{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;border-bottom:1px solid #181C26}
+.phd .lg{display:flex;align-items:center;gap:8px;font:700 18px 'Chakra Petch',sans-serif}
+.phd .lg i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px}
+.av{width:30px;height:30px;border-radius:50%;background:#20222A;border:1px solid #262A35}
+.ptitle{padding:14px 16px 0;font:700 21px 'Chakra Petch',sans-serif}
+.ptabs{display:flex;gap:18px;padding:8px 16px 0;border-bottom:1px solid #181C26;overflow:hidden}
+.ptabs .tab{height:38px;font-size:14px;padding-bottom:10px}
+.pseg{display:flex;margin:12px 16px 0;padding:4px;border:1px solid #262A35;border-radius:12px}
+.pseg .sg{flex:1;justify-content:center;font-size:14px;padding:0 4px;height:36px}
+.pkey{display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 16px 0}
+.pkey .ki{font-size:10px;gap:5px}
+.pkey.c2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+.pgh{display:flex;align-items:baseline;gap:8px;padding:16px 16px 8px;font:600 16px 'IBM Plex Sans',sans-serif}
+.pgh span{font:12px 'IBM Plex Mono',monospace;color:#6F7486;font-weight:400}
+.prows{display:flex;flex-direction:column;gap:3px;padding:0 16px}
+.prow{display:flex;align-items:center;gap:9px;min-height:52px;padding:0 4px 0 8px;border-radius:7px;background:#12141B}
+.prow.ov,.xr.ov{box-shadow:inset 0 0 0 1px #752619}
+.prow .dt{width:7px;height:7px}
+.blk{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px}
+.blk .l1{display:flex;align-items:center;gap:6px;min-width:0}
+.blk .nm{font-size:12.5px}
+.blk .l2{display:flex;align-items:center;gap:5px;min-width:0}
+.blk .pip{width:13px;height:13px}
+.x44{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#343843}
+.xr{display:flex;flex-direction:column;gap:2px;padding:2px 4px 2px 8px;border-radius:7px;background:#12141B}
+.xr .l1{display:flex;align-items:center;gap:9px;min-height:44px}
+.xr .l1 .dt{width:7px;height:7px}
+.xr .nm1{flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;line-height:18px}
+.xr .l2{display:flex;align-items:center;gap:5px;min-height:44px;padding-left:16px}
+.xr .l2 .gl{margin-left:-16px;margin-right:-1px}
+.xr .l2 .pip{width:13px;height:13px}
+.xr .sp2{flex:1}
+.xr .pr{height:36px;margin:0;border-radius:9px;padding:0 10px;gap:8px}
+.xr .pr .sw{font-size:16px}
+.xr .tag{font-size:9px;padding:1px 5px}
+.xr .tw{display:flex;align-items:center;min-height:44px;padding-left:4px}
+.pbar{display:flex;justify-content:space-around;align-items:center;height:62px;border-top:1px solid #181C26;margin-top:16px;font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.pbar span{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pbar span.on{color:#E6E8F0}
+</style>
+</helmet>
+<div class="board" style="width:1900px">
+<div class="bh"><span class="k">Card rows addendum L1 · one line · 2026-10-16</span><h2>One line for every card row</h2><p class="cap" style="max-width:1560px">A fast follow to the foil mark addendum’s two-line row (#1886). Hugh’s verdict on it live: the information is worth having, but two lines read empty on desktop for a light row, and one line used to get cluttered on a heavy one. This addendum puts the deck page’s card row back on <b>one 34px line from 768px up, in All and Shopping</b>, and makes it hold the busiest real row by giving each view its own lead, folding marks in a fixed order as the row narrows, and fixing the right-hand columns. <b>The phone keeps today’s rows.</b> Drawn over the shipped deck page, Kamigawa theme, at shipped row metrics. Dashed pink marks what is new.</p></div>
+<div style="display:grid;grid-template-columns:860px 860px;gap:28px 72px;align-items:start">
+<div class="fr"><span class="k">All · 582px column (1300)</span>
+<div class="cell" style="width:582px"><div class="r va ov"><span class="ow new"><span class="gl"></span></span><span class="lr"><span class="nm">Captain America, Team Leader</span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg><svg class="fm f2" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"/><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"/></svg><svg class="fm f3" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="pn p1">+2</span><span class="pn p0">+3</span></span><span class="sl"><span class="mr sh"><i class="og"><b></b><b></b></i><span class="w">short</span></span></span><span class="pp"><span class="pips"><i class="pip n">2</i><i class="pip R"></i><i class="pip W"></i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:582px"><div class="r va"><span class="ow"><i class="dt no"></i></span><span class="lr"><span class="nm">Lathliss, Dragon Queen</span></span><span class="sl"><span class="tag c">$1.36</span></span><span class="pp"><span class="pips"><i class="pip n">4</i><i class="pip R"></i><i class="pip R"></i></span></span><span class="x">✕</span></div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:12.5px;line-height:1.5;color:#959AAD;margin-top:4px">
+<b style="color:#E6E8F0;font-weight:600">Left run, leads</b><span>Ownership (the dot, or the glint in its place), the name, <code>//</code>, <code>×N</code>, then the deck marks: Game Changer, tutor, mass land denial, extra turns, combo.</span>
+<b style="color:#E6E8F0;font-weight:600">Slot, flows</b><span>The one availability slot: the marker (<b>in use</b>, <b>short</b>) on a card you own, the collapsed price (<b>$1.36</b>) on one you don’t. It takes width only when it has something to say.</span>
+<b style="color:#E6E8F0;font-weight:600">Fixed columns</b><span>The 72px pip track and the ✕, on one vertical line down the list.</span>
+</div>
+</div>
+<div class="fr"><span class="k">Shopping · 582px column (1300)</span>
+<div class="cell" style="width:582px"><div class="r vs ov"><span class="ow new"><span class="gl"></span></span><span class="lr"><span class="nm">Captain America, Team Leader</span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg><svg class="fm f2" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"/><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"/></svg><svg class="fm f3" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="pn p0">+3</span></span><span class="mr sh"><i class="og"><b></b><b></b></i><span class="w">short</span></span><span class="pr"><span class="sw">⇄</span><span class="sp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.2c2.6-.3 4.6 1.3 5.1 4.3"/></svg></span></span><span class="by"><span class="tag ol">buy<i>$11.18</i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:582px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr"><span class="nm">Lathliss, Dragon Queen</span></span><span class="by"><span class="tag">buy<i>$1.36</i></span></span><span class="x">✕</span></div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:12.5px;line-height:1.5;color:#959AAD;margin-top:4px">
+<b style="color:#E6E8F0;font-weight:600">Left run</b><span>The same run as All. Here the marks follow the name but are the first to fold.</span>
+<b style="color:#E6E8F0;font-weight:600">Leads, flows</b><span>The marker (<b>short</b>) and the one other-ways press: ⇄ for cheaper stand-ins, the spare glyph for a friend’s spare, one press holding whichever apply (#1891, unchanged).</span>
+<b style="color:#E6E8F0;font-weight:600">Fixed columns</b><span>The buy tag (84px, figure right-aligned in its 46px slot, outlined when over the deck’s limit) and the ✕. No pips, no EDHREC figure.</span>
+</div>
+</div>
+</div>
+<div class="bh" style="margin-top:14px"><span class="k">The brief’s four directions, tested</span><h2 style="font-size:22px">All four directions taken, with one merge left for your call</h2></div>
+<div style="display:grid;grid-template-columns:repeat(3,580px);gap:28px 30px;align-items:start">
+<div class="note"><span class="k" style="color:#6FA368">1 · Per-view relevance · taken</span>
+<div class="cell" style="width:540px"><div class="r va"><span class="ow"><span class="gl"></span></span><span class="lr"><span class="nm">Ashling, the Limitless</span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg><svg class="fm f2" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"/><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"/></svg></span></span><span class="sl"><span class="mr use"><i class="dm"></i><span class="w">in use</span></span></span><span class="pp"><span class="pips"><i class="pip n">3</i><i class="pip R"></i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:540px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr"><span class="nm">Miku, Song of the People</span></span><span class="pr"><span class="sp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.2c2.6-.3 4.6 1.3 5.1 4.3"/></svg></span></span><span class="by"><span class="tag">buy<i>$4.10</i></span></span><span class="x">✕</span></div></div>
+<p>All leads with cost and deck marks; its only buying signal is the collapsed price, and <b>the other-ways press is Shopping’s alone</b> at every width. Shopping leads with the buy tag, its price and the press, and draws no pips. This is what frees the room for one line.</p></div>
+<div class="note"><span class="k" style="color:#6FA368">2 · Drop order with +N · taken</span>
+<div class="cell" style="width:400px"><div class="r va ov"><span class="ow"><span class="gl"></span></span><span class="lr"><span class="nm">Captain America, Team Leader</span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg><svg class="fm f2" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 12.2 H14.2 V14.4 H1.8 Z" fill="currentColor"/><path d="M8 1.3 L11.7 5.7 H9.2 V10.3 H6.8 V5.7 H4.3 Z" fill="currentColor"/></svg><svg class="fm f3" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 4.9 A 3.1 3.1 0 1 0 5.2 11.1 C 8.3 11.1 7.7 4.9 10.8 4.9 A 3.1 3.1 0 1 1 10.8 11.1 C 7.7 11.1 8.3 4.9 5.2 4.9 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="pn p1 new">+2</span><span class="pn p0">+3</span></span><span class="sl"><span class="mr sh"><i class="og"><b></b><b></b></i><span class="w">short</span></span></span><span class="pp"><span class="pips"><i class="pip n">2</i><i class="pip R"></i><i class="pip W"></i></span></span><span class="x">✕</span></div></div>
+<p>Each view folds in a fixed order, keyed to the row’s own column width (board D1). Folded marks become a bare <b>+N</b> in the mark ink: no box, no hit area, a tooltip with a fine pointer, card details on press. The name ellipsizes last and the shipped hover preview shows it whole.</p></div>
+<div class="note"><span class="k" style="color:#6FA368">4 · Fixed right-hand columns · taken</span>
+<div class="cell" style="width:400px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr" style="flex:0 1 auto"><span class="nm">Miku, Song of the People</span></span><span class="by" style="width:auto"><span class="tag">buy<i>$4.10</i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:400px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr" style="flex:0 1 auto"><span class="nm">Ghoulcaller Gisa</span></span><span class="by" style="width:auto"><span class="tag">buy<i>$0.61</i></span></span><span class="x">✕</span></div></div>
+<span class="k" style="color:#959AAD;margin-top:4px">Fixed</span>
+<div class="cell" style="width:400px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr"><span class="nm">Miku, Song of the People</span></span><span class="by"><span class="tag">buy<i>$4.10</i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:400px"><div class="r vs"><span class="ow"><i class="dt no"></i></span><span class="lr"><span class="nm">Ghoulcaller Gisa</span></span><span class="by"><span class="tag">buy<i>$0.61</i></span></span><span class="x">✕</span></div></div>
+<p>The ✕ and the view’s lead column (pips in All, the buy tag in Shopping) sit at fixed widths at the right, so prices and pips form columns down the list, as the shipped pip track already does. Above, without: every price follows its name.</p></div>
+<div class="note"><span class="k" style="color:#6FA368">3a · Merged: the glint in the dot’s place · taken</span>
+<div class="cell" style="width:400px"><div class="r va"><span class="ow new"><span class="gl"></span></span><span class="lr"><span class="nm">Jace, Multiverse Architect</span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg></span></span><span class="pp"><span class="pips"><i class="pip n">3</i><i class="pip U"></i><i class="pip U"></i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:400px"><div class="r va"><span class="ow"><i class="dt"></i></span><span class="lr"><span class="nm">Killian, Decisive Mentor</span><span class="tf">//</span></span><span class="pp"><span class="pips"><i class="pip n">2</i><i class="pip W"></i><i class="pip B"></i></span></span><span class="x">✕</span></div></div>
+<p>On one line the glint has no line 2 to sit on, so it takes the filled dot’s place, centred on it: every name keeps its x and nothing gets wider. A foil card is always one you own, so the green dot said nothing the glint doesn’t. A card you don’t own, or a proxied slot, keeps its dot and shows no glint.</p></div>
+<div class="note"><span class="k" style="color:#E0913C">3b · Merged: the glint after the name · drawn, your call</span>
+<div class="cell" style="width:400px"><div class="r va"><span class="ow"><i class="dt"></i></span><span class="lr"><span class="nm">Jace, Multiverse Architect</span><span class="gl new"></span><span class="mk"><svg class="fm f1" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"/></svg></span></span><span class="pp"><span class="pips"><i class="pip n">3</i><i class="pip U"></i><i class="pip U"></i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:400px"><div class="r va"><span class="ow"><i class="dt"></i></span><span class="lr"><span class="nm">Killian, Decisive Mentor</span><span class="tf">//</span></span><span class="pp"><span class="pips"><i class="pip n">2</i><i class="pip W"></i><i class="pip B"></i></span></span><span class="x">✕</span></div></div>
+<p>The brief’s example: the glint rides the name, before <code>//</code> and the marks. It keeps the dot, but the glint lands in a different place on every row and reads as one more deck mark beside Game Changer and tutor. Recommended: 3a.</p></div>
+<div class="note"><span class="k" style="color:#C26755">3c · Merged: availability inside the buy tag · not taken</span>
+<div class="cell" style="width:400px"><div class="r vs ov"><span class="ow"><i class="dt"></i></span><span class="lr"><span class="nm">Zimone, Infinite Analyst</span></span><span class="by" style="width:auto"><span class="tag" style="gap:6px"><i class="og" style="min-width:0"><b></b><b style="box-shadow:0 0 0 1.2px #2A1F17"></b></i>buy<i>$2.20</i></span></span><span class="x">✕</span></div></div>
+<div class="cell" style="width:400px"><div class="r vs ov"><span class="ow"><i class="dt"></i></span><span class="lr"><span class="nm">Zimone, Infinite Analyst</span></span><span class="mr sh"><i class="og"><b></b><b></b></i></span><span class="by"><span class="tag">buy<i>$2.20</i></span></span><span class="x">✕</span></div></div>
+<p>Above, folded in; below, what ships instead at 900. The buy tag is the <b>I got it</b> press, so a marker inside it would make “short” part of a button about buying, and the card-rows ruling keeps the owned-but-spoken-for pair as two facts in two places. The room comes from the marker dropping its word instead.</p></div>
+</div>
+<div style="display:grid;grid-template-columns:1100px 640px;gap:48px;align-items:start;margin-top:14px">
+<div class="fr"><span class="k">The calls</span>
+<table class="t"><tr><th>#</th><th>Call</th></tr>
+<tr><td>L1</td><td><b style="color:#E6E8F0">One line from 768px up, in All and Shopping.</b> The desktop row is 34px again, the shipped one-line metrics (9px padding, 10px gap, 7px radius). The two-line desktop forms retire, and so does Shopping’s phone-shaped band from 768 to 1024.</td></tr>
+<tr><td>L2</td><td><b style="color:#E6E8F0">Per-view lead.</b> All: left run, slot, pips, ✕. Shopping: left run, marker, press, buy tag, ✕. All has no other-ways press; Shopping has no pips and no EDHREC figure.</td></tr>
+<tr><td>L3</td><td><b style="color:#E6E8F0">Drop order by the row’s own width</b>, in three tiers: wide (480px and up), middle (360 to 479), tight (under 360). The lists are on board D1. The name ellipsizes; nothing else shrinks.</td></tr>
+<tr><td>L4</td><td><b style="color:#E6E8F0">+N</b>: bare mono 11px in <code>--fact</code>, after the marks it stands for. Fine pointer: the fact tooltip lists what folded. Press: the row’s own press, card details. Screen readers still hear every mark.</td></tr>
+<tr><td>L5</td><td><b style="color:#E6E8F0">The glint takes the filled dot’s place</b> on one line (3a), centred on the dot so the name keeps its x. Only where the dot would be filled; a dashed or proxied row draws no glint. Under the dot on the phone, as shipped.</td></tr>
+<tr><td>L6</td><td><b style="color:#E6E8F0">Fixed right-hand columns</b>: All’s pip track (72px) and ✕; Shopping’s buy tag (84px) and ✕. The marker, the press and All’s price flow left of them and take width only when present.</td></tr>
+<tr><td>L7</td><td><b style="color:#E6E8F0">Full name on hover is the shipped card preview</b> (240ms in, 252×352). No name tooltip, so one hover never opens two popups.</td></tr>
+<tr><td>L8</td><td><b style="color:#E6E8F0">The press keeps its 26px box</b> and takes 3px off each side of the line, so a row holding it stays 34px.</td></tr>
+<tr><td>L9</td><td><b style="color:#E6E8F0">Unchanged</b>: over the limit is the tag’s outline and the key’s <b>over $5</b>; both keys as shipped; a basic land’s stepper row, a precon’s read-only row, and the removal and I got it slots (34px on desktop again).</td></tr>
+<tr><td>L10</td><td><b style="color:#E6E8F0">The phone stays as it ships</b>: the 52px All row and option B Shopping, except that All loses the press (L2). One line at 358px leaves a 40px press, a 40px tag and a 44px ✕ beside about 90px of name.</td></tr>
+</table></div>
+<div class="fr"><span class="k">Engineering</span>
+<div class="note"><p><code>decks/decklist-row.tsx</code>: delete <code>TWO_MD</code>, <code>TWO_LG</code> and <code>TWO_SHELLS</code>; from <code>md</code> both views use the one-line shell (<code>ROW_SHELL</code>, 34px), and <code>ROW_SHELL_SHOPPING</code>’s <code>lg</code> becomes <code>md</code>. <code>PHONE_B</code> stays below <code>md</code>.<br>The grid cell becomes a container (<code>@container</code>); the folds are <code>@max-[479px]:</code> and <code>@max-[359px]:</code> variants on the marks, the +N spans and the marker’s word.<br>Marks render whole, each with its index; three +N spans (past the third, past the first, all) carry the counts, one shown per tier.<br><code>OtherWaysPress</code> draws only <code>inShopping</code>. Pips draw only outside Shopping, in the desktop track. The press gets <code>md:-my-[3px]</code>.<br>The ownership slot draws <code>FoilGlint</code> instead of <code>OwnershipDot</code> when the dot would be filled and the row has a foil finish; the glint’s <code>-2px</code> margin keeps the 8px slot.<br><code>AvailabilityMarker</code> needs a hook to hide its word and keep the glyph and count (its tooltip and spoken label stay).<br>Update <code>docs/superpowers/inventories/foil-row.json</code> for one line at 900 and 1300.</p></div>
+<span class="k" style="margin-top:6px">Gaps</span>
+<div class="note"><p><b>L-G1</b> The combo mark: the data exists, so wiring it onto deck rows is engineering’s, not a design gap.<br><b>L-G2</b> All carries no other-ways press, ruled by Hugh 2026-10-16: Shopping only, until feedback says otherwise.<br><b>L-G3</b> In the tight tier the marker is glyph-only. Its word stays in the tooltip and the spoken label; the key does not list marker glyphs, as today.<br><b>L-G4</b> Tier widths were measured with IBM Plex at shipped sizes on these fixtures; the build should confirm them on staging’s longest names.<br><b>L-G5</b> Marks on these fixtures are illustrative. Captain America carries Game Changer, tutor and combo to show the busiest row.</p></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1900,"height":1888}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
