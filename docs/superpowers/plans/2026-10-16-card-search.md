@@ -34,9 +34,10 @@ this plan the same way. The resolutions:
    - Art is `cards.image_uri`.
    - The ilike is timed on a scratch branch, and a `pg_trgm` GIN index is added only if it is slow.
 7. **Accessibility as drawn** (README call 7). Recent cards are cleared on sign-out.
-8. **The About entry ships with PR D** (d9's call): `card-search`, switched on `CARD_SEARCH_ENABLED`, `since` the
-   current version, so it bumps nothing and only re-pins the hash. **Do not bump `ABOUT_VERSION` to 15**; it is spent,
-   and the next bump is 16.
+8. **The About entry is deferred to the About redesign** (Hugh, relayed by d9 2026-10-16: every new About entry is
+   paused until the redesign is complete). D ships without it. The handoff's entry (`about · card search.ts`, switched
+   on `CARD_SEARCH_ENABLED`) waits for the redesign, and its words still go through `/copy-review` then. Nothing here
+   touches `ABOUT_VERSION`.
 
 ## PR split
 
@@ -126,7 +127,7 @@ Hugh's lock 5 is a redesign of the header on every phone screen, so it ships uns
 - Contact sheet `card-search-phone.json` at 360, 375 and 390: S1 to S7, H2, H3, the header with the offline pill,
   and the deck page (DP1, DP4).
 
-### D: the desktop, behind `CARD_SEARCH_ENABLED`, plus About
+### D: the desktop, behind `CARD_SEARCH_ENABLED`
 
 - **The rail slot (R-A).** A 38px square under the mark and above Home, with a 24px rule under it. It lights like a
   nav slot, and its name tag reads `Search all cards ⌘K`. The touch rail labels it `Search`.
@@ -136,8 +137,7 @@ Hugh's lock 5 is a redesign of the header on every phone screen, so it ships uns
 - **⌘K on a Mac, Ctrl+K elsewhere**, including inside page fields, but never Ctrl+K on a Mac and not while a dialog is
   up. `aria-keyshortcuts` is on the well. Focus returns to the slot, or to wherever the shortcut was pressed.
 - **The handover**, D7 and D8, through the same provider and `onDismiss`.
-- **About:** the `card-search` entry from `about · card search.ts`, chapter 01 after `card-detail`, switched, with
-  `since` the current version and the hash re-pinned. Its words go through `/copy-review`.
+- **About: deferred to the About redesign** (resolution 8). D adds no entry.
 - Probe: the desktop leg of `probe:card-search-ui` at 1300. ⌘K opens it, a result shows Find a deck, Escape on the
   card returns to the field.
 - Contact sheet `card-search-desktop.json` at 1300: D1 to D8, plus DD1 and DD2 on the deck page.
@@ -154,12 +154,12 @@ Hugh's lock 5 is a redesign of the header on every phone screen, so it ships uns
 | Card from a result (Find a deck) and back | ☐ | ☐ | ☐ | n/a | C |
 | `/decks/[id]`, search all cards beside Add a card | ☐ | ☐ | ☐ | ☐ | C, D |
 | Rail slot, field, D1 to D8 | n/a | n/a | n/a | ☐ | D |
-| `/about`, the entry | ☐ | ☐ | ☐ | ☐ | D |
+| `/about`, the entry | deferred to the About redesign | | | | |
 
 ## Switch rollout
 
 When A merges, d9 is told: `CARD_SEARCH_ENABLED` exists, set it `'true'` on staging, leave production unset. Off,
-the actions answer empty, and from C onward no icon, sheet, rail slot, shortcut or About entry appears. Quick
+the actions answer empty, and from C onward no icon, sheet, rail slot or shortcut appears. Quick
 return (B) is unswitched.
 
 ## Not in this plan
