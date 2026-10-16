@@ -5,7 +5,7 @@
 
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { hasFrontFaceCost } from "../../lib/cards/faces";
-import { TOUCH_HIT } from "../ui/touch-hit";
+import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useId, useState } from "react";
 import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -314,7 +314,7 @@ export function DecklistRow({
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
       <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`} {...plusPointer}>
         {/* On touch a tap opens the bubble (`tapOnTouch`), the one way the folded marks reach a phone screen, and the tap
-            stops there rather than opening card details. Its 44px hit is drawn past the figure (`TOUCH_HIT`). */}
+            stops there rather than opening card details. Its 44px-tall hit is drawn past the figure (`TOUCH_HIT_INLINE`), never over its neighbours. */}
         <FactTooltip
           tapOnTouch
           lines={folded.map((m) =>
@@ -331,7 +331,7 @@ export function DecklistRow({
             ),
           )}
         >
-          <span aria-hidden="true" className={TOUCH_HIT} style={{ color: "var(--fact)" }}>
+          <span aria-hidden="true" className={TOUCH_HIT_INLINE} style={{ color: "var(--fact)" }}>
             +{folded.length}
           </span>
         </FactTooltip>
@@ -640,7 +640,7 @@ export function DecklistRow({
   const rowBuyTag = inShopping ? buyTag : (
     <FactTooltip tapOnTouch sentence={addPanelCopy.unowned.glyphTip(glyphFigure)}>
       {/* As on the `+N`, the pointer on the `$` holds the row's card preview off, so the bubble is not covered. */}
-      <span className={`inline-flex ${TOUCH_HIT}`} {...plusPointer}>{buyTag}</span>
+      <span className={`inline-flex ${TOUCH_HIT_INLINE}`} {...plusPointer}>{buyTag}</span>
     </FactTooltip>
   );
 
@@ -823,7 +823,7 @@ export function DecklistRow({
             // absorb would overflow the box rather than clip inside it. The
             // ruling cost almost nothing to give up: what the marker used to
             // yield was the deck name, and there is no deck name left to yield.
-            className={`shrink-0 font-mono text-[11.5px] ${TOUCH_HIT}`}
+            className={`shrink-0 font-mono text-[11.5px] ${TOUCH_HIT_INLINE}`}
           />
           </FactTooltip>
           </span>

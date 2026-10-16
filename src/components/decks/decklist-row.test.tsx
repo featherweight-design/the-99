@@ -2036,3 +2036,38 @@ describe("DecklistRow, the All view's `$`", () => {
     }
   });
 });
+
+// Inline triggers share one line with their neighbours (#1916, Copilot round 1): each one's coarse hit is 44px tall but reaches only
+// 3px past its sides, so the `+N`, the availability marker and the `$` never cover one another. jsdom does no hit testing, so this
+// pins the spelling; the geometry is that 3px is half the tightest gap between two of them (the name block's 6px).
+describe("DecklistRow, inline touch hits", () => {
+  it("draws the +N, the availability marker and the $ with a 44px-tall hit that stays inside half the gap", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const asOf = new Date("2026-09-20T00:00:00Z");
+      renderRow(
+        <DecklistRow
+          deckId="d1"
+          card={{
+            ...(card as DeckDetailCard), owned: false, facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"],
+            price: { cents: 726, foilCents: null, etchedCents: null, asOf },
+            availability: { owned: 1, hard: 1, soft: 0, free: -1, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] },
+          } as DeckDetailCard}
+          newestAsOf={asOf}
+        />,
+      );
+      const hits = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [class*='pointer-coarse:after:h-[max(44px,100%)]']"));
+      const inline = hits.filter((el) => !el.matches("button"));
+      expect(inline.length).toBeGreaterThanOrEqual(3);
+      for (const el of inline) {
+        expect(el.className).toContain("pointer-coarse:after:w-[calc(100%+6px)]");
+        expect(el.className).not.toContain("pointer-coarse:after:w-[max(44px,100%)]");
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
