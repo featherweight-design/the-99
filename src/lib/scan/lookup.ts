@@ -1,0 +1,64 @@
+// The phone's half of `POST /api/card-scan/match` (plan `2026-10-16-card-scan.md`): it sends the card's embedding,
+// never the frame, once per stable card (`stable-card.ts`), and turns the answer into what a scanner shows. A failure
+// that may pass (the network, a server error, an index not yet loaded) is retried with a backoff while the scanner
+// says it is unsure and retrying; one that will not pass (signed out, the switch off, a model the server does not
+// hold, a body it cannot read) is not.
+import type { Guess } from "./match";
+import { AGREE_MARGIN } from "./models";
+
+export type ServerGuess = Guess & { scryfallId: string };
+
+export type LookupResult =
+  | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
+  | { kind: "refused"; reason: "signedOut" | "off" | "model" | "badEmbedding" }
+  | { kind: "failed" };
+
+/** Retries after the first try, and the wait before each (ms). */
+export const LOOKUP_BACKOFF_MS = [500, 1500] as const;
+
+/** The embedding as the route reads it: base64 of its float32 values, little-endian. */
+export function encodeEmbedding(v: Float32Array): string {
+  const bytes = new Uint8Array(v.length * 4);
+  const view = new DataView(bytes.buffer);
+  for (let i = 0; i < v.length; i++) view.setFloat32(i * 4, v[i], true);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+/**
+ * The margin gate: the top guess is the card only when it clears the runner-up by `AGREE_MARGIN`, the lab's own
+ * margin. Under it the scanner shows the guesses as unsure. A lone guess (an index of one card) is sure.
+ */
+export function marginClears(margin: number | null): boolean {
+  return margin === null || margin >= AGREE_MARGIN;
+}
+
+type Fetch = (url: string, init: RequestInit) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+type Deps = { fetch: Fetch; wait: (ms: number) => Promise<void>; onRetry?: (attempt: number) => void; signal?: AbortSignal };
+
+const REFUSED: Record<number, "signedOut" | "off" | "badEmbedding" | "model"> = { 400: "badEmbedding", 401: "signedOut", 404: "off", 409: "model" };
+
+/** One lookup, with its retries. `onRetry` fires before each retry, so the scanner can say it is retrying. */
+export async function lookupCard(embedding: Float32Array, model: string, deps: Deps): Promise<LookupResult> {
+  const body = JSON.stringify({ model, embedding: encodeEmbedding(embedding) });
+  for (let attempt = 0; ; attempt++) {
+    if (deps.signal?.aborted) return { kind: "failed" };
+    try {
+      const res = await deps.fetch("/api/card-scan/match", {
+        method: "POST", headers: { "content-type": "application/json" }, body, cache: "no-store", signal: deps.signal,
+      });
+      const refused = REFUSED[res.status];
+      if (refused) return { kind: "refused", reason: refused };
+      if (res.ok) {
+        const { index, guesses, margin } = (await res.json()) as { index: string; guesses: ServerGuess[]; margin: number | null };
+        return { kind: "match", index, guesses, margin, sure: guesses.length > 0 && marginClears(margin) };
+      }
+    } catch {
+      // the network, or an answer that was not JSON: retried like a server error
+    }
+    if (attempt >= LOOKUP_BACKOFF_MS.length || deps.signal?.aborted) return { kind: "failed" };
+    deps.onRetry?.(attempt + 1);
+    await deps.wait(LOOKUP_BACKOFF_MS[attempt]);
+  }
+}
