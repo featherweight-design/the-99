@@ -26,10 +26,11 @@ export type ScanMode = "fast" | "normal";
 export type ScanTorch = { available: boolean; on: boolean };
 
 /** Which of the three looks the guide corners take. */
-export function guideLook(screen: ScanScreen): "dash" | "lit" | "ok" {
+export function guideLook(screen: ScanScreen, torchOn = false): "dash" | "lit" | "ok" {
   if (screen.kind !== "scanning") return "dash";
   const k = screen.panel.kind;
-  if (k === "sure") return "ok";
+  // The light on (V9) reads green, as a sure answer does.
+  if (k === "sure" || torchOn) return "ok";
   // A dark frame is being read even before a card settles (V7, V8): the corners light.
   if (screen.dark) return "lit";
   if (k === "looking" || k === "added") return "dash";

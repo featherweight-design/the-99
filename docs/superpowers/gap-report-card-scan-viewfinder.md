@@ -66,3 +66,33 @@ All other states REACHABLE: D6 / W6 (`getUserMedia` rejection, `use-card-scan.ts
 6. DEVIATION — mode line reuses the mode labels plus a colon (`scanner-view.tsx:236`).
 
 VERDICT: 11 visual gaps, 2 state gaps
+
+## Confirm
+
+Agent 3 (Confirm), 2026-10-16. Rulings applied: gap 6 `--surface-raised` accepted; state gap 1 keeps `DARK_LUMA = 40`
+(only the ~1s hold required); state gap 2 None of these adds nothing and the answer is not offered again.
+
+Visual gaps
+1. FIXED, `scanner-view.tsx:225` (`PANEL_PHONE` is `absolute` with no `relative`; the held badge at 357 positions against it).
+2. FIXED, `scanner-view.tsx:52, 68, 134, 202, 214, 225, 415` all `--border-strong` (the hairline `--border` at 194, 226, 379 is the
+   table's own).
+3. FIXED, `scanner-view.tsx:232, 262, 416` all `--border-dashed`.
+4. FIXED, `scanner-view.tsx:214, 225` use `--surface-rail` (92% / 94%).
+5. FIXED, `scanner-view.tsx:348` held press is `--accent-strong`.
+6. FIXED (accepted), `scanner-view.tsx:416` `--surface-raised`.
+7. STILL WRONG, `scan-view.ts:29-37`, `scanner-view.tsx:44`. Dark now lights the guide (`scan-view.ts:34`), but "light on
+   -> ok" (V9) is not: `guideLook` takes the screen only and `ScannerView` never passes `p.torch`, so a torch-on
+   guide stays dashed or lit. The table's "default" `.55` solid has no state of its own in the table; accepted as the
+   base the three looks override.
+8. FIXED, `scanner-view.tsx:104` desktop box `left-[150px] top-[10px] h-[229px] w-[174px]`.
+9. FIXED, `scanner-view.tsx:88-95` tray pulse (`left-[10px] bottom-[16px] 72x60 rounded-[12px]`, 2px accent 60% ring, z-5).
+10. FIXED, `scanner-view.tsx:229, 238, 285` desktop heading carries no size.
+11. FIXED, `scanner-view.tsx:302` desktop sleeve line `--fg-muted`.
+
+State gaps
+1. FIXED, `use-card-scan.ts:19, 130-132` dark shows only after `DARK_HOLD_MS` (1000) of consecutive dark frames; a bright
+   frame clears at once; `DARK_LUMA` untouched.
+2. FIXED, `use-card-scan.ts:201`, `screen-state.ts:43`, `add-cards-sheet.tsx:379, 605` (no `onNoneOfThese`, so the scanner
+   no longer closes); the dismissed answer is not offered again and reading carries on.
+
+VERDICT: 10 of 11 visual gaps fixed, 2 of 2 state gaps fixed; 1 STILL WRONG (visual gap 7, guide does not turn ok when the light is on)

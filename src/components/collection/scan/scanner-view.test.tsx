@@ -177,5 +177,7 @@ describe("guideLook", () => {
     expect(s({ kind: "notSure", guesses: [], sleeves: false })).toBe("lit");
     expect(s({ kind: "looking" })).toBe("dash");
     expect(guideLook({ kind: "blocked" })).toBe("dash");
+    expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true }, true)).toBe("ok");
+    expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true })).toBe("lit");
   });
 });

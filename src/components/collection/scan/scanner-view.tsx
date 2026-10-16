@@ -41,7 +41,7 @@ export type ScannerViewProps = {
 export function ScannerView(p: ScannerViewProps) {
   const phone = p.layout === "phone";
   if (p.screen.kind === "blocked") return <CameraBlocked {...p} />;
-  const look = guideLook(p.screen);
+  const look = guideLook(p.screen, p.torch.on);
   return (
     <section
       data-testid="scanner"
