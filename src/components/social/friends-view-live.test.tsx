@@ -28,11 +28,12 @@ const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date(
 const fetchMock = vi.fn();
 
 const MO: Friend = { publicId: "p-mo", displayName: "Mo", since: NOW, commander: null };
-const view = (friends: Friend[] = [DAVE]) => (
+type Link = { token: string; createdAt: Date; expiresAt: Date };
+const view = (friends: Friend[] = [DAVE], links: Link[] = []) => (
   <FriendsView
     profile={{ publicId: "p-me", displayName: "Hugh", commander: null }}
     friends={friends}
-    links={[]}
+    links={links}
     accepted={null}
     origin="https://the-99.dev"
     nowMs={NOW.getTime()}
@@ -140,6 +141,31 @@ describe("/friends watches a shown link", () => {
     rerender(view([DAVE, MO]));
     expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
     rerender(view([DAVE]));
+    expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
+  });
+  it("still reports a link accepted just before it expired, once the minute tick has dropped it from the list", async () => {
+    render(view([DAVE], [{ token: TOKEN, createdAt: NOW, expiresAt: new Date(NOW.getTime() + 30_000) }]));
+    await tick(60_000);
+    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    await tick(WATCH_MS);
+    expect(nav.refresh).toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+  });
+
+  it("does not welcome a friend again when they spend a second watched link", async () => {
+    const OTHER = "ZyXwVuTsRqPoNmLkJiHgFe";
+    const later = new Date("2026-10-22T21:41:00Z");
+    const links = [{ token: TOKEN, createdAt: NOW, expiresAt: later }, { token: OTHER, createdAt: NOW, expiresAt: later }];
+    const { rerender } = render(view([DAVE], links));
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ links: [
+      { token: TOKEN, open: false, friend: { publicId: "p-mo", displayName: "Mo" } }, { token: OTHER, open: true, friend: null },
+    ] }) });
+    await tick(WATCH_MS);
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: socialCopy.page.close }));
+    rerender(view([DAVE, MO], [links[1]]));
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ links: [{ token: OTHER, open: false, friend: { publicId: "p-mo", displayName: "Mo" } }] }) });
+    await tick(WATCH_MS);
+    expect(nav.refresh).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
   });
 });

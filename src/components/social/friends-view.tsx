@@ -194,21 +194,27 @@ export function FriendsView({
   // link that ended any other way (declined, revoked elsewhere, or a friend you already had) only redraws.
   const router = useRouter();
   // Who was already a friend is judged against the list as it stood when each link started being watched, never
-  // the list at the answer: a focus redraw can land first and already hold the new friend.
-  const watched = shown ? [shown.token, ...open.map((l) => l.token)] : open.map((l) => l.token);
+  // the list at the answer: a focus redraw can land first and already hold the new friend. A friend the watch
+  // has welcomed joins every baseline (so their spending a second link is not news), and anyone a redraw no
+  // longer lists leaves them (so a removed friend who comes back through a link is). The watch follows the
+  // server's links, not the minute tick's `open`: a link accepted just before it expired still reports.
+  const serverLinks = links.filter((l) => !revoked.has(l.token)).map((l) => l.token);
+  const watched = shown ? [shown.token, ...serverLinks] : serverLinks;
   const watchedKey = watched.join(",");
   const listedIds = useRef(new Set<string>());
   const before = useRef(new Map<string, Set<string>>());
   useEffect(() => {
     listedIds.current = new Set(friends.map((f) => f.publicId));
+    for (const ids of before.current.values()) for (const id of ids) if (!listedIds.current.has(id)) ids.delete(id);
   }, [friends]);
   useEffect(() => {
-    for (const t of watchedKey ? watchedKey.split(",") : []) if (!before.current.has(t)) before.current.set(t, listedIds.current);
+    for (const t of watchedKey ? watchedKey.split(",") : []) if (!before.current.has(t)) before.current.set(t, new Set(listedIds.current));
   }, [watchedKey]);
   const onEnded = useCallback((ended: InviteOutcome[]) => {
     router.refresh();
     const made = ended.find((l) => l.friend && !(before.current.get(l.token) ?? listedIds.current).has(l.friend.publicId));
     if (!made?.friend) return;
+    for (const ids of before.current.values()) ids.add(made.friend.publicId);
     setReceipt(made.friend);
     setWatchReceiptListed(listedIds.current.has(made.friend.publicId));
     setShown((s) => (s && ended.some((l) => l.token === s.token) ? null : s));
