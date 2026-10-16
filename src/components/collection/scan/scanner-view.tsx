@@ -314,6 +314,9 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
               {copy.view.loadingPrintings}
             </p>
           ) : (
+            // The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card
+            // out of the scanner's panel, which clips; the phone's one row scrolls sideways.
+            <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40vh)] min-h-0 overflow-y-auto"}>
             <PrintingRegion
               role="choose"
               source="catalog"
@@ -326,6 +329,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
               onPick={(c) => p.onChoosePrinting?.(c)}
               autoFocus={!phone}
             />
+            </div>
           )}
           <button
             type="button"

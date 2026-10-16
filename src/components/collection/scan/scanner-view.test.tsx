@@ -130,6 +130,18 @@ describe("ScannerView", () => {
     expect(screen.getByRole("button", { name: copy.again.addAnother })).toBeTruthy();
   });
 
+  it("on the desktop scrolls the printing grid in its own box, with Not this card outside it", () => {
+    const choices = [1, 2, 3].map((n) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: null, collectorNumber: String(n),
+      releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {},
+    }));
+    draw({ layout: "desk", mode: "normal", panel: { kind: "choose", guess: SOL, choices } });
+    const box = screen.getByTestId("scan-printings");
+    expect(box.className).toContain("overflow-y-auto");
+    expect(box.className).toContain("max-h-");
+    expect(box.contains(screen.getByRole("button", { name: copy.view.notThis }))).toBe(false);
+  });
+
   it("in Fast draws no press: a sure card says it is going on, and one never out of the frame says how to add another", () => {
     draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
     expect(within(panel()).queryByRole("button")).toBeNull();
@@ -156,6 +168,7 @@ describe("ScannerView", () => {
     const choices = [choice("1"), choice("2")];
     draw({ mode: "normal", panel: { kind: "choose", guess: SOL, choices }, onChoosePrinting, onNotThis });
     expect(within(panel()).getByText(collectionEditCopy.add.choose.introPhone(2))).toBeTruthy();
+    expect(screen.getByTestId("scan-printings").className).not.toContain("overflow-y-auto");
     const tiles = within(panel()).getAllByRole("radio");
     fireEvent.click(tiles[1]);
     expect(onChoosePrinting).toHaveBeenCalledWith(choices[1]);

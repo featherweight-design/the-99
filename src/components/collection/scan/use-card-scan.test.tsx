@@ -240,6 +240,26 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
+    it("does not take a card again across a missed frame or two after it was added", async () => {
+      const frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      let gap = 0;
+      const { onAdd } = setup({
+        readFrame: async () => {
+          await new Promise((r) => setTimeout(r, 5));
+          if (gap > 0) {
+            gap--;
+            return { frame: { kind: "none" }, cardInView: false, dark: false };
+          }
+          return frame;
+        },
+      });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 15000 });
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      gap = 2;
+      await act(async () => new Promise((r) => setTimeout(r, 400)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
     it("takes a second copy only once the frame has emptied", async () => {
       let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
       const { hook, onAdd } = setup({ readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
@@ -248,6 +268,8 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
       frame = { frame: { kind: "none" }, cardInView: false, dark: false };
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } }), { timeout: 15000 });
+      // Looking shows on the first missed frame; the scanner calls the frame empty only once its tracker lets go.
+      await new Promise((r) => setTimeout(r, 300));
       frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
       await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2), { timeout: 15000 });
       await waitFor(() => expect(hook.result.current.count).toBe(2));
@@ -369,7 +391,8 @@ describe("useCardScan", () => {
       const { hook } = setup({ storage: normal, loadChoices, readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
       frame = { frame: { kind: "none" }, cardInView: false, dark: false };
-      await new Promise((r) => setTimeout(r, 40));
+      // Long enough for the scanner's tracker to call the frame empty, not just one missed frame.
+      await new Promise((r) => setTimeout(r, 300));
       await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
       frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
       await waitFor(() => expect(loadChoices).toHaveBeenCalledTimes(2), { timeout: 15000 });
@@ -390,6 +413,13 @@ describe("useCardScan", () => {
           { oracleId: SOL.oracleId, name: "Sol Ring", imageUri: "https://img/sol" },
         ],
       }, { choices: CHOICES, printing: CHOICES[0] });
+    });
+
+    it("keeps the step open when the mode already on is pressed again", async () => {
+      const { hook } = setup({ storage: normal, loadChoices: async () => CHOICES });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 15000 });
+      act(() => hook.result.current.setMode("normal"));
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } });
     });
 
     it("leaves the step when Fast is chosen", async () => {

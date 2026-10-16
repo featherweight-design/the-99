@@ -101,6 +101,11 @@ export function useCardScan(
 
   const now = useCallback(() => (depsRef.current.now ?? (() => performance.now()))(), []);
   const [mode, setModeState] = useState<ScanMode>(() => readScanMode(deps.storage === undefined ? safeLocalStorage() : deps.storage));
+  // Read by setMode, which keeps one identity across renders.
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  });
   const [blocked, setBlocked] = useState(false);
   const [server, setServer] = useState<ServerState>({ kind: "idle" });
   const [read, setRead] = useState<{ cardInView: boolean; dark: boolean }>({ cardInView: false, dark: false });
@@ -181,6 +186,14 @@ export function useCardScan(
       // that lands after its card left would otherwise be addable until the next read.
       (s) => {
         if (s.kind !== "match") setServer(s);
+        // The scanner goes idle through here only when its tracker says the frame emptied: it holds a card across a
+        // missed frame or two, and so must the duplicate rule, or a card that flickered would be taken again (R1). An
+        // empty view ends the one an answer was taken in, so the card coming back is a new copy (R2).
+        if (s.kind === "idle") {
+          empties.current++;
+          taken.current = null;
+          setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
+        }
       },
     );
     (async () => {
@@ -209,12 +222,6 @@ export function useCardScan(
         const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.crop) lastCrop.current = r.crop;
-        if (r.frame.kind === "none") {
-          empties.current++;
-          // An empty frame ends the view an answer was taken in: the card coming back is a new take (R2).
-          taken.current = null;
-        }
-        if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
         setServer(scanner.frame(r.frame, now(), t));
@@ -339,6 +346,8 @@ export function useCardScan(
 
   // Through useCallback, so a render never reads the deps ref: only the press does.
   const setMode = useCallback((m: ScanMode) => {
+    // The mode already on changes nothing, and leaves an open printing step alone.
+    if (m === modeRef.current) return;
     // A printing step open when Fast is chosen is left: the card is read again under the new mode.
     stopChoosing();
     setModeState(m);
