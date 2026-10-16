@@ -5,7 +5,8 @@ import { ComboGlyph } from "./combo-glyph";
 import { FactTooltip } from "./fact-tooltip";
 
 /**
- * The combo mark, for the BROWSE hosts — `/collection`'s row and tile.
+ * The combo mark, for the BROWSE hosts — `/collection`'s row and tile — and, with `scope="deck"`, the deck row, where it
+ * joins the bracket marks as the last mark and folds with them (card rows addendum L1, PR 2).
  *
  * ONE GLYPH, NO SENTENCE. The revised handoff splits the feature by what a host is for:
  * a browse host gets the MARKER and a decision host gets the SENTENCE. `/collection` is

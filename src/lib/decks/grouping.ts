@@ -59,6 +59,7 @@ export type DeckDetailCard = {
    * "no marker": a failed availability read degrades to the free rendering
    * rather than to an error surface.
    */
+  availability?: Availability | null;
   /**
    * This card's two-card combo partner IN THIS DECK (the commanders count), for the row's combo
    * mark; the most popular when there are several. Optional for the reason `availability` is,
@@ -67,7 +68,6 @@ export type DeckDetailCard = {
   comboPartner?: { oracleId: string; name: string } | null;
   /** How many OTHER in-deck partners the mark's tooltip is not naming. Absent or 0: none. */
   comboOtherPartners?: number;
-  availability?: Availability | null;
   /** Optional for the same reason `availability` is, and degrading the same
    * way: absent and null both mean the bare `buy` tag. */
   price?: PriceFact | null;
