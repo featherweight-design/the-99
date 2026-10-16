@@ -7,6 +7,7 @@ Account 1, 2026-10-16. Brief: `docs/superpowers/design-briefs/2026-10-16-invite-
 | Read | For |
 |---|---|
 | **`The 99 - Invites R1 (R1).dc.html`** | **Start here: the nine calls, the locks, four questions for Hugh, engineering gaps.** |
+| `R1 - Glyph-Options.dc.html` | Hugh’s note: six graphics for card 2 (the fan for reference, a number, a ticket, a spindown die, a counter token, a pip ring), each at 3, 2 + 1 waiting, and 0. Not a pick. |
 | `R1 - Add-Phone.dc.html` / `R1 - Add-Desktop.dc.html` | Add a friend: the two-card chooser, at 0, path 1 as today, path 2. |
 | `R1 - Email-Phone.dc.html` / `R1 - Email-Desktop.dc.html` | The email form: not an email, sending, “Invitation sent”, the last invite, a toast. |
 | `R1 - QR-Phone.dc.html` / `R1 - QR-Desktop.dc.html` | The invite QR: live with its ring, the last minute, claimed, expired, a new one. |

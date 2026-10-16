@@ -107,10 +107,18 @@
       "w": 1810,
       "h": 1720,
       "title": "About · Inviting someone new · §G per-entry template"
+    },
+    "Glyph-Options.dc.html": {
+      "x": 1960,
+      "y": 0,
+      "w": 1820,
+      "h": 1340,
+      "title": "R1 · Card 2’s graphic · six options (Hugh’s note)"
     }
   },
   "order": [
     "Main.dc.html",
+    "Glyph-Options.dc.html",
     "Add-Phone.dc.html",
     "Add-Desktop.dc.html",
     "Email-Phone.dc.html",
