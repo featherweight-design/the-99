@@ -13,7 +13,7 @@ const B = "22222222-2222-4222-8222-222222222222";
 const C = "33333333-3333-4333-8333-333333333333";
 const D = "44444444-4444-4444-8444-444444444444";
 const row = (oracleId: string, distance: number, scryfallId = `${oracleId.slice(0, 8)}-p`) => ({
-  oracleId, name: oracleId.slice(0, 1), scryfallId, typeLine: "Artifact", imageUri: `https://img/${scryfallId}`, distance,
+  oracleId, name: oracleId.slice(0, 1), scryfallId, typeLine: "Artifact", imageUri: `https://img/${scryfallId}`, setCode: "lea", collectorNumber: "1", distance,
 });
 
 describe("decodeEmbedding", () => {

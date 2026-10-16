@@ -921,7 +921,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, never defaulted, checked by `neon.branch_id`),
   refusing a wrong model, a row off unit length or fewer than 100,000 rows; never through the Neon MCP. Until it
   has run on a database, the endpoint there answers 503 `no-index`. Production's index comes by a copy step, not a
-  second embedding run. `pnpm probe:card-scan-match` proves it on a scratch branch.
+  second embedding run. `pnpm probe:card-scan-match` proves it on a scratch branch. Where the camera is blocked or
+  absent, the scanner offers Choose photos (PR 5): each photo is read ONCE, in order, through the camera's own
+  detector and embedder and one lookup (`usePhotoReader`), and nothing is added until the player presses. Each
+  guess carries its matched printing's `setCode` and `collectorNumber` for the photo row's `SET · #`.
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted

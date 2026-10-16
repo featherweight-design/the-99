@@ -5,7 +5,8 @@ import { renderHook } from "@testing-library/react";
 const released = vi.fn();
 let attempts = 0;
 const loadOrt = vi.fn(async () => ({}));
-vi.mock("../../../lib/scan/pipeline", () => ({
+vi.mock("../../../lib/scan/pipeline", async (importOriginal) => ({
+  sourceSize: (await importOriginal<typeof import("../../../lib/scan/pipeline")>()).sourceSize,
   loadOrt: () => loadOrt(),
   loadModels: async (_ort: unknown, hold: (s: { release(): void }) => unknown) => {
     attempts++;

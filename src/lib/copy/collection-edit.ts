@@ -600,6 +600,12 @@ export const collectionEditCopy = {
       photoOf: (i: number, t: number) => `photo ${i} of ${t}`,
       addSure: (x: number) => (x === 1 ? "Add the sure one" : `Add the ${n(x)} sure ones`),
       more: "Choose more photos",
+      /** The photo's own thumbnail, beside what it was read as. */
+      yourPhoto: "Your photo",
+      /** A photo that gave no card: none found in it, a file the browser can't open, or a lookup that never answered. */
+      noCard: "No card found in this photo",
+      /** A lookup that never answered, said once in a ToastFrame. The row reads as no card. */
+      lookupFailed: "Couldn’t check that photo. Choose it again.",
     },
   },
 } as const;

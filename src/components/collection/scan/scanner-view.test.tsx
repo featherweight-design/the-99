@@ -189,6 +189,33 @@ describe("ScannerView", () => {
     expect(screen.getByText(copy.camera.noWebcamTitle)).toBeTruthy();
     expect(screen.getByText(copy.camera.noWebcamBody)).toBeTruthy();
   });
+
+  it("offers photos on a blocked camera at both widths (D6, W6), and nothing when no picker is wired", () => {
+    for (const layout of ["phone", "desk"] as const) {
+      const onChoosePhotos = vi.fn();
+      const { unmount } = render(
+        <ScannerView
+          layout={layout}
+          screen={{ kind: "blocked" }}
+          mode="fast"
+          torch={{ available: false, on: false }}
+          count={0}
+          onMode={vi.fn()} onTorch={vi.fn()} onClose={vi.fn()} onReview={vi.fn()} onHold={vi.fn()} onAdd={vi.fn()}
+          onCancelHold={vi.fn()} onPick={vi.fn()} onNoneOfThese={vi.fn()}
+          onChoosePhotos={onChoosePhotos}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: copy.camera.choosePhotos }));
+      expect(onChoosePhotos).toHaveBeenCalledTimes(1);
+      // The phone says what photos are for (D6); the desktop's body already does (W6).
+      expect(screen.queryByText(copy.camera.photosLine) !== null).toBe(layout === "phone");
+      unmount();
+      draw({ layout, screen: { kind: "blocked" } });
+      expect(screen.queryByRole("button", { name: copy.camera.choosePhotos })).toBeNull();
+      expect(screen.queryByText(copy.camera.photosLine)).toBeNull();
+      document.body.innerHTML = "";
+    }
+  });
 });
 
 describe("guideLook", () => {

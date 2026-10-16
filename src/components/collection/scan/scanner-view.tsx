@@ -36,6 +36,8 @@ export type ScannerViewProps = {
   onCancelHold: () => void;
   onPick: (oracleId: string) => void;
   onNoneOfThese: () => void;
+  /** Opens the photo picker from the blocked screen (D6, W6). Unset, the blocked screen offers no photos. */
+  onChoosePhotos?: () => void;
 };
 
 export function ScannerView(p: ScannerViewProps) {
@@ -122,7 +124,7 @@ function Guide({ look, phone }: { look: "dash" | "lit" | "ok"; phone: boolean })
   );
 }
 
-function ModeSegment({ mode, onMode, desk }: { mode: ScanMode; onMode: (m: ScanMode) => void; desk: boolean }) {
+export function ModeSegment({ mode, onMode, desk }: { mode: ScanMode; onMode: (m: ScanMode) => void; desk: boolean }) {
   const btn = (m: ScanMode, label: string) => (
     <button
       type="button"
@@ -191,16 +193,21 @@ function TopBar(p: ScannerViewProps) {
 }
 
 function DeskHead(p: ScannerViewProps & { withMode: boolean }) {
+  return <DeskBar label={copy.camera.webcam} mode={p.withMode ? p.mode : null} onMode={p.onMode} onStop={p.onClose} />;
+}
+
+/** The desktop panel's head: its label, Fast/Normal when it reads cards, and Stop. Shared by the webcam and photos (W4). */
+export function DeskBar(p: { label: string; mode: ScanMode | null; onMode: (m: ScanMode) => void; onStop: () => void }) {
   return (
     <div className="flex items-center gap-[8px] border-b-[1px] border-b-[color:var(--border)] py-[8px] pl-[14px] pr-[8px]">
       <span className="flex-1 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
-        {copy.camera.webcam}
+        {p.label}
       </span>
-      {p.withMode && <ModeSegment mode={p.mode} onMode={p.onMode} desk />}
+      {p.mode && <ModeSegment mode={p.mode} onMode={p.onMode} desk />}
       <button
         type="button"
         data-scan-close=""
-        onClick={p.onClose}
+        onClick={p.onStop}
         className="rounded-[8px] border border-[color:var(--border-strong)] bg-transparent px-[12px] py-[7px] text-[13px] text-[color:var(--fg)]"
       >
         {copy.camera.stop}
@@ -230,9 +237,9 @@ const HEAD = "m-0 text-[16px] font-semibold text-[color:var(--fg)]";
 /** W2/W3 leave the heading's size unset, so it takes the sheet's. */
 const HEAD_DESK = "m-0 font-semibold text-[color:var(--fg)]";
 const BODY = "m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]";
-const BIG = "h-[52px] w-full rounded-[12px] border-0 bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]";
-const BIG_OUTLINE = "h-[52px] w-full rounded-[12px] border border-[color:var(--border-dashed)] bg-transparent text-[15px] font-medium text-[color:var(--fg)]";
-const BIG_DESK = "h-[40px] flex-none whitespace-nowrap rounded-[8px] border-0 bg-[color:var(--accent)] px-[18px] text-[14px] font-semibold text-[color:var(--bg)]";
+export const BIG = "h-[52px] w-full rounded-[12px] border-0 bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]";
+export const BIG_OUTLINE = "h-[52px] w-full rounded-[12px] border border-[color:var(--border-dashed)] bg-transparent text-[15px] font-medium text-[color:var(--fg)]";
+export const BIG_DESK = "h-[40px] flex-none whitespace-nowrap rounded-[8px] border-0 bg-[color:var(--accent)] px-[18px] text-[14px] font-semibold text-[color:var(--bg)]";
 
 function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
   const phone = p.layout === "phone";
@@ -317,7 +324,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
   }
 }
 
-function Thumb({ guess, className }: { guess: ScanGuess; className: string }) {
+export function Thumb({ guess, className }: { guess: ScanGuess; className: string }) {
   return (
     <span className={`block overflow-hidden bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_rgba(0,0,0,.35)] ${className}`}>
       {guess.imageUri && <img src={guess.imageUri} alt="" className="h-full w-full object-cover" />}
@@ -479,6 +486,11 @@ function CameraBlocked(p: ScannerViewProps) {
           <CameraIcon size={44} radius={12} />
           <b className="font-display text-[18px] font-bold text-[color:var(--fg)]">{copy.camera.noWebcamTitle}</b>
           <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.camera.noWebcamBody}</p>
+          {p.onChoosePhotos && (
+            <button type="button" onClick={p.onChoosePhotos} className={BIG_DESK}>
+              {copy.camera.choosePhotos}
+            </button>
+          )}
         </div>
       </section>
     );
@@ -496,7 +508,15 @@ function CameraBlocked(p: ScannerViewProps) {
         </span>
         <h3 className="m-0 font-display text-[24px] font-bold text-[color:var(--fg)]">{copy.camera.blockedTitle}</h3>
         <p className="m-0 text-[15px] leading-[1.6] text-[color:var(--fg-body)]">{copy.camera.blockedBody}</p>
+        {p.onChoosePhotos && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--fg-muted)]">{copy.camera.photosLine}</p>}
       </div>
+      {p.onChoosePhotos && (
+        <div className="flex flex-col gap-[10px] px-[22px] pb-[22px] pt-[14px]">
+          <button type="button" onClick={p.onChoosePhotos} className={BIG_OUTLINE}>
+            {copy.camera.choosePhotos}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

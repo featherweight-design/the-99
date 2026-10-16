@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { scanScreen, type ScanInputs } from "./screen-state";
 import type { ServerState } from "../../../lib/scan/server-scan";
 
-const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
+const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", setCode: "lea", collectorNumber: "270", score: 0.97 };
 const ARC = { ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", score: 0.95 };
 const MIND = { ...SOL, oracleId: "33333333-3333-4333-8333-333333333333", name: "Mind Stone", score: 0.94 };
 const match = (sure: boolean, guesses = [SOL, ARC, MIND]): ServerState => ({
