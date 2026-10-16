@@ -15,6 +15,8 @@ export type FrameRead = { frame: ScanFrame; cardInView: boolean; dark: boolean }
 
 /** How long the added panel and the tray's flip stay up (READINESS: "about 0.8s"). */
 export const ADDED_MS = 800;
+/** How long frames must stay dark before the dark line shows. */
+export const DARK_HOLD_MS = 1000;
 
 export type CardScanDeps = {
   /** Reads the video's current frame. Resolves when the detector and embedder are done with it. */
@@ -39,6 +41,8 @@ export type CardScan = {
   cancelHold: () => void;
   add: () => void;
   pick: (oracleId: string) => void;
+  /** None of these: adds nothing, and reading carries on past this answer. */
+  dismiss: () => void;
 };
 
 /**
@@ -67,6 +71,10 @@ export function useCardScan(
   const [added, setAdded] = useState<{ name: string; imageUri: string | null } | null>(null);
   const [onList, setOnList] = useState<Map<string, number>>(() => new Map());
   const [lastAdded, setLastAdded] = useState<{ oracleId: string; emptiedSince: boolean } | null>(null);
+  const [dismissed, setDismissed] = useState<object | null>(null);
+  // Dark only once a dark frame has held for `DARK_HOLD_MS` (READINESS: "for about 1s"), so one dim frame never
+  // flickers the line; a bright frame ends it at once.
+  const darkSince = useRef<number | null>(null);
   const [torch, setTorch] = useState<{ handle: Torch | null; on: boolean }>({ handle: null, on: false });
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
 
@@ -118,7 +126,11 @@ export function useCardScan(
           continue;
         }
         if (stop) break;
-        setRead({ cardInView: r.cardInView, dark: r.dark });
+        const at = now();
+        if (!r.dark) darkSince.current = null;
+        else if (darkSince.current === null) darkSince.current = at;
+        const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
+        setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         scanner.frame(r.frame, now(), t);
       }
@@ -143,7 +155,7 @@ export function useCardScan(
     return () => clearTimeout(t);
   }, [added]);
 
-  const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList, lastAdded };
+  const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList, lastAdded, dismissed };
   const screen = scanScreen(inputs);
 
   const commit = useCallback(
@@ -186,6 +198,7 @@ export function useCardScan(
       const g = held ?? current;
       if (g) commit(g);
     },
+    dismiss: () => setDismissed(server.kind === "match" ? server.result : null),
     pick: (oracleId) => {
       const g = notSure.find((x) => x.oracleId === oracleId);
       if (g) commit(g);

@@ -27,7 +27,8 @@ export function CardScanner({
   deps: CardScanDeps;
   onAdd: (guess: ScanGuess, mode: ScanMode) => void;
   onClose: () => void;
-  onNoneOfThese: () => void;
+  /** PR 4's search by name; until then None of these only reads on. */
+  onNoneOfThese?: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
   const onProblem = useCallback((kind: "failed" | "refused") => {
@@ -41,7 +42,7 @@ export function CardScanner({
     const t = setTimeout(() => setNotice(null), NOTICE_MS);
     return () => clearTimeout(t);
   }, [notice]);
-  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick } = useCardScan(true, deps, onAdd, onProblem);
+  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, deps, onAdd, onProblem);
   return (
     <ScannerView
       layout={layout}
@@ -60,7 +61,10 @@ export function CardScanner({
       onAdd={add}
       onCancelHold={cancelHold}
       onPick={pick}
-      onNoneOfThese={onNoneOfThese}
+      onNoneOfThese={() => {
+        dismiss();
+        onNoneOfThese?.();
+      }}
     />
   );
 }

@@ -22,6 +22,8 @@ export type ScanInputs = {
   onList: ReadonlyMap<string, number>;
   /** The card last added, and whether the frame has emptied since: unbroken view is a duplicate, not a new copy. */
   lastAdded: { oracleId: string; emptiedSince: boolean } | null;
+  /** An answer the player turned down with None of these: it is not offered again, and reading carries on. */
+  dismissed: object | null;
 };
 
 export function scanScreen(i: ScanInputs): ScanScreen {
@@ -38,6 +40,7 @@ export function scanScreen(i: ScanInputs): ScanScreen {
     case "retrying":
       return scanning({ kind: "unsure", agreeing: 2 });
     case "match": {
+      if (s.result === i.dismissed) return scanning({ kind: "unsure", agreeing: 0 });
       const guesses = s.result.guesses.map(toScanGuess);
       if (guesses.length === 0) return scanning({ kind: "looking" });
       if (s.result.sure) return scanning({ kind: "sure", guess: guesses[0], held: false, again: againFor(i, guesses[0].oracleId) });

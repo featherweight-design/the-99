@@ -49,7 +49,7 @@ export function ScannerView(p: ScannerViewProps) {
       className={
         phone
           ? "absolute inset-0 z-40 overflow-hidden bg-[color:var(--bg)]"
-          : "mx-[22px] flex flex-col overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)]"
+          : "mx-[22px] flex flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
       }
     >
       {phone ? (
@@ -65,7 +65,7 @@ export function ScannerView(p: ScannerViewProps) {
       {p.notice && (
         <p
           role="alert"
-          className={`z-[3] m-0 rounded-[12px] border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_92%,transparent)] px-[14px] py-[11px] text-[13.5px] leading-[1.5] text-[color:var(--fg)] ${
+          className={`z-[3] m-0 rounded-[12px] border border-[color:var(--border-strong)] bg-[color:color-mix(in_srgb,var(--surface-rail)_92%,transparent)] px-[14px] py-[11px] text-[13.5px] leading-[1.5] text-[color:var(--fg)] ${
             phone ? `absolute inset-x-[12px] ${p.screen.dark ? "top-[132px]" : "top-[72px]"}` : "mx-[14px] mt-[10px]"
           }`}
         >
@@ -85,6 +85,14 @@ export function ScannerView(p: ScannerViewProps) {
           <img src={p.flipTo} alt="" className="h-full w-full object-cover" />
         </span>
       )}
+      {phone && p.flipTo && (
+        // The tray's pulse beside the flight (V5): a ring round the count card while it flips.
+        <span
+          aria-hidden="true"
+          data-testid="scan-tray-pulse"
+          className="pointer-events-none absolute bottom-[16px] left-[10px] z-[5] h-[60px] w-[72px] rounded-[12px] shadow-[0_0_0_2px_color-mix(in_srgb,var(--accent)_60%,transparent)]"
+        />
+      )}
       {phone && <Tray count={p.count} flipTo={p.flipTo ?? null} onReview={p.onReview} />}
     </section>
   );
@@ -93,7 +101,7 @@ export function ScannerView(p: ScannerViewProps) {
 function Guide({ look, phone }: { look: "dash" | "lit" | "ok"; phone: boolean }) {
   const color = look === "ok" ? "var(--success)" : look === "lit" ? "var(--accent)" : "color-mix(in srgb, var(--fg) 35%, transparent)";
   const style = look === "dash" ? "dashed" : "solid";
-  const box = phone ? "left-[66px] top-[108px] h-[350px] w-[258px]" : "left-1/2 top-[10px] h-[229px] w-[174px] -translate-x-1/2";
+  const box = phone ? "left-[66px] top-[108px] h-[350px] w-[258px]" : "left-[150px] top-[10px] h-[229px] w-[174px]";
   const size = phone ? 34 : 24;
   const corner = (sides: string) => ({
     width: size,
@@ -132,7 +140,7 @@ function ModeSegment({ mode, onMode, desk }: { mode: ScanMode; onMode: (m: ScanM
     <div
       role="group"
       aria-label={copy.mode.label}
-      className={`inline-flex gap-[2px] rounded-[12px] border border-[color:var(--border)] p-[3px] ${
+      className={`inline-flex gap-[2px] rounded-[12px] border border-[color:var(--border-strong)] p-[3px] ${
         desk ? "bg-[color:var(--bg)]" : "mx-auto bg-[color:color-mix(in_srgb,var(--bg)_78%,transparent)]"
       }`}
     >
@@ -191,7 +199,7 @@ function DeskHead(p: ScannerViewProps & { withMode: boolean }) {
       <button
         type="button"
         onClick={p.onClose}
-        className="rounded-[8px] border border-[color:var(--border)] bg-transparent px-[12px] py-[7px] text-[13px] text-[color:var(--fg)]"
+        className="rounded-[8px] border border-[color:var(--border-strong)] bg-transparent px-[12px] py-[7px] text-[13px] text-[color:var(--fg)]"
       >
         {copy.camera.stop}
       </button>
@@ -203,7 +211,7 @@ function DarkLine({ torch }: { torch: ScanTorch }) {
   return (
     <div
       role="status"
-      className="absolute inset-x-[12px] top-[72px] z-[3] flex items-start gap-[10px] rounded-[12px] border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_92%,transparent)] px-[14px] py-[11px] text-[13.5px] leading-[1.5] text-[color:var(--fg)]"
+      className="absolute inset-x-[12px] top-[72px] z-[3] flex items-start gap-[10px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:color-mix(in_srgb,var(--surface-rail)_92%,transparent)] px-[14px] py-[11px] text-[13.5px] leading-[1.5] text-[color:var(--fg)]"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" className="mt-[2px] flex-none text-[color:var(--warning)]">
         <path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" />
@@ -214,24 +222,27 @@ function DarkLine({ torch }: { torch: ScanTorch }) {
 }
 
 const PANEL_PHONE =
-  "absolute inset-x-[8px] bottom-[92px] z-[3] flex flex-col rounded-[18px] border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_94%,transparent)] p-[16px] shadow-[0_-10px_40px_rgba(0,0,0,.35)]";
+  "absolute inset-x-[8px] bottom-[92px] z-[3] flex flex-col rounded-[18px] border border-[color:var(--border-strong)] bg-[color:color-mix(in_srgb,var(--surface-rail)_94%,transparent)] p-[16px] shadow-[0_-10px_40px_rgba(0,0,0,.35)]";
 const PANEL_DESK = "flex flex-col gap-[12px] border-t-[1px] border-t-[color:var(--border)] px-[14px] py-[12px]";
 const HEAD = "m-0 text-[16px] font-semibold text-[color:var(--fg)]";
+/** W2/W3 leave the heading's size unset, so it takes the sheet's. */
+const HEAD_DESK = "m-0 font-semibold text-[color:var(--fg)]";
 const BODY = "m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]";
 const BIG = "h-[52px] w-full rounded-[12px] border-0 bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]";
-const BIG_OUTLINE = "h-[52px] w-full rounded-[12px] border border-[color:var(--border-strong)] bg-transparent text-[15px] font-medium text-[color:var(--fg)]";
+const BIG_OUTLINE = "h-[52px] w-full rounded-[12px] border border-[color:var(--border-dashed)] bg-transparent text-[15px] font-medium text-[color:var(--fg)]";
 const BIG_DESK = "h-[40px] flex-none whitespace-nowrap rounded-[8px] border-0 bg-[color:var(--accent)] px-[18px] text-[14px] font-semibold text-[color:var(--bg)]";
 
 function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
   const phone = p.layout === "phone";
   const { panel } = p;
+  const H = phone ? HEAD : HEAD_DESK;
   const gap = panel.kind === "added" ? "gap-[6px]" : panel.kind === "notSure" ? "gap-[12px]" : "gap-[14px]";
   const box = phone ? `${PANEL_PHONE} ${gap}` : PANEL_DESK;
   switch (panel.kind) {
     case "looking":
       return (
         <div data-testid="scan-panel" data-state="looking" className={box}>
-          <p className={HEAD}>{copy.view.looking}</p>
+          <p className={H}>{copy.view.looking}</p>
           <p className={BODY}>
             <b className="font-semibold text-[color:var(--fg)]">{p.mode === "fast" ? copy.mode.fast : copy.mode.normal}:</b>{" "}
             {p.mode === "fast" ? copy.mode.fastLine : copy.mode.normalLine}
@@ -242,13 +253,13 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       return (
         <div data-testid="scan-panel" data-state="unsure" role="status" className={box}>
           <div className="flex items-center justify-between">
-            <p className={HEAD}>{copy.view.unsure}</p>
+            <p className={H}>{copy.view.unsure}</p>
             <span aria-hidden="true" className="flex gap-[6px]">
               {[0, 1, 2].map((i) => (
                 <i
                   key={i}
                   data-on={i < panel.agreeing ? "" : undefined}
-                  className={`block h-[8px] w-[8px] rounded-full ${i < panel.agreeing ? "bg-[color:var(--accent)]" : "bg-[color:var(--border-strong)]"}`}
+                  className={`block h-[8px] w-[8px] rounded-full ${i < panel.agreeing ? "bg-[color:var(--accent)]" : "bg-[color:var(--border-dashed)]"}`}
                 />
               ))}
             </span>
@@ -261,7 +272,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
     case "added":
       return (
         <div data-testid="scan-panel" data-state="added" role="status" className={box}>
-          <p className={HEAD}>
+          <p className={H}>
             <span aria-hidden="true" className="text-[color:var(--success)]">✓ </span>
             {copy.view.added(panel.name)}
           </p>
@@ -271,7 +282,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
     case "notSure":
       return (
         <div data-testid="scan-panel" data-state="notSure" className={box}>
-          <p className={HEAD}>{copy.view.notSure}</p>
+          <p className={H}>{copy.view.notSure}</p>
           <div className={phone ? "flex flex-col gap-[12px]" : "flex gap-[14px]"}>
             <div className={`grid grid-cols-3 gap-[10px] ${phone ? "" : "w-[270px] flex-none"}`}>
               {panel.guesses.map((g) => (
@@ -288,7 +299,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
             </div>
             <div className="flex flex-col gap-[8px]">
               {panel.sleeves && (
-                <p className={`m-0 leading-[1.55] text-[color:var(--fg-body)] ${phone ? "text-[13px]" : "text-[12.5px]"}`}>{copy.view.sleeves}</p>
+                <p className={`m-0 leading-[1.55] ${phone ? "text-[13px] text-[color:var(--fg-body)]" : "text-[12.5px] text-[color:var(--fg-muted)]"}`}>{copy.view.sleeves}</p>
               )}
               <button
                 type="button"
@@ -334,14 +345,14 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
           ? BIG_DESK
           : again?.kind === "duplicate"
             ? BIG_OUTLINE
-            : `${BIG} ${held ? "scale-[.985] bg-[color:var(--accent-hover)]" : ""}`
+            : `${BIG} ${held ? "scale-[.985] bg-[color:var(--accent-strong)]" : ""}`
       }
     >
       {label}
     </button>
   );
   return (
-    <div data-testid="scan-panel" data-state="sure" className={`${p.box} ${phone ? "relative" : ""}`}>
+    <div data-testid="scan-panel" data-state="sure" className={p.box}>
       {held && phone && (
         <span className="absolute right-[14px] top-[14px] rounded-[4px] border border-[color:var(--warning)] px-[6px] py-[2px] font-mono text-[10px] uppercase tracking-[.14em] text-[color:var(--warning)]">
           {copy.view.held}
@@ -401,8 +412,8 @@ function CountCard({ count, flipTo }: { count: number; flipTo: string | null }) 
   const back = "absolute top-[4px] h-[45px] w-[32px] rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,.5)]";
   return (
     <span aria-hidden="true" className="relative h-[52px] w-[62px] flex-none">
-      <span className={`${back} left-[2px] -rotate-[8deg] border border-[color:var(--border)] bg-[color:var(--elevated)]`} />
-      <span className={`${back} left-[13px] -rotate-[1deg] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]`} />
+      <span className={`${back} left-[2px] -rotate-[8deg] border border-[color:var(--border-strong)] bg-[color:var(--elevated)]`} />
+      <span className={`${back} left-[13px] -rotate-[1deg] border border-[color:var(--border-dashed)] bg-[color:var(--surface-raised)]`} />
       <span
         data-testid="scan-count-card"
         data-flip={flipTo ? "" : undefined}
@@ -426,7 +437,7 @@ function CountCard({ count, flipTo }: { count: number; flipTo: string | null }) 
 function CameraBlocked(p: ScannerViewProps) {
   if (p.layout === "desk") {
     return (
-      <section data-testid="scanner" data-layout="desk" className="mx-[22px] flex flex-col overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)]">
+      <section data-testid="scanner" data-layout="desk" className="mx-[22px] flex flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]">
         <DeskHead {...p} withMode={false} />
         <div className="flex flex-col items-start gap-[12px] px-[16px] py-[22px]">
           <CameraIcon size={44} radius={12} />

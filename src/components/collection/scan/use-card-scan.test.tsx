@@ -85,6 +85,19 @@ describe("useCardScan", () => {
     expect([...store.values()]).toEqual(["normal"]);
   });
 
+  it("calls a frame dark only once dark frames have held for a second", async () => {
+    const { hook } = setup({}, { frame: { kind: "none" }, cardInView: false, dark: true });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ kind: "scanning", dark: true }), { timeout: 4000 });
+  });
+
+  it("reads on past a not-sure answer turned down with None of these", async () => {
+    const fetch = vi.fn(() => json({ index: "all", guesses: [SOL, { ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", score: 0.96 }], margin: 0.01 }));
+    const { hook } = setup({ fetch: fetch as unknown as typeof globalThis.fetch });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
+    act(() => hook.result.current.dismiss());
+    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+  });
+
   it("offers no light on a camera without a torch", async () => {
     const { hook } = setup();
     await waitFor(() => expect(hook.result.current.screen.kind).toBe("scanning"));

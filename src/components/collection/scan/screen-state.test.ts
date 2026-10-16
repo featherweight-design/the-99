@@ -8,7 +8,7 @@ const MIND = { ...SOL, oracleId: "33333333-3333-4333-8333-333333333333", name: "
 const match = (sure: boolean, guesses = [SOL, ARC, MIND]): ServerState => ({
   kind: "match", result: { kind: "match", index: "all", guesses, margin: sure ? 0.3 : 0.01, sure }, ms: 300, totalMs: 500,
 });
-const base: ScanInputs = { blocked: false, server: { kind: "idle" }, cardInView: false, dark: false, held: null, added: null, onList: new Map(), lastAdded: null };
+const base: ScanInputs = { blocked: false, server: { kind: "idle" }, cardInView: false, dark: false, held: null, added: null, onList: new Map(), lastAdded: null, dismissed: null };
 const panel = (over: Partial<ScanInputs>) => {
   const s = scanScreen({ ...base, ...over });
   if (s.kind !== "scanning") throw new Error("not scanning");
@@ -44,6 +44,13 @@ describe("scanScreen", () => {
   it("freezes a held guess over whatever the scanner now says, and shows an add until it clears", () => {
     expect(panel({ held: guess, server: { kind: "idle" } })).toEqual({ kind: "sure", guess, held: true, again: null });
     expect(panel({ added: { name: "Sol Ring" }, held: guess })).toEqual({ kind: "added", name: "Sol Ring" });
+  });
+
+  it("reads on past an answer turned down with None of these", () => {
+    const s = match(false);
+    const result = s.kind === "match" ? s.result : null;
+    expect(panel({ server: s, dismissed: result })).toEqual({ kind: "unsure", agreeing: 0 });
+    expect(panel({ server: match(false), dismissed: result })).toMatchObject({ kind: "notSure" });
   });
 
   it("goes back to looking on a refusal, a failure or an empty answer, and carries the dark flag", () => {

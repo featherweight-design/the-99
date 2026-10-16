@@ -29,7 +29,9 @@ export type ScanTorch = { available: boolean; on: boolean };
 export function guideLook(screen: ScanScreen): "dash" | "lit" | "ok" {
   if (screen.kind !== "scanning") return "dash";
   const k = screen.panel.kind;
-  if (k === "looking" || k === "added") return "dash";
   if (k === "sure") return "ok";
+  // A dark frame is being read even before a card settles (V7, V8): the corners light.
+  if (screen.dark) return "lit";
+  if (k === "looking" || k === "added") return "dash";
   return "lit";
 }

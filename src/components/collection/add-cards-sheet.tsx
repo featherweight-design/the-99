@@ -376,7 +376,7 @@ function AddMode({
         </div>
 
         {phase !== "saved" && scanning && !phone && (
-          <CardScanner layout="desk" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={closeScanner} />
+          <CardScanner layout="desk" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} />
         )}
         {phase !== "saved" && !(scanning && !phone) && (
           <div className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
@@ -602,7 +602,7 @@ function AddMode({
 
       <p role="status" aria-live="polite" className="sr-only">{announce}</p>
       {scanning && phone && (
-        <CardScanner layout="phone" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={closeScanner} />
+        <CardScanner layout="phone" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} />
       )}
     </div>
   );
