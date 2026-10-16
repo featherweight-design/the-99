@@ -603,21 +603,24 @@ agreement. "Confident" means the top-1 beats the runner-up by 0.05 or more (0.10
 twice the scale). The sum is the row-wise summed cosine. The agreement gate answers only when dhvazquez and DINOv2
 name the same card. "Confidently wrong" counts over all frames, with an exact one-sided 95% upper bound.
 
-| model | top-1 | right, when confident | confidently wrong (95% upper) | no answer |
-|---|---|---|---|---|
-| dhvazquez fp32 | 94.4% | 88.6% | 3 of 360, 0.8% (2.1%) | 10.6% |
-| DINOv2-small | 35.8% | 18.9% | 2, 0.6% (1.7%) | 80.6% |
-| summed score | 92.5% | 84.2% | 0 (0.8%) | 15.8% |
-| agreement gate | n/a | 34.4% | 0 (0.8%) | 65.6% |
+Every rate below is over all 360 frames except "right, of its confident answers", which is over the frames the model
+answered.
+
+| model | top-1 | confident and right | right, of its confident answers | confidently wrong (95% upper) | no answer |
+|---|---|---|---|---|---|
+| dhvazquez fp32 | 94.4% | 88.6% (319) | 99.1% (319 of 322) | 3, 0.8% (2.1%) | 10.6% |
+| DINOv2-small | 35.8% | 18.9% (68) | 97.1% (68 of 70) | 2, 0.6% (1.7%) | 80.6% |
+| summed score | 92.5% | 84.2% (303) | 100% (303 of 303) | 0 (0.8%) | 15.8% |
+| agreement gate | n/a | 34.4% (124) | 100% (124 of 124) | 0 (0.8%) | 65.6% |
 
 On these real crops DINOv2-small has the true card in its top 5 for only 161 of 360 frames, so it adds nothing to the
 sum. The dhvazquez gate moves along one curve:
 
-| gate (margin) | right, when confident | confidently wrong (95% upper) | no answer |
-|---|---|---|---|
-| 0.02 | 92.2% | 2.2% (4.0%) | 5.6% |
-| 0.05 | 88.6% | 0.8% (2.1%) | 10.6% |
-| 0.10 | 83.1% | 0.0% (0.8%) | 16.9% |
+| gate (margin) | confident and right | right, of its confident answers | confidently wrong (95% upper) | no answer |
+|---|---|---|---|---|
+| 0.02 | 92.2% | 97.6% (332 of 340) | 2.2% (4.0%) | 5.6% |
+| 0.05 | 88.6% | 99.1% (319 of 322) | 0.8% (2.1%) | 10.6% |
+| 0.10 | 83.1% | 100% (299 of 299) | 0.0% (0.8%) | 16.9% |
 
 **By condition** (dhvazquez; conditions read by eye from thumbnails of the kept crops, low light by mean luminance
 under 90 of 255, about the 10th percentile):
@@ -650,8 +653,10 @@ frame. That log, with #1887's dwell and `changed_ms_before_tap`, is what measure
 - embedder 251ms;
 - match 101ms.
 
-DINOv2-small runs about 2.3 times dhvazquez's embedder on the laptop bench (106ms against 45ms), so the sum would add
-roughly 300ms a frame on the phone. That is an **estimate**, not measured on a phone.
+The summed score needs both embeddings. DINOv2-small runs about 2.4 times dhvazquez's embedder on the laptop's
+native Python bench (106ms against 45ms). Carried to the phone's 251ms embedder, and run one after the other, DINOv2
+would add roughly 590ms a frame before its own match, more than doubling the frame. That is an **estimate**: it
+assumes sequential runs and the native ratio, and DINOv2 was never timed in the browser path, whose ratios differ.
 
 **Licenses** (re-read 2026-10-16 from each Hugging Face repo):
 
@@ -666,9 +671,12 @@ The caveats under Licenses above still stand.
 **Recommendation.**
 
 - **Model:** dhvazquez fp32 alone.
-- **The bar:** met on top-1 (94.4% against 90%). Not met as one rule on a single frame: at margin 0.05 it gives 88.6%
-  right with an upper bound of 2.1%, and at 0.10 it gives 0.8% at 83.1% right. The lab's 3-frame agreement and dwell
-  should close the gap; the cadence log is what will show it.
+- **The bar is not established end to end.** The 90% bar is end-to-end top-1, and these figures are crop-level: the
+  tap-selected crops above, which favor frames already recognized and hold no detector failure. On those crops
+  dhvazquez reads 94.4% top-1. As one rule on a single crop, margin 0.05 answers 88.6% of frames right with 0.8%
+  confidently wrong (upper bound 2.1%), and 0.10 answers 83.1% right with none wrong (upper bound 0.8%). The end-to-end
+  figure needs untapped scan attempts, detection failures included: the cadence log, which also measures how far the
+  lab's 3-frame agreement and dwell close the gap.
 - **For Design, every scan is a suggestion the player confirms.** Nothing is added unseen.
   - Above the confidence gate: one card, confirmed with one tap.
   - Below it: "Not sure", with the top three to pick from. Expect about one card in six to one in ten to need a pick,
