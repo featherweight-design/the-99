@@ -25,11 +25,14 @@ describe("the cadence log", () => {
     expect(run.frames[0]).toEqual({ t: 0, top: [], margin: null, shown: null, unsure: true });
   });
 
-  it("logs at a fixed rate: a frame sooner than the gap after the last is skipped", () => {
+  it("logs every frame a phone reads, and only drops one that came under the floor after the last", () => {
     let run = startCadence(0);
-    for (const t of [0, 50, 150, 200, 260, 400]) run = logFrame(run, card(1), showing(card(1)), t);
-    expect(run.frames.map((f) => f.t)).toEqual([0, 200, 400]);
-    expect(CADENCE_GAP_MS).toBe(200);
+    for (const t of [0, 150, 300, 450, 600]) run = logFrame(run, card(1), showing(card(1)), t);
+    expect(run.frames.map((f) => f.t)).toEqual([0, 150, 300, 450, 600]);
+    run = startCadence(0);
+    for (const t of [0, 20, 60, 90, 140]) run = logFrame(run, card(1), showing(card(1)), t);
+    expect(run.frames.map((f) => f.t)).toEqual([0, 60, 140]);
+    expect(CADENCE_GAP_MS).toBe(50);
   });
 
   it("stops after its 30 seconds", () => {
@@ -38,7 +41,7 @@ describe("the cadence log", () => {
     expect(cadenceDone(run, CADENCE_MS - 1)).toBe(false);
     expect(cadenceDone(run, CADENCE_MS)).toBe(true);
     expect(logFrame(run, card(1), showing(card(1)), CADENCE_MS + 500)).toBe(run);
-    expect(MAX_CADENCE_FRAMES).toBe(150);
+    expect(MAX_CADENCE_FRAMES).toBe(600);
   });
 });
 

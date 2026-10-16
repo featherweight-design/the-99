@@ -8,12 +8,13 @@ import type { Display } from "./steady";
 
 /** How long one run logs. */
 export const CADENCE_MS = 30_000;
-/** At most one frame per this many ms, so a fast device logs at a fixed rate rather than as fast as it reads. */
-export const CADENCE_GAP_MS = 200;
-/** The most frames one run may hold: 30s at one per 200ms. */
+/** A floor, not a sampling rate: every frame the loop reads is logged, since frame-to-frame flicker is what the log
+ * measures, and a phone reads one every ~150-300ms. Only a loop faster than 20 a second would lose any. */
+export const CADENCE_GAP_MS = 50;
+/** The most frames one run may hold: 30s at the floor. */
 export const MAX_CADENCE_FRAMES = CADENCE_MS / CADENCE_GAP_MS;
 /** The request body cap: a frame is under 300 bytes of JSON. */
-export const MAX_CADENCE_BODY = 160_000;
+export const MAX_CADENCE_BODY = MAX_CADENCE_FRAMES * 300 + 4_000;
 
 export type CadenceFrame = {
   /** ms since the run began. */
