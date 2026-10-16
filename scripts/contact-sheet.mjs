@@ -265,6 +265,8 @@ for (const row of inventory.rows) {
 
 const shots = [];
 const browser = await chromium.launch();
+/** The per-width camera browsers still open: closed in the `finally`, so a width that fails part-way leaves none behind. */
+const cameraBrowsers = new Set();
 /** The account's About columns as the run found them, when an inventory clears the gate. */
 let aboutPrior = null;
 try {
@@ -275,6 +277,7 @@ try {
     const widthBrowser = size.camera
       ? await chromium.launch({ args: fakeCameraArgs(await writeFakeCamera(size.camera, path.join(outDir, "camera"), size.label)) })
       : browser;
+    if (widthBrowser !== browser) cameraBrowsers.add(widthBrowser);
     const context = await widthBrowser.newContext({
       permissions: size.camera ? ["camera"] : [],
       viewport: { width: size.width, height: size.height },
@@ -321,7 +324,10 @@ try {
       console.log(`${note ? "✗" : "✓"} ${row.id} · ${size.label}${note ? ` — ${note}` : ""}`);
     }
     await context.close();
-    if (widthBrowser !== browser) await widthBrowser.close();
+    if (widthBrowser !== browser) {
+      cameraBrowsers.delete(widthBrowser);
+      await widthBrowser.close();
+    }
   }
 
   // The sheet itself: a page of the photographs, screenshotted. No image library,
@@ -381,6 +387,7 @@ try {
     process.exitCode = 1;
   }
 } finally {
+  await Promise.all([...cameraBrowsers].map((b) => b.close().catch(() => {})));
   // A restore that fails leaves the account's About state changed, so the run fails with it rather
   // than reading as a clean sheet over a dirty account. The browser still closes.
   if (aboutPrior) {
