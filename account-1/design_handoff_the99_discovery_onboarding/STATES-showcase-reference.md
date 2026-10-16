@@ -4,11 +4,11 @@
 
 | State | When | Drawn | What shows |
 |---|---|---|---|
-| One deck fits | Exactly one deck meets the tool's `fits` | T2 | `Try it on <deck> →` |
-| Several fit | Two or more | T2 | The press, plus `N more are over ▾` / `N more are full ▾` |
-| None fits, no door | No deck meets it, and nowhere better to send them | T2 (Top off) | The dashed line saying what it needs, then `How it works ›` |
-| None fits, a door | No deck meets it, and another screen helps | T2 (Friends' spares) | The dashed line, the door, then `How it works ›` |
-| Needs no deck | Help me choose, Precons, Wishlist, Sync, Lineup, Friends | S1 | A press naming where it goes |
+| One deck fits | Exactly one deck meets the tool's `fits` | T2 | The whole card is the press; footer `Opens <deck>` and a ringed arrow |
+| Several fit | Two or more | T2 | The card opens the most recently opened one; the footer reads `Opens <deck> · +N` |
+| None fits, no door | No deck meets it, and nowhere better to send them | T2 (Top off) | The card is not a press; one mono line saying what it needs, then `How it works ›` |
+| None fits, a door | No deck meets it, and another screen helps | T2 (Friends' spares) | The same line, then `How it works ›` and the door |
+| Needs no deck | Help me choose, Precons, Wishlist, Sync, Lineup, Friends | S1 | The card is the press; its footer names where it goes (`Open Help me choose`) |
 | Switch off | The tool's switch is off for this reader | L2 (not drawn) | No card. A group left empty is not drawn |
 | Moment dismissed | R1's moment for the tool was spent | S1 | The card as usual |
 | Fixture has no picture | Never ships: a test fails (E9) | — | — |

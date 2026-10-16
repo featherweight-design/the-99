@@ -35,16 +35,16 @@ Amonkhet values; every color is a theme token, so other themes follow. Copy is i
 
 | Property | Value |
 |---|---|
-| Size | 354 × 530 in the 1280 grid (3 columns, 22 gap); 300 × 460 in the 390 row (12 gap, 16 inset, next card peeking) |
+| Size | 354 × 450 in the 1280 grid (3 columns, 22 gap); 300 × 400 in the 390 row (12 gap, 16 inset, next card peeking) |
 | Frame | `--surface`, 1px `--border`, radius 14, clip |
 | Picture | 3:2, `--bg` behind, 1px `--border` under; the capture at 390, 2x |
 | Halo | radius 9; `0 0 0 2px accent/75%, 0 0 0 6px accent/20%`, plus `0 0 0 2000px bg/28%` dimming the rest |
 | Name | Plex Sans 16 / 600 `--fg` |
 | Cost chip | Plex Mono 11 `--fg-muted`, 1px `--border-strong`, pill |
 | Line | Plex Sans 14 / 1.5 `--fg-body` |
-| Try it | at least 44 tall, 1px `--accent`, radius 10, Plex Sans 14.5 / 600 `--accent`, centered, wraps to two lines |
-| None fits | 1px dashed `--border-dashed`, radius 10; Plex Mono 12 / 1.5 `--fg-muted`; door Plex Sans 14 / 600 `--accent` |
-| More / How it works | Plex Mono 12; `--fg-muted` / `--fg-faint` |
+| Try it (option C) | the whole card is one link, its accessible name `Try it on <deck>`; How it works sits above it (`z-index`) as its own link. Footer: 1px `--border` hairline, `Opens <deck> · +N` Plex Sans 13.5 `--fg-muted` (truncates), a 30px ring, 1px `--accent`, `→` `--accent` |
+| None fits | not a link; Plex Mono 12 / 1.5 `--fg-muted` under the hairline; door Plex Sans 14 / 600 `--accent`, right |
+| How it works | Plex Mono 12 `--fg-faint`, no wrap, left of the footer |
 
 ## About's tabs, and the Reference
 
