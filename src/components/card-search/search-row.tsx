@@ -3,7 +3,7 @@
 // `docs/superpowers/design-tables/card-search-phone.md` §Result row). The whole row is one option in the field's
 // listbox and one press; it carries no other control. Ownership is always drawn, so a row is never blank.
 
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -49,6 +49,7 @@ export function SearchRow({
   active,
   returned,
   onPick,
+  onKey,
   rowRef,
 }: {
   row: CardSearchRow;
@@ -61,6 +62,7 @@ export function SearchRow({
   /** The row whose card was just closed: the focus ring the reader returns to (H3). */
   returned: boolean;
   onPick: (el: HTMLElement) => void;
+  onKey?: (e: KeyboardEvent<HTMLDivElement>) => void;
   rowRef?: (el: HTMLDivElement | null) => void;
 }) {
   const [deck, ...moreDecks] = row.decks;
@@ -73,6 +75,7 @@ export function SearchRow({
       aria-label={cardSearchCopy.row.aria(row.name, row.owned, row.decks, row.wishlist)}
       tabIndex={-1}
       onClick={(e) => onPick(e.currentTarget)}
+      onKeyDown={onKey}
       data-card-search-row={row.oracleId}
       className={`flex min-h-[72px] cursor-pointer items-center gap-3 rounded-[8px] py-2 pr-[10px] pl-4 outline-none ${
         first ? "" : "border-t border-solid border-[color:var(--border)]"

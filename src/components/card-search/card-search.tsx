@@ -33,6 +33,7 @@ import { afterDialogsReleased, useBackDismiss, useScrollLock, visibleFocusables 
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import type { SiblingCard } from "../cards/card-detail-provider";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
 
@@ -206,7 +207,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
           if (n !== seq.current) return;
           setPhase("failed");
           // S6 is drawn with the keyboard down, Try again in reach.
-          inputRef.current?.blur();
+          lowerKeyboard(inputRef.current);
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
@@ -272,6 +273,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // The keyboard's place stays in view: `aria-activedescendant` moves no scroll of its own.
   useEffect(() => {
     if (!open || active < 0) return;
+    noteAppScroll();
     bodyRef.current?.querySelector(`#${CSS.escape(`${LISTBOX_ID}-${active}`)}`)?.scrollIntoView({ block: "nearest" });
   }, [open, active]);
 
@@ -279,7 +281,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     const body = bodyRef.current;
     if (!open || returned === null || !body) return;
     body.scrollTop = savedScroll.current;
-    body.querySelector<HTMLElement>(`[data-card-search-row="${CSS.escape(returned)}"]`)?.focus({ preventScroll: true });
+    // The row that opened the card; after a failed read there is no row, and focus goes to Try again instead.
+    const target =
+      body.querySelector<HTMLElement>(`[data-card-search-row="${CSS.escape(returned)}"]`) ??
+      body.querySelector<HTMLElement>("[data-card-search-retry]");
+    target?.focus({ preventScroll: true });
   }, [open, returned]);
 
   // A navigation takes the sheet with it; the card it opened is closed by the layer (never as a dismissal).
@@ -384,6 +390,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     onCardDismissed,
     onCardFailed,
     recentsFailed,
+    open,
     openCardRef,
   };
 
@@ -445,7 +452,7 @@ function PhoneFrame() {
     }
     // Dragging the list lowers the keyboard (S4b): the field gives up focus, the query stays.
     function onTouchMove() {
-      if (document.activeElement === inputRef.current) inputRef.current?.blur();
+      if (document.activeElement === inputRef.current) lowerKeyboard(inputRef.current);
     }
     sheet.addEventListener("keydown", onKey);
     sheet.addEventListener("touchmove", onTouchMove, { passive: true });
@@ -461,8 +468,10 @@ function PhoneFrame() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="card-search-heading"
+      // Focusable itself, so lowering the keyboard keeps focus (and Escape, and Tab) inside the sheet.
+      tabIndex={-1}
       hidden={!isOpen}
-      className="fixed inset-0 z-40 flex flex-col bg-[color:var(--bg)] md:hidden"
+      className="fixed inset-0 z-40 flex flex-col bg-[color:var(--bg)] outline-none md:hidden"
     >
       <h2 id="card-search-heading" className="sr-only">
         {cardSearchCopy.label}
@@ -513,6 +522,16 @@ function PhoneFrame() {
       />
     </div>
   );
+}
+
+/**
+ * Lowers the keyboard by moving focus off the field onto the sheet around it, never onto the page: a bare blur
+ * leaves focus on `body`, where the sheet's Escape and Tab never see a key.
+ */
+function lowerKeyboard(input: HTMLInputElement | null) {
+  const sheet = input?.closest<HTMLElement>('[role="dialog"]');
+  if (sheet) sheet.focus({ preventScroll: true });
+  else input?.blur();
 }
 
 /** S7: offline, for either frame. The field still types, and the read runs by itself once back online. */

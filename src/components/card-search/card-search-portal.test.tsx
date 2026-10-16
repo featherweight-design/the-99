@@ -38,7 +38,8 @@ describe("the sheet hears its portalled results", () => {
     const option = await openWithResults();
     screen.getByRole("combobox").focus();
     await act(async () => fireEvent.touchMove(option));
-    expect(document.activeElement).not.toBe(screen.getByRole("combobox"));
+    // Off the field and onto the sheet itself, never the page, so Escape and Tab still reach the sheet.
+    expect(document.activeElement).toBe(screen.getByRole("dialog", { name: "Search all cards" }));
   });
 
   it("Tab from a focused row stays inside the sheet", async () => {
@@ -46,5 +47,14 @@ describe("the sheet hears its portalled results", () => {
     option.focus();
     await act(async () => fireEvent.keyDown(option, { key: "Tab" }));
     expect(screen.getByRole("dialog", { name: "Search all cards" }).contains(document.activeElement)).toBe(true);
+  });
+});
+
+describe("a row focus came back to keeps the list's keys", () => {
+  it("↵ on a focused row opens its card (the sheet gives way)", async () => {
+    const option = await openWithResults();
+    option.focus();
+    await act(async () => fireEvent.keyDown(option, { key: "Enter" }));
+    expect(screen.queryByRole("dialog", { name: "Search all cards" })).toBeNull();
   });
 });

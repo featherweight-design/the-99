@@ -1273,11 +1273,14 @@ export function CardDetailProvider({
   const dismiss = useCallback(() => {
     if (leavingTimer.current !== null) return;
     if (stepBack()) return;
+    // A card stacked over a sheet within the stack (the picker's combo card) goes back to that sheet, which is not
+    // leaving the card details: only a close with nothing held is a dismissal.
+    const leaving = heldRef.current === null;
     const phone = !window.matchMedia?.("(min-width: 768px)")?.matches;
     const still = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     if (sheetsBelow === 0 || !phone || still) {
       close();
-      onDismissRef.current?.();
+      if (leaving) onDismissRef.current?.();
       return;
     }
     setLeaving(true);
@@ -1285,7 +1288,7 @@ export function CardDetailProvider({
       leavingTimer.current = null;
       setLeaving(false);
       close();
-      onDismissRef.current?.();
+      if (leaving) onDismissRef.current?.();
     }, STACK_DROP_MS);
   }, [close, sheetsBelow, stepBack]);
   useEffect(() => () => {

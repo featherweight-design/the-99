@@ -47,12 +47,17 @@ export type SearchLayerProps = {
   onCardFailed: () => void;
   /** The recent cards' signals could not be read. */
   recentsFailed: boolean;
+  /** The sheet is up; nothing is announced while it is not. */
+  open: boolean;
   openCardRef: MutableRefObject<OpenCard | null>;
 };
 
 export function SearchLayer(props: SearchLayerProps) {
+  // A fresh provider for each route: a navigation drops a read still in flight and any card or sheet stacked over
+  // the search's card, all of which would otherwise outlive the page that opened them (the shell outlives every page).
+  const pathname = usePathname();
   return (
-    <CardDetailProvider onDismiss={props.onCardDismissed}>
+    <CardDetailProvider key={pathname} onDismiss={props.onCardDismissed}>
       <Bridge openCardRef={props.openCardRef} onCardFailed={props.onCardFailed} />
       {props.bodyEl ? createPortal(<SearchBody {...props} />, props.bodyEl) : null}
     </CardDetailProvider>
@@ -61,7 +66,7 @@ export function SearchLayer(props: SearchLayerProps) {
 
 /** Hands the provider's `open` to the shell's half, and closes the card on a navigation, never as a dismissal. */
 function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<OpenCard | null>; onCardFailed: () => void }) {
-  const { open, close, pendingOracleId, openOracleId } = useCardDetail();
+  const { open, pendingOracleId, openOracleId } = useCardDetail();
   // The card asked for, and whether its read was seen in flight: a read that ends with no card drawn failed, and the
   // provider says so only in its own live region, with no dialog and no dismissal to bring the search back.
   const asked = useRef<{ id: string; pending: boolean } | null>(null);
@@ -84,15 +89,6 @@ function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<O
       onCardFailed();
     }
   }, [pendingOracleId, openOracleId, onCardFailed]);
-  // The shell outlives every page, so a card left open by a link inside it (a deck in Find a deck) would otherwise
-  // stand over the next route.
-  const pathname = usePathname();
-  const seen = useRef(pathname);
-  useEffect(() => {
-    if (seen.current === pathname) return;
-    seen.current = pathname;
-    close();
-  }, [pathname, close]);
   return null;
 }
 
@@ -106,7 +102,7 @@ const SKELETON_WIDTHS: ReadonlyArray<readonly [string, string]> = [
 
 function SearchBody(p: SearchLayerProps) {
   const stale = p.rowsFor !== p.query;
-  const settled = p.searching && p.online && !stale && p.phase === "results";
+  const settled = p.open && p.searching && p.online && !stale && p.phase === "results";
   const { onAnnounce } = p;
 
   // The count, or the no-results line, once the results have stood still for half a second.
@@ -209,6 +205,7 @@ function Failed({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
+        data-card-search-retry
         className="mt-[6px] h-11 self-start rounded-[10px] border border-solid border-[color:var(--border-strong)] px-[18px] text-[14px] font-medium text-[color:var(--fg)]"
       >
         {cardSearchCopy.tryAgain}
@@ -237,6 +234,19 @@ function Rows({
           active={i === active}
           returned={row.oracleId === returned}
           onPick={() => onPick(from, i)}
+          // A row focus came back to (H3) keeps the list's keys: ↑ ↓ move between rows, ↵ and Space open.
+          onKey={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onPick(from, i);
+            } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              const options = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="option"]');
+              if (!options || options.length === 0) return;
+              const next = e.key === "ArrowDown" ? (i + 1) % options.length : (i - 1 + options.length) % options.length;
+              options[next]?.focus();
+            }
+          }}
         />
       ))}
     </div>
