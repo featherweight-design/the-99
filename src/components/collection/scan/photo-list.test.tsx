@@ -79,6 +79,15 @@ describe("PhotoList", () => {
     expect(screen.getByRole("button", { name: copy.photos.more })).toBeTruthy();
   });
 
+  it("scrolls the desktop's rows inside the panel and keeps its presses outside the scroll", () => {
+    draw();
+    const body = screen.getByTestId("scan-photos-body");
+    expect(body.className).toMatch(/overflow-y-auto/);
+    expect(body.className).toMatch(/min-h-0/);
+    expect(body.contains(screen.getByRole("button", { name: copy.photos.more }))).toBe(false);
+    expect(body.contains(screen.getAllByRole("listitem")[0])).toBe(true);
+  });
+
   it("stops from the desktop's head, and closes from the phone's ✕ beside Fast/Normal", () => {
     const desk = draw();
     fireEvent.click(screen.getByRole("button", { name: copy.camera.stop }));

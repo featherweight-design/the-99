@@ -94,6 +94,8 @@ export function usePhotoReader(
     }
     let read: FrameRead;
     try {
+      // Closed while the photo decoded: the models are already released, and a read now would load them again.
+      if (signal.aborted) return { kind: "failed" };
       read = await d.readFrame(bitmap);
     } catch {
       // The models would not load: no photo can be read, and the player is told why.

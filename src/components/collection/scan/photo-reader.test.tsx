@@ -143,4 +143,22 @@ describe("usePhotoReader", () => {
     expect(read).toEqual(["one.jpg"]);
     expect(d.fetch).not.toHaveBeenCalled();
   });
+
+  it("never reads a photo whose decode finishes after the scanner closed, and still releases its bitmap", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    const { d, closed } = deps();
+    const decode = d.decode!;
+    d.decode = vi.fn(async (f: File) => {
+      await gate;
+      return decode(f);
+    });
+    const { result, unmount } = renderHook(() => usePhotoReader(d, vi.fn(async () => true), "fast", vi.fn()));
+    act(() => result.current.choose([file("one.jpg")]));
+    await waitFor(() => expect(d.decode).toHaveBeenCalledTimes(1));
+    unmount();
+    release();
+    await waitFor(() => expect(closed).toEqual(["one.jpg"]));
+    expect(d.readFrame).not.toHaveBeenCalled();
+  });
 });

@@ -62,16 +62,17 @@ export function PhotoList(p: PhotoListProps) {
         data-testid="scanner"
         data-layout="desk"
         data-photos=""
-        className="mx-[22px] flex flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
+        className="mx-[22px] flex min-h-0 flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
       >
         <DeskBar label={copy.photos.read(read)} mode={p.mode} onMode={p.onMode} onStop={p.onClose} />
-        <div className="flex flex-col gap-[12px] px-[14px] py-[12px]">
+        {/* The sheet's height is fixed: the rows scroll, and the presses under them stay in reach. */}
+        <div data-testid="scan-photos-body" className="flex min-h-0 flex-col gap-[12px] overflow-y-auto px-[14px] pt-[12px]">
           {notice}
           {list}
-          <div className="flex items-center gap-[14px]">
-            {addSure}
-            {more}
-          </div>
+        </div>
+        <div className="flex flex-none items-center gap-[14px] px-[14px] pb-[12px] pt-[12px]">
+          {addSure}
+          {more}
         </div>
       </section>
     );
