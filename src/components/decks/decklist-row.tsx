@@ -303,7 +303,7 @@ export function DecklistRow({
     return (
       // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
-      <span key={className} className={`${className} flex-none`}>
+      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`}>
         <FactTooltip
           lines={folded.map((f) => (
             <>
@@ -312,7 +312,7 @@ export function DecklistRow({
             </>
           ))}
         >
-          <span aria-hidden="true" className="font-mono text-[11px] leading-none" style={{ color: "var(--fact)" }}>
+          <span aria-hidden="true" style={{ color: "var(--fact)" }}>
             +{folded.length}
           </span>
         </FactTooltip>
@@ -835,6 +835,11 @@ export function DecklistRow({
             vertical line the fixed track exists to hold.
             `hidden` is display:none, so exactly one of the two runs is in the
             accessibility tree at any width and the cost is spoken once. */}
+        {!cost && allFixedCols ? (
+          // A costless card (a land, Ancestral Vision) keeps the 72px track empty, so its price and marker sit where a costed
+          // row's do and the columns line up down the list (L6).
+          <span aria-hidden="true" className="hidden md:block flex-none w-[72px] md:order-1" />
+        ) : null}
         {cost && !rowB ? (
           <span className={`hidden md:flex flex-none items-center${allFixedCols ? " md:order-1" : ""}`}>
             <CostPips

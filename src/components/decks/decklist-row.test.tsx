@@ -1985,11 +1985,29 @@ describe("DecklistRow, folding the marks", () => {
 
   it("lets a qualified price grow the buy column leftward rather than over its neighbour", () => {
     const asOf = new Date("2026-09-20T00:00:00Z");
-    const priced = { ...(card as DeckDetailCard), owned: false, price: { cents: 1250, foilCents: null, etchedCents: 1250, asOf } } as DeckDetailCard;
+    const priced = { ...(card as DeckDetailCard), owned: false, price: { cents: null, foilCents: null, etchedCents: 1250, asOf } } as DeckDetailCard;
     renderRow(<DecklistRow deckId="d1" card={priced} inShopping shoppingFigure={24} newestAsOf={asOf} />);
     const slot = document.querySelector<HTMLElement>("[data-decklist-row] .md\\:min-w-\\[84px\\]")!;
     expect(slot).not.toBeNull();
     expect(tokens(slot)).not.toContain("md:w-[84px]");
+    // The fixture really is the wide one: an etched-only price draws its qualifier.
+    expect(slot.textContent).toContain("etched");
+  });
+
+  it("keeps the 72px pip track for a costless All row, so its price lines up with a costed row's", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), manaCost: null }} newestAsOf={null} />);
+    const track = document.querySelector<HTMLElement>("[data-decklist-row] span[aria-hidden='true'].md\\:block.w-\\[72px\\]")!;
+    expect(track).not.toBeNull();
+    expect(tokens(track)).toContain("md:order-1");
+    cleanup();
+    // A read-only row and a Shopping row keep the layouts they had: no reserved track.
+    renderRow(<DecklistRow deckId="" card={{ ...(card as DeckDetailCard), manaCost: null }} readOnly newestAsOf={null} />);
+    expect(document.querySelector("[data-decklist-row] span.w-\\[72px\\]")).toBeNull();
+  });
+
+  it("sets the +N tier's own line box small, so a visible counter cannot grow the 34px row", () => {
+    renderRow(<DecklistRow deckId="d1" card={four} newestAsOf={null} />);
+    for (const tier of plusSpans()) expect(tokens(tier)).toEqual(expect.arrayContaining(["leading-none", "text-[11px]"]));
   });
 
   it("draws no empty slot for a marker that draws nothing, which would add a flex gap before the tag", () => {
