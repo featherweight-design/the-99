@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { ScannerView } from "./scanner-view";
+import { createOutlineStore } from "../../../lib/scan/outline";
 import { useFrameReader } from "./frame-reader";
 import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
@@ -48,7 +49,8 @@ export function CardScanner({
     setNotice(offline ? copy.offlineBody : copy.lookupFailed);
   }, []);
   // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
-  const readFrame = useFrameReader();
+  const [outline] = useState(createOutlineStore);
+  const readFrame = useFrameReader(outline);
   const scanDeps = useMemo(() => ({ readFrame, ...deps }), [readFrame, deps]);
   useEffect(() => {
     if (!notice) return;
@@ -120,6 +122,7 @@ export function CardScanner({
       <ScannerView
         layout={layout}
         screen={screen}
+        outline={outline}
         mode={mode}
         torch={torch}
         count={count}

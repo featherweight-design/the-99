@@ -27,6 +27,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+import { fakeCameraArgs, writeFakeCamera } from "./lib/fake-camera.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -264,12 +265,21 @@ for (const row of inventory.rows) {
 
 const shots = [];
 const browser = await chromium.launch();
+/** The per-width camera browsers still open: closed in the `finally`, so a width that fails part-way leaves none behind. */
+const cameraBrowsers = new Set();
 /** The account's About columns as the run found them, when an inventory clears the gate. */
 let aboutPrior = null;
 try {
   await clerkSetup();
   for (const size of WIDTHS) {
-    const context = await browser.newContext({
+    // `"camera": { w, h, card?, share, cx, cy, angle }` on a width gives that width its own browser with a fake
+    // camera playing the scene (`lib/fake-camera.mjs`), for a surface that reads the camera.
+    const widthBrowser = size.camera
+      ? await chromium.launch({ args: fakeCameraArgs(await writeFakeCamera(size.camera, path.join(outDir, "camera"), size.label)) })
+      : browser;
+    if (widthBrowser !== browser) cameraBrowsers.add(widthBrowser);
+    const context = await widthBrowser.newContext({
+      permissions: size.camera ? ["camera"] : [],
       viewport: { width: size.width, height: size.height },
       deviceScaleFactor: 1,
       // A width may name an input: `"touch": true` makes Chromium report `(hover: none)`, where the
@@ -314,6 +324,10 @@ try {
       console.log(`${note ? "✗" : "✓"} ${row.id} · ${size.label}${note ? ` — ${note}` : ""}`);
     }
     await context.close();
+    if (widthBrowser !== browser) {
+      cameraBrowsers.delete(widthBrowser);
+      await widthBrowser.close();
+    }
   }
 
   // The sheet itself: a page of the photographs, screenshotted. No image library,
@@ -373,6 +387,7 @@ try {
     process.exitCode = 1;
   }
 } finally {
+  await Promise.all([...cameraBrowsers].map((b) => b.close().catch(() => {})));
   // A restore that fails leaves the account's About state changed, so the run fails with it rather
   // than reading as a clean sheet over a dirty account. The browser still closes.
   if (aboutPrior) {
