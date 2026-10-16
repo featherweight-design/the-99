@@ -83,10 +83,13 @@ export function FriendSparesProvider({
     };
   }, [key]);
   const value = useMemo<Ctx>(() => {
+    // Only the cards asked for NOW: a card that left the list (bought, cut, proxied) drops its spare at once, the
+    // empty list included, rather than when a later read lands.
+    const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
-    for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
+    for (const s of spares) if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
     return { byCard, opened, open: setOpened, close: () => setOpened(null) };
-  }, [spares, opened]);
+  }, [spares, opened, key]);
   return (
     <SparesContext.Provider value={value}>
       {children}
@@ -105,12 +108,16 @@ export function FriendSparesProvider({
  */
 export function OtherWaysPress({
   card,
+  openStandIns,
   standIn,
   standInAria,
   limitFigure,
   className = "",
 }: {
   card: DeckDetailCard;
+  /** Opens the row's stand-ins modal: a deck row with the swap tools on whose card may be cut (never a locked one).
+   *  Absent, the press opens the spares-only modal. */
+  openStandIns?: () => void;
   /** The row may look for cheaper stand-ins (the swap tools' over-limit rule, decided by the row). */
   standIn: boolean;
   /** The row's shipped name for ⇄ alone. */
@@ -123,11 +130,11 @@ export function OtherWaysPress({
   const ctx = usePageSpares();
   const tools = useSwapTools();
   const spare = ctx?.byCard.has(card.oracleId) ?? false;
-  const swap = standIn && tools !== null;
+  const swap = standIn && tools !== null && openStandIns !== undefined;
   if (!swap && !spare) return null;
   const name = printedFaceName(card);
   const label = swap && spare ? spareCopy.pressBothAria(name, limitFigure) : swap ? standInAria : spareCopy.markerAria(name);
-  const on = tools ? tools.standIns?.oracleId === card.oracleId : ctx?.opened?.oracleId === card.oracleId;
+  const on = tools && openStandIns ? tools.standIns?.oracleId === card.oracleId : ctx?.opened?.oracleId === card.oracleId;
   return (
     <button
       type="button"
@@ -135,7 +142,7 @@ export function OtherWaysPress({
       aria-label={label}
       aria-haspopup="dialog"
       aria-expanded={on}
-      onClick={() => (tools ? tools.openStandIns(card) : ctx?.open(card))}
+      onClick={() => (tools && openStandIns ? openStandIns() : ctx?.open(card))}
       // The phone keeps the shipped 44px-tall hit around the 36px press it draws, as wide as the press (#1875 sets it
       // flush beside the tag); from md the hit is the press.
       className={`flex h-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 md:h-auto${className}`}

@@ -875,6 +875,23 @@ export function DecklistRow({
             the two can never co-occur: a row saying at once that the player is
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
+        {/* The other-ways press (#1875, Social R2 PR A): ⇄ on an over-limit Shopping row, opening its cheaper
+            stand-ins, and the spare glyph on any row the deck is buying that a friend holds a spare of. One press
+            holds whichever apply, and neither draws nothing, with no slot kept. A LOCKED row has no ⇄ (STATES,
+            Shopping: the stand-ins sheet exists to cut this card, and the player said it is never cut), and its spare opens
+            the spares-only modal for the same reason. Drawn BEFORE the tag in DOM order, so the widths no slot table
+            covers (the phone All row, Shopping from md to lg) keep it before the tag too. */}
+        {tag === "buy" && !readOnly ? (
+          <OtherWaysPress
+            card={card}
+            openStandIns={swapTools && !locked ? () => swapTools.openStandIns(card) : undefined}
+            standIn={overLimit && !locked}
+            standInAria={swapTools ? swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents)) : ""}
+            limitFigure={swapTools ? formatLimit(swapTools.limitCents) : ""}
+            className={withAt("swap")}
+          />
+        ) : null}
+
         {tag === "proxy" && (twoLine ? <span className={at("buy")}><ProxyTag variant="row" /></span> : <ProxyTag variant="row" />)}
         {/* Below lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
             (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
@@ -943,20 +960,6 @@ export function DecklistRow({
               : deckVersioningCopy.pending.addMarkA11y}
           </span>
         )}
-
-        {/* The other-ways press (#1875, Social R2 PR A): ⇄ on an over-limit Shopping row, opening its cheaper
-            stand-ins, and the spare glyph on any row the deck is buying that a friend holds a spare of. One press
-            holds whichever apply, and neither draws nothing, with no slot kept. A LOCKED row has no ⇄ (STATES,
-            Shopping: the stand-ins sheet exists to cut this card, and the player said it is never cut). */}
-        {tag === "buy" && !readOnly ? (
-          <OtherWaysPress
-            card={card}
-            standIn={overLimit && !locked}
-            standInAria={swapTools ? swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents)) : ""}
-            limitFigure={swapTools ? formatLimit(swapTools.limitCents) : ""}
-            className={withAt("swap")}
-          />
-        ) : null}
 
         {/* THE LOCK MARK (Locked), left of the ✕, on a LOCKED row only and outside the mode. It is a
             mark, not a control: Lock cards mode is the one way to set or clear a lock (Hugh, staging

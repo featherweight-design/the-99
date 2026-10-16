@@ -19,6 +19,8 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SwapToolsProvider } from "../../lib/swaps/context";
+import { FriendSparesProvider } from "../social/spare-markers";
+import { spareCopy } from "../../lib/copy/social";
 
 const TEST_MIX = recommendedMix(null, false);
 
@@ -399,6 +401,31 @@ describe("DecklistRow's lock", () => {
     it("keeps the ⇄ on an unlocked row", () => {
       inTools(over);
       expect(swap()).not.toBeNull();
+    });
+
+    it("opens a locked row's spare in the spares-only modal, never the stand-ins one", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ spares: [{ oracleId: "sol-ring", friend: { publicId: "p", displayName: "Ana", commander: null, pods: [] }, spare: 1 }] }),
+      }));
+      try {
+        await act(async () => {
+          renderRow(
+            <FriendSparesProvider oracleIds={["sol-ring"]} newestAsOf={asOf}>
+              <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>
+                <DecklistRow deckId="d1" card={{ ...over, locked: true }} shoppingFigure={24} inShopping newestAsOf={asOf} />
+              </SwapToolsProvider>
+            </FriendSparesProvider>,
+            lockValue(),
+          );
+        });
+        const press = screen.getByRole("button", { name: spareCopy.markerAria("Sol Ring") });
+        await act(async () => { fireEvent.click(press); });
+        expect(screen.getByRole("dialog", { name: spareCopy.modalTitleSpares })).toBeInTheDocument();
+        expect(press.getAttribute("aria-expanded")).toBe("true");
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
 
     it("drops the ⇄ on a locked row, keeping no slot", () => {

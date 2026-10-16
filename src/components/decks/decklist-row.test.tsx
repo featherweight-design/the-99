@@ -1930,6 +1930,13 @@ describe("DecklistRow, the other-ways press", () => {
     expect(press.textContent).not.toContain("⇄");
   });
 
+  it("draws the press before the buy tag in the DOM, for the widths no slot table orders", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(500)} newestAsOf={asOf} />);
+    const press = screen.getByTestId("other-ways");
+    const tag = screen.getByText(/buy/i, { selector: "span" });
+    expect(press.compareDocumentPosition(tag) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("draws nothing on a row the collection holds", async () => {
     await withSpares(<DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), owned: true }} newestAsOf={asOf} />);
     expect(screen.queryByTestId("other-ways")).toBeNull();

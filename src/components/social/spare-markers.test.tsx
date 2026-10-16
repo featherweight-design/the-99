@@ -19,7 +19,17 @@ const SPARES = [{ oracleId: "poly", friend: friend("Ana"), spare: 2 }];
 
 const STAND_IN_ARIA = "Cheaper stand-ins for Polyraptor, over your $10 limit";
 function Press({ standIn = false }: { standIn?: boolean }) {
-  return <OtherWaysPress card={POLY} standIn={standIn} standInAria={STAND_IN_ARIA} limitFigure="$10" />;
+  // A deck row hands the press its stand-ins opener while the swap tools are on, as DecklistRow does.
+  const tools = useSwapTools();
+  return (
+    <OtherWaysPress
+      card={POLY}
+      openStandIns={tools ? () => tools.openStandIns(POLY) : undefined}
+      standIn={standIn}
+      standInAria={STAND_IN_ARIA}
+      limitFigure="$10"
+    />
+  );
 }
 
 const fetchMock = vi.fn();
@@ -159,6 +169,20 @@ describe("the key's item", () => {
     expect(key.textContent).not.toContain(gotItCopy.row.keyBuy);
     // No width hides it: neither the key nor the item carries a `hidden` class, at any breakpoint.
     for (const el of [key, within(key).getByTestId("spare-key")]) expect(el.className).not.toMatch(/(^|\s|:)hidden(\s|$)/);
+  });
+
+  it("drops a card's spare as soon as the card leaves the list, the empty list included", async () => {
+    fetchMock.mockResolvedValue(answer(SPARES));
+    const tree = (ids: string[]) => (
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <FriendSparesProvider oracleIds={ids} newestAsOf={asOf}><ShoppingKey shoppingCount={3} /></FriendSparesProvider>
+      </CardDetailProvider>
+    );
+    let rerender!: (ui: React.ReactNode) => void;
+    await act(async () => { ({ rerender } = render(tree(["poly"]))); });
+    expect(screen.getByTestId("spare-key")).toBeInTheDocument();
+    await act(async () => { rerender(tree([])); });
+    expect(screen.queryByTestId("spare-key")).toBeNull();
   });
 
   it("is absent while no friend has a spare, so the key is too with I got it off", async () => {
