@@ -18,8 +18,10 @@ whether they own it and where.
 **Look up ANY card in the catalog by name.** The answer is card details, as it ships today:
 - **What's this card?** Its art, text, printings and price.
 - **Do I have it, and where?** Ownership, and the decks that hold it.
-- **Its Wishlist section** when the card is unowned (`SOCIAL_WISHLIST_ENABLED`).
-- **Find a deck** when it is owned and in no deck (`SWAP_TOOLS_ENABLED`).
+- **Its Wishlist section**, on every card with `SOCIAL_WISHLIST_ENABLED` on: Add to wishlist, or the want stepper
+  with `you have N`, owned or not.
+- **Find a deck** (`SWAP_TOOLS_ENABLED`) on a Commander-legal card, for a reader with at least one deck that has a
+  commander (`fitsDoor`: `commanderLegal && hasDecks`). Ownership and the card's own decks are not checked.
 
 Search adds no answer of its own. Both questions come free through card details.
 
@@ -35,11 +37,16 @@ Search adds no answer of its own. Both questions come free through card details.
 - **Card details** (`CardDetailProvider`, opened by `CardDetailTrigger`) is mounted per surface today: Collection,
   Commanders, About's figures and others, not once in the shell. A search reachable from every screen needs card details
   reachable from every screen too. That is engineering's half, and card details itself is reused as it is.
-- **The shell** (`src/components/shell/nav.tsx`): `NavRail` on desktop, `MobileHeader` and `TabBar` on the phone. The
-  phone header is NOT sticky today; it scrolls away with the page.
-- **Stacked sheets** (`design/design_handoff_the99_stacked_sheets/`): a card sheet opened from another sheet replaces
-  it, and the sheet underneath stays mounted with its scroll kept. Card details opened from the search sheet follows
-  that rule.
+- **The shell** (`src/components/shell/nav.tsx`): `NavRail` on desktop, `MobileHeader` and `TabBar` on the phone.
+  Desktop has no header: `MobileHeader` is `md:hidden`. The phone header is NOT sticky today; it scrolls away with the
+  page. It is about 73px tall (20px top, the 38px avatar, 14px bottom and a 1px rule). Its right-hand cluster is up to
+  THREE controls, not one: the offline pill (`OfflinePill`), the install slot (`InstallSlot`, phone only) and the
+  account button (`AccountMenu`).
+- **Stacked sheets** (`design/design_handoff_the99_stacked_sheets/`): a card opened from a sheet STACKS on it; on a
+  phone the card covers the sheet at full height, and the sheet stays mounted and hidden under it with its scroll kept.
+  **A stacked card opens no further layer**, so it draws no Find a deck (`onFindDeck` is null while a sheet is below).
+  If the search sheet stacked under card details like any other sheet, every card opened from search would lose Find a
+  deck, which lock 1 forbids. How the search sheet and card details hand over is open question 8.
 
 ## Locked (do not reopen)
 
@@ -52,11 +59,11 @@ Search adds no answer of its own. Both questions come free through card details.
    - **Phone:** a search icon in the top header beside the account button, which opens a full-screen search sheet.
 5. **The phone header returns on scroll up ("quick return"), on every phone screen.** It slides away on scroll down, as
    it does now, and slides back as soon as the player scrolls up a little.
-   - **Rejected:** an always-sticky header, which costs about 80px on every screen.
+   - **Rejected:** an always-sticky header, which costs about 73px on every screen.
    - **Rejected:** a header reachable only at the top of the page, which leaves search out of reach mid-page.
 6. **Two searches on the deck page, labelled apart.** The deck's own bottom field adds a card to THIS deck, and the
-   global search looks up any card. Their labels differ: **"Search all cards"** in the header and **"Add a card"** at the
-   bottom. Those words are d9's call, and /copy-review may refine them.
+   global search looks up any card. Their labels differ: **"Search all cards"** for the global search (the phone header's
+   sheet and the desktop rail field) and **"Add a card"** for the deck's own field. Those words are d9's call, and /copy-review may refine them.
 7. **The deck page's bottom controls and the returning header never collide.**
 8. **Results never show another player's data.** Ownership, decks and wishlist are the reader's own.
 
@@ -79,19 +86,23 @@ Search adds no answer of its own. Both questions come free through card details.
    panel), and how the Cmd+K hint reads.
 5. **Recent cards:** whether search remembers the cards a player opened, and how many. A recent list is the reader's
    own, never another player's.
-6. **The phone header icon:** where it sits beside the account button without crowding it.
+6. **The phone header icon:** where it sits in a right-hand cluster that already holds up to three controls (offline,
+   install, account) without crowding it.
 7. **Accessibility:** focus on open, Escape and the back gesture, results announced as they arrive, and the Cmd+K
    shortcut not taking a key a text field needs.
+8. **The handover to card details:** whether a result closes the search sheet and opens card details on its own (so
+   Find a deck stays), or the sheet stays under it and Back returns to the results. If it stays under, engineering must
+   keep Find a deck on a card opened from search, since lock 1 says card details does not change.
 
 ## Every state to draw
 
-- **Phone:** the header with its icon at rest; the header returning mid-page; the search sheet empty (with and without
+- **Phone:** the header with its icon at rest, with the offline pill and the install slot showing; the header returning mid-page; the search sheet empty (with and without
   recent cards), typing, with results, with no results, failed, and offline; card details opened from a result, and back
   to the sheet.
 - **Desktop:** the rail field at rest, focused and typing; Cmd+K from a page with no field focused; results; no results;
   failed; card details opened from a result.
-- **The deck page, both widths:** the header's "Search all cards" and the bottom "Add a card" on one screen, with the
-  header returned over the bottom controls on the phone.
+- **The deck page:** "Search all cards" and the deck's own "Add a card" on one screen; on the phone, the header returned
+  over the deck's bottom controls; on desktop, the rail field beside the page's own add field.
 - **Result rows:** owned N; in a deck; on the wishlist; none of them; all of them; a long name; a Secret Lair flavor
   name match.
 
