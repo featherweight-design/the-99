@@ -44,8 +44,8 @@ Inventories: `docs/superpowers/inventories/social-r2.json`, `social-r2-spares.js
 2. **The phone place strip overflowed at 390** (#1879). Five tabs and `+ Add` were wider than the phone, so the
    strip scrolled and Add showed half-cut. **Fixed here:** beside five tabs, the tabs close up and Add is its mark
    alone in a 44px square, named `Add cards` for a screen reader, as WP1 draws its trailing control.
-3. **The spares sheet's pods line truncates at 390** (#1872, #1891), `shares with Store league and Th…`. Assigned
-   to its owner's lane.
+3. **The spares sheet's pods line truncates at 390** (#1872, #1891), `shares with Store league and Th…`. **Fixed
+   in #1899**: the line wraps, and `social-r2-spares.json` carries a `pods-wrap` row for it.
 4. **The About `friend-spares` specimen read doubled on desktop** (#1894): `Valakut Awakening // Valakut
    Stoneforge` and then the row's own two-face mark. **Fixed here:** the specimen names the front face at both
    widths, as the phone does. The shipped row is unchanged.
