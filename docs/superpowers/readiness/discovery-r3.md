@@ -108,6 +108,12 @@ unless Hugh overrules one. One question is genuinely Hugh's (Friends on the chec
 8. **N1 with the hub off.** Suggested changes has no tile when the hub is off.
    - **Resolution:** N1 lands on the Suggested changes panel itself, by the same scroll and halo as gap 7. "99 / 99"
      means the deck at its own body size (98 with a partner), per R2's gap 2. The words drop no figure.
+   - **No reading yet.** With the hub off, `AnalysisPanel` mounts Suggested changes only when a reading is held
+     (`analysis-panel.tsx`, the `!hub && held && tuning` branch), and opening the Analysis tab only loads a stored
+     reading; it never creates one. A full deck that was never analyzed therefore has no panel to land on.
+     **Resolution:** with no reading held, N1 lands on the Analysis tab's existing empty state (`AnalysisEmpty`) by
+     the same scroll and halo, and does not run the analysis: the player presses Analyze themselves. The press still
+     opens the tab, so it never lands on nothing.
 9. **N3's count, and its units.** The over-limit count is computed on the client from the list's rows, not from a read
    E26 can reuse. The `15` counts copies, while `2 over` counts rows.
    - **Resolution:** compute it with `isOverLimit` over the same list rows `decklist.tsx` uses, under
