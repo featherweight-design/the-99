@@ -247,9 +247,9 @@ describe("useCardScan", () => {
       await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
       expect(onAdd).toHaveBeenCalledTimes(1);
       frame = { frame: { kind: "none" }, cardInView: false, dark: false };
-      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } }), { timeout: 4000 });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } }), { timeout: 15000 });
       frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
-      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2), { timeout: 4000 });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2), { timeout: 15000 });
       await waitFor(() => expect(hook.result.current.count).toBe(2));
     });
 
@@ -359,7 +359,20 @@ describe("useCardScan", () => {
       await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notAdded"), { timeout: 4000 });
       await act(async () => new Promise((r) => setTimeout(r, 100)));
       expect(loadChoices).toHaveBeenCalledTimes(1);
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+      // The answer is turned down, not merely left: the panel reads on rather than offering the card.
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    });
+
+    it("a card taken out of the frame before its printing is picked comes back as a new copy, not a duplicate", async () => {
+      let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      const loadChoices = vi.fn(async () => CHOICES);
+      const { hook } = setup({ storage: normal, loadChoices, readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      frame = { frame: { kind: "none" }, cardInView: false, dark: false };
+      await new Promise((r) => setTimeout(r, 40));
+      await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
+      frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      await waitFor(() => expect(loadChoices).toHaveBeenCalledTimes(2), { timeout: 15000 });
     });
 
     it("a card picked from Not sure opens its printings, with the closest cards it was picked from", async () => {

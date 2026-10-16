@@ -24,7 +24,9 @@ export type ScanCapture = ScanSource;
 export type ScanPicked = { choices: PrintingChoice[]; printing: PrintingChoice };
 
 /** What the scanner saw when a card was taken: its closest cards and its photo. */
-type Snap = { named: ScanGuess[]; crop: Float32Array | null };
+/** `empties` is how many empty frames had been read when the card was taken: an add that lands after the frame
+ * emptied is a card already out of view, so the next one in is a new copy (R2), not a duplicate (R1). */
+type Snap = { named: ScanGuess[]; crop: Float32Array | null; empties: number };
 
 /** How long the added panel and the tray's flip stay up (READINESS: "about 0.8s"). */
 export const ADDED_MS = 800;
@@ -119,7 +121,12 @@ export function useCardScan(
   // The newest frame that held a card: the card an add is pressed for is still in view, so its photo is this one.
   const lastCrop = useRef<Float32Array | null>(null);
   // What the scanner saw as a hold began (V4): the frozen guess's own photo and closest cards.
-  const heldSnap = useRef<{ oracleId: string; named: ScanGuess[]; crop: Float32Array | null } | null>(null);
+  const heldSnap = useRef<({ oracleId: string } & Snap) | null>(null);
+  // Empty frames read so far, counted by the read loop.
+  const empties = useRef(0);
+  // The answer (and mode) already taken by itself in this view: the take lands a microtask later, and a render
+  // before it must not take the same answer twice.
+  const taken = useRef<{ answer: object | null; mode: ScanMode } | null>(null);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
   useEffect(() => {
@@ -202,6 +209,11 @@ export function useCardScan(
         const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.crop) lastCrop.current = r.crop;
+        if (r.frame.kind === "none") {
+          empties.current++;
+          // An empty frame ends the view an answer was taken in: the card coming back is a new take (R2).
+          taken.current = null;
+        }
         if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
@@ -237,7 +249,7 @@ export function useCardScan(
   const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
   const answer = server.kind === "match" ? server.result : null;
   const snapNow = useCallback(
-    (): Snap => ({ named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [], crop: lastCrop.current }),
+    (): Snap => ({ named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [], crop: lastCrop.current, empties: empties.current }),
     [server],
   );
 
@@ -272,7 +284,7 @@ export function useCardScan(
         setHeld(null);
         heldSnap.current = null;
         setChoosing(null);
-        setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
+        setLastAdded({ oracleId: g.oracleId, emptiedSince: empties.current !== snap.empties });
         setAdded({ name: g.name, imageUri: g.imageUri });
         return true;
       } finally {
@@ -309,9 +321,6 @@ export function useCardScan(
   // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
   // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
   const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
-  // The answer (and mode) already taken by itself: the take lands a microtask later, and a render before it must
-  // not take the same answer twice.
-  const taken = useRef<{ answer: object | null; mode: ScanMode } | null>(null);
   useEffect(() => {
     if (!sure || added || choosing || committing.current) return;
     if (sure.again?.kind === "duplicate") return;
@@ -366,6 +375,7 @@ export function useCardScan(
         oracleId: current.oracleId,
         named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [],
         crop: lastCrop.current,
+        empties: empties.current,
       };
       setHeld(current);
     },
@@ -388,7 +398,7 @@ export function useCardScan(
       const g = notSure.find((x) => x.oracleId === oracleId);
       if (!g) return;
       if (mode === "fast") return void commit(g);
-      choose(g, { named: notSure, crop: lastCrop.current }, answer);
+      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer);
     },
     choosePrinting: (printing) => {
       const c = choosing;
