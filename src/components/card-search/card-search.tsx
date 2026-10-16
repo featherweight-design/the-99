@@ -105,7 +105,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [attempt, setAttempt] = useState(0);
   const [recents, setRecents] = useState<RecentCard[]>([]);
   const [recentSignals, setRecentSignals] = useState<Record<string, CardSignals> | null>(null);
-  const [active, setActive] = useState(-1);
+  const [moved, setActive] = useState(-1);
   const [returned, setReturned] = useState<string | null>(null);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -221,6 +221,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // What ↑ ↓ and ↵ move through: the results while searching, else the recent cards; nothing offline.
   // Only rows that are drawn: none before their chunk has arrived, none behind a failure panel.
   const list = !online || Layer === null ? [] : searching ? (phase === "failed" ? [] : rows) : recentsFailed ? [] : recentRows;
+  // D2: on the desktop the dropdown opens on recents with the first one active, so ↵ opens it and the arrows move from
+  // there. The phone keeps none: nothing on a touch sheet is keyboard-active.
+  const active = moved === -1 && desktop && !searching && list.length > 0 ? 0 : moved;
 
   const pick = useCallback(
     (from: readonly CardSearchRow[], index: number) => {
@@ -308,7 +311,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         if (list.length === 0) return;
         e.preventDefault();
-        setActive((i) => (e.key === "ArrowDown" ? (i + 1) % list.length : i <= 0 ? list.length - 1 : i - 1));
+        setActive(e.key === "ArrowDown" ? (active + 1) % list.length : active <= 0 ? list.length - 1 : active - 1);
       } else if (e.key === "Enter" && active >= 0) {
         e.preventDefault();
         pick(list, active);

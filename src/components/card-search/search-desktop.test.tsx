@@ -12,6 +12,7 @@ vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 vi.mock("../ui/use-min-width", () => ({ useMinWidth: () => true }));
 
 const { CardSearchRoot } = await import("./card-search");
+const { pushRecent } = await import("../../lib/card-search/recent");
 const { SearchDesktop } = await import("./search-desktop");
 
 function mount(platform: string) {
@@ -96,6 +97,26 @@ describe("the search on the desktop", () => {
     await act(async () => void window.dispatchEvent(new Event("offline")));
     await press({ ctrlKey: true });
     expect(frame()?.textContent).toContain("offline");
+  });
+
+  it("D2: opens on recent cards with the first one active, so ↵ opens it and the arrows move from there", async () => {
+    pushRecent("u1", { oracleId: "b", name: "Beta", imageUri: null, flavorName: null });
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("Win32");
+    await press({ ctrlKey: true });
+    await act(async () => {});
+    expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-0");
+    await act(async () => void fireEvent.keyDown(combobox(), { key: "ArrowDown" }));
+    expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-1");
+  });
+
+  it("D2: nothing is active once a query is typed", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("Win32");
+    await press({ ctrlKey: true });
+    await act(async () => {});
+    await act(async () => void fireEvent.change(combobox(), { target: { value: "al" } }));
+    expect(combobox().getAttribute("aria-activedescendant")).toBeNull();
   });
 
   it("closes on a press outside", async () => {
