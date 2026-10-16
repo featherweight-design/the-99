@@ -70,7 +70,7 @@ read-only from Hugh's account on 2026-10-16. The exceptions:
 ### C3 · Try it on your deck (§Open)
 
 - **Which deck.** The whole card is the press (R2b, option C), and its footer names the deck it opens: the fitting deck the reader opened most recently (E10).
-  - When several decks fit, a quiet `2 more are over ▾` lists them. Picking one is the same press on that deck.
+  - When several decks fit, the footer says so (`Opens HD - Kratos · +2`); there is no menu on the card.
 - **Where it lands.** On the deck (or the tool's own page), with the tool named in the address.
   - The page scrolls the control into view and gives it R1's halo for 2.4 seconds, with no bubble.
   - The parameter is then stripped through `mirrorUrl`.
