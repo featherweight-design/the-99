@@ -454,11 +454,10 @@ export function AccountMenu({
 
   const label = triggerLabel(identity.name);
   const isPopover = panel === "popover";
-  // The rail's trigger is a rail slot, which takes a left nib (bubble to its right); the phone header's points down.
+  // Below the phone header's avatar; above the rail's, which sits at the rail's foot, so the bubble flips (README, M11).
   const afterGame = useMomentAnchor("friends-after-game", {
     eligible: friends && friendsMoment,
     copy: momentsCopy.friendsAfterGame,
-    place: isPopover ? "right" : "below",
   });
   const wrapperRef = useRef<HTMLDivElement>(null);
 
