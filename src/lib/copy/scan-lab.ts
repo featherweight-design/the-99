@@ -47,6 +47,7 @@ export const scanLabCopy = {
     off: "Server matching is off for this account.",
     model: "The server’s index was built by a different model.",
     badEmbedding: "The server couldn’t read this card’s embedding.",
+    unavailable: "Server matching isn’t available. Sign in again, or check it’s on for this account.",
   },
   torch: "Torch",
   tooDark: "Too dark to read a card. Turn on the torch or find more light.",

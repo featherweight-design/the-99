@@ -10,7 +10,7 @@ export type ServerGuess = Guess & { scryfallId: string };
 
 export type LookupResult =
   | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
-  | { kind: "refused"; reason: "signedOut" | "off" | "model" | "badEmbedding" }
+  | { kind: "refused"; reason: "signedOut" | "off" | "model" | "badEmbedding" | "unavailable" }
   | { kind: "failed" };
 
 /** Retries after the first try, and the wait before each (ms). */
@@ -48,11 +48,17 @@ export async function lookupCard(embedding: Float32Array, model: string, deps: D
       const res = await deps.fetch("/api/card-scan/match", {
         method: "POST", headers: { "content-type": "application/json" }, body, cache: "no-store", signal: deps.signal,
       });
+      // A signed-out request never reaches the route: the proxy answers it with Clerk's own redirect (followed here, to
+      // a page that is not JSON) or its 404. So only the route's own JSON is read as an answer; a success that is not
+      // it is unavailable, never retried.
       const refused = REFUSED[res.status];
       if (refused) return { kind: "refused", reason: refused };
       if (res.ok) {
-        const { index, guesses, margin } = (await res.json()) as { index: string; guesses: ServerGuess[]; margin: number | null };
-        return { kind: "match", index, guesses, margin, sure: guesses.length > 0 && marginClears(margin) };
+        const body = (await res.json().catch(() => null)) as { index?: unknown; guesses?: unknown; margin?: unknown } | null;
+        if (!body || typeof body.index !== "string" || !Array.isArray(body.guesses)) return { kind: "refused", reason: "unavailable" };
+        const guesses = body.guesses as ServerGuess[];
+        const margin = typeof body.margin === "number" ? body.margin : null;
+        return { kind: "match", index: body.index, guesses, margin, sure: guesses.length > 0 && marginClears(margin) };
       }
     } catch {
       // the network, or an answer that was not JSON: retried like a server error

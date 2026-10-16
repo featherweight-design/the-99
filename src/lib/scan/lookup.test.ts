@@ -77,4 +77,12 @@ describe("lookupCard", () => {
     expect(await lookupCard(emb, MODEL, { ...d, signal: ctl.signal })).toEqual({ kind: "failed" });
     expect(d.fetch).toHaveBeenCalledTimes(1);
   });
+  it("reads a sign-in redirect, or a page that is not the route's JSON, as unavailable, and never retries it", async () => {
+    const redirected = deps({ ok: true, status: 200, json: async () => ({ signIn: true }) } as never);
+    expect(await lookupCard(emb, MODEL, redirected)).toEqual({ kind: "refused", reason: "unavailable" });
+    const html = deps({ ok: true, status: 200, json: async () => { throw new Error("html"); } } as never);
+    expect(await lookupCard(emb, MODEL, html)).toEqual({ kind: "refused", reason: "unavailable" });
+    expect(redirected.fetch).toHaveBeenCalledTimes(1);
+    expect(html.fetch).toHaveBeenCalledTimes(1);
+  });
 });
