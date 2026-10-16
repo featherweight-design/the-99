@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R2b · Try it, four ways</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+</style>
+</helmet>
+<div style="width:2010px;min-height:3240px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R2b · Try it, four ways · 354 and 300 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">Try it, without the big button</h2>
+    <p class="cap">Hugh’s note on R2: the outlined press takes a lot of each card and reads as a second thing to look at. Options B to D take it off the card body. Each row is one option across the five states a card can be in, at 354 (1280 grid). Option A is R2 as drawn, kept for comparison.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">A</span><span class="t">R2 as drawn · an outlined press</span></div>
+    <p class="cap" style="max-width:1100px">The press is a box of its own, two lines when the deck name is long, with the deck menu and How it works on a row beneath. Clear, and heavy: three rows of controls under every card.</p>
+    <div class="frames">
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="button" fit="auto" w="354" h="470" hint-size="354px,470px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="button" fit="auto" w="354" h="470" hint-size="354px,470px"></dc-import></div>
+      <div><div class="w">none fits</div><dc-import name="ToolCard" tool="topoff" cta="button" fit="auto" w="354" h="470" hint-size="354px,470px"></dc-import></div>
+      <div><div class="w">none fits, a door</div><dc-import name="ToolCard" tool="spares" cta="button" fit="auto" w="354" h="470" hint-size="354px,470px"></dc-import></div>
+      <div><div class="w">needs no deck</div><dc-import name="ToolCard" tool="hmc" cta="button" fit="auto" w="354" h="470" hint-size="354px,470px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">B</span><span class="t">A footer line · Try it → on the deck</span></div>
+    <p class="cap" style="max-width:1100px">One hairline footer: <span class="mono">Try it →</span> in the accent, the deck in mono after it (a menu when more than one fits), How it works at the right. A long deck name truncates (Proposed cuts, here).</p>
+    <div class="frames">
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="slim" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="slim" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits</div><dc-import name="ToolCard" tool="topoff" cta="slim" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits, a door</div><dc-import name="ToolCard" tool="spares" cta="slim" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">needs no deck</div><dc-import name="ToolCard" tool="hmc" cta="slim" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">C</span><span class="t">The whole card is the press</span></div>
+    <p class="cap" style="max-width:1100px">Pressing anywhere on the card is Try it. The footer only says where it opens, with an arrow in a ring; How it works sits above the card’s link so it stays its own press. No deck menu: the most recently opened deck that fits, and the count of the others.</p>
+    <div class="frames">
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="card" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits</div><dc-import name="ToolCard" tool="topoff" cta="card" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits, a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">needs no deck</div><dc-import name="ToolCard" tool="hmc" cta="card" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">D</span><span class="t">A chip on the picture</span></div>
+    <p class="cap" style="max-width:1100px"><span class="mono">Try it →</span> sits on the screenshot’s top-right corner, clear of the haloed control, as if pointing into the screen. The footer names the deck. Over a busy capture it competes with the halo, and on a card with no fit there is nothing on the picture.</p>
+    <div class="frames">
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="chip" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="chip" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits</div><dc-import name="ToolCard" tool="topoff" cta="chip" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">none fits, a door</div><dc-import name="ToolCard" tool="spares" cta="chip" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+      <div><div class="w">needs no deck</div><dc-import name="ToolCard" tool="hmc" cta="chip" fit="auto" w="354" h="430" hint-size="354px,430px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">390</span><span class="t">B, C and D in the phone’s row (300)</span></div>
+    <div class="frames">
+      <div><div class="w">B · several</div><dc-import name="ToolCard" tool="cuts" cta="slim" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">C · several</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">D · several</div><dc-import name="ToolCard" tool="cuts" cta="chip" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">C · none, a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div class="note" style="width:320px"><span class="k">Design’s pick: C</span>
+<span>The card is already the thing a reader is looking at, so making it the press removes the second focal point Hugh named, and it gives the phone the largest target there is. The footer still names the deck, so nothing is opened by surprise.</span>
+<span class="k">What C gives up</span>
+<span>The menu of other decks. The tool itself still works on any deck once opened, and a reader with several decks over 99 is one press from the others. If that matters, B keeps the menu at the cost of a truncated deck name.</span></div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2010,"height":3240}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

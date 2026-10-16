@@ -1,6 +1,6 @@
 # Discovery R2 · READINESS
 
-**Verdict: 🟡 R2, for Hugh's audit.** Every lock in the brief for this round is held (`README-r2.md`, "Brief locks, held").
+**Verdict: 🟡 R2b, for Hugh's audit (R2 plus his notes of 2026-10-16).** Every lock in the brief for this round is held (`README-r2.md`, "Brief locks, held").
 The calls are on `r2/Main.dc.html`. What remains: Hugh's audit, his calls on G11, G13, G18 and G19, `/copy-review` for every
 new string, and the engineering items below.
 
@@ -66,6 +66,8 @@ exceptions). Every board was rendered whole before handover: no broken image, no
   - 390: a modal sheet with the shell's existing sheet behavior.
   - Show me closes the panel first. A screen with no entries shows the empty line (G21).
 - **E14 · The banner's Show me** points at `/about?tab=reference#new` for a returning reader and `/about` (Tools) for a new account. The banner's words are unchanged.
+- **E16 · Cost wording.** `1 credit per run` replaces the shipped `1 credit a run` on the Tuning tile and wherever else it appears, so the showcase and the app agree.
+- **E17 · The note.** It moves from the top of `/about` to the Reference's last row and a dialog or sheet; the `pageTitle` `Welcome to The 99` becomes `A note from the creator`.
 - **E15 · Copy.** `discovery-r2 · copy strings.ts` goes through `/copy-review` before build.
 
 ## About

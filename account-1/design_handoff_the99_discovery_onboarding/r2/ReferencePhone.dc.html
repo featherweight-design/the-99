@@ -104,13 +104,17 @@
           </div>
         </sc-for>
       </section>
+      <a href="#" style="margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:0 18px;border:1px solid #3A3229;border-radius:12px;background:#1E1A15;text-decoration:none">
+        <span><span style="display:block;font-family:'Cinzel',serif;font-size:16px;font-weight:600;color:#EDE6D8">A note from the creator</span><span style="display:block;margin-top:2px;font-size:13px;color:#A59C89">Why The 99 exists, and who it’s for.</span></span>
+        <span style="color:#8B8270;font-size:14px">›</span>
+      </a>
       </sc-if>
     </div>
   </main>
   <div style="position:absolute;left:0;bottom:0"><dc-import name="TabBar" active="none" hint-size="390px,74px"></dc-import></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"q":{"editor":"text","default":""},"h":{"editor":"int","default":3030},"$preview":{"width":390,"height":3030}}'>
+<script type="text/x-dc" data-dc-script data-props='{"q":{"editor":"text","default":""},"h":{"editor":"int","default":3130},"$preview":{"width":390,"height":3130}}'>
 class Component extends DCLogic {
   renderVals() {
     const p = this.props;
@@ -138,7 +142,7 @@ class Component extends DCLogic {
       hits, hitsLabel: `${hits.length} entries mention “${q}”`,
       showNew: !hasQ, news: DATA.new, screens, how,
       index: DATA.screens.map((s) => ({ name: s.name, n: s.n, style: s.id === 'shopping' ? 'color:#EDE6D8;font-weight:500' : 'color:#A59C89' })),
-      frame: `position:relative;width:390px;height:${Number(p.h ?? 3030)}px;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
+      frame: `position:relative;width:390px;height:${Number(p.h ?? 3130)}px;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
     };
   }
 }

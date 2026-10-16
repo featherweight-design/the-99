@@ -12,14 +12,13 @@
 <style>body{margin:0}</style>
 </helmet>
 <div style="{{ frame }}">
-  <dc-import name="Rail" active="none" help="shown" h="{{ h }}" hint-size="62px,5570px"></dc-import>
+  <dc-import name="Rail" active="none" help="shown" h="{{ h }}" hint-size="62px,5670px"></dc-import>
   <main style="flex:1;min-width:0;padding:40px 56px 64px;box-sizing:border-box">
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
       <div>
         <h1 style="margin:0;font-family:'Cinzel',serif;font-size:34px;font-weight:600;color:#EDE6D8">About The 99</h1>
         <p style="margin:8px 0 0;font-size:15px;color:#C0B8A6">Every entry, by the screen it lives on.</p>
       </div>
-      <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A59C89;text-decoration:none;padding:8px 0">Read Hugh’s letter ›</a>
     </div>
     <div role="tablist" aria-label="About" style="display:flex;gap:28px;margin-top:26px;border-bottom:1px solid #2B241B">
       <button type="button" role="tab" aria-selected="false" style="background:none;border:0;padding:10px 2px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:500;color:#A59C89">Tools <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">14</span></button>
@@ -106,6 +105,10 @@
           </div>
         </sc-for>
       </section>
+      <a href="#" style="margin-top:28px;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:0 18px;border:1px solid #3A3229;border-radius:12px;background:#1E1A15;text-decoration:none">
+        <span><span style="display:block;font-family:'Cinzel',serif;font-size:16px;font-weight:600;color:#EDE6D8">A note from the creator</span><span style="display:block;margin-top:2px;font-size:13px;color:#A59C89">Why The 99 exists, and who it’s for.</span></span>
+        <span style="color:#8B8270;font-size:14px">›</span>
+      </a>
       </sc-if>
       </div>
       <nav aria-label="Screens" style="width:230px;flex:none;display:flex;flex-direction:column;gap:2px;position:relative">
@@ -117,7 +120,7 @@
   </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"q":{"editor":"text","default":""},"h":{"editor":"int","default":5570},"$preview":{"width":1280,"height":5570}}'>
+<script type="text/x-dc" data-dc-script data-props='{"q":{"editor":"text","default":""},"h":{"editor":"int","default":5670},"$preview":{"width":1280,"height":5670}}'>
 class Component extends DCLogic {
   renderVals() {
     const p = this.props;
@@ -140,12 +143,12 @@ class Component extends DCLogic {
     });
     const how = ['Brackets', 'Roles and targets', 'Themes', 'Commander recommendations', 'Availability and claims', 'Prices', 'Stand-ins and Find a deck', 'Written text and credits'].map((t) => ({ t }));
     return {
-      h: Number(p.h ?? 5570), q, hasQ, searchBorder: hasQ ? '#CF8745' : '#3A3229',
+      h: Number(p.h ?? 5670), q, hasQ, searchBorder: hasQ ? '#CF8745' : '#3A3229',
       listMode: !hasQ, hitsMode: hasQ && hits.length > 0, noneMode: hasQ && hits.length === 0,
       hits, hitsLabel: `${hits.length} entries mention “${q}”`,
       showNew: !hasQ, news: DATA.new, screens, how,
       index: DATA.screens.map((s) => ({ name: s.name, n: s.n, style: s.id === 'shopping' ? 'color:#EDE6D8;font-weight:500' : 'color:#A59C89' })),
-      frame: `width:1280px;height:${Number(p.h ?? 5570)}px;display:flex;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
+      frame: `width:1280px;height:${Number(p.h ?? 5670)}px;display:flex;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
     };
   }
 }

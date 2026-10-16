@@ -14,161 +14,177 @@
    "x": 0,
    "y": 0,
    "w": 1800,
-   "h": 1440,
+   "h": 1620,
    "title": "R2 · The calls"
   },
   "Showcase.dc.html": {
    "x": 0,
-   "y": 1560,
+   "y": 1740,
    "w": 1800,
-   "h": 4300,
+   "h": 4760,
    "title": "S1 · Tools, the showcase"
   },
   "Tool-Card.dc.html": {
    "x": 0,
-   "y": 5980,
+   "y": 6620,
    "w": 1800,
    "h": 2830,
    "title": "T1–T3 · a tool card and Try it"
   },
   "Help-Deck.dc.html": {
    "x": 0,
-   "y": 8930,
+   "y": 14430,
    "w": 1800,
    "h": 2070,
    "title": "H1 · the ? on the deck page"
   },
   "Help-Shopping.dc.html": {
    "x": 0,
-   "y": 11120,
+   "y": 16620,
    "w": 1800,
    "h": 2070,
    "title": "H2 · the ? on Shopping, and search"
   },
   "Help-Collection.dc.html": {
    "x": 0,
-   "y": 13310,
+   "y": 18810,
    "w": 1800,
    "h": 2070,
    "title": "H3 · the ? on Collection, and no results"
   },
   "Reference.dc.html": {
    "x": 0,
-   "y": 15500,
+   "y": 21000,
    "w": 1800,
-   "h": 5920,
+   "h": 6020,
    "title": "R1 · the Reference, every entry by screen"
   },
   "Reference-Search.dc.html": {
    "x": 0,
-   "y": 21540,
+   "y": 27140,
    "w": 1800,
    "h": 2180,
    "title": "R2–R3 · searching the Reference"
   },
   "Links.dc.html": {
    "x": 0,
-   "y": 23840,
+   "y": 29440,
    "w": 1800,
    "h": 1200,
    "title": "L1–L2 · how the places link"
   },
   "ToolCard.dc.html": {
-   "x": 1960,
+   "x": 2170,
    "y": 0,
    "w": 372,
    "h": 470,
    "title": "Part · a tool card"
   },
   "PhoneShot.dc.html": {
-   "x": 2412,
+   "x": 2622,
    "y": 0,
    "w": 390,
    "h": 520,
    "title": "Part · a real phone screen, the ? and its sheet"
   },
   "HelpSheet.dc.html": {
-   "x": 2882,
+   "x": 3092,
    "y": 0,
    "w": 400,
    "h": 758,
    "title": "Part · the ? panel and sheet"
   },
   "Rail.dc.html": {
-   "x": 3362,
+   "x": 3572,
    "y": 0,
    "w": 62,
    "h": 760,
    "title": "Part · desktop rail, with the ?"
   },
   "MobileHeader.dc.html": {
-   "x": 1960,
+   "x": 2170,
    "y": 880,
    "w": 390,
    "h": 79,
    "title": "Part · phone header, with the ?"
   },
   "TabBar.dc.html": {
-   "x": 2430,
+   "x": 2640,
    "y": 880,
    "w": 390,
    "h": 74,
    "title": "Part · phone tab bar"
   },
   "Moment.dc.html": {
-   "x": 2900,
+   "x": 3110,
    "y": 880,
    "w": 360,
    "h": 96,
    "title": "Part · R1’s moment bubble"
   },
   "DeckDesk.dc.html": {
-   "x": 1960,
+   "x": 2170,
    "y": 1096,
    "w": 1280,
    "h": 760,
    "title": "Part · deck page 1280"
   },
   "CollectionDesk.dc.html": {
-   "x": 1960,
+   "x": 2170,
    "y": 1976,
    "w": 1280,
    "h": 760,
    "title": "Part · Collection 1280"
   },
   "ShowcaseDesk.dc.html": {
-   "x": 1960,
+   "x": 2170,
    "y": 2856,
    "w": 1280,
-   "h": 3950,
+   "h": 4410,
    "title": "Part · About, Tools, 1280"
   },
   "ShowcasePhone.dc.html": {
-   "x": 3320,
+   "x": 3530,
    "y": 2856,
    "w": 390,
-   "h": 3110,
+   "h": 3870,
    "title": "Part · About, Tools, 390"
   },
   "ReferenceDesk.dc.html": {
-   "x": 1960,
-   "y": 6926,
+   "x": 2170,
+   "y": 7386,
    "w": 1280,
-   "h": 5570,
+   "h": 5670,
    "title": "Part · About, Reference, 1280"
   },
   "ReferencePhone.dc.html": {
-   "x": 3320,
-   "y": 6926,
+   "x": 3530,
+   "y": 7386,
    "w": 390,
-   "h": 3030,
+   "h": 3130,
    "title": "Part · About, Reference, 390"
+  },
+  "Try-Options.dc.html": {
+   "x": 0,
+   "y": 9570,
+   "w": 2010,
+   "h": 3240,
+   "title": "R2b · Try it, four ways"
+  },
+  "Note.dc.html": {
+   "x": 0,
+   "y": 12930,
+   "w": 1800,
+   "h": 1380,
+   "title": "R2b · A note from the creator"
   }
  },
  "order": [
   "Main.dc.html",
   "Showcase.dc.html",
   "Tool-Card.dc.html",
+  "Try-Options.dc.html",
+  "Note.dc.html",
   "Help-Deck.dc.html",
   "Help-Shopping.dc.html",
   "Help-Collection.dc.html",

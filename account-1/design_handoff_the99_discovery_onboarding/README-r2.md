@@ -43,7 +43,7 @@ read-only from Hugh's account on 2026-10-16. The exceptions:
 
 - **Tools** (the default) and **Reference**, as tabs on `/about`.
 - The account menu's `About The 99` still opens About, on Tools. No row is added anywhere.
-- Hugh's letter stays, behind `Read Hugh’s letter ›` at the top of both tabs, so neither tab opens on a wall of text.
+- The letter is now `A note from the creator` (R2b, below).
 - The four chapters give way to screens in the Reference. Chapters are the order a reader learns the app; screens are where they stand when they need it. Hugh's complaint was snippets without context, and the screen is the context.
 
 ### C2 · The showcase: 14 tools in 5 groups (§Open: which tools, order, grouping)
@@ -120,6 +120,27 @@ read-only from Hugh's account on 2026-10-16. The exceptions:
 - **R1's moments** point at their control only; the ? on that screen lists the tool's entry.
 - Board L2 lists every end and what is there instead of a dead end.
 
+## R2b · after Hugh's notes (2026-10-16)
+
+- **Try it, four ways** (`r2/Try-Options.dc.html`). R2's outlined press was heavy and read as a second thing to look at. The board draws four options across the five states a card can be in (one deck fits, several fit, none fits, none fits with a door, needs no deck), at 354 and 300:
+  - **A.** R2 as drawn, kept for comparison.
+  - **B.** A footer line: `Try it →` in the accent, then the deck in mono (a menu when several fit), and How it works.
+  - **C.** The whole card is the press. The footer says where it opens, with an arrow in a ring; How it works stays its own press. There is no deck menu.
+  - **D.** A `Try it →` chip on the picture's top-right corner.
+  - **Design's pick is C.** Making the card the press removes the second focal point, gives the phone its largest target, and still names the deck. What it gives up is choosing another deck from the card. Hugh picks.
+- **The drawer stays** as drawn (H1–H3).
+- **A note from the creator** (`r2/Note.dc.html`).
+  - The app names no one outside the note itself, so the letter is titled `A note from the creator`; the signature stays inside it.
+  - It leaves the top of About. It is the last row of the Reference, after How it works, and it opens as a dialog (1280) or a sheet (390).
+  - A new player meets it once, as the last step of the first-run tour; that step is drawn in R3.
+  - The text (`aboutCopy.pageIntro`) is unchanged.
+- **Written for you.** Tools gains a sixth section that groups everything that uses credits.
+  - The five spenders, from the credits entry: the Overview, Suggested changes, Look deeper, Help me choose with "Anything else?", and Which deck needs it most?
+  - Each has where it lives, one line, and its cost: `1 credit each`, `1 credit per run`, `per look`, `per search`, `per read`.
+  - It closes with the free line from the credits entry and `How credits work ›`. Each spender follows its own switch, as the credits entry's lines do.
+  - Buying credits joins this section with the payments designs; nothing about buying is drawn here.
+- **`1 credit per run`.** It replaces `1 credit a run` on the card and in the copy. The shipped Tuning tile still reads `1 credit a run`, so the plan changes it too (E16).
+
 ## Screens: every entry's `screen` (E8)
 
 | Screen | Entries |
@@ -151,9 +172,12 @@ with an `ABOUT_VERSION` bump is Hugh's call (G19).
 
 ## Gaps for Hugh and the plan
 
+- **G22 · Try it.** A, B, C or D (Design picks C).
+- **G23 · The note in onboarding** is drawn in R3. Until R3 ships, the Reference row is its only way in.
+
 - **G11 · One theme for screenshots.** The shipped pictures are captured in the default theme (Amonkhet). A reader in another theme sees Amonkhet pictures in a frame. The alternative is capturing every tool in all six themes. Hugh's call.
 - **G12 · Two pictures are rebuilds.** Hugh's staging has no deck under 99 and no friend with a spare. Top off's and Friends' spares' pictures are rebuilt from `src/` and are captured for real at build (E9).
-- **G13 · Cost chips.** Drawn only where the app already shows a cost: Top off, Proposed cuts and Mana Balance `free`, and Suggested changes `1 credit a run`. Help me choose, Find a deck and the others draw none until engineering confirms what they cost.
+- **G13 · Cost chips.** Drawn only where the app already shows a cost: Top off, Proposed cuts and Mana Balance `free`, and Suggested changes `1 credit per run`. Help me choose, Find a deck and the others draw none until engineering confirms what they cost.
 - **G14 · Collection Sync's control appears after a file is read.** Its card shows the upload page with the drop zone haloed, and Try it is `Upload a file →`.
   - With no earlier upload (the base Sync needs), the card says so and still offers the upload.
 - **G15 · The ? scrolls away on the phone.** It sits in the header, which is not sticky. Putting it in the deck's sticky add bar would add to the deck page, which the brief rules out.
