@@ -44,7 +44,14 @@ function DoorMark({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function CollectionEmptyDoors({ ways = null }: { ways?: { precons: boolean } | null } = {}) {
+export function CollectionEmptyDoors({
+  ways = null,
+  scan = false,
+}: {
+  ways?: { precons: boolean } | null;
+  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  scan?: boolean;
+} = {}) {
   const c = collectionEditCopy.empty;
   const [adding, setAdding] = useState(false);
   const saved = useRef(false);
@@ -88,6 +95,7 @@ export function CollectionEmptyDoors({ ways = null }: { ways?: { precons: boolea
           mode="add"
           returnFocusRef={trigger}
           totalCards={0}
+          scan={scan}
           // The page behind the sheet turns into the browse list once the collection exists, which
           // would unmount the sheet and its saved state with it; the refresh waits for the close.
           onSaved={() => {

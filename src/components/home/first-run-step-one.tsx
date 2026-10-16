@@ -22,8 +22,11 @@ export function FirstRunStepOne({
   fan,
   addByHand = false,
   ways = null,
+  scan = false,
 }: {
   fan: React.ReactNode;
+  /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
+  scan?: boolean;
   addByHand?: boolean;
   /**
    * The no-collection entry's ways group under the upload (S1), or null for the shipped card. With it, `Add cards by
@@ -121,6 +124,7 @@ export function FirstRunStepOne({
           mode="add"
           returnFocusRef={trigger}
           totalCards={0}
+          scan={scan}
           // The first save turns Home from first run into the dashboard, which would unmount the
           // sheet and its saved state; the refresh waits for the close.
           onSaved={() => {

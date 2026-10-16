@@ -96,4 +96,43 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     expect(screen.queryByTestId("fake-scanner")).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("returns focus to the search when Escape closes the scanner", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    const search = document.querySelector<HTMLInputElement>("input")!;
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    // Focus is inside the scanner, as it is once the scanner opens; Escape unmounts what holds it.
+    const inside = screen.getByRole("button", { name: "close scanner" });
+    inside.focus();
+    expect(document.activeElement).toBe(inside);
+    fireEvent.keyDown(inside, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(search));
+  });
+
+  it("holds Save while a scanned card's printings are still loading, so the save cannot leave it out", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalledTimes(1));
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    const save = await screen.findByRole("button", { name: copy.save(1) });
+    expect((save as HTMLButtonElement).disabled).toBe(true);
+    land(TWO);
+    await waitFor(() => expect((screen.getByRole("button", { name: copy.save(2) }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it("clears the search when a scanned card lands, so its results never cover the printing step", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    const search = document.querySelector<HTMLInputElement>("input")!;
+    fireEvent.change(search, { target: { value: "sol" } });
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "normal add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
+    expect(document.querySelector<HTMLInputElement>("input")!.value).toBe("");
+  });
 });

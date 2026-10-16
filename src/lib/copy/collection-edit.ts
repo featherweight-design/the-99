@@ -537,6 +537,8 @@ export const collectionEditCopy = {
     close: "Close the scanner",
     /** A lookup that failed: a ToastFrame, and the viewfinder keeps scanning. */
     lookupFailed: "Couldn’t check that card. Hold it up again.",
+    /** The detector or embedder would not load, or kept failing: nothing is being read. */
+    noStart: "The scanner couldn’t start. Close it and try again.",
     /** No connection: scanning needs one now, and search still works once it is back. */
     offlineTitle: "You’re offline",
     offlineBody: "Scanning needs a connection to check each card. Search works again once you’re back online.",

@@ -14,25 +14,27 @@ type Pipe = ReturnType<typeof framePipeline>;
  * camera has no size) reads as no card.
  */
 export function useFrameReader(): (video: HTMLVideoElement) => Promise<FrameRead> {
-  const sessions = useRef(sessionHolder<OrtSession>());
+  // One holder per load attempt: a failed attempt closes its own, so a model that loaded beside one that failed (or
+  // finishes loading after) is released rather than kept for a pipeline that will never run.
+  const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
   const pipe = useRef<Promise<Pipe> | null>(null);
   const alive = useRef(true);
 
   useEffect(() => {
-    const held = sessions.current;
-    held.open();
     alive.current = true;
     return () => {
       alive.current = false;
       pipe.current = null;
-      held.close();
+      sessions.current?.close();
+      sessions.current = null;
     };
   }, []);
 
   return useCallback(async (video: HTMLVideoElement): Promise<FrameRead> => {
     if (!pipe.current) {
-      const held = sessions.current;
-      pipe.current = (async () => {
+      const held = sessionHolder<OrtSession>();
+      sessions.current = held;
+      const attempt = (async () => {
         const ort = await loadOrt();
         const models = await loadModels(ort, (s) => {
           if (!held.accept(s)) throw new Error("the scanner closed");
@@ -40,9 +42,12 @@ export function useFrameReader(): (video: HTMLVideoElement) => Promise<FrameRead
         });
         return framePipeline(ort, models, (fn) => held.use(fn));
       })();
-      // A failed load is tried again on the next frame rather than kept as a rejected promise.
-      pipe.current.catch(() => {
-        pipe.current = null;
+      pipe.current = attempt;
+      // A failed load is tried again on the next frame, with a holder of its own.
+      attempt.catch(() => {
+        held.close();
+        if (sessions.current === held) sessions.current = null;
+        if (pipe.current === attempt) pipe.current = null;
       });
     }
     const r = await (await pipe.current).read(video, () => alive.current);

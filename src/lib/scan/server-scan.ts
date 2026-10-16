@@ -22,6 +22,9 @@ export type ServerState =
 
 type Deps = Pick<Parameters<typeof lookupCard>[2], "fetch" | "wait"> & { now: () => number };
 
+/** One idle state, handed back on every frame that suppresses a match, so a caller storing it re-renders once. */
+const IDLE: ServerState = Object.freeze({ kind: "idle" });
+
 export function serverScanner(model: string, deps: Deps, onState: (s: ServerState) => void) {
   let scan = startStableScan(deps.now());
   let inFlight: AbortController | null = null;
@@ -65,7 +68,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       // A match answers for the card that settled, as the tracker still holds it (it follows the card's own slow
       // drift frame to frame). While another card is settling in its place, or nothing holds, this frame is not that
       // card, so the match is not handed back with it.
-      if (state.kind === "match" && !(scan.value && sameCard(scan.value, f))) return { kind: "idle" };
+      if (state.kind === "match" && !(scan.value && sameCard(scan.value, f))) return IDLE;
       return state;
     },
     /** Abandon any lookup in flight (the toggle went off, or the page was left). */

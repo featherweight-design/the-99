@@ -36,9 +36,10 @@ export function CardScanner({
   onNoneOfThese?: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
-  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded") => {
+  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded" | "noStart") => {
     if (kind === "notAdded") return setNotice(collectionEditCopy.add.printingsFailed);
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+    if (kind === "noStart") return setNotice(offline ? copy.offlineBody : copy.noStart);
     // A refusal (signed out, switch off) and a failure read the same to a player: the card was not checked.
     setNotice(offline ? copy.offlineBody : copy.lookupFailed);
   }, []);

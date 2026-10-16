@@ -119,6 +119,11 @@ function AddMode({
   const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
   const [phase, setPhase] = useState<Phase>("editing");
+  // The phase as a scanned add's await sees it, which a closure from before the save would not.
+  const phaseRef = useRef<Phase>("editing");
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
   // `went`: what the block is built from, so its foot can follow each row's Change (`whereItWent`).
   const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string; went: WentInputs | null } | null>(null);
   const [discarding, setDiscarding] = useState(false);
@@ -203,16 +208,22 @@ function AddMode({
   }, [pickerFor]);
 
   // Escape and the close button share one answer, in order: the question, the picker, the list.
+  // Every way out of the scanner (✕, Review, Escape, Back) puts focus back on the search it was opened beside.
+  const closeScanner = useCallback(() => {
+    setScanning(false);
+    queueMicrotask(() => searchRef.current?.focus());
+  }, []);
+
   const requestClose = useCallback(() => {
     // A write in flight cannot be called back, so it cannot be discarded either.
     if (saving) return;
     // Escape and Back close the scanner first, back to the list it fills.
-    if (scanning) return setScanning(false);
+    if (scanning) return closeScanner();
     if (discarding) return setDiscarding(false);
     if (pickerFor !== null) return cancelPicker();
     if (dirty) return setDiscarding(true);
     onClose();
-  }, [saving, scanning, discarding, pickerFor, cancelPicker, dirty, onClose]);
+  }, [saving, scanning, closeScanner, discarding, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
@@ -255,7 +266,11 @@ function AddMode({
    * Normal leaves the line without one, and the sheet's own printing step asks for it once the scanner closes. The
    * update is functional, because adds arrive faster than this component re-renders.
    */
+  const listRead = () => phaseRef.current === "saving" || phaseRef.current === "saved";
+
   async function addScanned(guess: ScanGuess, mode: ScanMode): Promise<boolean> {
+    // A save in flight (or done) has already read the list: a card scanned now would land behind it, unsaved.
+    if (listRead()) return false;
     setScanPending((n) => n + 1);
     let choices: PrintingChoice[] = [];
     try {
@@ -266,17 +281,17 @@ function AddMode({
       setScanPending((n) => n - 1);
     }
     // The scanner says this one, over its own feed; the sheet's notice would sit under it on a phone.
-    if (choices.length === 0) return false;
+    if (choices.length === 0 || listRead()) return false;
     const id = crypto.randomUUID();
+    // As a search pick does, a scanned card clears the query: its results would cover the printing step it may open.
+    setQuery("");
+    setResults([]);
+    setSearched(null);
     const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices };
     setLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
     return true;
   }
 
-  function closeScanner() {
-    setScanning(false);
-    queueMicrotask(() => searchRef.current?.focus());
-  }
 
 
   /** Copies of each card on the list, for the scanner's tray and its "again". */
@@ -320,7 +335,8 @@ function AddMode({
   }
 
   async function save() {
-    if (!canSave(lines) || saving) return;
+    if (!canSave(lines) || saving || scanPending > 0) return;
+    phaseRef.current = "saving";
     setPhase("saving");
     setNotice(null);
     const payload = toPayload(lines);
@@ -572,7 +588,8 @@ function AddMode({
             </span>
             <button
               type="button"
-              disabled={!canSave(lines) || saving}
+              // A scanned card whose printings are still loading is not on the list yet: Save waits for it.
+              disabled={!canSave(lines) || saving || scanPending > 0}
               onClick={() => void save()}
               className={`h-[46px] cursor-pointer rounded-[10px] px-[22px] text-[15px] font-semibold disabled:cursor-default disabled:opacity-40 md:h-auto md:rounded-[8px] md:px-[20px] md:py-[11px] md:text-[14px] ${PRIMARY}`}
             >

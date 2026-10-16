@@ -35,12 +35,17 @@ function setup(
     storage: null,
     ...over,
   };
-  const onAdd = vi.fn(async () => true);
+  // The sheet's list, as the sheet would keep it: an add puts the card on it.
+  const list = { current: listed };
+  const onAdd = vi.fn(async (g: { oracleId: string }) => {
+    list.current = new Map(list.current).set(g.oracleId, (list.current.get(g.oracleId) ?? 0) + 1);
+    return true;
+  });
   const onProblem = vi.fn();
   // A fresh callback every render, as an inline caller passes: the problem must still be said once.
-  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k), listed));
+  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k), list.current));
   act(() => hook.result.current.attachVideo(document.createElement("video")));
-  return { hook, onAdd, onProblem, fetch };
+  return { hook, onAdd, onProblem, fetch, list };
 }
 
 describe("useCardScan", () => {
@@ -113,7 +118,7 @@ describe("useCardScan", () => {
 
   it("says nothing is on the list when the add could not land, and counts nothing", async () => {
     const { hook, onAdd, onProblem } = setup();
-    onAdd.mockResolvedValueOnce(false);
+    onAdd.mockImplementationOnce(async () => false);
     await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
     await act(async () => hook.result.current.add());
     expect(onProblem).toHaveBeenCalledWith("notAdded");
@@ -130,5 +135,37 @@ describe("useCardScan", () => {
     const { hook } = setup();
     await waitFor(() => expect(hook.result.current.screen.kind).toBe("scanning"));
     expect(hook.result.current.torch).toEqual({ available: false, on: false });
+  });
+
+  it("reads the sheet's list live, so a line removed while scanning is no longer a copy on it", async () => {
+    const { hook, list } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
+    expect(hook.result.current.count).toBe(2);
+    list.current = new Map();
+    hook.rerender();
+    expect(hook.result.current.count).toBe(0);
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: null } }), { timeout: 4000 });
+  });
+
+  it("withdraws an answer once a different card is in the frame, so Add never takes the card before it", async () => {
+    const other = new Float32Array(EMBED_DIM);
+    other[1] = 1;
+    let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+    const { hook } = setup({ readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    frame = { frame: { kind: "card", embedding: other }, cardInView: true, dark: false };
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } }), { timeout: 4000 });
+  });
+
+  it("tells the player once when reads keep failing, and stands no answer meanwhile", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { hook, onProblem } = setup({ readFrame: () => Promise.reject(new Error("model failed to load")) });
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("noStart"), { timeout: 4000 });
+      await act(async () => vi.advanceTimersByTimeAsync(20000));
+      expect(onProblem.mock.calls.filter(([k]) => k === "noStart")).toHaveLength(1);
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

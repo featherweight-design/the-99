@@ -17,6 +17,10 @@ export type FrameRead = { frame: ScanFrame; cardInView: boolean; dark: boolean }
 export const ADDED_MS = 800;
 /** How long frames must stay dark before the dark line shows. */
 export const DARK_HOLD_MS = 1000;
+/** Failed reads in a row before the player is told the scanner cannot start. */
+export const READ_FAILURES_TOLD = 3;
+
+const NO_LIST: ReadonlyMap<string, number> = new Map();
 
 export type CardScanDeps = {
   /** Reads the video's current frame. Resolves when the detector and embedder are done with it. */
@@ -56,15 +60,22 @@ export function useCardScan(
   deps: CardScanDeps,
   /** Puts the card on the list; answers false when it could not (its printings would not load). */
   onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>,
-  onProblem: (kind: "failed" | "refused" | "notAdded") => void,
-  /** Copies already on the list when the scanner opens, by oracle id, so the tray and "again" start from the list. */
-  listed: ReadonlyMap<string, number> = new Map(),
+  onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart") => void,
+  /** Copies on the sheet's list, by oracle id, live: the tray and "again" read the list, which the desktop sheet can
+   * still edit while the scanner is open. */
+  listed: ReadonlyMap<string, number> = NO_LIST,
 ): CardScan {
   // The caller's deps are read through a ref, so a new object each render never restarts the camera or the loop.
   const depsRef = useRef(deps);
   useEffect(() => {
     depsRef.current = deps;
   });
+  // Read through a ref by the read loop, which must not restart when the caller passes a new function.
+  const onProblemRef = useRef(onProblem);
+  useEffect(() => {
+    onProblemRef.current = onProblem;
+  });
+
   const now = useCallback(() => (depsRef.current.now ?? (() => performance.now()))(), []);
   const [mode, setModeState] = useState<ScanMode>(() => readScanMode(deps.storage === undefined ? safeLocalStorage() : deps.storage));
   const [blocked, setBlocked] = useState(false);
@@ -72,7 +83,6 @@ export function useCardScan(
   const [read, setRead] = useState<{ cardInView: boolean; dark: boolean }>({ cardInView: false, dark: false });
   const [held, setHeld] = useState<ScanGuess | null>(null);
   const [added, setAdded] = useState<{ name: string; imageUri: string | null } | null>(null);
-  const [onList, setOnList] = useState<Map<string, number>>(() => new Map(listed));
   const [lastAdded, setLastAdded] = useState<{ oracleId: string; emptiedSince: boolean } | null>(null);
   const [dismissed, setDismissed] = useState<object | null>(null);
   // Dark only once a dark frame has held for `DARK_HOLD_MS` (READINESS: "for about 1s"), so one dim frame never
@@ -119,15 +129,24 @@ export function useCardScan(
       setServer,
     );
     (async () => {
+      let failures = 0;
       while (!stop) {
         const t = now();
         let r: FrameRead;
         try {
           r = await depsRef.current.readFrame(videoEl);
         } catch {
-          await new Promise((res) => setTimeout(res, 250));
+          if (stop) break;
+          // The models would not load or a read threw: nothing on screen is being read, so no answer stands, and
+          // the player is told once rather than left holding a card up. It keeps trying, further apart.
+          failures++;
+          if (failures === READ_FAILURES_TOLD) onProblemRef.current("noStart");
+          setRead({ cardInView: false, dark: false });
+          setServer(scanner.frame({ kind: "none" }, now()));
+          await new Promise((res) => setTimeout(res, Math.min(4000, 250 * 2 ** Math.min(failures, 4))));
           continue;
         }
+        failures = 0;
         if (stop) break;
         const at = now();
         if (!r.dark) darkSince.current = null;
@@ -135,7 +154,9 @@ export function useCardScan(
         const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
-        scanner.frame(r.frame, now(), t);
+        // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
+        // its callback, so a press never adds the card that was in view before this one.
+        setServer(scanner.frame(r.frame, now(), t));
         // Always hand the browser a turn: a read that answers at once (the camera has no size yet, or no card)
         // would otherwise spin this loop on resolved promises and starve the very events that give the video its size.
         await nextFrame();
@@ -161,7 +182,7 @@ export function useCardScan(
     return () => clearTimeout(t);
   }, [added]);
 
-  const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList, lastAdded, dismissed };
+  const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList: listed, lastAdded, dismissed };
   const screen = scanScreen(inputs);
 
   // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
@@ -172,7 +193,6 @@ export function useCardScan(
         onProblem("notAdded");
         return;
       }
-      setOnList((m) => new Map(m).set(g.oracleId, (m.get(g.oracleId) ?? 0) + 1));
       setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
       setAdded({ name: g.name, imageUri: g.imageUri });
     },
@@ -192,7 +212,7 @@ export function useCardScan(
     screen,
     mode,
     torch: { available: torch.handle?.available ?? false, on: torch.on },
-    count: [...onList.values()].reduce((a, b) => a + b, 0),
+    count: [...listed.values()].reduce((a, b) => a + b, 0),
     flipTo: added?.imageUri ?? null,
     attachVideo: setVideoEl,
     setMode,

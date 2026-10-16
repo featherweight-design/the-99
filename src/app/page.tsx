@@ -32,6 +32,7 @@ import { aboutSeen } from "../lib/about/read";
 import { visibleEntries, type SeenState } from "../lib/about/visible";
 import { noCollectionEntryEnabled } from "../lib/collection/edit-flag";
 import { preconsEnabled } from "../lib/precons/flag";
+import { cardScanEnabled } from "../lib/card-scan/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
@@ -253,6 +254,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         addByHand={collectionEditEnabled(env)}
         about={about}
         ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
+        scan={cardScanEnabled(env)}
       />
     );
   }
