@@ -109,7 +109,7 @@ function DesktopFrame() {
         {/* The caret back to the rail's slot, as the lock note draws it. */}
         <span
           aria-hidden
-          className="absolute top-[18px] -left-[6px] z-10 h-[10px] w-[10px] rotate-45 border-b border-l border-solid border-[color:var(--accent)] bg-[color:var(--bg)]"
+          className="absolute top-[18px] -left-[6px] z-10 h-[10px] w-[10px] rotate-45 border-b border-l border-solid border-[color:var(--accent)] border-b-[color:var(--accent)] border-l-[color:var(--accent)] bg-[color:var(--bg)]"
         />
         <div className="rounded-[10px] border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
           <SearchField
