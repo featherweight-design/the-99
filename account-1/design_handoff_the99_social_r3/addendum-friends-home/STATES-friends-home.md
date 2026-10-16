@@ -8,10 +8,11 @@ Low Sun (the default theme), and the section and row are drawn in all six themes
 | State | Drawn | Rule |
 |---|---|---|
 | Switch off (`SOCIAL_FRIENDS_ENABLED`) | — | No section, no space kept. Home as shipped. |
-| No friends | H1, P1 | `FRIENDS`; your seat and three dashed seats (`aria-hidden`); one line; Add a friend. No /friends link. |
-| One friend | H2, P2 | `FRIENDS · 1`, `All friends ›`; one face; Add a friend. |
-| Two to four friends | rule (H3's slots) | Every face, in /friends' order (by name). |
-| Five or more (overflow) | H3, P3 | Three faces, then `+N` (`aria-hidden`; the heading carries the total). |
+| No friends | H1, P1 | `FRIENDS`; your seat and four dashed seats (`aria-hidden`); one line; Add a friend. No /friends link. |
+| One friend | H2, P2 | `FRIENDS · 1`, `All friends ›`; one face, then four empty seats to the row's end; Add a friend. |
+| Two to five friends | rule | Every face, in /friends' order (by name), then empty seats to the end of the row. |
+| Six or more (overflow) | H3, P3 | Four faces, then `+N` (`aria-hidden`; the heading carries the total). |
+| Phone placement | P1–P4 (top), P5 (option B) | First under the header buttons and banner; Commitments stays last. |
 | A friend link open, no friends | H4, P4 | `Friend link open · 6 days left · Show` under the line; the next empty seat carries the diamond. |
 | A link open, under a day | rule | `Under a day left` in `--warning`. |
 | Two or more links open | rule | `3 friend links open · See them ›` to /friends. |

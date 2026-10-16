@@ -32,9 +32,9 @@ class Component extends DCLogic {
     return {
       theme: this.props.theme || 'amonkhet',
       frames: [
-        { id: 'H1', title: 'No friends', note: 'Your seat and three empty ones, one line, Add a friend. No link to /friends yet.', state: 'none', banner: false },
-        { id: 'H2', title: 'One friend, with the banner up', note: 'The banner keeps its place over both columns. Friends never moves above it.', state: 'one', banner: true },
-        { id: 'H3', title: 'Seven friends: the overflow', note: 'Three faces, then +4. The heading carries the count; All friends › is the way to the rest.', state: 'many', banner: false },
+        { id: 'H1', title: 'No friends', note: 'Your seat and four empty ones across the column, one line, Add a friend. No link to /friends yet.', state: 'none', banner: false },
+        { id: 'H2', title: 'One friend, with the banner up', note: 'Colin, then four empty seats: the row always spans the column. The banner keeps its place above both columns.', state: 'one', banner: true },
+        { id: 'H3', title: 'Seven friends: the overflow', note: 'Five columns across the 316 column: four faces, then +3. The heading carries the count.', state: 'many', banner: false },
         { id: 'H4', title: 'A friend link open, no friends yet', note: 'The link’s time left and Show sit under the line. The next empty seat carries the diamond.', state: 'pending', banner: false },
       ],
     };

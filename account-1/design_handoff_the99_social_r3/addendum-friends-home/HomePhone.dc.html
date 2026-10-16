@@ -31,6 +31,9 @@
   </sc-if>
 
   <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px">
+    <sc-if value="{{ top }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-bottom:10px"><dc-import name="Friends" theme="{{ theme }}" state="{{ state }}" col="{{ false }}" phone="{{ true }}" hint-size="358px,190px"></dc-import></div>
+    </sc-if>
     <span style="{{ s.kick }}">READY TO BUILD</span>
     <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
       <div style="{{ s.hero }}">
@@ -46,6 +49,9 @@
       </div>
     </sc-for>
     <div style="display:flex;align-items:center"><span style="{{ s.more }}">12 more scored 70 or better</span><a href="#" style="{{ s.ghostSm }}">All commanders</a></div>
+    <sc-if value="{{ mid }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:6px"><dc-import name="Friends" theme="{{ theme }}" state="{{ state }}" col="{{ false }}" phone="{{ true }}" hint-size="358px,190px"></dc-import></div>
+    </sc-if>
     <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="{{ s.kick }}">PICK UP WHERE YOU LEFT OFF</span><span style="{{ s.cap }}">last touched</span></div>
     <sc-for list="{{ resume }}" as="r" hint-placeholder-count="4">
       <a href="#" style="{{ s.resume }}">
@@ -56,12 +62,12 @@
         </span>
       </a>
     </sc-for>
-    <dc-import name="Friends" theme="{{ theme }}" state="{{ state }}" col="{{ true }}" phone="{{ true }}" hint-size="358px,420px"></dc-import>
+    <dc-import name="Friends" theme="{{ theme }}" state="{{ state }}" col="{{ true }}" friends="{{ end }}" phone="{{ true }}" hint-size="358px,420px"></dc-import>
   </div>
   <dc-import name="PhoneChrome" theme="{{ theme }}" part="tabs" hint-size="390px,74px"></dc-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["none","one","four","many","pending","pendingSoon"],"default":"many"},"banner":{"editor":"boolean","default":false},"$preview":{"width":390,"height":2060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["none","one","four","many","pending","pendingSoon"],"default":"many"},"banner":{"editor":"boolean","default":false},"place":{"editor":"enum","options":["top","mid","end"],"default":"top"},"$preview":{"width":390,"height":2060}}'>
 class Component extends DCLogic {
   renderVals() {
     const TH = {
@@ -110,6 +116,7 @@ class Component extends DCLogic {
     };
     return {
       theme, s, banner, state: p.state || 'many',
+      top: (p.place || 'top') === 'top', mid: p.place === 'mid', end: p.place === 'end',
       heroes: [
         { name: 'Zimone, Infinite Analyst', type: 'Legendary Creature — Human Wizard', fit: '84', fits: '212', art: '/_blob/2d6f874a494e6f1abf5da2904d33be25' },
         { name: 'Giada, Font of Hope', type: 'Legendary Creature — Angel', fit: '81', fits: '198', art: '/_blob/7d3c5a2e7417781f6f5dec087ccf9548' },

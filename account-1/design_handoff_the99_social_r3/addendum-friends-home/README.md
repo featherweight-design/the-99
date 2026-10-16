@@ -1,6 +1,6 @@
 # The 99 — Friends on Home (Social R3 addendum) · design handoff, R1
 
-`design_handoff_the99_social_r3/addendum-friends-home/` · 2026-10-16 · account 1 · **R1, for audit. Not approved.**
+`design_handoff_the99_social_r3/addendum-friends-home/` · 2026-10-16 · account 1 · **R2, for audit. Not approved.**
 
 A light addendum. Home gains a permanent Friends section, and the first-run checklist gains a Friends row. Both sit
 behind `SOCIAL_FRIENDS_ENABLED`. Phone and desktop, in all six themes.
@@ -41,15 +41,28 @@ The canvas is live as a Design artifact in account 1: `The 99 - Friends on Home 
 
 ## The answer in one line
 
-Friends is the last section on Home at both widths: under Commitments in the right column at 1280, after Commitments at
-390. It is a section, not a card: a mono label, up to four faces, one line, and one Add a friend. On the checklist it is
+At 1280 Friends sits under Commitments in the right column; at 390 it is on the first screen, under the header buttons.
+It is a section, not a card: a mono label, a row of five seats that always spans the width, and one Add a friend. On the checklist it is
 an unnumbered row under step 3, live from the first visit, done at one friend.
 
 ---
 
 ## Decisions log
 
-### 1. Where the section sits (Open 1)
+### R2 (Hugh's notes on R1, 2026-10-16)
+
+- **R2.1 · Phone: Friends moves up (P1–P4).** R1 put it last, after Commitments, about 1,700px down the page. It now sits
+  first under the header buttons (and the banner, when it shows), above Ready to build, so it is on the first screen.
+  Commitments stays last. Desktop is unchanged: the right column is already on the first screen. The two widths now
+  order the blocks differently, which `dashboard.tsx` does today only by one DOM order; engineering draws Friends in
+  two places or reorders with CSS `order` at the 1180 split (G8). **P5** draws the alternative for Hugh: after Ready
+  to build, before Pick up where you left off.
+- **R2.2 · The faces row fills the width (H2, H3, P2, P3).** R1's four slots left the right of the column empty. The
+  row is now five slots set flush to both edges (`space-between`; 52 wide at 1280, 56 at 390). Five friends or fewer:
+  every face, then empty seats to the end of the row, the same dashed seats as the no-friends table. Six or more: four
+  faces, then `+N`. So the row reads as one full table in every state. This supersedes decision 2's cap of four.
+
+### 1. Where the section sits (Open 1) — R1; the phone half is superseded by R2.1
 
 - **1280: the right column, under Commitments.** The column `dashboard.tsx` gives Commitments (316, from 1180) takes
   Friends under it, with the column's own 11px gap and the same mono label. The left column stays the deck work, Ready
@@ -66,7 +79,7 @@ an unnumbered row under step 3, live from the first visit, done at one friend.
 - **Zero decks and no cards:** the section shows on the dashboard in every one of its shapes (zero decks with
   `HomeDecksZero`, decks and no cards). The checklist is first run's only page, and it carries the row (3).
 
-### 2. How many faces before it overflows (Open 2)
+### 2. How many faces before it overflows (Open 2) — R1; superseded by R2.2
 
 - **Four slots, at both widths.** Four friends or fewer: every face. Five or more: three faces, then `+N` for the rest
   (seven friends: three faces and `+4`). The row never grows, wraps or scrolls, and it is the same at 390 and 1280.
@@ -141,6 +154,8 @@ an unnumbered row under step 3, live from the first visit, done at one friend.
 | G5 | The no-friends line names seating and spares. With `SOCIAL_GAMES_ENABLED` or spares off for the reader, that clause goes (`Add the people you play with.`). | Copy |
 | G6 | Every new string is a placeholder for `/copy-review`. About entries are paused for this line (Discovery R3); Friends already has its social-line entry. | Copy |
 | G7 | The commitments column today renders only with Commitments. It now renders when either block does. | Engineering |
+| G8 | Friends is first at 390 and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS `order` below 1180. | Engineering |
+| G9 | Phone placement: top (P1–P4) or after Ready to build (P5). | **Hugh** |
 
 ## Not done this round
 

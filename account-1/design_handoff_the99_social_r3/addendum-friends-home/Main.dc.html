@@ -11,11 +11,11 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:1280px;min-height:1640px;box-sizing:border-box;padding:56px 64px 64px;background:#14110E;font-family:'IBM Plex Sans',sans-serif;color:#C0B8A6;display:flex;flex-direction:column;gap:30px">
+<div style="width:1280px;min-height:1760px;box-sizing:border-box;padding:56px 64px 64px;background:#14110E;font-family:'IBM Plex Sans',sans-serif;color:#C0B8A6;display:flex;flex-direction:column;gap:30px">
   <header style="display:flex;flex-direction:column;gap:10px">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#8B8270">SOCIAL R3 ADDENDUM · DISCOVERY R3 G25 · 2026-10-16 · ACCOUNT 1 · FOR HUGH’S AUDIT</span>
-    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:40px;line-height:1.1;color:#EDE6D8">Friends on Home · R1</h1>
-    <p style="margin:0;max-width:1040px;font-size:17px;line-height:1.6;color:#EDE6D8">Friends is the last section on Home at both widths: under Commitments in the right column at 1280, after Commitments at 390. It is a section, not a card: a label, up to four faces, one line and one Add a friend. On the first-run checklist it is an unnumbered row under step 3, live from the first visit.</p>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#8B8270">SOCIAL R3 ADDENDUM · DISCOVERY R3 G25 · 2026-10-16 · ACCOUNT 1 · R2, HUGH’S NOTES ON R1</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:40px;line-height:1.1;color:#EDE6D8">Friends on Home · R2</h1>
+    <p style="margin:0;max-width:1040px;font-size:17px;line-height:1.6;color:#EDE6D8">At 1280 Friends sits under Commitments in the right column; at 390 it moves up to the first screen, under the header buttons. It is a section, not a card: a label, a row of five seats that spans the width, and one Add a friend. On the first-run checklist it is an unnumbered row under step 3, live from the first visit.</p>
   </header>
 
   <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
@@ -24,16 +24,16 @@
       <span style="font-size:13px;color:#8B8270">Look at Home at 1280, H1–H4; Home at 390, P1–P4</span>
       <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.55">
         <li><b style="color:#EDE6D8;font-weight:600">1280:</b> the right column, under Commitments. The left column stays the deck work: Ready to build, then Pick up where you left off.</li>
-        <li><b style="color:#EDE6D8;font-weight:600">390:</b> last, after Commitments. Home keeps one block order at every width, so 640–1179 is the phone’s order too.</li>
+        <li><b style="color:#EDE6D8;font-weight:600">390 (R2):</b> first under the header buttons and the banner, above Ready to build, so it is on the first screen. Commitments stays last. P5 draws the alternative, after Ready to build.</li>
         <li><b style="color:#EDE6D8;font-weight:600">The banner</b> spans both columns above the body and keeps its place. Friends never moves above it, and the two show together (H2, P2).</li>
         <li><b style="color:#EDE6D8;font-weight:600">Quiet:</b> no surface, border or ✕. The column’s one card stays Commitments.</li>
       </ul>
     </div>
     <div style="border-radius:14px;border:1px solid #3A3229;background:#1B1712;padding:20px 22px;display:flex;flex-direction:column;gap:10px">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#CF8745">CALL 2 · HOW MANY FACES</span>
-      <span style="font-size:13px;color:#8B8270">Look at H3 and P3</span>
+      <span style="font-size:13px;color:#8B8270">Look at H2, H3 and P3</span>
       <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.55">
-        <li><b style="color:#EDE6D8;font-weight:600">Four slots, both widths.</b> Four friends or fewer: every face. Five or more: three faces, then <span style="font-family:'IBM Plex Mono',monospace">+N</span>. The row never grows or wraps.</li>
+        <li><b style="color:#EDE6D8;font-weight:600">Five slots, edge to edge (R2).</b> Five friends or fewer: every face, then empty seats to the end of the row. Six or more: four faces, then <span style="font-family:'IBM Plex Mono',monospace">+N</span>. The row always spans the width.</li>
         <li><b style="color:#EDE6D8;font-weight:600">The face</b> is the shipped Face at 40: signature commander, or initials. Name under it. Each face opens that friend’s page.</li>
         <li><b style="color:#EDE6D8;font-weight:600">+N is a count, not a press.</b> The heading carries the total (FRIENDS · 7) and All friends › is the one way to the rest.</li>
         <li><b style="color:#EDE6D8;font-weight:600">Order</b> is /friends’ own, by name. No new sort.</li>
@@ -84,13 +84,13 @@
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1640}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1760}}'>
 class Component extends DCLogic {
   renderVals() {
     const row = (i, cols) => `display:grid;grid-template-columns:${cols};gap:16px;padding:12px 16px;${i ? 'border-top:1px solid #2B241B;' : ''}`;
     const locks = [
       ['Permanent, no ✕', 'No ✕ at either width; nothing records a dismissal.'],
-      ['No friends: an invite', 'H1, P1: your seat, three empty seats, one line, Add a friend.'],
+      ['No friends: an invite', 'H1, P1: your seat, four empty seats, one line, Add a friend.'],
       ['Friends: faces, Add a friend, /friends', 'H2, H3: the faces, Add a friend, and All friends › in the heading.'],
       ['On the checklist (G25)', 'C1–C3, CP1–CP3.'],
       ['Not a moment', 'No bubble, halo or motion. It renders with the page.'],
@@ -112,6 +112,8 @@ class Component extends DCLogic {
       ['G5', 'The line names seating and spares. With SOCIAL_GAMES_ENABLED or spares off, that clause goes.', 'Copy'],
       ['G6', 'Every new string is a placeholder for /copy-review. About entries are paused for this line.', 'Copy'],
       ['G7', 'The right column renders today only with Commitments. It now renders when either block does, so Friends stands alone if the Commitments read fails.', 'Engineering'],
+      ['G8', 'Friends is first at 390 and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS order below 1180.', 'Engineering'],
+      ['G9', 'Phone placement: first under the header buttons (P1–P4), or after Ready to build (P5).', 'Hugh'],
     ].map(([id, text, who], i) => ({
       id, text, for: who, row: row(i, '44px 1fr 110px'),
       forStyle: `justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:${who === 'Hugh' ? '#EDE6D8' : '#8B8270'}`,

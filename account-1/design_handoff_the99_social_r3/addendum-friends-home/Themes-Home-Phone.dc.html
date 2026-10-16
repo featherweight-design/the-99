@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Friends on Home at 390, six themes</title>
+<title>Friends on Home at 390, six themes (top of the page)</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -25,10 +25,9 @@
       </div>
       <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="4">
         <div style="{{ r.panel }}">
-          <div style="padding:6px 16px 16px">
-            <dc-import name="Friends" theme="{{ r.key }}" state="{{ c.state }}" col="{{ true }}" phone="{{ true }}" hint-size="358px,420px"></dc-import>
+          <div style="padding:16px">
+            <dc-import name="Friends" theme="{{ r.key }}" state="{{ c.state }}" col="{{ false }}" phone="{{ true }}" hint-size="358px,190px"></dc-import>
           </div>
-          <dc-import name="PhoneChrome" theme="{{ r.key }}" part="tabs" hint-size="390px,74px"></dc-import>
         </div>
       </sc-for>
     </div>
