@@ -225,7 +225,11 @@ export function useCardScan(
       // A press during an add in flight still let go of its hold: clear it before the one-at-a-time guard, or the
       // scanner would show Held, with the feed frozen, once the first add's panel goes.
       setHeld(null);
-      if (committing.current) return;
+      if (committing.current) {
+        // That press is discarded, and its snapshot with it, or a later add of the card would carry its photo.
+        heldSnap.current = null;
+        return;
+      }
       committing.current = true;
       try {
         // A held card adds what the scanner saw when the press went down; frames read since are another moment.
@@ -242,8 +246,9 @@ export function useCardScan(
           return;
         }
         // A press made while this add waited is over with it: the Added panel replaces its button, so no release
-        // would ever clear that hold.
+        // would ever clear that hold, or its snapshot.
         setHeld(null);
+        heldSnap.current = null;
         setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
         setAdded({ name: g.name, imageUri: g.imageUri });
       } finally {

@@ -15,10 +15,11 @@ const CAPTURE = {
 
 const choices = vi.fn();
 const search = vi.fn(async (_q: string) => [] as unknown[]);
+const save = vi.fn(async (..._a: unknown[]) => ({ applied: { id: "e1" } }) as unknown);
 vi.mock("../../app/collection/edit-actions", () => ({
   searchCollectionCards: (q: string) => search(q),
   loadPrintingChoices: (...a: unknown[]) => choices(...a),
-  addToCollection: vi.fn(),
+  addToCollection: (...a: unknown[]) => save(...a),
 }));
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: vi.fn() }) }));
@@ -248,6 +249,20 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     expect(screen.getByRole("group", { name: scan.fix.regionLabel })).toBeTruthy();
     land([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: /Mind Stone/ })));
+  });
+
+  it("closes the sheet from the receipt even when Save was pressed with a fix open", async () => {
+    const onClose = vi.fn();
+    render(<AddCardsSheet mode="add" onClose={onClose} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sol Ring", expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(copy.savedTitle(1));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });
 
