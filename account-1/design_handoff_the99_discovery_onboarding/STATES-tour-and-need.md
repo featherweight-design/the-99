@@ -32,7 +32,7 @@ At 390 the card is docked 12px above the tab bar, 358 wide; the page scrolls so 
 | Next | The next step; the cutout glides, the card crossfades | steps 1–5 |
 | Back | The step before | steps 2–6 |
 | Finish | Ends the tour, spent; Home as it was | step 6 |
-| `Read the note ›` | Ends the tour, spent; opens the note (dialog 1280, sheet 390); closing it lands on Home | step 6 |
+| `Read the note ›` | Ends the tour, spent; opens the note (dialog 1280, sheet 390), sized to the letter up to the screen and scrolling past it; closing it lands on Home | step 6 |
 | ✕ `Skip the tour`, or Esc | Ends the tour, spent; Home as it was; no confirm, no toast | every step |
 | A miniature | Applies that theme at once, as the account menu does (`data-theme`, the cookie, `<name> applied.`) | step 5 |
 | Enter | Next (Finish on 6) | focus starts on Next |

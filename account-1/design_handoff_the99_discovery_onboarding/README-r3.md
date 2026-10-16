@@ -90,6 +90,7 @@ The canvas is `The 99 - Discovery R3 · Tour and tools where the need is` (Desig
 - **C7 · The ending.** Step 6 lights the Home banner, the new account's `What The 99 does:` line, as the place new things are announced.
   - Under a rule, the card closes with `A note from the creator`: its opening line and `Read the note ›` (R2b).
   - `Finish` ends the tour. `Read the note ›` ends it and opens the note: a dialog at 1280, a sheet at 390.
+  - The note fits its text: the dialog and the sheet grow with the letter, up to the screen, and scroll past that (R3b, Hugh's note).
   - **Friends is not named,** because a new account's Home is the checklist, which has no Friends section (G25).
 - **C8 · G1, Help me choose on /commanders.** A door at the end of the guided banner's line: `Not sure which? Help me choose →`.
   - R1's M12 points at it instead of at Discover in the rail.
