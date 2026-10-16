@@ -6,11 +6,12 @@ GRID = ["lathliss", "ghalta", "miku", "killian", "ashling", "dina", "invisible-w
 
 
 def rail(state="rest", active="Collection"):
-    cls = {"rest": "", "on": " on", "hov": " hov"}[state]
+    cls = {"rest": "", "on": " on", "hov": " on"}[state]
     slots = "".join(f'<span class="rsl{" on" if n == active else ""}">{nav_icon(n)}</span>'
                     for n in ["Home", "Collection", "Commanders", "Discover", "Decks"])
     return (f'<div class="rail"><span class="mk">{crown(6, 8.5, 3)}<span class="nn">99</span></span>'
-            f'<span class="rsrch{cls} new" aria-label="Search all cards" aria-keyshortcuts="Meta+K">{ico_search(17)}<small>⌘K</small></span>'
+            f'<span class="rsl{cls} new" style="color:{"var(--fg)" if cls else "var(--fg-muted)"}" aria-label="Search all cards" aria-keyshortcuts="Meta+K">{ico_search(19, 1.5)}</span>'
+            '<span style="width:24px;height:1px;background:var(--border-strong);margin:6px 0 10px"></span>'
             f'{slots}<span class="rfoot"><span class="rav">HH</span></span></div>')
 
 
@@ -32,7 +33,7 @@ def fld(text="", caret=True, esc=True):
         return (f'<div class="dfld">{ico_search(18)}<span>{text}</span>{"<span class=caret></span>" if caret else ""}'
                 f'<span class="clr">✕</span></div>')
     return (f'<div class="dfld ph0">{ico_search(18)}<span class="caret" style="margin-left:-2px"></span><span>Search all cards</span>'
-            f'{"<span class=esc>esc</span>" if esc else ""}</div>')
+            f'{"<span class=esc>⌘K</span>" if esc else ""}</div>')
 
 
 def dres(inner, prog=False):
@@ -46,14 +47,14 @@ def desk(rail_state, overlay=""):
 def board():
     q = "in"
     d1 = desk("rest")
-    d1h = desk("hov", '<span style="position:absolute;left:72px;top:82px;z-index:9;height:28px;padding:0 10px;border-radius:7px;background:var(--surface-raised);border:1px solid var(--border-strong);display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg);box-shadow:0 10px 24px rgba(0,0,0,.45)">Search all cards<span style="font:10.5px IBM Plex Mono,monospace;color:var(--fg-faint)">⌘K</span></span>')
+    d1h = desk("hov", '<span style="position:absolute;left:72px;top:76px;z-index:9;height:28px;padding:0 10px;border-radius:7px;background:var(--surface-raised);border:1px solid var(--border-strong);display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg);box-shadow:0 10px 24px rgba(0,0,0,.45)">Search all cards<span style="font:10.5px IBM Plex Mono,monospace;color:var(--fg-faint)">⌘K</span></span>')
     d2 = desk("on", fly(fld(), dres('<div class="hd">Recent cards<a href="#">Clear</a></div>' + "".join(row(k, first=(i == 0), cls=("act" if i == 0 else "")) for i, k in enumerate(RECENT)))))
-    d2n = desk("on", fly(fld(), dres('<div class="msg"><b>Look up any card</b><p>Type part of a card’s name to see what it does, whether you own it, and which of your decks hold it.</p></div>')))
+    d2n = desk("on", fly(fld(), dres('<div style="display:flex;gap:18px;align-items:center;padding:14px 18px">' + graphic_a(0.62) + '<div class="msg" style="padding:0"><b>Look up any card</b><p>Type part of a card’s name to see what it does, whether you own it, and which of your decks hold it.</p></div></div>')))
     d3 = desk("on", fly(fld(q), dres('<div class="hd">Searching…</div>' + "".join(
         f'<div class="skel" style="height:58px;padding:0 14px{";border-top:0" if i == 0 else ""}"><span class="a" style="width:30px;height:42px"></span><span class="l"><i style="width:{w}%"></i><i style="width:{w2}%"></i></span></div>'
         for i, (w, w2) in enumerate([(52, 30), (40, 24), (60, 34)])), prog=True)))
     d4 = desk("on", fly(fld(q), dres('<div class="hd">10 cards</div>' + "".join(row(k, q, first=(i == 0), cls=("act" if i == 2 else "")) for i, k in enumerate(RESULTS_IN[:8]))
-                                      + '<div class="ft"><span>↑ ↓ to move · ↵ to open · esc to close</span><span>10 of 10</span></div>')))
+                                      + '<div class="ft"><span>↑ ↓ to move · ↵ to open · esc to close</span><span>⌘K opens this from anywhere</span></div>')))
     d5 = desk("on", fly(fld("zqx"), dres('<div class="msg"><b>No card is named “zqx”</b><p>Check the spelling, or try part of the name. Tokens and emblems aren’t in the catalog.</p></div>')))
     d6 = desk("on", fly(fld(q, caret=False), dres('<div class="msg" role="alert"><p style="color:var(--fg-body)">We couldn’t search just now. Check your connection and try again.</p><span class="obtn">Try again</span></div>')))
     c = CARDS["heroes"]
@@ -71,12 +72,12 @@ def board():
 
     W = 1300
     fr = [
-        frame("D1 · the rail field at rest", d1, "The field sits at the top of the rail, under the mark and above Home: a sunken 46×48 well with the search glyph and <code>⌘K</code> (<code>Ctrl K</code> off a Mac). The rail is 62px, so the well is the field’s resting shape; it opens to its full width on a press or the shortcut.", W),
-        frame("D1h · hover", d1h, "Hover fills the well with <code>--elevated</code>, like a nav slot. The rail’s name tag reads <code>Search all cards ⌘K</code>. On a touch rail (88px, no hover) the well carries the word <code>Search</code> under the glyph instead of the shortcut, as the touch rail labels its slots.", W),
-        frame("D2 · focused, with recent cards", d2, "A press or ⌘K opens the field beside the rail, the way the rail’s lock note opens: 12px out, its top on the well’s, with a caret pointing back. The well stays lit. Empty, the panel lists recent cards; ↓ moves into them.", W),
-        frame("D2n · focused, nothing recent", d2n, "With no recent cards the panel holds one sentence, so the field never opens onto an empty box.", W),
+        frame("D1 · the rail slot at rest", d1, "Search is a slot like the five below it (R-A, Hugh 2026-10-16): the 19px glyph in a 38px square under the mark, above Home, with a short rule between. No well and no shortcut at rest, so the rail holds no text but the mark.", W),
+        frame("D1h · hover", d1h, "Hover lights the slot like any nav slot, and the rail’s own name tag reads <code>Search all cards ⌘K</code>. That tag is where the shortcut lives at rest. On a touch rail (88px) the slot carries the word <code>Search</code> under the glyph, as every touch slot carries its label.", W),
+        frame("D2 · focused, with recent cards", d2, "A press or ⌘K opens the field beside the rail, the way the rail’s lock note opens: 12px out, its top on the slot’s, with a caret pointing back. The slot stays lit. Until you type, <b>⌘K</b> sits at the field’s right edge. Empty, the panel lists recent cards; ↓ moves into them.", W),
+        frame("D2n · focused, nothing recent", d2n, "With no recent cards the panel holds the empty-state graphic (option A, at 62%) and its sentence, so the field never opens onto an empty box.", W),
         frame("D3 · typing, first search in flight", d3, "The same 2-character rule and 150ms debounce as the phone. Three skeleton rows under a 2px accent bar.", W),
-        frame("D4 · results", d4, "The dropdown under the field, never a panel of its own: the page stays visible, and the reader is one glance from where they were. Row 3 is active. The foot line lists the keys.", W),
+        frame("D4 · results", d4, "The dropdown under the field, never a panel of its own: the page stays visible, and the reader is one glance from where they were. Row 3 is active. The foot line lists the keys and says <b>⌘K opens this from anywhere</b>.", W),
         frame("D5 · no results", d5, "The shipped words, unchanged.", W),
         frame("D6 · failed", d6, "The shipped failure sentence and Try again.", W),
         frame("D7 · card details from a result", d7, "↵ or a click closes the field and opens the shipped 820 card modal, unstacked, paging through the results (3 of 10). <b>Find a deck for it</b> is there because nothing sits below the card (lock 1).", W),
@@ -90,9 +91,9 @@ def board():
             '<li>Not while a modal or sheet is up: the shortcut is the page’s, and a dialog’s keys are the dialog’s (the rule the rail lock note already follows).</li>'
             '<li>The field is a combobox (<code>aria-expanded</code>, <code>aria-controls</code>, <code>aria-activedescendant</code>), as the deck’s Add a card field already is. ↑ ↓ move, ↵ opens, Escape clears a query and then closes.</li>'
             '<li>A polite live region, always mounted, says <code>10 cards</code> or the no-results line once typing has paused for 500ms, so each key doesn’t chatter.</li>'
-            '<li>The well carries <code>aria-keyshortcuts="Meta+K"</code> (<code>Control+K</code> off a Mac) and its name is <code>Search all cards</code>.</li></ul></div>')
+            '<li>The slot carries <code>aria-keyshortcuts="Meta+K"</code> (<code>Control+K</code> off a Mac) and its name is <code>Search all cards</code>.</li></ul></div>')
     body = (
-        '<div class="bh"><span class="k">Card search · desktop 1300 · round 1</span><h2>The rail field and ⌘K · desktop</h2>'
+        '<div class="bh"><span class="k">Card search · desktop 1300 · round 2</span><h2>The rail slot and ⌘K · desktop</h2>'
         '<p class="cap" style="max-width:2000px">The shipped <code>NavRail</code> (62px, the crowned mark, five slots, the account control at the foot) over Collection. '
         'Desktop has no header, so search lives at the top of the rail (lock 4). New parts carry a dashed pink outline.</p></div>'
         + rows + keys)

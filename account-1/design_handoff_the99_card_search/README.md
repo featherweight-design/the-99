@@ -1,21 +1,26 @@
-# Card search — R1
+# Card search — R2 (approved)
 
-**Round 1.** Look up any catalog card by name from anywhere, as a doorway into card details. Phone and desktop.
+**Round 2, approved by Hugh 2026-10-16.** Look up any catalog card by name from anywhere, as a doorway into card details. Phone and desktop.
 **Brief:** `docs/superpowers/design-briefs/2026-10-16-card-search.md` (main, 875f54c). Its eight locks are not reopened here.
 **Mirrors:** `design/design_handoff_the99_social_r2/` (the Wishlist search's row grammar and results panel).
 
-**The answer in one line.** A quiet search glyph by the account button on the phone, and a ⌘K well at the top of the
-rail on desktop, both open one name-only search. Its rows say what the reader owns and where. A result hands over to
+**The answer in one line.** A quiet search glyph by the account button on the phone, and a search slot at the top of
+the rail on desktop (or ⌘K), both open one name-only search. Its rows say what the reader owns and where. A result hands over to
 card details exactly as it ships, and closing the card brings the search back as it was.
 
 | File | What it is |
 |---|---|
-| `The 99 - Card Search (R1).dc.html` | **Start here.** The locks and where each is honoured, the eight calls, the gaps, Hugh's calls. |
+| `The 99 - Card Search (R2).dc.html` | **Start here.** The locks and where each is honoured, the eight calls, the gaps, round 2. |
+| `R2 - Sheet-Phone.dc.html` | S1–S7 the sheet's seven states (S1 with graphic A); H1–H3 card details from a result and back. **Build from this.** |
+| `R2 - Rail-Desktop.dc.html` | D1–D8 the rail slot (R-A) at rest, hover, focused, typing, results, none, failed, card details and back; the ⌘K and keys note. **Build from this.** |
+| `R2 - Deck-Page.dc.html` | DP1–DP4 and DD1–DD2 with the R-A rail slot. **Build from this.** |
+| `R2 - Options.dc.html` | The empty-state graphics A–D and rail slots R-A/B/C Hugh picked from (A and R-A). For the record. |
 | `R1 - Header-Phone.dc.html` | HP1–HP3 the icon in the header's cluster (with the offline pill and install slot, measured); Q1–Q5 quick return. |
-| `R1 - Sheet-Phone.dc.html` | S1–S7 the sheet's seven states; H1–H3 card details from a result and back. |
-| `R1 - Rail-Desktop.dc.html` | D1–D8 the rail field at rest, hover, focused, typing, results, none, failed, card details and back; the ⌘K and keys note. |
-| `R1 - Deck-Page.dc.html` | DP1–DP4 both searches on the phone deck page, the header over the bottom controls, typing in Add a card; DD1–DD2 desktop. |
+| `R1 - Sheet-Phone.dc.html` | **Superseded by R2.** S1–S7 the sheet's seven states; H1–H3 card details from a result and back. |
+| `R1 - Rail-Desktop.dc.html` | **Superseded by R2.** D1–D8 the rail field at rest, hover, focused, typing, results, none, failed, card details and back; the ⌘K and keys note. |
+| `R1 - Deck-Page.dc.html` | **Superseded by R2.** DP1–DP4 both searches on the phone deck page, the header over the bottom controls, typing in Add a card; DD1–DD2 desktop. |
 | `R1 - Rows.dc.html` | The result row's anatomy at both widths, every ownership case, and the wishlist signal A/B. |
+| `The 99 - Card Search (R1).dc.html` | Round 1's main board, superseded. |
 | `The 99 - About · Card Search Entry.dc.html` | The About entry on the §G per-entry template, desktop and phone. |
 | `STATES-card-search.md` · `READINESS.md` · `card-search · copy strings.ts` · `about · card search.ts` | The matrix, the verdict, every new string, the About entry as code. |
 | `art/`, `brand/`, `support.js` | Carried so the folder opens standalone. |
@@ -27,10 +32,23 @@ cut off.
 
 ---
 
+## Round 2 (Hugh's notes on R1, 2026-10-16)
+
+- **The empty state is a graphic, not card art: option A**, the brand fan (the Games tab's and the scanner's three
+  blank cards, the front one carrying the pink 99) with a pink lens over the 99 card. 200×150 on the phone sheet (S1),
+  at 62% beside the sentence in the desktop panel (D2n). No card art anywhere in the empty state.
+- **The rail's search is a plain slot (R-A).** The 19px glyph in a 38px square, under the mark and above Home, with a
+  24px rule between it and the nav slots; it lights like a nav slot on hover and while open. **No ⌘K at rest.** The
+  shortcut lives in the rail's name tag (`Search all cards ⌘K`), at the open field's right edge until typing starts,
+  and in the panel's foot line (`⌘K opens this from anywhere`), plus the About entry's caption. The touch rail labels
+  the slot `Search`, as it labels every slot.
+- **Approved as drawn otherwise**, including the bookmark marker on rows (A) and G5 (the install slot stepping aside
+  while offline under 390). Where the About entry ships stays Hugh's call at build time.
+
 ## The calls (§Open for Design)
 
 **1. The sheet's states.** Full screen over the header and tab bar, the field focused and the keyboard up in the same
-tap. Empty with no recent cards: one sentence over three catalog cards (S1). Empty with recent cards: those rows and
+tap. Empty with no recent cards: one sentence under graphic A, the brand fan under a pink lens (S1, R2). Empty with recent cards: those rows and
 **Clear** (S2). Typing: search starts at 2 characters (the read's own minimum) 150ms after the last key (the shipped
 debounce), with a 2px accent bar under the field and three skeleton rows; a later search keeps the previous rows at 50%
 (S3). Results: up to 20, best match first (G3), with a count (S4); dragging the list lowers the keyboard (S4b); at 20 a
@@ -56,9 +74,9 @@ any page field has focus it doesn't return, and a returned header slides away (t
 tab bar the bottom, 582px apart at 844, and typing in Add a card suspends it, so it never covers those results (lock 7).
 A new page arrives with the header in place; scrolls the app makes don't move it (G4). Reduced motion: no slide.
 
-**4. The desktop rail field.** The rail is 62px and icon-only, so the field's resting shape is a sunken 46×48 well under
-the mark, above Home, with the glyph and `⌘K` (`Ctrl K` off a Mac; `Search` on the 88px touch rail). Hover fills it
-like a nav slot and shows the rail's name tag. A press or ⌘K opens the 540 field beside the rail, the way the rail's
+**4. The desktop rail field.** The rail is 62px and icon-only, so at rest the field is a plain slot (R2, R-A): the
+glyph in a 38px square under the mark, above Home, with a short rule below it and no shortcut text (`Search` under
+it on the 88px touch rail). Hover lights it like a nav slot and shows the rail's name tag with ⌘K. A press or ⌘K opens the 540 field beside the rail, the way the rail's
 lock note opens (12px out, its top on the well's, a caret back), and results open in a **dropdown under the field**,
 the Wishlist panel's look, never a separate panel. The page stays visible.
 
@@ -90,14 +108,14 @@ card's, so Back from the card returns to search and Back again to the page.
 
 The deck's field already reads `Add a card by name · {identity} only`, so d9's **Add a card** is its first three words
 and nothing changes there. The global search is **Search all cards** on the icon's name, the sheet's placeholder and the
-rail well's name. DP4 shows the difference: a white card the Red deck's field would never offer. Collection's own field
+rail slot's name. DP4 shows the difference: a white card the Red deck's field would never offer. Collection's own field
 (`Search your cards…`) is a third, already labelled apart.
 
 ## Gaps
 
 | # | Gap | Who |
 |---|---|---|
-| G1 | A switch, named here `CARD_SEARCH_ENABLED`: the icon, the well, ⌘K, quick return and the About entry follow it. | Eng |
+| G1 | A switch, named here `CARD_SEARCH_ENABLED`: the icon, the rail slot, ⌘K, quick return and the About entry follow it. | Eng |
 | G2 | Card details mounted once in the shell (the brief's note), and a close callback so search can come back after it. | Eng |
 | G3 | `searchCollectionCatalog` orders by name. Search wants the name starting with the query, then a word starting with it, then any match, then by name. Same read, same limit. | Eng |
 | G4 | Quick return must tell the reader's scrolling from the app's (`reveal()`, scroll restore). One way: ignore scroll for 300ms after a programmatic scroll or a navigation. | Eng |
@@ -115,6 +133,6 @@ when the switch flips and bumps nothing. Board: `The 99 - About · Card Search E
 
 ## Hugh's calls
 
-1. The wishlist signal on a row: the bookmark (A, drawn) or the words (B).
-2. G5, the install slot stepping aside offline under 390.
-3. Where the About entry ships.
+1. ~~The wishlist signal on a row~~: the bookmark (A), approved as drawn.
+2. ~~G5~~: approved as drawn.
+3. Where the About entry ships (with the feature or the discovery showcase): at build time.

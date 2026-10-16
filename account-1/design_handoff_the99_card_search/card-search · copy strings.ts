@@ -1,13 +1,15 @@
-// card-search · copy strings.ts. R1. Intent only: every NEW string goes through /copy-review.
+// card-search · copy strings.ts. R2. Intent only: every NEW string goes through /copy-review.
 // "Search all cards" and "Add a card" are d9's (brief lock 6). Strings marked REUSED ship today and are not changed.
 
 export const cardSearchCopy = {
   // The control's name everywhere: the phone icon's aria-label, the sheet's placeholder and hidden heading,
-  // the rail well's name and the rail tag. d9's label.
+  // the rail slot's name and the rail tag. d9's label.
   label: "Search all cards",
-  // The rail well's shortcut hint at rest. Off a Mac: "Ctrl K". Touch rail (88px): the word below.
+  // R2: no shortcut at rest. The shortcut shows in the rail's name tag (`Search all cards ⌘K`), at the open field's
+  // right edge until typing starts, and in the panel's foot line. Off a Mac: "Ctrl K". Touch rail (88px): the label.
   shortcutMac: "⌘K",
   shortcutOther: "Ctrl K",
+  shortcutFoot: (shortcut: string) => `${shortcut} opens this from anywhere`,
   touchRailLabel: "Search",
   closeAria: "Close search",
 

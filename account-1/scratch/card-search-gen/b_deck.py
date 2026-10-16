@@ -86,7 +86,7 @@ def board():
     dd2 = deskdeck(fly(fld("gia"), dres('<div class="hd">1 card</div>' + row("giada", "gia", first=True, cls="act"))))
 
     body = (
-        '<div class="bh"><span class="k">Card search · the deck page · round 1</span><h2>Two searches on the deck page</h2>'
+        '<div class="bh"><span class="k">Card search · the deck page · round 2</span><h2>Two searches on the deck page</h2>'
         '<p class="cap" style="max-width:2000px">Lock 6: the deck keeps its own bottom field for adding a card to <b>this</b> deck, filtered by the commander’s colors, '
         'and the global search looks up <b>any</b> card. They are labelled apart: <b>Search all cards</b> <span class="pin">1</span> and <b>Add a card</b> <span class="pin">2</span>. '
         'Fixture: HD - Dragons, Lathliss, Red, 94 of 99.</p></div>'
@@ -97,7 +97,7 @@ def board():
         + frame("DP4 · Search all cards from the deck", p4, "The header’s sheet covers the dock and everything else. It finds Giada, a white card the deck’s Red-only field would never offer, which is the difference between the two searches in one picture.")
         + '</div></div>'
         '<div class="sec"><h3>Desktop</h3><div class="frames">'
-        + frame("DD1 · the rail field beside the page’s own add field", dd1, "The rail’s well at the top left, the deck’s add field docked at the foot of the column, as shipped. A whole screen apart, and the deck’s field still names the colors it filters by.", 1300)
+        + frame("DD1 · the rail slot beside the page’s own add field", dd1, "The rail’s search slot at the top left, the deck’s add field docked at the foot of the column, as shipped. A whole screen apart, and the deck’s field still names the colors it filters by.", 1300)
         + frame("DD2 · the rail field open on the deck page", dd2, "⌘K opens the field over the deck. It never touches the deck: pressing Giada opens her card details, where Find a deck is the way to put her in one. The deck’s add field stays where it is.", 1300)
         + '</div></div>'
     )

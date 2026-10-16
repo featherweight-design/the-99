@@ -30,8 +30,7 @@ def under():
 
 def board():
     q = "in"
-    fan = ('<div class="fan"><span><img src="art/lathliss.jpg" alt=""></span><span><img src="art/miku.jpg" alt=""></span>'
-           '<span><img src="art/ghalta.jpg" alt=""></span></div>')
+    fan = graphic_a()
 
     s1 = phone(under() + sheet(sheet_head(), f'<div class="sempty">{fan}<b>Look up any card</b><p>Type part of a card’s name to see what it does, whether you own it, and which of your decks hold it.</p></div>'))
     s2 = phone(under() + sheet(sheet_head(),
@@ -76,7 +75,7 @@ def board():
                                                     for i, k in enumerate(RESULTS_IN[:8])), keyboard=False))
 
     f = [
-        frame("S1 · empty, no recent cards", s1, "The icon opens the sheet over the whole screen, header and tab bar included, with the field focused and the keyboard up. Nothing has been opened from search yet, so the sheet says what it’s for over three cards from the catalog."),
+        frame("S1 · empty, no recent cards", s1, "The icon opens the sheet over the whole screen, header and tab bar included, with the field focused and the keyboard up. Nothing has been opened from search yet, so the sheet says what it’s for under the empty-state graphic: the brand fan with a pink lens over its 99 card (option A, no card art)."),
         frame("S2 · empty, with recent cards", s2, "The last cards opened from search, newest first, up to 8, in the same rows as results. <b>Clear</b> empties the list. The list is this account’s own, on this device."),
         frame("S3 · typing, first search in flight", s3, "Search starts at 2 characters, 150ms after the last key (the shipped debounce). A 2px accent bar runs under the field and three skeleton rows hold the space. A later search keeps the previous rows at 50% under the same bar."),
         frame("S4 · results", s4, "Name only, best match first: names starting with what you typed, then a word starting with it, then any match (G3). Typed letters are in the accent. The count is the live region’s text too."),
@@ -89,7 +88,7 @@ def board():
         frame("H3 · back to the sheet", h3, "✕, Escape, a swipe down or the back gesture close the card, and the search sheet comes back as it was: query, results, scroll. Focus lands on the row that opened the card. The keyboard stays down."),
     ]
     body = (
-        '<div class="bh"><span class="k">Card search · phone 390 · round 1</span><h2>The search sheet · phone</h2>'
+        '<div class="bh"><span class="k">Card search · phone 390 · round 2</span><h2>The search sheet · phone</h2>'
         '<p class="cap" style="max-width:1500px">Opened from the header icon on any phone screen. Every frame is the shipped shell at 390×844 with the Kamigawa theme. '
         'The ownership on each row is the reader’s own: their copies, their decks, their wishlist. New parts carry a dashed pink outline.</p></div>'
         '<div class="sec"><h3>The seven states</h3><div class="frames">' + "".join(f[:8]) + '</div></div>'

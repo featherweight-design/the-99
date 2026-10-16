@@ -7,11 +7,11 @@ ART = ["lathliss", "ghalta", "killian", "giada", "invisible-woman", "zimone", "h
        "quintorius", "rootha", "zada", "captain-america", "gisa", "miku", "sai"]
 
 BOARDS = {
-    "b_main": "The 99 - Card Search (R1).dc.html",
+    "b_main": "The 99 - Card Search (R2).dc.html",
     "b_header": "R1 - Header-Phone.dc.html",
-    "b_sheet": "R1 - Sheet-Phone.dc.html",
-    "b_rail": "R1 - Rail-Desktop.dc.html",
-    "b_deck": "R1 - Deck-Page.dc.html",
+    "b_sheet": "R2 - Sheet-Phone.dc.html",
+    "b_rail": "R2 - Rail-Desktop.dc.html",
+    "b_deck": "R2 - Deck-Page.dc.html",
     "b_rows": "R1 - Rows.dc.html",
     "b_about": "The 99 - About · Card Search Entry.dc.html",
     "b_opts": "R2 - Options.dc.html",

@@ -1,7 +1,9 @@
-# Card search R1 — readiness
+# Card search — readiness
 
-**Verdict: ready for Hugh's audit, not for build.** R1 answers all eight open items and draws every state the brief
-lists. Three calls are Hugh's (README §Hugh's calls). Build waits for his approval and the handoff PR to main.
+**Verdict: ready to build (R2, approved by Hugh 2026-10-16).** R1 answered all eight open items and drew every state
+the brief lists; R2 takes Hugh's two notes (empty-state graphic A, the rail's plain slot R-A) and he approved the rest
+as drawn. Build from `R2 - Sheet-Phone`, `R2 - Rail-Desktop`, `R2 - Deck-Page`, and `R1 - Header-Phone`, `R1 - Rows`
+and the About entry, which R2 did not change. One call left for build time: where the About entry ships.
 
 ## Against the locks
 
@@ -10,7 +12,7 @@ lists. Three calls are Hugh's (README §Hugh's calls). Build waits for his appro
 | 1 Search opens card details, unchanged | Yes. Unstacked handover keeps Find a deck with no change to card details. | Sheet H1–H3, Rail D7–D8 |
 | 2 Name only | Yes. One field; its only control is ✕. | All |
 | 3 Art, name, owned N / in deck X / on your wishlist | Yes. | Rows |
-| 4 Placement A | Yes. Rail well + ⌘K; header icon + full-screen sheet. | Rail, Header, Sheet |
+| 4 Placement A | Yes. A plain rail slot + ⌘K (R2); header icon + full-screen sheet. | Rail, Header, Sheet |
 | 5 Quick return on every phone screen | Yes. Not sticky at the top, back on 12px up. | Header Q1–Q5 |
 | 6 Two labels | Yes. The deck field already begins "Add a card". | Deck DP1–DP4, DD1–DD2 |
 | 7 No collision | Yes. 582px apart; suspended while typing. | Deck DP2, DP3 |

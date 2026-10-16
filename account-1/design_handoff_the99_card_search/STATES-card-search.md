@@ -1,4 +1,6 @@
-# Card search R1 — states
+# Card search R2 — states
+
+R2 boards supersede R1's Sheet-Phone, Rail-Desktop and Deck-Page; read `R2 - *` where a frame below names those.
 
 Every state the brief asks for (§Every state to draw), where it is drawn, and its trigger. A state with no real
 trigger is not drawn.
@@ -15,7 +17,7 @@ trigger is not drawn.
 | Header returned mid-page | 12px up | Header-Phone · Q3; Deck-Page · DP2 |
 | Header under a sheet | A sheet or modal is up | Header-Phone · Q4 |
 | Header with the keyboard up | A page field has focus | Header-Phone · Q5; Deck-Page · DP3 |
-| Sheet empty, no recent cards | Opened; nothing opened from search yet | Sheet-Phone · S1 |
+| Sheet empty, no recent cards (graphic A) | Opened; nothing opened from search yet | Sheet-Phone · S1 |
 | Sheet empty, recent cards | Opened; ≥1 card opened from search | Sheet-Phone · S2 |
 | Typing | ≥2 characters, in flight | Sheet-Phone · S3 |
 | Results | Read returned rows | Sheet-Phone · S4, S4b |
@@ -29,9 +31,9 @@ trigger is not drawn.
 
 | State | Trigger | Board · frame |
 |---|---|---|
-| Rail field at rest | Any page | Rail-Desktop · D1 |
-| Hover | Pointer on the well | Rail-Desktop · D1h |
-| Focused, recent cards / none | Press or ⌘K | Rail-Desktop · D2, D2n |
+| Rail slot at rest (R-A, no ⌘K) | Any page | Rail-Desktop · D1 |
+| Hover | Pointer on the slot | Rail-Desktop · D1h |
+| Focused, recent cards / none (graphic A) | Press or ⌘K | Rail-Desktop · D2, D2n |
 | ⌘K from a page with no field focused | ⌘K / Ctrl K | Rail-Desktop · D2 (same open state; keys note) |
 | Typing | ≥2 characters, in flight | Rail-Desktop · D3 |
 | Results | Read returned rows | Rail-Desktop · D4 |

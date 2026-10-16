@@ -261,6 +261,13 @@ a{color:var(--accent)}
 .ann{position:absolute;z-index:20;display:flex;align-items:center;gap:6px;font:600 11px 'IBM Plex Mono',monospace;color:var(--accent);white-space:nowrap}
 .ann .pin{flex:none}
 .meas{position:absolute;z-index:20;border:1px dashed rgba(143,166,190,.7);font:10.5px 'IBM Plex Mono',monospace;color:var(--fact);display:flex;align-items:center;justify-content:center}
+.g{position:relative;flex:none;display:flex;align-items:center;justify-content:center}
+.bc{position:absolute;border-radius:8px;box-sizing:border-box;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.bc.back{background:#20222A;border:1.5px solid #262A35}
+.bc.mid{background:#1B1D25;border:1.5px solid #343843}
+.bc.front{background:color-mix(in srgb,#FF4D9A 14%,#16181F);border:1.5px solid #FF4D9A;display:flex;align-items:center;justify-content:center;font:700 26px 'Chakra Petch',sans-serif;color:#FF4D9A}
+.lens{position:absolute;border-radius:50%;border:3px solid #FF4D9A;background:rgba(14,15,20,.35);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 10px 24px rgba(0,0,0,.45)}
+.handle{position:absolute;height:5px;border-radius:3px;background:#FF4D9A;transform-origin:left center}
 table.t{border-collapse:collapse;width:100%;font-size:13px;line-height:1.5}
 table.t th{font:10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border-strong);vertical-align:bottom}
 table.t td{padding:10px 14px 10px 0;border-bottom:1px solid var(--border);vertical-align:top;color:var(--fg-body)}
@@ -426,3 +433,13 @@ def row(key, q="", first=False, cls="", c=None, wl_words=False):
         words = f'<span class="own" style="color:var(--accent)">{ico_bookmark(11)}&nbsp;on your wishlist</span>'
     return (f'<div class="rr{" first" if first else ""} {cls}"><span class="art"><img src="art/{key}.jpg" alt=""></span>'
             f'<span class="tx"><span class="nm">{nm}</span>{flav}{own_line(c)}{words}</span>{wl}</div>')
+
+
+def graphic_a(s=1.0):
+    """The empty-state graphic, option A (Hugh, 2026-10-16): the brand fan with a pink lens over the 99 card."""
+    return (f'<div class="g" role="img" aria-hidden="true" style="width:{200*s}px;height:{150*s}px">'
+            f'<span class="bc back" style="left:{31*s}px;top:{14*s}px;width:{70*s}px;height:{100*s}px;transform:rotate(-18deg)"></span>'
+            f'<span class="bc mid" style="left:{65*s}px;top:{14*s}px;width:{70*s}px;height:{100*s}px"></span>'
+            f'<span class="bc front" style="left:{99*s}px;top:{14*s}px;width:{70*s}px;height:{100*s}px;transform:rotate(18deg);font-size:{26*s}px">99</span>'
+            f'<span class="lens" style="left:{116*s}px;top:{66*s}px;width:{56*s}px;height:{56*s}px;border-width:{3*s}px"></span>'
+            f'<span class="handle" style="left:{164*s}px;top:{115*s}px;width:{30*s}px;height:{5*s}px;transform:rotate(45deg)"></span></div>')

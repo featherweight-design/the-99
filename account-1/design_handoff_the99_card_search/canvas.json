@@ -4,67 +4,107 @@
   "v": 1,
   "at": "2026-10-16T18:00:00Z"
  },
- "title": "The 99 · Card search",
+ "title": "The 99 · Card search R2",
  "launch": {
   "view": "canvas"
  },
  "pages": [],
  "boards": {
-  "The 99 - Card Search (R1).dc.html": {
+  "The 99 - Card Search (R2).dc.html": {
    "x": 0,
    "y": 0,
    "w": 1700,
-   "h": 2190,
-   "title": "Card search R1 · calls, locks, gaps"
+   "h": 2276,
+   "title": "Card search R2 · calls, locks, gaps"
   },
-  "R1 - Rows.dc.html": {
+  "R2 - Sheet-Phone.dc.html": {
    "x": 1780,
    "y": 0,
+   "w": 1850,
+   "h": 3253,
+   "title": "The search sheet · phone (R2)"
+  },
+  "R1 - Header-Phone.dc.html": {
+   "x": 3710,
+   "y": 0,
+   "w": 2330,
+   "h": 2643,
+   "title": "Header icon and quick return · phone"
+  },
+  "R2 - Options.dc.html": {
+   "x": 6120,
+   "y": 0,
+   "w": 2520,
+   "h": 3011,
+   "title": "R2 options · picked A and R-A"
+  },
+  "R1 - Rows.dc.html": {
+   "x": 0,
+   "y": 3373,
    "w": 1850,
    "h": 1494,
    "title": "The result row"
   },
+  "R2 - Rail-Desktop.dc.html": {
+   "x": 1930,
+   "y": 3373,
+   "w": 2770,
+   "h": 5031,
+   "title": "The rail slot and ⌘K · desktop (R2)"
+  },
+  "R2 - Deck-Page.dc.html": {
+   "x": 4780,
+   "y": 3373,
+   "w": 2770,
+   "h": 2202,
+   "title": "Two searches on the deck page (R2)"
+  },
   "The 99 - About · Card Search Entry.dc.html": {
-   "x": 3710,
-   "y": 0,
+   "x": 0,
+   "y": 4987,
    "w": 1846,
    "h": 931,
    "title": "About entry · Looking up any card"
   },
-  "R1 - Header-Phone.dc.html": {
+  "The 99 - Card Search (R1).dc.html": {
    "x": 0,
-   "y": 2400,
-   "w": 2330,
-   "h": 2643,
-   "title": "The header icon and quick return · phone"
+   "y": 8600,
+   "w": 1700,
+   "h": 2190,
+   "title": "R1 · superseded"
   },
   "R1 - Sheet-Phone.dc.html": {
-   "x": 2410,
-   "y": 2400,
+   "x": 1780,
+   "y": 8600,
    "w": 1850,
    "h": 3233,
-   "title": "The search sheet · phone"
+   "title": "R1 · superseded"
   },
   "R1 - Rail-Desktop.dc.html": {
-   "x": 0,
-   "y": 5900,
+   "x": 3710,
+   "y": 8600,
    "w": 2770,
    "h": 5010,
-   "title": "The rail field and ⌘K · desktop"
+   "title": "R1 · superseded"
   },
   "R1 - Deck-Page.dc.html": {
-   "x": 2850,
-   "y": 5900,
+   "x": 6560,
+   "y": 8600,
    "w": 2770,
    "h": 2202,
-   "title": "Two searches on the deck page"
+   "title": "R1 · superseded"
   }
  },
  "order": [
-  "The 99 - Card Search (R1).dc.html",
-  "R1 - Rows.dc.html",
-  "The 99 - About · Card Search Entry.dc.html",
+  "The 99 - Card Search (R2).dc.html",
+  "R2 - Sheet-Phone.dc.html",
   "R1 - Header-Phone.dc.html",
+  "R2 - Options.dc.html",
+  "R1 - Rows.dc.html",
+  "R2 - Rail-Desktop.dc.html",
+  "R2 - Deck-Page.dc.html",
+  "The 99 - About · Card Search Entry.dc.html",
+  "The 99 - Card Search (R1).dc.html",
   "R1 - Sheet-Phone.dc.html",
   "R1 - Rail-Desktop.dc.html",
   "R1 - Deck-Page.dc.html"
