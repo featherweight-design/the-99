@@ -204,4 +204,25 @@ describe("useCardScan", () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
   });
+
+  it("shows the blocked screen on a browser with no camera API at all", async () => {
+    const { hook } = setup({ getUserMedia: () => { throw new TypeError("navigator.mediaDevices is undefined"); } });
+    await waitFor(() => expect(hook.result.current.screen).toEqual({ kind: "blocked" }));
+  });
+
+  it("freezes the feed while Add is held, and runs it again on release", async () => {
+    const { hook } = setup();
+    const video = document.createElement("video");
+    const pause = vi.fn();
+    const play = vi.fn(() => Promise.resolve());
+    Object.assign(video, { pause, play });
+    act(() => hook.result.current.attachVideo(video));
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    play.mockClear();
+    act(() => hook.result.current.hold());
+    expect(pause).toHaveBeenCalled();
+    act(() => hook.result.current.cancelHold());
+    expect(play).toHaveBeenCalled();
+  });
 });
+

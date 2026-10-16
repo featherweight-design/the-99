@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { guideLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
@@ -329,6 +329,8 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
   const phone = p.layout === "phone";
   const { guess, held, again } = p.panel;
   const label = again?.kind === "duplicate" ? copy.again.addAnother : again?.kind === "second" ? copy.again.addSecond : copy.view.add;
+  // This press is down: a release adds only the press it ends, never one that began elsewhere or slid off.
+  const down = useRef(false);
   const press = (
     <button
       type="button"
@@ -339,17 +341,28 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
         // A touch captures the pointer to the button, so sliding off would never leave it: let go of the capture,
         // and the finger's leave cancels the hold as the design asks.
         if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+        down.current = true;
         p.onHold();
       }}
       onPointerUp={(e) => {
-        if (e.button !== 0) return;
+        // A release adds only the press it ends: a press that began elsewhere, or was cancelled by sliding off, adds
+        // nothing (keys and assistive tech have their own paths below).
+        if (e.button !== 0 || !down.current) return;
+        down.current = false;
         const r = e.currentTarget.getBoundingClientRect();
         const inside = r.width === 0 || (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
         if (inside) p.onAdd();
         else p.onCancelHold();
       }}
-      onPointerLeave={held ? p.onCancelHold : undefined}
-      onPointerCancel={p.onCancelHold}
+      onPointerLeave={() => {
+        if (!down.current) return;
+        down.current = false;
+        p.onCancelHold();
+      }}
+      onPointerCancel={() => {
+        down.current = false;
+        p.onCancelHold();
+      }}
       // Assistive tech that activates with a click and no pointer (detail 0) still adds; a pointer's click is the
       // pointerup above, so it is not counted twice.
       onClick={(e) => {

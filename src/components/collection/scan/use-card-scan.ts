@@ -97,7 +97,10 @@ export function useCardScan(
     let stream: MediaStream | null = null;
     let gone = false;
     const gum = depsRef.current.getUserMedia ?? ((c: MediaStreamConstraints) => navigator.mediaDevices.getUserMedia(c));
-    gum(CAMERA_CONSTRAINTS).then(
+    // Asked inside the chain, so a browser with no camera API at all (it throws rather than rejects) is blocked too.
+    Promise.resolve()
+      .then(() => gum(CAMERA_CONSTRAINTS))
+      .then(
       (s) => {
         if (gone) return s.getTracks().forEach((t) => t.stop());
         stream = s;
@@ -114,6 +117,17 @@ export function useCardScan(
       videoEl.srcObject = null;
     };
   }, [active, videoEl]);
+
+  // The held card's frame stays on screen while the press is down (V4), and the feed runs again on release.
+  useEffect(() => {
+    if (!videoEl?.srcObject) return;
+    try {
+      if (held) videoEl.pause();
+      else void Promise.resolve(videoEl.play?.()).catch(() => {});
+    } catch {
+      // a test DOM with no media playback
+    }
+  }, [held, videoEl]);
 
   // The read loop: one frame at a time, each awaited, so a slow model never queues frames behind it.
   useEffect(() => {

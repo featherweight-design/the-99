@@ -118,6 +118,15 @@ function AddMode({
   // `alreadyApplied` for a write that never carried the edit.
   const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
+  // Every write to the list goes through `writeLines`, which applies it to the newest list, not the one a render or an
+  // await began with: a search pick and a scanned add each finish after a network read, and a write built on the list
+  // they started from would drop whatever landed in between.
+  const linesRef = useRef<AddLineState[]>([]);
+  const writeLines = useCallback((next: AddLineState[] | ((ls: AddLineState[]) => AddLineState[])) => {
+    const value = typeof next === "function" ? next(linesRef.current) : next;
+    linesRef.current = value;
+    setLines(value);
+  }, []);
   const [phase, setPhase] = useState<Phase>("editing");
   // The phase as a scanned add's await sees it, which a closure from before the save would not.
   const phaseRef = useRef<Phase>("editing");
@@ -210,9 +219,9 @@ function AddMode({
   const cancelPicker = useCallback(() => {
     // The line being asked about goes if it never got its printing; a reopened one keeps the printing it had. Only
     // that line: scanned Normal-mode lines still waiting keep their place, and the next is asked for.
-    setLines((ls) => ls.filter((l) => l.printing !== null || l.id !== pickerFor));
+    writeLines((ls) => ls.filter((l) => l.printing !== null || l.id !== pickerFor));
     setPickerFor(null);
-  }, [pickerFor]);
+  }, [pickerFor, writeLines]);
 
   // Escape and the close button share one answer, in order: the question, the picker, the list.
   // Every way out of the scanner (✕, Review, Escape, Back) puts focus back on the search it was opened beside.
@@ -260,10 +269,10 @@ function AddMode({
     const base = { id, oracleId: card.oracleId, name: card.name, imageUri: card.imageUri, choices };
     if (choices.length === 1) {
       // A card with a single printing skips the step: the one printing is the answer.
-      finish(choosePrinting(openLine(lines, base), id, choices[0]), id, card.name);
+      finish(choosePrinting(openLine(linesRef.current, base), id, choices[0]), id, card.name);
       return;
     }
-    setLines(openLine(lines, base));
+    writeLines((ls) => openLine(ls, base));
     setPickerFor(id);
     setAnnounce(copy.announceChoose(card.name, choices.length));
   }
@@ -298,7 +307,7 @@ function AddMode({
     setResults([]);
     setSearched(null);
     const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices };
-    setLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
+    writeLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
     return true;
   }
 
@@ -312,7 +321,7 @@ function AddMode({
   }, [lines]);
 
   function finish(r: ReturnType<typeof choosePrinting>, id: string, name: string) {
-    setLines(r.lines);
+    writeLines(r.lines);
     setPickerFor(null);
     if (r.merged) {
       setPulse({ id: r.merged.id, n: (pulse?.n ?? 0) + 1 });
@@ -373,7 +382,7 @@ function AddMode({
   function addMore() {
     attempt.current = null;
     setBaseline((b) => (b === undefined ? undefined : b + (saved?.copies ?? 0)));
-    setLines([]);
+    writeLines([]);
     setSaved(null);
     setPhase("editing");
     setNotice(null);
@@ -571,15 +580,15 @@ function AddMode({
                     phone={phone}
                     disabled={saving}
                     onOpenPicker={() => setPickerFor(pickerFor === l.id ? null : l.id)}
-                    onChoose={(p) => finish(choosePrinting(lines, l.id, p), l.id, l.name)}
+                    onChoose={(p) => finish(choosePrinting(linesRef.current, l.id, p), l.id, l.name)}
                     onFinish={(f) => {
-                      const r = setFinish(lines, l.id, f);
-                      setLines(r.lines);
+                      const r = setFinish(linesRef.current, l.id, f);
+                      writeLines(r.lines);
                       if (r.merged) finish(r, l.id, l.name);
                     }}
-                    onQuantity={(q) => setLines(setQuantity(lines, l.id, q))}
+                    onQuantity={(q) => writeLines((ls) => setQuantity(ls, l.id, q))}
                     onRemove={() => {
-                      setLines(removeLine(lines, l.id));
+                      writeLines((ls) => removeLine(ls, l.id));
                       if (pickerFor === l.id) setPickerFor(null);
                     }}
                   />

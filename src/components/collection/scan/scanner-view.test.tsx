@@ -85,8 +85,19 @@ describe("ScannerView", () => {
   it("marks a held guess and cancels when the finger slides off", () => {
     const p = draw({ panel: { kind: "sure", guess: SOL, held: true, again: null } });
     expect(within(panel()).getByText(copy.view.held)).toBeTruthy();
-    fireEvent.pointerLeave(screen.getByRole("button", { name: copy.view.add }));
+    const add = screen.getByRole("button", { name: copy.view.add });
+    fireEvent.pointerDown(add);
+    fireEvent.pointerLeave(add);
     expect(p.onCancelHold).toHaveBeenCalled();
+    // Sliding back on and letting go is not a fresh press: nothing is added.
+    fireEvent.pointerUp(add);
+    expect(p.onAdd).not.toHaveBeenCalled();
+  });
+
+  it("adds nothing on a release whose press began somewhere else", () => {
+    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    fireEvent.pointerUp(screen.getByRole("button", { name: copy.view.add }));
+    expect(p.onAdd).not.toHaveBeenCalled();
   });
 
   it("says a duplicate is already on the list, and a second copy takes its own press (R1, R2)", () => {

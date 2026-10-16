@@ -9,8 +9,9 @@ const scan = collectionEditCopy.scan;
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", typeLine: "Artifact", imageUri: null };
 
 const choices = vi.fn();
+const search = vi.fn(async (_q: string) => [] as unknown[]);
 vi.mock("../../app/collection/edit-actions", () => ({
-  searchCollectionCards: vi.fn(async () => []),
+  searchCollectionCards: (q: string) => search(q),
   loadPrintingChoices: (...a: unknown[]) => choices(...a),
   addToCollection: vi.fn(),
 }));
@@ -33,7 +34,10 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
 });
 const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" })];
 
-beforeEach(() => choices.mockReset().mockResolvedValue(TWO));
+beforeEach(() => {
+  choices.mockReset().mockResolvedValue(TWO);
+  search.mockReset().mockResolvedValue([]);
+});
 afterEach(() => {
   document.body.innerHTML = "";
 });
@@ -155,4 +159,24 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     land([]);
     expect(await screen.findByRole("alert")).toHaveTextContent(copy.printingsFailed);
   });
+
+  it("keeps a scanned card that lands while a search pick is still loading its printings", async () => {
+    const STONE = { oracleId: "22222222-2222-4222-8222-222222222222", name: "Mind Stone", imageUri: null, typeLine: "Artifact" };
+    search.mockResolvedValue([STONE]);
+    let landPick: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (landPick = r)));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.change(document.querySelector("input")!, { target: { value: "mind" } });
+    const result = await screen.findByRole("option", { name: /Mind Stone/ });
+    // On the desktop the scanner stands in for the search box and the results below stay pressable.
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(result);
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(screen.getByText(copy.summary(1, 1))).toBeTruthy());
+    landPick([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
+    // Both are on the list: the pick did not write over the scanned card it never saw.
+    await waitFor(() => expect(screen.getByText(copy.summary(2, 2))).toBeTruthy());
+  });
 });
+
