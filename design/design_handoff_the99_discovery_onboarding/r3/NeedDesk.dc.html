@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Decks with no decks, and Commanders' first run, at 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:1280px;height:{{ h }}px;display:flex;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#C0B8A6">
+  <dc-import name="Rail" active="{{ active }}" h="{{ h }}" hint-size="62px,760px"></dc-import>
+  <main style="flex:1;min-width:0;position:relative;overflow:hidden">
+
+    <sc-if value="{{ decks }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:16px 26px;border-bottom:1px solid #2B241B;display:flex;align-items:baseline;justify-content:space-between">
+        <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:24px;color:#EDE6D8">Decks</h1>
+        <span style="display:flex;gap:10px"><span style="height:32px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid #3A3229;font-size:12.5px;color:#EDE6D8">Import a deck</span><span style="height:32px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid #3A3229;font-size:12.5px;color:#EDE6D8">New deck</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:64px 40px 26px;text-align:center">
+        <div aria-hidden="true" style="position:relative;width:130px;height:110px">
+          <span style="position:absolute;left:14px;top:18px;width:62px;height:84px;box-sizing:border-box;border-radius:7px;border:1px solid #3A3229;background:#1B1712;transform:rotate(-16deg)"></span>
+          <span style="position:absolute;left:32px;top:13px;width:62px;height:84px;box-sizing:border-box;border-radius:7px;border:1px solid #3A3229;background:#211D18"></span>
+          <span style="position:absolute;left:50px;top:18px;width:62px;height:84px;box-sizing:border-box;border-radius:7px;border:1px solid #CF8745;background:#1B1712;transform:rotate(15deg);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#CF8745">99</span>
+        </div>
+        <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:25px;color:#EDE6D8">No decks yet</h2>
+        <p style="margin:0;max-width:430px;font-size:14px;line-height:1.65;color:#A59C89">Pick a commander and we’ll assemble the 99 from cards you already own, then track what’s missing.</p>
+        <div style="margin-top:2px;display:flex;gap:10px">
+          <a href="#" style="height:32px;display:flex;align-items:center;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;text-decoration:none">Browse commanders</a>
+          <a href="#" style="height:32px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid #3A3229;color:#EDE6D8;font-size:12.5px;text-decoration:none">Import a deck</a>
+        </div>
+        <p style="margin:2px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">64 commanders buildable from 1,418 cards</p>
+        <sc-if value="{{ hmc }}" hint-placeholder-val="{{ true }}">
+          <p style="margin:4px 0 0;font-size:13.5px;color:#A59C89">Not sure what to build? <a href="#" style="{{ door }}">Help me choose →</a></p>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ commanders }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 22px;border-bottom:1px solid #2B241B;display:flex;align-items:baseline;gap:12px"><h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8">Commanders</h1><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">yours, not yet built</span></div>
+      <div style="margin:28px 34px 0;border-radius:14px;padding:22px 26px;display:flex;gap:26px;align-items:center;background:linear-gradient(120deg,#211D18,#1A1611 60%);border:1px solid #3A3229">
+        <span style="flex:none;width:52px;height:52px;border-radius:999px;border:2px solid #CF8745;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:600;font-size:13px;color:#CF8745;box-sizing:border-box">XCIX</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#CF8745">GUIDED SETUP · STEP 2 OF 3</span><span style="display:flex;align-items:center;gap:4px"><span style="width:7px;height:7px;background:#6FA368;transform:rotate(45deg)"></span><span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg)"></span><span style="width:7px;height:7px;background:#3A3229;transform:rotate(45deg)"></span></span></div>
+          <h2 style="margin:6px 0 0;font-family:'Cinzel',serif;font-weight:600;font-size:23px;color:#EDE6D8">Meet your commanders</h2>
+          <p style="margin:6px 0 0;font-size:14px;line-height:1.55;color:#C0B8A6">1,418 cards read. 64 can lead. I ranked them. You’re welcome. Pick a commander to build your first 99.<sc-if value="{{ hmc }}" hint-placeholder-val="{{ true }}"> <span style="color:#A59C89">Not sure which?</span> <a href="#" style="{{ door }}">Help me choose →</a></sc-if></p>
+        </div>
+      </div>
+      <div style="margin-top:20px;background:#17140F;border-top:1px solid #2B241B;border-bottom:1px solid #2B241B;padding:12px 22px 10px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="width:240px;height:32px;border-radius:8px;border:1px solid #3A3229;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#8B8270;box-sizing:border-box">Search commanders</span>
+          <span style="display:flex;gap:4px"><span style="width:20px;height:20px;border-radius:999px;background:#F4E9C4"></span><span style="width:20px;height:20px;border-radius:999px;background:#3A6AA5"></span><span style="width:20px;height:20px;border-radius:999px;background:#98748F"></span><span style="width:20px;height:20px;border-radius:999px;background:#C05A3E"></span><span style="width:20px;height:20px;border-radius:999px;background:#4B7A46"></span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8B8270">BUILD FROM</span>
+          <span style="display:flex;padding:2px;border-radius:8px;border:1px solid #3A3229"><span style="padding:4px 10px;border-radius:6px;background:#29241F;font-size:12.5px;font-weight:600;color:#EDE6D8">All my cards</span><span style="padding:4px 10px;font-size:12.5px;color:#A59C89">Free only</span></span>
+          <span style="height:32px;display:flex;align-items:center;padding:0 12px;border-radius:8px;border:1px solid #3A3229;font-size:12.5px;color:#C0B8A6">Order · Fit</span>
+        </div>
+        <span style="font-size:13px;color:#C0B8A6">64 commanders you own and haven’t built</span>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:16px;padding:12px 22px;border-bottom:1px solid #2B241B">
+            <img src="{{ r.art }}" alt="" style="flex:none;width:96px;height:60px;border-radius:7px;object-fit:cover;object-position:center 22%;display:block">
+            <span style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0"><span style="font-size:15px;font-weight:600;color:#EDE6D8">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">{{ r.meta }}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"page":{"editor":"enum","options":["decks","commanders"],"default":"decks"},"hmc":{"editor":"boolean","default":true},"h":{"editor":"int","default":560},"$preview":{"width":1280,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const page = p.page ?? 'decks';
+    return {
+      decks: page === 'decks', commanders: page === 'commanders', active: page === 'decks' ? 'decks' : 'commanders',
+      hmc: p.hmc !== false && p.hmc !== 'false', h: Number(p.h ?? 560),
+      door: 'color:#CF8745;text-decoration:underline;text-decoration-color:rgba(207,135,69,.55);text-underline-offset:3px',
+      rows: [
+        { art: '/_blob/1fe068cf8b09ae84756e0a673987cb31', name: 'Sai, Master Thopterist', meta: 'Blue · artifacts, thopters' },
+        { art: '/_blob/49ed709133661cc79c9695c133359a91', name: 'Zimone, Mystery Unraveler', meta: 'Simic · lands, +1/+1 counters' },
+        { art: '/_blob/4017ab6de13a979e8adfcd6bfc5f6715', name: 'Ghalta, Primal Hunger', meta: 'Green · big creatures' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · phone tab bar, themed, with the first-run bracket</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<nav aria-label="Primary" style="{{ frame }}">
+  <sc-if value="{{ locked }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;height:14px;margin-left:40%">
+      <span aria-hidden="true" style="{{ bracketBox }}"></span>
+      <span style="{{ bracketLbl }}"><svg width="8" height="10" viewBox="0 0 10 12" fill="none" stroke="{{ lockInk }}" stroke-width="1.4"><rect x="1" y="5" width="8" height="6" rx="1.2"></rect><path d="M3 5V3.5a2 2 0 0 1 4 0V5"></path></svg>Open once your cards are in</span>
+    </div>
+  </sc-if>
+  <div style="display:flex;padding:8px 8px 14px">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="5">
+      <span aria-label="{{ it.aria }}" style="{{ it.style }}">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="{{ it.d }}"></path></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em">{{ it.label }}</span>
+      </span>
+    </sc-for>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kaldheim","eldraine"],"default":"amonkhet"},"active":{"editor":"enum","options":["home","collection","commanders","discover","decks"],"default":"home"},"locked":{"editor":"boolean","default":false},"$preview":{"width":390,"height":88}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      amonkhet: { rail:'#1A1611', border:'#2B241B', strong:'#3A3229', inset:'#1B1712', fg:'#EDE6D8', faint:'#8B8270', locked:'#6E6654' },
+      kaldheim: { rail:'#181920', border:'#1A1F2B', strong:'#2E3340', inset:'#1A1B22', fg:'#C6D2D3', faint:'#7C8A8C', locked:'#5F6D6E' },
+      eldraine: { rail:'#15121B', border:'#241D30', strong:'#342C41', inset:'#17141D', fg:'#E4DEEE', faint:'#898395', locked:'#6A6475' },
+    };
+    const p = this.props;
+    const t = P[p.theme] || P.amonkhet;
+    const active = p.active ?? 'home';
+    const locked = p.locked === true || p.locked === 'true';
+    const defs = [
+      ['home', 'Home', 'M3.5 9 10 4l6.5 5v7.5h-4.25v-4.5h-4.5v4.5H3.5z'],
+      ['collection', 'Collection', 'M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z'],
+      ['commanders', 'Commanders', 'M3 14 4.5 6l3.5 3.5L10 5l2 4.5L15.5 6 17 14zM3 16.5h14'],
+      ['discover', 'Discover', 'M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM10 6.5 13.5 10 10 13.5 6.5 10z'],
+      ['decks', 'Decks', 'M4 6.5h9.5v10.5H4zM6.5 3.5h9.5v10.5'],
+    ];
+    const items = defs.map(([k, label, d], i) => {
+      const shut = locked && i >= 2;
+      return {
+        label, d, aria: shut ? label + ', locked' : label,
+        style: 'flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;' +
+          (shut ? `color:${t.locked};` : k === active ? `background:${t.inset};color:${t.fg};` : `color:${t.faint};`),
+      };
+    });
+    return {
+      locked, items, lockInk: t.locked,
+      frame: `width:390px;height:${locked ? 88 : 74}px;box-sizing:border-box;background:${t.rail};border-top:1px solid ${t.border};display:flex;flex-direction:column`,
+      bracketBox: `position:absolute;top:7px;right:8px;left:8px;height:6px;border-radius:3px 3px 0 0;border:1px solid ${t.strong};border-bottom:0`,
+      bracketLbl: `position:absolute;top:0;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:5px;white-space:nowrap;background:${t.rail};padding:0 7px;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:14px;letter-spacing:.08em;text-transform:uppercase;color:${t.locked}`,
+    };
+  }
+}
+</script>
+</body>
+</html>
