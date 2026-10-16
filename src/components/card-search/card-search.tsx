@@ -415,6 +415,16 @@ function PhoneFrame() {
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
 
+  // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
+  // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
+  useEffect(() => {
+    if (!isOpen) return;
+    const at = document.activeElement;
+    if (!at || at === document.body) inputRef.current?.focus();
+    // On mount only: a frame that mounts open is one the resize just swapped in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Native listeners on the sheet itself: the results are a portal owned by the layer, so their React events bubble
   // through the layer and never reach this frame, while the DOM's own events do.
   const escapeRef = useRef(escape);

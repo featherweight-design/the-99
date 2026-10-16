@@ -124,7 +124,7 @@ export function useRailTag(pathname: string): {
       // note, which sit in the rail too and own their own Escape.
       const active = document.activeElement;
       const nowhere = !active || active === document.body;
-      if (!nowhere && !active.closest("[data-rail-nav] a[href]")) return;
+      if (!nowhere && !ownsRailEscape(active)) return;
       dismissed.current = current.href;
       close();
     };
@@ -206,4 +206,12 @@ export function useRailTag(pathname: string): {
     ) : null;
 
   return { bind, tag };
+}
+
+/**
+ * Whether focus is on a control whose Escape closes the rail's name tag: a live nav link or the search slot (a button,
+ * which opens the same tag on focus). Not the account control or a locked slot, which own their own Escape.
+ */
+export function ownsRailEscape(active: Element): boolean {
+  return active.closest("[data-rail-nav] a[href], [data-rail-nav] [data-rail-search]") !== null;
 }

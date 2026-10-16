@@ -46,6 +46,16 @@ function DesktopFrame() {
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
 
+  // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
+  // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
+  useEffect(() => {
+    if (!isOpen) return;
+    const at = document.activeElement;
+    if (!at || at === document.body) inputRef.current?.focus();
+    // On mount only: a frame that mounts open is one the resize just swapped in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Escape, from the field or from a row the card's return left focus on. A native listener, because the results
   // are portalled into the body host and a React handler on this frame would never see a key pressed in them.
   const escapeRef = useRef(escape);

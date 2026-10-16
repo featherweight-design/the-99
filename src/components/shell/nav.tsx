@@ -540,6 +540,7 @@ function RailSearchSlot({ bind }: { bind: ReturnType<typeof useRailTag>["bind"] 
         aria-haspopup="dialog"
         aria-expanded={search.isOpen}
         aria-keyshortcuts={shortcut.keys}
+        data-rail-search=""
         {...bind("#card-search", `${cardSearchCopy.label} ${shortcut.label}`)}
         onPointerDown={search.warmSearch}
         onClick={(e) => search.openSearch(e.currentTarget)}

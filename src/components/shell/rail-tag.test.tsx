@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NavRail } from "./nav";
-import { CLOSE_DELAY_MS, FOLLOW_GRACE_MS, OPEN_DELAY_MS } from "./rail-tag";
+import { CLOSE_DELAY_MS, FOLLOW_GRACE_MS, OPEN_DELAY_MS, ownsRailEscape } from "./rail-tag";
 
 let pathname = "/collection";
 vi.mock("./pending-push", () => ({ usePendingPush: () => ({ go: () => {} }) }));
@@ -274,5 +274,19 @@ describe("the pointer rail's name tag", () => {
     enter(slot("Home"));
     wait(OPEN_DELAY_MS * 2);
     expect(tag()).toBeNull();
+  });
+});
+
+describe("which focused control owns the rail tag's Escape", () => {
+  const rail = (inner: string) => {
+    document.body.innerHTML = `<nav data-rail-nav>${inner}</nav><aside><button id="account"></button></aside>`;
+    return (id: string) => document.getElementById(id)!;
+  };
+  it("is a live link or the search slot, and nothing else in or beside the rail", () => {
+    const get = rail('<a id="link" href="/x"></a><button id="search" data-rail-search></button><button id="locked"></button>');
+    expect(ownsRailEscape(get("link"))).toBe(true);
+    expect(ownsRailEscape(get("search"))).toBe(true);
+    expect(ownsRailEscape(get("locked"))).toBe(false);
+    expect(ownsRailEscape(get("account"))).toBe(false);
   });
 });

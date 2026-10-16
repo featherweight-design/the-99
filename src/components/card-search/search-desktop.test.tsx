@@ -87,6 +87,37 @@ describe("the search on the desktop", () => {
     expect(frame()?.getAttribute("tabindex")).toBe("-1");
   });
 
+  it("keeps focus in the field when a resize swaps the frame, in both directions", async () => {
+    const listeners = new Set<() => void>();
+    let wide = true;
+    vi.spyOn(navigator, "platform", "get").mockReturnValue("Win32");
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      get matches() {
+        return q.includes("768") ? wide : false;
+      },
+      addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+      removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+    }));
+    const tree = () => (
+      <CardSearchRoot userId="u1">{wide ? <SearchDesktop /> : null}</CardSearchRoot>
+    );
+    const { rerender } = render(tree());
+    const inField = () => {
+      const at = document.activeElement;
+      return at?.getAttribute("role") === "combobox" && at.isConnected && at.closest("[data-card-search-sheet]") !== null;
+    };
+    await press({ ctrlKey: true });
+    expect(inField()).toBe(true);
+    for (const next of [false, true]) {
+      wide = next;
+      await act(async () => {
+        listeners.forEach((fn) => fn());
+        rerender(tree());
+      });
+      expect(inField()).toBe(true);
+    }
+  });
+
   it("is not modal and shows the shortcut until typing starts, with no foot line before results", async () => {
     mount("MacIntel");
     await press({ metaKey: true });
