@@ -12,6 +12,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
+import { clearRecent } from "../../lib/card-search/recent";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import { useMomentHold } from "../../lib/moments/hold";
 import { momentsCopy } from "../../lib/copy/moments";
@@ -449,6 +450,8 @@ export function AccountMenu({
   // failure — without that release the menu stays dead until a reload.
   function onSignOut() {
     setBusy(true);
+    // Card search's recent cards go with the account on this device (README call 7), before the session does.
+    if (user) clearRecent(user.id);
     void clerk.signOut().catch(() => setBusy(false));
   }
 

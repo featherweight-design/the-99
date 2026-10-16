@@ -465,6 +465,41 @@ export function leaveDialogsForNavigation() {
 }
 
 /**
+ * Runs `then` once a dialog that just closed has taken its entry back off the history: after the release's one-task
+ * wait, and after the `back()` it issued has landed. Card search hands over to card details this way (plan
+ * `2026-10-16-card-search.md`, resolution 3): the card pushes its own entry only once the search's is gone, so the
+ * two never stand together and the card cannot adopt an entry still on its way out. Call it after the closing commit
+ * (from an effect), so the release is already queued ahead of this wait. A pop that never lands (a test with no real
+ * history, or a browser that drops it) gives way after a second, the same window the self-pop itself is given.
+ */
+export function afterDialogsReleased(then: () => void): () => void {
+  let done = false;
+  let fallback: ReturnType<typeof setTimeout> | null = null;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener("popstate", finish);
+    if (fallback !== null) clearTimeout(fallback);
+    then();
+  };
+  const wait = setTimeout(() => {
+    if (selfPops === 0) {
+      finish();
+      return;
+    }
+    // Registered after `onPopState`, which counts the pop off first.
+    window.addEventListener("popstate", finish);
+    fallback = setTimeout(finish, 1_000);
+  }, 0);
+  return () => {
+    done = true;
+    clearTimeout(wait);
+    if (fallback !== null) clearTimeout(fallback);
+    window.removeEventListener("popstate", finish);
+  };
+}
+
+/**
  * Give an open dialog a history entry, so Back closes it rather than the route.
  *
  * The release waits one task, and that is for React rather than for the browser:

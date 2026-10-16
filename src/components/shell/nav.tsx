@@ -1,5 +1,6 @@
 "use client";
 
+import { CardSearchIcon } from "../card-search/card-search";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
@@ -808,6 +809,8 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, friendsMomen
         <OfflinePill place="header" />
         {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
         <InstallSlot />
+        {/* Card search, left of the avatar (HP1). Drawn only where the shell mounted the search. */}
+        <CardSearchIcon />
         {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
         <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
       </div>

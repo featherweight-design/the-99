@@ -18,6 +18,8 @@ import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
+import { cardSearchEnabled } from "../../lib/card-search/flag";
+import { CardSearchRoot } from "../card-search/card-search";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -73,6 +75,8 @@ export default async function Shell({
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
     friends: socialFriendsEnabled(env),
   };
+  // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
+  const cardSearch = cardSearchEnabled(env);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). Off, or none live, the spent set is not
@@ -103,6 +107,7 @@ export default async function Shell({
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
       <MomentsProvider live={moments} spent={spentMoments}>
+      <CardSearchShell userId={cardSearch ? userId : null}>
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -122,8 +127,14 @@ export default async function Shell({
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>
+      </CardSearchShell>
       </MomentsProvider>
     </NavigationPendingProvider>
     </div>
   );
+}
+
+/** The search's root while the switch is on for the reader; its children alone otherwise. */
+function CardSearchShell({ userId, children }: { userId: string | null; children: React.ReactNode }) {
+  return userId ? <CardSearchRoot userId={userId}>{children}</CardSearchRoot> : <>{children}</>;
 }

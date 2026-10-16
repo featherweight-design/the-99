@@ -1,0 +1,287 @@
+{
+  "feature": "Card search on the phone (plan 2026-10-16-card-search.md, PR C): the header icon, the search sheet S1 to S7, and the handover to card details",
+  "note": "Photographed at 360, 375 and 390 against a dev server with CARD_SEARCH_ENABLED, SWAP_TOOLS_ENABLED and FIND_A_DECK_READ_ENABLED on, local-dev's audit account. The two Slow 4G rows put the throttle on only after the page has loaded, and lift it first. S6 (failed) cannot be forced from a browser without breaking the server, so it is proved in search-layer.test.tsx.",
+  "widths": [
+    {
+      "label": "phone-360",
+      "width": 360,
+      "height": 800
+    },
+    {
+      "label": "phone-375",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "rows": [
+    {
+      "id": "hp1-icon",
+      "label": "HP1: the header's search icon at rest, left of the account button",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "hp3-offline",
+      "label": "HP2/HP3: offline, the pill beside the icon (the install slot steps aside under 390 when offered)",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "offline": true,
+          "settle": 800
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s1-empty",
+      "label": "S1: opened with no recent cards, graphic A, field focused",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "settle": 800
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s4-results",
+      "label": "S4: results with the count, typed letters in the accent, ownership and decks",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "settle": 600
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s4b-scrolled",
+      "label": "S4b: the list dragged, field unfocused, the query kept with its clear",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "searchScroll": 400,
+          "settle": 400
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s5-none",
+      "label": "S5: no results, Add cards' own words",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "zqxzq",
+          "searchWait": "No card is named “zqxzq”",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "h2-card",
+      "label": "H1/H2: a result pressed, card details on its own with n of N",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "searchPick": 0,
+          "settle": 2500
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "h3-back",
+      "label": "H3: Back from the card, the search as it was with the ring on the row that opened it",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "searchPick": 2,
+          "settle": 2500
+        },
+        {
+          "back": true,
+          "settle": 800
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s2-recent",
+      "label": "S2: opened again, the recent cards with Clear",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "settle": 1500
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s7-offline",
+      "label": "S7: offline, recents hidden, the field still types",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "offline": true,
+          "settle": 500,
+          "openSearch": true,
+          "searchType": "sol"
+        },
+        {
+          "settle": 500
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "dp1-deck",
+      "label": "DP1: the deck page, the icon at rest above the dock's own Add a card field",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 2500
+        },
+        {
+          "click": "a[href^='/decks/'][href*='-']",
+          "settle": 3500
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "dp4-deck-open",
+      "label": "DP4: searching from the deck page, the icon open, results ignoring the deck's identity",
+      "steps": [
+        {
+          "goto": "/decks",
+          "settle": 2500
+        },
+        {
+          "click": "a[href^='/decks/'][href*='-']",
+          "settle": 3500
+        },
+        {
+          "openSearch": true,
+          "searchType": "giada",
+          "searchWait": "3 cards",
+          "settle": 600
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s3-first",
+      "label": "S3: the first search in flight on Slow 4G, the bar and three skeletons",
+      "steps": [
+        {
+          "throttle": "off"
+        },
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "settle": 400
+        },
+        {
+          "throttle": "slow",
+          "searchType": "sol",
+          "settle": 600
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    },
+    {
+      "id": "s3-later",
+      "label": "S3, a later search: the previous rows at half strength under the bar",
+      "steps": [
+        {
+          "throttle": "off"
+        },
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2000
+        },
+        {
+          "openSearch": true,
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "settle": 400
+        },
+        {
+          "throttle": "slow",
+          "searchType": "sola",
+          "settle": 600
+        }
+      ],
+      "view": "src/components/card-search/card-search.tsx"
+    }
+  ]
+}

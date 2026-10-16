@@ -118,16 +118,29 @@ function expand(value, where, { forRegex = false } = {}) {
 // Chromium's own "Slow 4G" figures, as `measure:load`'s slow profile uses them.
 const SLOW_4G = { offline: false, latency: 562.5, downloadThroughput: (1.6 * 1e6) / 8 * 0.9, uploadThroughput: (750 * 1e3) / 8 * 0.9 };
 
+const throttles = new WeakMap();
+
 async function run(page, steps) {
   for (const step of steps ?? []) {
     // `throttle: "slow"` puts the page on Slow 4G for the steps after it: a state that exists
     // only while a navigation is pending (the pip, the track, the escalation screen) is gone in
     // a frame on a local server, and a sheet taken there photographs the page it landed on.
     if (step.throttle !== undefined) {
-      if (step.throttle !== "slow") throw new Error(`throttle takes "slow", not ${JSON.stringify(step.throttle)}`);
-      const cdp = await page.context().newCDPSession(page);
-      await cdp.send("Network.enable");
-      await cdp.send("Network.emulateNetworkConditions", SLOW_4G);
+      // `"off"` takes it away again, so a row can end its throttle and the rows after it load at full speed.
+      if (step.throttle !== "slow" && step.throttle !== "off") {
+        throw new Error(`throttle takes "slow" or "off", not ${JSON.stringify(step.throttle)}`);
+      }
+      // One session per page: conditions set on one session are not lifted by another.
+      if (!throttles.has(page)) {
+        const fresh = await page.context().newCDPSession(page);
+        await fresh.send("Network.enable");
+        throttles.set(page, fresh);
+      }
+      const cdp = throttles.get(page);
+      await cdp.send(
+        "Network.emulateNetworkConditions",
+        step.throttle === "slow" ? SLOW_4G : { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 },
+      );
     }
     if (step.goto !== undefined) {
       const url = expand(step.goto, step.goto);
@@ -195,6 +208,30 @@ async function run(page, steps) {
     if (step.hoverRail !== undefined) {
       await page.locator(`aside a[aria-label="${step.hoverRail}"]`).first().hover({ timeout: 15_000 });
     }
+    // Card search lives in the shell, not the page: its sheet is reached through the header's icon by its own name,
+    // and every step after that is scoped to the sheet by ITS name, so none of them can wander into the page.
+    const searchSheet = page.getByRole("dialog", { name: "Search all cards" });
+    if (step.openSearch) {
+      await page.locator('header button[aria-label="Search all cards"]').first().click({ timeout: 15_000 });
+      await searchSheet.waitFor({ state: "visible", timeout: 15_000 });
+    }
+    if (step.searchType !== undefined) {
+      await searchSheet.getByRole("combobox").fill(step.searchType, { timeout: 15_000 });
+    }
+    if (step.searchWait !== undefined) {
+      await searchSheet.getByText(step.searchWait, { exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
+    if (step.searchPick !== undefined) {
+      await searchSheet.getByRole("option").nth(step.searchPick).click({ timeout: 15_000 });
+    }
+    // Dragging the list lowers the keyboard (S4b): the field gives up focus and the list scrolls.
+    if (step.searchScroll !== undefined) {
+      await searchSheet.getByRole("combobox").blur();
+      await searchSheet.getByRole("listbox").evaluate((list, y) => { list.parentElement.scrollTop = y; }, step.searchScroll);
+    }
+    if (step.back) await page.goBack();
+    // The browser's own offline switch, for the surfaces that change with the connection.
+    if (step.offline !== undefined) await page.context().setOffline(step.offline);
     if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other
@@ -320,6 +357,8 @@ try {
         note = String(error).split("\n")[0].slice(0, 120);
         await page.screenshot({ path: file }).catch(() => {});
       }
+      // A row that went offline must not leave the next row photographing an offline app.
+      await context.setOffline(false);
       shots.push({ id: row.id, label: row.label, size: size.label, file, note });
       console.log(`${note ? "✗" : "✓"} ${row.id} · ${size.label}${note ? ` — ${note}` : ""}`);
     }
