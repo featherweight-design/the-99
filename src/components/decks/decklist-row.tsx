@@ -139,8 +139,11 @@ const FOLD = {
     plusMid: "hidden md:@min-[359px]:@max-[479px]:inline",
   },
 } as const;
-/** The availability marker's word drops to its glyph (and its count) at the middle tier in Shopping and the tight tier in All. */
-const WORD_FOLD = { all: "md:@max-[359px]:hidden", shopping: "md:@max-[479px]:hidden" } as const;
+/**
+ * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
+ * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
+ */
+const WORD_FOLD = { all: "md:@max-[479px]:hidden", shopping: "md:@max-[479px]:hidden" } as const;
 
 /** Phone pips ride the meta line at their own size, plain and uncapped — there
  *  the line is theirs alone and has the width to spend. Desktop takes the shared
@@ -312,13 +315,27 @@ export function DecklistRow({
   ];
   const markFold = (i: number): string =>
     inShopping ? FOLD.shopping.all : i >= 3 ? FOLD.all.fourth : i >= 1 ? FOLD.all.afterFirst : FOLD.all.all;
+  // The whole row is the preview's trigger (#351), so the handlers go on the
+  // shell rather than on the name — the name is the modal's trigger, and a
+  // preview that only opened over it would be a second, smaller target for a
+  // gesture the reader is already making across the row.
+  const previewHandlers = usePreviewRow(card.imageUri, card.foil);
+  // THE +N SUPPRESSES THE ROW'S PREVIEW while the pointer is on it (d9, 2026-10-16): its tooltip lists the folded marks, and the
+  // 252x352 card would cover the rows under it. Entering the chip closes the preview, its moves never reach the row's, and leaving
+  // it (back to the name) opens it again; leaving the row from the chip closes it after, on the row's own leave. The chip takes
+  // no focus (aria-hidden, no hit area), and the preview is a pointer gesture only, so there is no focus half.
+  const plusPointer = {
+    onMouseEnter: () => previewHandlers.onMouseLeave?.(),
+    onMouseMove: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
+    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => previewHandlers.onMouseEnter?.(e),
+  };
   const plusN = (fromIndex: number, className: string) => {
     const folded = marks.slice(fromIndex);
     if (folded.length === 0) return null;
     return (
       // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
-      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`}>
+      <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`} {...plusPointer}>
         <FactTooltip
           lines={folded.map((m) =>
             m.kind === "fact" ? (
@@ -447,11 +464,6 @@ export function DecklistRow({
   const hasMetaLine = shellHasMeta || twoLine;
   // The SHELL keeps the original condition (a land with no figure is 44px on the phone), and `rowB` forces only the markup.
   const rowShell = shellHasMeta ? ROW_SHELL_META : ROW_SHELL;
-  // The whole row is the preview's trigger (#351), so the handlers go on the
-  // shell rather than on the name — the name is the modal's trigger, and a
-  // preview that only opened over it would be a second, smaller target for a
-  // gesture the reader is already making across the row.
-  const previewHandlers = usePreviewRow(card.imageUri, card.foil);
   // The row body opens the card too, so resting on it prefetches the card as the name does.
   const intent = useCardIntent(card.oracleId, card.imageUri);
   // Two strings, because they answer different questions. The visible one is a

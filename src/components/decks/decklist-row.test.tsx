@@ -63,6 +63,7 @@ vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought: vi.fn() }));
 vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 
 const { DecklistRow } = await import("./decklist-row");
+const { HoverPreviewProvider } = await import("./hover-preview");
 const { GotItProvider } = await import("./got-it");
 const { commanderAsRow } = await import("../../lib/decks/shopping");
 const { DeckPageSwitches } = await import("./deck-page-switches");
@@ -2017,10 +2018,11 @@ describe("DecklistRow, folding the marks", () => {
     expect(Array.from(document.querySelectorAll("[data-decklist-row] span")).filter((el) => el.childElementCount === 0 && el.textContent === "" && el.className.includes("inline-flex flex-none"))).toHaveLength(0);
   });
 
-  it("folds the marker's word to its glyph, keeping a count and the spoken sentence", () => {
+  // From the middle tier in All too (d9, 2026-10-16), as in Shopping: at 900 a row reading `1 in a draft` cut a 20-character name.
+  it("folds an All row's marker word to its glyph at the middle tier, keeping a count and the spoken sentence", () => {
     const over = { ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -2, claims: [] } };
     renderRow(<DecklistRow deckId="d1" card={over} newestAsOf={null} />);
-    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("md:@max-[359px]:hidden"));
+    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("md:@max-[479px]:hidden"));
     expect(folded.length).toBeGreaterThan(0);
     // The count stays outside the folded span, and the sentence is read in full.
     expect(document.querySelector("[data-decklist-row]")!.textContent).toContain("2");
@@ -2137,5 +2139,54 @@ describe("DecklistRow, the combo mark", () => {
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
     expect(glyphWrap.className.split(/\s+/)).toContain("md:sr-only");
     expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+  });
+});
+
+// THE +N SUPPRESSES THE ROW'S PREVIEW (d9, 2026-10-16): the chip's tooltip lists the folded marks, and the card would cover the
+// rows under it. Entering the chip closes the preview; leaving it for the name opens it again.
+describe("DecklistRow, the +N and the row's preview", () => {
+  const heavy = {
+    ...(card as DeckDetailCard),
+    imageUri: "https://cards.example/sol-ring.jpg",
+    facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"],
+  } as DeckDetailCard;
+  const preview = () => screen.queryByTestId("hover-preview");
+  const chip = () => Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span.flex-none")).find((el) => /^\+\d$/.test(el.textContent ?? ""))!;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q === "(hover: hover)", media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("closes the preview while the pointer is on the +N, and opens it again on leaving for the name", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <HoverPreviewProvider>
+          <DecklistRow deckId="d1" card={heavy} newestAsOf={null} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    const row = document.querySelector<HTMLElement>("[data-decklist-row]")!;
+    fireEvent.mouseEnter(row, { clientX: 100, clientY: 100 });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).not.toBeNull();
+
+    // Moving within the row: React derives enter and leave from over/out, so the pointer comes from (and goes back to) the name.
+    const name = row.querySelector<HTMLElement>("button")!;
+    fireEvent.mouseOut(name, { clientX: 140, clientY: 100, relatedTarget: chip() });
+    fireEvent.mouseMove(chip(), { clientX: 141, clientY: 100 });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).toBeNull();
+
+    fireEvent.mouseOut(chip(), { clientX: 120, clientY: 100, relatedTarget: name });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(preview()).not.toBeNull();
   });
 });
