@@ -293,7 +293,8 @@ export function FilterBar({
     const mq = window.matchMedia("(min-width: 900px)");
     const apply = () => {
       // 108/66, not the brief's provisional 102/60 — see the head's own comment below.
-      document.documentElement.style.scrollPaddingTop = mq.matches ? "66px" : "108px";
+      // Plus a returned phone header's room (card search plan PR B), which the head rides under.
+      document.documentElement.style.scrollPaddingTop = `calc(${mq.matches ? "66px" : "108px"} + var(--header-offset, 0px))`;
     };
     apply();
     mq.addEventListener("change", apply);

@@ -70,7 +70,12 @@ describe("quickReturnStep", () => {
     expect(run([288], {}, moved).mode).toBe("shown");
   });
 
-  it("a long upward app scroll from the page past the header lands away, not back", () => {
+  it("an app scroll that lands within the header's height puts it in the page, never away over its empty room", () => {
+    expect(run([40], { programmatic: true }, run([400, 600])).mode).toBe("page");
+    expect(run([40], { programmatic: true }, run([400, 600, 580])).mode).toBe("shown");
+  });
+
+  it("a long downward app scroll from the page past the header lands away, not back", () => {
     expect(run([2000], { programmatic: true }).mode).toBe("away");
   });
 });

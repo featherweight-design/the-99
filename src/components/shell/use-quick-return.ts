@@ -53,6 +53,9 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
     const measure = () => {
       height.current = el.offsetHeight;
       root.style.setProperty("--header-h", `${height.current}px`);
+      // The offset is the height while the header is back, so it moves with it (and goes to 0 when the header is
+      // hidden from `md` up).
+      scheduleRef.current();
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -102,11 +105,14 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
     };
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("popstate", settle);
+    // An in-page anchor jump is the app's scroll too.
+    window.addEventListener("hashchange", settle);
     document.addEventListener("focusin", onFocusIn);
     document.addEventListener("focusout", onFocusOut);
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("popstate", settle);
+      window.removeEventListener("hashchange", settle);
       document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", onFocusOut);
       root.removeAttribute("data-field-focus");

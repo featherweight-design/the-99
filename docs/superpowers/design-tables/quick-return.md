@@ -1,5 +1,18 @@
 # Design Property Table — Quick return
 
+**Engineering overrides (plan `2026-10-16-card-search.md`, resolutions 1 and 4, d9 as Hugh's proxy, 2026-10-16).** The
+rows below are the handoff as drawn. Where they differ, the build follows these:
+
+- **Height 79px, not 73px.** The shipped header is 79px (the account press is 44px: a 38px avatar in 3px of padding;
+  `--mobile-header-h`). Every 73px below reads 79px in the build, and the sticky heads ride 79px down.
+- **No switch.** Quick return ships unswitched (it redesigns the header on every phone screen); only card search's
+  own surfaces follow `CARD_SEARCH_ENABLED`.
+- **z-order.** The header is `z-30`, over every sticky page head (`z-[2]`) and under the app's scrims (`z-40` and up).
+  The handoff's 6 / 7 / 8 describe the same order on the board.
+- **App scrolls** are ignored for a `reveal()`'s whole run plus a beat, and 300ms after a navigation, a history move
+  or an anchor jump.
+
+
 Sources: card search handoff README §3, STATES, Header-Phone Q1–Q5, R2 Deck-Page DP2–DP3.
 
 ## Component: MobileHeader (quick return)

@@ -52,7 +52,7 @@ export function quickReturnStep(state: QuickReturnState, input: QuickReturnInput
   const y = Math.max(0, input.y);
   if (input.locked) return state;
   if (y <= 0) return { mode: "page", y, mark: y };
-  if (input.programmatic) return { mode: state.mode === "page" && y > input.height ? "away" : state.mode, y, mark: y };
+  if (input.programmatic) return { mode: settledMode(state.mode, y, input.height), y, mark: y };
 
   switch (state.mode) {
     case "page":
@@ -72,6 +72,16 @@ export function quickReturnStep(state: QuickReturnState, input: QuickReturnInput
       return { mode: "shown", y, mark: high };
     }
   }
+}
+
+/**
+ * Where an app scroll leaves the header: where the page puts it within its own height (or still back over the page),
+ * scrolled off with the page past it, and otherwise as it was. Away inside its height would leave the page's room for
+ * it empty at the top.
+ */
+function settledMode(mode: QuickReturnMode, y: number, height: number): QuickReturnMode {
+  if (y <= height) return mode === "shown" ? "shown" : "page";
+  return mode === "page" ? "away" : mode;
 }
 
 /**

@@ -616,6 +616,10 @@ html { --collection-head-h: 48px; }
    Not a theme token, for the same reason as `--tabbar-h`. */
 html { --mobile-header-h: 79px; }
 
+/* A returned phone header (quick return, card search plan PR B) covers the top of the page by the room it publishes,
+   so an anchor jump or a scroll into view lands below it. 0 whenever the header is in the page, away, or on desktop. */
+html { scroll-padding-top: var(--header-offset, 0px); }
+
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    and the collection's confirm and issue dialogs. Copies of the same literal
    disagree the moment any one of them is tuned.

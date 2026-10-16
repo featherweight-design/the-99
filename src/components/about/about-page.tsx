@@ -117,11 +117,13 @@ function Entry({
       // NO SCROLL MARGIN with the sheet switch off. Under it (R6 §P1) the
       // margin is 20px, the drawn landing, set in `rule` above; the 80px below
       // is what that is not. The first version carried `scroll-mt-[80px]` on the
-      // theory that the shell's header overlays the page. It does not:
-      // `MobileHeader` is in flow (`shell/nav.tsx:303-308`), the desktop rail is
-      // sticky on the LEFT, and the tab bar is fixed to the BOTTOM. Nothing sits
-      // over the top of an entry at either width, so the margin bought nothing
-      // and left an 80px gap above every anchor navigation.
+      // theory that the shell's header overlays the page. It did not then; since
+      // quick return (card search plan PR B) a phone header the reader has
+      // brought back does, and `html`'s `scroll-padding-top` follows the room it
+      // publishes (`--header-offset`, 0 whenever it is not back), so an anchor
+      // still lands clear of it with no margin here. The desktop rail is sticky
+      // on the LEFT and the tab bar fixed to the BOTTOM; a fixed 80px margin
+      // would only leave a gap above every anchor navigation.
       id={entry.id}
       className={rule}
       // While the figure's marks await re-pinning (`marksPending`), they are hidden so none points

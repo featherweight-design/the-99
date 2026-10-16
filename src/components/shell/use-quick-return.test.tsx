@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isPageField, slidesInto, useQuickReturn } from "./use-quick-return";
 
 const nav = vi.hoisted(() => ({ path: "/collection" }));
+const resize = vi.hoisted(() => ({ height: 79, fire: () => {} }));
 vi.mock("next/navigation", () => ({ usePathname: () => nav.path }));
 
 function Probe() {
@@ -33,8 +34,18 @@ async function scrollTo(y: number) {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance", "setTimeout", "Date"] });
-  Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => 79 });
-  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  resize.height = 79;
+  Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => resize.height });
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      constructor(cb: () => void) {
+        resize.fire = cb;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
   Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
 });
 afterEach(() => {
@@ -71,6 +82,22 @@ describe("useQuickReturn", () => {
     await scrollTo(600);
     await scrollTo(580);
     expect(header().dataset.mode).toBe("shown");
+  });
+
+  // A phone turned past `md` hides the header: its offset must go with it, not wait for the next scroll.
+  it("moves the offset when the header's height changes, without a scroll", async () => {
+    render(<Probe />);
+    await act(async () => vi.advanceTimersByTime(400));
+    await scrollTo(400);
+    await scrollTo(600);
+    await scrollTo(580);
+    expect(document.documentElement.style.getPropertyValue("--header-offset")).toBe("79px");
+    resize.height = 0;
+    await act(async () => {
+      resize.fire();
+      vi.advanceTimersToNextFrame();
+    });
+    expect(document.documentElement.style.getPropertyValue("--header-offset")).toBe("0px");
   });
 
   it("does not slide when it leaves the page by scrolling past it", async () => {
