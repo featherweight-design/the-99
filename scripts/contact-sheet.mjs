@@ -193,9 +193,16 @@ async function run(page, steps) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
     }
-    // A fresh visit for the next moment: the visit lives in this context's storage, and the row before took it.
+    // A fresh visit for the next moment: the visit lives in this context's storage, and the row before took it. Cleared
+    // before the page's own scripts run on every later load too, so a row clears FIRST and then loads its route once: a
+    // load made only to reach the origin could take the visit (a shell anchor is on every route) and spend the moment
+    // before this step ran. The page may still be blank, where storage is not reachable yet.
     if (step.clearVisit === true) {
-      await page.evaluate(() => window.localStorage.removeItem("the99.moments.visit"));
+      if (!clearsVisit.has(page)) {
+        await page.addInitScript(() => window.localStorage.removeItem("the99.moments.visit"));
+        clearsVisit.add(page);
+      }
+      await page.evaluate(() => window.localStorage.removeItem("the99.moments.visit")).catch(() => {});
     }
     // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is. `at` rests it
     // at a point inside the element ({ x, y } in px from its top left), for a card that tilts toward the pointer.
@@ -304,6 +311,8 @@ const shots = [];
 const browser = await chromium.launch();
 /** The per-width camera browsers still open: closed in the `finally`, so a width that fails part-way leaves none behind. */
 const cameraBrowsers = new Set();
+/** The pages already clearing the moments' visit on every load (`clearVisit`), so the init script is added once. */
+const clearsVisit = new WeakSet();
 /** The account's About columns as the run found them, when an inventory clears the gate. */
 let aboutPrior = null;
 try {
