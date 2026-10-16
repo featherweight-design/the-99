@@ -42,6 +42,9 @@ export function WishlistSearch({
   const listId = useId();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<WishlistSearchResult[]>([]);
+  // What the collection holds, as the newest write answered it (a result's own count is read once, with the search),
+  // so the stepper's floor and the sub line follow a collection that grew while the results stood.
+  const [owned, setOwned] = useState<Map<string, number>>(new Map());
   const [searched, setSearched] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   // A row's want, in two layers over the want the search answered with (null: not on the list). `confirmed` is the
@@ -108,9 +111,6 @@ export function WishlistSearch({
   const wantOf = (r: WishlistSearchResult) =>
     pending.get(r.oracleId)?.want ?? (confirmed.has(r.oracleId) ? confirmed.get(r.oracleId)! : r.want);
   const confirm = (oracleId: string, want: number | null) => setConfirmed((prev) => new Map(prev).set(oracleId, want));
-  // What the collection holds, as the newest write answered it (a result's own count is read once, with the search),
-  // so the stepper's floor and the sub line follow a collection that grew while the results stood.
-  const [owned, setOwned] = useState<Map<string, number>>(new Map());
   const ownedOf = (r: WishlistSearchResult) => owned.get(r.oracleId) ?? r.owned;
   const heard = (oracleId: string, have: number) => setOwned((prev) => new Map(prev).set(oracleId, have));
 
