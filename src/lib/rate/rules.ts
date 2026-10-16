@@ -6,7 +6,7 @@
  * would need a row per hit. A burst straddling a boundary can therefore reach twice the limit; the
  * limits are guard rails against a scripted loop, not a fairness mechanism.
  *
- * OBSERVE-ONLY. Nothing here blocks: `observe.ts` logs what WOULD be refused. The limits are
+ * OBSERVE-ONLY, except `checkout`. Nothing else here blocks: `observe.ts` logs what WOULD be refused. The limits are
  * provisional until a few days of those logs say what a real reader does; the app's own background
  * fetches are the heaviest honest callers (`/collection` pulls its withheld cards in batches of 200,
  * about 15 for a 3,000-card collection), so a limit below that would refuse the app to itself.
@@ -21,6 +21,12 @@ export const RATE_RULES = {
   "draw-fields": { limit: 120, windowMs: 60_000 },
   /** `POST /api/card-scan/match`: one lookup per stable detection, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },
+  /**
+   * Creating a Checkout Session (payments scope §5.4). The ONE enforced bucket: `checkout.ts` refuses the
+   * 11th in an hour whatever `RATE_LIMIT_ENABLED` says, because a Session is a card-testing surface and
+   * no honest reader starts ten purchases in an hour.
+   */
+  checkout: { limit: 10, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;
