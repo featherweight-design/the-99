@@ -14,7 +14,7 @@ Hugh, on `/about` as it stands:
 > It only serves someone if they know what to look for… a huge wall of text with some images sprinkled throughout…
 > snippets [that] lack grounding context in the app.
 
-- `/about` holds 69 entries (`src/lib/copy/about.ts`). Each is accurate, and each is reached only by a reader who goes
+- `/about` holds 71 entries (`src/lib/copy/about.ts`). Each is accurate, and each is reached only by a reader who goes
   looking for it.
 - A specimen is drawn out of context: a card row or a sheet on a plain ground, with no sign of the screen it lives on.
 - Valuable tools are buried. **Find a deck** (`fits-your-decks`, behind `SWAP_TOOLS_ENABLED`) is the clearest case: it
@@ -101,8 +101,12 @@ belong to the screen, unlike a moment, which is shown once.
 
 ### 4. About becomes a reference
 
-- Reached from a **"?" on each screen**, which opens that screen's entries: an entry belongs to the screen its `route`
-  names.
+- Reached from a **"?" on each screen**, which opens that screen's entries.
+- **An entry's `route` does not say which screen it belongs to**, so this needs a mapping of its own. 33 of the 71
+  entries route to `/decks` and carry an `opens` qualifier ("opens a deck's Analysis tab", "opens a deck's Shopping
+  filter"), and none routes to a deck's own page; `fits-your-decks` routes to `/collection` but is reached through card
+  details. Engineering adds a screen field to each entry (a deck page, card details, Shopping and so on) from those
+  qualifiers; Design names the screens that carry a "?" (open question 5).
 - **Searchable.**
 - **The full list is kept**, for a reader who wants all of it.
 - The reference is where the long form lives; the moments and the showcase each say one line and point here.
