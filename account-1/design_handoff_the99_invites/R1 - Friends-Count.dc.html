@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friends, the invite count</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;position:relative;overflow:hidden}
+.pg{width:720px;margin:0 auto;padding:36px 0 60px;box-sizing:border-box}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.who{display:flex;align-items:center;gap:16px}
+.mf{width:64px;height:64px;flex:none;border-radius:14px;border:1px solid #262A35;overflow:hidden}
+.mf img{display:block;width:100%;height:100%;object-fit:cover}
+.h1{margin:0;font:700 28px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.me{margin:2px 0 0;font-size:14px;color:#959AAD}
+.me b{color:#E6E8F0;font-weight:600}
+.act{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.bp{height:44px;min-width:132px;padding:0 20px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+.cnt{margin:0;font:11px 'IBM Plex Mono',monospace;color:#959AAD}
+.cnt .w{color:#B1B6C7}
+.cnt.none{color:#6F7486}
+.held{margin:0;max-width:340px;font:11px/1.5 'IBM Plex Mono',monospace;color:#959AAD;text-align:right}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-top:34px;padding-bottom:8px;border-bottom:1px solid #181C26}
+.fr{display:flex;align-items:center;gap:12px;height:60px;border-bottom:1px solid #181C26}
+.face{width:40px;height:40px;border-radius:10px;border:1px solid #262A35;overflow:hidden;flex:none}
+.face img{display:block;width:100%;height:100%;object-fit:cover}
+.fn{font-size:14.5px;font-weight:500;color:#E6E8F0}
+.fc{font-size:12px;color:#959AAD}
+.fs{font:11px 'IBM Plex Mono',monospace;color:#6F7486;margin-left:auto}
+.more{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:18px;letter-spacing:1px}
+.iv{display:flex;align-items:center;gap:12px;height:52px;border-bottom:1px solid #181C26}
+.ivn{font-size:14px;color:#E6E8F0}
+.ivm{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.ivl{margin-left:auto;font:11px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.tlk{min-height:32px;padding:0 6px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.scroll{flex:1;overflow:hidden;padding:18px 16px}
+.ph .h1{font-size:22px}
+.ph .me{font-size:13.5px}
+.ph .mf{width:56px;height:56px;border-radius:13px}
+.pbp{width:100%;height:48px;margin-top:16px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif}
+.pbp.hold{background:#20222A;color:#606476}
+.ph .cnt{margin-top:8px}
+.ph .held{text-align:left;margin-top:6px}
+.ph .sh{margin-top:26px}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+</style>
+</helmet>
+<div style="width:2760px;min-height:2340px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · Call 05 · /friends · the count beside its own controls · lock 6</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">One mono line under Add a friend, where the hold line already lives</h2>
+    <p class="cap" style="max-width:2600px">The head keeps one press, Add a friend, and gains one line under it: <b style="color:#E6E8F0">N invites left</b>, with <b style="color:#E6E8F0">· 1 waiting</b> or <b style="color:#E6E8F0">· 1 held by an open QR</b> when either applies. Right-aligned at desktop, left under the full-width press at phone, in the same mono the shipped 10-link line uses. At 0 it reads Out of invites in the faint grey, and the press stays live, because friend links still work. Nothing else on /friends changes: no list of waiting invitations (a waiting invite is managed in /admin), so no address a sender typed is ever listed back.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 40px">
+    <sc-for list="{{desk}}" as="f" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></span>
+            <span class="slot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></span>
+            <span class="av">HH</span>
+          </nav>
+          <div class="main">
+            <div class="pg">
+              <div class="hd">
+                <div class="who"><span class="mf"><img src="/_blob/5f86f9b2bb6fcbee111dae6275f245a2" alt=""></span><div><h1 class="h1">Friends</h1><p class="me">Friends see you as <b>Hugh</b> · <span style="color:#FF4D9A">Change</span></p></div></div>
+                <div class="act"><button class="bp" type="button">Add a friend</button><p class="{{f.cntCls}}">{{f.cnt}}<span class="w">{{f.wait}}</span></p></div>
+              </div>
+              <div class="sh"><span class="k" style="color:#959AAD">Friends · 4</span></div>
+              <div class="fr"><span class="face"><img src="/_blob/e8de8813e9f87dac3e5e0e493468c894" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Colin</span><span class="fc">Avatar Aang</span></div><span class="fs">since Oct 2</span><button class="more" type="button" aria-label="Colin actions">···</button></div>
+              <div class="fr"><span class="face"><img src="/_blob/40882fd59e89b0d50caff3cf94b5527b" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Peter</span><span class="fc">Kilo, Apogee Mind</span></div><span class="fs">since Oct 9</span><button class="more" type="button" aria-label="Peter actions">···</button></div>
+              <div class="fr"><span class="face"><img src="/_blob/82179c769b4a136f0ca45d7981cc4b3d" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Max</span><span class="fc">Omnath, Locus of Creation</span></div><span class="fs">since Oct 12</span><button class="more" type="button" aria-label="Max actions">···</button></div>
+              <div class="fr"><span class="face"><img src="/_blob/9374aee5788c4963032159934cbf2f94" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Chris</span><span class="fc">Baral, Chief of Compliance</span></div><span class="fs">since Oct 14</span><button class="more" type="button" aria-label="Chris actions">···</button></div>
+              <div class="sh"><span class="k" style="color:#959AAD">Open friend links · 1</span></div>
+              <div class="iv"><span class="ivn">Friend link</span><span class="ivm">made today, 9:41 AM</span><span class="ivl">7 days left</span><button class="tlk" type="button">Show</button><button class="tlk" type="button">Revoke</button></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 40px;margin-top:20px">
+    <sc-for list="{{phone}}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="wm"><span>THE</span><b>99</b></span><span class="mav" aria-hidden="true">HH</span></header>
+          <div class="scroll">
+            <div style="display:flex;align-items:center;gap:14px"><span class="mf"><img src="/_blob/5f86f9b2bb6fcbee111dae6275f245a2" alt=""></span><div><h1 class="h1">Friends</h1><p class="me">Friends see you as <b>Hugh</b> · <span style="color:#FF4D9A">Change</span></p></div></div>
+            <button class="{{f.btnCls}}" type="button" aria-disabled="{{f.btnOff}}">Add a friend</button>
+            <sc-if value="{{f.heldLine}}" hint-placeholder-val="{{false}}"><p class="held">10 friend links open, the most at once. Revoke one, or wait for one to be used.</p></sc-if>
+            <p class="{{f.cntCls}}">{{f.cnt}}<span class="w">{{f.wait}}</span></p>
+            <div class="sh"><span class="k" style="color:#959AAD">Friends · 4</span></div>
+            <div class="fr"><span class="face"><img src="/_blob/e8de8813e9f87dac3e5e0e493468c894" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Colin</span><span class="fc">Avatar Aang</span></div><span class="fs">since Oct 2</span></div>
+            <div class="fr"><span class="face"><img src="/_blob/40882fd59e89b0d50caff3cf94b5527b" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Peter</span><span class="fc">Kilo, Apogee Mind</span></div><span class="fs">since Oct 9</span></div>
+            <div class="fr"><span class="face"><img src="/_blob/82179c769b4a136f0ca45d7981cc4b3d" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Max</span><span class="fc">Omnath, Locus of Creation</span></div><span class="fs">since Oct 12</span></div>
+            <div class="fr"><span class="face"><img src="/_blob/9374aee5788c4963032159934cbf2f94" alt=""></span><div style="display:flex;flex-direction:column"><span class="fn">Chris</span><span class="fc">Baral, Chief of Compliance</span></div><span class="fs">since Oct 14</span></div>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Collection</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg>Commanders</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg>Discover</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg>Decks</span>
+          </nav>
+        </div>
+        <p class="cap" style="max-width:390px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2340}}'>
+class Component extends DCLogic {
+renderVals() {
+const desk = [
+{ label: 'C1 · desktop · invites left, one waiting', cnt: '2 invites left', wait: ' · 1 waiting', cntCls: 'cnt', note: 'Right under the press, right-aligned. “Waiting” is an invitation sent by email or a QR claimed, on its 7 days; it never says to whom, and it reads the same whether the address had an account.' },
+{ label: 'C2 · desktop · out of invites', cnt: 'Out of invites', wait: '', cntCls: 'cnt none', note: 'Faint grey, not a warning: being out is ordinary. Add a friend stays live and opens the chooser with card 2 greyed (Add-Desktop D2).' }
+];
+const phone = [
+{ label: 'C3 · phone · 3 invites left', cnt: '3 invites left', wait: '', cntCls: 'cnt', btnCls: 'pbp', btnOff: 'false', heldLine: false, note: 'Under the full-width press, left-aligned, 8px below it.' },
+{ label: 'C4 · phone · an open QR holds one', cnt: '2 invites left', wait: ' · 1 held by an open QR', cntCls: 'cnt', btnCls: 'pbp', btnOff: 'false', heldLine: false, note: 'The sheet was closed on a live QR. Opening Add a friend › Invite someone new › Show an invite QR shows the same QR with its time left; at expiry the line goes back to 3.' },
+{ label: 'C5 · phone · out of invites', cnt: 'Out of invites', wait: '', cntCls: 'cnt none', btnCls: 'pbp', btnOff: 'false', heldLine: false, note: 'As desktop. A brand-new account reads this until Hugh gives it invites.' },
+{ label: 'C6 · phone · 10 links open, and the count', cnt: '3 invites left', wait: '', cntCls: 'cnt', btnCls: 'pbp', btnOff: 'false', heldLine: true, note: 'A change to the shipped hold: with 10 friend links open, only path 1 is held, so Add a friend stays live and invites can still go out. The hold line stays under the press, above the count; inside, card 1 greys with the same sentence.' }
+];
+return { desk, phone };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invite by email, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;position:relative;overflow:hidden}
+.pg{width:720px;margin:0 auto;padding:36px 0 60px;box-sizing:border-box}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.who{display:flex;align-items:center;gap:16px}
+.mf{width:64px;height:64px;flex:none;border-radius:14px;border:1px solid #262A35;overflow:hidden}
+.mf img{display:block;width:100%;height:100%;object-fit:cover}
+.h1{margin:0;font:700 28px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.me{margin:2px 0 0;font-size:14px;color:#959AAD}
+.me b{color:#E6E8F0;font-weight:600}
+.bp{height:44px;min-width:132px;padding:0 20px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+.scrim{position:absolute;inset:0;z-index:3;background:rgba(14,15,20,.72)}
+.dlg{position:absolute;left:50%;top:82px;transform:translateX(-50%);z-index:4;width:440px;box-sizing:border-box;background:#191B22;border:1px solid #262A35;border-radius:14px;box-shadow:0 30px 70px rgba(0,0,0,.6);padding:12px 20px 18px}
+.dh{display:flex;align-items:center;gap:4px;margin-right:-10px}
+.dh h2{margin:0;flex:1;font:700 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.x{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:15px;padding:0;font-family:'IBM Plex Sans',sans-serif}
+.bk{width:36px;height:44px;margin-left:-10px;border:0;background:transparent;color:#E6E8F0;font:400 22px 'IBM Plex Sans',sans-serif;padding:0 0 3px}
+.cnt{margin:0 0 16px;font:11px 'IBM Plex Mono',monospace;color:#959AAD}
+.cnt .w{color:#B1B6C7}
+.cnt.none{color:#6F7486}
+.sk{margin:4px 0 6px}
+.sp{margin:0;font-size:13px;line-height:1.5;color:#B1B6C7}
+.bf{height:44px;margin-top:12px;padding:0 16px;border-radius:6px;border:0;background:#FF4D9A;color:#0E0F14;font:600 13px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;gap:8px;flex:none}
+.bf.held{background:#20222A;color:#606476}
+.bf.wait{background:#D33E7E}
+.bs{height:40px;padding:0 16px;border-radius:6px;border:0;background:#FF4D9A;color:#0E0F14;font:600 13px 'IBM Plex Sans',sans-serif;flex:none}
+.bs.wait{background:#D33E7E}
+.bs.idle{background:transparent;border:1px solid #262A35;color:#959AAD}
+.or{display:flex;align-items:center;gap:12px;margin:18px 0 14px;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.or i{flex:1;height:1px;background:#262A35}
+.lab{display:block;font-size:13px;font-weight:600;color:#E6E8F0;margin-bottom:6px}
+.lf{flex:1;height:40px;border-radius:6px;padding:0 12px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #262A35;font:14px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.lf.on{border-color:#FF4D9A}
+.lf.bad{border-color:#C6533F}
+.lf.lock{color:#959AAD}
+.err{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:#E07A66}
+.hint{margin:8px 0 0;font:11px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+.sent{border:1px solid #262A35;border-radius:12px;background:#16181F;padding:14px 16px 4px;display:flex;flex-direction:column;gap:6px}
+.sent b{display:flex;align-items:center;gap:8px;font:700 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.sent b i{font-style:normal;color:#6FA368;font-size:16px}
+.sent span{font-size:13px;line-height:1.5;color:#B1B6C7}
+.tl{align-self:flex-start;min-height:36px;padding:0 2px;border:0;background:transparent;color:#FF4D9A;font:500 13.5px 'IBM Plex Sans',sans-serif}
+</style>
+</helmet>
+<div style="width:2760px;min-height:2140px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · Call 04 · Invite someone new › by email · desktop 1300 · the 440 dialog</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">The field and Send in one row; the answer takes the row’s place</h2>
+    <p class="cap" style="max-width:2600px">As the phone, at the dialog’s sizes: the 40px field and its press side by side like the shipped link field and Copy link. The not-an-email line, the held wait, the one answer and the last invite all behave exactly as on Email-Phone; the toast on a failure is the shared ToastFrame at the foot of the page.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:44px 40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></nav>
+          <div class="main">
+            <div class="pg"><div class="hd"><div class="who"><span class="mf"><img src="/_blob/5f86f9b2bb6fcbee111dae6275f245a2" alt=""></span><div><h1 class="h1">Friends</h1><p class="me">Friends see you as <b>Hugh</b> · <span style="color:#FF4D9A">Change</span></p></div></div><button class="bp" type="button">Add a friend</button></div></div>
+            <div class="scrim" aria-hidden="true"></div>
+            <div class="dlg" role="dialog" aria-modal="true" aria-label="Invite someone new">
+              <div class="dh"><button class="bk" type="button" aria-label="Back">‹</button><h2>Invite someone new</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+              <p class="{{f.cntCls}}">{{f.cnt}}<span class="w">{{f.wait}}</span></p>
+              <p class="k sk">At the table</p>
+              <p class="sp">They scan it and type their own email on their phone. It works once, for 15 minutes.</p>
+              <button class="{{f.qrCls}}" type="button" aria-disabled="{{f.qrOff}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3"/></svg>Show an invite QR</button>
+              <div class="or" aria-hidden="true"><i></i>or<i></i></div>
+              <p class="k sk">By email</p>
+              <sc-if value="{{f.form}}" hint-placeholder-val="{{true}}">
+                <label class="lab" for="em">Their email</label>
+                <div style="display:flex;gap:8px"><span class="{{f.fldCls}}" id="em">{{f.email}}</span><button class="{{f.sendCls}}" type="button">{{f.send}}</button></div>
+                <sc-if value="{{f.bad}}" hint-placeholder-val="{{false}}"><p class="err" role="alert">Enter an email address, like name@example.com.</p></sc-if>
+                <p class="hint">The 99 emails them an invitation. If they join within 7 days, you’re friends.</p>
+              </sc-if>
+              <sc-if value="{{f.sent}}" hint-placeholder-val="{{false}}">
+                <div class="sent" role="status">
+                  <b><i aria-hidden="true">✓</i>Invitation sent</b>
+                  <span>If they join within 7 days, you’re friends. Until then it holds one of your invites.</span>
+                  <sc-if value="{{f.again}}" hint-placeholder-val="{{true}}"><button class="tl" type="button">Invite someone else</button></sc-if>
+                  <sc-if value="{{f.out}}" hint-placeholder-val="{{false}}"><span style="padding-bottom:10px;color:#6F7486;font:11px 'IBM Plex Mono',monospace">That was your last invite.</span></sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2140}}'>
+class Component extends DCLogic {
+renderVals() {
+const base = { cnt: '3 invites left', wait: '', cntCls: 'cnt', qrCls: 'bf', qrOff: 'false', form: true, sent: false, bad: false, again: true, out: false, fldCls: 'lf on', email: 'colin.r@example.com', sendCls: 'bs', send: 'Send invitation' };
+const fr = (o) => Object.assign({}, base, o);
+const frames = [
+fr({ label: 'E1 · not an email', fldCls: 'lf bad', email: 'colin.r@', bad: true, sendCls: 'bs idle', note: 'The field’s own error line, shape only. Nothing is asked of the server until the shape is right.' }),
+fr({ label: 'E3 · sending', fldCls: 'lf lock', qrCls: 'bf held', qrOff: 'true', sendCls: 'bs wait', send: 'Sending…', note: 'Held for the server’s floor, the same for every email. Esc still closes; the send carries on and the count reads it the next time the dialog opens.' }),
+fr({ label: 'E4 · Invitation sent · whatever happened', form: false, sent: true, cnt: '2 invites left', wait: ' · 1 waiting', note: 'The one answer. The waiting invite is “1 waiting” on this line, on card 2 and on /friends, until a new account spends it or its own 7 days return it.' }),
+fr({ label: 'E5 · the last invite sent', form: false, sent: true, again: false, out: true, cnt: 'Out of invites', wait: ' · 1 waiting', cntCls: 'cnt none', qrCls: 'bf held', qrOff: 'true', note: 'The same answer, then the QR press holds and Invite someone else leaves. ‹ back shows the chooser with card 2 greyed.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-16T17:40:00Z"
+  },
+  "title": "The 99 · Invites R1",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1840,
+      "h": 2400,
+      "title": "R1 · Invite-only launch · start here"
+    },
+    "Add-Phone.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 2240,
+      "h": 1280,
+      "title": "Add a friend · the two paths · phone 390"
+    },
+    "Add-Desktop.dc.html": {
+      "x": 2320,
+      "y": 2520,
+      "w": 2760,
+      "h": 2140,
+      "title": "Add a friend · the two paths · desktop 1300"
+    },
+    "Email-Phone.dc.html": {
+      "x": 0,
+      "y": 4780,
+      "w": 2680,
+      "h": 1280,
+      "title": "Invite by email · one answer · phone 390"
+    },
+    "Email-Desktop.dc.html": {
+      "x": 2760,
+      "y": 4780,
+      "w": 2760,
+      "h": 2140,
+      "title": "Invite by email · one answer · desktop 1300"
+    },
+    "QR-Phone.dc.html": {
+      "x": 0,
+      "y": 7040,
+      "w": 2240,
+      "h": 1280,
+      "title": "Invite QR · live and expired · phone 390"
+    },
+    "QR-Desktop.dc.html": {
+      "x": 2320,
+      "y": 7040,
+      "w": 2760,
+      "h": 2140,
+      "title": "Invite QR · live and expired · desktop 1300"
+    },
+    "Newcomer.dc.html": {
+      "x": 0,
+      "y": 9300,
+      "w": 2680,
+      "h": 2440,
+      "title": "The newcomer's phone · scan, email, code, sign-up"
+    },
+    "Friends-Count.dc.html": {
+      "x": 2760,
+      "y": 9300,
+      "w": 2760,
+      "h": 2340,
+      "title": "/friends · the invite count"
+    },
+    "Invite-Only.dc.html": {
+      "x": 0,
+      "y": 11860,
+      "w": 2760,
+      "h": 2260,
+      "title": "The invite-only page · both widths · waitlist as an option"
+    },
+    "Friend-Link.dc.html": {
+      "x": 2840,
+      "y": 11860,
+      "w": 1900,
+      "h": 1180,
+      "title": "A friend link opened with no account"
+    },
+    "Admin-Desktop.dc.html": {
+      "x": 0,
+      "y": 14240,
+      "w": 2760,
+      "h": 2420,
+      "title": "/admin · counts and the tree · desktop 1300"
+    },
+    "Admin-Phone.dc.html": {
+      "x": 2840,
+      "y": 14240,
+      "w": 2240,
+      "h": 1280,
+      "title": "/admin · counts and the tree · phone 390"
+    },
+    "About-Entry.dc.html": {
+      "x": 0,
+      "y": 16780,
+      "w": 1810,
+      "h": 1720,
+      "title": "About · Inviting someone new · §G per-entry template"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Add-Phone.dc.html",
+    "Add-Desktop.dc.html",
+    "Email-Phone.dc.html",
+    "Email-Desktop.dc.html",
+    "QR-Phone.dc.html",
+    "QR-Desktop.dc.html",
+    "Newcomer.dc.html",
+    "Friends-Count.dc.html",
+    "Invite-Only.dc.html",
+    "Friend-Link.dc.html",
+    "Admin-Desktop.dc.html",
+    "Admin-Phone.dc.html",
+    "About-Entry.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}
