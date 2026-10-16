@@ -168,10 +168,10 @@ export function CartView({
   }, [cart]);
   const brews = cart.decks.some((d) => d.brew && selected.has(d.id));
   // The cards the list draws now, which the key's spare item names only while one of them shows the glyph: the
-  // selected lines by card, the selected decks' lines by deck (an unselected deck draws its group without them).
+  // selected lines by card, the open selected decks' lines by deck (a folded or unselected group draws none).
   const drawnIds = useMemo(() => new Set(byDeck
-    ? cart.decks.filter((d) => selected.has(d.id)).flatMap((d) => (groupLines.get(d.id) ?? []).map((l) => l.oracleId))
-    : lines.map((l) => l.oracleId)), [byDeck, cart.decks, selected, groupLines, lines]);
+    ? cart.decks.filter((d) => selected.has(d.id) && open.has(d.id)).flatMap((d) => (groupLines.get(d.id) ?? []).map((l) => l.oracleId))
+    : lines.map((l) => l.oracleId)), [byDeck, cart.decks, selected, open, groupLines, lines]);
 
   const toggle = (id: string) => setSelected((prev) => {
     const next = new Set(prev);

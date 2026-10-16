@@ -530,6 +530,18 @@ describe("CartView, friends' spares by deck and on selection", () => {
     try {
       await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" focusDeckId="gishath" />); });
       expect(list().getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
+      expect(screen.getByTestId("spare-key")).toBeTruthy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("names no spare in the key while every group holding one is folded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
+    try {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" />); });
+      expect(list().queryByTestId("other-ways")).toBeNull();
+      expect(screen.queryByTestId("spare-key")).toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }
