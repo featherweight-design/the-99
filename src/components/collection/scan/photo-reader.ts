@@ -2,18 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
-import { printingLabel } from "../../../lib/collection/edit-lines";
 import { lookupCard } from "../../../lib/scan/lookup";
 import type { Source } from "../../../lib/scan/pipeline";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { nextFrame, type FrameRead } from "./use-card-scan";
 
-/** What one chosen photo became. `printing` is the matched printing's `SET · #`, null when the catalog lacks it. */
+/**
+ * What one chosen photo became. No printing is named: the index matches the card, not the printing, and the printing
+ * added is the sheet's (Fast takes the card's first, Normal asks), shown on the list line itself.
+ */
 export type PhotoState =
   | { kind: "pending" }
-  | { kind: "sure"; guess: ScanGuess; printing: string | null }
+  | { kind: "sure"; guess: ScanGuess }
   | { kind: "notSure"; guesses: ScanGuess[] }
-  | { kind: "added"; guess: ScanGuess; printing: string | null }
+  | { kind: "added"; guess: ScanGuess }
   /** No card found, a file the browser cannot open (HEIC in Chrome), or a lookup that never answered. */
   | { kind: "failed" };
 
@@ -113,11 +115,7 @@ export function usePhotoReader(
     }
     const guesses = r.guesses.map((g) => ({ oracleId: g.oracleId, name: g.name, typeLine: g.typeLine, imageUri: g.imageUri }));
     if (guesses.length === 0) return { kind: "failed" };
-    if (r.sure) {
-      const top = r.guesses[0];
-      const printing = top.setCode && top.collectorNumber ? printingLabel({ setCode: top.setCode, collectorNumber: top.collectorNumber }) : null;
-      return { kind: "sure", guess: guesses[0], printing };
-    }
+    if (r.sure) return { kind: "sure", guess: guesses[0] };
     return { kind: "notSure", guesses: guesses.slice(0, 3) };
   }, []);
 
@@ -163,12 +161,12 @@ export function usePhotoReader(
     rowsRef.current = rows;
   });
   const commit = useCallback(
-    async (id: number, guess: ScanGuess, printing: string | null): Promise<boolean> => {
+    async (id: number, guess: ScanGuess): Promise<boolean> => {
       if (!(await onAdd(guess, mode))) {
         onProblemRef.current("notAdded");
         return false;
       }
-      settle(id, { kind: "added", guess, printing });
+      settle(id, { kind: "added", guess });
       return true;
     },
     [onAdd, mode],
@@ -180,7 +178,7 @@ export function usePhotoReader(
     try {
       for (const r of rowsRef.current) {
         if (r.state.kind !== "sure") continue;
-        if (!(await commit(r.id, r.state.guess, r.state.printing))) return;
+        if (!(await commit(r.id, r.state.guess))) return;
       }
     } finally {
       committing.current = false;
@@ -194,7 +192,7 @@ export function usePhotoReader(
       if (!guess || committing.current) return;
       committing.current = true;
       try {
-        await commit(rowId, guess, null);
+        await commit(rowId, guess);
       } finally {
         committing.current = false;
       }

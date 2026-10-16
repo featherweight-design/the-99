@@ -3,8 +3,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { FrameRead } from "./use-card-scan";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
 
-const guess = (oracleId: string, name: string, setCode: string | null = "soc", collectorNumber: string | null = "4") => ({
-  oracleId, name, scryfallId: `${oracleId}-p`, typeLine: "Creature", imageUri: `https://img/${oracleId}`, setCode, collectorNumber, score: 0.9,
+const guess = (oracleId: string, name: string) => ({
+  oracleId, name, scryfallId: `${oracleId}-p`, typeLine: "Creature", imageUri: `https://img/${oracleId}`, score: 0.9,
 });
 const answer = (guesses: ReturnType<typeof guess>[], margin: number | null) =>
   ({ ok: true, status: 200, json: async () => ({ index: "all", guesses, margin }) }) as unknown as Response;
@@ -43,7 +43,7 @@ describe("usePhotoReader", () => {
     act(() => result.current.choose([file("one.jpg"), file("blank.jpg")]));
     expect(result.current.rows.map((r) => [r.thumb, r.state.kind])).toEqual([["blob:one.jpg", "pending"], ["blob:blank.jpg", "pending"]]);
     await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "failed"]));
-    expect(result.current.rows[0].state).toMatchObject({ kind: "sure", guess: { name: "Killian, Decisive Mentor" }, printing: "SOC · #4" });
+    expect(result.current.rows[0].state).toMatchObject({ kind: "sure", guess: { name: "Killian, Decisive Mentor" } });
     expect(read).toEqual(["one.jpg", "blank.jpg"]);
     // Every bitmap is released after its read, and only one lookup ran per photo with a card.
     expect(closed).toEqual(["one.jpg", "blank.jpg"]);
@@ -68,6 +68,7 @@ describe("usePhotoReader", () => {
     await waitFor(() => expect(result.current.rows[0].state.kind).toBe("failed"));
     // The lookup's own retries, and no more: three tries.
     expect(d.fetch).toHaveBeenCalledTimes(3);
+    expect(onProblem).toHaveBeenCalledTimes(1);
     expect(onProblem).toHaveBeenCalledWith("photoFailed");
   });
 

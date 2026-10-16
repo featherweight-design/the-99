@@ -22,10 +22,10 @@ export type PhotoListProps = {
 
 /**
  * The photos a player chose in place of the camera (card-scan PR 5, handoff W4; the phone draws the same rows in the
- * scanner's own full screen, from D6). A row per photo: its thumbnail, then what it was read as: Sure with the name and
- * `SET · #`, Not sure with its top three to pick from, or no card. A row still being read says which photo it is.
- * Nothing reaches the list unpressed: `Add the N sure ones` takes every sure row, and a Not sure row adds the guess
- * pressed. A row already added says so and is never added again.
+ * scanner's own full screen, from D6). A row per photo: its thumbnail, then what it was read as: Sure with the name
+ * (never a printing: the one added is the list line's to show), Not sure with its top three to pick from, or no card.
+ * A row still being read says which photo it is. Nothing reaches the list unpressed: `Add the N sure ones` takes
+ * every sure row, and a Not sure row adds the guess pressed. A row already added says so and is never added again.
  */
 export function PhotoList(p: PhotoListProps) {
   const phone = p.layout === "phone";
@@ -142,7 +142,7 @@ function PhotoItem({ row, index, total, phone, onPick }: { row: PhotoRow; index:
           <span className="block h-[50px] w-[36px] flex-none overflow-hidden rounded-[4px] bg-[color:var(--elevated)] shadow-[0_6px_14px_rgba(0,0,0,.4)]">
             {s.guess.imageUri && <img src={s.guess.imageUri} alt="" className="h-full w-full object-cover" />}
           </span>
-          <Name title={s.guess.name} sub={s.printing} />
+          <Name title={s.guess.name} />
           <span className={`ml-auto ${TAG_OK}`}>{s.kind === "sure" ? copy.photos.sure : copy.fix.onList}</span>
         </>
       );
@@ -177,7 +177,7 @@ function PhotoThumb({ src }: { src: string }) {
   );
 }
 
-function Name({ title, sub, warn }: { title: string; sub: string | null; warn?: boolean }) {
+function Name({ title, sub, warn }: { title: string; sub?: string; warn?: boolean }) {
   return (
     <span className="flex min-w-0 flex-1 flex-col gap-[4px]">
       <b className={`truncate text-[13.5px] font-semibold ${warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg)]"}`}>{title}</b>

@@ -8,8 +8,8 @@ import type { ScanGuess } from "./scan-view";
 const copy = collectionEditCopy.scan;
 const g = (oracleId: string, name: string): ScanGuess => ({ oracleId, name, typeLine: "Creature", imageUri: `https://img/${oracleId}` });
 const ROWS: PhotoRow[] = [
-  { id: 0, thumb: "blob:0", state: { kind: "sure", guess: g("a", "Killian, Decisive Mentor"), printing: "SOC · #4" } },
-  { id: 1, thumb: "blob:1", state: { kind: "added", guess: g("b", "Rootha, Mastering the Moment"), printing: "SOC · #8" } },
+  { id: 0, thumb: "blob:0", state: { kind: "sure", guess: g("a", "Killian, Decisive Mentor") } },
+  { id: 1, thumb: "blob:1", state: { kind: "added", guess: g("b", "Rootha, Mastering the Moment") } },
   { id: 2, thumb: "blob:2", state: { kind: "notSure", guesses: [g("c", "Zimone"), g("d", "Jace"), g("e", "Sai")] } },
   { id: 3, thumb: "blob:3", state: { kind: "failed" } },
   { id: 4, thumb: "blob:4", state: { kind: "pending" } },
@@ -42,10 +42,11 @@ describe("PhotoList", () => {
     expect(within(row(3)).queryByRole("img")).toBeNull();
   });
 
-  it("names a sure photo's card and printing, and says a row already added is on the list", () => {
+  it("names a sure photo's card and never a printing, and says a row already added is on the list", () => {
     draw();
     expect(within(row(0)).getByText("Killian, Decisive Mentor")).toBeTruthy();
-    expect(within(row(0)).getByText("SOC · #4")).toBeTruthy();
+    // The index matches the card, not the printing: the printing added is the list line's to name.
+    expect(row(0).textContent).not.toMatch(/·\s*#/);
     expect(within(row(0)).getByText(copy.photos.sure)).toBeTruthy();
     expect(within(row(1)).getByText(copy.fix.onList)).toBeTruthy();
   });

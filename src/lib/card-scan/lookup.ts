@@ -45,8 +45,7 @@ export async function lookupGuesses(embedding: Float32Array, model: string): Pro
           await tx.execute(sql`
             select n.oracle_id::text as "oracleId", n.scryfall_id::text as "scryfallId",
                    coalesce(c.name, '') as name, coalesce(c.type_line, '') as "typeLine",
-                   coalesce(p.image_uri, c.image_uri) as "imageUri", p.set_code as "setCode",
-                   p.collector_number as "collectorNumber", n.distance::float8 as distance
+                   coalesce(p.image_uri, c.image_uri) as "imageUri", n.distance::float8 as distance
             from (
               select s.oracle_id, s.scryfall_id, s.embedding <=> ${vec}::halfvec(256) as distance
               from scan_index s

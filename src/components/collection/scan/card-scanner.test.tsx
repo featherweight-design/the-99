@@ -89,7 +89,7 @@ describe("CardScanner", () => {
   });
 
   it("reads photos chosen from the blocked screen, then adds the sure ones with one press (D6 into W4)", async () => {
-    const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: null, setCode: "lea", collectorNumber: "270", score: 0.97 };
+    const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: null, score: 0.97 };
     const embedding = new Float32Array(256);
     embedding[0] = 1;
     const onAdd = vi.fn(async () => true);
@@ -115,8 +115,12 @@ describe("CardScanner", () => {
     fireEvent.click(await screen.findByRole("button", { name: collectionEditCopy.scan.camera.choosePhotos }));
     expect(opened).toHaveBeenCalled();
     fireEvent.change(input, { target: { files: [new File(["x"], "sol.jpg", { type: "image/jpeg" })] } });
-    await screen.findByText("LEA · #270");
-    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.scan.photos.addSure(1) }));
+    await screen.findByText(collectionEditCopy.scan.photos.sure);
+    // A keyboard press: focus is on the bulk press when it goes.
+    const bulk = screen.getByRole("button", { name: collectionEditCopy.scan.photos.addSure(1) });
+    bulk.focus();
+    expect(document.activeElement).toBe(bulk);
+    fireEvent.click(bulk);
     await screen.findByText(collectionEditCopy.scan.fix.onList);
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast");
     // Focus moves to the list's own Stop once the press that held it is gone.

@@ -6,7 +6,7 @@ kamigawa theme block in `globals.css`.
 
 ## Result
 
-Every W4 row matches except the seven below, and all ten CameraBlocked rows match at both widths, the photos line, the
+Every W4 row matches except the eight below, and all ten CameraBlocked rows match at both widths, the photos line, the
 footer and the Choose photos press included.
 
 | # | Gap | Disposition |
@@ -18,6 +18,7 @@ footer and the Choose photos press included.
 | 5 | Stop's `inline-flex` and 6px gap | Left: PR 3's shared head; the press holds text only, so nothing moves |
 | 6 | Sheet list head "On the list · 0" while the list is empty | Not this PR: the Add cards sheet draws its empty body there, for the webcam panel too |
 | 7 | Desktop Save 40px tall, 22px sides | Not this PR: the sheet's footer, shipped |
+| 8 | A Sure row's `SET · #` sub-line (`SOC · #4`) is not drawn | Ruled (orchestrator for Hugh, 2026-10-16): the index matches the card, not the printing, and Fast adds the card's first printing while Normal asks, so a matched printing would name one the list does not hold. The row names the card; the list line names the printing added |
 
 The photo itself is drawn as taken (`object-cover`), without the board's rotate, blur and dim, which stand in for a camera
 photo on the canvas. The canvas's dashed `new` outline is an annotation. A row name truncates (ambiguity 6). A Not sure
@@ -30,4 +31,4 @@ more photos are all reachable. No path adds a photo's card without a press: the 
 Beyond the board: a row still being read (`photo i of t`, `aria-busy`), a row already added (`On the list`), and a photo
 that gave no card (`photos.noCard`).
 
-Gap 1 was confirmed fixed by reading the row's markup after the change. The other six are recorded rather than changed.
+Gap 1 was confirmed fixed by reading the row's markup after the change. The other seven are recorded rather than changed.
