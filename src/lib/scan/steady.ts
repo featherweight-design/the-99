@@ -1,5 +1,5 @@
 import type { Reading } from "./reading";
-import { nextTrack, startTrack, type Tracked } from "./track";
+import { ageTrack, nextTrack, startTrack, type Tracked } from "./track";
 
 // What the lab SHOWS, as opposed to what the camera read last. In low light the top-1 flickers between cards from one
 // frame to the next, and a verdict can land on a guess that replaced the right one as the finger came down (Hugh,
@@ -40,6 +40,12 @@ export function startSteady(now: number): SteadyState {
 export function nextSteady(s: SteadyState, r: Reading, now: number): SteadyState {
   const track = nextTrack(s.track, r, now, (a, b) => keyOf(a) === keyOf(b));
   return { reading: track.value, changedAt: track.changedAt, before: track.before, track };
+}
+
+/** The display at `now` after a frame that gave no reading (a server answer still pending): it may only lose. Pure. */
+export function ageSteady(s: SteadyState, now: number): SteadyState {
+  const track = ageTrack(s.track, now);
+  return track === s.track ? s : { reading: track.value, changedAt: track.changedAt, before: track.before, track };
 }
 
 /** What a verdict pressed at `pressAt` is recorded against, and how long before the press the screen last changed. A

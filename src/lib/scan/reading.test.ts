@@ -61,4 +61,10 @@ describe("scan-lab stream holder", () => {
     expect(h.accept(stream)).toBe(true);
     expect(track.stopped).toBe(0);
   });
+  it("records the index the reading's guesses came from, over the page's own", () => {
+    const at = { changedMsBeforeTap: 0, shown: null };
+    const r = { kind: "card" as const, crop: new Float32Array(1), guesses: [{ oracleId: "o", name: "n", score: 0.9 }], margin: 0.1, agreed: 1, committed: true, detMs: 1, embMs: 1, matchMs: 1, totalMs: 3, index: "all-20261015" };
+    expect(tapBody(r, true, "device-v1", null, at).indexVersion).toBe("all-20261015");
+    expect(tapBody({ ...r, index: undefined }, true, "device-v1", null, at).indexVersion).toBe("device-v1");
+  });
 });

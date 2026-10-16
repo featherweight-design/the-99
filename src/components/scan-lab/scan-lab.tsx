@@ -13,7 +13,7 @@ import {
 } from "../../lib/scan/geometry";
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan/reading";
-import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
+import { ageSteady, nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
 import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
 import { sessionHolder } from "../../lib/scan/sessions";
 import { TrueCardStep } from "./true-card-step";
@@ -22,6 +22,8 @@ import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan/models";
+import { isDark, torchOf, type Torch } from "../../lib/scan/camera";
+import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
 
 /** The slice of onnxruntime-web this page uses; it is loaded from the CDN, so it has no types here. */
 type OrtTensor = { data: Float32Array };
@@ -57,7 +59,11 @@ async function loadIndex(base: string): Promise<ScanIndex> {
 // The camera loop's own clock; read from handlers, never while rendering.
 const clock = () => performance.now();
 
-export function ScanLab({ indexBase }: { indexBase: string | null }) {
+export function ScanLab({ indexBase, serverModel = null }: {
+  indexBase: string | null;
+  /** The embedder build the server's index was made by, when server matching is on for this reader; null hides it. */
+  serverModel?: string | null;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const running = useRef(false);
   const history = useRef<{ oracleId: string; margin: number }[]>([]);
@@ -85,6 +91,27 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const heldDisplay = useRef<Display | null>(null);
   const lastRun = useRef<{ start: number; end: number } | null>(null);
   const [logged, setLogged] = useState<number | null>(null);
+  // Matching on the server (card-scan plan PR 2): while the box is selected each frame goes through the server
+  // scanner, which asks the server once per steady card, in place of the index on this device.
+  const server = useRef<ReturnType<typeof serverScanner> | null>(null);
+  const [serverOn, setServerOn] = useState(false);
+  // Frames in a row the server's answer has stood for the card in view: the server path's "same answer on N frames".
+  const serverRun = useRef<{ oracleId: string; n: number } | null>(null);
+  const onServerState = useCallback((st: ServerState) => {
+    if (st.kind === "looking") setNote(copy.serverLooking);
+    else if (st.kind === "retrying") setNote(copy.serverRetrying);
+    else if (st.kind === "failed") setNote(copy.serverFailed);
+    else if (st.kind === "refused") setNote(copy.serverRefused[st.reason]);
+    else setNote(null);
+  }, []);
+  const [torch, setTorch] = useState<Torch | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const toggleTorch = async (on: boolean) => {
+    if (torch && (await torch.set(on))) setTorchOn(on);
+  };
+  // The frame is too dark to read a card from: set from the loop only when it changes.
+  const [dark, setDark] = useState(false);
+  const darkNow = useRef(false);
   const finishLog = useCallback(async () => {
     const run = cadence.current;
     if (!run) return;
@@ -98,10 +125,23 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     const res = await fetch("/api/scan-lab/cadence", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ indexVersion: indexVersion.current, frames: run.frames }),
+      // the index that served the run's readings (the server's, while matching there), else the page's own
+      body: JSON.stringify({ indexVersion: run.index ?? indexVersion.current, frames: run.frames }),
     }).catch(() => null);
     setNote(res?.ok ? copy.logged(run.frames.length) : copy.logFailed);
   }, []);
+  const toggleServer = useCallback((on: boolean) => {
+    // a log run reads one matcher: switching ends it, and the next run starts on the new one
+    if (cadence.current) void finishLog();
+    server.current?.stop();
+    server.current = on && serverModel
+      ? serverScanner(serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)), now: clock }, onServerState)
+      : null;
+    setServerOn(server.current !== null);
+    setNote(null);
+  }, [serverModel, onServerState, finishLog]);
+  // No index on this deployment: the lab still runs, matching on the server alone, when the reader may.
+  const serverOnly = !indexBase && serverModel !== null;
   const toggleLog = (on: boolean) => {
     if (!on) {
       void finishLog();
@@ -121,6 +161,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     models.open();
     return () => {
       running.current = false;
+      server.current?.stop();
       held.close();
       models.close();
     };
@@ -137,7 +178,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       setStatus("error");
       setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
     };
-    if (!indexBase) {
+    if (!indexBase && !serverModel) {
       setStatus("error");
       setError(copy.noIndex);
       return;
@@ -151,7 +192,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     try {
       const [ort, index, media] = await Promise.all([
         loadOrt(),
-        loadIndex(indexBase),
+        indexBase ? loadIndex(indexBase) : Promise.resolve(null),
         navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
@@ -161,7 +202,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           return m;
         }),
       ]);
-      indexVersion.current = index.meta.version;
+      indexVersion.current = index?.meta.version ?? "server";
+      if (!index) toggleServer(true);
       // each held as it loads, so a failed sibling or leaving the page releases it, even late
       const load = (url: string) =>
         ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then((s) => {
@@ -175,6 +217,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
         sessions.current.close();
         return;
       }
+      setTorch(torchOf(media.getVideoTracks()[0]));
       video.srcObject = media;
       await video.play();
       if (!stream.current.holds(media)) return; // the page was left while the camera started
@@ -206,6 +249,9 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, t1: number) => {
         history.current = [];
+        // the server path's run of agreeing frames breaks on a frame with no card, as the device path's does
+        serverRun.current = null;
+        server.current?.frame({ kind: "none" }, performance.now());
         publish({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
       };
       const loop = async () => {
@@ -222,6 +268,13 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           sctx.fillRect(0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
           sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
           const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
+          // Darkness is read off the middle of the picture, never the letterbox's black bars.
+          const mid = sctx.getImageData(Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2))).data;
+          const isDarkNow = isDark(mid);
+          if (isDarkNow !== darkNow.current) {
+            darkNow.current = isDarkNow;
+            setDark(isDarkNow);
+          }
           const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
           const det = await sessions.current.use(() => detector.run({ [detector.inputNames[0]]: detIn }));
           if (!running.current) return;
@@ -238,6 +291,43 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               if (!running.current) return;
               const t2 = performance.now();
               const q = normalise(Object.values(out)[0].data);
+              const viaServer = server.current;
+              if (viaServer) {
+                // Asked once per steady card; until the answer lands the screen keeps what it shows.
+                const st = viaServer.frame({ kind: "card", embedding: q }, t2, t0);
+                if (st.kind === "match") {
+                  const { guesses, margin, sure, index: served } = st.result;
+                  const top = guesses[0]?.oracleId ?? "";
+                  serverRun.current = serverRun.current?.oracleId === top ? { oracleId: top, n: serverRun.current.n + 1 } : { oracleId: top, n: 1 };
+                  // the reading carries the server's index, so a tap on it records that one, not the device's
+                  publish({
+                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure, index: served,
+                    // from the frame that asked to the answer, not this later frame's own work
+                    detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: st.totalMs,
+                  });
+                } else {
+                  serverRun.current = null;
+                  // no answer for this frame: the screen may only lose what it shows, on time, and the log still
+                  // records the frame, as a card waiting on its answer
+                  const now = performance.now();
+                  const aged = ageSteady(steady.current, now);
+                  if (aged.changedAt !== steady.current.changedAt) setDisplay(aged);
+                  steady.current = aged;
+                  const run = cadence.current;
+                  if (run) {
+                    const more = logFrame(run, "pending", heldDisplay.current ?? aged, now);
+                    cadence.current = more;
+                    if (more !== run) setLogged(more.frames.length);
+                    if (cadenceDone(more, now)) void finishLog();
+                  }
+                }
+                setTimeout(tick, 60);
+                return;
+              }
+              if (!index) {
+                setTimeout(tick, 60);
+                return;
+              }
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
@@ -246,7 +336,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               const committed = agreement(history.current, AGREE_FRAMES, AGREE_MARGIN) !== null;
               // the crop and the verdict it produced are published together, as one reading
               publish({
-                kind: "card", crop, guesses, margin, agreed, committed,
+                kind: "card", crop, guesses, margin, agreed, committed, index: index.meta.version,
                 detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
             } else {
@@ -265,7 +355,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     } catch (e) {
       fail(e);
     }
-  }, [indexBase, finishLog]);
+  }, [indexBase, serverModel, finishLog, toggleServer]);
 
   const record = useCallback(async (tap: Tap, correct: boolean) => {
     // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
@@ -320,6 +410,19 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             {note ? ` · ${note}` : ""}
           </span>
           {/* Outside the controls area, so ticking it never holds the reading. */}
+          {serverModel && !serverOnly && (
+            <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+              <Checkbox checked={serverOn} onChange={toggleServer} />
+              {copy.serverMatch}
+            </label>
+          )}
+          {torch?.available && (
+            <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+              <Checkbox checked={torchOn} onChange={(on) => void toggleTorch(on)} />
+              {copy.torch}
+            </label>
+          )}
+          {dark && <span className="text-[12px] text-[color:var(--warning)]">{copy.tooDark}</span>}
           <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
             <Checkbox checked={logged !== null} onChange={toggleLog} />
             {logged === null ? copy.logFrames : copy.logging(logged)}

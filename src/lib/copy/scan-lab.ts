@@ -37,4 +37,19 @@ export const scanLabCopy = {
   searchFailed: "The search didn’t load. Type again to retry.",
   labelled: (name: string) => `Saved as ${name}`,
   labelFailed: "That didn’t save. Pick it again or skip.",
+  // Matching on the server (card-scan plan PR 2): the embedding goes to the server once per steady card, never the frame.
+  serverMatch: "Match on the server",
+  serverLooking: "Asking the server…",
+  serverRetrying: "Unsure, retrying…",
+  // A lookup is made once per card that settles: the same card again needs the view to empty first (a short gap is not).
+  serverFailed: "The server didn’t answer. Take the card out of view until it says No card in view, then show it again.",
+  serverRefused: {
+    signedOut: "Sign in again to match on the server.",
+    off: "Server matching is off for this account.",
+    model: "The server’s index was built by a different model.",
+    badEmbedding: "The server couldn’t read this card’s embedding.",
+    unavailable: "Server matching isn’t available. Sign in again, or check it’s on for this account.",
+  },
+  torch: "Torch",
+  tooDark: "Too dark to read a card. Turn on the torch or find more light.",
 } as const;

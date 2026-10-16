@@ -27,9 +27,12 @@ export type CadenceFrame = {
   shown: string | null;
   /** The screen said it was unsure. */
   unsure: boolean;
+  /** A card was in view and its answer had not come (matching on the server); absent otherwise. */
+  pending?: true;
 };
 
-export type CadenceRun = { startedAt: number; lastAt: number; frames: CadenceFrame[] };
+/** `index`: the index that served the run's readings, from the first one that names it. */
+export type CadenceRun = { startedAt: number; lastAt: number; frames: CadenceFrame[]; index?: string };
 
 export function startCadence(now: number): CadenceRun {
   return { startedAt: now, lastAt: -Infinity, frames: [] };
@@ -42,9 +45,9 @@ export function cadenceDone(run: CadenceRun, now: number): boolean {
 
 /** The run with this frame logged, or unchanged when it came sooner than `CADENCE_GAP_MS` after the last or the run is
  * done. Pure. */
-export function logFrame(run: CadenceRun, r: Reading, d: Display, now: number): CadenceRun {
+export function logFrame(run: CadenceRun, r: Reading | "pending", d: Display, now: number): CadenceRun {
   if (cadenceDone(run, now) || now - run.lastAt < CADENCE_GAP_MS) return run;
-  const card = r.kind === "card" ? r : null;
+  const card = r !== "pending" && r.kind === "card" ? r : null;
   const shown = d.reading?.kind === "card" ? (d.reading.guesses[0]?.oracleId ?? null) : null;
   const frame: CadenceFrame = {
     t: Math.round(now - run.startedAt),
@@ -52,8 +55,9 @@ export function logFrame(run: CadenceRun, r: Reading, d: Display, now: number): 
     margin: card ? round(card.margin) : null,
     shown,
     unsure: d.reading === null,
+    ...(r === "pending" ? { pending: true as const } : {}),
   };
-  return { ...run, lastAt: now, frames: [...run.frames, frame] };
+  return { ...run, lastAt: now, frames: [...run.frames, frame], index: run.index ?? card?.index };
 }
 
 /** Whether a tap pressed at `pressedAt` fell inside a log run: the one running now, or the last one, which ended at
@@ -93,7 +97,11 @@ export function parseCadence(raw: unknown): CadenceLog | null {
     if (x.margin !== null && !num(x.margin, -2, 2)) return null;
     if (x.shown !== null && !(typeof x.shown === "string" && isUuid(x.shown))) return null;
     if (typeof x.unsure !== "boolean") return null;
-    frames.push({ t: x.t, top, margin: x.margin as number | null, shown: x.shown as string | null, unsure: x.unsure });
+    if (x.pending !== undefined && x.pending !== true) return null;
+    frames.push({
+      t: x.t, top, margin: x.margin as number | null, shown: x.shown as string | null, unsure: x.unsure,
+      ...(x.pending === true ? { pending: true as const } : {}),
+    });
   }
   return { indexVersion: r.indexVersion, frames };
 }

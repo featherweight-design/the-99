@@ -50,4 +50,21 @@ describe("nextTrack", () => {
     s = nextTrack(s, card(1.55), 1000 + DWELL_MS, sameCard);
     expect(s.value).toEqual(card(1.55));
   });
+  it("ages a settled value nothing supports to unsure on time, and leaves it before LOSE_MS", async () => {
+    const { ageTrack } = await import("./track");
+    const s = run([[1, 0], [1, DWELL_MS]]);
+    expect(ageTrack(s, DWELL_MS + LOSE_MS - 1)).toBe(s);
+    const aged = ageTrack(s, DWELL_MS + LOSE_MS);
+    expect(aged.value).toBeNull();
+    expect(aged.before).toBe(1);
+  });
+  it("breaks a candidate's run on a frame that gave nothing, so its dwell starts again", async () => {
+    const { ageTrack } = await import("./track");
+    let s = nextTrack(startTrack<number>(0), 1, 0, eq);
+    s = ageTrack(s, 400);
+    s = nextTrack(s, 1, DWELL_MS + 100, eq);
+    expect(s.value).toBeNull();
+    s = nextTrack(s, 1, 2 * DWELL_MS + 100, eq);
+    expect(s.value).toBe(1);
+  });
 });
