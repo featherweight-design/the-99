@@ -537,6 +537,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SHOPPING_MARK_BOUGHT_ENABLED: { label: "Mark bought", description: "Mark a shopping line bought and add it to the collection." },
   SOCIAL_FRIENDS_ENABLED: { label: "Friends", description: "Friends, invites and pods. Opponents needs it." },
   SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
+  SOCIAL_INVITES_ENABLED: { label: "Invites", description: "Inviting someone new, and invite counts." },
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },

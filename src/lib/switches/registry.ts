@@ -61,6 +61,7 @@ export const SWITCHES = [
   { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
   { name: "SOCIAL_GAMES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
+  { name: "SOCIAL_INVITES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },

@@ -4,12 +4,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PURGE_ORDER } from "./purge";
-import { SOCIAL_PURGED, SOCIAL_UNLINKED } from "../social/purge";
+import { SOCIAL_PURGED, SOCIAL_UNLINKED as SOCIAL_ONLY_UNLINKED } from "../social/purge";
+import { INVITES_UNLINKED } from "../invites/purge";
+
+/** Every table the purge unlinks rather than deletes: the social game log's opponent seats and the invite tree. */
+const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = { ...SOCIAL_ONLY_UNLINKED, ...INVITES_UNLINKED };
 
 const schema = readFileSync("src/db/schema.ts", "utf8");
 
 /** Columns that name an account. */
-const ACCOUNT_COLUMNS = ["clerk_id", "user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
+const ACCOUNT_COLUMNS = ["clerk_id", "user_id", "owner_user_id", "inviter_user_id", "invitee_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
 
 /**
  * Account columns the purge deliberately leaves, by `table.column`, and why. Each but the tombstone names an

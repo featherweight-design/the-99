@@ -25,7 +25,7 @@ import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { socialFriendsEnabled, socialGamesEnabled } from "../social/flag";
+import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "../tuning/flag";
@@ -75,6 +75,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,
+  SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
