@@ -201,4 +201,39 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     }
     expect(names()).toEqual(order);
   });
+
+  it("gives focus back to the line's name when Escape closes the fix from inside it", async () => {
+    await scanned();
+    const name = await screen.findByRole("button", { name: "Sol Ring", expanded: false });
+    fireEvent.click(name);
+    const tile = screen.getAllByRole("radio")[0];
+    tile.focus();
+    fireEvent.keyDown(tile, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("group", { name: scan.fix.regionLabel })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Sol Ring", expanded: false })));
+  });
+
+  it("gives focus to the line a swap folded the fixed line into", async () => {
+    const stone = printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" });
+    search.mockResolvedValue([{ oracleId: STONE.oracleId, name: STONE.name, imageUri: null, typeLine: "Artifact" }]);
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    // Mind Stone, by search, at WWK.
+    fireEvent.change(document.querySelector("input")!, { target: { value: "mind" } });
+    choices.mockResolvedValueOnce([stone]);
+    fireEvent.click(await screen.findByRole("option", { name: /Mind Stone/ }));
+    await waitFor(() => expect(screen.getByText(copy.summary(1, 1))).toBeTruthy());
+    // Sol Ring by scan, then swapped to Mind Stone at that same printing: the two lines fold into one.
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(screen.getByText(copy.summary(2, 2))).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sol Ring", expanded: false }));
+    choices.mockResolvedValueOnce([stone]);
+    const tile = screen.getByRole("radio", { name: /Mind Stone/ });
+    tile.focus();
+    fireEvent.click(tile);
+    await waitFor(() => expect(screen.getByText(copy.summary(1, 2))).toBeTruthy());
+    await waitFor(() => expect(document.activeElement?.closest("[data-line-id]")).toBeTruthy());
+  });
 });
+

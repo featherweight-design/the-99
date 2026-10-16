@@ -99,6 +99,7 @@ export function AddLine(props: AddLineProps) {
       className="relative flex flex-col gap-[10px] rounded-[10px] border border-solid bg-[color:var(--bg)] p-[12px]"
       style={{ borderColor: picking || props.fix?.open ? "var(--accent)" : "var(--border)" }}
       aria-label={line.name}
+      data-line-id={line.id}
     >
       {pulse !== null && (
         <span key={pulse} aria-hidden className="anim-line-pulse pointer-events-none absolute inset-0 rounded-[10px]" />

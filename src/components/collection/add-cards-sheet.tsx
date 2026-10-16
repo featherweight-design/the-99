@@ -163,6 +163,22 @@ function AddMode({
   // The fix is open only while its line is on the list and nothing else is being asked: a line folded into a twin
   // (by a swap, a printing or a finish) takes its fix with it, and a printing step asked elsewhere shows over it.
   const fixing = fixChosen !== null && pickerFor === null && lines.some((l) => l.id === fixChosen) ? fixChosen : null;
+  // However the fix closes (Escape, its own name press, a swap that folds the line into another), focus that was in
+  // it has nowhere to stand and falls to the page: it goes back to the line's name, or, when the line folded away,
+  // to the line it folded into, else the search. Focus already moved on (Search for it instead) is left where it is.
+  const fixWas = useRef<string | null>(null);
+  useEffect(() => {
+    const was = fixWas.current;
+    fixWas.current = fixing;
+    if (was === null || was === fixing) return;
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (!lost) return;
+    const target =
+      document.querySelector<HTMLElement>(`[aria-controls="scan-fix-${was}"]:not([disabled])`) ??
+      (pulse ? document.querySelector<HTMLElement>(`[data-line-id="${pulse.id}"] button:not([disabled])`) : null) ??
+      searchRef.current;
+    target?.focus();
+  }, [fixing, pulse]);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogCardResult[]>([]);
