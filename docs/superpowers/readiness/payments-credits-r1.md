@@ -133,8 +133,10 @@ Errors the boards do not draw are gap 3.
      `reserveModelCall` beside the lot choice, so `hasCredit` stays the one decision. History is read from Stripe by
      the reader's `stripe_customers` id (charges and invoices, with Stripe's receipt URL), since `payment_records`
      holds no account. A refunded row shows as Stripe reports it, with a string for /copy-review. "Ever bought"
-     (G6) is a `stripe_customers` row or any `credit_grants` row. `/credits` is not found, and the chip is absent,
-     for a reader with the switch off and neither.
+     (G6) is any `credit_grants` row, which fulfilment writes only for a validated, paid Session. A
+     `stripe_customers` row is NOT evidence: it is written when Checkout starts, so an abandoned first Checkout
+     has one. A current plan and a paid balance are checked separately. `/credits` is not found, and the chip is
+     absent, for a reader with the switch off, no grant, no plan and no paid balance.
 6. **The Checkout return (G5).** The return grants nothing. It reads the Session by id from the success URL, under
    the signed-in reader, and shows R1 only when the Session reads paid, so `Payment received` is true. It re-reads
    every 2s for a minute, then every 10s (R4), and stops on `added` or leaving the page.
@@ -162,8 +164,15 @@ Errors the boards do not draw are gap 3.
 ## Before build
 
 - /copy-review of `buying-credits · copy strings.ts`, with the Copy section and gaps 3 and 11.
-- Hugh's calls: gap 10 (does a paid run ever pause) and gap 11 (the refund promise at deletion). Both have a default
-  and neither blocks the build.
+- Hugh's calls: gap 10 (does a paid run ever pause) and gap 11 (the refund promise at deletion). Both are now
+  ruled; see below.
 - The plan names as tasks: the subscription backend, the paid daily limit, the block row, the switch, the history
   read, the return's re-read, the interstitial, and the six-theme contact sheet, with the resolutions above. The
   About entry is a stated deferral, batched at launch.
+
+## Hugh's rulings (2026-10-16)
+
+1. **Gap 10:** a run paid for with a bought credit is never stopped by the app-wide monthly pause. Engineering's
+   default stands: the cap keeps pausing free-funded runs only, until payments are on for everyone.
+2. **Gap 11:** the account-deletion warning uses the Credits page's refund wording (`page.refunds`), so the two
+   never disagree. /copy-review settles the final string from that rule.
