@@ -40,7 +40,8 @@ export function useInviteWatch(tokens: readonly string[], onEnded: (ended: Invit
       const ended: InviteOutcome[] = [];
       // The route answers at most MAX_OPEN_INVITES tokens, and the shown link beside ten open ones is eleven, so
       // the watch asks in batches; a token a successful batch leaves out is no longer the reader's open link.
-      for (let i = 0; i < left.length && !stopped; i += MAX_OPEN_INVITES) {
+      // A tab hidden between batches asks no further: what was not asked is asked again once it is visible.
+      for (let i = 0; i < left.length && !stopped && !hidden(); i += MAX_OPEN_INVITES) {
         const batch = left.slice(i, i + MAX_OPEN_INVITES);
         try {
           const res = await fetch(`/api/friend-invites?t=${batch.join(",")}`, { signal, cache: "no-store" });

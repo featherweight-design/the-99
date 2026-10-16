@@ -120,4 +120,15 @@ describe("useInviteWatch", () => {
     for (const [url] of fetchMock.mock.calls) expect(new URL(url, "http://x").searchParams.get("t")!.split(",").length).toBeLessThanOrEqual(10);
     expect(onEnded).toHaveBeenCalledWith([{ token: tokens[10], open: false, friend: null }]);
   });
+  it("asks no further batch once the tab is hidden between them", async () => {
+    const tokens = Array.from({ length: 11 }, (_, i) => `tok${String(i).padStart(19, "0")}`);
+    fetchMock.mockImplementation(async (url: string) => {
+      visibility = "hidden";
+      const asked = new URL(url, "http://x").searchParams.get("t")!.split(",");
+      return { ok: true, json: async () => ({ links: asked.map((t) => ({ token: t, open: true, friend: null })) }) };
+    });
+    renderHook(() => useInviteWatch(tokens, vi.fn()));
+    await tick(WATCH_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
