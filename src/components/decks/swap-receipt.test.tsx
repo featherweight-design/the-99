@@ -50,7 +50,11 @@ describe("SwapReceiptRow", () => {
     await draw(base);
     const shell = screen.getByTestId("swap-receipt").firstElementChild as HTMLElement;
     expect(shell.className.split(/\s+/)).toContain("min-h-[34px]");
-    expect(shell.className).not.toMatch(/96px|44px|md:/);
+    expect(shell.className).not.toMatch(/96px|44px/);
+    // Nothing inside grows the line: the Undo press takes its 44px hit from TOUCH_HIT, drawn past its box.
+    const undo = shell.querySelector("button")!;
+    expect(undo.className).not.toMatch(/(^|\s)(min-)?h-\[44px\]/);
+    expect(undo.className).toContain("pointer-coarse:after:h-[max(44px,100%)]");
   });
 
   it("names a free copy", async () => {

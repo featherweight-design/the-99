@@ -564,10 +564,8 @@ export function DecklistRow({
   // outlives what it describes — that state never returns to false, so once a
   // card had been removed and put back, React reusing the row under the same
   // key would draw the receipt over a card that is in the deck.
-  // `rowShell` carries the same meta-line height this row would have drawn
-  // live (H29: a receipt that is always 44px shrinks the slot of any card
-  // that would have shown a meta line, and several stacked compound the
-  // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
+  // `rowShell` is the live row's own 34px shell, so a receipt holds exactly
+  // the height of the row it replaces (H29).
   const slotShell = rowShell;
   if (spent) return <UndoRow deckId={deckId} card={card} rowShell={slotShell} />;
   if (held) return <HeldSlot card={card} rowShell={slotShell} />;
@@ -692,8 +690,8 @@ export function DecklistRow({
           className={`w-[8px] h-[8px]${glintForDot ? " hidden" : ""}`}
         />
         {/* The glint takes the filled dot's place on a one-line row (L5, direction 3a): centred on the 8px slot, so the name keeps
-            its x. Only where the dot would be filled; a dashed or proxied row draws none here. The phone keeps the dot, and the
-            glint under it on the meta line. Silent: the row's description says the finish. */}
+            its x. Only where the dot would be filled; a dashed or proxied row draws none here.
+            Silent: the row's description says the finish. */}
         {glintForDot ? (
           <span className="flex flex-none w-[8px] h-[8px] items-center justify-center">
             <FoilGlint finish={foilFinish} />
