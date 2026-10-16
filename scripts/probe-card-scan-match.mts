@@ -54,7 +54,9 @@ try {
   // b. the CLI refuses a target it was not told about
   const before = (await client.query("select to_regclass('scan_index_meta') is not null as ok")).rows[0] as { ok: boolean };
   check("b. migration 0137 is applied here", before.ok);
-  const wrong = spawnSync("pnpm", ["-s", "db:seed:scan-index", SCAN_ROWS_DIR], {
+  // `--dry-run`: the CLI loads `.env` over the environment (`env.mjs`), so a target pair kept there would replace the
+  // misnamed one passed here; dry-run still refuses on the branch, and can never publish.
+  const wrong = spawnSync("pnpm", ["-s", "db:seed:scan-index", SCAN_ROWS_DIR, "--dry-run"], {
     env: { ...process.env, SCAN_INDEX_TARGET_URL: DATABASE_URL, SCAN_INDEX_TARGET_BRANCH: "br-not-this-one" },
     encoding: "utf8",
   });
