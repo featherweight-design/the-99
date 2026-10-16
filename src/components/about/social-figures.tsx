@@ -189,6 +189,7 @@ const VALAKUT = spareRow({
   oracleId: "about-spare-valakut",
   name: "Valakut Awakening // Valakut Stoneforge",
   typeLine: "Instant // Land",
+  layout: "modal_dfc",
   cmc: 3,
   manaCost: "{2}{R}",
   imageUri: "https://cards.scryfall.io/normal/front/2/2/228e551e-023a-4c9a-8f32-58dae6ffdf7f.jpg?1783929350",
