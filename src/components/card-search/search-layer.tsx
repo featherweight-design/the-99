@@ -95,10 +95,11 @@ function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<O
 const META =
   "px-4 pt-3 pb-1 font-mono text-[11.5px] text-[color:var(--fg-faint)] md:px-[14px] md:pt-2 md:pb-[6px] md:text-[10.5px] md:tracking-[0.14em] md:uppercase";
 const BOX = "mx-4 mt-[18px] flex flex-col gap-2 rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] p-[18px] md:mx-0 md:mt-0 md:gap-[6px] md:rounded-none md:border-0 md:bg-transparent md:px-4 md:pt-[14px] md:pb-3";
-const SKELETON_WIDTHS: ReadonlyArray<readonly [string, string]> = [
-  ["62%", "40%"],
-  ["48%", "30%"],
-  ["70%", "44%"],
+// Phone widths, then the desktop's (D3): each row's two lines.
+const SKELETON_WIDTHS: ReadonlyArray<readonly [string, string, string, string]> = [
+  ["62%", "40%", "52%", "30%"],
+  ["48%", "30%", "40%", "24%"],
+  ["70%", "44%", "60%", "34%"],
 ];
 
 function SearchBody(p: SearchLayerProps) {
@@ -159,7 +160,7 @@ function SearchBody(p: SearchLayerProps) {
     return (
       <>
         <p className={META}>{cardSearchCopy.searching}</p>
-        {SKELETON_WIDTHS.map(([a, b], i) => (
+        {SKELETON_WIDTHS.map(([a, b, da, db], i) => (
           <div
             key={i}
             aria-hidden
@@ -167,8 +168,8 @@ function SearchBody(p: SearchLayerProps) {
           >
             <span className="h-14 w-10 flex-none rounded-[4px] bg-[color:var(--surface-raised)] md:h-[42px] md:w-[30px] md:bg-[color:var(--elevated)]" />
             <span className="flex flex-1 flex-col gap-[9px]">
-              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)] md:bg-[color:var(--elevated)]" style={{ width: a }} />
-              <span className="h-[10px] rounded-[5px] bg-[color:var(--surface-raised)] md:bg-[color:var(--elevated)]" style={{ width: b }} />
+              <span className="h-[10px] w-[var(--w)] rounded-[5px] bg-[color:var(--surface-raised)] md:w-[var(--wd)] md:bg-[color:var(--elevated)]" style={{ "--w": a, "--wd": da } as React.CSSProperties} />
+              <span className="h-[10px] w-[var(--w)] rounded-[5px] bg-[color:var(--surface-raised)] md:w-[var(--wd)] md:bg-[color:var(--elevated)]" style={{ "--w": b, "--wd": db } as React.CSSProperties} />
             </span>
           </div>
         ))}
