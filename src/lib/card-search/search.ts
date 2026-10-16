@@ -77,7 +77,7 @@ export function cardSignalsSql(userId: string, oracleIds: string[], wishlist: bo
       coalesce((
         select sum(ci.quantity) from collection_items ci
         where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id
-      ), 0)::int as owned,
+      ), 0) as owned,
       coalesce((
         select array_agg(d.name order by d.name, d.id) from decks d
         where d.user_id = ${userId}
@@ -108,7 +108,9 @@ export async function loadCardSignals(
 ): Promise<Map<string, CardSignals>> {
   const ids = [...new Set(oracleIds)];
   if (ids.length === 0) return new Map();
-  const { rows } = await db.execute<{ oracleId: string; owned: number; decks: string[]; wishlist: boolean }>(
+  // `owned` stays a bigint in SQL (a holding may be up to 2^31 - 1 copies, and a sum of two passes an int) and is
+  // read as a number here.
+  const { rows } = await db.execute<{ oracleId: string; owned: string | number; decks: string[]; wishlist: boolean }>(
     cardSignalsSql(userId, ids, opts.wishlist),
   );
   return new Map(rows.map((r) => [r.oracleId, { owned: Number(r.owned), decks: r.decks, wishlist: r.wishlist }]));
