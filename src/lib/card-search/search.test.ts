@@ -42,6 +42,12 @@ describe("cardSignalsSql", () => {
     expect(sql).toContain("w.oracle_id = c.oracle_id");
   });
 
+  // A holding may be up to 2^31 - 1 copies, so a sum across printings can pass an int: no cast, or the read fails.
+  it("keeps the owned sum a bigint", () => {
+    expect(sql).toMatch(/\), 0\) as owned/);
+    expect(sql).not.toMatch(/::int as owned/);
+  });
+
   it("marks a wish only while it is unmet", () => {
     expect(sql).toMatch(/w\.quantity > coalesce\(\(\s+select sum\(ci2\.quantity\)/);
   });
