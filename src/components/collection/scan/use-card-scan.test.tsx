@@ -33,7 +33,8 @@ function setup(over: Partial<CardScanDeps> = {}, frame: FrameRead = { frame: { k
   };
   const onAdd = vi.fn();
   const onProblem = vi.fn();
-  const hook = renderHook(() => useCardScan(true, deps, onAdd, onProblem));
+  // A fresh callback every render, as an inline caller passes: the problem must still be said once.
+  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k)));
   act(() => hook.result.current.videoRef(document.createElement("video")));
   return { hook, onAdd, onProblem, fetch };
 }
@@ -68,6 +69,8 @@ describe("useCardScan", () => {
     const fetch = vi.fn(() => json(null, 404));
     const { hook, onProblem } = setup({ fetch: fetch as unknown as typeof globalThis.fetch });
     await waitFor(() => expect(onProblem).toHaveBeenCalledWith("refused"), { timeout: 4000 });
+    hook.rerender();
+    hook.rerender();
     expect(onProblem).toHaveBeenCalledTimes(1);
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } });
   });
