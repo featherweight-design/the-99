@@ -224,6 +224,10 @@ export function CollectionPlaceHead({
     throw new Error(`CollectionPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
   const effective = pendingPlace ?? current;
+  const tabs = visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled);
+  // Five tabs and a labelled trailing control outgrow a 390px phone, so beside five the tabs
+  // close up and the control is drawn as its mark alone (board WP1).
+  const compact = tabs.length >= 5;
   const titleClass =
     "font-display font-bold m-0 md:text-[30px] md:leading-[45px]";
   return (
@@ -286,7 +290,7 @@ export function CollectionPlaceHead({
         // Scrolls sideways rather than widening the page when five tabs and + Add outgrow a narrow phone (320px).
         className="flex h-[48px] items-stretch gap-[2px] overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
       >
-        {visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled).map((tab) => {
+        {tabs.map((tab) => {
           const on = tab.place === effective;
           return (
             <Link
@@ -296,7 +300,7 @@ export function CollectionPlaceHead({
               data-testid={`collection-tab-${tab.place}`}
               onNavigate={() => setPendingPlace(tab.place)}
               className={[
-                "flex items-center px-[11px] md:px-[10px] text-[14px]",
+                `flex items-center ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
                 on
                   ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"
@@ -310,16 +314,18 @@ export function CollectionPlaceHead({
         })}
         {hasCollection && editEnabled ? (
           // The strip has room for one trailing control beside the tabs, and `+ Add` (70px) fits
-          // where `↻ Replace` (92px) does not; the upload moves into the sheet (B0).
+          // where `↻ Replace` (92px) does not; the upload moves into the sheet (B0). Beside five
+          // tabs only the mark fits, in a 44px square, as board WP1 draws its trailing control.
           <button
             type="button"
             onClick={openAdd}
             aria-haspopup="dialog"
+            aria-label={compact ? collectionEditCopy.head.add : undefined}
             data-testid="collection-add-phone"
-            className="md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center px-[10px] text-[13px] text-[color:var(--accent)]"
+            className={`md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center text-[13px] text-[color:var(--accent)] ${compact ? "h-[44px] w-[44px] self-center justify-center" : "px-[10px]"}`}
           >
-            <span aria-hidden className="mr-[6px] text-[15px]">+</span>
-            {collectionEditCopy.head.addShort}
+            <span aria-hidden className={compact ? "text-[18px]" : "mr-[6px] text-[15px]"}>+</span>
+            {compact ? null : collectionEditCopy.head.addShort}
           </button>
         ) : hasCollection ? (
           <a

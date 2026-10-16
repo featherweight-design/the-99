@@ -187,7 +187,9 @@ const DEMAND_ANSWERS = spareRow({
 });
 const VALAKUT = spareRow({
   oracleId: "about-spare-valakut",
-  name: "Valakut Awakening // Valakut Stoneforge",
+  // The front face alone, at both widths: from `md` a Shopping row prints the name it is given, and the whole
+  // two-face name beside its own two-face mark reads doubled in a figure (the row's mark still says it has a back).
+  name: "Valakut Awakening",
   typeLine: "Instant // Land",
   layout: "modal_dfc",
   cmc: 3,

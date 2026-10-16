@@ -1841,6 +1841,9 @@ describe("figures that draw what their keys name", () => {
     expect(presses[0].textContent).not.toContain("⇄");
     expect(presses[1].querySelector('[data-testid="spare-glyph"]')).toBeNull();
     expect(presses[1].textContent).toContain("⇄");
+    // Valakut is named by its front face at every width; the row's two-face mark is its only "//".
+    expect(el.textContent).toContain("Valakut Awakening");
+    expect(el.textContent).not.toContain("Valakut Stoneforge");
     // The modal is drawn on the page, not as an overlay or a dialog.
     expect(el.querySelector('[role="dialog"]')).toBeNull();
     const sheet = el.querySelector<HTMLElement>('[data-testid="spares-sheet-in-place"]')!;
