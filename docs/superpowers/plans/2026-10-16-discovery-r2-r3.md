@@ -79,7 +79,13 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    - **The manifest**, `src/lib/about/shots.generated.ts`, is written by the script: per image its size, and per entry
      and per tool its halo box as fractions of its frame.
    - **Budget:** a test fails when one image exceeds 90KB or the set exceeds 18MB, so the six-theme cost is held, not
-     discovered.
+     discovered. About 46 images a theme (28 screen frames, 14 tool crops, 3 tour pictures), so 276 in all. The bar
+     for the set is an average of 65KB at most. The expected sizes:
+     - a full 780 × 1688 frame of flat UI: about 75KB in WebP at quality 75;
+     - a 3:2 crop or a tour picture: about 25KB.
+
+     That is about 2.5MB a theme and about 15MB across six. R2·4 measures it before it commits the set. A frame over
+     90KB is answered by lowering its quality, never by raising the cap.
    - **A test fails** when a tool or a visible entry has no image in any theme (STATES: "Fixture has no picture: never
      ships").
    - Reading an image picks the reader's theme from the same cookie the shell reads. An unknown theme reads the
@@ -105,7 +111,7 @@ Each of these closes a choice the handoff and the audits leave to engineering.
 7. **Friends on the checklist** (ruling 3) needs the permanent Friends Home section, which is its own PR outside this
    plan, waiting on a Design addendum (moments plan, "Changes after approval"). That addendum must also say where the
    section sits on the checklist, because no board draws it there. **This is the one item that goes back to Design**,
-   and d9 carries it. PR 12 mounts the shipped section and adds step 6's sentence and second light, and it waits for
+   and d9 carries it. R3·3 mounts the shipped section and adds step 6's sentence and second light, and it waits for
    both.
 
 ## Architecture, by layer
@@ -123,7 +129,7 @@ Each of these closes a choice the handoff and the audits leave to engineering.
   `/about` loads, under `ABOUT_TOOLS_ENABLED`. Each tool's `fits(deck, facts)` is pure and compares against the deck's
   own body size (99, or 98 with a partner). Decks order by Home's `resume` touched order. Cheaper stand-ins reads the
   price read the Shopping total already makes. Friends' spares calls `loadFriendSpares` once over the union of every
-  deck's missing cards, with no cap. Before PR 3 merges, `pnpm measure:friend-spares` (read-only) times it on staging. If it
+  deck's missing cards, with no cap. Before R2·3 merges, `pnpm measure:friend-spares` (read-only) times it on staging. If it
   takes over 400ms for Hugh's account (this plan's bar), the card falls back to `Open Friends →` and nothing else changes (R2 gap 3).
 - **The landing (E11, R2 gaps 7 and 11).** `useToolLanding()` on the deck page and on each tool's own page reads
   `?tool=<id>`, waits for the target to register, scrolls it into view, haloes it 2.4s with no bubble, spends the tool's
@@ -140,10 +146,14 @@ Each of these closes a choice the handoff and the audits leave to engineering.
   from the path and, on a deck, from the tab and view in the URL. Card details stacking is R2 gap 5 exactly.
 - **The tour (E18 to E22, R3 gaps 1, 4, 6, 13, 14).** `user_prefs.tour_seen_at timestamptz`, written once, only when null
   (`user_prefs` carries `user_data_touch`). Home's payload carries `tourDue` (`FIRST_RUN_TOUR_ENABLED` on, the checklist
-  drawn, `tour_seen_at` null); the stamp moves on the write, so the cached key needs nothing new. The tour opens after
+  drawn, `tour_seen_at` null). The write moves the stamp, but flipping `FIRST_RUN_TOUR_ENABLED` moves nothing, so
+  Home's `cachePageForUser` key must carry the resolved switch. It does once the switch is in the registry: the key
+  holds `switchBits(env)` of every registered switch, from `requestSwitchEnv(userId)`, and the load decides `tourDue`
+  from that same env. R3·1a's test pins that the key changes when the switch flips for the reader. The tour opens after
   the page settles plus `ARRIVE_MS` with nothing open over Home (`scrollLockCount`, `useMomentHold`), takes the visit
   through `takeVisit`, sets `inert` on the app root and renders `TourCard` (a modal dialog, Esc skips) outside it. The
-  theme step renders `ThemePicker` with `panel="tour"`. `Read the note ›` opens PR 6's note dialog or sheet.
+  theme step renders `ThemePicker` with `panel="tour"`. `Read the note ›` opens R2·6b's note dialog or sheet. The tour ends by leaving
+  only through a reload, a closed tab or Back, never through the banner's link, because the app is inert (R3 gap 4).
   `tour_seen_at` is purged with `user_prefs`, so the purge needs nothing new.
 - **Doors and nudges (E23 to E26, R3 gaps 3, 7 to 12).** `DecksZeroActions` (`src/components/decks/decks-zero.tsx`) and the commanders `GuidedBanner`
   (`src/components/commanders/guided-banner.tsx`) take `helpMeChoose:
@@ -152,7 +162,8 @@ Each of these closes a choice the handoff and the audits leave to engineering.
   its own switch; with the hub off each lands on the directly mounted panel, or `AnalysisEmpty` with no reading held.
   `MoneyCard` takes `overLimit: { count, limit } | null`, counted with `isOverLimit` over the rows `decklist.tsx`
   already uses, under `swapToolsEnabled(env)`. N1 and N3 land through `useToolLanding` (`?tool=suggested-changes`,
-  `?tool=stand-ins`).
+  `?tool=stand-ins`). **A tool's `?tool=` id is its registry id**, which is its moment id where it has one. The audits'
+  `suggested` and `standins` are superseded, so one name serves the landing, the target and the moment.
 
 No model call is added anywhere in this plan, so it carries no spend.
 
@@ -165,44 +176,79 @@ copy gaps (R2 gaps 2 and 14, R3 gaps 9, 10 and 16).
 
 | PR | Scope | Depends on | Files (est.) |
 |---|---|---|---|
-| R2·1 · Entries | the three switches in the registry; `aboutEntries` in its own module; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | — | ~14 |
-| R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares, Matchups and Stats for your decks | R2·1 | ~16 |
-| R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends and `/collection` (Find a deck); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests | R2·2 | ~16 |
-| R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture, `shots.generated.ts`, the budget and coverage tests | R2·1 | ~6 plus images |
-| R2·5 · Tools | About's tabs; `ToolCard` in its five states; the five groups at 1280 and the phone's sideways rows; Written for you; the visit recorded on the Reference only | R2·3, R2·4 | ~14 |
-| R2·6 · Reference | entries by screen with the screens index; an opened entry with its frame; what's new; search over text; How it works last; the note as the last row, its dialog and sheet (E17); the banner's new target (E14) | R2·5 | ~16 |
-| R2·7 · Retire the specimens | the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6 | deletions |
-| R2·8 · The ? | the rail item and the header press; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.` | R2·6 | ~14 |
+| R2·1a · The entry list moves | `aboutEntries` to `src/lib/copy/about-entries.ts`, a pure move with its importers repointed and the content hash unchanged | — | ~8 |
+| R2·1b · Entries | the three switches in the registry; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | R2·1a | ~12 |
+| R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares, Matchups and Stats for your decks; `pnpm probe:tool-landing` (below) for the deck tools | R2·1b | ~16 |
+| R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends and `/collection` (Find a deck); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests; `pnpm measure:friend-spares` run read-only on staging, its figure in the PR body; `probe:tool-landing` extended to these pages | R2·2 | ~16 |
+| R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture, `shots.generated.ts`, the budget and coverage tests | R2·1b | ~6 plus images |
+| R2·5 · Tools | About's tabs; `ToolCard` in its five states, widths as drawn and heights a target, not fixed (R2 gap 13); the five groups at 1280 and the phone's sideways rows; Written for you, with the Overview line's switch edit (decision 3); the visit recorded on the Reference only | R2·3, R2·4 | ~14 |
+| R2·6a · Reference | entries by screen with the screens index; an opened entry with its frame; what's new; search over text; How it works last | R2·5 | ~12 |
+| R2·6b · The note and the banner | the note as the Reference's last row, its dialog at `md` and up and its sheet below (E17); the banner's new target (E14) | R2·6a | ~7 |
+| R2·7 · Retire the specimens | the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6a | deletions |
+| R2·8 · The ? | the rail item and the header press; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.`; `pnpm probe:help-panel` (below) | R2·6a | ~14 |
 | R2·9 · The ? over card details | R2 gap 5's stack at `md` and up: the inert exemption, the layering, the Tab stop, the focus hand-off and Escape | R2·8 | ~6 |
-| R3·1 · The tour | migration `tour_seen_at`; the spend action; `tourDue` in Home's payload; the SVG overlay; `TourCard`; steps 1 to 6 on first-run Home, with step 6's fallback; `ThemePicker` `panel="tour"`; the visit taken | R2·4, R2·6 | ~16 |
-| R3·2 · The tour again | `/?tour=1`; the real-app stops (decision 6); both `Take the tour` presses, About's head and the account menu row | R3·1 | ~8 |
-| R3·3 · Friends on the checklist | the shipped Friends section on the checklist where the addendum places it; step 6's sentence and second light | R3·1, the Friends Home PR | ~5 |
-| R3·4 · Doors | E1 on `/decks` and Home, E2 on `/commanders`, M12's anchor moved to E2's door, and the moments plan's M12 row updated | R2·1 | ~8 |
+| R3·1a · Tour state | the switch in the registry; migration `tour_seen_at`; the spend action (written only when null); `tourDue` in Home's payload, with the cache-key test | R2·1b | ~8 |
+| R3·1b · The tour | the SVG overlay; `TourCard`; steps 1 to 6 on first-run Home, with step 6's fallback; `ThemePicker` `panel="tour"`; the visit taken; `pnpm probe:tour` (below) | R3·1a, R2·4, R2·6b | ~14 |
+| R3·2 · The tour again | `/?tour=1`; the real-app stops (decision 6); both `Take the tour` presses, About's head and the account menu row; `probe:tour` extended to the replay | R3·1b | ~8 |
+| R3·3 · Friends on the checklist | the shipped Friends section on the checklist where the addendum places it; step 6's sentence and second light | R3·1b, the Friends Home PR | ~5 |
+| R3·4 · Doors | E1 on `/decks` and Home, E2 on `/commanders`, M12's anchor moved to E2's door, and the moments plan's M12 row updated | R2·1b | ~8 |
 | R3·5 · Nudges | N1, N2 and N2b on their own switches, N3 with its no-wrap test at 390 | R2·2 | ~12 |
 
-**Build order.** R2·1, then R2·2 and R2·4 in parallel, then R2·3, R2·5 and R2·6 in turn, then R2·7 and R2·8 in
-parallel, then R2·9. R3·4 can run any time after R2·1; R3·5 any time after R2·2 (R3 gap 11: its landings come from
-R2·2). R3·1 follows R2·6, then R3·2. R3·3 follows R3·1 and the Friends Home PR, whichever lands last.
+**Line estimates.** The two PRs that would have run over 800 lines are split: R2·6 into a and b, and R3·1 into a and
+b. R2·1 is split so that the move is a pure diff a reviewer can confirm by eye. Of what remains, the largest are
+R2·2, R2·3 and R2·8, at roughly 600 to 750 lines each. Any PR that measures over 800 before it opens is split at its
+row's semicolons, unstacked.
+
+**Build order.**
+1. R2·1a, then R2·1b.
+2. Then R2·2, R2·4 and R3·1a in parallel.
+3. Then R2·3, R2·5, R2·6a and R2·6b in turn.
+4. Then R2·7 and R2·8 in parallel, then R2·9.
+5. R3·1b follows R2·4, R2·6b and R3·1a. R3·2 follows R3·1b.
+6. R3·3 follows R3·1b and the Friends Home PR, whichever lands last.
+
+R3·4 can run any time after R2·1b, and R3·5 any time after R2·2 (R3 gap 11: its landings come from R2·2).
+
+**Browser probes.** Each one presses the control at 390 and 1300, through `scripts/lib/surface.mjs`, against `next
+start` on a scratch branch (`assertScratchBranch`), with the switches on and then off. A contact sheet alone is not
+proof.
+- `pnpm probe:tool-landing` (R2·2, extended in R2·3): opens each tool's Try it target and asserts:
+  - the halo on that tool's target;
+  - the parameter stripped;
+  - the moment spent, when `MOMENTS_ENABLED` is on;
+  - nothing pressed;
+  - a stale id stripped with no halo.
+- `pnpm probe:help-panel` (R2·8, extended in R2·9): presses the ?, a row, an Elsewhere chip and Show me, and searches,
+  asserting:
+  - focus moves into the panel and back to the ? on close;
+  - Escape closes the panel;
+  - Show me lands its halo;
+  - card details stays open under the panel at 1300.
+- `pnpm probe:tour` (R3·1b, extended in R3·2): runs a first-run fixture through all six steps and a skip, asserting:
+  - `tour_seen_at` written once;
+  - nothing under the scrim takes a press;
+  - a theme selected at step 5 survives skip;
+  - with `?tour=1` on a dashboard account, every step's cutout sits on its real-app target.
 
 ## Review focus
 
 The conditions most likely to bite a reader that no single PR's happy path exercises. Each one gets its test in the PR
 named.
 
-1. **Every switch off, one at a time** (R2·5, R2·8, R3·1, R3·5): a tool's card absent and its group shrinking or gone;
+1. **Every switch off, one at a time** (R2·5, R2·8, R3·1b, R3·5): a tool's card absent and its group shrinking or gone;
    About exactly as shipped with `ABOUT_TOOLS_ENABLED` off; no ? with `HELP_PANEL_ENABLED` off; no tour, no row and no
    press with `FIRST_RUN_TOUR_ENABLED` off; each nudge's slot as shipped.
 2. **A partner deck** (R2·3, R3·5): a 98-card body is full for Top off's fits and for N1, never "under".
 3. **A stale `?tool=`** (R2·2): an unknown id, a switch now off, a deck deleted or not the reader's. Each is stripped,
    draws no halo and writes nothing.
-4. **The tour against the rest of the page** (R3·1): a sheet open at load waits; a moment never arrives the same visit;
+4. **The tour against the rest of the page** (R3·1b): a sheet open at load waits; a moment never arrives the same visit;
    reduced motion cuts both the cutout and the card; a reload spends it; a theme selected then skipped keeps the theme.
 5. **A reader in a theme with no capture** (R2·4): reads the default theme's image rather than a broken one, and the
    coverage test fails the build before that can ship for a known theme.
 
 ## Inventory
 
-`docs/superpowers/inventories/discovery-r2-r3.json`, written in R2·1 and filled in as each PR lands:
+`docs/superpowers/inventories/discovery-r2-r3.json`, written in R2·1b and filled in as each PR lands:
 
 | Route / surface | Layer | 390 | 1300 |
 |---|---|---|---|
