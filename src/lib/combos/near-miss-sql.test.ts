@@ -1,6 +1,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, it, expect } from "vitest";
-import { ownBothQuery, pairsWithOnePiece } from "./near-miss";
+import { inDeckPairsQuery, ownBothQuery, pairsWithOnePiece } from "./near-miss";
 
 /**
  * THE EMITTED SQL, rendered rather than executed.
@@ -145,5 +145,41 @@ describe("ownBothQuery — emitted SQL", () => {
     const q = dialect.sqlToQuery(ownBothQuery("u-secret", null));
     expect(q.params).toContain("u-secret");
     expect(q.sql).not.toContain("u-secret");
+  });
+});
+
+describe("inDeckPairsQuery — emitted SQL", () => {
+  const show = () =>
+    dialect
+      .sqlToQuery(inDeckPairsQuery({ present: base.present, commanders: base.commanders }))
+      .sql.replace(/\s+/g, " ");
+
+  it("prunes against the deck before the group", () => {
+    const sql = show();
+    const prune = sql.indexOf("vc2.oracle_id = any(");
+    const group = sql.indexOf("group by v.variant_id");
+    expect(prune, "no prune").toBeGreaterThan(-1);
+    expect(prune, "the prune landed after the group, where it does nothing").toBeLessThan(group);
+  });
+
+  // RULES 1 TO 3, as the bracket's assembled read applies them: two rows, no template, and BOTH
+  // pieces held, a command-zone piece only as a commander.
+  it("requires both pieces in the deck, a must_be_commander piece only as a commander", () => {
+    const q = dialect.sqlToQuery(
+      inDeckPairsQuery({ present: base.present, commanders: base.commanders }),
+    );
+    const sql = q.sql.replace(/\s+/g, " ");
+    expect(sql).toContain("cardinality(v.requires_template_ids) = 0");
+    const rule = sql.match(
+      /bool_and\(case when vc\.must_be_commander then vc\.oracle_id = any\(\$(\d+)::uuid\[\]\) else vc\.oracle_id = any\(\$(\d+)::uuid\[\]\) end\)/,
+    );
+    expect(rule, "rule 2 is missing from the group's test").not.toBeNull();
+    expect(sql.indexOf("bool_and")).toBeGreaterThan(sql.indexOf("having count(*) = 2"));
+    expect(q.params[Number(rule![1]) - 1]).toEqual(base.commanders);
+    expect(q.params[Number(rule![2]) - 1]).toEqual(base.present);
+  });
+
+  it("pairs each piece with the OTHER piece, never itself", () => {
+    expect(show()).toContain("b.oracle_id <> a.oracle_id");
   });
 });

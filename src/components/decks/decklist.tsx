@@ -32,6 +32,8 @@ import { FriendSparesProvider } from "../social/spare-markers";
 import { commanderAsRow, commanderShoppingRows, isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { ComboGlyph } from "../cards/combo-glyph";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DeckStatsView } from "./deck-stats-view";
@@ -327,6 +329,12 @@ export function buildMarkKeyEntries({
         sample: <CardFactMark fact={fact} silent />,
         word: cardFactName(fact),
       });
+    }
+    // THE COMBO MARK (single-line row PR 2), after the facts as on /collection's key, and by the
+    // same closed-set rule: present only when a row in view names an in-deck partner. List rows
+    // draw it; the Card view tile does not, so neither does that view's key.
+    if (!inCardView && shown.some((c) => c.comboPartner)) {
+      entries.push({ id: "combo", sample: <ComboGlyph />, word: comboAwarenessCopy.keyWord });
     }
     return entries;
 }

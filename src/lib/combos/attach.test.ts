@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comboFor, comboLookupIds } from "./attach";
+import { comboFor, comboLookupIds, deckComboFields } from "./attach";
 import type { ComboPartner } from "./near-miss";
 
 const partner = (over: Partial<ComboPartner> = {}): ComboPartner => ({
@@ -52,5 +52,28 @@ describe("comboFor", () => {
   // must then simply carry no clause rather than throwing on the way to being drawn.
   it("answers null when the read failed entirely", () => {
     expect(comboFor("c-1", null)).toBeNull();
+  });
+});
+
+describe("deckComboFields", () => {
+  it("names the in-deck partner and carries the others it does not name", () => {
+    const map = new Map([["c-1", partner({ otherPartners: 2 })]]);
+    expect(deckComboFields("c-1", map)).toEqual({
+      comboPartner: { oracleId: "p-1", name: "Isochron Scepter" },
+      comboOtherPartners: 2,
+    });
+  });
+
+  it("ships no count for a lone partner", () => {
+    const map = new Map([["c-1", partner({ otherPartners: 0 })]]);
+    expect(deckComboFields("c-1", map)).toEqual({
+      comboPartner: { oracleId: "p-1", name: "Isochron Scepter" },
+    });
+  });
+
+  // A failed read is null, and draws what a card with no combo draws.
+  it("is a present null for a card with no partner, or a failed read", () => {
+    expect(deckComboFields("c-2", new Map([["c-1", partner()]]))).toEqual({ comboPartner: null });
+    expect(deckComboFields("c-1", null)).toEqual({ comboPartner: null });
   });
 });

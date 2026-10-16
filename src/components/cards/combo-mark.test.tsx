@@ -89,3 +89,32 @@ describe("ComboMark", () => {
     expect(screen.queryByText(/Two-card combo with/)).toBeNull();
   });
 });
+
+// THE DECK SCOPE: on a deck row the partner is in this deck, owned or not, so the sentence says
+// that and never `You own both`.
+describe("ComboMark, deck scope", () => {
+  it("says both are in this deck, not that you own both", async () => {
+    stubPointer(true);
+    render(<ComboMark partnerName="Isochron Scepter" scope="deck" />);
+    await hover();
+    await waitFor(() =>
+      expect(screen.getByText(comboAwarenessCopy.deckTooltip.inDeck("Isochron Scepter"))).toBeTruthy(),
+    );
+    expect(screen.queryByText(/You own both/)).toBeNull();
+  });
+
+  it("counts the other in-deck partners, singular at one", async () => {
+    stubPointer(true);
+    const one = render(<ComboMark partnerName="Isochron Scepter" scope="deck" otherPartners={1} />);
+    await hover();
+    await waitFor(() =>
+      expect(screen.getByText("Two-card combo with Isochron Scepter, and 1 other in this deck.")).toBeTruthy(),
+    );
+    one.unmount();
+    render(<ComboMark partnerName="Isochron Scepter" scope="deck" otherPartners={2} />);
+    await hover();
+    await waitFor(() =>
+      expect(screen.getByText("Two-card combo with Isochron Scepter, and 2 others in this deck.")).toBeTruthy(),
+    );
+  });
+});

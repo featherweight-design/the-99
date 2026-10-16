@@ -5,8 +5,8 @@ import { perfRoute } from "../../../lib/perf/timing";
 import { notFound } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
-import { loadCompletionPartners } from "../../../lib/combos/near-miss";
-import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
+import { loadCompletionPartners, loadInDeckPartners } from "../../../lib/combos/near-miss";
+import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
 import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
@@ -460,7 +460,7 @@ export default async function DeckBuilderPage({
   // Swallowed like its neighbours. A failed facts read degrades to rows with no
   // note, which is the state the round draws for a card that has no facts
   // anyway — never the builder going down.
-  const [priced, availability, candidateFacts, completions, considerRead] = await Promise.all([
+  const [priced, availability, candidateFacts, completions, considerRead, inDeckCombos] = await Promise.all([
     // The deck's held printing picks ride in the same price statement (deck printings), so a
     // picked card is priced as the buy tag rules: its pick when in stock, else today's figure.
     perf.timed("prices", async () => loadPrices([
@@ -511,6 +511,15 @@ export default async function DeckBuilderPage({
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
     }, considerLabelDeps(env))).catch(() => null),
+    // THE ROW'S COMBO MARK: each card's two-card combo partner already in this deck, the
+    // commanders counted (rule 3). Swallowed like its neighbours: a failed read draws no mark.
+    perf.timed("inDeckCombos", () => loadInDeckPartners({
+      deckOracleIds: detail.cards.map((c) => c.oracleId),
+      commanderOracleIds: [
+        detail.commander.oracleId,
+        ...(detail.partner ? [detail.partner.oracleId] : []),
+      ],
+    })).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -520,7 +529,7 @@ export default async function DeckBuilderPage({
     ...card,
     price: priced ? priceFor(priced, id, card.oracleId) : null,
   });
-  const cards = detail.cards.map(withPrice);
+  const cards = detail.cards.map((c) => ({ ...withPrice(c), ...deckComboFields(c.oracleId, inDeckCombos) }));
   // The commanders carry a price for the same reason, and on the same rule: the Shopping list
   // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
   const commander = withPrice(detail.commander);

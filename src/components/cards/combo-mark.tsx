@@ -22,14 +22,24 @@ export function ComboMark({
   partnerName,
   /** How many OTHER partners the tooltip is not naming. Never a claim about what exists. */
   otherPartners = 0,
+  /**
+   * What the partner is to this card: `collection`, both owned (the browse hosts); `deck`, both
+   * in the deck the row belongs to (the deck row), where owning is not the claim.
+   */
+  scope = "collection",
 }: {
   partnerName: string;
   otherPartners?: number;
+  scope?: "collection" | "deck";
 }) {
   const sentence =
-    otherPartners > 0
-      ? comboAwarenessCopy.markerTooltip.ownBothMore(partnerName, otherPartners)
-      : comboAwarenessCopy.markerTooltip.ownBoth(partnerName);
+    scope === "deck"
+      ? otherPartners > 0
+        ? comboAwarenessCopy.deckTooltip.inDeckMore(partnerName, otherPartners)
+        : comboAwarenessCopy.deckTooltip.inDeck(partnerName)
+      : otherPartners > 0
+        ? comboAwarenessCopy.markerTooltip.ownBothMore(partnerName, otherPartners)
+        : comboAwarenessCopy.markerTooltip.ownBoth(partnerName);
 
   return (
     <FactTooltip sentence={sentence}>

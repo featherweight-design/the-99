@@ -45,3 +45,21 @@ export function comboFor(
   const hit = completions?.get(oracleId);
   return hit ? { oracleId: hit.partnerOracleId, name: hit.partnerName } : null;
 }
+
+/**
+ * A deck card's in-deck combo fields, from `loadInDeckPartners`. The page spreads this onto each
+ * row; extracted for the reason `comboFor` is, since the page's inline projection is unreachable
+ * from a test. The other-partner count is carried only when there is one, so a row with a single
+ * partner ships no extra field.
+ */
+export function deckComboFields(
+  oracleId: string,
+  partners: ReadonlyMap<string, ComboPartner> | null,
+): { comboPartner: AttachedCombo; comboOtherPartners?: number } {
+  const hit = partners?.get(oracleId);
+  if (!hit) return { comboPartner: null };
+  return {
+    comboPartner: { oracleId: hit.partnerOracleId, name: hit.partnerName },
+    ...(hit.otherPartners ? { comboOtherPartners: hit.otherPartners } : {}),
+  };
+}
