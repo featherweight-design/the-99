@@ -1,0 +1,106 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-16T20:57:40Z"
+ },
+ "title": "The 99 · Buying credits R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 3021,
+   "title": "Buying credits R1 · calls, rulings, gaps"
+  },
+  "Credit-Line.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 1700,
+   "h": 3405,
+   "title": "§1 · The credit line, L1–L8"
+  },
+  "Surfaces.dc.html": {
+   "x": 3560,
+   "y": 0,
+   "w": 1700,
+   "h": 2454,
+   "title": "§1 · The line in place, and the inventory"
+  },
+  "Billing-Page.dc.html": {
+   "x": 0,
+   "y": 9650,
+   "w": 2770,
+   "h": 8182,
+   "title": "§2 · The Credits page, P1–P8"
+  },
+  "Plan-and-Cancel.dc.html": {
+   "x": 0,
+   "y": 3525,
+   "w": 2200,
+   "h": 3902,
+   "title": "§3 · The plan and cancelling it (A, decided)"
+  },
+  "Checkout-Return.dc.html": {
+   "x": 2850,
+   "y": 9650,
+   "w": 2770,
+   "h": 4162,
+   "title": "§4 · Back from Checkout, R1–R6"
+  },
+  "Blocked-and-Off.dc.html": {
+   "x": 5700,
+   "y": 9650,
+   "w": 2770,
+   "h": 5120,
+   "title": "§5 and §6 · Blocked, and payments off"
+  },
+  "Menu-and-Delete.dc.html": {
+   "x": 2280,
+   "y": 3525,
+   "w": 2770,
+   "h": 4187,
+   "title": "Menu entry and §7 · the deletion warning"
+  },
+  "Themes.dc.html": {
+   "x": 5340,
+   "y": 0,
+   "w": 3600,
+   "h": 3092,
+   "title": "R1b · Themes: Low Sun, Witching Hour, First Frost"
+  },
+  "Options.dc.html": {
+   "x": 5130,
+   "y": 3525,
+   "w": 2600,
+   "h": 6005,
+   "title": "R2 · Options (picked: A, M1)"
+  },
+  "Picks.dc.html": {
+   "x": 7810,
+   "y": 3525,
+   "w": 2600,
+   "h": 3736,
+   "title": "R2b · Picks: the crown’s diamond, the menu chip by state"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Credit-Line.dc.html",
+  "Surfaces.dc.html",
+  "Billing-Page.dc.html",
+  "Plan-and-Cancel.dc.html",
+  "Checkout-Return.dc.html",
+  "Blocked-and-Off.dc.html",
+  "Menu-and-Delete.dc.html",
+  "Themes.dc.html",
+  "Options.dc.html",
+  "Picks.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
