@@ -1,0 +1,74 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-16T18:00:00Z"
+ },
+ "title": "The 99 · Card search",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "The 99 - Card Search (R1).dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2190,
+   "title": "Card search R1 · calls, locks, gaps"
+  },
+  "R1 - Rows.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 1850,
+   "h": 1494,
+   "title": "The result row"
+  },
+  "The 99 - About · Card Search Entry.dc.html": {
+   "x": 3710,
+   "y": 0,
+   "w": 1846,
+   "h": 931,
+   "title": "About entry · Looking up any card"
+  },
+  "R1 - Header-Phone.dc.html": {
+   "x": 0,
+   "y": 2400,
+   "w": 2330,
+   "h": 2643,
+   "title": "The header icon and quick return · phone"
+  },
+  "R1 - Sheet-Phone.dc.html": {
+   "x": 2410,
+   "y": 2400,
+   "w": 1850,
+   "h": 3233,
+   "title": "The search sheet · phone"
+  },
+  "R1 - Rail-Desktop.dc.html": {
+   "x": 0,
+   "y": 5900,
+   "w": 2770,
+   "h": 5010,
+   "title": "The rail field and ⌘K · desktop"
+  },
+  "R1 - Deck-Page.dc.html": {
+   "x": 2850,
+   "y": 5900,
+   "w": 2770,
+   "h": 2202,
+   "title": "Two searches on the deck page"
+  }
+ },
+ "order": [
+  "The 99 - Card Search (R1).dc.html",
+  "R1 - Rows.dc.html",
+  "The 99 - About · Card Search Entry.dc.html",
+  "R1 - Header-Phone.dc.html",
+  "R1 - Sheet-Phone.dc.html",
+  "R1 - Rail-Desktop.dc.html",
+  "R1 - Deck-Page.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-16T18:00:00Z
+branch read this turn: main 875f54c (brief `2026-10-16-card-search.md`, `shell/nav.tsx`, `pwa/offline-pill.tsx`, `pwa/install-slot.tsx`, `wishlist/wishlist-search.tsx`, `decks/quick-add-bar.tsx`, `decks/card-search-row.tsx`, `decks/builder-shell.tsx` (dock), `collection/catalog-read.ts`, `cards/name-search.ts`, `marks.tsx`, `copy/about.ts`, stacked sheets README)
+
+### Updated in this project
+- **Card search R1, for Hugh's audit.** `design_handoff_the99_card_search/`: main board, Header-Phone (HP1–HP3, Q1–Q5), Sheet-Phone (S1–S7, H1–H3), Rail-Desktop (D1–D8), Deck-Page (DP1–DP4, DD1–DD2), Rows, About entry `card-search`; README (all eight open items called), STATES, READINESS, copy strings, `about · card search.ts`. Written as repo files; the generator is in `scratch/card-search-gen/` for R2.
+
+### Earlier entry
 date: 2026-10-12T05:10:33Z
 branch read this turn: main (precon-list-view, precon-row, open-precon-view, deck-card-tile, card-tile-caption, view-toggle, cart/view-switch, lib/precons/list, lib/copy/precons, lib/copy/card-surfaces, precons brief)
 
