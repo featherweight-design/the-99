@@ -1,7 +1,7 @@
 /**
  * A sender's own invite count (plan `2026-10-16-invites.md`): their stock and the rows that may still hold, read in
  * one repeatable-read snapshot (so a spend or an admin Set committing between the two reads cannot mix two moments)
- * and counted by `inviteCount`. Never `accessMode: "read only"`: on the pooled connection it breaks the next transaction
+ * and counted by `inviteCount`. Never a read-only one: on the pooled connection it breaks the next transaction
  * (`draft-state-snapshot.test.ts`). No caller beyond its tests and the probe until the sender's PRs.
  */
 import { and, eq, inArray } from "drizzle-orm";
