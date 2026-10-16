@@ -175,7 +175,8 @@ export async function loadFriendsAndLinks(viewerId: string, now = new Date()): P
     const friends = await listFriends(viewerId, tx);
     const links = await listOpenInvites(viewerId, now, tx);
     return { friends, links };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
+  }, { isolationLevel: "repeatable read" });
 }
 
 export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: string } | null };
