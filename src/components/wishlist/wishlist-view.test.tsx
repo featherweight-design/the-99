@@ -178,6 +178,19 @@ describe("the search", () => {
     expect(within(list).getByRole("button", { name: wishlistCopy.details.fewer })).toHaveAttribute("aria-disabled", "true");
   });
 
+  it("keeps the line when the first press is − after the collection grew: the server floors it, the row follows", async () => {
+    // The row read owned 1 and want 4; the collection is at 3 now. − sends 3, and the server answers the floored 4.
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 4 }] });
+    m.setWant.mockResolvedValue({ ok: true, status: "wanted", want: 4, have: 3 });
+    view({ tiles: [tile()] });
+    const list = await search("sol");
+    await act(async () => fireEvent.click(within(list).getByRole("button", { name: wishlistCopy.details.fewer })));
+    expect(m.setWant).toHaveBeenCalledWith(SOL, 3);
+    expect(within(list).getByTestId("want-stepper")).toBeInTheDocument();
+    expect(within(list).getByRole("status", { name: wishlistCopy.details.want })).toHaveTextContent("4");
+    expect(within(list).getByRole("button", { name: wishlistCopy.details.fewer })).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("names each stepper by its card, and puts focus back in the field when a held answer takes the stepper away", async () => {
     // The collection reached the want elsewhere while the result stood: the write answers `held` and the line goes.
     m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });

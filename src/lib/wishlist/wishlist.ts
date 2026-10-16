@@ -121,14 +121,26 @@ export type WantResult = { status: "wanted" | "held"; quantity: number; held: nu
 
 /**
  * Put a card on the viewer's wishlist wanting `quantity` copies, or change how many. A card id the catalog
- * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller). A want the
- * collection already reaches, set new or lowered to what is held, leaves no line, and is NOT kept for the collected
- * strip: the player made that change in front of them, and the strip says what was collected "since you last looked".
+ * does not hold writes nothing (checked in the statement, so no foreign-key error reaches the caller). A first want
+ * the collection already reaches leaves no line, and is NOT kept for the collected strip: the player made that change
+ * in front of them, and the strip says what was collected "since you last looked".
+ *
+ * A line still unmet is never lowered off the list (`wantFloor`): the stepper's − stops at one more than held, and a
+ * screen whose held count went stale while the collection grew is held to the same floor here, under the lock.
  */
 export async function setWishlistQuantity(viewerId: string, oracleId: unknown, rawQuantity: unknown): Promise<WantResult | null> {
   const quantity = cleanQuantity(rawQuantity);
   if (typeof oracleId !== "string" || !UUID.test(oracleId) || quantity === null) return null;
-  return writeWant(viewerId, oracleId, () => quantity);
+  return writeWant(viewerId, oracleId, (held, current) => wantFloor(quantity, held, current));
+}
+
+/**
+ * The want a set writes. The want is copies wanted IN ALL, so a line standing unmet (`current` above `held`) is
+ * floored at one more than held: a step down never removes it, and Remove is the way off. With no line, or a line the
+ * collection already reaches (it is swept by the next collection write, the collected rule), the request stands.
+ */
+export function wantFloor(requested: number, held: number, current: number | null): number {
+  return current !== null && current > held && requested <= held ? held + 1 : requested;
 }
 
 /**
@@ -144,17 +156,23 @@ export async function wantOneMore(viewerId: string, oracleId: unknown): Promise<
  * The one want write. Under the player's collection lock, so a collection write cannot land between the read of
  * what is held and the write, and the want is decided from that read.
  */
-async function writeWant(viewerId: string, oracleId: string, want: (held: number) => number): Promise<WantResult | null> {
+async function writeWant(
+  viewerId: string,
+  oracleId: string,
+  want: (held: number, current: number | null) => number,
+): Promise<WantResult | null> {
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
-    const { rows: [card] } = await tx.execute<{ held: number }>(sql`
+    const { rows: [card] } = await tx.execute<{ held: number; current: number | null }>(sql`
       select coalesce((
         select sum(ci.quantity) from ${collectionItems} ci where ci.user_id = ${viewerId} and ci.oracle_id = c.oracle_id
-      ), 0)::int as held
+      ), 0)::int as held, (
+        select wi.quantity from ${wishlistItems} wi where wi.user_id = ${viewerId} and wi.oracle_id = c.oracle_id
+      ) as current
       from ${cards} c where c.oracle_id = ${oracleId}
     `);
     if (!card) return null;
-    const quantity = want(card.held);
+    const quantity = want(card.held, card.current);
     if (quantity <= card.held) {
       await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
       return { status: "held", quantity, held: card.held };

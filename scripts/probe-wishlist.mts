@@ -120,9 +120,12 @@ async function main() {
     // The want write itself: re-wanted above what is held, then lowered to it.
     check("wanting X again, five, stands", (await wishlist.setWishlistQuantity(B, X, 5))?.status === "wanted"
       && (await wishlist.loadWishlist(B))[0]?.quantity === 5);
-    check("lowering it to the two held drops the line, as held", (await wishlist.setWishlistQuantity(B, X, 2))?.status === "held"
-      && (await lineCount()) === 0);
-    check("and does not put it on the strip: the player did that themselves", (await collected.loadCollectedNotices(B)).length === 0);
+    // A want is copies in all: a set at or below what is held cannot take an unmet line off (`wantFloor`).
+    const floored = await wishlist.setWishlistQuantity(B, X, 2);
+    check("lowering it to the two held stops at one more, and the line stays", floored?.status === "wanted"
+      && floored.quantity === 3 && floored.held === 2 && (await wishlist.loadWishlist(B))[0]?.quantity === 3);
+    check("Remove is the way off the list", await wishlist.clearWishlistLine(B, X) && (await lineCount()) === 0);
+    check("and nothing goes on the strip: the player did that themselves", (await collected.loadCollectedNotices(B)).length === 0);
     check("a first want of what is already held writes no line either", (await wishlist.setWishlistQuantity(B, X, 1))?.status === "held"
       && (await lineCount()) === 0 && (await collected.loadCollectedNotices(B)).length === 0);
 

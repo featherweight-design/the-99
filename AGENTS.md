@@ -907,9 +907,11 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   reversing Q9's "stays until cleared"): `sweepCollectedIn` (`src/lib/wishlist/collected.ts`) deletes the line and
   records it in `wishlist_collected` for the tab's one-time strip, INSIDE the write that reached the want:
   `applyCollectionChange` (every ledger write, Revert included) and `replaceCollection`, after their rows. A
-  rolled-back write takes the delete back with it. A want the player SETS at or below what is held
+  rolled-back write takes the delete back with it. A FIRST want the player sets at or below what is held
   (`setWishlistQuantity`, under the same per-player lock) leaves no line and answers `held`, and is not recorded: the
-  strip names what was collected since they last looked. **A read never deletes**: every own read leaves out a line the collection already
+  strip names what was collected since they last looked. The want is copies IN ALL, so a set never lowers an UNMET line
+  off the list (`wantFloor`, under that lock): it is floored at one more than held, the steppers' − stops there too
+  (2026-10-15, d9 for Hugh), and Remove is the way off. **A read never deletes**: every own read leaves out a line the collection already
   reaches, so a copy that arrived around the chokepoints hides the line until the next write sweeps it. The strip's ✕
   is `dismissCollected(viewer, shown)`, which forgets exactly the notices the strip drew (card and timestamp), never
   everything up to a time. `loadWishlistTiles` adds the
