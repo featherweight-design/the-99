@@ -96,8 +96,8 @@ const SHOPPING_SLOTS: LineSlots = {
 
 /**
  * The marks fold by the ROW's own width (the card rows addendum, L3), a container query on `DecklistRow`'s wrapper rather than a
- * viewport width: a two-column grid at 900px and a one-column page at 1300px give a row the same width. Wide is 479px and up,
- * middle 359 to 479, tight under 359. Folded marks go `sr-only`, never `display: none`, so a screen reader keeps hearing them;
+ * viewport width: a two-column grid at 900px and a one-column page at 1300px give a row the same width. Wide is 480px and up
+ * (the boards' `max-width: 479px` is inclusive, Tailwind's `@max-[480px]` is not), middle 360 to 479, tight under 360. Folded marks go `sr-only`, never `display: none`, so a screen reader keeps hearing them;
  * the `+N` spans are aria-hidden, one per tier, each drawn only in its own. At every width: a phone row is a tight one.
  * Every class spelled whole so Tailwind sees it.
  */
@@ -105,23 +105,23 @@ const FOLD = {
   // All: the 4th mark and beyond at every width, every mark after the first at the middle tier, every mark in the tight one.
   all: {
     fourth: "sr-only",
-    afterFirst: "@max-[479px]:sr-only",
-    all: "@max-[359px]:sr-only",
-    plusWide: "hidden @min-[479px]:inline",
-    plusMid: "hidden @min-[359px]:@max-[479px]:inline",
-    plusTight: "hidden @max-[359px]:inline",
+    afterFirst: "@max-[480px]:sr-only",
+    all: "@max-[360px]:sr-only",
+    plusWide: "hidden @min-[480px]:inline",
+    plusMid: "hidden @min-[360px]:@max-[480px]:inline",
+    plusTight: "hidden @max-[360px]:inline",
   },
   // Shopping: every mark at the middle tier, and the `+N` too in the tight one (its only `+N` is the middle tier's).
   shopping: {
-    all: "@max-[479px]:sr-only",
-    plusMid: "hidden @min-[359px]:@max-[479px]:inline",
+    all: "@max-[480px]:sr-only",
+    plusMid: "hidden @min-[360px]:@max-[480px]:inline",
   },
 } as const;
 /**
  * The availability marker's word drops to its glyph (and its count) at the middle tier, in All and Shopping alike (d9, 2026-10-16:
  * All kept it to the tight tier, and at 900 a row reading `1 in a draft` cut a 20-character name); the wide tier keeps it.
  */
-const WORD_FOLD = { all: "@max-[479px]:hidden", shopping: "@max-[479px]:hidden" } as const;
+const WORD_FOLD = { all: "@max-[480px]:hidden", shopping: "@max-[480px]:hidden" } as const;
 
 
 interface DecklistRowProps {

@@ -791,7 +791,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   72px pip track and the ✕ (the marker, the price, the auto tag and the lock mark flow left of them), Shopping's 84px buy tag and the ✕. A Shopping row
   draws no pips and no EDHREC figure; All draws no other-ways press at any width (the press, `OtherWaysPress`, is Shopping's, 26px with
   `-my-[3px]` so the row stays 34px). **The marks fold by the row's own width** (`FOLD`, a container query on `DecklistRow`'s wrapper, `@container`,
-  at every width): wide is 479px and up, middle 359 to 479, tight under 359. All: the 4th mark and beyond at every width, every mark after the first at the
+  at every width): wide is 480px and up, middle 360 to 479, tight under 360. All: the 4th mark and beyond at every width, every mark after the first at the
   middle tier, every mark at the tight one, and the availability word drops to its glyph (and a count) from the middle tier (d9, 2026-10-16); Shopping: every mark and the word at
   the middle tier, and the `+N` too at the tight one. A folded mark is `sr-only`, never `display: none`, so a screen reader keeps it; the `+N` spans
   (one per tier) are aria-hidden, bare mono in `--fact`, and a fine pointer's hover, or a coarse pointer's tap (`tapOnTouch`), opens the tooltip listing what they hold (`FactTooltip`'s `lines`; the tap goes no further than the bubble), and while the pointer is on one the row's card preview is held off (`plusPointer`), so the tooltip is not covered. A two-faced card's

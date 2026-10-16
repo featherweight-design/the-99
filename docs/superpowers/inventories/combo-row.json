@@ -31,7 +31,7 @@
       "steps": [
         { "goto": "/decks/${COMBO_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "wait": "[data-decklist-row]", "settle": 1200 },
-        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[479px\\]\\:inline)", "settle": 400 }
+        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[480px\\]\\:inline)", "settle": 400 }
       ],
       "widths": ["md-800", "md-900", "desktop"]
     },
@@ -42,8 +42,8 @@
       "steps": [
         { "goto": "/decks/${COMBO_DECK}", "wait": "[role=tablist]", "settle": 1500 },
         { "wait": "[data-decklist-row]", "settle": 1200 },
-        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[479px\\]\\:inline)", "settle": 400 },
-        { "hover": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[479px\\]\\:inline) span.\\@min-\\[479px\\]\\:inline", "settle": 900 }
+        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[480px\\]\\:inline)", "settle": 400 },
+        { "hover": "[data-decklist-row]:has([data-testid=combo-glyph]):has(span.\\@min-\\[480px\\]\\:inline) span.\\@min-\\[480px\\]\\:inline", "settle": 900 }
       ],
       "widths": ["desktop"]
     }

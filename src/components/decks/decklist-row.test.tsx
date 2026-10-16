@@ -1560,10 +1560,10 @@ describe("DecklistRow, folding the marks", () => {
     }
     // The 4th folds at every width, the 2nd and 3rd below the wide tier, the 1st only in the tight one.
     expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("@max-[479px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[479px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("@max-[359px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("@max-[479px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("@max-[360px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("@max-[480px]:sr-only");
   });
 
   it("draws one +N per tier, aria-hidden, counting what that tier folds", () => {
@@ -1571,18 +1571,18 @@ describe("DecklistRow, folding the marks", () => {
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
     for (const p of plus) expect(p.querySelector("[aria-hidden='true']")!.textContent).toMatch(/^\+\d$/);
-    expect(tokens(plus[0])).toContain("@min-[479px]:inline");
-    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["@min-[359px]:@max-[479px]:inline"]));
-    expect(tokens(plus[2])).toContain("@max-[359px]:inline");
+    expect(tokens(plus[0])).toContain("@min-[480px]:inline");
+    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["@min-[360px]:@max-[480px]:inline"]));
+    expect(tokens(plus[2])).toContain("@max-[360px]:inline");
   });
 
   it("folds every mark of a Shopping row at the middle tier, and drops the +N in the tight one", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...four, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />);
-    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[479px]:sr-only");
+    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[480px]:sr-only");
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+4"]);
-    expect(tokens(plus[0])).toContain("@min-[359px]:@max-[479px]:inline");
-    expect(tokens(plus[0])).not.toContain("@max-[359px]:inline");
+    expect(tokens(plus[0])).toContain("@min-[360px]:@max-[480px]:inline");
+    expect(tokens(plus[0])).not.toContain("@max-[360px]:inline");
   });
 
   it("keeps an inactive tier's visibility OUTSIDE a fine pointer's tooltip wrapper, so it is no empty flex item", () => {
@@ -1641,7 +1641,7 @@ describe("DecklistRow, folding the marks", () => {
   it("folds an All row's marker word to its glyph at the middle tier, keeping a count and the spoken sentence", () => {
     const over = { ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -2, claims: [] } };
     renderRow(<DecklistRow deckId="d1" card={over} newestAsOf={null} />);
-    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("@max-[479px]:hidden"));
+    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("@max-[480px]:hidden"));
     expect(folded.length).toBeGreaterThan(0);
     // The count stays outside the folded span, and the sentence is read in full.
     expect(document.querySelector("[data-decklist-row]")!.textContent).toContain("2");
