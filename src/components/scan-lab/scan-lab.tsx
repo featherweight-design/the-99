@@ -22,6 +22,8 @@ import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
 } from "../../lib/scan/models";
+import { isDark, torchOf, type Torch } from "../../lib/scan/camera";
+import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
 
 /** The slice of onnxruntime-web this page uses; it is loaded from the CDN, so it has no types here. */
 type OrtTensor = { data: Float32Array };
@@ -57,7 +59,11 @@ async function loadIndex(base: string): Promise<ScanIndex> {
 // The camera loop's own clock; read from handlers, never while rendering.
 const clock = () => performance.now();
 
-export function ScanLab({ indexBase }: { indexBase: string | null }) {
+export function ScanLab({ indexBase, serverModel = null }: {
+  indexBase: string | null;
+  /** The embedder build the server's index was made by, when server matching is on for this reader; null hides it. */
+  serverModel?: string | null;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const running = useRef(false);
   const history = useRef<{ oracleId: string; margin: number }[]>([]);
@@ -85,6 +91,33 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const heldDisplay = useRef<Display | null>(null);
   const lastRun = useRef<{ start: number; end: number } | null>(null);
   const [logged, setLogged] = useState<number | null>(null);
+  // Matching on the server (card-scan plan PR 2): while the box is selected each frame goes through the server
+  // scanner, which asks the server once per steady card, in place of the index on this device.
+  const server = useRef<ReturnType<typeof serverScanner> | null>(null);
+  const [serverOn, setServerOn] = useState(false);
+  const onServerState = useCallback((st: ServerState) => {
+    if (st.kind === "looking") setNote(copy.serverLooking);
+    else if (st.kind === "retrying") setNote(copy.serverRetrying);
+    else if (st.kind === "failed") setNote(copy.serverFailed);
+    else if (st.kind === "refused") setNote(copy.serverRefused[st.reason]);
+    else setNote(null);
+  }, []);
+  const toggleServer = (on: boolean) => {
+    server.current?.stop();
+    server.current = on && serverModel
+      ? serverScanner(serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)), now: clock }, onServerState)
+      : null;
+    setServerOn(server.current !== null);
+    setNote(null);
+  };
+  const [torch, setTorch] = useState<Torch | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const toggleTorch = async (on: boolean) => {
+    if (torch && (await torch.set(on))) setTorchOn(on);
+  };
+  // The frame is too dark to read a card from: set from the loop only when it changes.
+  const [dark, setDark] = useState(false);
+  const darkNow = useRef(false);
   const finishLog = useCallback(async () => {
     const run = cadence.current;
     if (!run) return;
@@ -121,6 +154,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     models.open();
     return () => {
       running.current = false;
+      server.current?.stop();
       held.close();
       models.close();
     };
@@ -175,6 +209,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
         sessions.current.close();
         return;
       }
+      setTorch(torchOf(media.getVideoTracks()[0]));
       video.srcObject = media;
       await video.play();
       if (!stream.current.holds(media)) return; // the page was left while the camera started
@@ -206,6 +241,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, t1: number) => {
         history.current = [];
+        server.current?.frame({ kind: "none" }, performance.now());
         publish({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
       };
       const loop = async () => {
@@ -222,6 +258,13 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
           sctx.fillRect(0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
           sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
           const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
+          // Darkness is read off the middle of the picture, never the letterbox's black bars.
+          const mid = sctx.getImageData(Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2))).data;
+          const isDarkNow = isDark(mid);
+          if (isDarkNow !== darkNow.current) {
+            darkNow.current = isDarkNow;
+            setDark(isDarkNow);
+          }
           const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
           const det = await sessions.current.use(() => detector.run({ [detector.inputNames[0]]: detIn }));
           if (!running.current) return;
@@ -238,6 +281,20 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
               if (!running.current) return;
               const t2 = performance.now();
               const q = normalise(Object.values(out)[0].data);
+              const viaServer = server.current;
+              if (viaServer) {
+                // Asked once per steady card; until the answer lands the screen keeps what it shows.
+                const st = viaServer.frame({ kind: "card", embedding: q }, t2);
+                if (st.kind === "match") {
+                  const { guesses, margin, sure } = st.result;
+                  publish({
+                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: 0, committed: sure,
+                    detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: Math.round(performance.now() - t0),
+                  });
+                }
+                setTimeout(tick, 60);
+                return;
+              }
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
@@ -320,6 +377,19 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
             {note ? ` · ${note}` : ""}
           </span>
           {/* Outside the controls area, so ticking it never holds the reading. */}
+          {serverModel && (
+            <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+              <Checkbox checked={serverOn} onChange={toggleServer} />
+              {copy.serverMatch}
+            </label>
+          )}
+          {torch?.available && (
+            <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+              <Checkbox checked={torchOn} onChange={(on) => void toggleTorch(on)} />
+              {copy.torch}
+            </label>
+          )}
+          {dark && <span className="text-[12px] text-[color:var(--warning)]">{copy.tooDark}</span>}
           <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
             <Checkbox checked={logged !== null} onChange={toggleLog} />
             {logged === null ? copy.logFrames : copy.logging(logged)}

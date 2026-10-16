@@ -1,0 +1,71 @@
+// The lab's recorded behavior, on the server path: the dwell before a card is asked about, one lookup per stable card
+// however long it stays, a new lookup for a second copy after the frame empties, and the retry with its own state.
+import { describe, expect, it, vi } from "vitest";
+import { DWELL_MS } from "./track";
+import { LOOKUP_BACKOFF_MS } from "./lookup";
+import { serverScanner, type ServerState } from "./server-scan";
+import type { ScanFrame } from "./stable-card";
+
+const MODEL = "dhvazquez/mtg_card_identification_embeddings@653d88d fp32";
+const MATCH = { index: "all-20261014", guesses: [{ oracleId: "o1", name: "Sol Ring", scryfallId: "s1", score: 0.93 }, { oracleId: "o2", name: "Mana Crypt", scryfallId: "s2", score: 0.6 }], margin: 0.33 };
+const card = (x: number): ScanFrame => ({ kind: "card", embedding: new Float32Array([Math.cos(x), Math.sin(x)]) });
+const none: ScanFrame = { kind: "none" };
+const ok = () => ({ ok: true, status: 200, json: async () => MATCH });
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+/** Frames every 150ms, the lab's phone cadence; answers the states seen. */
+async function play(frames: ScanFrame[], fetch: (u: string, i: RequestInit) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }> = vi.fn(async () => ok())) {
+  let clock = 0;
+  const states: ServerState["kind"][] = [];
+  const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, (st) => states.push(st.kind));
+  let last: ServerState = { kind: "idle" };
+  for (const f of frames) {
+    last = s.frame(f, clock);
+    await flush();
+    clock += 150;
+  }
+  return { fetch, states, last, scanner: s };
+}
+const hold = (f: ScanFrame, n: number) => Array.from({ length: n }, () => f);
+
+describe("serverScanner", () => {
+  it("asks nothing before the dwell, then once for a card however long it stays, and hands back its answer", async () => {
+    const before = await play(hold(card(0), Math.floor(DWELL_MS / 150)));
+    expect(before.fetch).not.toHaveBeenCalled();
+    const { fetch, states, last } = await play(hold(card(0), 40));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(states).toEqual(["looking", "match"]);
+    expect(last.kind === "match" && last.result.guesses[0].name).toBe("Sol Ring");
+  });
+
+  it("asks again for a second copy once the frame has emptied, and not across a brief gap", async () => {
+    expect((await play([...hold(card(0), 10), none, none, ...hold(card(0), 10)])).fetch).toHaveBeenCalledTimes(1);
+    const { fetch, states } = await play([...hold(card(0), 10), ...hold(none, 10), ...hold(card(0), 10)]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(states).toEqual(["looking", "match", "idle", "looking", "match"]);
+  });
+
+  it("says it is retrying while a failed lookup is retried, then shows the answer", async () => {
+    const fetch = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(ok());
+    const { states } = await play(hold(card(0), 10), fetch);
+    expect(states).toEqual(["looking", "retrying", "match"]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after the lookup's retries and asks again only for the next stable card", async () => {
+    const fetch = vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) }));
+    const { states } = await play(hold(card(0), 20), fetch);
+    expect(fetch).toHaveBeenCalledTimes(1 + LOOKUP_BACKOFF_MS.length);
+    expect(states.at(-1)).toBe("failed");
+  });
+
+  it("drops the answer to a card that has left the frame", async () => {
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn(() => new Promise((r) => { land = r; }));
+    const { states, scanner } = await play([...hold(card(0), 6), ...hold(none, 10)], fetch as never);
+    land(ok());
+    await flush();
+    expect(states).toEqual(["looking", "idle"]);
+    scanner.stop();
+  });
+});

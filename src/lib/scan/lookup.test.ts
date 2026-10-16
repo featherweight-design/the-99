@@ -9,7 +9,10 @@ const MATCH = { index: "all-20261014", guesses: [{ oracleId: "o1", name: "Sol Ri
 
 function deps(...replies: (ReturnType<typeof reply> | Error)[]) {
   const fetch = vi.fn();
-  for (const r of replies) r instanceof Error ? fetch.mockRejectedValueOnce(r) : fetch.mockResolvedValueOnce(r);
+  for (const r of replies) {
+    if (r instanceof Error) fetch.mockRejectedValueOnce(r);
+    else fetch.mockResolvedValueOnce(r);
+  }
   return { fetch, wait: vi.fn().mockResolvedValue(undefined), onRetry: vi.fn() };
 }
 

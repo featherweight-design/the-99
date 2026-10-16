@@ -8,7 +8,8 @@ export const CAMERA_CONSTRAINTS: MediaStreamConstraints = {
 };
 
 type TorchTrack = {
-  getCapabilities?: () => { torch?: boolean } & Record<string, unknown>;
+  // MediaTrackCapabilities has no `torch` in the DOM types yet; read as an object that may carry one.
+  getCapabilities?: () => object;
   applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
 };
 
@@ -20,9 +21,9 @@ export type Torch = { available: boolean; set(on: boolean): Promise<boolean> };
  * `set` that the device refuses answers false and leaves the camera running.
  */
 export function torchOf(track: TorchTrack | null | undefined): Torch {
-  let caps: { torch?: boolean } | null = null;
+  let caps: { torch?: unknown } | null = null;
   try {
-    caps = track?.getCapabilities?.() ?? null;
+    caps = (track?.getCapabilities?.() as { torch?: unknown } | undefined) ?? null;
   } catch {
     caps = null;
   }
