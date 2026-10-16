@@ -214,8 +214,11 @@ export function BuyTag({
    * at all) draws the bare `$` glyph. Nothing is dropped from the reading order either way:
    * the drawn content becomes the tag's accessible name unchanged, so the word and the figure
    * are still spoken in full, formatted by the one Tail that formats them everywhere.
+   *
+   * `glyph` draws the bare `$` whatever the price (the deck row's All view, Hugh 2026-10-16: the price is Shopping's, and
+   * the room it took goes to the marks). The figure is still spoken in full, and the row puts it one tap away in a tooltip.
    */
-  density?: "full" | "collapsed";
+  density?: "full" | "collapsed" | "glyph";
   /**
    * Over the deck's Shopping limit (swap tools, ruling 4): the plate gains a --warning inset ring,
    * and nothing else about it changes. No new token.
@@ -317,7 +320,12 @@ export function BuyTag({
         ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
       }}
     >
-      {density === "collapsed" ? (
+      {density === "glyph" ? (
+        <>
+          <span aria-hidden="true">$</span>
+          <span className="sr-only">{content}</span>
+        </>
+      ) : density === "collapsed" ? (
         <>
           {/* A LIVE price draws its figure here — the collapsed slot's whole point is to fit
               in the tile's caption line, and a bare `$` beside a real price is visually

@@ -181,6 +181,8 @@ export const addPanelCopy = {
   unowned: {
     tag: "buy",
     tagAria: (name: string) => `${name} is not in your collection`,
+    // The All row's `$` tooltip (Hugh, 2026-10-16): the price the glyph stands in for, or the state alone without one.
+    glyphTip: (figure: string | null) => (figure ? `${figure} · needs buying` : "Needs buying"),
     // The trailing shelf's coverage clause. The heading above it is the
     // existing shelf.labels.edhrec, so no new role or taxonomy is introduced.
     shelfCoverage: "not in your collection",

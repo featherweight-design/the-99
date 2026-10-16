@@ -1558,22 +1558,32 @@ describe("DecklistRow, folding the marks", () => {
       const t = tokens(wrapperOf(n));
       expect(t.some((c) => c.includes("hidden"))).toBe(false);
     }
-    // The 4th folds at every width, the 2nd and 3rd below the wide tier, the 1st only in the tight one.
-    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("sr-only");
+    // One more mark kept at every tier than before the All row's price became a bare `$` (Hugh, 2026-10-16): all four at
+    // the wide tier, the first two at the middle one (a 900px grid column), the first alone in the tight one (a phone). The
+    // first never folds.
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).not.toContain("sr-only");
     expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("@max-[480px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[480px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("@max-[360px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[360px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).not.toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger)).some((c) => c.includes("sr-only"))).toBe(false);
+  });
+
+  it("folds a fifth mark at every width, into the wide tier's +1", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...four, comboPartner: { oracleId: "scepter", name: "Isochron Scepter" } } as DeckDetailCard} newestAsOf={null} />);
+    const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
+    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
   });
 
   it("draws one +N per tier, aria-hidden, counting what that tier folds", () => {
     renderRow(<DecklistRow deckId="d1" card={four} newestAsOf={null} />);
     const plus = plusSpans();
-    expect(plus.map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+    // Four marks fold nothing at the wide tier, so it draws no +N; the middle tier folds two and the tight one three.
+    expect(plus.map((p) => p.textContent)).toEqual(["+2", "+3"]);
     for (const p of plus) expect(p.querySelector("[aria-hidden='true']")!.textContent).toMatch(/^\+\d$/);
-    expect(tokens(plus[0])).toContain("@min-[480px]:inline");
-    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["@min-[360px]:@max-[480px]:inline"]));
-    expect(tokens(plus[2])).toContain("@max-[360px]:inline");
+    expect(tokens(plus[0])).toEqual(expect.arrayContaining(["@min-[360px]:@max-[480px]:inline"]));
+    expect(tokens(plus[1])).toContain("@max-[360px]:inline");
   });
 
   // d9, 2026-10-16: a phone Shopping row is a tight one, so the +N stands in for its marks there too, or they reach no screen.
@@ -1748,7 +1758,7 @@ describe("DecklistRow, the combo mark", () => {
   });
 
   // The heavy row: three facts and the combo are four marks, so the combo is the 4th and folds at every width.
-  it("is the last mark, so beside three facts it is the 4th and folds into the wide tier's +1", () => {
+  it("is the last mark, so beside three facts it is the 4th and folds below the wide tier", () => {
     renderRow(
       <DecklistRow
         deckId="d1"
@@ -1757,8 +1767,8 @@ describe("DecklistRow, the combo mark", () => {
       />,
     );
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
-    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
-    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+    expect(glyphWrap.className.split(/\s+/)).toContain("@max-[480px]:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+2", "+3"]);
   });
 });
 
@@ -1972,11 +1982,55 @@ describe("DecklistRow, one line at every width", () => {
           <DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] } as DeckDetailCard} newestAsOf={null} />
         </CardDetailProvider>,
       );
-      const plus = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span[aria-hidden='true']")).find((el) => el.textContent === "+1")!;
+      const plus = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span[aria-hidden='true']")).find((el) => el.textContent === "+2")!;
       await act(async () => { fireEvent.click(plus); });
       expect(screen.getByTestId("fact-tooltip")).toBeInTheDocument();
       expect(fetchCard).not.toHaveBeenCalled();
       expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+// The All view draws a card to buy as a bare `$` (Hugh, 2026-10-16): the price is Shopping's, and the figure is one hover or
+// tap away in the `$`'s tooltip. Shopping keeps its figure.
+describe("DecklistRow, the All view's `$`", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const priced = { ...(card as DeckDetailCard), owned: false, price: { cents: 726, foilCents: null, etchedCents: null, asOf } } as DeckDetailCard;
+  const drawn = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [aria-hidden='true']")).map((el) => el.textContent);
+
+  it("draws `$` and no price on an All row, and still speaks the figure", () => {
+    renderRow(<DecklistRow deckId="d1" card={priced} newestAsOf={asOf} />);
+    expect(drawn()).toContain("$");
+    expect(drawn().some((t) => t?.includes("7.26"))).toBe(false);
+    expect(document.querySelector("[data-decklist-row] .sr-only")!.closest("[data-decklist-row]")!.textContent).toContain("7.26");
+  });
+
+  it("leaves a Shopping row's figure drawn", () => {
+    renderRow(<DecklistRow deckId="d1" card={priced} inShopping shoppingFigure={24} newestAsOf={asOf} />);
+    expect(screen.getAllByText((t) => t.includes("7.26")).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("fact-tooltip")).toBeNull();
+  });
+
+  it("opens the price and `needs buying` on a tap with a coarse pointer, and the tap goes no further", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const fetchCard = vi.fn().mockResolvedValue(null);
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <DecklistRow deckId="d1" card={priced} newestAsOf={asOf} />
+        </CardDetailProvider>,
+      );
+      const glyph = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [aria-hidden='true']")).find((el) => el.textContent === "$")!;
+      expect(glyph.closest("[class*='pointer-coarse:after:h-[max(44px,100%)]']")).not.toBeNull();
+      await act(async () => { fireEvent.click(glyph); });
+      expect(screen.getByTestId("fact-tooltip")).toHaveTextContent(addPanelCopy.unowned.glyphTip("$7.26"));
+      expect(fetchCard).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
     }

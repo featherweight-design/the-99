@@ -3,6 +3,7 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
+import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { useId, useState } from "react";
@@ -102,11 +103,13 @@ const SHOPPING_SLOTS: LineSlots = {
  * Every class spelled whole so Tailwind sees it.
  */
 const FOLD = {
-  // All: the 4th mark and beyond at every width, every mark after the first at the middle tier, every mark in the tight one.
+  // All: the 5th mark and beyond at every width, every mark after the second at the middle tier, every mark after the first in
+  // the tight one. One more than Shopping's rhythm at each tier: an All row draws a bare `$` where it drew a price (Hugh,
+  // 2026-10-16), and the room that frees goes to the marks.
   all: {
-    fourth: "sr-only",
-    afterFirst: "@max-[480px]:sr-only",
-    all: "@max-[360px]:sr-only",
+    fifth: "sr-only",
+    afterSecond: "@max-[480px]:sr-only",
+    afterFirst: "@max-[360px]:sr-only",
     plusWide: "hidden @min-[480px]:inline",
     plusMid: "hidden @min-[360px]:@max-[480px]:inline",
     plusTight: "hidden @max-[360px]:inline",
@@ -288,7 +291,7 @@ export function DecklistRow({
     ...(comboSentence ? [{ kind: "combo" as const, sentence: comboSentence }] : []),
   ];
   const markFold = (i: number): string =>
-    inShopping ? FOLD.shopping.all : i >= 3 ? FOLD.all.fourth : i >= 1 ? FOLD.all.afterFirst : FOLD.all.all;
+    inShopping ? FOLD.shopping.all : i >= 4 ? FOLD.all.fifth : i >= 2 ? FOLD.all.afterSecond : i >= 1 ? FOLD.all.afterFirst : "";
   // The whole row is the preview's trigger (#351), so the handlers go on the
   // shell rather than on the name — the name is the modal's trigger, and a
   // preview that only opened over it would be a second, smaller target for a
@@ -349,7 +352,7 @@ export function DecklistRow({
     )),
     ...(inShopping
       ? [plusN(0, FOLD.shopping.plus)]
-      : [plusN(3, FOLD.all.plusWide), plusN(1, FOLD.all.plusMid), plusN(0, FOLD.all.plusTight)]),
+      : [plusN(4, FOLD.all.plusWide), plusN(2, FOLD.all.plusMid), plusN(1, FOLD.all.plusTight)]),
   ];
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
@@ -620,9 +623,9 @@ export function DecklistRow({
       foldOver={inShopping}
       // `inShopping`, not the figure: Shopping is the list being paid
       // from, and the figure is `undefined` there too whenever EDHREC is
-      // unreachable. The All tab is being scanned, so the tag collapses
-      // to `$` — and still speaks the word and the price in full.
-      density={inShopping ? "full" : "collapsed"}
+      // unreachable. The All tab draws the bare `$` (Hugh, 2026-10-16: the price is Shopping's) and still speaks the word
+      // and the price in full; the tooltip below puts the figure one hover or tap away.
+      density={inShopping ? "full" : "glyph"}
       press={pressable ? {
         onPress: (trigger) => gotIt.open(card, fullName, newestAsOf, trigger),
         // Disabled while an undo for this card is in flight (A9): a second write would go stale.
@@ -632,6 +635,13 @@ export function DecklistRow({
         under: overText,
       } : undefined}
     />
+  );
+  const glyphFigure = card.price ? formatPriceFigure(card.price, priceState(card.price, newestAsOf)) : null;
+  const rowBuyTag = inShopping ? buyTag : (
+    <FactTooltip tapOnTouch sentence={addPanelCopy.unowned.glyphTip(glyphFigure)}>
+      {/* As on the `+N`, the pointer on the `$` holds the row's card preview off, so the bubble is not covered. */}
+      <span className={`inline-flex ${TOUCH_HIT}`} {...plusPointer}>{buyTag}</span>
+    </FactTooltip>
   );
 
   // The ✕. Its own slot on every other row; on a basic row it is the stepper's − slot at 1, so the press that
@@ -857,15 +867,15 @@ export function DecklistRow({
         ) : pressable ? (
           // `over $N` is not drawn under the tag; it folds into the outlined tag (the key says so), and the words stay in
           // the tag's description for a reader who cannot see the outline.
-          shopSlots ? <span className={SHOPPING_SLOTS.buy}>{buyTag}</span> : buyTag
+          shopSlots ? <span className={SHOPPING_SLOTS.buy}>{buyTag}</span> : rowBuyTag
         ) : overText ? (
           <span className={`flex flex-none flex-col items-end gap-[2px]${withAt("buyStack")}`}>
             <span className="sr-only font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}
             </span>
-            {tag === "buy" ? buyTag : null}
+            {tag === "buy" ? rowBuyTag : null}
           </span>
-        ) : tag === "buy" ? (shopSlots ? <span className={SHOPPING_SLOTS.buy}>{buyTag}</span> : buyTag) : null}
+        ) : tag === "buy" ? (shopSlots ? <span className={SHOPPING_SLOTS.buy}>{buyTag}</span> : rowBuyTag) : null}
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
