@@ -2411,6 +2411,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and production are refused by
   id. Mutation-checked four ways (the Replace's delete of upload printings, the precon re-derive, the writer's
   printing-of-token check, the reader's join on the token).
+- `pnpm probe:card-search` proves card search's reads (plan `2026-10-16-card-search.md`, PR A) against a real
+  database: the ranked search puts a name starting with the query first, then a word starting with it, then any
+  match, ties by name, at most 20; and the reader's signals are right for every case a row draws (owned summed
+  across printings, a deck holding the card as commander, partner or list card, decks by name, an unmet wish marked
+  and a met one not), while another account's copies, decks and wishes never reach them. It prints the ranked
+  search's round trip and its database execution time for a 2-, 3- and 5-letter query (about 25ms on local-dev's
+  catalog, 2026-10-16, so no trigram index). It writes, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
+  reports, never staging, production or local-dev, and it removes its two made-up accounts' rows in a finally.
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count (summed across printings), that a write moves the owner's data stamp, that an unknown card and a quantity
   outside 1 to 99 write nothing, that a friend reads the lines with the card and the wanted count and no owned count
