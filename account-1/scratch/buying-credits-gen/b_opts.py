@@ -61,7 +61,7 @@ def board():
                     + frame(f"{LS[1]} · offers, desktop", offer_pair(LS[0]), "", width=1000)
                     + frame(f"{LS[1]} · subscribed, 390", subscribed(LS[0]), "")
                     + '</div></div>')
-    ck.OFFER_ART["v"] = "fan"
+    ck.OFFER_ART["v"] = "diamond"
     mrows = []
     for v, title, cap in MENUS:
         ck.MENU_COUNT["v"] = v

@@ -19,10 +19,18 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-buying-credits.md` (
 | `R1 - Blocked-and-Off.dc.html` | §5 (B1) and §6 (O1–O4). |
 | `R1 - Menu-and-Delete.dc.html` | §2's entry (A1–A3) and §7 (D1–D2). |
 | `R1b - Themes.dc.html` | The main screens in Low Sun, Witching Hour and First Frost. |
-| `R2 - Options.dc.html` | Offer art A–D and menu count M1–M3, for Hugh's two picks. |
+| `R2 - Options.dc.html` | Offer art A–D and menu count M1–M3, as Hugh picked from them. |
+| `R2b - Picks.dc.html` | The crown's diamond, fixed; the menu chip (M1b) in four states. |
 | `STATES-buying-credits.md` | The state matrix, with what each state must not do. |
 | `READINESS.md` | The verdict and what blocks the build. |
 | `buying-credits · copy strings.ts` | Every new string, for /copy-review. |
+
+## R2b (Hugh's picks, 2026-10-16)
+
+- **Offer art: A, the crown's diamond**, on every board in place of the card fan. The plan's three small diamonds now sit clear above the large one (they merged in R2). A cancelled plan dims the mark.
+- **C and D dropped.** Art in the app is only ever real cards or player images; everything else is our own graphics, to cement the brand. G12 is withdrawn.
+- **Menu count: M1b**, M1's chip carrying the same diamond, by state (`R2b - Picks.dc.html`): holding credits (`◆ 117 credits ›`), never bought (`◆ 3 free credits ›`), out of credits (hollow diamond, `Get more credits ›`, payments on only), and plan credits expiring within 3 days (the chip in `--warning`, with `74 plan credits expire Nov 16` on a line under it). Pending Hugh's yes.
+- In Low Sun, `--warning` and the accent are close in hue, so the expiring state's meaning rests on the line under the chip, not the color.
 
 ## R2 (Hugh's answers, 2026-10-16)
 

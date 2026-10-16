@@ -54,10 +54,10 @@ GAPS = [
 
 DECIDE = (
     '<div class="note" style="max-width:1580px;border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,#111319)">'
-    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: two picks on R2 · Options</b><ul>'
-    '<li><b>1 · The plan and pack art</b> (replacing the card fan): A the crown’s diamond, B the number alone, C card art washed, D one real card tilted. Board <code>R2 · Options</code>, top half.</li>'
-    '<li><b>2 · The credit count in the account menu</b>: M1 a chip, M2 the number on the right, M3 the count over a split bar. Board <code>R2 · Options</code>, bottom half.</li>'
-    '</ul><p class="cap" style="margin-top:8px"><b>Decided (2026-10-16):</b> cancel is A (one tap, Keep my plan undoes it); the menu entry is A1, in the identity block; the expiry warning shows 3 days out.</p></div>')
+    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: one yes or no, on R2b · Picks</b><ul>'
+    '<li><b>The menu chip by state (M1b).</b> M1’s chip carrying the crown’s diamond, with four states: holding credits, never bought, out of credits, plan expiring. Board <code>R2b · Picks</code>, bottom half.</li>'
+    '</ul><p class="cap" style="margin-top:8px"><b>Decided (2026-10-16):</b> cancel A (one tap, Keep my plan undoes it); menu entry A1, in the identity block; expiry warning 3 days out; '
+    'offer art A, the crown’s diamond, now on every board. Art in the app is only ever real cards or player images; everything else is our own graphics.</p></div>')
 
 BOARDS = [
     ("R1 - Credit-Line", "§1 · the line in every state (L1–L8) on the CreditButton, 390 and desktop; the grammar"),
@@ -68,7 +68,8 @@ BOARDS = [
     ("R1 - Blocked-and-Off", "§5 and §6 · blocked; switched off with nothing bought; the reduced page"),
     ("R1 - Menu-and-Delete", "§2’s entry and §7 · the menu line, the row option, the Manage account interstitial"),
     ("R1b - Themes", "Round 1b · the main screens in Low Sun, Witching Hour and First Frost"),
-    ("R2 - Options", "Round 2 · offer art A to D and menu count M1 to M3, for Hugh’s picks"),
+    ("R2 - Options", "Round 2 · offer art A to D and menu count M1 to M3, as Hugh picked from them"),
+    ("R2b - Picks", "Round 2b · the crown’s diamond fixed, and the menu chip by state"),
 ]
 
 

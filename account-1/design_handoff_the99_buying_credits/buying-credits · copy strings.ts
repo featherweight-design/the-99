@@ -99,6 +99,9 @@ export const buyingCreditsCopy = {
   },
   // The account menu's identity line.
   menu: {
+    // M1b, the chip by state (R2b)
+    entryOut: "Get more credits",
+    entryExpiring: "74 plan credits expire Nov 16",
     entry: "117 credits",
     entryFree: "3 free credits",
   },

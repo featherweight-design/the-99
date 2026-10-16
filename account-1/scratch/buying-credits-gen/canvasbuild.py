@@ -10,10 +10,11 @@ MAP = [("The 99 - Buying Credits (R1)","Main","Buying credits R1 · calls, rulin
        ("R1 - Blocked-and-Off","Blocked-and-Off","§5 and §6 · Blocked, and payments off"),
        ("R1 - Menu-and-Delete","Menu-and-Delete","Menu entry and §7 · the deletion warning"),
        ("R1b - Themes","Themes","R1b · Themes: Low Sun, Witching Hour, First Frost"),
-       ("R2 - Options","Options","R2 · Options: offer art A–D, menu count M1–M3")]
+       ("R2 - Options","Options","R2 · Options (picked: A, M1)"),
+       ("R2b - Picks","Picks","R2b · Picks: the crown’s diamond, the menu chip by state")]
 BLOB = {"ghalta": "1f03c069aeec15aba80ac29f6b247c8f", "lathliss": "a487bbc5e48f8354a834e0165a0a3ae7",
         "ghalta-art": "4285f93e4772c8a999404186fcce7d12", "lathliss-art": "d5826f2927968e82ca89809a1d814105"}
-rows = [["Main","Credit-Line","Surfaces","Themes"],["Plan-and-Cancel","Menu-and-Delete","Options"],["Billing-Page","Checkout-Return","Blocked-and-Off"]]
+rows = [["Main","Credit-Line","Surfaces","Themes"],["Plan-and-Cancel","Menu-and-Delete","Options","Picks"],["Billing-Page","Checkout-Return","Blocked-and-Off"]]
 src_of = {n: s for s, n, _ in MAP}
 pos = {}; y = 0
 for r in rows:

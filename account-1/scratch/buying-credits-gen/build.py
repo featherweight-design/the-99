@@ -12,6 +12,7 @@ BOARDS = {
     "b_menu": "R1 - Menu-and-Delete.dc.html",
     "b_theme": "R1b - Themes.dc.html",
     "b_opts": "R2 - Options.dc.html",
+    "b_picks": "R2b - Picks.dc.html",
 }
 os.makedirs(OUT, exist_ok=True)
 shutil.copy("/home/claude/the-99/design/design_handoff_the99_tuning_hub/support.js", OUT + "/support.js")

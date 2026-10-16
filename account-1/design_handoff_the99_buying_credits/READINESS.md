@@ -1,6 +1,6 @@
 # Readiness · Buying credits R1
 
-**R1, for Hugh's audit (2026-10-16). Self-assessed: Amber until Hugh picks the offer art and the menu count (R2 · Options); Green for the build after that, with eight items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
+**R1, for Hugh's audit (2026-10-16). Self-assessed: Amber until Hugh confirms the menu chip (R2b · Picks); Green for the build after that, with eight items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
 
 **Build from** `The 99 - Buying Credits (R1).dc.html` for the calls and gaps, then the seven `R1 - *` boards (README "Start here"). Option B on Plan-and-Cancel is for Hugh's pick and is not built unless he picks it.
 
@@ -22,9 +22,10 @@
 
 **Decided (Hugh, 2026-10-16):** cancel A; menu entry A1; expiry warning 3 days.
 
-**For Hugh** (R2 · Options, also at the top of the main board)
-1. **Offer art:** A diamond, B number, C washed art, D one tilted card.
-2. **Menu count:** M1 chip, M2 number on the right, M3 split bar.
+**Decided (Hugh, 2026-10-16):** offer art A, the crown's diamond; art is only ever real cards or player images.
+
+**For Hugh** (R2b · Picks)
+1. **The menu chip by state (M1b):** yes, or notes.
 
 **Settle in the plan** (README gaps G1–G8)
 1. `creditsCopy` additions and the `Allowance` fields they need (paid used today, the paid limit, when paid is back, the plan's expiry).

@@ -314,10 +314,10 @@ CCSS = r"""
 .oc>.ow{position:absolute;z-index:0;right:0;top:0;bottom:0;width:46%;overflow:hidden;pointer-events:none;-webkit-mask-image:linear-gradient(270deg,#000 0 25%,transparent 95%);mask-image:linear-gradient(270deg,#000 0 25%,transparent 95%)}
 .oc>.ow img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;opacity:.5;display:block}
 .oc>.ow.dim img{opacity:.2;filter:saturate(.3)}
-.dmk{flex:none;width:74px;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.dmk{flex:none;width:74px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:17px;padding:4px 0 12px}
 .dm{width:46px;height:46px;transform:rotate(45deg);border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));display:flex;align-items:center;justify-content:center;border-radius:4px}
 .dm b{transform:rotate(-45deg);font:700 17px var(--disp);color:var(--accent)}
-.dm3{display:flex;align-items:flex-end;gap:3px}.dm3 i{width:6px;height:6px;transform:rotate(45deg);background:var(--accent);display:block}.dm3 i.b{width:8px;height:8px}
+.dm3{display:flex;align-items:flex-end;gap:3px}.dm3 i{width:7px;height:7px;transform:rotate(45deg);background:var(--accent);display:block}.dm3 i.b{width:10px;height:8px}
 .dmk.dim{opacity:.45;filter:saturate(.3)}
 .nmk{flex:none;display:flex;flex-direction:column;align-items:flex-end;line-height:1}
 .nmk b{font:700 44px/1 var(--disp);color:var(--accent);letter-spacing:-.01em}
@@ -342,6 +342,19 @@ CCSS = r"""
 .idb .mtr .r b{font:600 12.5px 'IBM Plex Mono',monospace;color:var(--accent)}
 .idb .mtr .bar{display:flex;gap:2px;height:5px}
 .idb .mtr .bar i{display:block;border-radius:2px}
+
+/* menu count, M1b: the chip carrying the offer art's diamond, by state */
+.idb .nm span.crd3{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:0 11px 0 10px;border-radius:999px;margin-top:8px;align-self:flex-start;max-width:100%;
+  background:color-mix(in srgb,var(--accent) 16%,transparent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);color:var(--fg);font:500 12px 'IBM Plex Sans',sans-serif;white-space:nowrap}
+.idb .nm span.crd3 span{font:inherit;color:inherit;margin:0}
+.idb .nm span.crd3 .dmi{width:9px;height:9px;transform:rotate(45deg);background:var(--accent);border-radius:1px;flex:none;display:block}
+.idb .nm span.crd3 .dmi.o{background:transparent;border:1.5px solid var(--accent)}
+.idb .nm span.crd3 b{font:600 13px 'IBM Plex Mono',monospace;color:var(--accent)}
+.idb .nm span.crd3 em{font-style:normal;color:var(--accent);margin-left:1px}
+.idb .nm span.crdx{font:11px 'IBM Plex Mono',monospace;color:var(--warning);margin-top:5px}
+.idb .nm span.crd3.out{background:transparent;color:var(--accent);font-weight:600}
+.idb .nm span.crd3.warn{background:color-mix(in srgb,var(--warning) 14%,transparent);border-color:color-mix(in srgb,var(--warning) 55%,transparent)}
+.idb .nm span.crd3.warn .dmi{background:var(--warning)}.idb .nm span.crd3.warn b,.idb .nm span.crd3.warn em{color:var(--warning)}
 """
 
 kit.CSS = kit.CSS + CCSS
@@ -434,7 +447,7 @@ def balance(free=(3, 5), plan=None, packs=None, total=None, today=None, plan_end
             f'{order}<div class="cells">{"".join(cells)}</div>{td}</div>')
 
 
-OFFER_ART = {"v": "fan"}
+OFFER_ART = {"v": "diamond"}  # Hugh, 2026-10-16: A, the crown's diamond
 ART_FOR = {"plan": "ghalta", "pack": "lathliss"}
 
 
@@ -558,11 +571,22 @@ def sheet(title, body, desk_=False):
 
 
 MENU_COUNT = {"v": "line"}
+MENU_STATE = {"v": "held"}
 
 
 def id_block(entry=None, desk_=False):
     v = MENU_COUNT["v"]
-    if entry and v == "chip":
+    if entry and v == "mark":
+        st = MENU_STATE["v"]
+        n, _, rest = entry.partition(" ")
+        if st == "out":
+            crd = '<span class="crd3 out new"><i class="dmi o"></i><span>Get more credits</span><em>›</em></span>'
+        elif st == "expiring":
+            crd = (f'<span class="crd3 warn new"><i class="dmi"></i><b>{n}</b><span>{rest}</span><em>›</em></span>'
+                   f'<span class="crdx">74 plan credits expire Nov 16</span>')
+        else:
+            crd = f'<span class="crd3 new"><i class="dmi"></i><b>{n}</b><span>{rest}</span><em>›</em></span>'
+    elif entry and v == "chip":
         n, _, rest = entry.partition(" ")
         crd = f'<span class="crd2 new"><i>◆</i><b>{n}</b>{rest}<em>›</em></span>'
     elif entry and v == "big":
