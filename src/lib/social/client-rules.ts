@@ -45,6 +45,9 @@ export function capName(value: string, max: number): string {
 // The origin is the request's own, so a link made on staging, on a preview or on localhost points back
 // where it was made, never at a hard-coded host.
 
+/** Open invites one account may hold at once, and so the most tokens one watch request names. */
+export const MAX_OPEN_INVITES = 10;
+
 /** The shape `newInviteToken` makes: 128 bits as base64url, 22 characters. Anything else names no link. */
 export function isInviteToken(v: unknown): v is string {
   return typeof v === "string" && /^[A-Za-z0-9_-]{22}$/.test(v);

@@ -10,7 +10,7 @@
 import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
-import { resolveFriend, type Reader } from "./access";
+import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
 import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
@@ -163,6 +163,61 @@ export function openInvitesQuery(viewerId: string, now: Date, q: Reader = db) {
 
 export async function listOpenInvites(viewerId: string, now = new Date(), q: Reader = db): Promise<OpenInvite[]> {
   return openInvitesQuery(viewerId, now, q);
+}
+
+/**
+ * /friends' friends and open links read from ONE snapshot. Read apart, a redemption committing between the two
+ * reads gives a redraw with the old friends and without the link, which drops the link from the page's watch
+ * before the new friend's row has arrived.
+ */
+export async function loadFriendsAndLinks(viewerId: string, now = new Date()): Promise<{ friends: Friend[]; links: OpenInvite[] }> {
+  return db.transaction(async (tx) => {
+    const friends = await listFriends(viewerId, tx);
+    const links = await listOpenInvites(viewerId, now, tx);
+    return { friends, links };
+  // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
+  }, { isolationLevel: "repeatable read" });
+}
+
+export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: string } | null };
+
+/**
+ * What became of the viewer's own links, for /friends' watch while one is shown or open: whether each is still
+ * open, and, for one redeemed by someone who is now the viewer's friend, that friend. Only the viewer's own
+ * tokens are read (the inviter is the viewer, in the statement), and the redeemer is named only through the
+ * viewer's own link row to them, so a redeemer who has since been removed is not named. A token the viewer does
+ * not own, or that no longer exists, is absent from the answer.
+ */
+export function inviteOutcomesQuery(viewerId: string, tokens: string[], q: Reader = db) {
+  return q
+    .select({
+      token: friendInvites.token,
+      redeemedAt: friendInvites.redeemedAt,
+      declinedAt: friendInvites.declinedAt,
+      revokedAt: friendInvites.revokedAt,
+      expiresAt: friendInvites.expiresAt,
+      publicId: socialProfiles.publicId,
+      displayName: socialProfiles.displayName,
+    })
+    .from(friendInvites)
+    .leftJoin(friendLinks, and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, friendInvites.redeemedBy)))
+    .leftJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .where(and(eq(friendInvites.inviterUserId, viewerId), inArray(friendInvites.token, tokens)));
+}
+
+type OutcomeRow = Awaited<ReturnType<typeof inviteOutcomesQuery>>[number];
+
+export function shapeOutcome(r: OutcomeRow, now: Date): InviteOutcome {
+  return {
+    token: r.token,
+    open: inviteState(r, now) === "open",
+    friend: r.redeemedAt && r.publicId && r.displayName ? { publicId: r.publicId, displayName: r.displayName } : null,
+  };
+}
+
+export async function inviteOutcomes(viewerId: string, tokens: string[], now = new Date(), q: Reader = db): Promise<InviteOutcome[]> {
+  if (tokens.length === 0) return [];
+  return (await inviteOutcomesQuery(viewerId, tokens, q)).map((r) => shapeOutcome(r, now));
 }
 
 /** Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. */

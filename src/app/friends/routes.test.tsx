@@ -35,7 +35,8 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../lib/social/friends", () => ({
-  readInvite: m.readInvite, ensureProfile: m.ensureProfile, listOpenInvites: m.listOpenInvites,
+  readInvite: m.readInvite, ensureProfile: m.ensureProfile,
+  loadFriendsAndLinks: async (userId: string, now: Date) => ({ friends: await m.listFriends(userId), links: await m.listOpenInvites(userId, now) }),
 }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));

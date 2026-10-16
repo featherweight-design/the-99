@@ -2,7 +2,7 @@
 // correlated subquery is qualified on both sides (AGENTS.md); `shapeInvite` proves what an ended link may
 // say; `probe:social` proves the answers on a database.
 import { describe, expect, it } from "vitest";
-import { inviteQuery, openInvitesQuery, shapeInvite } from "./friends";
+import { inviteOutcomesQuery, inviteQuery, openInvitesQuery, shapeInvite, shapeOutcome } from "./friends";
 
 const VIEWER = "user_viewer";
 const NOW = new Date("2026-10-15T12:00:00Z");
@@ -77,5 +77,39 @@ describe("openInvitesQuery", () => {
     expect(q.sql).toContain(`"friend_invites"."expires_at" > $2`);
     expect(q.sql).toContain(`order by "friend_invites"."created_at" asc`);
     expect(q.params[0]).toBe(VIEWER);
+  });
+});
+
+describe("inviteOutcomesQuery", () => {
+  it("reads only the viewer's own links, and names a redeemer only through the viewer's own friendship row", () => {
+    const q = inviteOutcomesQuery(VIEWER, ["tokA", "tokB"]).toSQL();
+    expect(q.sql).toContain(`left join "friend_links" on ("friend_links"."user_id" = $1 and "friend_links"."friend_user_id" = "friend_invites"."redeemed_by")`);
+    expect(q.sql).toContain(`left join "social_profiles" on "social_profiles"."user_id" = "friend_links"."friend_user_id"`);
+    expect(q.sql).toContain(`"friend_invites"."inviter_user_id" = $2`);
+    expect(q.params).toEqual([VIEWER, VIEWER, "tokA", "tokB"]);
+  });
+});
+
+describe("shapeOutcome", () => {
+  const out = (over: Partial<Parameters<typeof shapeOutcome>[0]> = {}) => shapeOutcome({
+    token: "tok", redeemedAt: null, declinedAt: null, revokedAt: null, expiresAt: LATER, publicId: null, displayName: null, ...over,
+  }, NOW);
+
+  it("an open link is open and names nobody", () => {
+    expect(out()).toEqual({ token: "tok", open: true, friend: null });
+  });
+
+  it("a link redeemed by someone now a friend names them", () => {
+    expect(out({ redeemedAt: NOW, publicId: "p-mo", displayName: "Mo" })).toEqual({ token: "tok", open: false, friend: { publicId: "p-mo", displayName: "Mo" } });
+  });
+
+  it("a link redeemed by someone no longer a friend is ended and names nobody", () => {
+    expect(out({ redeemedAt: NOW })).toEqual({ token: "tok", open: false, friend: null });
+  });
+
+  it("an expired, declined or revoked link is ended", () => {
+    expect(out({ expiresAt: NOW }).open).toBe(false);
+    expect(out({ declinedAt: NOW }).open).toBe(false);
+    expect(out({ revokedAt: NOW }).open).toBe(false);
   });
 });
