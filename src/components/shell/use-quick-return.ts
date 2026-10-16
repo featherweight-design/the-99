@@ -5,6 +5,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "re
 import { scrollLocked } from "../../lib/a11y/dialog";
 import { appScrolling } from "../../lib/ui/reveal";
 import {
+  AWAY_MS,
+  BACK_MS,
   headerOffset,
   INITIAL,
   quickReturnStep,
@@ -64,6 +66,8 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       observer.disconnect();
       root.style.removeProperty("--header-h");
       root.style.removeProperty("--header-offset");
+      root.style.removeProperty("--header-ms");
+      root.style.removeProperty("--header-ease");
     };
   }, [header]);
 
@@ -75,15 +79,24 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       // `focusout`, and focus can be in a field before these listeners attach.
       if (isPageField(document.activeElement)) root.setAttribute("data-field-focus", "");
       else root.removeAttribute("data-field-focus");
+      // Clamped to the scrollable range: iOS's rubber band past the bottom reads beyond it, and its rebound would
+      // otherwise count as upward travel.
+      const max = Math.max(0, root.scrollHeight - window.innerHeight);
       const next = quickReturnStep(state.current, {
-        y: window.scrollY,
+        y: Math.min(window.scrollY, max),
         height: height.current,
         locked: scrollLocked(),
         fieldFocus: root.hasAttribute("data-field-focus"),
         programmatic: appScrolling() || performance.now() < settleUntil.current,
       });
-      state.current = next;
       root.style.setProperty("--header-offset", `${headerOffset(next.mode, height.current)}px`);
+      // The heads riding under it move on the header's own slide, so their edges stay together both ways.
+      if (next.mode !== state.current.mode || !root.style.getPropertyValue("--header-ms")) {
+        const away = next.mode === "away";
+        root.style.setProperty("--header-ms", away ? `${AWAY_MS}ms` : `${BACK_MS}ms`);
+        root.style.setProperty("--header-ease", away ? "cubic-bezier(0.4, 0, 1, 1)" : "var(--motion-ease-out)");
+      }
+      state.current = next;
       setView((prev) => (prev.mode === next.mode ? prev : { mode: next.mode, slides: slidesInto(next.mode, prev) }));
     };
     const schedule = () => {

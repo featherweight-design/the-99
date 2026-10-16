@@ -47,6 +47,8 @@ beforeEach(() => {
     },
   );
   Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+  Object.defineProperty(document.documentElement, "scrollHeight", { value: 5000, configurable: true });
+  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -98,6 +100,31 @@ describe("useQuickReturn", () => {
       vi.advanceTimersToNextFrame();
     });
     expect(document.documentElement.style.getPropertyValue("--header-offset")).toBe("0px");
+  });
+
+  // iOS's rubber band past the bottom reads beyond the scrollable range; its rebound is not the reader scrolling up.
+  it("does not take the bottom's rubber-band rebound as upward travel", async () => {
+    Object.defineProperty(document.documentElement, "scrollHeight", { value: 2000, configurable: true });
+    render(<Probe />);
+    await act(async () => vi.advanceTimersByTime(400));
+    await scrollTo(600);
+    await scrollTo(1200);
+    await scrollTo(1240);
+    await scrollTo(1200);
+    expect(header().dataset.mode).toBe("away");
+  });
+
+  it("moves the heads under it on its own slide: 160ms ease-in away, 200ms on the sheet curve back", async () => {
+    render(<Probe />);
+    await act(async () => vi.advanceTimersByTime(400));
+    const root = document.documentElement.style;
+    await scrollTo(400);
+    await scrollTo(600);
+    expect(root.getPropertyValue("--header-ms")).toBe("160ms");
+    expect(root.getPropertyValue("--header-ease")).toBe("cubic-bezier(0.4, 0, 1, 1)");
+    await scrollTo(580);
+    expect(root.getPropertyValue("--header-ms")).toBe("200ms");
+    expect(root.getPropertyValue("--header-ease")).toBe("var(--motion-ease-out)");
   });
 
   it("does not slide when it leaves the page by scrolling past it", async () => {
