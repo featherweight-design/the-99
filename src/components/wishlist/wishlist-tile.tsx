@@ -1,5 +1,5 @@
 // The Wishlist tab's tile, as it draws (Social R2 PR 4, boards W1–W5 and WP1–WP5): the full card at the collection
-// grid's 63/88 and the `want N · have M` caption. Its own module so the tab, a friend's page (whose tiles read
+// grid's 63/88 and the `have M of N` caption. Its own module so the tab, a friend's page (whose tiles read
 // `wants N`, `have: null`) and About's `wishlist` specimen (the addendum's E1) render one tree, and so About imports
 // the drawing alone: the tab's view also holds its search, its writes and the card details provider, none of which an
 // inert specimen may reach.
@@ -15,7 +15,7 @@ export type WishlistTileCard = { name: string; imageUri: string | null; want: nu
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
 export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
 
-/** The caption's parts: `want N · have M`, or `wants N` on a friend's tile (`have: null`). */
+/** The caption's parts: `have M of N`, or `wants N` on a friend's tile (`have: null`). */
 function captionParts(tile: WishlistTileCard): CopyPart[] {
   return tile.have === null ? wishlistCopy.tile.wants(tile.want) : wishlistCopy.tile.caption(tile.want, tile.have);
 }

@@ -113,6 +113,7 @@ properties.
 | | fill | none (outlined: not yet on the list) | none |
 | | path | `M6.5 3.5h11v17l-5.5-4-5.5 4z` | same |
 | Stepper in row | rendered | card on the list (replaces Add in the same slot) | card on the list (replaces Add in the same slot) |
+| | floor | − `aria-disabled` at one more than `owned` (the want is copies in all, so a step never removes the line; Remove is the way off) | same |
 | | wrapper | `.step` alone, **no `want` label** | `.wrow`: flex, align center, gap 12px, 12.5px Mono (inline override of 13.5), `--fg-muted`; label `details.want` then `.step` |
 | `.step` | display | inline-flex; align-items center | inline-flex; align-items center |
 | | height | **44px** | 34px |
@@ -227,8 +228,8 @@ Superseded, do not build: `.wbtn.done` / `page.search.added` (round 2's `Added`:
 | | line-height | 1.2 | 1.2 |
 | | color | `--fg-faint` | `--fg-faint` |
 | | overflow | nowrap, hidden, ellipsis | same |
-| | slot | `tile.caption(want, have)` | `tile.caption(want, have)` |
-| Want figure `.cs b` | weight / color | 600, `--fg-body` | 600, `--fg-body` |
+| | slot | `tile.caption(want, have)`: `have 1 of 2`, the want in all strong (d9 for Hugh, 2026-10-15; was `want 2 · have 1`, which read as additive) | same |
+| Want figure `.cs b` (the `2` of `have 1 of 2`) | weight / color | 600, `--fg-body` | 600, `--fg-body` |
 | Spare marker on tile | rendered | **never** (R3: off wishlist tiles) | **never** |
 | Collected tile / `tile.collected` / `.tile.dim` | rendered | **never** (R3: a collected card leaves the list) | never |
 

@@ -54,11 +54,11 @@ export const wishlistCopy = {
   },
 
   tile: {
-    // `want 2 · have 1`, the want count strong (`--fg-body`).
+    // `have 1 of 2`, the want strong (`--fg-body`). The want is the copies wanted IN ALL, so the caption reads it as the
+    // total the holding counts toward, never as copies on top of it (d9, for Hugh, 2026-10-15).
     caption: (want: number, have: number): CopyPart[] => [
-      { text: "want " },
+      { text: `have ${have} of ` },
       { text: String(want), strong: true },
-      { text: ` · have ${have}` },
     ],
     // A friend's tile (their page, view only): `wants 2`, the count strong, and never an owned count.
     wants: (want: number): CopyPart[] => [{ text: "wants " }, { text: String(want), strong: true }],
@@ -69,8 +69,8 @@ export const wishlistCopy = {
     section0: "Wishlist", // the box's label before the card is added
     section: "In your wishlist",
     remove: "Remove",
-    want: "want",
-    have: (n: number) => `· have ${n}`,
+    want: "want in all", // the stepper's label, and its count's spoken name: the copies wanted in all
+    have: (n: number) => `you have ${n}`,
     fewer: "Want one fewer", // the stepper's −, aria-label (the tab's result stepper too)
     more: "Want one more", // the stepper's +, aria-label
     failedSet: "We couldn’t change that. Your wishlist is unchanged.", // toast, role alert

@@ -78,7 +78,7 @@ export function CardWishlist({
     setHave(held.owned);
   }
 
-  // When the line goes (Remove, or a step down to what the collection already holds) while the stepper held focus, the
+  // When the line goes (Remove, or a write answering that the collection now holds the want) while the stepper held focus, the
   // button that replaces it takes focus; focus anywhere else stays where it is.
   const listed = useRef(initial !== null);
   useEffect(() => {
@@ -160,6 +160,9 @@ export function CardWishlist({
           <span aria-busy={busy || undefined} className={"inline-flex" + wait}>
             <WantStepper
               value={want}
+              // The want is copies in ALL, so one more than the collection holds is the least a line can want: a
+              // step never removes the line, and Remove stays the one way off the list.
+              min={have + 1}
               onChange={(next) => void step(next)}
               fewerLabel={copy.fewer}
               moreLabel={copy.more}

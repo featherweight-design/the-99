@@ -33,9 +33,9 @@ describe("the collected strip", () => {
 });
 
 describe("the tile caption", () => {
-  it("reads want and have, the want strong", () => {
+  it("reads the holding against the want in all, the want strong", () => {
     const parts = wishlistCopy.tile.caption(2, 1);
-    expect(read(parts)).toBe("want 2 · have 1");
+    expect(read(parts)).toBe("have 1 of 2");
     expect(strong(parts)).toEqual(["2"]);
   });
 });
