@@ -150,6 +150,22 @@
           "settle": 3000
         }
       ]
+    },
+    {
+      "id": "about-friend-spares",
+      "label": "/about: the When a friend has a spare figure (two Shopping rows and the spares-only modal, in place)",
+      "view": "src/components/about/social-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='friend-spares']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='friend-spares']"
+        },
+        {
+          "settle": 3000
+        }
+      ]
     }
   ]
 }

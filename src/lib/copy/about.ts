@@ -1115,6 +1115,34 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     since: 9,
   },
+  // The Social line, entry 3 (Social R2's last PR; addendum `design_handoff_the99_about/addendum-social-line`, approved
+  // 2026-10-15): after `stand-ins` in chapter 03, since a spare opens the same modal. It follows `SOCIAL_FRIENDS_ENABLED`,
+  // which gates the rows' spare glyph and the stand-ins modal's friends (#1891, #1872), so `since: 14` and no bump; the
+  // `Before you buy` line needs the swap tools, and the cart line the all-decks cart. The specimen is two Shopping rows
+  // and the spares-only modal's own body, drawn in place (E2, `social/spare-markers.tsx`).
+  {
+    id: 'friend-spares',
+    switch: 'SOCIAL_FRIENDS_ENABLED',
+    chapter: '03',
+    title: 'When a friend has a spare',
+    route: '/decks',
+    opens: 'opens a deck’s Shopping filter',
+    width: 'plate',
+    caption:
+      'Before you buy a card, check whether a friend has one sitting idle. On a deck’s “Shopping” list, a card a friend can spare gets the friends mark beside its price. Press it to see who has one, the pod they share it with, and how many.\n\nA spare is a copy none of their decks uses, drafts included. It’s view only, so the trade happens at the table.\n\nYour own spares stay private until you tick “Share my spares with this pod” on one of your pods in “Friends”.',
+    keys: [
+      'You only see spares from friends who share them with a pod you’re both in.',
+      'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.',
+      'A spare changes nothing: no price, no cart, and no card moves into your deck.',
+      'The same mark shows on the cart for all your decks.',
+    ],
+    keySwitches: {
+      'When cheaper stand-ins exist too, the same window opens as “Before you buy”, friends first.': 'SWAP_TOOLS_ENABLED',
+      'The same mark shows on the cart for all your decks.': 'ALL_DECKS_CART_ENABLED',
+    },
+    marksPending: true,
+    since: 14,
+  },
   // I got it (plan `2026-10-10-i-got-it.md` PR 5, handoff `design_handoff_the99_i_got_it/about-entry`):
   // after `stand-ins`, the order a card is bought in. `since: 14` is the ONE bump this launch makes,
   // shared with `deck-printings`. Its switch reads `shoppingMarkBoughtEnabled`, which is already on

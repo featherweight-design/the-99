@@ -231,59 +231,111 @@ export function ModalChrome({
           boxShadow: "var(--modal-shadow)",
         }}
       >
-        <div
-          className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
-          style={{ opacity: behind ? 0.55 : undefined }}
+        <ModalPanel
+          titleId={titleId}
+          title={title}
+          pendingName={pendingName}
+          mark={mark}
+          aside={aside}
+          closeLabel={closeLabel}
+          onClose={onClose}
+          overCard={overCard}
+          titleClassName={titleClassName}
+          behind={behind}
         >
-          {mark}
-          <h2
-            id={titleId}
-            // Focusable by script, never by Tab: where the control a reader was on is gone (a
-            // stand-in's Take replaces its own row), focus lands on the sheet's name.
-            tabIndex={-1}
-            className={"m-0 min-w-0 font-display font-bold outline-none " + titleClassName}
-            style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
-          >
-            {title || (pendingName ? <span className="sr-only">{pendingName}</span> : null)}
-          </h2>
-          {aside != null ? (
-            <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
-              {aside}
-            </span>
-          ) : null}
-          {/* Over a card, the way back to it is `← {card}` at both widths (stacked sheets R1, call 7),
-              in place of the ×. 44px to press: the header is pinned to 43px on the phone, so the
-              pill's 32px plate carries an invisible band reaching the full height. */}
-          {overCard ? (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={overCard.backAria}
-              className="relative inline-flex ml-auto min-w-0 max-w-[60%] flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)] before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-['']"
-            >
-              <span aria-hidden="true">←</span>
-              <span className="min-w-0 truncate">{overCard.name}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={closeLabel}
-              className="ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
-            >
-              ×
-            </button>
-          )}
-        </div>
-        {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
-            header is the strip that says where a dismissal lands, and the body is only context.
-            `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of this body at either end
-            from chaining into the page behind the modal. */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ opacity: behind ? 0.35 : undefined }}>
           {children}
-        </div>
+        </ModalPanel>
       </div>
     </div>
+  );
+}
+
+/**
+ * The inside of `ModalChrome`'s sheet: its header (mark, title, aside, and the close or the way back to a card) over its
+ * scrolling body. Its own component so a figure can draw a sheet IN PLACE (the About entry for friends' spares draws
+ * the spares-only modal on the page, inert, inside a box of the sheet's own border and ground), with none of the
+ * overlay, the focus trap or the stacked-card wiring `ModalChrome` adds around it.
+ */
+export function ModalPanel({
+  titleId,
+  title,
+  pendingName,
+  mark,
+  aside,
+  closeLabel,
+  onClose,
+  overCard,
+  titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
+  behind = false,
+  children,
+}: {
+  titleId?: string;
+  title: string;
+  pendingName?: string;
+  mark?: React.ReactNode;
+  aside?: React.ReactNode;
+  closeLabel: string;
+  onClose: () => void;
+  overCard?: { name: string; backAria: string };
+  titleClassName?: string;
+  /** A card stands in front of the sheet: the header and body step down. */
+  behind?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div
+        className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
+        style={{ opacity: behind ? 0.55 : undefined }}
+      >
+        {mark}
+        <h2
+          id={titleId}
+          // Focusable by script, never by Tab: where the control a reader was on is gone (a
+          // stand-in's Take replaces its own row), focus lands on the sheet's name.
+          tabIndex={-1}
+          className={"m-0 min-w-0 font-display font-bold outline-none " + titleClassName}
+          style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
+        >
+          {title || (pendingName ? <span className="sr-only">{pendingName}</span> : null)}
+        </h2>
+        {aside != null ? (
+          <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
+            {aside}
+          </span>
+        ) : null}
+        {/* Over a card, the way back to it is `← {card}` at both widths (stacked sheets R1, call 7),
+            in place of the ×. 44px to press: the header is pinned to 43px on the phone, so the
+            pill's 32px plate carries an invisible band reaching the full height. */}
+        {overCard ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={overCard.backAria}
+            className="relative inline-flex ml-auto min-w-0 max-w-[60%] flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)] before:absolute before:inset-x-0 before:-inset-y-[6px] before:content-['']"
+          >
+            <span aria-hidden="true">←</span>
+            <span className="min-w-0 truncate">{overCard.name}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel}
+            className="ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
+          header is the strip that says where a dismissal lands, and the body is only context.
+          `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of this body at either end
+          from chaining into the page behind the modal. */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ opacity: behind ? 0.35 : undefined }}>
+        {children}
+      </div>
+    </>
   );
 }
 
