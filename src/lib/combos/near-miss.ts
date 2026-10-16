@@ -400,6 +400,76 @@ export async function loadOwnBothPartners(args: {
   return bestPartnerPerCard(rows);
 }
 
+/**
+ * THE DECK ROW's query: every two-card combo this deck ASSEMBLES, one row per piece, so each
+ * card in the deck can name the partner it combos with here.
+ *
+ * The same three §4.3b rules `assembledCombosQuery` applies, because the deck row's mark makes the
+ * same claim the bracket's combo slot does — these two cards are both in this deck and they do
+ * the thing. Rule 2 binds BOTH pieces: a `must_be_commander` piece held in the 99 assembles
+ * nothing, so neither card's row may name the other. `present` carries the commanders too
+ * (rule 3), so a commander is a partner like any card.
+ *
+ * Shaped as `PairRow` so `bestPartnerPerCard` chooses the one partner and counts the others.
+ * Its `missing_*` columns are the PARTNER here, which is in the deck rather than missing; the
+ * fold reads them as "the other piece" and nothing more.
+ */
+export function inDeckPairsQuery(args: {
+  present: readonly string[];
+  /** Cards that count as being in the COMMAND ZONE, for rule 2. */
+  commanders: readonly string[];
+}) {
+  const present = sql.param([...args.present]);
+  const commanders = sql.param([...args.commanders]);
+  return sql`
+    with pair as (
+      select v.variant_id, v.produces, v.popularity
+      from ${spellbookVariants} v
+      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+      where v.card_count = 2
+        and cardinality(v.requires_template_ids) = 0
+        -- Pruned before the group, as every read in this module is.
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id = any(${present}::uuid[]))
+      group by v.variant_id
+      having count(*) = 2
+        -- BOTH pieces held, each by rule 2: a command-zone piece counts only as a commander.
+        and bool_and(case when vc.must_be_commander
+                          then vc.oracle_id = any(${commanders}::uuid[])
+                          else vc.oracle_id = any(${present}::uuid[]) end)
+    )
+    select p.variant_id, p.produces, p.popularity,
+           a.oracle_id as present_id,
+           b.oracle_id as missing_id,
+           c.name as missing_name,
+           false as missing_must_be_commander
+    from pair p
+    join ${spellbookVariantCards} a on a.variant_id = p.variant_id
+    join ${spellbookVariantCards} b
+      on b.variant_id = p.variant_id and b.oracle_id <> a.oracle_id
+    join cards c on c.oracle_id = b.oracle_id
+  `;
+}
+
+/**
+ * Each card's two-card combo partner IN THIS DECK, for the deck row's combo mark: the most
+ * popular partner, with how many others the tooltip is not naming. The commanders are passed
+ * apart from the list for the reason `loadCompletionPartners` takes them apart (rule 3, and they
+ * are columns on `decks`).
+ */
+export async function loadInDeckPartners(args: {
+  deckOracleIds: readonly string[];
+  commanderOracleIds: readonly string[];
+}): Promise<Map<string, ComboPartner>> {
+  const present = [...new Set([...args.deckOracleIds, ...args.commanderOracleIds])];
+  if (present.length < 2) return new Map();
+  const rows = (await db.execute(
+    inDeckPairsQuery({ present, commanders: args.commanderOracleIds }),
+  )).rows as PairRow[];
+  return bestPartnerPerCard(rows);
+}
+
 /** One partner in the card modal's block, with the state the reader is shown. */
 export type ModalComboPartner = {
   oracleId: string;

@@ -83,6 +83,17 @@ export const comboAwarenessCopy = {
     completes: (partner: string) => `Completes a two-card combo with ${partner}.`,
   },
 
+  /**
+   * The deck row's combo mark (single-line row PR 2): the partner is IN THIS DECK, the commanders
+   * counted, owned or not, so `You own both` would be false there. Settled by /copy-review,
+   * 2026-10-15; the lead is the shipped noun, and the second sentence is the deck scope.
+   */
+  deckTooltip: {
+    inDeck: (partner: string) => `Two-card combo with ${partner}. Both are in this deck.`,
+    inDeckMore: (partner: string, others: number) =>
+      `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"} in this deck.`,
+  },
+
   /** The card modal's block — the ONE surface in this feature that enumerates. */
   modal: {
     heading: 'Two-card combos',

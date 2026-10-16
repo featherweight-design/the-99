@@ -798,7 +798,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   precon row stay as they were. `over $N` folds into the buy tag's outline at every width, with its words in the tag's description and the key's item.
   `ShoppingKey` is one grid (`cheaper stand-ins`, the friend-spare item's position, `press to add`, the outlined `over $N`). The deck's mark key names `foil` in every view when a
   row or tile in view draws the glint (a foil basic land is a tile only). `docs/superpowers/inventories/foil-row.json` holds the rows, at 390, 800, 900 and 1300.
-  The combo mark is not on the row yet (PR 2 of the addendum).
+  The combo mark (PR 2 of the addendum) is the row's last mark, after the facts, folding with them: a card's two-card combo partner in this
+  deck, commanders counted (`loadInDeckPartners`, the bracket's three §4.3b rules), spoken in the row's description and glossed `Two-card combo`
+  in the mark key when a list row in view draws it. `docs/superpowers/inventories/combo-row.json` holds its rows.
 
 - **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
   `COLLECTION_EDIT_ENABLED` (staging `'true'` from the plan's PR 2, production unset until Hugh flips it; off, the upload

@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 const execute = vi.fn();
 vi.mock("../../db", () => ({ db: { execute } }));
-const { loadCompletionPartners } = await import("./near-miss");
+const { loadCompletionPartners, loadInDeckPartners } = await import("./near-miss");
 
 const dialect = new PgDialect();
 const DECK = ["11111111-1111-1111-1111-111111111111"];
@@ -70,5 +70,36 @@ describe("loadCompletionPartners — the candidate argument", () => {
   it("an empty deck asks nothing, even for every card", async () => {
     await loadCompletionPartners({ deckOracleIds: [], commanderOracleIds: [], candidateOracleIds: null });
     expect(execute).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadInDeckPartners", () => {
+  it("asks nothing of a deck holding fewer than two cards, commanders included", async () => {
+    const out = await loadInDeckPartners({ deckOracleIds: [], commanderOracleIds: COMMANDER });
+    expect(out.size).toBe(0);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  // RULE 3: the commanders count as held, so a combo the commander is half of is in the deck.
+  it("counts the commanders as present", async () => {
+    await loadInDeckPartners({ deckOracleIds: DECK, commanderOracleIds: COMMANDER });
+    const { params } = firstQuery();
+    expect(params).toContainEqual([...DECK, ...COMMANDER]);
+    expect(params).toContainEqual(COMMANDER);
+  });
+
+  it("keeps each card's most popular in-deck partner and counts the rest", async () => {
+    const row = (present: string, partner: string, name: string, popularity: number, v: string) => ({
+      variant_id: v, produces: ["Infinite mana"], popularity,
+      present_id: present, missing_id: partner, missing_name: name, missing_must_be_commander: false,
+    });
+    execute.mockResolvedValue({ rows: [
+      row("a", "b", "Bee", 10, "v1"),
+      row("a", "c", "Sea", 50, "v2"),
+      row("b", "a", "Ay", 10, "v1"),
+    ] });
+    const out = await loadInDeckPartners({ deckOracleIds: ["a", "b", "c"], commanderOracleIds: COMMANDER });
+    expect(out.get("a")).toMatchObject({ partnerName: "Sea", otherPartners: 1 });
+    expect(out.get("b")).toMatchObject({ partnerName: "Ay", otherPartners: 0 });
   });
 });

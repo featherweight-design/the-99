@@ -125,3 +125,37 @@ describe("the key's foil entry", () => {
     expect(ids(entries).filter((i) => i === "foil")).toHaveLength(1);
   });
 });
+
+// THE COMBO MARK (single-line row PR 2): a deck row names its in-deck partner, so the key glosses
+// the glyph by the same closed-set rule as the facts, and only where a row draws it.
+describe("the key's combo entry", () => {
+  const partnered = card({ comboPartner: { oracleId: "o-2", name: "Isochron Scepter" } });
+
+  it("names the combo mark when a row in view has an in-deck partner", () => {
+    const entries = buildMarkKeyEntries({ cards: [partnered], filter: "all", inCardView: false });
+    expect(ids(entries)).toContain("combo");
+  });
+
+  it("draws no combo entry for a deck with no in-deck combo", () => {
+    const entries = buildMarkKeyEntries({
+      cards: [card(), card({ oracleId: "o-3", comboPartner: null })], filter: "all", inCardView: false,
+    });
+    expect(ids(entries)).not.toContain("combo");
+  });
+
+  // A commander billed on Shopping is a row too: its mark is glossed even when no body row draws one.
+  it("names the combo mark for a commander's Shopping row", () => {
+    const entries = buildMarkKeyEntries({
+      cards: [card({ owned: true })],
+      commanderRows: [card({ oracleId: "cmd", owned: false, commander: true, comboPartner: { oracleId: "o-2", name: "Isochron Scepter" } } as Partial<DeckDetailCard>)],
+      filter: "shopping",
+      inCardView: false,
+    });
+    expect(ids(entries)).toContain("combo");
+  });
+
+  it("draws no combo entry in Card view, whose tiles draw no combo mark", () => {
+    const entries = buildMarkKeyEntries({ cards: [partnered], filter: "all", inCardView: true });
+    expect(ids(entries)).not.toContain("combo");
+  });
+});

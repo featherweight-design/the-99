@@ -30,7 +30,10 @@ import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
-import { cardMarkCopy } from "../../lib/copy/card-mark";
+import { ComboGlyph } from "../cards/combo-glyph";
+import { ComboMark } from "../cards/combo-mark";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { cardMarkCopy, type CardFact } from "../../lib/copy/card-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
@@ -294,23 +297,42 @@ export function DecklistRow({
   // From `md` the marks fold by the row's own width (`FOLD`): a folded mark goes sr-only, never display:none, so a screen
   // reader keeps it, and the `+N` beside them (aria-hidden, one per tier) says how many a sighted reader no longer sees. The
   // order is the shipped one (CARD_FACTS), so what folds first is the last.
-  const facts = card.facts ?? [];
+  //
+  // THE COMBO MARK (single-line row PR 2) is the last mark, after the facts: this card's two-card combo partner in this
+  // deck. Its glyph is silent; the row's description speaks the same sentence its tooltip shows.
+  const combo = card.comboPartner ?? null;
+  const comboSentence = combo
+    ? card.comboOtherPartners
+      ? comboAwarenessCopy.deckTooltip.inDeckMore(combo.name, card.comboOtherPartners)
+      : comboAwarenessCopy.deckTooltip.inDeck(combo.name)
+    : null;
+  const marks: ({ kind: "fact"; fact: CardFact } | { kind: "combo"; sentence: string })[] = [
+    ...(card.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
+    ...(comboSentence ? [{ kind: "combo" as const, sentence: comboSentence }] : []),
+  ];
   const markFold = (i: number): string =>
     inShopping ? FOLD.shopping.all : i >= 3 ? FOLD.all.fourth : i >= 1 ? FOLD.all.afterFirst : FOLD.all.all;
   const plusN = (fromIndex: number, className: string) => {
-    const folded = facts.slice(fromIndex);
+    const folded = marks.slice(fromIndex);
     if (folded.length === 0) return null;
     return (
       // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
       <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`}>
         <FactTooltip
-          lines={folded.map((f) => (
-            <>
-              <CardFactMark fact={f} />
-              {cardMarkCopy[f]}
-            </>
-          ))}
+          lines={folded.map((m) =>
+            m.kind === "fact" ? (
+              <>
+                <CardFactMark fact={m.fact} />
+                {cardMarkCopy[m.fact]}
+              </>
+            ) : (
+              <>
+                <ComboGlyph />
+                {m.sentence}
+              </>
+            ),
+          )}
         >
           <span aria-hidden="true" style={{ color: "var(--fact)" }}>
             +{folded.length}
@@ -320,11 +342,15 @@ export function DecklistRow({
     );
   };
   const factMarks = [
-    ...facts.map((fact, i) => (
-      <span key={fact} className={`inline-flex flex-none ${markFold(i)}`}>
-        <FactTooltip fact={fact}>
-          <CardFactMark fact={fact} />
-        </FactTooltip>
+    ...marks.map((m, i) => (
+      <span key={m.kind === "fact" ? m.fact : "combo"} className={`inline-flex flex-none ${markFold(i)}`}>
+        {m.kind === "fact" ? (
+          <FactTooltip fact={m.fact}>
+            <CardFactMark fact={m.fact} />
+          </FactTooltip>
+        ) : (
+          <ComboMark partnerName={combo!.name} otherPartners={card.comboOtherPartners} scope="deck" />
+        )}
       </span>
     )),
     ...(inShopping
@@ -400,6 +426,7 @@ export function DecklistRow({
   // The finish the glint says, by the film's own rule (only over art). Said in words in the row's description, never twice.
   const foilFinish = card.imageUri ? card.foil : undefined;
   const foilDescriptionId = useId();
+  const comboDescriptionId = useId();
   const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // I got it (both switches on, mounted by the deck page): a Shopping row's tag is the button that
@@ -523,6 +550,7 @@ export function DecklistRow({
     [
       availabilityDescriptionId,
       foilFinish ? foilDescriptionId : null,
+      comboSentence ? comboDescriptionId : null,
       speaksQuantity ? quantityDescriptionId : null,
       // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
       // owned, that it is locked, then what the deck has done with it.
@@ -734,6 +762,11 @@ export function DecklistRow({
         {foilFinish && (
           <span id={foilDescriptionId} className="sr-only">
             {foilMarkCopy.name[foilFinish]}
+          </span>
+        )}
+        {comboSentence && (
+          <span id={comboDescriptionId} className="sr-only">
+            {comboSentence}
           </span>
         )}
         {locked && (

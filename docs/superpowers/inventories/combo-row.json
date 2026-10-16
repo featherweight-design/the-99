@@ -1,0 +1,51 @@
+{
+  "feature": "The combo mark on deck rows (card rows addendum L1, PR 2): a card's two-card combo partner in this deck, drawn as the last mark on the one-line row, folding with the facts, and glossed in the deck's mark key",
+  "note": "PRECONDITION: the deck (`COMBO_DECK`) must hold both pieces of at least one two-card combo, or no row draws the glyph and the sheet reads as coverage. The heavy row needs a card with three bracket facts and an in-deck partner, so its combo mark is the fourth mark and folds into the wide tier's +1. On local-dev's HD - Gishath, Polyraptor pairs with Marauding Raptor and Forerunner of the Empire; give it three facts on a scratch branch of local-dev (insert its `card_bracket_flags` row there only). The first row's throwaway visit absorbs the About gate.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "md-800", "width": 800, "height": 1000 },
+    { "label": "md-900", "width": 900, "height": 1000 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "shares": {
+    "module": "src/components/cards/combo-mark.tsx",
+    "binding": "ComboMark",
+    "note": "The deck row draws the browse hosts' combo mark as-is, with the deck scope."
+  },
+  "rows": [
+    {
+      "id": "all-row-combo",
+      "label": "/decks/[id] All: a row with an in-deck combo partner, the combo glyph after the name (and after any facts)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${COMBO_DECK}", "wait": "main, [role=main], h1", "settle": 1500 },
+        { "goto": "/decks/${COMBO_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph])", "settle": 400 }
+      ]
+    },
+    {
+      "id": "all-row-heavy",
+      "label": "/decks/[id] All: the heavy row, three facts and the combo, the combo the fourth mark folded into +N at every width from md",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${COMBO_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(.md\\:sr-only)", "settle": 400 }
+      ],
+      "widths": ["md-800", "md-900", "desktop"]
+    },
+    {
+      "id": "all-row-heavy-tooltip",
+      "label": "/decks/[id] All: the heavy row's +1 under a fine pointer, its tooltip listing the folded combo mark and its sentence",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        { "goto": "/decks/${COMBO_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "wait": "[data-decklist-row]", "settle": 1200 },
+        { "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph]):has(.md\\:sr-only)", "settle": 400 },
+        { "hover": "[data-decklist-row]:has([data-testid=combo-glyph]):has(.md\\:sr-only) span.md\\:\\@min-\\[479px\\]\\:inline", "settle": 900 }
+      ],
+      "widths": ["desktop"]
+    }
+  ]
+}
