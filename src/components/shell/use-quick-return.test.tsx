@@ -127,6 +127,29 @@ describe("useQuickReturn", () => {
     expect(root.getPropertyValue("--header-ease")).toBe("var(--motion-ease-out)");
   });
 
+  it("brings an away header back on the entrance's timing when a keyboard reader tabs into it", async () => {
+    function Tabbed() {
+      const ref = useRef<HTMLElement>(null);
+      const { mode } = useQuickReturn(ref);
+      return (
+        <header ref={ref} data-mode={mode}>
+          <button>Account</button>
+        </header>
+      );
+    }
+    const { getByText } = render(<Tabbed />);
+    await act(async () => vi.advanceTimersByTime(400));
+    await scrollTo(400);
+    await scrollTo(600);
+    expect(document.documentElement.style.getPropertyValue("--header-ms")).toBe("160ms");
+    await act(async () => {
+      getByText("Account").focus();
+      vi.advanceTimersToNextFrame();
+    });
+    expect(header().dataset.mode).toBe("shown");
+    expect(document.documentElement.style.getPropertyValue("--header-ms")).toBe("200ms");
+  });
+
   it("does not slide when it leaves the page by scrolling past it", async () => {
     render(<Probe />);
     await act(async () => vi.advanceTimersByTime(400));

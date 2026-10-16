@@ -44,6 +44,8 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
   const height = useRef(0);
   const settleUntil = useRef(0);
   const frame = useRef<number | null>(null);
+  // A keyboard reader tabbed into the header while it was away: the next step brings it back.
+  const bringBack = useRef(false);
 
   // Schedules one step for the next frame; set by the listeners' effect, called by the navigation effect too.
   const scheduleRef = useRef<() => void>(() => {});
@@ -82,7 +84,7 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       // Clamped to the scrollable range: iOS's rubber band past the bottom reads beyond it, and its rebound would
       // otherwise count as upward travel.
       const max = Math.max(0, root.scrollHeight - window.innerHeight);
-      const next = quickReturnStep(state.current, {
+      let next = quickReturnStep(state.current, {
         y: Math.min(window.scrollY, max),
         height: height.current,
         locked: scrollLocked(),
@@ -90,6 +92,10 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
         programmatic: appScrolling() || performance.now() < settleUntil.current,
       });
       root.style.setProperty("--header-offset", `${headerOffset(next.mode, height.current)}px`);
+      if (bringBack.current) {
+        bringBack.current = false;
+        if (next.mode === "away") next = { mode: "shown", y: next.y, mark: next.y };
+      }
       // The heads riding under it move on the header's own slide, so their edges stay together both ways.
       if (next.mode !== state.current.mode || !root.style.getPropertyValue("--header-ms")) {
         const away = next.mode === "away";
@@ -111,9 +117,8 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       const target = e.target as Element | null;
       if (isPageField(target)) root.setAttribute("data-field-focus", "");
       // A keyboard reader tabbing into the header while it is away brings it back to where they are.
-      else if (target && header.current?.contains(target) && state.current.mode === "away") {
-        state.current = { mode: "shown", y: window.scrollY, mark: window.scrollY };
-      }
+      // Through the next step, so it slides back on the entrance's own timing like any other return.
+      else if (target && header.current?.contains(target)) bringBack.current = true;
       schedule();
     };
     const onFocusOut = (e: FocusEvent) => {

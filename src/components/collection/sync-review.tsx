@@ -14,6 +14,7 @@ import type { ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { Rows, SHOWN, Tile } from "./review-parts";
 import { ShortDeckWarning } from "./short-deck-warning";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 const c = collectionEditCopy.upload;
 const s = c.syncReview;
@@ -279,6 +280,8 @@ export function SyncConflicts({
       const index = rows.findIndex((r) => !decided(answers, r.key));
       // Past the shipped rows (over the 500 cap), the section itself is the nearest place to stand.
       if (index === -1) {
+        // The app's scroll, not the reader's (quick return).
+        noteAppScroll();
         sectionRef.current?.scrollIntoView?.({ block: "center" });
         sectionRef.current?.focus();
         return;
@@ -287,6 +290,7 @@ export function SyncConflicts({
       const key = rows[index].key;
       setRingKey(key);
       const row = [...(sectionRef.current?.querySelectorAll<HTMLElement>("[data-key]") ?? [])].find((el) => el.dataset.key === key);
+      noteAppScroll();
       row?.scrollIntoView?.({ block: "center" });
       row?.querySelector<HTMLInputElement>("input")?.focus();
     },
