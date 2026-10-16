@@ -238,14 +238,6 @@ describe("BuyTag figure slot", () => {
     render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} reserveSlot />);
     expect(screen.getByText(priceCopy.tag.soldOut)).toHaveStyle({ minWidth: "46px" });
   });
-  // Below md a Shopping row is two lines and gives the name every pixel, so the figure hugs the word
-  // there and the column opens from md up (the one-line row, card rows addendum L1).
-  it("reserves it from md only when asked for md", () => {
-    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} reserveSlot="md" />);
-    const figure = screen.getByText("$2.10");
-    expect(figure).not.toHaveStyle({ minWidth: "46px" });
-    expect(figure.className).toContain("md:min-w-[46px]");
-  });
 });
 
 describe("BuyTag collapsed density", () => {

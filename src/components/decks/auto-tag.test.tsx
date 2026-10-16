@@ -135,7 +135,8 @@ describe("AutoTag", () => {
     render(<AutoTag deckId="d1" oracleId="sol-ring" name="Sol Ring" />);
     const btn = screen.getByRole("button");
 
-    expect(btn).toHaveClass("min-h-[44px]");
+    expect(btn).toHaveClass("pointer-coarse:after:h-[max(44px,100%)]");
+    expect(btn).not.toHaveClass("min-h-[44px]");
     expect(btn).not.toHaveClass("bg-elevated");
 
     const plate = screen.getByText(recommendationsCopy.auto.tag);

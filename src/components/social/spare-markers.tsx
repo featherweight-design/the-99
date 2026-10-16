@@ -6,6 +6,7 @@
 // Spares land after the page, so a row draws the glyph only once the read arrives; the press keeps no slot (#1875: neither
 // is no press). Off, the provider is not mounted and every piece here draws nothing.
 
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -149,6 +150,7 @@ export function OtherWaysPress({
   standInAria,
   limitFigure,
   className = "",
+  oneLine = false,
 }: {
   card: SpareCard;
   /** Opens the row's stand-ins modal: a deck row with the swap tools on whose card may be cut (never a locked one).
@@ -160,8 +162,13 @@ export function OtherWaysPress({
   standInAria: string;
   /** The limit `over` names, for the press's name when it holds both. */
   limitFigure: string;
-  /** The row's line-2 placement classes. */
+  /** The row's placement classes. */
   className?: string;
+  /**
+   * The deck row's one-line press: the 26px box at every width, with a coarse pointer's 44px hit drawn past it
+   * (`TOUCH_HIT`) so the row stays 34px. Off (the cart's lines), the phone keeps its 36px press in a 44px hit.
+   */
+  oneLine?: boolean;
 }) {
   const ctx = usePageSpares();
   const tools = useSwapTools();
@@ -179,16 +186,16 @@ export function OtherWaysPress({
       aria-haspopup="dialog"
       aria-expanded={on}
       onClick={() => (tools && openStandIns ? openStandIns() : ctx?.open(card))}
-      // The phone keeps the shipped 44px-tall hit around the 36px press it draws, as wide as the press (#1875 sets it
-      // flush beside the tag); from md the hit is the press.
-      className={`flex h-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 md:h-auto ${className}`}
+      // Off the one-line row (the cart), the phone keeps the shipped 44px-tall hit around the 36px press it draws, as wide as the
+      // press (#1875 sets it flush beside the tag); from md the hit is the press.
+      className={`flex flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 ${oneLine ? TOUCH_HIT : "h-[44px] md:h-auto"} ${className}`}
     >
       <span
         aria-hidden="true"
         // No pressed fill (#1875 draws none): the open modal is the state, and aria-expanded says it.
-        className="flex h-[36px] items-center gap-[8px] rounded-[9px] bg-transparent px-[10px] [border:1px_solid_var(--border-strong)] md:h-[26px] md:gap-[6px] md:rounded-[6px] md:px-[7px]"
+        className={`flex items-center bg-transparent [border:1px_solid_var(--border-strong)] ${oneLine ? "h-[26px] gap-[6px] rounded-[6px] px-[7px]" : "h-[36px] gap-[8px] rounded-[9px] px-[10px] md:h-[26px] md:gap-[6px] md:rounded-[6px] md:px-[7px]"}`}
       >
-        {swap ? <span className="font-mono text-[16px] leading-none text-[color:var(--warning)] md:text-[14px]">⇄</span> : null}
+        {swap ? <span className={`font-mono leading-none text-[color:var(--warning)] ${oneLine ? "text-[14px]" : "text-[16px] md:text-[14px]"}`}>⇄</span> : null}
         {spare ? (
           <span className="flex text-[color:var(--fact)]" data-testid="spare-glyph">
             <SpareGlyph size={16} />

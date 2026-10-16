@@ -673,7 +673,7 @@ describe("the empty-covered state renders when there is nothing to buy", () => {
   });
 });
 
-describe("the phone Shopping row is 52px and prints no EDHREC figure (foil addendum R4)", () => {
+describe("a Shopping row is one 34px line and prints no EDHREC figure (foil addendum R4)", () => {
   it("draws no EDHREC figure when shoppingFigure is provided", () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
@@ -691,7 +691,7 @@ describe("the phone Shopping row is 52px and prints no EDHREC figure (foil adden
     expect(screen.queryByText(recommendationsCopy.shopping.rowFigureDesktop("42"))).not.toBeInTheDocument();
   });
 
-  it("phone Shopping row has min-h-[52px] class when shoppingFigure is provided", () => {
+  it("a Shopping row is one 34px line when shoppingFigure is provided", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <AddOptimisticCardProvider value={{
@@ -704,8 +704,7 @@ describe("the phone Shopping row is 52px and prints no EDHREC figure (foil adden
       </CardDetailProvider>,
     );
 
-    // The row shell should have 52px phone min-height
-    const rowShell = container.querySelector(".min-h-\\[52px\\]");
+    const rowShell = container.querySelector(".min-h-\\[34px\\]");
     expect(rowShell).toBeInTheDocument();
   });
 
@@ -732,8 +731,8 @@ describe("the phone Shopping row is 52px and prints no EDHREC figure (foil adden
   });
 });
 
-describe("the phone All row stays 44px and prints no figure", () => {
-  it("has min-h-[44px] and no EDHREC figure when no shoppingFigure is passed", () => {
+describe("an All row is one 34px line and prints no figure", () => {
+  it("has min-h-[34px] and no EDHREC figure when no shoppingFigure is passed", () => {
     const { container } = render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <AddOptimisticCardProvider value={{
@@ -746,7 +745,7 @@ describe("the phone All row stays 44px and prints no figure", () => {
       </CardDetailProvider>,
     );
 
-    const rowShell = container.querySelector(".min-h-\\[44px\\]");
+    const rowShell = container.querySelector(".min-h-\\[34px\\]");
     expect(rowShell).toBeInTheDocument();
 
     // No figure text rendered

@@ -1,5 +1,6 @@
 "use client";
 
+import { TOUCH_HIT } from "./touch-hit";
 import { useState } from "react";
 
 /**
@@ -42,7 +43,9 @@ export function CountStepper({
     : "flex-none flex items-center";
   const button = band
     ? "flex h-[44px] w-[44px] md:h-[32px] md:w-[32px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-body)] md:text-[color:var(--fg-faint)] md:group-hover:text-[color:var(--fg)] md:group-focus-within:text-[color:var(--fg)]"
-    : "flex h-[44px] w-[44px] md:h-[20px] md:w-[22px] items-center justify-center font-mono text-[15px] md:text-[13px] leading-none text-[color:var(--fg-faint)] md:text-[color:var(--border-dashed)] md:group-hover:text-[color:var(--fg-body)] md:group-focus-within:text-[color:var(--fg-body)]";
+    // A row is one 34px line at every width, so the row's buttons are the ✕'s 22x20 everywhere and a coarse pointer's
+    // 44px hit is drawn past them (TOUCH_HIT), as on the ✕ that takes the − slot at 1.
+    : `flex h-[20px] w-[22px] items-center justify-center font-mono text-[13px] leading-none text-[color:var(--border-dashed)] active:text-[color:var(--fg-body)] group-hover:text-[color:var(--fg-body)] group-focus-within:text-[color:var(--fg-body)] ${TOUCH_HIT}`;
   const ring =
     "cursor-pointer bg-transparent border-0 p-0 rounded-[6px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]";
   return (
@@ -111,7 +114,7 @@ function CountField({
       // past 99, an imported stack in the thousands) widens the field by its own digits, at the same font, rather
       // than clipping. Monospace, so `ch` is one digit.
       style={{ minWidth: band ? 32 : 24, width: `${shownText.length + 0.5}ch` }}
-      className={`h-[22px] md:h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      className={`h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
   );
 }

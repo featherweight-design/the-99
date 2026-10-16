@@ -126,7 +126,7 @@ describe("I got it's held slot", () => {
     const shell = held.closest("[data-held-slot]")!;
     // The spent-slot shape, in the row's own shell, and no control inside it.
     expect(shell.className).toContain("border-dashed");
-    expect(shell.className).toMatch(/min-h-\[52px\]|h-\[52px\]/);
+    expect(shell.className).toMatch(/min-h-\[34px\]/);
     expect(shell.querySelector("button, a, [tabindex]")).toBeNull();
     // It sits where the row was: before its neighbor in the Ramp group.
     const next = screen.getByRole("button", { name: /View details for Talisman of Progress/ });
