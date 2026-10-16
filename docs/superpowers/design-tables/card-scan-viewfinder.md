@@ -13,12 +13,12 @@ Mobile = phone 390×844, scanner full screen. Desktop = 1300, the webcam panel i
 ## Colour legend (hex as drawn → Kamigawa token)
 
 The boards are drawn in raw hex. The names on the right are the handoff table's names where it gives one; the rest
-are the likely token and Agent 2 must confirm each against the Kamigawa block in `globals.css`.
+are the likely token and confirmed against the Kamigawa block in `globals.css` by the verify pass (`#1B1D25` has no token; back card 2 uses `--surface-raised`).
 
 | Hex | Token |
 |---|---|
 | `#FF4D9A` | `var(--accent)` |
-| `#D33E7E` | accent pressed (accent-hover / darker) — confirm |
+| `#D33E7E` | `var(--accent-strong)` |
 | `#6FA368` | `var(--success)` |
 | `#E0913C` | `var(--warning)` |
 | `#E6E8F0` | `var(--fg)` |
@@ -26,13 +26,13 @@ are the likely token and Agent 2 must confirm each against the Kamigawa block in
 | `#959AAD` | `--fg-muted` — confirm |
 | `#6F7486` | `var(--fg-faint)` |
 | `#0E0F14` | `var(--bg)` (accent button text, tray, pre-camera screen) |
-| `#12141B` / rgba(18,20,27,.9x) | surface (panel, dark line) — confirm |
+| `#12141B` / rgba(18,20,27,.9x) | `var(--surface-rail)` (panel, dark line) |
 | `#16181F` | `var(--surface)` (sheet) |
 | `#101219` | `var(--surface-sunken)` (webcam panel) |
 | `#20222A` | `var(--surface-elevated)` / `--elevated` |
-| `#262A35` | `var(--border)` |
-| `#343843` | stronger border / dot off — confirm |
-| `#181C26` | hairline divider — confirm |
+| `#262A35` | `var(--border-strong)` |
+| `#343843` | `var(--border-dashed)` |
+| `#181C26` | `var(--border)` (hairline divider) |
 
 ---
 
