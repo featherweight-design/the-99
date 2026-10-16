@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { momentsCopy, type MomentCopy } from "../../lib/copy/moments";
 import { visibleFocusables } from "../../lib/a11y/dialog";
@@ -67,10 +67,15 @@ export function placeBubble(r: Box, size: { height: number }, bounds: Box, phone
  */
 function nextTabbable(el: HTMLElement, skip: HTMLElement, scope: HTMLElement): HTMLElement | null {
   const all = visibleFocusables(scope).filter((n) => !skip.contains(n));
-  const i = all.indexOf(el);
-  if (i < 0) return null;
-  return all[i + 1] ?? (scope === document.body ? null : (all[0] ?? null));
+  // After the control, or after the last stop inside it when it is a group (the Matchups switch is a radiogroup of
+  // radios). A control out of the tab order (an inactive tab, under roving tabindex) is placed by document order.
+  const next = all.findIndex((n) => !el.contains(n) && (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
+  if (next >= 0) return all[next];
+  return scope === document.body ? null : (all[0] ?? null);
 }
+
+/** What `focus()` can land on, whatever its place in the tab order. */
+const FOCUSABLE_SELF = "button, a[href], input, select, textarea, [tabindex]";
 
 export function MomentBubble({
   id,
@@ -152,6 +157,20 @@ export function MomentBubble({
   // Esc dismisses, ahead of any modal's own Esc (capture on window), so in card details it closes the bubble alone. A
   // press anywhere but the bubble dismisses too: the control's own press still goes on to open its tool. Tab from the
   // control reaches the ✕ next, and Tab from the ✕ goes on to what follows the control.
+  // Where focus left the control for the ✕, so it goes back there: the control itself, or the stop inside it when the
+  // control is a group that takes no focus of its own.
+  const cameFrom = useRef<HTMLElement | null>(null);
+  const backToControl = useCallback(() => {
+    const from = cameFrom.current;
+    const to =
+      from?.isConnected && anchor.contains(from)
+        ? from
+        : anchor.matches(FOCUSABLE_SELF)
+          ? anchor
+          : // A group that takes no focus itself: its own stop (the selected radio, under roving tabindex).
+            (anchor.querySelector<HTMLElement>('[tabindex="0"]') ?? anchor.querySelector<HTMLElement>(FOCUSABLE_SELF) ?? anchor);
+    to.focus();
+  }, [anchor]);
   useEffect(() => {
     if (leaving) return;
     const onKey = (e: KeyboardEvent) => {
@@ -161,21 +180,26 @@ export function MomentBubble({
         // Focus inside the bubble would be lost with it: hand it back to the control.
         const inside = ref.current?.contains(document.activeElement) ?? false;
         onDismiss();
-        if (inside) anchor.focus();
+        if (inside) backToControl();
         return;
       }
       if (e.key !== "Tab" || !ref.current) return;
       const at = document.activeElement;
       // Stopped as well as prevented: a modal's own trap listens on window too, and would undo the move.
-      if (at === anchor && !e.shiftKey) {
+      if (at instanceof HTMLElement && anchor.contains(at) && !e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
+        cameFrom.current = at;
         closeRef.current?.focus();
       } else if (at === closeRef.current) {
         e.preventDefault();
         e.stopPropagation();
-        if (e.shiftKey) anchor.focus();
-        else (nextTabbable(anchor, ref.current, container) ?? anchor).focus();
+        if (e.shiftKey) backToControl();
+        else {
+          const next = nextTabbable(anchor, ref.current, container);
+          if (next) next.focus();
+          else backToControl();
+        }
       }
     };
     // A press anywhere but the bubble, by pointer or by keyboard and assistive tech (a click with no pointerdown).
@@ -191,7 +215,7 @@ export function MomentBubble({
       window.removeEventListener("pointerdown", onPress, true);
       window.removeEventListener("click", onPress, true);
     };
-  }, [anchor, container, leaving, onDismiss]);
+  }, [anchor, backToControl, container, leaving, onDismiss]);
 
   const shown = entered && !leaving && spot !== null;
   const nib =
@@ -249,7 +273,7 @@ export function MomentBubble({
           // A keyboard press (no pointer, `detail` 0) puts focus back on the control rather than losing it.
           const keyboard = e.detail === 0;
           onDismiss();
-          if (keyboard) anchor.focus();
+          if (keyboard) backToControl();
         }}
         className={`${TOUCH_HIT} -mt-[4px] flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[6px] border-0 bg-transparent p-0 text-[14px] leading-none text-[color:var(--fg-faint)] md:text-[13px] hover:text-[color:var(--fg)]`}
       >

@@ -34,7 +34,9 @@ const LEAVE_MS = 140;
 /** Activity closer together than this touches the visit once. */
 const TOUCH_EVERY_MS = 60_000;
 
-type Anchor = { id: MomentId; el: HTMLElement; copy: MomentCopy; place: MomentPlace };
+/** `fallback`: this control stands in for the moment's own, and counts only while no other control of that moment is
+ *  registered (audit resolution 2: M3 and M4 fall back to the Analysis tab when their shortcut is not drawn). */
+type Anchor = { id: MomentId; el: HTMLElement; copy: MomentCopy; place: MomentPlace; fallback?: boolean };
 type Showing = Anchor & { since: number };
 
 type Ctx = {
@@ -201,9 +203,11 @@ export function MomentsProvider({
     windowTimer.current = null;
     // A hidden page shows nothing: its time on screen would be counted without a reader seeing it.
     if (showingRef.current !== null || document.hidden) return;
+    // A fallback gives way to the moment's own control whenever that control is drawn, on screen or not.
+    const primaries = new Set([...regs.current.values()].filter((a) => !a.fallback).map((a) => a.id));
     const clear = [...visible.current]
       .map((reg) => regs.current.get(reg))
-      .filter((a): a is Anchor => a !== undefined && clearOver(a.el));
+      .filter((a): a is Anchor => a !== undefined && !(a.fallback && primaries.has(a.id)) && clearOver(a.el));
     const onScreen = [...new Set(clear.map((a) => a.id))];
     if (onScreen.length === 0) {
       // Covered, not gone: look again shortly, since a surface that locks nothing reports no close.
@@ -397,11 +401,17 @@ export function MomentsProvider({
 /**
  * Makes a control a moment's anchor while `eligible` (its condition holds on the reader's own data). Spread the
  * result on the control: `ref` registers it, and `aria-describedby` points at the bubble while it shows. Outside the
- * provider, or for a moment that is not live or already spent, it does nothing.
+ * provider, or for a moment that is not live or already spent, it does nothing. A `fallback` anchor stands in for the
+ * moment's own control and counts only while no other anchor of that moment is registered.
  */
 export function useMomentAnchor(
   id: MomentId,
-  { eligible, copy, place = "below" }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace },
+  {
+    eligible,
+    copy,
+    place = "below",
+    fallback = false,
+  }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace; fallback?: boolean },
 ): { ref: (el: HTMLElement | null) => void; "aria-describedby"?: string } {
   const ctx = useContext(MomentsContext);
   const [el, setEl] = useState<HTMLElement | null>(null);
@@ -409,8 +419,8 @@ export function useMomentAnchor(
   const { tool, line } = copy;
   useEffect(() => {
     if (!register || !eligible || el === null) return;
-    return register({ id, el, copy: { tool, line }, place });
-  }, [register, eligible, el, id, tool, line, place]);
+    return register({ id, el, copy: { tool, line }, place, fallback });
+  }, [register, eligible, el, id, tool, line, place, fallback]);
   const shown = ctx !== null && el !== null && ctx.showingEl === el;
   return { ref: setEl, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
 }

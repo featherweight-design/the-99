@@ -3,7 +3,7 @@
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
 - **Moments** (discovery R1, plan `2026-10-16-moments.md`, handoff `design_handoff_the99_discovery_onboarding/`), behind
-  `MOMENTS_ENABLED` (`'true'` on staging, unset on production; PR 1 is the foundation and mounts no moment). A moment is a
+  `MOMENTS_ENABLED` (`'true'` on staging, unset on production). PR 1 is the foundation; PR 2 mounts the deck page's and Games' moments (M1 to M4, M10, M11). A moment is a
   one-time bubble beside a control a reader has not used. Fifteen (M16, Home's Friends card, became a permanent
   Friends section on Home, not a moment), in a FIXED ORDER that breaks ties
   (`src/lib/moments/registry.ts`), each also following its tool's switch (`liveMoments`, from the reader's resolved env;
@@ -19,4 +19,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `aria-modal`, `role="dialog"` or `role="menu"` counts, since many surfaces lock nothing; a covered control is looked
   at again each second. A bubble the reader closes
   is spent at once, one the page tears down only after a second on screen, through `spendMomentAction`, which re-checks
-  the id is live for the reader. Every moment is spoken once through the provider's one polite live region.
+  the id is live for the reader. Every moment is spoken once through the provider's one polite live region. A control can be a FALLBACK
+  for its moment (`useMomentAnchor`'s `fallback`), which counts only while no other control of that moment is registered:
+  the Analysis tab stands in for `Proposed cuts →` and `balance mana →` when they are not drawn. M11's condition (a game
+  logged, no friend) is the shell's one extra read (`src/lib/social/after-game.ts`), made only while M11 is live and unspent.

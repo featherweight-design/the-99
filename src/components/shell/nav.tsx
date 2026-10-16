@@ -556,7 +556,13 @@ function NavSlot({ href, name, active, pip, className, handlers, children }: Nav
 
 /** The admin door (admin STATES D1): a boolean from the server, and the environment it names. And the
  *  Friends row (Social R1), drawn when `SOCIAL_FRIENDS_ENABLED` is on for this reader. */
-export type AdminDoorProps = { adminDoor?: boolean; adminEnv?: string; friends?: boolean };
+export type AdminDoorProps = {
+  adminDoor?: boolean;
+  adminEnv?: string;
+  friends?: boolean;
+  /** M11 (discovery R1): a game logged and no friend yet, so the account button carries Friends after a game. */
+  friendsMoment?: boolean;
+};
 
 export function NavRail({
   locked,
@@ -565,6 +571,7 @@ export function NavRail({
   adminDoor,
   adminEnv,
   friends,
+  friendsMoment,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey } & AdminDoorProps) {
   const pathname = usePathname();
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
@@ -659,7 +666,7 @@ export function NavRail({
       <div className="mt-auto flex shrink-0 flex-col items-center">
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
       </div>
       {tag}
     </aside>
@@ -745,7 +752,7 @@ export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, friends, friendsMoment }: { theme: ThemeKey } & AdminDoorProps) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -782,7 +789,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: T
         {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
         <InstallSlot />
         {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} />
+        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
       </div>
     </header>
     </>

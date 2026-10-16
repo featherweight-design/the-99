@@ -12,6 +12,8 @@ import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 interface RoleCounterCellProps {
   label: string;
@@ -34,6 +36,8 @@ interface RoleCounterCellProps {
   /** The land cell's other action (Tuning hub R3, `Land cell — balance mana`): open Mana Balance.
    *  `onSeeShelf` takes precedence, so a cell carries one action at most. */
   onBalanceMana?: () => void;
+  /** M4 (discovery R1): the deck is at its size, so `balance mana →` is Mana Balance's moment while it is drawn. */
+  balanceMoment?: boolean;
   /** True when the deck was just filled (`deck.filled && autoCount > 0`). A
    *  short cell in this state takes `border-border-strong` in place of the
    *  default `border-border`. A met cell is unaffected. */
@@ -52,10 +56,12 @@ export function RoleCounterCell({
   advisory,
   onSeeShelf,
   onBalanceMana,
+  balanceMoment = false,
   justFilled = false,
   was,
 }: RoleCounterCellProps) {
   const balance = onSeeShelf ? undefined : onBalanceMana;
+  const manaMoment = useMomentAnchor("mana-balance", { eligible: balanceMoment, copy: momentsCopy.manaBalance });
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
   const inFlight = have === null;
@@ -201,6 +207,7 @@ export function RoleCounterCell({
         type="button"
         onClick={balance}
         data-shortcut="balance-mana"
+        {...manaMoment}
         aria-label={named(tuningHubShortcutsCopy.balanceManaAria(have ?? 0, target))}
         // The shipped interactive cell's border (design table, `Land cell — balance mana`).
         className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
