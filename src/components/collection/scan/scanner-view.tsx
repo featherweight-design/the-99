@@ -21,6 +21,8 @@ export type ScannerViewProps = {
   mode: ScanMode;
   torch: ScanTorch;
   count: number;
+  /** The image of the card just added (V5): the tray's count card flips to it for a moment. */
+  flipTo?: string | null;
   feed?: ReactNode;
   onMode: (m: ScanMode) => void;
   onTorch: () => void;
@@ -61,7 +63,7 @@ export function ScannerView(p: ScannerViewProps) {
       <div aria-live="polite" className="contents">
         <Panel {...p} panel={p.screen.panel} />
       </div>
-      {phone && <Tray count={p.count} onReview={p.onReview} />}
+      {phone && <Tray count={p.count} flipTo={p.flipTo ?? null} onReview={p.onReview} />}
     </section>
   );
 }
@@ -338,11 +340,11 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
   );
 }
 
-function Tray({ count, onReview }: { count: number; onReview: () => void }) {
+function Tray({ count, flipTo, onReview }: { count: number; flipTo: string | null; onReview: () => void }) {
   const empty = count === 0;
   return (
     <div className="absolute inset-x-0 bottom-0 z-[4] flex h-[84px] items-center gap-[12px] border-t-[1px] border-t-[color:var(--border)] bg-[color:var(--bg)] px-[14px] pb-[8px]">
-      {!empty && <CountCard count={count} />}
+      {!empty && <CountCard count={count} flipTo={flipTo} />}
       <span data-testid="scan-tray-count" className={`flex-1 text-[14px] ${empty ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}`}>
         {empty
           ? copy.view.emptyList
@@ -368,16 +370,32 @@ function Tray({ count, onReview }: { count: number; onReview: () => void }) {
   );
 }
 
-function CountCard({ count }: { count: number }) {
+/**
+ * Three fanned cards, the front one carrying the count. While `flipTo` is set (the hook holds it about 0.8s after an
+ * add) the front card turns to show the added card's image; under reduced motion it never turns and the count just
+ * ticks, as READINESS says both animations drop.
+ */
+function CountCard({ count, flipTo }: { count: number; flipTo: string | null }) {
   const back = "absolute top-[4px] h-[45px] w-[32px] rounded-[4px] shadow-[0_2px_6px_rgba(0,0,0,.5)]";
   return (
     <span aria-hidden="true" className="relative h-[52px] w-[62px] flex-none">
       <span className={`${back} left-[2px] -rotate-[8deg] border border-[color:var(--border)] bg-[color:var(--elevated)]`} />
       <span className={`${back} left-[13px] -rotate-[1deg] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]`} />
       <span
-        className={`${back} left-[24px] flex rotate-[7deg] items-center justify-center overflow-hidden border border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--surface))] font-display text-[17px] font-bold text-[color:var(--accent)]`}
+        data-testid="scan-count-card"
+        data-flip={flipTo ? "" : undefined}
+        className={`${back} left-[24px] flex rotate-[7deg] items-center justify-center overflow-hidden border border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--surface))] font-display text-[17px] font-bold text-[color:var(--accent)] transition-transform duration-300 motion-reduce:transition-none ${
+          flipTo ? "motion-safe:[transform:rotate(7deg)_perspective(200px)_rotateY(18deg)]" : ""
+        }`}
       >
-        {count}
+        {flipTo ? (
+          <>
+            <img src={flipTo} alt="" className="hidden h-full w-full object-cover motion-safe:block" />
+            <span className="motion-safe:hidden">{count}</span>
+          </>
+        ) : (
+          count
+        )}
       </span>
     </span>
   );

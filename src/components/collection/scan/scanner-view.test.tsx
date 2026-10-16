@@ -90,8 +90,11 @@ describe("ScannerView", () => {
     expect(screen.getByRole("button", { name: copy.again.addSecond })).toBeTruthy();
   });
 
-  it("announces an added card (V5)", () => {
-    draw({ panel: { kind: "added", name: "Sol Ring" }, count: 4 });
+  it("announces an added card (V5), and the count card turns to show it", () => {
+    draw({ panel: { kind: "added", name: "Sol Ring" }, count: 4, flipTo: "https://img/sol" });
+    const card = screen.getByTestId("scan-count-card");
+    expect(card.hasAttribute("data-flip")).toBe(true);
+    expect(card.querySelector("img")?.getAttribute("src")).toBe("https://img/sol");
     expect(panel().getAttribute("role")).toBe("status");
     expect(panel().textContent).toContain(copy.view.added("Sol Ring"));
     expect(panel().textContent).toContain(copy.view.next);
