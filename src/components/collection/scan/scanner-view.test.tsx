@@ -205,7 +205,13 @@ describe("ScannerView", () => {
           onChoosePhotos={onChoosePhotos}
         />,
       );
-      fireEvent.click(screen.getByRole("button", { name: copy.camera.choosePhotos }));
+      const press = screen.getByRole("button", { name: copy.camera.choosePhotos });
+      if (layout === "phone") {
+        // A short screen scrolls the body and never squeezes the footer holding the press.
+        expect(press.parentElement!.className).toMatch(/flex-none/);
+        expect(press.parentElement!.previousElementSibling!.className).toMatch(/overflow-y-auto/);
+      }
+      fireEvent.click(press);
       expect(onChoosePhotos).toHaveBeenCalledTimes(1);
       // The phone says what photos are for (D6); the desktop's body already does (W6).
       expect(screen.queryByText(copy.camera.photosLine) !== null).toBe(layout === "phone");

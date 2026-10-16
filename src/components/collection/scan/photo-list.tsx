@@ -40,7 +40,8 @@ export function PhotoList(p: PhotoListProps) {
     </p>
   );
   const list = (
-    <ul className="m-0 flex list-none flex-col gap-[12px] p-0">
+    // A live region: each row is decided after it is drawn, so what it became is announced as it lands.
+    <ul aria-live="polite" className="m-0 flex list-none flex-col gap-[12px] p-0">
       {p.rows.map((r, i) => (
         <PhotoItem key={r.id} row={r} index={i + 1} total={p.rows.length} phone={phone} onPick={(o) => p.onPick(r.id, o)} />
       ))}

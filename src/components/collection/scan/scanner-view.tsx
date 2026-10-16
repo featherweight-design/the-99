@@ -502,7 +502,8 @@ function CameraBlocked(p: ScannerViewProps) {
           ✕
         </button>
       </div>
-      <div className="flex flex-1 flex-col gap-[16px] px-[22px] py-[24px]">
+      {/* On a short screen the body scrolls, so Choose photos below it is never pushed out of reach. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto px-[22px] py-[24px]">
         <span className="mt-[30px]">
           <CameraIcon size={56} radius={14} />
         </span>
@@ -511,7 +512,7 @@ function CameraBlocked(p: ScannerViewProps) {
         {p.onChoosePhotos && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--fg-muted)]">{copy.camera.photosLine}</p>}
       </div>
       {p.onChoosePhotos && (
-        <div className="flex flex-col gap-[10px] px-[22px] pb-[22px] pt-[14px]">
+        <div className="flex flex-none flex-col gap-[10px] px-[22px] pb-[22px] pt-[14px]">
           <button type="button" onClick={p.onChoosePhotos} className={BIG_OUTLINE}>
             {copy.camera.choosePhotos}
           </button>

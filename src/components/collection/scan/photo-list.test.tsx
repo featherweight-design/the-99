@@ -30,6 +30,8 @@ describe("PhotoList", () => {
   it("draws a row per photo, each with its own thumbnail, and counts the photos already read (W4)", () => {
     draw();
     expect(screen.getAllByRole("listitem")).toHaveLength(5);
+    // Rows are decided after they appear, so the list announces them.
+    expect(screen.getByRole("list").getAttribute("aria-live")).toBe("polite");
     expect(screen.getAllByAltText(copy.photos.yourPhoto).map((i) => i.getAttribute("src"))).toEqual(["blob:0", "blob:1", "blob:2", "blob:3", "blob:4"]);
     expect(screen.getByText(copy.photos.read(4))).toBeTruthy();
   });
