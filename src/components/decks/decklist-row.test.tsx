@@ -2105,3 +2105,37 @@ describe("DecklistRow, the other-ways press", () => {
     expect(screen.getByRole("dialog", { name: spareCopy.modalTitleSpares })).toBeInTheDocument();
   });
 });
+
+// THE COMBO MARK (single-line row PR 2): the last mark, after the facts, folding in the same order. A card with a
+// two-card combo partner in this deck draws the glyph, and the name's description speaks the deck-scope sentence.
+describe("DecklistRow, the combo mark", () => {
+  const scepter = { oracleId: "scepter", name: "Isochron Scepter" };
+  const plusSpans = () => Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span.flex-none")).filter((el) => /^\+\d$/.test(el.textContent ?? ""));
+
+  it("draws the glyph and speaks the in-deck partner", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, comboPartner: scepter, comboOtherPartners: 1 }} newestAsOf={null} />);
+    expect(screen.getAllByTestId("combo-glyph").length).toBeGreaterThan(0);
+    const [trigger] = screen.getAllByRole("button", { name: /Sol Ring/ });
+    const spoken = (trigger.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent);
+    expect(spoken).toContain("Two-card combo with Isochron Scepter, and 1 other in this deck.");
+  });
+
+  it("draws no glyph for a card with no in-deck partner", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, comboPartner: null }} newestAsOf={null} />);
+    expect(screen.queryByTestId("combo-glyph")).toBeNull();
+  });
+
+  // The heavy row: three facts and the combo are four marks, so the combo is the 4th and folds at every width.
+  it("is the last mark, so beside three facts it is the 4th and folds into the wide tier's +1", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{ ...(card as DeckDetailCard), facts: ["gameChanger", "massLandDenial", "tutor"], comboPartner: scepter } as DeckDetailCard}
+        newestAsOf={null}
+      />,
+    );
+    const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
+    expect(glyphWrap.className.split(/\s+/)).toContain("md:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+  });
+});
