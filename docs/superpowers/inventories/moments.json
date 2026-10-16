@@ -89,8 +89,8 @@
           "settle": 300
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     },
@@ -105,8 +105,8 @@
           "settle": 1500
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     },
@@ -121,8 +121,8 @@
           "settle": 1500
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     },
@@ -137,8 +137,8 @@
           "settle": 1500
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     },
@@ -157,8 +157,8 @@
           "settle": 300
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     },
@@ -169,12 +169,12 @@
       "steps": [
         {
           "goto": "/decks",
-          "wait": "main",
+          "wait": "h1, h2",
           "settle": 1500
         },
         {
-          "wait": "[role=note]",
-          "settle": 900
+          "settle": 900,
+          "waitNote": true
         }
       ]
     }

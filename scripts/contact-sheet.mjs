@@ -172,6 +172,11 @@ async function run(page, steps) {
     if (step.wait !== undefined) {
       await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
     }
+    // A moment's bubble (discovery R1): portalled to the end of the document, outside `<main>`, so it is the one wait
+    // that is not page-scoped. It matches only the bubble's own note, never anything the shell draws.
+    if (step.waitNote === true) {
+      await page.locator('[role="note"][aria-label$=", a tip"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    }
     // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is. `at` rests it
     // at a point inside the element ({ x, y } in px from its top left), for a card that tilts toward the pointer.
     if (step.hover !== undefined) {

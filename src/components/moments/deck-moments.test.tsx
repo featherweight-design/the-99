@@ -1,7 +1,7 @@
 // The deck page's and Games' moments (discovery R1, PR 2): each control registers its moment under the condition the
 // screen's own data gives it, and shows the bubble once on screen. The rules themselves are the provider's tests.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { ARRIVE_MS, MomentsProvider } from "./moments-provider";
 import { MOMENTS, type MomentId } from "../../lib/moments/registry";
@@ -86,6 +86,34 @@ describe("M10, the Matchups switch", () => {
     wrap(<GameMatchups matchups={matchups(3)} />);
     await seen(screen.getByRole("radiogroup"));
     expect(screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.matchups.tool) })).toBeTruthy();
+  });
+  it("a keyboard reader reaches Dismiss from the focused radio, and goes on past the group from it", async () => {
+    wrap(
+      <>
+        <GameMatchups matchups={matchups(3)} />
+        <button type="button">after</button>
+      </>,
+    );
+    await seen(screen.getByRole("radiogroup"));
+    const radio = screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")!;
+    radio.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    const dismiss = screen.getByRole("button", { name: momentsCopy.dismiss });
+    expect(document.activeElement).toBe(dismiss);
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(radio);
+    fireEvent.keyDown(window, { key: "Tab" });
+    // jsdom lays nothing out; tab order counts only what is drawn.
+    const proto = Element.prototype.getClientRects;
+    Element.prototype.getClientRects = function () {
+      return [{}] as unknown as DOMRectList;
+    };
+    try {
+      fireEvent.keyDown(window, { key: "Tab" });
+    } finally {
+      Element.prototype.getClientRects = proto;
+    }
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "after" }));
   });
   it("not before it", async () => {
     wrap(<GameMatchups matchups={matchups(2)} />);
