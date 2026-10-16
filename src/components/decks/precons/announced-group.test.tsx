@@ -184,17 +184,16 @@ describe("AnnouncedGroup", () => {
       expect(tile.className).toContain(TILE_FOCUS_RING);
     });
 
-    it("draws each one with the shared trigger and its hover preview, in tiles", () => {
+    it("draws each one with the shared trigger and NO hover preview, in tiles (Hugh)", () => {
       draw({ opensByItself: true });
-      expect(shared.previewProviders).toBeGreaterThan(0);
       const presses = screen.getAllByTestId("revealed-press");
       expect(presses).toHaveLength(16);
-      for (const p of presses) {
-        expect(p.parentElement).toHaveAttribute("data-shared-trigger");
-        expect(p.closest("[data-shared-preview]")).not.toBeNull();
-      }
+      for (const p of presses) expect(p.parentElement).toHaveAttribute("data-shared-trigger");
+      // Every trigger a tile mounts leaves `preview` off, so no hover handler is bound to the tile or its art.
+      expect(shared.triggers).toHaveLength(16);
+      for (const t of shared.triggers) expect(t.preview, `${String(t.name)} previews in a tile`).toBeFalsy();
       const chapel = shared.triggers.find((t) => t.oracleId === "o78")!;
-      expect(chapel).toMatchObject({ preview: true, imageUri: "https://img/normal/78.jpg", name: "Christine Chapel, Combat Medic" });
+      expect(chapel).toMatchObject({ imageUri: "https://img/normal/78.jpg", name: "Christine Chapel, Combat Medic" });
       // Prev/Next pages the set's own commanders.
       expect(chapel.siblings).toEqual(trcCards.map((c) => c.oracleId));
     });

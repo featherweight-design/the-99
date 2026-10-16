@@ -271,6 +271,32 @@ const TILE_VIEWS = [
 
 const HOVER_BINDINGS = ["usePreviewRow", "PreviewButton", "HoverPreviewProvider"];
 
+/** The `*Tile` components in a file that draw a hover preview: a `preview` flag on a trigger, or a preview binding. */
+export function tileComponentsThatPreview(src: string): string[] {
+  const file = ts.createSourceFile("tile.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const found: string[] = [];
+  const draws = (body: ts.Node): boolean => {
+    let hit = false;
+    const visit = (node: ts.Node) => {
+      if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node))
+        && (HOVER_BINDINGS.includes(node.tagName.getText(file))
+          || node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(file) === "preview"))) hit = true;
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && HOVER_BINDINGS.includes(node.expression.text)) hit = true;
+      ts.forEachChild(node, visit);
+    };
+    visit(body);
+    return hit;
+  };
+  const visitTop = (node: ts.Node) => {
+    if (ts.isFunctionDeclaration(node) && node.name && /Tile$/.test(node.name.text) && node.body && draws(node.body)) found.push(node.name.text);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && /Tile$/.test(node.name.text) && node.initializer
+      && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) && draws(node.initializer.body)) found.push(node.name.text);
+    ts.forEachChild(node, visitTop);
+  };
+  visitTop(file);
+  return found;
+}
+
 /** Tags that are a row's own shell: a hover handler spread on one of them previews for the WHOLE row. */
 const ROW_SHELL_TAGS = new Set(["li", "article", "div", "tr", "section", "ul", "p"]);
 
@@ -328,6 +354,9 @@ const NOT_A_ROW = new Set<string>([
   "components/decks/spine-desktop.tsx",
   "components/decks/spine-mobile.tsx",
   "components/decks/stand-in-door.tsx",
+  // A file with a row or a name that previews AND a tile that does not: the tile half is held by the `*Tile` guard below.
+  "components/decks/precons/announced-parts.tsx",
+  "components/decks/receipt-modal.tsx",
 ]);
 
 describe("the row guard's own failure paths", () => {
@@ -397,6 +426,26 @@ describe("every card row has a hover preview and a press that opens card details
       // ANY trigger opting in is a hover: `hasHover` wants every one to, which is the row guard's rule, not a tile's.
       expect(passesPreview(files[tile]), `${tile} passes \`preview\` to a trigger`).toBe(false);
     }
+  });
+
+  it("no component named *Tile draws a hover preview, wherever it lives (Hugh)", () => {
+    // `TILE_VIEWS` names whole files; this is the other half: a tile that shares a file with a row (the Announced group's
+    // revealed commander) is found by its COMPONENT's name, over every component in the tree.
+    const offenders = Object.entries(files)
+      .filter(([path]) => !/\.test\.tsx$/.test(path))
+      .flatMap(([path, src]) => tileComponentsThatPreview(src).map((name) => `${path}: ${name}`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("finds a tile that previews, through either the trigger's flag or a preview binding, and leaves a row beside it alone", () => {
+    const src = `
+      export function RevealedTile() { return <CardDetailTrigger oracleId="a" preview>x</CardDetailTrigger>; }
+      export function OtherTile() { const h = usePreviewRow(1); return <li {...h} />; }
+      export const ArrowTile = () => <PreviewButton onOpen={() => {}} />;
+      export function QuietTile() { return <CardDetailTrigger oracleId="a">x</CardDetailTrigger>; }
+      export function RevealedCard() { return <CardDetailTrigger oracleId="a" preview>x</CardDetailTrigger>; }
+    `;
+    expect(tileComponentsThatPreview(src).sort()).toEqual(["ArrowTile", "OtherTile", "RevealedTile"]);
   });
 
   it("previews a whole row only for the plain rows named for it, so a row with prose previews on its name and thumbnail", () => {
