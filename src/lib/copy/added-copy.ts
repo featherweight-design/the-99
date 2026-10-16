@@ -57,8 +57,9 @@ export const addedCopyCopy = {
     /** A brew's soft share: it reads a loose copy as covered, and so does every other brew. */
     canUse: "can use it",
     fold: (k: number, deck: string | null) =>
-      (deck ? `${n(k)} committed decks ahead of ${deck} have theirs` : `${n(k)} committed decks have theirs`),
-    foldShow: "Show",
+      k === 1
+        ? (deck ? `1 committed deck ahead of ${deck} has its copy` : "1 committed deck has its copy")
+        : (deck ? `${n(k)} committed decks ahead of ${deck} have theirs` : `${n(k)} committed decks have theirs`),
     /** The handoff wrote `all both` at two brews; `both` alone is the sentence. */
     brewNote: (k: number) =>
       `A brew holds a copy only once you pick it, so ${k === 2 ? "both" : `all ${n(k)}`} can use this one. Pick one to give it the copy.`,

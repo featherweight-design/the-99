@@ -23,7 +23,6 @@ import { foldCount } from "../../lib/decks/placements";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
-import { Chevron } from "../ui/chevron";
 
 
 /**
@@ -215,19 +214,7 @@ export function ContestedCardRow({
   // already had one, which is a different deck and the wrong name to print.
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
-  // The fold's `Show`, pressed: every folded claimant is drawn again, for this visit.
-  const [unfolded, setUnfolded] = useState(false);
-  // THE DECK `Show` HANDS FOCUS TO. Pressing it removes the fold row, and the button with it, so
-  // focus would otherwise fall to the document and a keyboard or screen-reader reader loses their
-  // place. It moves to the first deck the press revealed, once that deck is drawn.
-  const revealFocus = useRef<string | null>(null);
   const group = useRef<HTMLUListElement>(null);
-  useEffect(() => {
-    const id = revealFocus.current;
-    if (!unfolded || id === null) return;
-    revealFocus.current = null;
-    group.current?.querySelector<HTMLElement>(`[data-deck="${id}"]`)?.focus();
-  }, [unfolded]);
   // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
   // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
   // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
@@ -457,10 +444,12 @@ export function ContestedCardRow({
   const words = surfaceWords(card.fromImport);
   // THE FOLD (added copy, G7): committed decks at the head of the queue that keep their copies
   // whatever this pick does. Read off the SERVER's claimants, never the preview: a pick cannot move
-  // them, so a tap must not unfold them either. Two or more, or there is nothing to save.
+  // them, so they are never options: the chooser lists only the decks that want the copy (Hugh,
+  // 2026-10-16: `Show` drew a deck that already had the card as `gets it`, beside the drafts that
+  // wanted it). One holder folds as well as twenty, and nothing draws them again.
   // `giveable`, not every arrival: a copy locked as a commander is one no pick can move either.
   const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned) : 0;
-  const folding = foldN >= 2 && !unfolded;
+  const folding = foldN >= 1;
   const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
   const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;
   // A brew reading a loose copy as its own: every brew reads the same copy, so `gets it` on three
@@ -511,27 +500,15 @@ export function ContestedCardRow({
       >
         {folding ? (
           // ONE ROW FOR THE DECKS NO PICK HERE CAN MOVE. Inside the group as a presentation row,
-          // not an option: it names who already has theirs, and `Show` draws them again.
+          // not an option: it names who already has theirs, and offers nothing to press.
           <li
             role="presentation"
             className="flex items-center gap-[9px] py-[6px] px-[8px] min-h-[44px]"
             style={{ borderRadius: 7, border: "1px dashed var(--border)" }}
           >
-            <Chevron kind="disclosure" style={{ color: "var(--fg-faint)" }} />
             <span className="font-mono text-[11px] flex-1 min-w-0" style={{ color: "var(--fg-faint)" }}>
               {addedCopyCopy.chooser.fold(foldN, thisDeckName)}
             </span>
-            <button
-              type="button"
-              aria-expanded={false}
-              onClick={() => {
-                revealFocus.current = card.claimants[0]?.deckId ?? null;
-                setUnfolded(true);
-              }}
-              className="text-[12.5px] min-h-[44px] px-[4px] flex-none text-[color:var(--accent)]"
-            >
-              {addedCopyCopy.chooser.foldShow}
-            </button>
           </li>
         ) : null}
         {claimants.filter((c) => !foldedIds.has(c.deckId)).map((c) => {

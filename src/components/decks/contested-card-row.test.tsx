@@ -793,24 +793,34 @@ describe("ContestedCardRow — where an added copy goes", () => {
     expect(screen.getByText(/2 committed decks/)).toBeTruthy();
   });
 
-  it("folds the senior decks no pick can move into one row, and Show draws them", () => {
+  it("folds the senior decks no pick can move into one row, and offers no press to draw them", () => {
     render(<ContestedCardRow card={staging(17)} addedCopy />);
     expect(screen.getByText(addedCopyCopy.chooser.fold(16, null))).toBeTruthy();
     expect(screen.queryByText("HD - Deck 0")).toBeNull();
     // The junior-most holder is the one a pick moves, so it stays an option.
     expect(screen.getByText("HD - Deck 16")).toBeTruthy();
     expect(screen.getAllByRole("radio")).toHaveLength(4);
-    fireEvent.click(screen.getByRole("button", { name: addedCopyCopy.chooser.foldShow }));
-    expect(screen.getByText("HD - Deck 0")).toBeTruthy();
-    expect(screen.getAllByRole("radio")).toHaveLength(20);
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("hands focus to the first deck Show revealed, since the press removes the button", () => {
-    render(<ContestedCardRow card={staging(17)} addedCopy />);
-    const show = screen.getByRole("button", { name: addedCopyCopy.chooser.foldShow });
-    show.focus();
-    fireEvent.click(show);
-    expect(document.activeElement).toBe(screen.getByText("HD - Deck 0").closest("[role=radio]"));
+  it("lists only the decks that want the copy: two drafts, never the deck that already has it", () => {
+    // The scanner's review (Hugh's staging test, 2026-10-16): one committed deck already holds a copy that no pick
+    // moves, and two drafts want the copy that just arrived. Only the drafts are options.
+    const claimants = [
+      { deckId: "held", deckName: "HD - Held", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 1, allocated: 1 },
+      ...["Kratos", "Gishath"].map((name) => ({
+        deckId: name, deckName: `HD - ${name}`, quantity: 1, commanderCopies: 0, granted: 0,
+        since: null, versionNumber: null, brew: true, allocated: 1,
+      })),
+    ];
+    render(<ContestedCardRow card={{ ...card(), cardName: "Sol Ring", arrived: 1, ownedBefore: 1, owned: 2, claimants }} addedCopy />);
+    expect(screen.getByText(addedCopyCopy.chooser.fold(1, null))).toBeTruthy();
+    expect(screen.queryByText("HD - Held")).toBeNull();
+    expect(screen.getAllByRole("radio").map((r) => r.textContent)).toEqual([
+      expect.stringContaining("HD - Kratos"),
+      expect.stringContaining("HD - Gishath"),
+    ]);
+    expect(screen.queryByText(copy.contested.gets)).toBeNull();
   });
 
   it("says `can use it` for a brew reading a loose copy, with the note, and draws its mark hollow", () => {
@@ -831,7 +841,7 @@ describe("ContestedCardRow — where an added copy goes", () => {
   it("draws the shipped row with the switch off: no fold, and a brew's soft share still `gets it`", () => {
     render(<ContestedCardRow card={staging(18)} />);
     expect(screen.queryByText(addedCopyCopy.chooser.canUse)).toBeNull();
-    expect(screen.queryByRole("button", { name: addedCopyCopy.chooser.foldShow })).toBeNull();
+    expect(screen.queryByText(addedCopyCopy.chooser.fold(17, null))).toBeNull();
     expect(screen.getAllByRole("radio")).toHaveLength(20);
     for (const name of ["HD - Kratos", "HD - Gishath", "HD - Thorin"]) {
       expect(screen.getByRole("radio", { name: copy.contested.a11yOption(name, copy.contested.gets) })).toBeTruthy();
@@ -850,7 +860,6 @@ describe("ContestedCardRow — where an added copy goes", () => {
     const c = staging(17);
     c.claimants[3] = { ...c.claimants[3], granted: 1 };
     render(<ContestedCardRow card={c} addedCopy />);
-    expect(screen.queryByRole("button", { name: addedCopyCopy.chooser.foldShow })).toBeTruthy();
     expect(screen.getByText(addedCopyCopy.chooser.fold(3, null))).toBeTruthy();
     expect(screen.getByText("HD - Deck 3")).toBeTruthy();
   });
