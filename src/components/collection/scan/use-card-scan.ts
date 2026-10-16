@@ -32,7 +32,7 @@ export type CardScan = {
   torch: { available: boolean; on: boolean };
   count: number;
   flipTo: string | null;
-  videoRef: (el: HTMLVideoElement | null) => void;
+  attachVideo: (el: HTMLVideoElement | null) => void;
   setMode: (m: ScanMode) => void;
   toggleTorch: () => void;
   hold: () => void;
@@ -68,7 +68,6 @@ export function useCardScan(
   const [onList, setOnList] = useState<Map<string, number>>(() => new Map());
   const [lastAdded, setLastAdded] = useState<{ oracleId: string; emptiedSince: boolean } | null>(null);
   const [torch, setTorch] = useState<{ handle: Torch | null; on: boolean }>({ handle: null, on: false });
-  const video = useRef<HTMLVideoElement | null>(null);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
@@ -158,6 +157,12 @@ export function useCardScan(
     [onAdd, mode],
   );
 
+  // Through useCallback, so a render never reads the deps ref: only the press does.
+  const setMode = useCallback((m: ScanMode) => {
+    setModeState(m);
+    writeScanMode(depsRef.current.storage === undefined ? safeLocalStorage() : depsRef.current.storage, m);
+  }, []);
+
   const current = screen.kind === "scanning" && screen.panel.kind === "sure" ? screen.panel.guess : null;
   const notSure = screen.kind === "scanning" && screen.panel.kind === "notSure" ? screen.panel.guesses : [];
 
@@ -167,14 +172,8 @@ export function useCardScan(
     torch: { available: torch.handle?.available ?? false, on: torch.on },
     count: [...onList.values()].reduce((a, b) => a + b, 0),
     flipTo: added?.imageUri ?? null,
-    videoRef: useCallback((el: HTMLVideoElement | null) => {
-      video.current = el;
-      setVideoEl(el);
-    }, []),
-    setMode: (m) => {
-      setModeState(m);
-      writeScanMode(depsRef.current.storage === undefined ? safeLocalStorage() : depsRef.current.storage, m);
-    },
+    attachVideo: setVideoEl,
+    setMode,
     toggleTorch: () => {
       const h = torch.handle;
       if (!h?.available) return;

@@ -41,25 +41,25 @@ export function CardScanner({
     const t = setTimeout(() => setNotice(null), NOTICE_MS);
     return () => clearTimeout(t);
   }, [notice]);
-  const s = useCardScan(true, deps, onAdd, onProblem);
+  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick } = useCardScan(true, deps, onAdd, onProblem);
   return (
     <ScannerView
       layout={layout}
-      screen={s.screen}
-      mode={s.mode}
-      torch={s.torch}
-      count={s.count}
-      flipTo={s.flipTo}
+      screen={screen}
+      mode={mode}
+      torch={torch}
+      count={count}
+      flipTo={flipTo}
       notice={notice}
-      feed={<video ref={s.videoRef} muted playsInline className="h-full w-full object-cover" />}
-      onMode={s.setMode}
-      onTorch={s.toggleTorch}
+      feed={<video ref={attachVideo} muted playsInline className="h-full w-full object-cover" />}
+      onMode={setMode}
+      onTorch={toggleTorch}
       onClose={onClose}
       onReview={onClose}
-      onHold={s.hold}
-      onAdd={s.add}
-      onCancelHold={s.cancelHold}
-      onPick={s.pick}
+      onHold={hold}
+      onAdd={add}
+      onCancelHold={cancelHold}
+      onPick={pick}
       onNoneOfThese={onNoneOfThese}
     />
   );

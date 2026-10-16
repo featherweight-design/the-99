@@ -35,7 +35,7 @@ function setup(over: Partial<CardScanDeps> = {}, frame: FrameRead = { frame: { k
   const onProblem = vi.fn();
   // A fresh callback every render, as an inline caller passes: the problem must still be said once.
   const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k)));
-  act(() => hook.result.current.videoRef(document.createElement("video")));
+  act(() => hook.result.current.attachVideo(document.createElement("video")));
   return { hook, onAdd, onProblem, fetch };
 }
 

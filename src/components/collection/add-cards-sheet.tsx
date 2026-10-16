@@ -35,11 +35,15 @@ import { AddLine } from "./add-line";
 import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
+import { CardScanner } from "./scan/card-scanner";
+import { useFrameReader } from "./scan/frame-reader";
+import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 const copy = collectionEditCopy.add;
+const scanCopy = collectionEditCopy.scan;
 
 /** A precon box, 16px, in the row's accent (S18). */
 function BoxIcon() {
@@ -91,6 +95,7 @@ function AddMode({
   returnFocusRef,
   totalCards: totalCardsNow,
   preconPick = false,
+  scan = false,
 }: Extract<AddCardsSheetProps, { mode: "add" }>) {
   // The size when the sheet opened: the head re-reads its figure after a save, and the saved state
   // reports the move from the old one.
@@ -123,6 +128,10 @@ function AddMode({
   const [notice, setNotice] = useState<{ text: string; kind: "combined" | "error" } | null>(null);
   const [announce, setAnnounce] = useState("");
   const [pulse, setPulse] = useState<{ id: string; n: number } | null>(null);
+  // The scanner over the sheet (phone) or in place of the search (desktop), card-scan PR 3.
+  const [scanning, setScanning] = useState(false);
+  const readFrame = useFrameReader();
+  const scanDeps = useMemo(() => ({ readFrame }), [readFrame]);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogCardResult[]>([]);
@@ -235,6 +244,39 @@ function AddMode({
     setAnnounce(copy.announceChoose(card.name, choices.length));
   }
 
+  /**
+   * A scanned card onto the list, as a search pick lands (card-scan PR 3). Fast takes its first printing at once;
+   * Normal leaves the line without one, and the sheet's own printing step asks for it once the scanner closes. The
+   * update is functional, because adds arrive faster than this component re-renders.
+   */
+  async function addScanned(guess: ScanGuess, mode: ScanMode) {
+    let choices: PrintingChoice[] = [];
+    try {
+      choices = await loadPrintingChoices(guess.oracleId);
+    } catch {
+      choices = [];
+    }
+    if (choices.length === 0) {
+      setNotice({ text: copy.printingsFailed, kind: "error" });
+      return;
+    }
+    const id = crypto.randomUUID();
+    const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices };
+    setLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
+    setAnnounce(copy.announceAdded(guess.name));
+  }
+
+  function closeScanner() {
+    setScanning(false);
+    // Normal mode's lines wait for their printing; the first is asked for straight away.
+    setLines((ls) => {
+      const first = ls.find((l) => l.printing === null);
+      if (first) setPickerFor(first.id);
+      return ls;
+    });
+    queueMicrotask(() => searchRef.current?.focus());
+  }
+
   function finish(r: ReturnType<typeof choosePrinting>, id: string, name: string) {
     setLines(r.lines);
     setPickerFor(null);
@@ -333,8 +375,11 @@ function AddMode({
           </button>
         </div>
 
-        {phase !== "saved" && (
-          <div className={`px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
+        {phase !== "saved" && scanning && !phone && (
+          <CardScanner layout="desk" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={closeScanner} />
+        )}
+        {phase !== "saved" && !(scanning && !phone) && (
+          <div className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
             <SearchField
               ref={searchRef}
               role="combobox"
@@ -351,9 +396,23 @@ function AddMode({
               onChange={(e) => setQuery(e.target.value)}
               onClear={() => setQuery("")}
               onKeyDown={onSearchKey}
-              containerClassName="h-[48px] py-0 md:h-[46px]"
+              containerClassName="h-[48px] min-w-0 flex-1 py-0 md:h-[46px]"
               className="text-[16px] md:text-[14px]"
             />
+            {scan && (
+              <button
+                type="button"
+                disabled={searchDisabled}
+                onClick={() => setScanning(true)}
+                className="inline-flex h-[48px] flex-none cursor-pointer items-center gap-[8px] rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[14px] text-[15px] font-medium text-[color:var(--fg)] md:h-[46px] md:text-[14px]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+                {scanCopy.press}
+              </button>
+            )}
           </div>
         )}
 
@@ -542,6 +601,9 @@ function AddMode({
       )}
 
       <p role="status" aria-live="polite" className="sr-only">{announce}</p>
+      {scanning && phone && (
+        <CardScanner layout="phone" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={closeScanner} />
+      )}
     </div>
   );
 

@@ -1,0 +1,77 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { PrintingChoice } from "../../lib/collection/catalog-read";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { AddCardsSheet } from "./add-cards-sheet";
+
+const copy = collectionEditCopy.add;
+const scan = collectionEditCopy.scan;
+const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", typeLine: "Artifact", imageUri: null };
+
+const choices = vi.fn();
+vi.mock("../../app/collection/edit-actions", () => ({
+  searchCollectionCards: vi.fn(async () => []),
+  loadPrintingChoices: (...a: unknown[]) => choices(...a),
+  addToCollection: vi.fn(),
+}));
+vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
+vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: vi.fn() }) }));
+vi.mock("./scan/frame-reader", () => ({ useFrameReader: () => async () => ({ frame: { kind: "none" }, cardInView: false, dark: false }) }));
+// The scanner is its own surface, tested on its own: here it only has to hand the sheet a card, and close.
+vi.mock("./scan/card-scanner", () => ({
+  CardScanner: ({ layout, onAdd, onClose }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => void; onClose: () => void }) => (
+    <div data-testid="fake-scanner" data-layout={layout}>
+      <button type="button" onClick={() => onAdd(SOL, "fast")}>fast add</button>
+      <button type="button" onClick={() => onAdd(SOL, "normal")}>normal add</button>
+      <button type="button" onClick={onClose}>close scanner</button>
+    </div>
+  ),
+}));
+
+const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
+  scryfallId: "s1", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
+  imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {}, ...over,
+});
+const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" })];
+
+beforeEach(() => choices.mockReset().mockResolvedValue(TWO));
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
+  it("draws no Scan press without the switch", () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} />);
+    expect(screen.queryByRole("button", { name: scan.press })).toBeNull();
+  });
+
+  it("opens the scanner, and a Fast add lands on the list at its first printing", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    expect(screen.getByTestId("fake-scanner")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    // Two adds of one card at one printing fold into one line of two copies, and nothing asks for a printing.
+    await waitFor(() => expect(screen.getByText(copy.summary(1, 2))).toBeTruthy());
+  });
+
+  it("leaves a Normal add's printing to the sheet's own step once the scanner closes", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "normal add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
+  });
+
+  it("says so when a scanned card's printings could not be read", async () => {
+    choices.mockResolvedValueOnce([]);
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(screen.getByText(copy.printingsFailed)).toBeTruthy());
+  });
+});
