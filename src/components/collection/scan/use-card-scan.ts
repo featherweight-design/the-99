@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { CAMERA_CONSTRAINTS, torchOf, type Torch } from "../../../lib/scan/camera";
 import type { Source } from "../../../lib/scan/pipeline";
@@ -12,6 +12,7 @@ import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { readScanMode, writeScanMode } from "./mode-memory";
 import type { ScanGuess, ScanMode, ScanScreen } from "./scan-view";
 import { scanScreen, toScanGuess } from "./screen-state";
+import type { ScanTimer } from "../../../lib/scan/timing";
 
 /** One read of the camera: the detector's and embedder's answer for the frame (2c's module, injected), whether it
  * was too dark to read, and the card as the embedder saw it (its normalised crop), for the list's "Your scan". */
@@ -49,6 +50,8 @@ export type CardScanDeps = {
   photo?: (crop: Float32Array) => string | null;
   /** A card's printings, for Normal mode's step in the camera; an empty list or a throw is a read that failed. */
   loadChoices?: (oracleId: string) => Promise<PrintingChoice[]>;
+  /** The session's timing row (`timing.ts`), when the scanner keeps one. */
+  timer?: ScanTimer;
 };
 
 export type CardScan = {
@@ -127,6 +130,10 @@ export function useCardScan(
   const lastCrop = useRef<Float32Array | null>(null);
   // What the scanner saw as a hold began (V4): the frozen guess's own photo and closest cards.
   const heldSnap = useRef<({ oracleId: string } & Snap) | null>(null);
+  // One add at a time: a second tap while the first waits for its printings would add the card again unasked. The
+  // read loop also waits while it is set, as it does while Normal's printings load.
+  const committing = useRef(false);
+  const loadingChoices = useRef(false);
   // Empty frames read so far, counted by the read loop.
   const empties = useRef(0);
   // The answer (and mode) already taken by itself in this view: the take lands a microtask later, and a render
@@ -224,10 +231,17 @@ export function useCardScan(
         if (r.crop) lastCrop.current = r.crop;
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
+        depsRef.current.timer?.frame(t, at, r.frame.kind === "card");
         setServer(scanner.frame(r.frame, now(), t));
         // Always hand the browser a turn: a read that answers at once (the camera has no size yet, or no card)
         // would otherwise spin this loop on resolved promises and starve the very events that give the video its size.
-        await nextFrame();
+        await afterPaint();
+        // While the scanner waits on the server (a card's lookup, an add's printings, Normal's printings), no frame
+        // is read: a read is one long run of the models, and each step of a response (its headers, its body, the
+        // render it sets off) waits for the read in progress to end, so reading on cost a whole read per step, about
+        // 1.4s of a phone's 3s frame-to-guess (the speed lane's measure, 2026-10-16). The card in view is read
+        // again once the answer is in.
+        while (!stop && (scanner.waiting() || committing.current || loadingChoices.current)) await afterPaint();
       }
     })();
     return () => {
@@ -235,6 +249,11 @@ export function useCardScan(
       scanner.stop();
     };
   }, [active, videoEl, blocked, now]);
+
+  // The answer is drawn: the timing row's frame-to-guess ends at this commit, which the next paint shows.
+  useLayoutEffect(() => {
+    if (server.kind === "match") depsRef.current.timer?.answered(now());
+  }, [server, now]);
 
   // A refusal or failure is said once, as it arrives; the screen goes back to looking.
   const lastProblem = useRef<ServerState["kind"] | null>(null);
@@ -260,8 +279,7 @@ export function useCardScan(
     [server],
   );
 
-  // One add at a time: a second tap while the first waits for its printings would add the card again unasked.
-  const committing = useRef(false);
+
   // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
   const commit = useCallback(
     async (g: ScanGuess, given?: Snap, picked?: ScanPicked): Promise<boolean> => {
@@ -274,6 +292,7 @@ export function useCardScan(
         return false;
       }
       committing.current = true;
+      const startedAt = now();
       try {
         // A held card adds what the scanner saw when the press went down; frames read since are another moment.
         const snap = given ?? (heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow());
@@ -291,6 +310,7 @@ export function useCardScan(
         setHeld(null);
         heldSnap.current = null;
         setChoosing(null);
+        depsRef.current.timer?.added(startedAt, now());
         setLastAdded({ oracleId: g.oracleId, emptiedSince: empties.current !== snap.empties });
         setAdded({ name: g.name, imageUri: g.imageUri });
         return true;
@@ -298,7 +318,7 @@ export function useCardScan(
         committing.current = false;
       }
     },
-    [onAdd, mode, onProblem, snapNow],
+    [onAdd, mode, onProblem, snapNow, now],
   );
 
   // Normal mode's printing step, in the camera (Hugh, 2026-10-16): the card is held on the panel while its printings
@@ -308,10 +328,12 @@ export function useCardScan(
     const seq = ++chooseSeq.current;
     setChoosing({ guess: g, snap, answer: from, choices: null });
     const load = depsRef.current.loadChoices;
+    loadingChoices.current = true;
     void Promise.resolve()
       .then(() => (load ? load(g.oracleId) : []))
       .catch(() => [] as PrintingChoice[])
       .then((choices) => {
+        if (seq === chooseSeq.current) loadingChoices.current = false;
         if (seq !== chooseSeq.current) return;
         if (choices.length > 0) return setChoosing((c) => (c ? { ...c, choices } : c));
         setChoosing(null);
@@ -321,6 +343,7 @@ export function useCardScan(
   }, []);
   const stopChoosing = useCallback(() => {
     chooseSeq.current++;
+    loadingChoices.current = false;
     setChoosing(null);
   }, []);
 
@@ -328,7 +351,9 @@ export function useCardScan(
   // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
   // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
   const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
-  useEffect(() => {
+  // A layout effect, so the take has begun (and the read loop waits for it) before the frame that draws the answer
+  // is painted: the loop reads the next frame only after that paint.
+  useLayoutEffect(() => {
     if (!sure || added || choosing || committing.current) return;
     if (sure.again?.kind === "duplicate") return;
     if (lastAdded?.oracleId === sure.guess.oracleId && !lastAdded.emptiedSince) return;
@@ -350,6 +375,7 @@ export function useCardScan(
     if (m === modeRef.current) return;
     // A printing step open when Fast is chosen is left: the card is read again under the new mode.
     stopChoosing();
+    depsRef.current.timer?.modePressed(now());
     setModeState(m);
     writeScanMode(depsRef.current.storage === undefined ? safeLocalStorage() : depsRef.current.storage, m);
   }, [stopChoosing]);
@@ -420,6 +446,16 @@ export function useCardScan(
       stopChoosing();
     },
   };
+}
+
+/**
+ * After the next frame is painted: a task queued from an animation frame runs after that frame's paint. The read loop
+ * waits for it before each read, which is one long run of the models, so what the last read set (an answer, the
+ * card's outline) is on screen first rather than a whole read later.
+ */
+export async function afterPaint(): Promise<void> {
+  await nextFrame();
+  await new Promise<void>((r) => setTimeout(r, 0));
 }
 
 /** The next animation frame, or a short timeout where there is none (a test DOM, a hidden tab's throttle aside). */

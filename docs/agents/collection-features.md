@@ -59,6 +59,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked; a card added and never out of
   the frame is not taken again (R1), and a second copy needs the frame to empty first (R2). Below the gate the panel
   still asks Not sure, and nothing reaches the collection before the review's Save.
+  **The read loop reads no frame while the scanner waits on the server** (speed lane, 2026-10-16): a lookup in flight,
+  an add waiting for the list, or Normal's printings loading, and each read starts only after the previous frame is
+  painted (`afterPaint`). A read is one long run of the models, and every step of a response (its headers, its body,
+  the render it sets off) waited for the read in progress, so reading on made a 100ms lookup take about 1.4s and an
+  add about 0.9s. `pnpm measure:scan` times the scanner in desktop Chromium at phone width under a 4x CPU throttle,
+  with a fake camera putting a card down and taking it away and the match answered locally; on 2026-10-16 it read
+  frame to guess 3112ms before and 1852ms after, and add to on-list 911ms before and 102ms after. The scanner posts
+  one timing row per session as it closes (`src/lib/scan/timing.ts`: frame to guess, add, mode press to the next
+  read, Review to the list, the median read; no id, no card name) to `POST /api/card-scan/timing`, which logs one
+  `[scan-timing]` line only while `SCAN_LAB_ENABLED` is on for the reader (staging); find them with
+  `vercel logs -p the-99-staging -q "scan-timing"`.
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted

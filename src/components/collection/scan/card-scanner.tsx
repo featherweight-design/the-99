@@ -9,7 +9,8 @@ import { createOutlineStore } from "../../../lib/scan/outline";
 import { useFrameReader } from "./frame-reader";
 import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
-import { useCardScan, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
+import { nextFrame, useCardScan, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
+import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
 
 const copy = collectionEditCopy.scan;
 
@@ -52,7 +53,16 @@ export function CardScanner({
   // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
   const [outline] = useState(createOutlineStore);
   const readFrame = useFrameReader(outline);
-  const scanDeps = useMemo(() => ({ readFrame, loadChoices: loadPrintingChoices, ...deps }), [readFrame, deps]);
+  // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it.
+  const [timer] = useState(() => scanTimer(layout));
+  const reviewAt = useRef<number | null>(null);
+  const post = deps?.fetch ?? (typeof fetch === "function" ? fetch : null);
+  const postRef = useRef(post);
+  useEffect(() => {
+    postRef.current = post;
+  });
+  useEffect(() => () => void sendTiming(timer, reviewAt, postRef.current), [timer]);
+  const scanDeps = useMemo(() => ({ readFrame, loadChoices: loadPrintingChoices, timer, ...deps }), [readFrame, timer, deps]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), NOTICE_MS);
@@ -134,7 +144,10 @@ export function CardScanner({
         onMode={setMode}
         onTorch={toggleTorch}
         onClose={onClose}
-        onReview={onClose}
+        onReview={() => {
+          reviewAt.current = performance.now();
+          onClose();
+        }}
         onHold={hold}
         onAdd={add}
         onCancelHold={cancelHold}
@@ -149,4 +162,24 @@ export function CardScanner({
       />
     </>
   );
+}
+
+/**
+ * Posts the session's timing row (`POST /api/card-scan/timing`, which logs it only while `SCAN_LAB_ENABLED` is on for the
+ * reader), two frames after the scanner closed: by then the sheet's list is drawn, which is where Review's wait
+ * ends. A scanner that read no frame posts nothing, and a post that fails is dropped.
+ */
+async function sendTiming(timer: ScanTimer, reviewAt: { current: number | null }, post: typeof fetch | null) {
+  await nextFrame();
+  await nextFrame();
+  if (reviewAt.current !== null) timer.reviewed(performance.now() - reviewAt.current);
+  const row = timer.row();
+  if (!row || !post) return;
+  try {
+    await post("/api/card-scan/timing", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(row), keepalive: true,
+    });
+  } catch {
+    // a timing row is never worth a retry
+  }
 }

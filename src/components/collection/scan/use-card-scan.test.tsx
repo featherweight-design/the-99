@@ -159,8 +159,9 @@ describe("useCardScan", () => {
     const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
     const other = new Float32Array(EMBED_DIM);
     other[1] = 1;
-    // Card A until its lookup is asked for, then one frame of card B, then no further frame at all: the answer for A
-    // lands while B is in view and has not settled, and nothing after it re-checks.
+    // Card A until its lookup is asked for; no frame is read while it is in flight, so the first frame after the answer
+    // for A lands is card B, then no further frame at all: the answer is for a card that has left, and nothing after
+    // it re-checks.
     let left = false;
     const readFrame = async (): Promise<FrameRead> => {
       await new Promise((r) => setTimeout(r, 5));
@@ -171,12 +172,13 @@ describe("useCardScan", () => {
       }
       return new Promise<FrameRead>(() => {});
     };
-    const { hook } = setup({ fetch: fetch as unknown as typeof globalThis.fetch, readFrame });
-    await waitFor(() => expect(left).toBe(true), { timeout: 4000 });
-    await new Promise((r) => setTimeout(r, 20));
+    const { hook, onAdd } = setup({ fetch: fetch as unknown as typeof globalThis.fetch, readFrame });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
     await act(async () => answer(new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await waitFor(() => expect(left).toBe(true), { timeout: 4000 });
     await new Promise((r) => setTimeout(r, 30));
     expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
+    expect(onAdd).not.toHaveBeenCalled();
   });
 
   it("shows the blocked screen on a browser with no camera API at all", async () => {
@@ -439,5 +441,58 @@ describe("useCardScan", () => {
       act(() => hook.result.current.setMode("fast"));
       expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
     });
+  });
+});
+
+// The speed lane's fix (2026-10-16): a read is one long run of the models, and a response's steps waited for the read
+// in progress, so the loop reads nothing while the scanner waits on the server.
+describe("useCardScan reads no frame while it waits on the server", () => {
+  it("while a lookup is in flight, and reads again once the answer is in", async () => {
+    let answer: (r: Response) => void = () => {};
+    const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
+    let reads = 0;
+    let readsAtLookup = -1;
+    const { hook } = setup({
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+    });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    readsAtLookup = reads;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(reads).toBe(readsAtLookup);
+    await act(async () => answer(new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await waitFor(() => expect(reads).toBeGreaterThan(readsAtLookup), { timeout: 4000 });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }));
+  });
+
+  it("while an add waits for the list", async () => {
+    let reads = 0;
+    let land: (ok: boolean) => void = () => {};
+    const onAddWait = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    let t = 0;
+    const deps: CardScanDeps = {
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+      getUserMedia: async () => stream(),
+      fetch: vi.fn(() => json({ index: "all", guesses: [SOL], margin: null })) as unknown as typeof globalThis.fetch,
+      wait: async () => {},
+      now: () => (t += 200),
+      storage: null,
+    };
+    const hook = renderHook(() => useCardScan(true, deps, onAddWait, () => {}));
+    act(() => hook.result.current.attachVideo(document.createElement("video")));
+    await waitFor(() => expect(onAddWait).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    const at = reads;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(reads).toBe(at);
+    await act(async () => land(true));
+    await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
   });
 });
