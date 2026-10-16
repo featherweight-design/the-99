@@ -148,6 +148,7 @@ describe("useQuickReturn", () => {
     });
     expect(header().dataset.mode).toBe("shown");
     expect(document.documentElement.style.getPropertyValue("--header-ms")).toBe("200ms");
+    expect(document.documentElement.style.getPropertyValue("--header-offset")).toBe("79px");
   });
 
   it("does not slide when it leaves the page by scrolling past it", async () => {

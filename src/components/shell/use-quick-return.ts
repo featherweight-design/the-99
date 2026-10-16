@@ -91,11 +91,12 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
         fieldFocus: root.hasAttribute("data-field-focus"),
         programmatic: appScrolling() || performance.now() < settleUntil.current,
       });
-      root.style.setProperty("--header-offset", `${headerOffset(next.mode, height.current)}px`);
       if (bringBack.current) {
         bringBack.current = false;
         if (next.mode === "away") next = { mode: "shown", y: next.y, mark: next.y };
       }
+      // Everything below reads the FINAL mode: the step's, with a keyboard return already applied.
+      root.style.setProperty("--header-offset", `${headerOffset(next.mode, height.current)}px`);
       // The heads riding under it move on the header's own slide, so their edges stay together both ways.
       if (next.mode !== state.current.mode || !root.style.getPropertyValue("--header-ms")) {
         const away = next.mode === "away";
