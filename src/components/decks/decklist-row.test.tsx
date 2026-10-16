@@ -339,6 +339,26 @@ describe("DecklistRow availability marker (#43)", () => {
       const bubble = screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.cardAssignments.tool) });
       expect(anchor.getAttribute("aria-describedby")).toBe(bubble.id);
     });
+    it("closes when the marker's own tooltip opens over it", async () => {
+      const { momentsCopy } = await import("../../lib/copy/moments");
+      const mm = window.matchMedia;
+      window.matchMedia = ((q: string) => ({
+        matches: q === "(pointer: fine)", media: q, onchange: null,
+        addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, dispatchEvent: () => false,
+      })) as typeof window.matchMedia;
+      try {
+        await mountWith(avail(-1, ["Atraxa"]));
+        const name = momentsCopy.noteName(momentsCopy.cardAssignments.tool);
+        expect(screen.getByRole("note", { name })).toBeInTheDocument();
+        fireEvent.pointerEnter(screen.getByText("short").closest("span.inline-flex.flex-none")!.firstElementChild!);
+        await act(async () => {
+          vi.advanceTimersByTime(1000);
+        });
+        expect(screen.queryByRole("note", { name })).toBeNull();
+      } finally {
+        window.matchMedia = mm;
+      }
+    });
   });
 
   // The quiet-failure half of the degraded ruling.
