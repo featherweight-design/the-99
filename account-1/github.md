@@ -16,6 +16,7 @@ branch read this turn: main 4009713 (brief `2026-10-16-buying-credits.md`, `ui/c
 
 ### Updated in this project
 - **Buying credits R1, for Hugh's audit.** `design_handoff_the99_buying_credits/`: main board (three calls, rulings, gaps G1–G11), Credit-Line (L1–L8), Surfaces, Billing-Page (P1–P8), Plan-and-Cancel (K1–K6, options A/B), Checkout-Return (R1–R6), Blocked-and-Off (B1, O1–O4), Menu-and-Delete (A1–A3, D1–D2); README, STATES, READINESS, copy strings, canvas.json. Design canvas: "The 99 · Buying credits R1". Generator in `scratch/buying-credits-gen/` for R2.
+- **Buying credits approved (R2b, Hugh, 2026-10-16) and packaged.** Handoff PR #1946 adds `design/design_handoff_the99_buying_credits/`. Decisions: cancel inline with undo, menu chip M1b in the identity block, 3-day expiry warning, offer art the crown's diamond (art only ever real cards or player images).
 
 ### Earlier entry
 date: 2026-10-16T18:00:00Z
