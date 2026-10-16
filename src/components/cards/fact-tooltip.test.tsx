@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
@@ -65,6 +65,25 @@ describe("FactTooltip", () => {
     });
     fireEvent.pointerLeave(screen.getByTestId("mark"));
     await waitFor(() => expect(screen.queryByText(cardMarkCopy.tooltip.massLandDenial)).toBeNull());
+  });
+
+  it("lists a row's folded marks one per line when given `lines`, and draws nothing under a coarse pointer", async () => {
+    pointer(true);
+    render(
+      <FactTooltip lines={[<b key="a">game changer</b>, <b key="b">tutor</b>]}><i data-testid="mark" /></FactTooltip>,
+    );
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    await waitFor(() => expect(screen.getByTestId("fact-tooltip")).toBeTruthy(), { timeout: 2000 });
+    const bubble = screen.getByTestId("fact-tooltip");
+    // One line per entry, in the same chrome and still aria-hidden.
+    expect(Array.from(bubble.children).map((c) => c.textContent)).toEqual(["game changer", "tutor"]);
+    expect(bubble.getAttribute("aria-hidden")).toBe("true");
+    cleanup();
+    pointer(false);
+    render(<FactTooltip lines={[<b key="a">game changer</b>]}><i data-testid="mark" /></FactTooltip>);
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+    await new Promise((r) => setTimeout(r, OPEN_DELAY_MS + 100));
+    expect(screen.queryByTestId("fact-tooltip")).toBeNull();
   });
 
   it("says only what a MARKED card is, and never a threshold or a bracket", () => {

@@ -1,11 +1,16 @@
 {
-  "feature": "The two-line card row (foil addendum R3), the glint under the dot, and the Shopping key",
-  "note": "PR 2 of the foil mark (plan `2026-10-15-foil-mark.md`). The card row is two lines from md in All and from lg in Shopping, and option B below md in Shopping (Hugh made B the row for everyone, 2026-10-15; the phone All row and Shopping from md to lg are the shipped rows). Photographed at 390, 900 and 1300, because 900 is the one width where All is two-line and Shopping is not.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage; The deck must hold a card priced over its limit: the Shopping cell scrolls to a row carrying the stand-ins press, so it fails when none exists. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
+  "feature": "The one-line card row (card rows addendum L1), the glint under the dot or in its place, the marks folding by the row's width, and the Shopping key",
+  "note": "The foil mark's PR 2 (plan `2026-10-15-foil-mark.md`) drew a two-line row; the card rows addendum (L1, Hugh 2026-10-16) put every card row back on one 34px line from md in All and Shopping, folding marks by the row's own width (`@container` on the row's wrapper) and fixing the right-hand columns. Below md the phone keeps its rows: the All row as shipped and Shopping's option B, with the glint under the dot. Photographed at 390, 800, 900 and 1300: 800 and 900 are the two-column grid at its narrowest, where the wide, middle and tight tiers all show, and 1300 is the wide one.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage. The deck must hold a card priced over its limit (the Shopping cell scrolls to a row carrying the stand-ins press), and a card with two or more bracket marks (the `marks` rows scroll to a folded one, light and heavy); a row that cannot find its target fails rather than photographing something else. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
   "widths": [
     {
       "label": "phone",
       "width": 390,
       "height": 844
+    },
+    {
+      "label": "md-800",
+      "width": 800,
+      "height": 1000
     },
     {
       "label": "md-900",
@@ -26,7 +31,7 @@
   "rows": [
     {
       "id": "all-row",
-      "label": "/decks/[id] All: the two-line row (name, marks and ✕ on line 1; the glint under the dot, pips, marker and tag on line 2)",
+      "label": "/decks/[id] All, one 34px line: the glint in the filled dot's place, the name and marks, the price, the pip track and the ✕ in fixed columns",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -45,6 +50,7 @@
         }
       ],
       "widths": [
+        "md-800",
         "md-900",
         "desktop"
       ]
@@ -84,7 +90,7 @@
     },
     {
       "id": "shopping-row",
-      "label": "/decks/[id] Shopping: an over-limit row (two lines from lg, B below md, the shipped column from md to lg), no EDHREC figure",
+      "label": "/decks/[id] Shopping, one 34px line from md (option B below it): marker, ⇄, the 84px buy tag with `over $N` folded into its outline, the ✕",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -109,7 +115,7 @@
     },
     {
       "id": "shopping-row-foil",
-      "label": "/decks/[id] Shopping: a foil card that is short (so Shopping lists it), the glint under the dot with the pips at the name's x (option B at 390, the shipped column at 900, two lines from lg)",
+      "label": "/decks/[id] Shopping: a foil card that is short (so Shopping lists it), the glint in the dot's place from md and under it on the phone, pips at the name's x below md",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -130,6 +136,61 @@
           "scrollTo": "[data-decklist-row]:has([data-testid='foil-mark'])",
           "settle": 400
         }
+      ]
+    },
+    {
+      "id": "all-row-marks",
+      "label": "/decks/[id] All: a row with two or more bracket marks, the marks folding into +N as the column narrows (wide at 1300, middle and tight in the two-column grid at 800 and 900)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has(.md\\:\\@max-\\[479px\\]\\:sr-only)",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "md-800",
+        "md-900",
+        "desktop"
+      ]
+    },
+    {
+      "id": "shopping-row-marks",
+      "label": "/decks/[id] Shopping: a row with two or more bracket marks, every mark folded into +N at the middle tier and the marker's word to its glyph",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has(.md\\:\\@max-\\[479px\\]\\:sr-only)",
+          "settle": 400
+        }
+      ],
+      "widths": [
+        "md-800",
+        "md-900",
+        "desktop"
       ]
     }
   ]

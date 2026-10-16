@@ -238,13 +238,13 @@ describe("BuyTag figure slot", () => {
     render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} reserveSlot />);
     expect(screen.getByText(priceCopy.tag.soldOut)).toHaveStyle({ minWidth: "46px" });
   });
-  // Shopping from md to lg is two lines and gives the name every pixel, so the figure hugs the word
-  // there and the column opens from lg only (Hugh, 2026-09-26).
-  it("reserves it from lg only when asked for lg", () => {
-    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} reserveSlot="lg" />);
+  // Below md a Shopping row is two lines and gives the name every pixel, so the figure hugs the word
+  // there and the column opens from md up (the one-line row, card rows addendum L1).
+  it("reserves it from md only when asked for md", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} reserveSlot="md" />);
     const figure = screen.getByText("$2.10");
     expect(figure).not.toHaveStyle({ minWidth: "46px" });
-    expect(figure.className).toContain("lg:min-w-[46px]");
+    expect(figure.className).toContain("md:min-w-[46px]");
   });
 });
 
@@ -340,7 +340,7 @@ describe("BuyTag as I got it's button (press)", () => {
   it("draws the hover wash from lg only, and the press wash at every width", () => {
     render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />);
     const plate = screen.getByRole("button").firstElementChild as HTMLElement;
-    expect(plate.className).toContain("lg:group-hover/buy:bg-");
+    expect(plate.className).toContain("md:group-hover/buy:bg-");
     expect(plate.className).not.toMatch(/(^|\s)group-hover\/buy:/);
     expect(plate.className).toMatch(/(^|\s)group-active\/buy:bg-/);
   });

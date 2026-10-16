@@ -86,7 +86,7 @@ function Tail({
   fact: PriceFact | null;
   state: PriceState;
   variant: BuyTagVariant;
-  reserveSlot: boolean | "lg";
+  reserveSlot: boolean | "md";
   /** True where the tag already speaks the price in its own sentence. */
   silent: boolean;
   /**
@@ -120,7 +120,7 @@ function Tail({
       <span
         // `lg` reserves the slot from 1024px up only. Below it the Shopping row is two lines and
         // every pixel goes to the name, so the figure hugs the word (Hugh, 2026-09-26).
-        className={reserveSlot === "lg" ? "lg:inline-block lg:min-w-[46px] lg:text-right" : undefined}
+        className={reserveSlot === "md" ? "md:inline-block md:min-w-[46px] md:text-right" : undefined}
         style={{
           color: pending ? "var(--fg-muted)" : FIGURE_INK[variant],
           ...(reserveSlot === true
@@ -175,12 +175,12 @@ export type BuyTagPress = {
  * which would leave a closed tag at the open wash.
  */
 const WASH = {
-  rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] lg:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
+  rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] md:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
   open: "bg-[color-mix(in_oklab,var(--warning)_24%,transparent)]",
   idle: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]",
   // An over-limit tag folded into the row's outline (the two-line row): no resting wash, but the hover and press washes stay, so a
   // press still answers the pointer.
-  restFolded: "bg-transparent lg:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
+  restFolded: "bg-transparent md:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
   idleFolded: "bg-transparent",
 } as const;
 
@@ -206,10 +206,10 @@ export function BuyTag({
   /** Server-built; only the labelled (tile) variant speaks it. */
   provenance?: ProvenanceForm | null;
   /**
-   * Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. `"lg"` reserves
-   * it from 1024px up only (the class spells `FIGURE_SLOT`'s 46px, since a class cannot read it).
+   * Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. `"md"` reserves
+   * it from 768px up only (the class spells `FIGURE_SLOT`'s 46px, since a class cannot read it).
    */
-  reserveSlot?: boolean | "lg";
+  reserveSlot?: boolean | "md";
   /**
    * `collapsed` draws a LIVE price's figure (with its foil/etched qualifier, where the fact
    * carries one) in the same box, ink, radius and position — the All tab is a list being
@@ -375,7 +375,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         if (pressState === "rest") onPress(e.currentTarget);
       }}
       // The ring is the plate's, not the button's: below lg the button is the whole 44px stack.
-      className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] lg:before:hidden ${
+      className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] md:before:hidden ${
         live ? "cursor-pointer" : "cursor-default"
       }`}
     >
@@ -393,7 +393,7 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         {children}
       </span>
       {under ? (
-        <span id={underId} className={`${foldOver ? "sr-only" : "block lg:hidden"} font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
+        <span id={underId} className={`${foldOver ? "sr-only" : "block md:hidden"} font-mono text-[10px] leading-none whitespace-nowrap`} style={{ color: "var(--warning)" }}>
           {under}
         </span>
       ) : null}
