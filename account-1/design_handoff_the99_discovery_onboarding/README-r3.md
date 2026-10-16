@@ -2,7 +2,7 @@
 
 `design_handoff_the99_discovery_onboarding/` · 2026-10-16 · account 1 · beside R1 (`README.md`) and R2 (`README-r2.md`)
 
-**Status: R3, for Hugh's audit.** This is the last round of the line. Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
+**Status: R3b, approved by Hugh, 2026-10-16.** Build from these files once every line has been through `/copy-review`. G24, G25 and G30 stay open for Hugh and don't block R3. This is the last round of the line. Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
 (main), §3 (tools where the need is), §5 (the tour), Style, Locked, and Open 7 and 4. Two rulings since the brief:
 
 - **Friends on Home is a permanent section with no ✕.** With no friends it shows an invite; with friends, faces, Add a friend and a link to /friends. It is no longer a moment, so M16 and ruling 7 are gone.

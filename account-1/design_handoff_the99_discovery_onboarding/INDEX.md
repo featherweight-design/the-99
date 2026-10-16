@@ -77,7 +77,7 @@ artifact in account 1 (`The 99 - Discovery R3 · Tour and tools where the need i
 | `r3/Forms.dc.html` | One tool met five ways: moment, nudge, tool card, ?, tour. |
 | `README-r3.md` | Locks held, the calls, the list, gaps G24–G31. |
 | `STATES-tour-and-need.md` | The tour's life, each step, every press; each nudge and door on, met and off. |
-| `READINESS-r3.md` | R3 for audit, and E18–E27 for the plan. |
+| `READINESS-r3.md` | Green: R3b approved by Hugh, 2026-10-16. E18–E27 for the plan. |
 | `discovery-r3 · copy strings.ts` | Every new string, as placeholders for `/copy-review`. |
 | `design-tables/discovery-r3.md` | The property tables. |
 | `r3/art/` | The staging captures and crops. They are uploaded to the canvas, and the boards reference them by their `/_blob` url. |

@@ -1,10 +1,9 @@
 # Discovery R3 · READINESS
 
-**Verdict: 🟡 R3, for Hugh's audit.** Every lock in the brief for this round is held (`README-r3.md`, "Brief locks, held").
+**Verdict: 🟢 R3b approved by Hugh, 2026-10-16** (after one note: the creator's note fits its text). Every lock in the brief for this round is held (`README-r3.md`, "Brief locks, held").
 The calls are on `r3/Main.dc.html`. What remains:
 
-- Hugh's audit;
-- his calls on G24, G25 and G30;
+- his calls on G24, G25 and G30, which don't block R3;
 - `/copy-review` for every new string;
 - the engineering items below.
 
