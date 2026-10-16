@@ -257,8 +257,10 @@ function Rows({
 function Empty() {
   const card = "absolute top-[14px] h-[100px] w-[70px] rounded-[8px] border-[1.5px] border-solid shadow-[0_10px_24px_rgba(0,0,0,0.5)]";
   return (
-    <div className="flex flex-col items-center gap-[10px] px-7 pt-11 text-center">
-      <div className="relative h-[150px] w-[200px]" role="img" aria-hidden="true">
+    <div className="flex flex-col items-center gap-[10px] px-7 pt-11 text-center md:flex-row md:gap-4 md:px-6 md:py-6 md:text-left">
+      {/* At 62% beside the sentence in the desktop dropdown (D2n); the box is sized to the scaled graphic. */}
+      <div className="md:h-[93px] md:w-[124px] md:flex-none">
+      <div className="relative h-[150px] w-[200px] md:origin-top-left md:scale-[0.62]" role="img" aria-hidden="true">
         <span className={`${card} left-[31px] rotate-[-18deg] border-[color:var(--border-strong)] bg-[color:var(--elevated)]`} />
         <span className={`${card} left-[65px] border-[color:var(--border-dashed)] bg-[color:var(--surface-raised)]`} />
         <span
@@ -273,8 +275,11 @@ function Empty() {
         />
         <span className="absolute top-[115px] left-[164px] h-[5px] w-[30px] origin-left rotate-45 rounded-[3px] bg-[color:var(--accent)]" />
       </div>
-      <p className="font-display text-[19px] font-bold text-[color:var(--fg)]">{cardSearchCopy.empty.title}</p>
-      <p className="max-w-[300px] text-[14.5px] leading-[1.6] text-pretty text-[color:var(--fg-muted)]">{cardSearchCopy.empty.body}</p>
+      </div>
+      <div className="flex flex-col items-center gap-[10px] md:items-start md:gap-1">
+        <p className="font-display text-[19px] font-bold text-[color:var(--fg)] md:text-[17px]">{cardSearchCopy.empty.title}</p>
+        <p className="max-w-[300px] text-[14.5px] leading-[1.6] text-pretty text-[color:var(--fg-muted)] md:text-[13.5px]">{cardSearchCopy.empty.body}</p>
+      </div>
     </div>
   );
 }
