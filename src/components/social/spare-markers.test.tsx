@@ -191,3 +191,17 @@ describe("the key's item", () => {
     expect(screen.queryByTestId("shopping-key")).toBeNull();
   });
 });
+
+describe("the friend line's pods", () => {
+  it("wraps the pod names rather than truncating them, so every pod reads in full", async () => {
+    const long = [{ oracleId: "poly", friend: { ...friend("Ana"), pods: ["Store league", "Thursday pod"] }, spare: 1 }];
+    fetchMock.mockResolvedValue(answer(long));
+    await mount(<Press />);
+    await act(async () => { fireEvent.click(screen.getByTestId("other-ways")); });
+    const row = within(screen.getByRole("dialog")).getByTestId("friend-spare");
+    const pods = within(row).getByText(spareCopy.via(["Store league", "Thursday pod"]));
+    // No ellipsis on the line: it wraps to a second line instead (bb's R2 walk, 390).
+    expect(pods.className.split(/\s+/)).not.toContain("truncate");
+    expect(pods.className).toContain("[overflow-wrap:anywhere]");
+  });
+});

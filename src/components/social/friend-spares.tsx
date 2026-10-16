@@ -78,7 +78,11 @@ export function FriendSpareSection({ spares }: { spares: readonly FriendSpare[] 
             <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
               <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{s.friend.displayName}</b>
-              <span className="truncate font-mono text-[11.5px] text-[color:var(--fg-faint)]">{spareCopy.via(s.friend.pods)}</span>
+              {/* The pods wrap rather than truncate: they are why this friend can see you, and an ellipsis hid the second
+                  one at 390 (bb's R2 walk). */}
+              <span className="font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)] [overflow-wrap:anywhere] [text-wrap:pretty]">
+                {spareCopy.via(s.friend.pods)}
+              </span>
             </span>
             <span className="inline-flex h-[22px] flex-none items-center gap-[6px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]">
               <SpareGlyph size={13} />
