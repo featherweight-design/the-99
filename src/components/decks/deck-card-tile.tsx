@@ -21,11 +21,12 @@
 
 import { useId, useState } from "react";
 
-import { frontFaceName, hasFrontFaceCost } from "../../lib/cards/faces";
+import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
-import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedNameOf } from "../../lib/collection/browse";
+import { deckRowName } from "../../lib/decks/row-name";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -164,7 +165,7 @@ export function DeckCardTile({
     deckId,
     oracleId: card.oracleId,
     quantity: card.quantity,
-    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
+    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(deckRowName(card), n)),
   });
   // `from N` takes the draft figure's place: the committed count, while the count on screen is not it.
   const committedCount = !stepperOn
@@ -202,7 +203,7 @@ export function DeckCardTile({
   const markClause = foilSpoken(foilFinish) + factClause;
   // The front face of a two-faced card, beside the `//` mark in the name's trail, as on the row (d9, 2026-10-16).
   const fullName = printedNameOf(card);
-  const displayName = frontFaceName(fullName, card.layout);
+  const displayName = deckRowName(card);
   // Null unless the string holds symbols this app can draw, so both branches
   // below agree on what "has a cost" means.
   const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;

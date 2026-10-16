@@ -3,12 +3,13 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
-import { faceNames, frontFaceName, hasFrontFaceCost, isTwoFaced } from "../../lib/cards/faces";
+import { faceNames, hasFrontFaceCost, isTwoFaced } from "../../lib/cards/faces";
 import { useId, useState } from "react";
 import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedNameOf } from "../../lib/collection/browse";
+import { deckRowName } from "../../lib/decks/row-name";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -263,7 +264,7 @@ export function DecklistRow({
     deckId,
     oracleId: card.oracleId,
     quantity: card.quantity,
-    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(printedFaceName(card), n)),
+    onSettled: (n) => setSettledLine(addPanelCopy.basicStepper.settled(deckRowName(card), n)),
   });
   // `from N`: the committed figure, when the count on screen is not it. The stepper prints the new count, so the
   // shipped `6 → 8` pair keeps only its left half (STATES rule 7). A card the version did not hold (`from` 0)
@@ -472,7 +473,7 @@ export function DecklistRow({
   // The front face of a two-faced card, beside the `//` mark the row draws for it (d9, 2026-10-16): the whole oracle string
   // and the mark said the back face twice, and cost the row half its name. The full name is the trigger's accessible name.
   const fullName = printedNameOf(card);
-  const displayName = frontFaceName(fullName, card.layout);
+  const displayName = deckRowName(card);
   // Option B's phone name: the front face of a two-face card, from the name the row speaks (a printed name when the
   // player owns a renamed copy). From `md` the row prints what it printed. Null for a one-face card.
   const frontFace = isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(fullName).front : null;
@@ -1150,7 +1151,7 @@ function HeldSlot({ card, rowShell }: { card: DeckDetailCard; rowShell: string }
       <div data-decklist-row data-held-slot className={`${rowShell} bg-surface-sunken border border-dashed border-border-strong`}>
         <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />
         <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12px] text-fg-locked">
-          {gotItCopy.slot.held(printedFaceName(card))}
+          {gotItCopy.slot.held(deckRowName(card))}
         </span>
       </div>
     </div>
@@ -1184,7 +1185,7 @@ function UndoRow({
               receipt replaces does — and as the list's own order does. A
               receipt calling a renamed printing by its oracle name sits in the
               list by one name and announces itself by another. */}
-          {addPanelCopy.undo.removed(printedFaceName(card))}
+          {addPanelCopy.undo.removed(deckRowName(card))}
         </span>
         {/* Absent once the undo has been refused: the message below tells the
             player where to go instead. */}
@@ -1197,7 +1198,7 @@ function UndoRow({
               bg-transparent border-0 md:border-b md:border-b-accent-shadow md:border-accent-shadow
               text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
               text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
-            aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}
+            aria-label={addPanelCopy.undo.actionAria(deckRowName(card))}
           >
             {addPanelCopy.undo.action}
           </button>

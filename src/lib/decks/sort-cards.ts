@@ -7,7 +7,7 @@
 // holds, and `grouping.ts` takes the comparator as an option.
 
 import { priceRank, type PriceFact } from "./price";
-import { printedFaceName } from "../collection/browse";
+import { deckRowName } from "./row-name";
 import type { DeckSortDirection, DeckSortKey } from "../copy/deck-sort";
 
 /** What ordering a row needs. Structural, so a fixture can satisfy it. */
@@ -25,9 +25,9 @@ export type SortableCard = {
 /**
  * ON THE NAME THE ROW DRAWS, which is not always the oracle name.
  *
- * `decklist-row.tsx` renders `printedFaceName(card)` — for a live row, and for
+ * `decklist-row.tsx` renders `deckRowName(card)` — for a live row, and for
  * the undo receipt that stands in its place — so a player whose copy is a
- * renamed printing sees that name on the list. Sorting the oracle name would
+ * renamed printing sees that name on the list, and a two-faced card its front face. Sorting the oracle name would
  * put those rows in a position the visible labels contradict, which is the same
  * mistake as ranking a price a row does not print. Every surface that names a
  * card on this list goes through that one resolver, so none of them can drift
@@ -108,11 +108,7 @@ export function compareDeckCards(
 }
 
 function displayName(card: SortableCard): string {
-  return printedFaceName({
-    name: card.name,
-    printedName: card.printedName ?? null,
-    layout: card.layout ?? null,
-  });
+  return deckRowName(card);
 }
 
 /** Bound to one key and direction, for `Array.prototype.sort`. */
