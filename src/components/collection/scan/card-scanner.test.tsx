@@ -87,5 +87,43 @@ describe("CardScanner", () => {
     await screen.findByText(collectionEditCopy.scan.view.added("Sol Ring"));
     await waitFor(() => expect(document.activeElement?.hasAttribute("data-scan-close")).toBe(true));
   });
-});
 
+  it("reads photos chosen from the blocked screen, then adds the sure ones with one press (D6 into W4)", async () => {
+    const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: null, score: 0.97 };
+    const embedding = new Float32Array(256);
+    embedding[0] = 1;
+    const onAdd = vi.fn(async () => true);
+    render(
+      <CardScanner
+        layout="desk"
+        listed={new Map()}
+        deps={{
+          getUserMedia: async () => Promise.reject(new Error("NotFoundError")),
+          readFrame: async () => ({ frame: { kind: "card", embedding }, cardInView: true, dark: false }),
+          decode: async () => ({ width: 10, height: 10, close: () => {} }) as unknown as ImageBitmap,
+          thumb: { create: (f) => `blob:${f.name}`, revoke: () => {} },
+          fetch: (async () => new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })) as unknown as typeof fetch,
+          wait: async () => {},
+          storage: null,
+        }}
+        onAdd={onAdd}
+        onClose={vi.fn()}
+      />,
+    );
+    const input = screen.getByTestId<HTMLInputElement>("scan-photos-input");
+    const opened = vi.spyOn(input, "click");
+    fireEvent.click(await screen.findByRole("button", { name: collectionEditCopy.scan.camera.choosePhotos }));
+    expect(opened).toHaveBeenCalled();
+    fireEvent.change(input, { target: { files: [new File(["x"], "sol.jpg", { type: "image/jpeg" })] } });
+    await screen.findByText(collectionEditCopy.scan.photos.sure);
+    // A keyboard press: focus is on the bulk press when it goes.
+    const bulk = screen.getByRole("button", { name: collectionEditCopy.scan.photos.addSure(1) });
+    bulk.focus();
+    expect(document.activeElement).toBe(bulk);
+    fireEvent.click(bulk);
+    await screen.findByText(collectionEditCopy.scan.fix.onList);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast");
+    // Focus moves to the list's own Stop once the press that held it is gone.
+    await waitFor(() => expect(document.activeElement?.hasAttribute("data-scan-close")).toBe(true));
+  });
+});

@@ -1,7 +1,7 @@
 // The gate between the detector and the embedder: a card is read only when it is sharp enough and big enough in the
 // frame. The rest of the pipeline draws on canvases and runs the models, which the lab's browser proof exercises.
 import { describe, expect, it } from "vitest";
-import { cardInView, MIN_CARD_AREA } from "./pipeline";
+import { cardInView, MIN_CARD_AREA, sourceSize, type Source } from "./pipeline";
 import { SHARPNESS_GATE } from "./models";
 
 const W = 1000, H = 1000;
@@ -23,5 +23,17 @@ describe("cardInView", () => {
   it("passes over a card too small in the frame", () => {
     expect(cardInView(1, quad(MIN_CARD_AREA * 0.9), W, H)).toBe(false);
     expect(cardInView(1, quad(MIN_CARD_AREA * 1.1), W, H)).toBe(true);
+  });
+});
+
+describe("sourceSize", () => {
+  it("reads a video by its picture, never its element's box", () => {
+    const video = { videoWidth: 1920, videoHeight: 1080, width: 300, height: 150 } as unknown as Source;
+    expect(sourceSize(video)).toEqual({ width: 1920, height: 1080 });
+  });
+
+  it("reads a still (a chosen photo's bitmap) by its own size", () => {
+    const bitmap = { width: 3024, height: 4032 } as unknown as Source;
+    expect(sourceSize(bitmap)).toEqual({ width: 3024, height: 4032 });
   });
 });

@@ -50,11 +50,17 @@ export type FrameRead =
   | { kind: "none"; dark: boolean; detMs: number }
   | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; detMs: number; embMs: number };
 
-type Source = CanvasImageSource & { videoWidth: number; videoHeight: number };
+/** What `read` takes: the camera's `<video>`, or a still (a chosen photo's `ImageBitmap`). */
+export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: number } | { width: number; height: number });
+
+/** A source's picture size: a video's frame (its element's `width` is the box, not the picture), else its own. */
+export function sourceSize(s: Source): { width: number; height: number } {
+  return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
+}
 type Run = <T>(fn: () => Promise<T>) => Promise<T>;
 
 /**
- * The reader for one camera: `read` takes the frame in view and answers what it holds, or null while the camera has
+ * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
  * no size yet or once `alive` says the scanner stopped mid-read. `infer` runs each inference (a session holder's, so
  * a release waits for it). The embedding is L2-normalised; the crop is the embedder's own input, for a "your scan".
  */
@@ -68,7 +74,7 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
   const { detector, embedder } = models;
   return {
     async read(video: Source, alive: () => boolean = () => true): Promise<FrameRead | null> {
-      const vw = video.videoWidth, vh = video.videoHeight;
+      const { width: vw, height: vh } = sourceSize(video);
       if (!vw || !vh) return null;
       const t0 = performance.now();
       const s = Math.min(1, MAX_FRAME_EDGE / Math.max(vw, vh));

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { CAMERA_CONSTRAINTS, torchOf, type Torch } from "../../../lib/scan/camera";
+import type { Source } from "../../../lib/scan/pipeline";
 import { serverScanner, type ServerState } from "../../../lib/scan/server-scan";
 import type { ScanFrame } from "../../../lib/scan/stable-card";
 import { readScanMode, writeScanMode } from "./mode-memory";
@@ -23,8 +24,8 @@ export const READ_FAILURES_TOLD = 3;
 const NO_LIST: ReadonlyMap<string, number> = new Map();
 
 export type CardScanDeps = {
-  /** Reads the video's current frame. Resolves when the detector and embedder are done with it. */
-  readFrame: (video: HTMLVideoElement) => Promise<FrameRead>;
+  /** Reads the video's current frame (or a chosen photo). Resolves when the detector and embedder are done with it. */
+  readFrame: (source: Source) => Promise<FrameRead>;
   getUserMedia?: (c: MediaStreamConstraints) => Promise<MediaStream>;
   fetch?: typeof fetch;
   wait?: (ms: number) => Promise<void>;
