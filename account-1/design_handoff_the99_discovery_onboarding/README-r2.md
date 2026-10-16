@@ -69,7 +69,7 @@ read-only from Hugh's account on 2026-10-16. The exceptions:
 
 ### C3 · Try it on your deck (§Open)
 
-- **Which deck.** One press that names the deck: the fitting deck the reader opened most recently (E10).
+- **Which deck.** The whole card is the press (R2b, option C), and its footer names the deck it opens: the fitting deck the reader opened most recently (E10).
   - When several decks fit, a quiet `2 more are over ▾` lists them. Picking one is the same press on that deck.
 - **Where it lands.** On the deck (or the tool's own page), with the tool named in the address.
   - The page scrolls the control into view and gives it R1's halo for 2.4 seconds, with no bubble.
