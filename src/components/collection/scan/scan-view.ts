@@ -25,14 +25,18 @@ export type ScanMode = "fast" | "normal";
 /** The phone's light: `available` false where the camera offers no torch (iOS), and then no control is drawn. */
 export type ScanTorch = { available: boolean; on: boolean };
 
-/** Which of the three looks the guide corners take. */
-export function guideLook(screen: ScanScreen, torchOn = false): "dash" | "lit" | "ok" {
+/**
+ * Which of the three looks the card's outline takes: dashed while the card is only being looked at (seen, not yet
+ * steady), lit while answers agree, and ok on a read. With no card in view there is no outline at all.
+ */
+export function outlineLook(screen: ScanScreen, torchOn = false): "dash" | "lit" | "ok" {
   if (screen.kind !== "scanning") return "dash";
-  const k = screen.panel.kind;
+  const p = screen.panel;
   // The light on (V9) reads green, as a sure answer does.
-  if (k === "sure" || torchOn) return "ok";
-  // A dark frame is being read even before a card settles (V7, V8): the corners light.
+  if (p.kind === "sure" || torchOn) return "ok";
+  // A dark frame is being read even before a card settles (V7, V8): the outline lights.
   if (screen.dark) return "lit";
-  if (k === "looking" || k === "added") return "dash";
-  return "lit";
+  if (p.kind === "unsure") return p.agreeing === 0 ? "dash" : "lit";
+  if (p.kind === "notSure") return "lit";
+  return "dash";
 }

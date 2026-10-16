@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
-import { guideLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
+import { outlineInBox, type OutlineStore } from "../../../lib/scan/outline";
+import { outlineLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
 
 /**
  * The scanner's screen (card-scan PR 3, `docs/superpowers/design-tables/card-scan-viewfinder.md`): the camera's feed
- * behind guide corners, the top bar (✕, Fast/Normal, the light), the dark line, the result panel and, on the phone,
+ * behind the detected card's outline, the top bar (✕, Fast/Normal, the light), the dark line, the result panel and, on the phone,
  * the tray. Drawn from `screen` alone: what the camera sees and what the server said arrive as data, and every press
  * is a callback, so the hook that runs the camera owns all state but the press.
  *
@@ -26,6 +27,8 @@ export type ScannerViewProps = {
   /** A transient problem (a lookup that failed, no connection), said over the feed and gone on its own. */
   notice?: string | null;
   feed?: ReactNode;
+  /** Where the detector last saw the card, for the outline drawn over the feed. Unset, no outline is drawn. */
+  outline?: OutlineStore;
   onMode: (m: ScanMode) => void;
   onTorch: () => void;
   onClose: () => void;
@@ -43,7 +46,7 @@ export type ScannerViewProps = {
 export function ScannerView(p: ScannerViewProps) {
   const phone = p.layout === "phone";
   if (p.screen.kind === "blocked") return <CameraBlocked {...p} />;
-  const look = guideLook(p.screen, p.torch.on);
+  const look = outlineLook(p.screen, p.torch.on);
   return (
     <section
       data-testid="scanner"
@@ -61,7 +64,7 @@ export function ScannerView(p: ScannerViewProps) {
       )}
       <div aria-hidden="true" className={phone ? "absolute inset-0" : "relative h-[250px] w-full"}>
         {p.feed}
-        <Guide look={look} phone={phone} />
+        {p.outline && <CardOutline store={p.outline} look={look} phone={phone} />}
       </div>
       {phone && p.screen.dark && <DarkLine torch={p.torch} />}
       {p.notice && (
@@ -101,25 +104,40 @@ export function ScannerView(p: ScannerViewProps) {
   );
 }
 
-function Guide({ look, phone }: { look: "dash" | "lit" | "ok"; phone: boolean }) {
-  const color = look === "ok" ? "var(--success)" : look === "lit" ? "var(--accent)" : "color-mix(in srgb, var(--fg) 35%, transparent)";
-  const style = look === "dash" ? "dashed" : "solid";
-  const box = phone ? "left-[66px] top-[108px] h-[350px] w-[258px]" : "left-[150px] top-[10px] h-[229px] w-[174px]";
-  const size = phone ? 34 : 24;
-  const corner = (sides: string) => ({
-    width: size,
-    height: size,
-    borderColor: color,
-    borderStyle: style,
-    borderWidth: 0,
-    ...Object.fromEntries(sides.split(" ").map((s) => [`border${s}Width`, 3])),
-  });
+/**
+ * The detected card's outline, live over the feed: the detector's four corners mapped from the camera picture to the
+ * box the feed fills (`object-fit: cover`, as the `<video>` is drawn), so the card can be anywhere in the frame.
+ */
+function CardOutline({ store, look, phone }: { store: OutlineStore; look: "dash" | "lit" | "ok"; phone: boolean }) {
+  const outline = useSyncExternalStore(store.subscribe, store.get, () => null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const host = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = host.current;
+    if (!el) return;
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const pts = outline && box ? outlineInBox(outline, box.w, box.h) : null;
+  const color = look === "ok" ? "var(--success)" : look === "lit" ? "var(--accent)" : "color-mix(in srgb, var(--fg) 55%, transparent)";
   return (
-    <div data-testid="scan-guide" data-look={look} className={`pointer-events-none absolute ${box}`}>
-      <span className="absolute left-0 top-0 rounded-tl-[14px]" style={corner("Top Left")} />
-      <span className="absolute right-0 top-0 rounded-tr-[14px]" style={corner("Top Right")} />
-      <span className="absolute bottom-0 left-0 rounded-bl-[14px]" style={corner("Bottom Left")} />
-      <span className="absolute bottom-0 right-0 rounded-br-[14px]" style={corner("Bottom Right")} />
+    <div ref={host} aria-hidden="true" className="pointer-events-none absolute inset-0">
+      {pts && box && (
+        <svg data-testid="scan-outline" data-look={look} width={box.w} height={box.h} className="absolute inset-0">
+          <polygon
+            points={pts.map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")}
+            fill="none"
+            stroke={color}
+            strokeWidth={phone ? 3 : 2.5}
+            strokeLinejoin="round"
+            strokeDasharray={look === "dash" ? "9 7" : undefined}
+          />
+        </svg>
+      )}
     </div>
   );
 }

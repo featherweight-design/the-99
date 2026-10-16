@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { framePipeline, loadModels, loadOrt, sourceSize, type OrtSession, type Source } from "../../../lib/scan/pipeline";
+import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
 import type { FrameRead } from "./use-card-scan";
 
@@ -12,9 +13,10 @@ type Pipe = ReturnType<typeof framePipeline>;
  * and both models load once, on the first frame, and every session is released when the scanner closes
  * (`sessionHolder`), a load that finishes after it closed included. A frame the pipeline cannot read yet (the
  * camera has no size) reads as no card. A chosen photo goes through the same reader, so photos and the camera share
- * one load of the models.
+ * one load of the models. A live frame also hands the card's outline to `outline`, for the viewfinder to draw where
+ * the card is (a chosen photo has no viewfinder, so it never does).
  */
-export function useFrameReader(): (source: Source) => Promise<FrameRead> {
+export function useFrameReader(outline?: OutlineStore): (source: Source) => Promise<FrameRead> {
   // One holder per load attempt: a failed attempt closes its own, so a model that loaded beside one that failed (or
   // finishes loading after) is released rather than kept for a pipeline that will never run.
   const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
@@ -25,11 +27,12 @@ export function useFrameReader(): (source: Source) => Promise<FrameRead> {
     alive.current = true;
     return () => {
       alive.current = false;
+      outline?.clear();
       pipe.current = null;
       sessions.current?.close();
       sessions.current = null;
     };
-  }, []);
+  }, [outline]);
 
   return useCallback(async (video: Source): Promise<FrameRead> => {
     // No picture yet (the camera is still being asked for, or was refused): nothing to read, and no reason to load the
@@ -56,7 +59,12 @@ export function useFrameReader(): (source: Source) => Promise<FrameRead> {
       });
     }
     const r = await (await pipe.current).read(video, () => alive.current);
-    if (!r || r.kind === "none") return { frame: { kind: "none" }, cardInView: false, dark: r?.dark ?? false };
+    const live = "videoWidth" in video;
+    if (!r || r.kind === "none") {
+      if (live) outline?.hide();
+      return { frame: { kind: "none" }, cardInView: false, dark: r?.dark ?? false };
+    }
+    if (live) outline?.show(r.outline);
     return { frame: { kind: "card", embedding: r.embedding }, cardInView: true, dark: r.dark, crop: r.crop };
-  }, []);
+  }, [outline]);
 }

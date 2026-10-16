@@ -1,13 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { ScannerView, type ScannerViewProps } from "./scanner-view";
-import { guideLook, type ScanGuess, type ScanPanel } from "./scan-view";
+import { createOutlineStore, type OutlineStore } from "../../../lib/scan/outline";
+import { outlineLook, type ScanGuess, type ScanPanel } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
 const SOL: ScanGuess = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", typeLine: "Artifact", imageUri: "https://img/sol" };
 const ARC: ScanGuess = { oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", typeLine: "Artifact", imageUri: null };
 const MIND: ScanGuess = { oracleId: "33333333-3333-4333-8333-333333333333", name: "Mind Stone", typeLine: "Artifact", imageUri: null };
+
+function baseProps(panel: ScanPanel, outline?: OutlineStore): ScannerViewProps {
+  return {
+    layout: "phone", screen: { kind: "scanning", panel, dark: false }, mode: "fast", torch: { available: true, on: false }, count: 0, outline,
+    onMode: vi.fn(), onTorch: vi.fn(), onClose: vi.fn(), onReview: vi.fn(), onHold: vi.fn(), onAdd: vi.fn(),
+    onCancelHold: vi.fn(), onPick: vi.fn(), onNoneOfThese: vi.fn(),
+  };
+}
 
 function draw(over: Partial<ScannerViewProps> & { panel?: ScanPanel; dark?: boolean } = {}) {
   const { panel = { kind: "looking" }, dark = false, ...rest } = over;
@@ -26,11 +35,26 @@ function draw(over: Partial<ScannerViewProps> & { panel?: ScanPanel; dark?: bool
 }
 const panel = () => screen.getByTestId("scan-panel");
 
+// A card shown at the middle of a square picture.
+function withCard(): OutlineStore {
+  const store = createOutlineStore();
+  store.show({ corners: [{ x: 0.4, y: 0.3 }, { x: 0.6, y: 0.3 }, { x: 0.6, y: 0.7 }, { x: 0.4, y: 0.7 }], width: 1000, height: 1000 });
+  return store;
+}
+// jsdom lays nothing out: the feed's box is given a size.
+beforeEach(() => {
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400);
+  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(800);
+});
+afterEach(() => vi.restoreAllMocks());
+const outlineEl = () => screen.getByTestId("scan-outline");
+
 describe("ScannerView", () => {
-  it("looks for a card with a dashed guide, the mode's line, and an empty tray whose Review is held (D7)", () => {
+  it("looks for a card with no outline until a card is seen, the mode's line, and an empty tray whose Review is held (D7)", () => {
     const p = draw();
     expect(panel().dataset.state).toBe("looking");
-    expect(screen.getByTestId("scan-guide").dataset.look).toBe("dash");
+    expect(screen.queryByTestId("scan-outline")).toBeNull();
+    expect(screen.queryByTestId("scan-guide")).toBeNull();
     expect(panel().textContent).toBe(`${copy.view.looking}${copy.mode.fast}: ${copy.mode.fastLine}`);
     expect(screen.getByTestId("scan-tray-count").textContent).toBe(copy.view.emptyList);
     const review = screen.getByRole("button", { name: copy.view.reviewEmpty });
@@ -49,17 +73,17 @@ describe("ScannerView", () => {
   });
 
   it("shows no name before three answers agree, with the agreeing count as dots (V2)", () => {
-    draw({ panel: { kind: "unsure", agreeing: 2 } });
+    draw({ panel: { kind: "unsure", agreeing: 2 }, outline: withCard() });
     expect(panel().dataset.state).toBe("unsure");
     expect(panel().closest("[aria-live=polite]")).toBeTruthy();
     expect(panel().querySelectorAll("i[data-on]")).toHaveLength(2);
-    expect(screen.getByTestId("scan-guide").dataset.look).toBe("lit");
+    expect(outlineEl().dataset.look).toBe("lit");
     expect(panel().textContent).not.toContain("Sol Ring");
   });
 
-  it("offers a sure card on a green guide, holds on press down and adds on release (V3, V4)", () => {
-    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null }, count: 3 });
-    expect(screen.getByTestId("scan-guide").dataset.look).toBe("ok");
+  it("offers a sure card on a green outline, holds on press down and adds on release (V3, V4)", () => {
+    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null }, count: 3, outline: withCard() });
+    expect(outlineEl().dataset.look).toBe("ok");
     expect(within(panel()).getByText("Sol Ring")).toBeTruthy();
     expect(within(panel()).getByText("Artifact")).toBeTruthy();
     const add = screen.getByRole("button", { name: copy.view.add });
@@ -224,18 +248,46 @@ describe("ScannerView", () => {
   });
 });
 
-describe("guideLook", () => {
-  it("is green only on a sure answer, pink while reading, dashed otherwise", () => {
-    const s = (panel: ScanPanel) => guideLook({ kind: "scanning", panel, dark: false });
-    expect(s({ kind: "sure", guess: SOL, held: false, again: null })).toBe("ok");
-    expect(s({ kind: "unsure", agreeing: 0 })).toBe("lit");
-    expect(s({ kind: "notSure", guesses: [], sleeves: false })).toBe("lit");
-    expect(s({ kind: "looking" })).toBe("dash");
-    expect(guideLook({ kind: "blocked" })).toBe("dash");
-    expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true }, true)).toBe("ok");
-    expect(guideLook({ kind: "scanning", panel: { kind: "looking" }, dark: true })).toBe("lit");
+describe("the card's outline", () => {
+  it("is drawn at the detected corners, following object-fit: cover, wherever the card is in the frame", () => {
+    draw({ outline: withCard() });
+    // A 1000x1000 picture covering 400x800 is scaled 0.8 and cut 200px at each side: x = share * 800 - 200, y = share * 800.
+    expect(outlineEl().querySelector("polygon")?.getAttribute("points")).toBe("120.0,240.0 280.0,240.0 280.0,560.0 120.0,560.0");
   });
 
+  it("draws nothing with no card in view, and nothing without a store", () => {
+    draw({ outline: createOutlineStore() });
+    expect(screen.queryByTestId("scan-outline")).toBeNull();
+  });
+
+  it("is dashed while the card is only being looked at, lit while answers agree, ok on a read", () => {
+    const look = (panel: ScanPanel) => {
+      const { unmount } = render(<ScannerView {...baseProps(panel, withCard())} />);
+      const l = outlineEl().dataset.look;
+      unmount();
+      return l;
+    };
+    expect(look({ kind: "unsure", agreeing: 0 })).toBe("dash");
+    expect(look({ kind: "unsure", agreeing: 1 })).toBe("lit");
+    expect(look({ kind: "sure", guess: SOL, held: false, again: null })).toBe("ok");
+  });
+});
+
+describe("outlineLook", () => {
+  it("is green on a sure answer, solid once answers agree, dashed while a card is only seen", () => {
+    const s = (panel: ScanPanel) => outlineLook({ kind: "scanning", panel, dark: false });
+    expect(s({ kind: "sure", guess: SOL, held: false, again: null })).toBe("ok");
+    expect(s({ kind: "unsure", agreeing: 0 })).toBe("dash");
+    expect(s({ kind: "unsure", agreeing: 2 })).toBe("lit");
+    expect(s({ kind: "notSure", guesses: [], sleeves: false })).toBe("lit");
+    expect(s({ kind: "looking" })).toBe("dash");
+    expect(outlineLook({ kind: "blocked" })).toBe("dash");
+    expect(outlineLook({ kind: "scanning", panel: { kind: "looking" }, dark: true }, true)).toBe("ok");
+    expect(outlineLook({ kind: "scanning", panel: { kind: "looking" }, dark: true })).toBe("lit");
+  });
+});
+
+describe("ScannerView, more", () => {
   it("ignores a right-click on Add: the context menu opens and nothing is held or added", () => {
     const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
     const add = screen.getByRole("button", { name: copy.view.add });

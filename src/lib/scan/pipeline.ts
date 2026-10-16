@@ -8,6 +8,7 @@ import {
 import { normalise } from "./match";
 import { DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
 import { isDark } from "./camera";
+import { outlineOf, type Outline } from "./outline";
 
 /** The slice of onnxruntime-web a scanner uses; it is loaded from the CDN, so it has no types here. */
 export type OrtTensor = { data: Float32Array };
@@ -48,7 +49,7 @@ export function cardInView(sharpness: number, corners: Pt[], width: number, heig
 
 export type FrameRead =
   | { kind: "none"; dark: boolean; detMs: number }
-  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; detMs: number; embMs: number };
+  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number };
 
 /** What `read` takes: the camera's `<video>`, or a still (a chosen photo's `ImageBitmap`). */
 export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: number } | { width: number; height: number });
@@ -105,7 +106,7 @@ export function framePipeline(ort: Ort, models: { detector: OrtSession; embedder
       const out = await infer(() => embedder.run({ [embedder.inputNames[0]]: embIn }));
       if (!alive()) return null;
       const embedding = normalise(Object.values(out)[0].data);
-      return { kind: "card", dark, crop, embedding, detMs, embMs: Math.round(performance.now() - t1) };
+      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1) };
     },
   };
 }

@@ -560,7 +560,7 @@ export const collectionEditCopy = {
       normalLine: "you choose each card’s printing on the list, before you save.",
     },
     view: {
-      looking: "Hold a card inside the frame",
+      looking: "Show a card to the camera",
       unsure: "Hold it still",
       unsureBody: "The name shows once the card stays the same for a moment.",
       add: "Add to the list",
