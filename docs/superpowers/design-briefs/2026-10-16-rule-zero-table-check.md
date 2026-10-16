@@ -37,8 +37,10 @@ table's decks side by side.
     disclosure, and an absent fact never reads as a clean deck.
 - **When a reading exists.** A reading is stored per deck in `deck_profiles` (`src/lib/profile/stored.ts`). Analysis
   runs only on a legal deck (the body at exactly 99 or 98 with a partner). The stored bracket holds over a later edit
-  (`readStoredPermits`), so a deck edited since its reading still has a bracket, from its last analysis. A deck never
-  analyzed, or not legal, has none. Today the reading is drawn only with `ANALYSIS_TAB_ENABLED` on.
+  (`readStoredPermits`), so a deck edited since its reading still has a bracket, from its last analysis, even when the edit has made it
+  illegal: `readStoredPermits` checks ownership and the saved shape, not current legality. A deck never analyzed has
+  none. Whether a deck is legal NOW is a separate check the table must make itself; reusing the loader does not enforce
+  it. Today the reading is drawn only with `ANALYSIS_TAB_ENABLED` on.
 - **Pods and friends** (Social foundation; `src/lib/social/`). A pod's members are added from its owner's friends; pods
   are drawn on `/friends` in the pods pane (`src/components/social/pods-pane.tsx`). There is no pod page of its own.
   A pod grants no visibility by itself: every cross-user read joins the viewer's friendship in the same statement.
@@ -77,8 +79,11 @@ table's decks side by side.
    reason to invite them; the table can point at the invite flow and does not redesign it.
 5. **One player sets up the table. Every seated player sees the same check on their own phone and can swap their own
    deck.** Each seat's deck is that player's to change.
-6. **Reads go through `src/lib/social/`** and join the viewer's friendship and pod membership, as every cross-user read
-   does.
+6. **Reads go through `src/lib/social/`**. An ordinary cross-user read joins the viewer's friendship and pod membership.
+   The table's seat read is the one exception, and it is narrow: it joins the viewer's seat at the same unexpired table
+   (item 11) and returns the chosen deck only (item 12). The existing friend-deck and pod-seat queries
+   (`src/lib/social/games.ts`) join the friendship and would omit seated players who are not friends, so the table
+   needs a seat-grant read of its own beside them.
 7. **A suggestion offers only that player's own decks**, the ones that sit closer to the table, with one tap to swap.
 8. **The table feeds the game log**: logging from it pre-fills the opponent seats and decks (`deck_game_opponents`).
 9. **The table expires after the night, about 24 hours.**
@@ -97,12 +102,17 @@ table's decks side by side.
 These are facts of the build that shape the drawing. None reopens a locked item.
 
 - **"Away from the rest" against a range.** A seat's bracket can be a range (1 to 2, or 4 to 5). Where its player has
-  declared a bracket, the declaration answers it, as the header chip already does. Otherwise engineering measures the
+  declared a bracket, the declaration answers it, as the header chip already does. That holds only while the declaration sits inside the analyzed range (`declarationAsk` answers it). After a
+  reanalysis the permits can be 4 to 5 while a retained declaration is 1: that declaration is drifted, it resolves
+  nothing, and the seat stays a range measured from its nearer end, never compared as a 1. Design draws the drifted
+  seat. Otherwise engineering measures the
   distance from the range's nearer end. The table's reference point is the middle of the seated brackets, so a 2, 3, 3,
   4 table flags both ends (two outliers) and a 2, 2, 4 table flags the 4. A two-seat table with different brackets has
   no "rest": both seats are flagged as a split. Design draws a range seat and a split table; the rule is engineering's.
-- **A deck with no bracket yet.** Never analyzed, or not legal (not at 100). It takes a seat but cannot be compared, and
-  the table's read says it leaves that seat out. Because the reading is deterministic, engineering may compute it on the
+- **A deck with no bracket yet, or not legal now.** Never analyzed, or not legal (not at 100). A deck with a stored
+  reading that an edit has since made illegal is left out of the comparison too, and the seat says why (its card
+  count), rather than showing the old bracket as if current. Both take a seat but cannot be compared, and the table's
+  read says it leaves that seat out. Because the reading is deterministic, engineering may compute it on the
   spot for a legal deck that has none (about 0.6s for a typical deck, up to about 2s for the largest). An illegal deck
   can never be read; its player sees why (how many cards it holds).
 - **A reading from before an edit.** A deck edited since its last analysis still has its last bracket. The seat shows it
