@@ -76,7 +76,8 @@ const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h
  * A Shopping row's slots. Below `md` it is option B (Social R2 PR 7; Hugh made it the row for everyone, 2026-10-15): the name
  * and the ✕ take line 1, and the pips, the marker, ⇄ and the buy tag take line 2. The shell wraps by `order`: a zero-height
  * full-width break ends line 1 (its own flex line, so `gap-y` falls on both sides of it). From `md` it is the one line every
- * card row is, with the buy tag in its own fixed 84px column and the ✕ after it (the card rows addendum, L2 and L6): the
+ * card row is, with the buy tag in its own 84px column (a minimum: a qualified price such as `$12.50 etched` is wider, and
+ * grows leftward rather than over its neighbour) and the ✕ after it (the card rows addendum, L2 and L6): the
  * marker and the press flow left of them. Every class spelled whole so Tailwind sees it.
  */
 type LineSlots = {
@@ -101,8 +102,8 @@ const SHOPPING_SLOTS: LineSlots = {
   mark: "max-md:order-6",
   // The press keeps its 26px box and takes 3px off each side of the line, so a row holding it stays 34px (L8).
   swap: "max-md:order-7 md:-my-[3px]",
-  buyStack: "max-md:order-8 max-md:min-h-[44px] max-md:justify-center md:order-1 md:w-[84px]",
-  buy: "max-md:flex max-md:order-8 max-md:min-h-[44px] max-md:items-center md:flex md:order-1 md:w-[84px] md:flex-none md:items-center md:justify-end",
+  buyStack: "max-md:order-8 max-md:min-h-[44px] max-md:justify-center md:order-1 md:min-w-[84px]",
+  buy: "max-md:flex max-md:order-8 max-md:min-h-[44px] max-md:items-center md:flex md:order-1 md:min-w-[84px] md:flex-none md:items-center md:justify-end",
 };
 /**
  * The glint on the phone's meta line (a Shopping row's line 2 and an All row's pips line under the name) sits in the indent
@@ -300,19 +301,22 @@ export function DecklistRow({
     const folded = facts.slice(fromIndex);
     if (folded.length === 0) return null;
     return (
-      <FactTooltip
-        key={className}
-        lines={folded.map((f) => (
-          <>
-            <CardFactMark fact={f} />
-            {cardMarkCopy[f]}
-          </>
-        ))}
-      >
-        <span aria-hidden="true" className={`${className} flex-none font-mono text-[11px] leading-none`} style={{ color: "var(--fact)" }}>
-          +{folded.length}
-        </span>
-      </FactTooltip>
+      // The tier's visibility sits on the OUTER span, outside the tooltip's own wrapper (a fine pointer adds an inline-flex
+      // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
+      <span key={className} className={`${className} flex-none`}>
+        <FactTooltip
+          lines={folded.map((f) => (
+            <>
+              <CardFactMark fact={f} />
+              {cardMarkCopy[f]}
+            </>
+          ))}
+        >
+          <span aria-hidden="true" className="font-mono text-[11px] leading-none" style={{ color: "var(--fact)" }}>
+            +{folded.length}
+          </span>
+        </FactTooltip>
+      </span>
     );
   };
   const factMarks = [
@@ -409,7 +413,10 @@ export function DecklistRow({
   // reason to draw one.
   // Option B draws the two-line layout on every Shopping row, a land with no EDHREC figure included (the figure
   // stays conditional, and the second line is then cost and nothing, which still carries the row's width).
-  const shellHasMeta = hasShoppingMeta || !inLandsGroup;
+  // A foil nonbasic land keeps the phone's meta line too: its glint rides that line under the dot, and the row is 52px there like a
+  // card's. A basic land's stepper row and a read-only list draw no glint.
+  const landGlint = foilFinish !== undefined && !basicRow && !readOnly;
+  const shellHasMeta = hasShoppingMeta || !inLandsGroup || landGlint;
   const hasMetaLine = shellHasMeta || twoLine;
   // The SHELL keeps the original condition (a land with no figure is 44px on the phone), and `rowB` forces only the markup.
   const rowShell = shellHasMeta ? ROW_SHELL_META : ROW_SHELL;
