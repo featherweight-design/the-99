@@ -37,6 +37,13 @@ afterEach(() => {
 });
 
 describe("the search sheet (phone)", () => {
+  it("is no dialog in the DOM until it opens (the swap receipt waits for none to exist)", async () => {
+    const icon = mount();
+    expect(document.querySelector('[role="dialog"], [aria-modal="true"]')).toBeNull();
+    await act(async () => fireEvent.click(icon));
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+  });
+
   it("opens with the field focused in the icon's own press, and marks the icon open", async () => {
     const icon = mount();
     expect(screen.queryByRole("dialog")).toBeNull();

@@ -287,7 +287,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       body.querySelector<HTMLElement>(`[data-card-search-row="${CSS.escape(returned)}"]`) ??
       body.querySelector<HTMLElement>("[data-card-search-retry]") ??
       // Neither (the opening row was replaced by a newer search while the card was up): the sheet itself.
-      inputRef.current?.closest<HTMLElement>('[role="dialog"]');
+      inputRef.current?.closest<HTMLElement>("[data-card-search-sheet]");
     target?.focus({ preventScroll: true });
   }, [open, returned]);
 
@@ -472,9 +472,12 @@ function PhoneFrame() {
   return (
     <div
       ref={sheetRef}
-      role="dialog"
-      aria-modal="true"
+      // A dialog only while it is up: a closed one still matches `[role="dialog"]`, and the swap receipt waits for
+      // none to exist before it focuses Undo. The field stays mounted either way, for the synchronous focus.
+      role={isOpen ? "dialog" : undefined}
+      aria-modal={isOpen ? "true" : undefined}
       aria-labelledby="card-search-heading"
+      data-card-search-sheet=""
       // Focusable itself, so lowering the keyboard keeps focus (and Escape, and Tab) inside the sheet.
       tabIndex={-1}
       hidden={!isOpen}
@@ -536,7 +539,7 @@ function PhoneFrame() {
  * leaves focus on `body`, where the sheet's Escape and Tab never see a key.
  */
 function lowerKeyboard(input: HTMLInputElement | null) {
-  const sheet = input?.closest<HTMLElement>('[role="dialog"]');
+  const sheet = input?.closest<HTMLElement>("[data-card-search-sheet]");
   if (sheet) sheet.focus({ preventScroll: true });
   else input?.blur();
 }
