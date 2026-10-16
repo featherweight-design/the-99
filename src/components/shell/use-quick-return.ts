@@ -108,6 +108,13 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       schedule();
     };
     window.addEventListener("scroll", schedule, { passive: true });
+    // A link to the fragment already in the address bar scrolls with no `hashchange` (as `about/jump-mark.tsx` knows),
+    // so a press on any same-page fragment link marks the scroll it starts as the app's.
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.("a[href*='#']") as HTMLAnchorElement | null;
+      if (link && link.pathname === location.pathname && link.hash) settle();
+    };
+    document.addEventListener("click", onClick, true);
     window.addEventListener("popstate", settle);
     // An in-page anchor jump is the app's scroll too.
     window.addEventListener("hashchange", settle);
@@ -115,6 +122,7 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
     document.addEventListener("focusout", onFocusOut);
     return () => {
       window.removeEventListener("scroll", schedule);
+      document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", settle);
       window.removeEventListener("hashchange", settle);
       document.removeEventListener("focusin", onFocusIn);

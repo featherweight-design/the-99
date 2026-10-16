@@ -4,6 +4,7 @@
 // export dialog, ConfirmModal, and the account menu.
 
 import { type RefObject, useEffect, useRef } from "react";
+import { noteAppScroll } from "../ui/reveal";
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -373,7 +374,9 @@ function pinScrollY(y: number | null) {
       stop();
       return;
     }
-    // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
+    // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move. The app's
+    // scroll, not the reader's: quick return must not read it as travel.
+    noteAppScroll();
     if (window.scrollY !== offset) window.scrollTo(0, offset);
     frames += 1;
     if (frames < 30) rafId = requestAnimationFrame(reassert);

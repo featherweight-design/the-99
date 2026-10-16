@@ -56,6 +56,13 @@ describe("quickReturnStep", () => {
     expect(run([581], { fieldFocus: true }, back).mode).toBe("away");
   });
 
+  it("takes a returned header into the page when a field takes focus within its height, app scroll or not", () => {
+    const near = run([400, 600, 580, 50]);
+    expect(near.mode).toBe("shown");
+    expect(run([50], { fieldFocus: true }, near).mode).toBe("page");
+    expect(run([50], { fieldFocus: true, programmatic: true }, near).mode).toBe("page");
+  });
+
   it("sends a returned header away when a field takes focus, even while the app is scrolling", () => {
     const back = run([400, 600, 580]);
     expect(run([700], { programmatic: true, fieldFocus: true }, back).mode).toBe("away");

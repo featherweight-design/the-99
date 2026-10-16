@@ -54,6 +54,7 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import { SearchIcon } from "../ui/search-icon";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { UNDER_HEADER } from "../ui/under-header";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 export type SetGridViewProps = {
   code: string;
@@ -765,6 +766,7 @@ export function SetGridView(props: SetGridViewProps) {
                 // the keyboard reader stayed on a button that was about to unmount.
                 openHead();
                 // Instant, not `reveal`: the next frame focuses the field, which must find the page at the top.
+                noteAppScroll();
                 window.scrollTo({ top: 0 });
                 // And on the next frame, once the open head has painted. The control they
                 // asked for is the field this button stands for; landing them anywhere

@@ -52,8 +52,9 @@ export function quickReturnStep(state: QuickReturnState, input: QuickReturnInput
   const y = Math.max(0, input.y);
   if (input.locked) return state;
   if (y <= 0) return { mode: "page", y, mark: y };
-  // A field taking focus sends a returned header away whoever is scrolling, so it never sits over what is typed.
-  if (input.fieldFocus && state.mode === "shown" && y > input.height) return { mode: "away", y, mark: y };
+  // A field taking focus takes a returned header off the page whoever is scrolling, so it never sits over what is
+  // typed: into the page within its own height, away past it.
+  if (input.fieldFocus && state.mode === "shown") return { mode: y > input.height ? "away" : "page", y, mark: y };
   if (input.programmatic) return { mode: settledMode(state.mode, y, input.height), y, mark: y };
 
   switch (state.mode) {
@@ -68,7 +69,6 @@ export function quickReturnStep(state: QuickReturnState, input: QuickReturnInput
       return { mode: "away", y, mark: low };
     }
     case "shown": {
-      if (input.fieldFocus && y > input.height) return { mode: "away", y, mark: y };
       const high = Math.min(state.mark, y);
       if (y > input.height && y - high >= AWAY_AFTER_PX) return { mode: "away", y, mark: y };
       return { mode: "shown", y, mark: high };

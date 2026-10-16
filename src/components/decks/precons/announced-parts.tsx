@@ -24,6 +24,7 @@ import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../.
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { SheetGroupToggle } from "../../ui/sheet-group";
 import { collapsible, firstPaintCss } from "../../../lib/precons/announced-collapse";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 
 const copy = preconsCopy.upcoming;
 
@@ -288,7 +289,11 @@ function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggl
   // Show fewer lifts the toggle with the tiles it folds away: if that would leave it above the window, bring it back.
   const wasExpanded = useRef(expanded);
   useLayoutEffect(() => {
-    if (wasExpanded.current && !expanded) toggleRef.current?.querySelector("button")?.scrollIntoView({ block: "nearest" });
+    if (wasExpanded.current && !expanded) {
+      // The app's scroll, not the reader's (quick return).
+      noteAppScroll();
+      toggleRef.current?.querySelector("button")?.scrollIntoView({ block: "nearest" });
+    }
     wasExpanded.current = expanded;
   }, [expanded]);
   if (commanders.length === 0) {

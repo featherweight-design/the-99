@@ -139,6 +139,34 @@ describe("useQuickReturn", () => {
   });
 });
 
+describe("a link to the fragment already in the address bar", () => {
+  // It scrolls with no `hashchange`, so the press itself marks the jump as the app's.
+  it("does not bring the header back with its upward jump", async () => {
+    function Page() {
+      const ref = useRef<HTMLElement>(null);
+      const { mode } = useQuickReturn(ref);
+      return (
+        <>
+          <header ref={ref} data-mode={mode} />
+          <main>
+            <a href="#entry">Appendix</a>
+          </main>
+        </>
+      );
+    }
+    const { getByText } = render(<Page />);
+    await act(async () => vi.advanceTimersByTime(400));
+    await scrollTo(400);
+    await scrollTo(600);
+    getByText("Appendix").addEventListener("click", (e) => e.preventDefault());
+    await act(async () => {
+      getByText("Appendix").click();
+    });
+    await scrollTo(300);
+    expect(header().dataset.mode).toBe("away");
+  });
+});
+
 describe("a focused field that unmounts", () => {
   // No `focusout` fires for it, so the attribute is read from the focus itself on the next frame.
   it("does not leave the header held away", async () => {
