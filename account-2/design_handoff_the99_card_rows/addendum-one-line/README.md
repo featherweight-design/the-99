@@ -2,7 +2,7 @@
 
 Fast follow to the foil mark addendum's two-line card row (#1886). Hugh's verdict live: the information is worth having, but two lines read empty on desktop for a light row. This addendum puts the deck page's card row back on one 34px line from `md` (768px) up, in All and Shopping, and makes it hold the busiest real row.
 
-Canvas: https://claude.ai/artifact/DMQXF285UCEH5P8ntK7aGH (private to Hugh until shared).
+Canvas: https://claude.ai/artifact/DMQXF285UCEH5P8ntK7aGH (private to Hugh until shared). **Approved by Hugh 2026-10-16.**
 
 ## Boards
 
@@ -30,6 +30,8 @@ Canvas: https://claude.ai/artifact/DMQXF285UCEH5P8ntK7aGH (private to Hugh until
 - **L9** Unchanged: over-limit outline and key item, both keys, stepper rows, read-only precon rows, removal / I got it slots (34px on desktop again).
 - **L10** Phone stays as shipped (52px All row, option B Shopping), except All loses the press.
 
+L2 and L10's "All has no press" is Hugh's ruling (2026-10-16).
+
 Directions not taken: availability folded into the buy tag (3c; the buy plate is the I got it press). Drawn for Hugh's call: the glint after the name (3b; recommended against).
 
 ## Engineering
@@ -43,8 +45,8 @@ Directions not taken: availability folded into the buy tag (3c; the buy plate is
 
 ## Gaps
 
-- **L-G1** Combo mark has no data on `DeckDetailCard`; drawn per the brief, ships once the decklist reads combos.
-- **L-G2** All loses the other-ways press (Hugh to confirm).
+- **L-G1** Combo mark: the combo data exists; wiring it onto deck rows is an engineering task, not a design gap (Hugh, 2026-10-16).
+- **L-G2** All carries no other-ways press: ruled by Hugh 2026-10-16, Shopping only until feedback says otherwise.
 - **L-G3** Tight tier marker is glyph-only; word stays in tooltip and spoken label.
 - **L-G4** Tier widths measured on fixtures; confirm on staging's longest names.
 - **L-G5** Fixture marks are illustrative.
