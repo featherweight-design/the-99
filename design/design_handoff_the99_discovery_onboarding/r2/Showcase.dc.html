@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R2 · the showcase</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:4280px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R2 · the showcase · About’s Tools tab · 1280 and 390 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">Tools: fourteen tools, each on a real screen with its control haloed</h2>
+    <p class="cap">About opens on Tools. Each tool is a card: a real screenshot cropped to the control that opens it, the tool’s name and cost, one line on what it is for, and Try it, which opens the tool on one of the reader’s own decks. Tools are grouped by when in a deck’s life a player reaches for them. A tool behind an off switch is not drawn; a tool whose moment was dismissed is drawn like any other.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">S1</span><span class="t">The Tools tab</span></div>
+    <div class="frames">
+      <div><div class="w">1280 · Tools, the whole page</div><dc-import name="ShowcaseDesk" h="3930" hint-size="1280px,3930px"></dc-import></div>
+      <div><div class="w">390 · each group scrolls sideways; the next card peeks</div><dc-import name="ShowcasePhone" h="3570" hint-size="390px,3570px"></dc-import></div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":4280}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>
