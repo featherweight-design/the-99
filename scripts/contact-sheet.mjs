@@ -193,16 +193,11 @@ async function run(page, steps) {
       if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
       await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
     }
-    // A fresh visit for the next moment: the visit lives in this context's storage, and the row before took it. Cleared
-    // before the page's own scripts run on every later load too, so a row clears FIRST and then loads its route once: a
-    // load made only to reach the origin could take the visit (a shell anchor is on every route) and spend the moment
-    // before this step ran. The page may still be blank, where storage is not reachable yet.
+    // A fresh visit for the row's moment, on its NEXT load only (the init script above reads the flag before the page's
+    // own scripts run). The page it is on keeps its taken visit, so nothing arrives there in the meantime: a row clears
+    // first and then loads its route once.
     if (step.clearVisit === true) {
-      if (!clearsVisit.has(page)) {
-        await page.addInitScript(() => window.localStorage.removeItem("the99.moments.visit"));
-        clearsVisit.add(page);
-      }
-      await page.evaluate(() => window.localStorage.removeItem("the99.moments.visit")).catch(() => {});
+      await page.evaluate(() => window.sessionStorage.setItem("contactSheet.freshVisit", "1"));
     }
     // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is. `at` rests it
     // at a point inside the element ({ x, y } in px from its top left), for a card that tilts toward the pointer.
@@ -311,8 +306,6 @@ const shots = [];
 const browser = await chromium.launch();
 /** The per-width camera browsers still open: closed in the `finally`, so a width that fails part-way leaves none behind. */
 const cameraBrowsers = new Set();
-/** The pages already clearing the moments' visit on every load (`clearVisit`), so the init script is added once. */
-const clearsVisit = new WeakSet();
 /** The account's About columns as the run found them, when an inventory clears the gate. */
 let aboutPrior = null;
 try {
@@ -333,6 +326,20 @@ try {
       hasTouch: size.touch === true,
     });
     const page = await context.newPage();
+    // An inventory of moments: every load starts with this visit's moment TAKEN, unless the step before it was
+    // `clearVisit`, so nothing arrives on the loads that sign in and clear the About gate (the account button carries a
+    // moment on every route, Home included) and a row's moment is the first its own route can show.
+    if (inventory.rows.some((r) => r.steps?.some((st) => st.clearVisit === true))) {
+      await page.addInitScript(() => {
+        const key = "the99.moments.visit";
+        if (window.sessionStorage.getItem("contactSheet.freshVisit") === "1") {
+          window.sessionStorage.removeItem("contactSheet.freshVisit");
+          window.localStorage.removeItem(key);
+        } else {
+          window.localStorage.setItem(key, JSON.stringify({ last: Date.now(), taken: true }));
+        }
+      });
+    }
     await signIn(page);
     // `"clearAbout": true` marks the About gate seen before the first row, through the one helper every
     // probe uses, so the first load photographs the surface rather than `/about` (swap tools close-out:
