@@ -46,8 +46,11 @@ about 0.5s a frame, a margin gate that sorts sure from not sure.
 
 - **G1 · One tap to fix. Settled by Hugh 2026-10-16:** one tap isn't needed. The name press opening the closest
   cards stands, with *Search for it instead* when none match (L2).
-- **G9 · Card art or a graphic (open).** Hugh asked whether card art on D1–D5 and in the tray fits the brand.
-  Options in `R1 - Options-Images.dc.html`: A brand fan, B scan mark, C the player's own cards; tray T1–T3.
+- **G9 · Card art or a graphic. Settled by Hugh 2026-10-16: B and T3.** D1–D5 show the scan mark, a blank 99 card
+  inside the camera's pink corners, with a scan line that sweeps while the index downloads (still under reduced
+  motion). The tray is a count card on the brand fan; on each add its front card flips to the card just added for a
+  moment, then back to the count (V5). No fixed card art anywhere. The options are kept in
+  `R1 - Options-Images.dc.html`.
 - **G2 · Fast is the default.** Fewer steps for a batch; any printing can be changed on the list.
 - **G3 · Index updates.** New sets mean new rows. Drawn as a quiet background top-up with no screen; engineering
   sizes it. (The research also recommends matching on our server, which would drop the download; the brief's

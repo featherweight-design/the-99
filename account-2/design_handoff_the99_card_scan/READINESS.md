@@ -1,7 +1,8 @@
 # READINESS — Card scanning (R1)
 
-**🟡 R1, for Hugh's audit, 2026-10-16.** Every open question in the brief is drawn at 390, with the desktop fallback
-at 1300. Gaps G1–G8 are in `README.md`; G1 needs Hugh's word.
+**🟢 R1, approved by Hugh 2026-10-16**, with G1 settled (the name press and *Search for it instead* stand) and G9
+settled (B, the scan mark on D1–D5; T3, the count card that flips in the tray). Every open question in the brief is
+drawn at 390, with the desktop fallback at 1300. G2–G8 in `README.md` are engineering defaults.
 
 ## Locks held
 
@@ -27,5 +28,8 @@ at 1300. Gaps G1–G8 are in `README.md`; G1 needs Hugh's word.
 - Camera: `getUserMedia` rear camera; torch through `applyConstraints({advanced:[{torch:true}]})` where offered;
   dark detection by mean frame brightness.
 - Fast/Normal remembered per device (localStorage).
+- The scan mark and the tray's count card are drawn in CSS/SVG from tokens, like the shipped `CardFanMark` /
+  `FanShuffle`; both animations drop under `prefers-reduced-motion`. The tray's flip shows the added card's image
+  for about 0.8s.
 - Save is the shipped add, so one History entry for the batch.
 - Copy in `card-scan · copy strings.ts` goes through `/copy-review`; About entry in `about · scanning your cards.ts`.

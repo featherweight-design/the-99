@@ -16,6 +16,7 @@ its **Real photos, 2026-10-16** section, and Hugh's brief of 2026-10-16 (project
 | `R1 - Review-Phone.dc.html` | R1–R4 re-scanning the same card (duplicate vs second copy); L1–L4 the review on the Add cards list, fixing a wrong card, Normal's printing step, saved. |
 | `R1 - Desktop.dc.html` | W1–W6: the Scan press, the webcam panel in the sheet (sure, not sure), photos, the index, no webcam. |
 | `R1 - About-Entry.dc.html` | The new About entry, desktop and phone. |
+| `R1 - Options-Images.dc.html` | The image options Hugh chose from (picked: B and T3). For the record only. |
 | `README.md` | Each open question answered, with reasons; the gap report. |
 | `STATES-card-scan.md` | The matrix. |
 | `READINESS.md` | R1's verdict and what engineering needs. |
