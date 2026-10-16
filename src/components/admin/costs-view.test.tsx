@@ -349,14 +349,15 @@ describe("the pinned head and month bar", () => {
     const head = render(<AdminHead env="staging" />);
     const header = head.container.querySelector("header")!;
     expect(header.className).toMatch(/(^|\s)sticky(\s|$)/);
-    expect(header.style.top).toBe("0px");
+    // Under a returned phone header too (card search plan PR B): nothing of the head is hidden from `md` up.
+    expect(header.style.top).toBe("calc(var(--header-offset, 0px) - 0px)");
     expect(header.className).toContain("bg-[color:var(--bg)]");
     expect(observed).toBe(header);
     expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("173px");
 
     draw(rows([p(2, 1)]));
     const bar = screen.getByText("October 2026").closest("div.sticky")!;
-    expect(bar.className).toContain("top-[var(--admin-head-h,0px)]");
+    expect(bar.className).toContain("top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px))]");
     expect(bar.className).not.toMatch(/(^|\s)top-0(\s|$)/);
 
     head.unmount();
@@ -380,7 +381,7 @@ describe("the pinned head and month bar", () => {
     });
     const head = render(<AdminHead env="staging" />);
     const header = head.container.querySelector("header")!;
-    expect(header.style.top).toBe("-117.6px");
+    expect(header.style.top).toBe("calc(var(--header-offset, 0px) - 117.6px)");
     expect(parseFloat(document.documentElement.style.getPropertyValue("--admin-head-h"))).toBeCloseTo(42.8, 5);
     head.unmount();
     rect.mockRestore();

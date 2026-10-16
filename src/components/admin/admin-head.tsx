@@ -110,7 +110,8 @@ function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObjec
       // 20.8px lines would leave a sliver of it showing, or clip the strip).
       const box = head.getBoundingClientRect();
       const hidden = wide.matches ? 0 : tabs.getBoundingClientRect().top - box.top;
-      head.style.top = `${-hidden}px`;
+      // Under a returned phone header too (`--header-offset`, card search plan PR B), which the bars below follow.
+      head.style.top = `calc(var(--header-offset, 0px) - ${hidden}px)`;
       root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${box.height - hidden}px`);
     };
     publish();

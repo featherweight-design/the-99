@@ -241,7 +241,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
 
   return (
     <>
-      <div className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col items-start justify-between gap-[10px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:flex-row md:items-center md:px-[28px] md:pb-[14px] md:pt-[18px]">
+      <div className="sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px))] z-[1] flex flex-none flex-col items-start justify-between gap-[10px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:flex-row md:items-center md:px-[28px] md:pb-[14px] md:pt-[18px]">
         <div className="flex items-center gap-[10px]">
           <Link href={prevHref} aria-label={copy.period.previous} className="px-[6px] text-[18px] text-[color:var(--fg-muted)]">
             ‹<PendingReporter href={prevHref} />

@@ -96,7 +96,7 @@ export function AccountsList({
       </p>
       <div
         ref={pinRef}
-        className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
+        className="sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px))] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
       >
         <SearchField
           value={query}
@@ -113,7 +113,7 @@ export function AccountsList({
         <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
-            className={`sticky top-[calc(var(--admin-head-h,0px)+var(--admin-pin-h,0px))] z-[1] hidden bg-[color:var(--surface-rail)] px-[16px] py-[9px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] ${GRID}`}
+            className={`sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px)+var(--admin-pin-h,0px))] z-[1] hidden bg-[color:var(--surface-rail)] px-[16px] py-[9px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] ${GRID}`}
           >
             <span>{copy.cols.account}</span>
             <span>{copy.cols.group}</span>

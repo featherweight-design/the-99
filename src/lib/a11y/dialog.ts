@@ -58,6 +58,11 @@ function scrollLockMoved() {
 }
 let overflowBeforeLock = "";
 
+/** Whether any dialog holds the page's scroll now (quick return freezes the phone header under one). */
+export function scrollLocked(): boolean {
+  return scrollLocks > 0;
+}
+
 // Every mounted dialog's root, in mount order (H23 PR 2's pre-open review). Ownership of a
 // key is settled by DOM containment (`closest('[role="dialog"]')`) whenever focus is inside
 // one — the stack below decides only the AMBIGUOUS case, focus on neither dialog's subtree,

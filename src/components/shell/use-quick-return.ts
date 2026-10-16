@@ -1,0 +1,138 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { scrollLocked } from "../../lib/a11y/dialog";
+import { appScrolling } from "../../lib/ui/reveal";
+import {
+  headerOffset,
+  INITIAL,
+  quickReturnStep,
+  SETTLE_MS,
+  type QuickReturnMode,
+  type QuickReturnState,
+} from "../../lib/ui/quick-return";
+
+/**
+ * Runs quick return for the phone header (`lib/ui/quick-return.ts` holds the rules). It publishes two custom
+ * properties on `<html>`: `--header-h`, the header's own height, which its spacer in the page holds, and
+ * `--header-offset`, the room a returned header takes, which sticky page heads ride under. It also keeps
+ * `data-field-focus` on `<html>` while a text field in the page has focus, which the rules read.
+ *
+ * Scroll is read once a frame. A scroll inside 300ms of a navigation or a history move (a restore) is the app's, as is
+ * any `reveal()` for its whole run; both move the reference points and never the header.
+ */
+export type QuickReturnView = {
+  mode: QuickReturnMode;
+  /**
+   * Whether the header slides into this mode. Only between away and back: arriving away from the page it has already
+   * scrolled off, so a slide there would draw it sliding up across the screen.
+   */
+  slides: boolean;
+};
+
+export function slidesInto(next: QuickReturnMode, prev: QuickReturnView): boolean {
+  return next === "shown" || (next === "away" && (prev.mode === "shown" || (prev.mode === "away" && prev.slides)));
+}
+
+export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickReturnView {
+  const pathname = usePathname();
+  const [view, setView] = useState<QuickReturnView>({ mode: "page", slides: false });
+  const state = useRef<QuickReturnState>(INITIAL);
+  const height = useRef(0);
+  const settleUntil = useRef(0);
+  const frame = useRef<number | null>(null);
+
+  // Schedules one step for the next frame; set by the listeners' effect, called by the navigation effect too.
+  const scheduleRef = useRef<() => void>(() => {});
+
+  useLayoutEffect(() => {
+    const el = header.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const measure = () => {
+      height.current = el.offsetHeight;
+      root.style.setProperty("--header-h", `${height.current}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--header-h");
+      root.style.removeProperty("--header-offset");
+    };
+  }, [header]);
+
+  useEffect(() => {
+    const tick = () => {
+      frame.current = null;
+      const root = document.documentElement;
+      const next = quickReturnStep(state.current, {
+        y: window.scrollY,
+        height: height.current,
+        locked: scrollLocked(),
+        fieldFocus: root.hasAttribute("data-field-focus"),
+        programmatic: appScrolling() || performance.now() < settleUntil.current,
+      });
+      state.current = next;
+      root.style.setProperty("--header-offset", `${headerOffset(next.mode, height.current)}px`);
+      setView((prev) => (prev.mode === next.mode ? prev : { mode: next.mode, slides: slidesInto(next.mode, prev) }));
+    };
+    const schedule = () => {
+      if (frame.current === null) frame.current = requestAnimationFrame(tick);
+    };
+    scheduleRef.current = schedule;
+    const settle = () => {
+      settleUntil.current = performance.now() + SETTLE_MS;
+    };
+    const root = document.documentElement;
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as Element | null;
+      if (isPageField(target)) root.setAttribute("data-field-focus", "");
+      // A keyboard reader tabbing into the header while it is away brings it back to where they are.
+      else if (target && header.current?.contains(target) && state.current.mode === "away") {
+        state.current = { mode: "shown", y: window.scrollY, mark: window.scrollY };
+      }
+      schedule();
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (!isPageField(e.relatedTarget as Element | null)) root.removeAttribute("data-field-focus");
+      schedule();
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("popstate", settle);
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("popstate", settle);
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+      root.removeAttribute("data-field-focus");
+      // Cleared, not only cancelled: a pending id left behind (StrictMode's remount runs this) would read as a frame
+      // already scheduled, and no scroll would ever be read again.
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = null;
+    };
+  }, [header]);
+
+  // A new page arrives with the header in place, and its own scroll restore is the app's.
+  useEffect(() => {
+    settleUntil.current = performance.now() + SETTLE_MS;
+    state.current = { mode: "page", y: window.scrollY, mark: window.scrollY };
+    scheduleRef.current();
+  }, [pathname]);
+
+  return view;
+}
+
+const NOT_TEXT = new Set(["button", "checkbox", "radio", "range", "color", "file", "submit", "reset", "image", "hidden"]);
+
+/** A field the phone keyboard rises for, inside the page (`<main>`), never the shell's own controls. */
+export function isPageField(el: Element | null): boolean {
+  if (!el || !el.closest("main")) return false;
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return true;
+  if (el instanceof HTMLInputElement) return !NOT_TEXT.has(el.type);
+  return el instanceof HTMLElement && el.isContentEditable === true;
+}

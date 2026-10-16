@@ -1,0 +1,160 @@
+{
+  "feature": "Quick return for the phone header (card search plan PR B): away on the way down, back over the page on 12px up, sticky heads riding under it",
+  "note": "Photographed at 360, 375 and 390 on a scratch branch of local-dev, whose audit account holds Gishath under the staging deck id. Scrolls are window.scrollTo jumps after the 300ms a navigation settles for, so the 30px back up reads as the reader's.",
+  "widths": [
+    {
+      "label": "phone-360",
+      "width": 360,
+      "height": 800
+    },
+    {
+      "label": "phone-375",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "rows": [
+    {
+      "id": "collection-top",
+      "label": "Collection at the top: the header in the page as it always was, no shadow",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "collection-away",
+      "label": "Collection scrolled down: the header has left, the filter head pinned at the top",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        },
+        {
+          "scroll": 1500,
+          "settle": 500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "collection-returned",
+      "label": "Collection, 30px back up: the header back over the page with its shadow, the filter head riding under it",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        },
+        {
+          "scroll": 1500,
+          "settle": 500
+        },
+        {
+          "scroll": 1470,
+          "settle": 500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "deck-returned",
+      "label": "A deck mid-list, back up: the header takes the top, the dock and tab bar the bottom (lock 7)",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scroll": 1500,
+          "settle": 500
+        },
+        {
+          "scroll": 1470,
+          "settle": 500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "deck-typing",
+      "label": "A deck, typing in Add a card after the header came back: the header goes and stays away",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scroll": 1500,
+          "settle": 500
+        },
+        {
+          "scroll": 1470,
+          "settle": 500
+        },
+        {
+          "fill": "input[placeholder^='Add a card']",
+          "text": "sol",
+          "settle": 800
+        },
+        {
+          "scroll": 1300,
+          "settle": 500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "deck-card-sheet",
+      "label": "A deck, a card opened with the header back: the header frozen under the scrim",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scroll": 1500,
+          "settle": 500
+        },
+        {
+          "scroll": 1470,
+          "settle": 500
+        },
+        {
+          "click": "[data-decklist-row]",
+          "settle": 200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    }
+  ]
+}

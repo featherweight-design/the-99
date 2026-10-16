@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
+import type { QuickReturnMode } from "../../lib/ui/quick-return";
+import { useQuickReturn } from "./use-quick-return";
 import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
 import { Lock } from "../ui/lock";
@@ -744,9 +746,16 @@ export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?
 // ---------------------------------------------------------------------------
 
 export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: ThemeKey } & AdminDoorProps) {
+  const ref = useRef<HTMLElement>(null);
+  const { mode, slides } = useQuickReturn(ref);
   return (
+    <>
+    {/* Holds the header's room in the page, since the header itself is out of flow at every scroll. */}
+    <div aria-hidden className="md:hidden h-[var(--header-h,79px)] shrink-0" />
     <header
-      className="md:hidden flex items-center justify-between px-5 pt-5 pb-[14px]"
+      ref={ref}
+      data-quick-return={mode}
+      className={`${QUICK_RETURN[mode]} ${slides ? QUICK_RETURN_SLIDE[mode] : ""} md:hidden inset-x-0 top-0 z-30 flex items-center justify-between bg-[color:var(--bg)] px-5 pt-5 pb-[14px] motion-reduce:transition-none`}
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* Wordmark: gap 3px, items-end */}
@@ -776,5 +785,24 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends }: { theme: T
         <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} />
       </div>
     </header>
+    </>
   );
 }
+
+/**
+ * Where the header sits in each quick-return mode (card search handoff call 3). In the page it is absolute at the
+ * document's top, so it scrolls with the page exactly as it always has; away and back it is fixed to the screen.
+ * Under the sheets' scrim (z-40) and over every sticky page head.
+ */
+const QUICK_RETURN: Record<QuickReturnMode, string> = {
+  page: "absolute",
+  away: "fixed -translate-y-full",
+  shown: "fixed translate-y-0 shadow-[0_10px_28px_rgba(0,0,0,0.5)]",
+};
+
+/** The slides: away in 160ms on an ease-in, back in 200ms on the sheet curve (`--motion-ease-out`). */
+const QUICK_RETURN_SLIDE: Record<QuickReturnMode, string> = {
+  page: "",
+  away: "transition-transform duration-[160ms] ease-[cubic-bezier(0.4,0,1,1)]",
+  shown: "transition-[transform,box-shadow] duration-[200ms] ease-[var(--motion-ease-out)]",
+};

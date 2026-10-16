@@ -39,6 +39,7 @@ import { FilterPanel } from "../ui/filter-panel";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { UNDER_HEADER } from "../ui/under-header";
 
 export { useIsDesktop };
 
@@ -462,7 +463,7 @@ export function FilterBar({
       <div
         ref={headRef}
         className={[
-          "sticky top-0 z-[2] flex flex-col gap-[6px]",
+          `sticky ${UNDER_HEADER} z-[2] flex flex-col gap-[6px]`,
           "min-[900px]:flex-row min-[900px]:items-center min-[900px]:gap-[8px]",
           "border-0 border-b border-b-[color:var(--border)] border-solid border-[color:var(--border)]",
           "px-[16px] pt-[8px] pb-[7px]",

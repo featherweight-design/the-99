@@ -23,6 +23,7 @@ import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
 import { CardDetailProvider } from "../../cards/card-detail-provider";
+import { UNDER_HEADER } from "../../ui/under-header";
 
 /** By card: commanders first, then the cards most selected decks need, then A to Z (A2, A3). */
 function byCardOrder(a: SelectedLine, b: SelectedLine): number {
@@ -266,7 +267,7 @@ export function CartView({
                   scroll under them, and plain blocks on desktop, where the list has its own box. */}
               <div
                 data-cart-controls
-                className="sticky top-0 z-[2] -mx-[16px] flex flex-col gap-[12px] border-b border-b-[color:var(--border)] bg-[color:var(--bg)] px-[16px] py-[10px] md:static md:mx-0 md:border-b-0 md:bg-transparent md:p-0"
+                className={`sticky ${UNDER_HEADER} z-[2] -mx-[16px] flex flex-col gap-[12px] border-b border-b-[color:var(--border)] bg-[color:var(--bg)] px-[16px] py-[10px] md:static md:mx-0 md:border-b-0 md:bg-transparent md:p-0`}
               >
                 {/* The switch has nothing to switch between with one deck (E1); the buy key sits
                     beside it, alone, while there is a line to press. */}
