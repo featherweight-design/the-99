@@ -3,6 +3,8 @@
 // Strings are the handoff's `collection-edit · copy strings.ts`, adopted as drawn. Counts are
 // pinned to en-US like the place head, so a server render and a browser agree.
 
+import type { CopyPart } from "./wishlist";
+
 const n = (x: number) => x.toLocaleString("en-US");
 const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
 export const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
@@ -558,6 +560,7 @@ export const collectionEditCopy = {
     view: {
       looking: "Hold a card inside the frame",
       unsure: "Hold it still",
+      unsureBody: "The name shows once the card stays the same for a moment.",
       add: "Add to the list",
       held: "Held",
       notSure: "Not sure. Which is it?",
@@ -566,8 +569,14 @@ export const collectionEditCopy = {
       darkTorch: "It’s dark, so cards read slowly. Turn on the light, top right.",
       darkNoTorch: "It’s dark, so cards read slowly. Move closer to a lamp.",
       light: "Light",
-      onList: (x: number) => `${n(x)} on the list`,
+      added: (name: string) => `${name} is on the list`,
+      next: "Next card.",
+      /** The tray's count, the figure bold as drawn. */
+      onList: (x: number): CopyPart[] => [{ text: n(x), strong: true }, { text: " on the list" }],
+      emptyList: "Nothing on the list yet",
       review: (x: number) => `Review ${n(x)}`,
+      /** Review with nothing on the list: held, so it names no count. */
+      reviewEmpty: "Review",
     },
     again: {
       stillOn: (x: number) => `✓ On the list · ×${n(x)}`,

@@ -22,7 +22,7 @@ const unit = () => {
 };
 const post = (body: unknown) =>
   POST(new NextRequest("http://localhost/api/card-scan/match", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) }));
-const GUESS = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "22222222-2222-4222-8222-222222222222", score: 0.91 };
+const GUESS = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "22222222-2222-4222-8222-222222222222", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.91 };
 
 beforeEach(() => {
   stub.userId = "user_1";

@@ -89,7 +89,7 @@ try {
       const prev = best.get(oid);
       if (!prev || s > prev.s) best.set(oid, { s, sid: data.keys[r][0] });
     }
-    return poolGuesses([...best.entries()].map(([oracleId, { s, sid }]) => ({ oracleId, name: names.get(oracleId) ?? "", scryfallId: sid, distance: 1 - s })));
+    return poolGuesses([...best.entries()].map(([oracleId, { s, sid }]) => ({ oracleId, name: names.get(oracleId) ?? "", scryfallId: sid, typeLine: "", imageUri: null, distance: 1 - s })));
   };
   const nudged = (r: number, seed: number) => {
     const q = new Float32Array(EMBED_DIM);
