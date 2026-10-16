@@ -63,6 +63,16 @@ export function ScannerView(p: ScannerViewProps) {
       <div aria-live="polite" className="contents">
         <Panel {...p} panel={p.screen.panel} />
       </div>
+      {phone && p.flipTo && (
+        // V5's flight, decorative: drawn only when motion is welcome, and gone with the flip.
+        <span
+          aria-hidden="true"
+          data-testid="scan-flight"
+          className="pointer-events-none absolute left-[150px] top-[470px] z-[5] hidden h-[154px] w-[110px] overflow-hidden rounded-[8px] shadow-[0_14px_30px_rgba(0,0,0,.6)] motion-safe:block motion-safe:animate-[scan-fly_450ms_ease-in_forwards]"
+        >
+          <img src={p.flipTo} alt="" className="h-full w-full object-cover" />
+        </span>
+      )}
       {phone && <Tray count={p.count} flipTo={p.flipTo ?? null} onReview={p.onReview} />}
     </section>
   );

@@ -95,6 +95,7 @@ describe("ScannerView", () => {
     const card = screen.getByTestId("scan-count-card");
     expect(card.hasAttribute("data-flip")).toBe(true);
     expect(card.querySelector("img")?.getAttribute("src")).toBe("https://img/sol");
+    expect(screen.getByTestId("scan-flight").getAttribute("aria-hidden")).toBe("true");
     expect(panel().getAttribute("role")).toBe("status");
     expect(panel().textContent).toContain(copy.view.added("Sol Ring"));
     expect(panel().textContent).toContain(copy.view.next);
