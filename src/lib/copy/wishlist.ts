@@ -60,6 +60,8 @@ export const wishlistCopy = {
       { text: String(want), strong: true },
       { text: ` · have ${have}` },
     ],
+    // A friend's tile (their page, view only): `wants 2`, the count strong, and never an owned count.
+    wants: (want: number): CopyPart[] => [{ text: "wants " }, { text: String(want), strong: true }],
   },
 
   details: {

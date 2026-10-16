@@ -55,6 +55,8 @@ approved 2026-10-15), README "Round 3 changes" and decision 9/10, STATES "A frie
 | caption name | 600 12px, one line, ellipsis | 600 13px |
 | caption sub | mono 9px var(--fg-faint), `wants <b>N</b>` number 600 var(--fg-body) | mono 9.5px |
 | collected / owned | never drawn (collected leaves the list) | same |
+| face | the Wishlist tab's own `WishlistTileFace`, with `have: null` for the `wants N` caption | same |
+| press | the whole tile opens card details (`CardDetailTrigger`), stepping through the friend's list; no stepper | same |
 
 ## Component: Empty (P3, PP3)
 

@@ -56,7 +56,6 @@ export const socialCopy = {
     since: (since: string) => `Friend ${since}`, // `since` is friends.since's "since Oct 2"
     head: (name: string) => `${name}’s wishlist`,
     viewOnly: "view only",
-    wants: "wants", // a tile's sub-line: `wants 2`, the count drawn after it in --fg-body
     emptyTitle: (name: string) => `${name}’s wishlist is empty`,
     emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want until they have them.`,
   },
