@@ -1418,6 +1418,10 @@ export function CardModal({
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
+  // M8 (discovery R1): Find a deck's moment is for a card the reader owns and no deck uses, read off this card's own
+  // claims (`fitsDoor` decides only that the door is drawn). A card with no availability read is not counted as unused.
+  const fitsMoment = card.quantity > 0 && !deckHolds && card.availability != null
+    && card.availability.hard === 0 && card.availability.soft === 0;
 
   /**
    * Closing unmounts the layer.
@@ -2843,7 +2847,7 @@ export function CardModal({
                     </div>
                   ) : null}
                   {onFindDeck ? (
-                    <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" reading={fitsReading} />
+                    <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} moment={fitsMoment} layout="column" reading={fitsReading} />
                   ) : null}
                 </div>
               )}
@@ -2864,7 +2868,7 @@ export function CardModal({
             {footer ? footer("row") : onFindDeck ? (
               <span className="flex flex-col gap-[8px] min-w-0">
                 {buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
-                <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" reading={fitsReading} />
+                <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} moment={fitsMoment} layout="row" reading={fitsReading} />
               </span>
             ) : buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
             {/* One / two (handoff decision 6): a list of one drops the whole counter and

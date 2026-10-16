@@ -20,6 +20,9 @@ import { wishlistCopy } from "../../lib/copy/wishlist";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { RECEIPT_LINK_CLASS } from "../cards/card-modal-shared";
 import { WantStepper } from "./want-stepper";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 const copy = wishlistCopy.details;
 
@@ -52,6 +55,9 @@ export function CardWishlist({
   // section as it opens never takes it, and a reader who has tabbed away is left where they are.
   const [arrived, setArrived] = useState(false);
   const addRef = useRef<HTMLButtonElement>(null);
+  // M9 (discovery R1): `Add to wishlist` is the Wishlist's moment on a card the reader does not own.
+  const wishMoment = useMomentAnchor("wishlist", { eligible: want === null && have === 0, copy: momentsCopy.wishlist });
+  const addButtonRef = useMergedRef(addRef, wishMoment.ref);
   const toasts = useRef(0);
   const fail = (text: string) => setToast({ id: ++toasts.current, text });
 
@@ -145,7 +151,8 @@ export function CardWishlist({
       </div>
       {want === null ? (
         <button
-          ref={addRef}
+          ref={addButtonRef}
+          aria-describedby={wishMoment["aria-describedby"]}
           type="button"
           aria-busy={busy || undefined}
           onClick={() => void add()}

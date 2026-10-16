@@ -20,6 +20,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useMinWidth } from "../ui/use-min-width";
+import { useMomentHold } from "../../lib/moments/hold";
 
 import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 
@@ -137,6 +138,7 @@ export function FactTooltip({
   sentence,
   lines,
   tapOnTouch = false,
+  holdMoments = false,
   children,
 }: {
   fact?: CardFact;
@@ -154,6 +156,11 @@ export function FactTooltip({
    * every fact is listed.
    */
   tapOnTouch?: boolean;
+  /**
+   * While the bubble is open, hold every moment off (`useMomentHold`), which also closes one showing: the availability
+   * marker's tooltip, which would otherwise draw over its own moment's bubble (M7, plan `2026-10-16-moments.md`).
+   */
+  holdMoments?: boolean;
   children: React.ReactNode;
 }) {
   // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
@@ -187,13 +194,14 @@ export function FactTooltip({
   if (!fine && !tapOnTouch) return <>{children}</>;
   const tap = !fine;
   const text = sentence ?? (fact ? cardMarkCopy.tooltip[fact] : "");
-  if (lines && lines.length > 0) return <FinePointerTooltip key={String(tap)} tap={tap} text="" lines={lines}>{children}</FinePointerTooltip>;
+  if (lines && lines.length > 0) return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} text="" lines={lines}>{children}</FinePointerTooltip>;
   if (!text) return <>{children}</>;
-  return <FinePointerTooltip key={String(tap)} tap={tap} text={text}>{children}</FinePointerTooltip>;
+  return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} text={text}>{children}</FinePointerTooltip>;
 }
 
-function FinePointerTooltip({ text, lines, tap = false, children }: { text: string; lines?: readonly React.ReactNode[]; tap?: boolean; children: React.ReactNode }) {
+function FinePointerTooltip({ text, lines, tap = false, holdMoments = false, children }: { text: string; lines?: readonly React.ReactNode[]; tap?: boolean; holdMoments?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  useMomentHold(holdMoments && open);
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
   // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
   // An estimate on open, then corrected from the bubble's MEASURED size before paint — the

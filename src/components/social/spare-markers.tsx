@@ -7,6 +7,9 @@
 // is no press). Off, the provider is not mounted and every piece here draws nothing.
 
 import { TOUCH_HIT } from "../ui/touch-hit";
+import { useMergedRef } from "../ui/use-merged-ref";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -174,6 +177,12 @@ export function OtherWaysPress({
   const tools = useSwapTools();
   const spare = ctx?.byCard.has(card.oracleId) ?? false;
   const swap = standIn && tools !== null && openStandIns !== undefined;
+  // M5 and M6 (discovery R1) share this one press: Cheaper stand-ins while it holds ⇄, a friend's spare while it holds
+  // the spare glyph. Many rows register; the provider shows the first on screen, and at most one shows at a time.
+  const standInMoment = useMomentAnchor("stand-ins", { eligible: swap, copy: momentsCopy.standIns(limitFigure) });
+  const spareMoment = useMomentAnchor("friend-spares", { eligible: spare, copy: momentsCopy.friendSpares });
+  const ref = useMergedRef(standInMoment.ref, spareMoment.ref);
+  const describedBy = standInMoment["aria-describedby"] ?? spareMoment["aria-describedby"];
   if (!swap && !spare) return null;
   const name = printedFaceName(card);
   const label = swap && spare ? spareCopy.pressBothAria(name, limitFigure) : swap ? standInAria : spareCopy.markerAria(name);
@@ -181,8 +190,10 @@ export function OtherWaysPress({
   return (
     <button
       type="button"
+      ref={ref}
       data-testid="other-ways"
       aria-label={label}
+      aria-describedby={describedBy}
       aria-haspopup="dialog"
       aria-expanded={on}
       onClick={() => (tools && openStandIns ? openStandIns() : ctx?.open(card))}
