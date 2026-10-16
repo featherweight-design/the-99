@@ -273,5 +273,18 @@ describe("useCardScan", () => {
     expect(applyConstraints).toHaveBeenCalledTimes(1);
     expect(hook.result.current.torch.on).toBe(true);
   });
-});
 
+  it("leaves no hold behind when an add lands while a second press is still down", async () => {
+    const { hook, onAdd } = setup();
+    let land: (v: boolean) => void = () => {};
+    onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    act(() => hook.result.current.hold());
+    act(() => hook.result.current.add());
+    // The second press goes down, and the first add lands before it is let go.
+    act(() => hook.result.current.hold());
+    await act(async () => land(true));
+    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
+    expect(hook.result.current.screen).not.toMatchObject({ panel: { held: true } });
+  });
+});

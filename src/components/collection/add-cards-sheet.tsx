@@ -205,7 +205,8 @@ function AddMode({
     wasBlocked.current = blocked;
   }, [blocked]);
 
-  const dirty = lines.length > 0 && phase !== "saved";
+  // A scanned card still loading its printings is on its way to the list: closing now would lose it unasked.
+  const dirty = (lines.length > 0 || scanPending > 0) && phase !== "saved";
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();

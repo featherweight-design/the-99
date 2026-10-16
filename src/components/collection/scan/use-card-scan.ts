@@ -219,6 +219,9 @@ export function useCardScan(
           onProblem("notAdded");
           return;
         }
+        // A press made while this add waited is over with it: the Added panel replaces its button, so no release
+        // would ever clear that hold.
+        setHeld(null);
         setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
         setAdded({ name: g.name, imageUri: g.imageUri });
       } finally {

@@ -187,5 +187,16 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(await screen.findByRole("button", { name: copy.save(1) }));
     await waitFor(() => expect(screen.queryByTestId("fake-scanner")).toBeNull());
   });
-});
 
+  it("asks before closing while a scanned card is still on its way to the list", async () => {
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>(() => {}));
+    const onClose = vi.fn();
+    render(<AddCardsSheet mode="add" onClose={onClose} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(await screen.findByRole("alertdialog")).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
