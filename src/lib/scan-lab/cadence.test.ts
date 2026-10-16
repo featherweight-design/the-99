@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Reading } from "./reading";
-import type { Display } from "./steady";
+import type { Reading } from "../scan/reading";
+import type { Display } from "../scan/steady";
 import { CADENCE_GAP_MS, CADENCE_MS, MAX_CADENCE_FRAMES, cadenceDone, logFrame, parseCadence, pressedDuringRun, startCadence } from "./cadence";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

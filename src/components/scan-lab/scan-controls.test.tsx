@@ -4,8 +4,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ScanControls, VERDICT_CLICK_WAIT_MS } from "./scan-controls";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
-import type { Reading } from "../../lib/scan-lab/reading";
-import type { Display } from "../../lib/scan-lab/steady";
+import type { Reading } from "../../lib/scan/reading";
+import type { Display } from "../../lib/scan/steady";
 
 const card = (name: string): Reading => ({
   kind: "card", crop: new Float32Array(3), margin: 0.2, agreed: 5, committed: true, detMs: 1, embMs: 2, matchMs: 3, totalMs: 6,

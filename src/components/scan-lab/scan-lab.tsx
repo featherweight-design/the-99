@@ -10,18 +10,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
-} from "../../lib/scan-lab/geometry";
-import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
-import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
-import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan-lab/steady";
+} from "../../lib/scan/geometry";
+import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan/match";
+import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan/reading";
+import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
 import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
-import { sessionHolder } from "../../lib/scan-lab/sessions";
+import { sessionHolder } from "../../lib/scan/sessions";
 import { TrueCardStep } from "./true-card-step";
 import { Checkbox } from "../ui/checkbox";
 import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
-} from "../../lib/scan-lab/models";
+} from "../../lib/scan/models";
 
 /** The slice of onnxruntime-web this page uses; it is loaded from the CDN, so it has no types here. */
 type OrtTensor = { data: Float32Array };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseResult } from "./result";
+import { parseResult } from "../scan-lab/result";
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta } from "./match";
 
 function index() {

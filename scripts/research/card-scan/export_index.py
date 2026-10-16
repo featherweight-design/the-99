@@ -1,4 +1,4 @@
-"""Export the card-scan lab's index (`src/lib/scan-lab/match.ts` reads it).
+"""Export the card-scan lab's index (`src/lib/scan/match.ts` reads it).
 
 One row per image of a gallery (default `all`: every paper printing, plus a DFC's back; pass
 `single` for one reference per oracle), embedded by the build the lab runs in the browser (fp32 by default; pass `int8` second), so the
