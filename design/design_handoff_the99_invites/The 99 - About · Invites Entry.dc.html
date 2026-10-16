@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About entry, Inviting someone new</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}a:hover{color:#FF62A9}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.m{font-family:'IBM Plex Mono',monospace}
+.d{font-family:'Chakra Petch',sans-serif}
+.code{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.dk{width:1300px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box}
+.rail{width:64px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:6px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.av{margin-top:auto;width:28px;height:28px;border-radius:50%;border:1px solid #262A35;color:#B1B6C7;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.ph{width:390px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-sizing:border-box}
+.mh{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #181C26;background:#12141B}
+.mh .logo{margin:0;font-size:16px}
+.mh .logo i{font-size:7px}
+.mh .av{margin:0}
+.tb{height:64px;flex:none;border-top:1px solid #181C26;background:#12141B}
+.cap{font-size:13.5px;line-height:1.55;color:#B1B6C7;display:flex;flex-direction:column;gap:8px}
+.cap p{margin:0}
+.keys{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.keys li{display:flex;align-items:flex-start;gap:8px}
+.keys .dot{width:14px;height:14px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.keys .t{font:10.5px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+.fig{margin:10px 0 0;border:1px solid #181C26;border-radius:8px;background:#101219;overflow:hidden;padding:14px 16px}
+.newpill{display:inline-flex;align-items:center;margin-right:8px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;letter-spacing:.08em;background:#FF4D9A;color:#0E0F14;vertical-align:middle;font-family:'IBM Plex Mono',monospace}
+.navc{width:216px;flex:none;padding-top:24px;display:flex;flex-direction:column}
+.navc ol{margin:0;padding:0;list-style:none}
+.ch{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:6px;color:#959AAD;font-size:13px}
+.ch .n{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6F7486}
+.ch .c{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+.e{display:flex;align-items:baseline;padding:4px 10px 4px 30px;border-radius:6px;color:#959AAD;font-size:12.5px;line-height:1.35}
+.e.now{background:#20222A;color:#E6E8F0}
+.e .t{flex:1;min-width:0}
+.e .nw{margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#FF4D9A}
+.opts{display:flex;flex-direction:column;gap:8px;max-width:440px}
+.opt{display:grid;grid-template-columns:48px minmax(0,1fr) 14px;align-items:center;column-gap:12px;width:100%;min-height:72px;padding:10px 12px 10px 10px;box-sizing:border-box;border-radius:12px;border:1px solid #262A35;background:#20222A;text-align:left;color:#E6E8F0;font-family:'IBM Plex Sans',sans-serif}
+.opt .tt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opt .tt b{font-size:14px;font-weight:600;color:#E6E8F0}
+.opt .tt span{font-size:12px;line-height:1.4;color:#959AAD}
+.opt .cv{color:#959AAD;font-size:18px;line-height:1}
+.opt .left{font:10.5px 'IBM Plex Mono',monospace;color:#FF4D9A}
+.gly{width:48px;height:48px;border-radius:11px;border:1px solid #343843;background:#16181F;display:flex;align-items:center;justify-content:center;color:#E6E8F0;box-sizing:border-box}
+.fan{position:relative;width:48px;height:48px}
+.mini{position:absolute;left:13px;top:8px;width:22px;height:31px;border-radius:4px;box-sizing:border-box;border:1px solid #343843;background:radial-gradient(16px 16px at 50% 46%,rgba(255,77,154,.35),transparent 75%),#101219;display:flex;align-items:center;justify-content:center;font:700 8px 'Chakra Petch',sans-serif;color:#E6E8F0;box-shadow:0 4px 10px rgba(0,0,0,.5)}
+.mini.a{transform:rotate(-14deg) translate(-7px,2px)}
+.mini.b{transform:translate(0,-2px)}
+.mini.c{transform:rotate(14deg) translate(7px,2px)}
+.slotc{border:1px solid #181C26;border-radius:10px;padding:14px 16px;background:#12141B;display:flex;flex-direction:column;gap:7px}
+.slotc .t{font-size:12.5px;line-height:1.55;color:#B1B6C7;white-space:pre-line}
+.slotc mark{background:rgba(111,163,104,.18);color:#E6E8F0;padding:0 2px;border-radius:2px}
+.slotc s{color:#C6533F}
+</style>
+</helmet>
+<div style="width:1810px;min-height:1720px;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif;background:#0E0F14;color:#E6E8F0;padding:44px 40px 60px;display:flex;flex-direction:column;gap:32px">
+
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+      <span class="m" style="font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:.08em">I1 · INVITING SOMEONE NEW</span>
+      <span class="k">§G per-entry template · R6 sheet · drawn on the shipped /about in Kamigawa · lives in this feature’s own handoff</span>
+    </div>
+    <h1 class="d" style="font-weight:700;font-size:30px;margin:0;line-height:1.2">Inviting someone new</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:#B1B6C7;max-width:1240px">Chapter 04, straight after <i>Friends and pods</i> and before <i>Who you played against</i>. It follows the invites switch engineering names (the chooser’s), so it is <span class="code">since: 14</span> with no bump if that switch flips it, as the Social line’s entries do; if invite-only ships unswitched, it is a new entry and bumps <span class="code">ABOUT_VERSION</span>. The specimen is the chooser itself, at its desktop size, with three invites. One sentence of <i>Friends and pods</i> is edited so the two entries agree (right column).</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:1300px;flex:none;display:flex;flex-direction:column;gap:10px">
+      <span class="k">Desktop · 1300 · /about, scrolled to chapter 04 · the entry new</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></nav>
+        <main style="flex:1;min-width:0;padding-bottom:28px">
+          <div style="max-width:1088px;margin:0 auto;padding:0 34px;display:flex;gap:40px;align-items:flex-start;box-sizing:border-box">
+            <article style="width:760px;flex:none">
+              <ol class="keys" style="margin-top:20px">
+                <li><span class="dot">·</span><span class="t">You add your own friends to your pods. Leave one you own and it passes to its longest-standing member.</span></li>
+                <li><span class="dot">·</span><span class="t">Removing a friend or leaving a pod tells nobody.</span></li>
+              </ol>
+
+              <div style="margin-top:14px;border-top:2px solid #FF4D9A;padding-top:13px">
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px">
+                  <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Inviting someone new</h3>
+                  <a class="m" href="#" style="font-size:11.5px">/friends</a>
+                  <span class="m" style="font-size:11px;color:#6F7486">opens Add a friend</span>
+                </div>
+                <div class="cap" style="margin-top:6px">
+                  <p>The 99 is invite-only, so new players arrive through the people already in it. On Friends, press “Add a friend”, then “Invite someone new”. At the table, show an invite QR: they scan it, type their own email, and confirm it with a code. Or type their email here, and The 99 sends the invitation.</p>
+                  <p>Once they make their account, you’re friends. Adding someone who already plays? Pick “They’re on The 99” and send a friend link: it uses no invite.</p>
+                </div>
+                <figure class="fig" aria-label="Specimen: Add a friend’s two choices">
+                  <div class="opts">
+                    <div class="opt">
+                      <span class="gly" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h1M20 14h1"/></svg></span>
+                      <span class="tt"><b>They’re on The 99</b><span>Send a friend link, or show its QR code. Uses no invite.</span></span>
+                      <span class="cv" aria-hidden="true">›</span>
+                    </div>
+                    <div class="opt">
+                      <span class="fan" aria-hidden="true"><span class="mini a">99</span><span class="mini b">99</span><span class="mini c">99</span></span>
+                      <span class="tt"><b>Invite someone new</b><span>For someone without an account. An invite is used only when they join.</span><span class="left">3 invites left</span></span>
+                      <span class="cv" aria-hidden="true">›</span>
+                    </div>
+                  </div>
+                </figure>
+                <ol class="keys">
+                  <li><span class="dot">·</span><span class="t">An invite is used only when someone makes an account. One that isn’t used within 7 days comes back.</span></li>
+                  <li><span class="dot">·</span><span class="t">An invite QR holds one invite for its 15 minutes, and gives it back if nobody uses it.</span></li>
+                  <li><span class="dot">·</span><span class="t">Whatever the email, you’re told “Invitation sent”, so nobody can use an invite to find out who’s on The 99.</span></li>
+                  <li><span class="dot">·</span><span class="t">How many you have left shows under “Add a friend”. Invites are given out by The 99, not bought.</span></li>
+                </ol>
+              </div>
+
+              <div style="margin-top:14px;border-top:1px solid #181C26;padding-top:14px">
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px">
+                  <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0">Who you played against</h3>
+                  <a class="m" href="#" style="font-size:11.5px">/decks</a>
+                </div>
+                <div class="cap" style="margin-top:6px"><p>When you log a game, “Across the table” lets you seat who you played: a friend, one of their decks, or anyone by their commander.</p></div>
+              </div>
+            </article>
+
+            <nav class="navc" aria-label="Contents">
+              <p class="m" style="margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#6F7486">Contents</p>
+              <label style="margin-top:10px;display:flex;align-items:center;height:32px;border:1px solid #262A35;border-radius:7px;background:#101219;padding:0 10px;font-size:13px;color:#7D8294">Find an entry</label>
+              <ol style="margin-top:10px">
+                <li><a href="#" class="ch"><span><span class="n">01</span> Your Collection</span></a></li>
+                <li><a href="#" class="ch"><span><span class="n">02</span> Finding a commander</span></a></li>
+                <li><a href="#" class="ch"><span><span class="n">03</span> Building the 99</span></a></li>
+                <li><a href="#" class="ch"><span><span class="n">04</span> Playing and tuning</span><span class="c">1 new</span></a>
+                  <ol>
+                    <li><a href="#" class="e"><span class="t">Logging a game</span></a></li>
+                    <li><a href="#" class="e"><span class="t">What your games are telling you</span></a></li>
+                    <li><a href="#" class="e"><span class="t">Friends and pods</span></a></li>
+                    <li><a href="#" class="e now" aria-current="true"><span class="t">Inviting someone new</span><span class="nw">new</span></a></li>
+                    <li><a href="#" class="e"><span class="t">Who you played against</span></a></li>
+                    <li><a href="#" class="e"><span class="t">Tuning a deck with Suggested changes</span></a></li>
+                    <li><a href="#" class="e"><span class="t">Notes on a deck</span></a></li>
+                  </ol>
+                </li>
+              </ol>
+            </nav>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">Phone · 390 · the same entry</span>
+        <div class="ph">
+          <header class="mh"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></header>
+          <div style="padding:16px 16px 20px">
+            <div style="border-top:2px solid #FF4D9A;padding-top:12px">
+              <h3 class="d" style="margin:0;font-size:15.5px;font-weight:600;color:#E6E8F0"><span class="newpill">NEW</span>Inviting someone new</h3>
+              <p class="m" style="margin:3px 0 0;font-size:11px"><a href="#">/friends</a> <span style="color:#6F7486">· opens Add a friend</span></p>
+              <div class="cap" style="margin-top:8px;font-size:13.5px">
+                <p>The 99 is invite-only, so new players arrive through the people already in it. On Friends, press “Add a friend”, then “Invite someone new”. At the table, show an invite QR: they scan it, type their own email, and confirm it with a code. Or type their email here, and The 99 sends the invitation.</p>
+                <p>Once they make their account, you’re friends. Adding someone who already plays? Pick “They’re on The 99” and send a friend link: it uses no invite.</p>
+              </div>
+              <figure class="fig" style="padding:12px" aria-label="Specimen: Add a friend’s two choices">
+                <div class="opts">
+                  <div class="opt">
+                    <span class="gly" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3"/></svg></span>
+                    <span class="tt"><b>They’re on The 99</b><span>Uses no invite.</span></span>
+                    <span class="cv" aria-hidden="true">›</span>
+                  </div>
+                  <div class="opt">
+                    <span class="fan" aria-hidden="true"><span class="mini a">99</span><span class="mini b">99</span><span class="mini c">99</span></span>
+                    <span class="tt"><b>Invite someone new</b><span class="left">3 invites left</span></span>
+                    <span class="cv" aria-hidden="true">›</span>
+                  </div>
+                </div>
+              </figure>
+              <ol class="keys">
+                <li><span class="dot">·</span><span class="t">An invite is used only when someone makes an account. One that isn’t used within 7 days comes back.</span></li>
+                <li><span class="dot">·</span><span class="t">An invite QR holds one invite for its 15 minutes, and gives it back if nobody uses it.</span></li>
+                <li><span class="dot">·</span><span class="t">Whatever the email, you’re told “Invitation sent”, so nobody can use an invite to find out who’s on The 99.</span></li>
+                <li><span class="dot">·</span><span class="t">How many you have left shows under “Add a friend”. Invites are given out by The 99, not bought.</span></li>
+              </ol>
+            </div>
+          </div>
+          <div class="tb"></div>
+        </div>
+        <p style="margin:0;max-width:390px;font-size:12.5px;line-height:1.55;color:#959AAD">The phone reduction: the specimen’s cards keep their titles, the count and one line each; the caption and keys are whole.</p>
+      </div>
+
+      <div class="slotc" style="width:390px;box-sizing:border-box">
+        <span class="k">Edit · Friends and pods · caption, sentence 2</span>
+        <span class="t">Open “Friends” from your account menu, press “Add a friend”, <mark>pick “They’re on The 99”,</mark> and send them the link, or let them scan the QR code off your screen.</span>
+        <span class="t" style="color:#6F7486;font-size:11.5px">An edit, not a new entry: no bump of its own. The rest of the entry stands.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1810,"height":1720}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
