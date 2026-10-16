@@ -49,26 +49,6 @@ function setup(
 }
 
 describe("useCardScan", () => {
-  it("looks a steady card up once and offers it, then adds it under the current mode", async () => {
-    const { hook, onAdd, fetch } = setup();
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ kind: "scanning", panel: { kind: "sure" } }), { timeout: 4000 });
-    expect(fetch).toHaveBeenCalledTimes(1);
-    await act(async () => hook.result.current.add());
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast", expect.anything());
-    await waitFor(() => expect(hook.result.current.count).toBe(1));
-    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } });
-    expect(hook.result.current.flipTo).toBe("https://img/sol");
-  });
-
-  it("holds the guess under the finger and lets it go", async () => {
-    const { hook } = setup();
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    act(() => hook.result.current.hold());
-    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", held: true } });
-    act(() => hook.result.current.cancelHold());
-    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", held: false } });
-  });
-
   it("shows the blocked screen when the camera is refused", async () => {
     const { hook } = setup({ getUserMedia: () => Promise.reject(new Error("NotAllowedError")) });
     await waitFor(() => expect(hook.result.current.screen).toEqual({ kind: "blocked" }));
@@ -145,34 +125,10 @@ describe("useCardScan", () => {
     expect(hook.result.current.screen.kind).toBe("scanning");
   });
 
-  it("says nothing is on the list when the add could not land, and counts nothing", async () => {
-    const { hook, onAdd, onProblem } = setup();
-    onAdd.mockImplementationOnce(async () => false);
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    await act(async () => hook.result.current.add());
-    expect(onProblem).toHaveBeenCalledWith("notAdded");
-    expect(hook.result.current.count).toBe(0);
-  });
-
-  it("starts from the cards already on the list, so a listed card is a second copy", async () => {
-    const { hook } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
-    expect(hook.result.current.count).toBe(2);
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "second", count: 2 } } }), { timeout: 4000 });
-  });
-
   it("offers no light on a camera without a torch", async () => {
     const { hook } = setup();
     await waitFor(() => expect(hook.result.current.screen.kind).toBe("scanning"));
     expect(hook.result.current.torch).toEqual({ available: false, on: false });
-  });
-
-  it("reads the sheet's list live, so a line removed while scanning is no longer a copy on it", async () => {
-    const { hook, list } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
-    expect(hook.result.current.count).toBe(2);
-    list.current = new Map();
-    hook.rerender();
-    expect(hook.result.current.count).toBe(0);
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: null } }), { timeout: 4000 });
   });
 
   it("withdraws an answer once a different card is in the frame, so Add never takes the card before it", async () => {
@@ -196,23 +152,6 @@ describe("useCardScan", () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("adds once for two taps while the first add is still waiting on its printings", async () => {
-    const { hook, onAdd } = setup();
-    let land: (v: boolean) => void = () => {};
-    onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    act(() => hook.result.current.hold());
-    act(() => hook.result.current.add());
-    // A second press and release while the first add waits: it adds nothing, and leaves no hold behind.
-    act(() => hook.result.current.hold());
-    act(() => hook.result.current.add());
-    await act(async () => land(true));
-    expect(onAdd).toHaveBeenCalledTimes(1);
-    // Once the added panel has gone, the scanner reads on rather than showing the second press's hold.
-    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
-    expect(hook.result.current.screen).not.toMatchObject({ panel: { held: true } });
   });
 
   it("never offers an answer that arrives after its card has left the frame", async () => {
@@ -245,21 +184,6 @@ describe("useCardScan", () => {
     await waitFor(() => expect(hook.result.current.screen).toEqual({ kind: "blocked" }));
   });
 
-  it("freezes the feed while Add is held, and runs it again on release", async () => {
-    const { hook } = setup();
-    const video = document.createElement("video");
-    const pause = vi.fn();
-    const play = vi.fn(() => Promise.resolve());
-    Object.assign(video, { pause, play });
-    act(() => hook.result.current.attachVideo(video));
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    play.mockClear();
-    act(() => hook.result.current.hold());
-    expect(pause).toHaveBeenCalled();
-    act(() => hook.result.current.cancelHold());
-    expect(play).toHaveBeenCalled();
-  });
-
   it("turns the light on once for two presses before the camera answers the first", async () => {
     let answer: () => void = () => {};
     const applyConstraints = vi.fn(() => new Promise<void>((r) => (answer = r)));
@@ -272,20 +196,6 @@ describe("useCardScan", () => {
     await act(async () => answer());
     expect(applyConstraints).toHaveBeenCalledTimes(1);
     expect(hook.result.current.torch.on).toBe(true);
-  });
-
-  it("leaves no hold behind when an add lands while a second press is still down", async () => {
-    const { hook, onAdd } = setup();
-    let land: (v: boolean) => void = () => {};
-    onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    act(() => hook.result.current.hold());
-    act(() => hook.result.current.add());
-    // The second press goes down, and the first add lands before it is let go.
-    act(() => hook.result.current.hold());
-    await act(async () => land(true));
-    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
-    expect(hook.result.current.screen).not.toMatchObject({ panel: { held: true } });
   });
 
   it("hands each add the card's photo as read and the closest cards, the added one first (L2)", async () => {
@@ -306,62 +216,228 @@ describe("useCardScan", () => {
         { oracleId: SIGNET.oracleId, name: "Arcane Signet", imageUri: "https://img/signet" },
         { oracleId: SOL.oracleId, name: "Sol Ring", imageUri: "https://img/sol" },
       ],
+    }, undefined);
+  });
+
+
+  // Fast adds with no press, and Normal picks the printing in the camera (Hugh, 2026-10-16).
+  describe("Fast", () => {
+    it("puts a sure card on the list by itself, once, with its photo and closest cards", async () => {
+      const crop = new Float32Array(4);
+      const photo = vi.fn(() => "data:scan");
+      const { hook, onAdd, fetch } = setup({ photo }, { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId }), "fast", {
+        photo: "data:scan",
+        guesses: [{ oracleId: SOL.oracleId, name: "Sol Ring", imageUri: "https://img/sol" }],
+      }, undefined);
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } }));
+      expect(hook.result.current.flipTo).toBe("https://img/sol");
+      // The card never left the frame: once the added panel goes it is a duplicate, and nothing more is added.
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate", count: 1 } } });
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not take a card again across a missed frame or two after it was added", async () => {
+      const frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      let gap = 0;
+      const { onAdd } = setup({
+        readFrame: async () => {
+          await new Promise((r) => setTimeout(r, 5));
+          if (gap > 0) {
+            gap--;
+            return { frame: { kind: "none" }, cardInView: false, dark: false };
+          }
+          return frame;
+        },
+      });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 15000 });
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      gap = 2;
+      await act(async () => new Promise((r) => setTimeout(r, 400)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("still waits for the frame to empty when the added card's line is removed while it stays in view", async () => {
+      const { hook, onAdd, list } = setup();
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 15000 });
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      list.current = new Map();
+      hook.rerender();
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate", count: 0 } } });
+      await act(async () => new Promise((r) => setTimeout(r, 200)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes a second copy only once the frame has emptied", async () => {
+      let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      const { hook, onAdd } = setup({ readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      frame = { frame: { kind: "none" }, cardInView: false, dark: false };
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } }), { timeout: 15000 });
+      // Looking shows on the first missed frame; the scanner calls the frame empty only once its tracker lets go.
+      await new Promise((r) => setTimeout(r, 300));
+      frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2), { timeout: 15000 });
+      await waitFor(() => expect(hook.result.current.count).toBe(2));
+    });
+
+    it("says once that a card could not be added, and does not try it again while it stays in view", async () => {
+      const { hook, onAdd, onProblem } = setup();
+      onAdd.mockImplementation(async () => false);
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notAdded"), { timeout: 4000 });
+      await act(async () => new Promise((r) => setTimeout(r, 100)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      expect(hook.result.current.count).toBe(0);
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    });
+
+    it("counts a card the sheet already lists as a second copy, and a line removed while scanning as none", async () => {
+      const { hook, onAdd, list } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
+      expect(hook.result.current.count).toBe(2);
+      list.current = new Map();
+      hook.rerender();
+      expect(hook.result.current.count).toBe(0);
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
     });
   });
 
-  it("adds with no photo when no frame held a crop", async () => {
-    const { hook, onAdd } = setup();
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    await act(async () => hook.result.current.add());
-    expect(onAdd).toHaveBeenCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: null }));
-  });
-
-  it("adds a held card with the photo and closest cards from when the press went down", async () => {
-    const first = new Float32Array([1, 0, 0, 0]);
-    const later = new Float32Array([0, 1, 0, 0]);
-    let crop = first;
-    const photo = vi.fn((c: Float32Array) => (c === first ? "data:first" : "data:later"));
-    const { hook, onAdd } = setup({
-      photo,
-      readFrame: async () => {
-        await new Promise((r) => setTimeout(r, 5));
-        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop };
-      },
+  describe("Normal", () => {
+    const normal = { getItem: () => "normal", setItem: () => {} } as unknown as Storage;
+    const choice = (n: string) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: null, collectorNumber: n,
+      releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {},
     });
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    act(() => hook.result.current.hold());
-    // A frame read finishes while the press is still down.
-    crop = later;
-    await new Promise((r) => setTimeout(r, 30));
-    await act(async () => hook.result.current.add());
-    expect(onAdd).toHaveBeenCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: "data:first" }));
-  });
+    const CHOICES = [choice("1"), choice("2")];
 
-  it("drops the photo of a press discarded during an add, so a later add carries its own", async () => {
-    const first = new Float32Array([1, 0, 0, 0]);
-    const later = new Float32Array([0, 1, 0, 0]);
-    let crop = first;
-    const photo = vi.fn((c: Float32Array) => (c === first ? "data:first" : "data:later"));
-    const { hook, onAdd } = setup({
-      photo,
-      readFrame: async () => {
-        await new Promise((r) => setTimeout(r, 5));
-        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop };
-      },
+    it("opens the card's printings in the camera, and the one picked goes on the list at that printing", async () => {
+      const loadChoices = vi.fn(async () => CHOICES);
+      const { hook, onAdd } = setup({ storage: normal, loadChoices });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      expect(loadChoices).toHaveBeenCalledWith(SOL.oracleId);
+      expect(onAdd).not.toHaveBeenCalled();
+      await act(async () => hook.result.current.choosePrinting(CHOICES[1]));
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId }), "normal", expect.anything(), {
+        choices: CHOICES,
+        printing: CHOICES[1],
+      });
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } });
+      // The card still in view is a duplicate: the step does not open again by itself.
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate" } } });
+      expect(loadChoices).toHaveBeenCalledTimes(1);
     });
-    let land: (v: boolean) => void = () => {};
-    onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    act(() => hook.result.current.add());
-    // A second press and release while the first add waits: discarded, with what it saw.
-    act(() => hook.result.current.hold());
-    act(() => hook.result.current.add());
-    await act(async () => land(true));
-    crop = later;
-    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
-    // A keyboard Add with no hold: the photo is the frame now, not the discarded press's.
-    await act(async () => hook.result.current.add());
-    expect(onAdd).toHaveBeenLastCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: "data:later" }));
+
+    it("adds once for two picks while the first add is still landing", async () => {
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => CHOICES });
+      let land: (v: boolean) => void = () => {};
+      onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      act(() => hook.result.current.choosePrinting(CHOICES[0]));
+      act(() => hook.result.current.choosePrinting(CHOICES[1]));
+      await act(async () => land(true));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("Add another copy opens the step with the photo from when the press went down, and the feed freezes meanwhile", async () => {
+      const first = new Float32Array([1, 0, 0, 0]);
+      const later = new Float32Array([0, 1, 0, 0]);
+      let crop = first;
+      const photo = vi.fn((c: Float32Array) => (c === first ? "data:first" : "data:later"));
+      const { hook, onAdd } = setup({
+        storage: normal,
+        loadChoices: async () => CHOICES,
+        photo,
+        readFrame: async () => {
+          await new Promise((r) => setTimeout(r, 5));
+          return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop };
+        },
+      });
+      const video = document.createElement("video");
+      const pause = vi.fn();
+      Object.assign(video, { pause, play: vi.fn(() => Promise.resolve()) });
+      act(() => hook.result.current.attachVideo(video));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate" } } }), { timeout: 4000 });
+      crop = first;
+      await new Promise((r) => setTimeout(r, 30));
+      act(() => hook.result.current.hold());
+      expect(pause).toHaveBeenCalled();
+      crop = later;
+      await new Promise((r) => setTimeout(r, 30));
+      act(() => hook.result.current.add());
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }));
+      await act(async () => hook.result.current.choosePrinting(CHOICES[1]));
+      expect(onAdd).toHaveBeenLastCalledWith(expect.anything(), "normal", expect.objectContaining({ photo: "data:first" }), expect.anything());
+    });
+
+    it("Not this card adds nothing and reads on past that answer", async () => {
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => CHOICES });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } }), { timeout: 4000 });
+      act(() => hook.result.current.notThis());
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+      await act(async () => new Promise((r) => setTimeout(r, 100)));
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it("says once when the printings would not load, and does not ask again for the card in view", async () => {
+      const loadChoices = vi.fn(async () => { throw new Error("offline"); });
+      const { hook, onProblem } = setup({ storage: normal, loadChoices });
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notAdded"), { timeout: 4000 });
+      await act(async () => new Promise((r) => setTimeout(r, 100)));
+      expect(loadChoices).toHaveBeenCalledTimes(1);
+      // The answer is turned down, not merely left: the panel reads on rather than offering the card.
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    });
+
+    it("a card taken out of the frame before its printing is picked comes back as a new copy, not a duplicate", async () => {
+      let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      const loadChoices = vi.fn(async () => CHOICES);
+      const { hook } = setup({ storage: normal, loadChoices, readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      frame = { frame: { kind: "none" }, cardInView: false, dark: false };
+      // Long enough for the scanner's tracker to call the frame empty, not just one missed frame.
+      await new Promise((r) => setTimeout(r, 300));
+      await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
+      frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      await waitFor(() => expect(loadChoices).toHaveBeenCalledTimes(2), { timeout: 15000 });
+    });
+
+    it("a card picked from Not sure opens its printings, with the closest cards it was picked from", async () => {
+      const SIGNET = { ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", imageUri: "https://img/signet", score: 0.96 };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [SOL, SIGNET], margin: 0.01 }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => CHOICES, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
+      act(() => hook.result.current.pick(SIGNET.oracleId));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", guess: { oracleId: SIGNET.oracleId }, choices: CHOICES } }));
+      await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SIGNET.oracleId }), "normal", {
+        photo: null,
+        guesses: [
+          { oracleId: SIGNET.oracleId, name: "Arcane Signet", imageUri: "https://img/signet" },
+          { oracleId: SOL.oracleId, name: "Sol Ring", imageUri: "https://img/sol" },
+        ],
+      }, { choices: CHOICES, printing: CHOICES[0] });
+    });
+
+    it("keeps the step open when the mode already on is pressed again", async () => {
+      const { hook } = setup({ storage: normal, loadChoices: async () => CHOICES });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 15000 });
+      act(() => hook.result.current.setMode("normal"));
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } });
+    });
+
+    it("leaves the step when Fast is chosen", async () => {
+      const { hook } = setup({ storage: normal, loadChoices: () => new Promise(() => {}) });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } }), { timeout: 4000 });
+      act(() => hook.result.current.setMode("fast"));
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
   });
 });
-

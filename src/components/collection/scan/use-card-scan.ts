@@ -8,6 +8,7 @@ import { serverScanner, type ServerState } from "../../../lib/scan/server-scan";
 import type { ScanFrame } from "../../../lib/scan/stable-card";
 import { photoOf } from "../../../lib/scan/photo";
 import type { ScanSource } from "../../../lib/collection/add-lines";
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { readScanMode, writeScanMode } from "./mode-memory";
 import type { ScanGuess, ScanMode, ScanScreen } from "./scan-view";
 import { scanScreen, toScanGuess } from "./screen-state";
@@ -18,6 +19,14 @@ export type FrameRead = { frame: ScanFrame; cardInView: boolean; dark: boolean; 
 
 /** What an add carries with it: the card's photo as read, and the closest cards, the added one first (L2). */
 export type ScanCapture = ScanSource;
+
+/** Normal mode's pick, made in the camera: the card's printings as loaded, and the one chosen. */
+export type ScanPicked = { choices: PrintingChoice[]; printing: PrintingChoice };
+
+/** What the scanner saw when a card was taken: its closest cards and its photo. */
+/** `empties` is how many empty frames had been read when the card was taken: an add that lands after the frame
+ * emptied is a card already out of view, so the next one in is a new copy (R2), not a duplicate (R1). */
+type Snap = { named: ScanGuess[]; crop: Float32Array | null; empties: number };
 
 /** How long the added panel and the tray's flip stay up (READINESS: "about 0.8s"). */
 export const ADDED_MS = 800;
@@ -38,6 +47,8 @@ export type CardScanDeps = {
   storage?: Storage | null;
   /** The crop as a picture; the canvas's own by default. */
   photo?: (crop: Float32Array) => string | null;
+  /** A card's printings, for Normal mode's step in the camera; an empty list or a throw is a read that failed. */
+  loadChoices?: (oracleId: string) => Promise<PrintingChoice[]>;
 };
 
 export type CardScan = {
@@ -55,6 +66,10 @@ export type CardScan = {
   pick: (oracleId: string) => void;
   /** None of these: adds nothing, and reading carries on past this answer. */
   dismiss: () => void;
+  /** Normal mode: the printing chosen in the camera, which puts the card on the list. */
+  choosePrinting: (printing: PrintingChoice) => void;
+  /** Normal mode: not this card after all. Nothing is added, and reading carries on past this answer. */
+  notThis: () => void;
 };
 
 /**
@@ -66,8 +81,8 @@ export type CardScan = {
 export function useCardScan(
   active: boolean,
   deps: CardScanDeps,
-  /** Puts the card on the list; answers false when it could not (its printings would not load). */
-  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture) => Promise<boolean>,
+  /** Puts the card on the list (at `picked`'s printing when Normal chose one); answers false when it could not. */
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => Promise<boolean>,
   onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart") => void,
   /** Copies on the sheet's list, by oracle id, live: the tray and "again" read the list, which the desktop sheet can
    * still edit while the scanner is open. */
@@ -86,6 +101,11 @@ export function useCardScan(
 
   const now = useCallback(() => (depsRef.current.now ?? (() => performance.now()))(), []);
   const [mode, setModeState] = useState<ScanMode>(() => readScanMode(deps.storage === undefined ? safeLocalStorage() : deps.storage));
+  // Read by setMode, which keeps one identity across renders.
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  });
   const [blocked, setBlocked] = useState(false);
   const [server, setServer] = useState<ServerState>({ kind: "idle" });
   const [read, setRead] = useState<{ cardInView: boolean; dark: boolean }>({ cardInView: false, dark: false });
@@ -93,6 +113,10 @@ export function useCardScan(
   const [added, setAdded] = useState<{ name: string; imageUri: string | null } | null>(null);
   const [lastAdded, setLastAdded] = useState<{ oracleId: string; emptiedSince: boolean } | null>(null);
   const [dismissed, setDismissed] = useState<object | null>(null);
+  // Normal mode's printing step for one card, held until a printing is chosen or the card is turned down: the
+  // answer it came from (so Not this card can pass it), what the scanner saw, and the printings once they load.
+  const [choosing, setChoosing] = useState<{ guess: ScanGuess; snap: Snap; answer: object | null; choices: PrintingChoice[] | null } | null>(null);
+  const chooseSeq = useRef(0);
   // Dark only once a dark frame has held for `DARK_HOLD_MS` (READINESS: "for about 1s"), so one dim frame never
   // flickers the line; a bright frame ends it at once.
   const darkSince = useRef<number | null>(null);
@@ -102,7 +126,12 @@ export function useCardScan(
   // The newest frame that held a card: the card an add is pressed for is still in view, so its photo is this one.
   const lastCrop = useRef<Float32Array | null>(null);
   // What the scanner saw as a hold began (V4): the frozen guess's own photo and closest cards.
-  const heldSnap = useRef<{ oracleId: string; named: ScanGuess[]; crop: Float32Array | null } | null>(null);
+  const heldSnap = useRef<({ oracleId: string } & Snap) | null>(null);
+  // Empty frames read so far, counted by the read loop.
+  const empties = useRef(0);
+  // The answer (and mode) already taken by itself in this view: the take lands a microtask later, and a render
+  // before it must not take the same answer twice.
+  const taken = useRef<{ answer: object | null; mode: ScanMode } | null>(null);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
   useEffect(() => {
@@ -157,6 +186,14 @@ export function useCardScan(
       // that lands after its card left would otherwise be addable until the next read.
       (s) => {
         if (s.kind !== "match") setServer(s);
+        // The scanner goes idle through here only when its tracker says the frame emptied: it holds a card across a
+        // missed frame or two, and so must the duplicate rule, or a card that flickered would be taken again (R1). An
+        // empty view ends the one an answer was taken in, so the card coming back is a new copy (R2).
+        if (s.kind === "idle") {
+          empties.current++;
+          taken.current = null;
+          setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
+        }
       },
     );
     (async () => {
@@ -185,7 +222,6 @@ export function useCardScan(
         const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.crop) lastCrop.current = r.crop;
-        if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
         setServer(scanner.frame(r.frame, now(), t));
@@ -215,54 +251,108 @@ export function useCardScan(
   }, [added]);
 
   const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList: listed, lastAdded, dismissed };
-  const screen = scanScreen(inputs);
+  // The screen as the camera reads it, before Normal's printing step takes the panel over.
+  const reading = scanScreen(inputs);
+  const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
+  const answer = server.kind === "match" ? server.result : null;
+  const snapNow = useCallback(
+    (): Snap => ({ named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [], crop: lastCrop.current, empties: empties.current }),
+    [server],
+  );
 
   // One add at a time: a second tap while the first waits for its printings would add the card again unasked.
   const committing = useRef(false);
   // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
   const commit = useCallback(
-    async (g: ScanGuess) => {
+    async (g: ScanGuess, given?: Snap, picked?: ScanPicked): Promise<boolean> => {
       // A press during an add in flight still let go of its hold: clear it before the one-at-a-time guard, or the
       // scanner would show Held, with the feed frozen, once the first add's panel goes.
       setHeld(null);
       if (committing.current) {
         // That press is discarded, and its snapshot with it, or a later add of the card would carry its photo.
         heldSnap.current = null;
-        return;
+        return false;
       }
       committing.current = true;
       try {
         // A held card adds what the scanner saw when the press went down; frames read since are another moment.
-        const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : null;
+        const snap = given ?? (heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow());
         heldSnap.current = null;
-        const named = snap ? snap.named : server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [];
-        const crop = snap ? snap.crop : lastCrop.current;
         const capture: ScanCapture = {
-          photo: crop ? (depsRef.current.photo ?? photoOf)(crop) : null,
-          guesses: [g, ...named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
+          photo: snap.crop ? (depsRef.current.photo ?? photoOf)(snap.crop) : null,
+          guesses: [g, ...snap.named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
         };
-        if (!(await onAdd(g, mode, capture))) {
+        if (!(await onAdd(g, mode, capture, picked))) {
           onProblem("notAdded");
-          return;
+          return false;
         }
         // A press made while this add waited is over with it: the Added panel replaces its button, so no release
         // would ever clear that hold, or its snapshot.
         setHeld(null);
         heldSnap.current = null;
-        setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
+        setChoosing(null);
+        setLastAdded({ oracleId: g.oracleId, emptiedSince: empties.current !== snap.empties });
         setAdded({ name: g.name, imageUri: g.imageUri });
+        return true;
       } finally {
         committing.current = false;
       }
     },
-    [onAdd, mode, onProblem, server],
+    [onAdd, mode, onProblem, snapNow],
   );
+
+  // Normal mode's printing step, in the camera (Hugh, 2026-10-16): the card is held on the panel while its printings
+  // load and the player picks one. A read that fails, or finds none, says so and turns that answer down, so the step
+  // does not open again for the card still in view.
+  const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null) => {
+    const seq = ++chooseSeq.current;
+    setChoosing({ guess: g, snap, answer: from, choices: null });
+    const load = depsRef.current.loadChoices;
+    void Promise.resolve()
+      .then(() => (load ? load(g.oracleId) : []))
+      .catch(() => [] as PrintingChoice[])
+      .then((choices) => {
+        if (seq !== chooseSeq.current) return;
+        if (choices.length > 0) return setChoosing((c) => (c ? { ...c, choices } : c));
+        setChoosing(null);
+        setDismissed(from);
+        onProblemRef.current("notAdded");
+      });
+  }, []);
+  const stopChoosing = useCallback(() => {
+    chooseSeq.current++;
+    setChoosing(null);
+  }, []);
+
+  // A sure answer goes on by itself (Hugh, 2026-10-16): in Fast straight onto the list at its first printing, in
+  // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
+  // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
+  const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
+  useEffect(() => {
+    if (!sure || added || choosing || committing.current) return;
+    if (sure.again?.kind === "duplicate") return;
+    if (lastAdded?.oracleId === sure.guess.oracleId && !lastAdded.emptiedSince) return;
+    if (taken.current && taken.current.answer === answer && taken.current.mode === mode) return;
+    taken.current = { answer, mode };
+    const g = sure.guess;
+    const snap = snapNow();
+    const from = answer;
+    void Promise.resolve().then(async () => {
+      if (mode === "normal") return choose(g, snap, from);
+      // A card that could not be added is not tried again while it stays in view: the toast said so once.
+      if (!(await commit(g, snap))) setDismissed(from);
+    });
+  });
 
   // Through useCallback, so a render never reads the deps ref: only the press does.
   const setMode = useCallback((m: ScanMode) => {
+    // The mode already on changes nothing, and leaves an open printing step alone.
+    if (m === modeRef.current) return;
+    // A printing step open when Fast is chosen is left: the card is read again under the new mode.
+    stopChoosing();
     setModeState(m);
     writeScanMode(depsRef.current.storage === undefined ? safeLocalStorage() : depsRef.current.storage, m);
-  }, []);
+  }, [stopChoosing]);
 
   const current = screen.kind === "scanning" && screen.panel.kind === "sure" ? screen.panel.guess : null;
   const notSure = screen.kind === "scanning" && screen.panel.kind === "notSure" ? screen.panel.guesses : [];
@@ -294,6 +384,7 @@ export function useCardScan(
         oracleId: current.oracleId,
         named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [],
         crop: lastCrop.current,
+        empties: empties.current,
       };
       setHeld(current);
     },
@@ -303,12 +394,30 @@ export function useCardScan(
     },
     add: () => {
       const g = held ?? current;
-      if (g) void commit(g);
+      if (!g) return;
+      if (mode === "fast") return void commit(g);
+      // Normal's Add another copy opens the printing step with what the scanner saw when the press went down.
+      const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow();
+      heldSnap.current = null;
+      setHeld(null);
+      choose(g, snap, answer);
     },
-    dismiss: () => setDismissed(server.kind === "match" ? server.result : null),
+    dismiss: () => setDismissed(answer),
     pick: (oracleId) => {
       const g = notSure.find((x) => x.oracleId === oracleId);
-      if (g) void commit(g);
+      if (!g) return;
+      if (mode === "fast") return void commit(g);
+      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer);
+    },
+    choosePrinting: (printing) => {
+      const c = choosing;
+      if (!c?.choices?.some((x) => x.scryfallId === printing.scryfallId)) return;
+      void commit(c.guess, c.snap, { choices: c.choices, printing });
+    },
+    notThis: () => {
+      if (!choosing) return;
+      setDismissed(choosing.answer);
+      stopChoosing();
     },
   };
 }

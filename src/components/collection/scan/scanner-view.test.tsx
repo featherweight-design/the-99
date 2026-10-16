@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { ScannerView, type ScannerViewProps } from "./scanner-view";
 import { createOutlineStore, type OutlineStore } from "../../../lib/scan/outline";
@@ -82,7 +82,7 @@ describe("ScannerView", () => {
   });
 
   it("offers a sure card on a green outline, holds on press down and adds on release (V3, V4)", () => {
-    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null }, count: 3, outline: withCard() });
+    const p = draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: null }, count: 3, outline: withCard() });
     expect(outlineEl().dataset.look).toBe("ok");
     expect(within(panel()).getByText("Sol Ring")).toBeTruthy();
     expect(within(panel()).getByText("Artifact")).toBeTruthy();
@@ -107,7 +107,7 @@ describe("ScannerView", () => {
   });
 
   it("marks a held guess and cancels when the finger slides off", () => {
-    const p = draw({ panel: { kind: "sure", guess: SOL, held: true, again: null } });
+    const p = draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: true, again: null } });
     expect(within(panel()).getByText(copy.view.held)).toBeTruthy();
     const add = screen.getByRole("button", { name: copy.view.add });
     fireEvent.pointerDown(add);
@@ -119,19 +119,70 @@ describe("ScannerView", () => {
   });
 
   it("adds nothing on a release whose press began somewhere else", () => {
-    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    const p = draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: null } });
     fireEvent.pointerUp(screen.getByRole("button", { name: copy.view.add }));
     expect(p.onAdd).not.toHaveBeenCalled();
   });
 
   it("says a duplicate is already on the list, and a second copy takes its own press (R1, R2)", () => {
-    draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 1 } } });
+    draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 1 } } });
     expect(within(panel()).getByText(copy.again.stillOn(1))).toBeTruthy();
     expect(screen.getByRole("button", { name: copy.again.addAnother })).toBeTruthy();
   });
 
+  it("on the desktop scrolls the printing grid in its own box, with Not this card outside it", () => {
+    const choices = [1, 2, 3].map((n) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: null, collectorNumber: String(n),
+      releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {},
+    }));
+    draw({ layout: "desk", mode: "normal", panel: { kind: "choose", guess: SOL, choices } });
+    const box = screen.getByTestId("scan-printings");
+    expect(box.className).toContain("overflow-y-auto");
+    expect(box.className).toContain("max-h-");
+    expect(box.contains(screen.getByRole("button", { name: copy.view.notThis }))).toBe(false);
+  });
+
+  it("in Fast draws no press: a sure card says it is going on, and one never out of the frame says how to add another", () => {
+    draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    expect(within(panel()).queryByRole("button")).toBeNull();
+    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.adding);
+    cleanup();
+    draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 1 } } });
+    expect(within(panel()).queryByRole("button")).toBeNull();
+    expect(within(panel()).getByText(copy.again.stillOn(1))).toBeTruthy();
+    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.takeOut);
+    cleanup();
+    // Its line removed since: no "on the list" line, and still the take-out instruction.
+    draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 0 } } });
+    expect(within(panel()).queryByText(copy.again.stillOn(0))).toBeNull();
+    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.takeOut);
+  });
+
+  it("in Normal draws the card's printings in the camera, and a pick or Not this card goes back", () => {
+    const choice = (n: string) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: `Set ${n}`, collectorNumber: n,
+      releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {},
+    });
+    const onChoosePrinting = vi.fn();
+    const onNotThis = vi.fn();
+    draw({ mode: "normal", panel: { kind: "choose", guess: SOL, choices: null }, onChoosePrinting, onNotThis, outline: withCard() });
+    expect(panel().dataset.state).toBe("choose");
+    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.loadingPrintings);
+    expect(outlineEl().dataset.look).toBe("ok");
+    cleanup();
+    const choices = [choice("1"), choice("2")];
+    draw({ mode: "normal", panel: { kind: "choose", guess: SOL, choices }, onChoosePrinting, onNotThis });
+    expect(within(panel()).getByText(collectionEditCopy.add.choose.introPhone(2))).toBeTruthy();
+    expect(screen.getByTestId("scan-printings").className).not.toContain("overflow-y-auto");
+    const tiles = within(panel()).getAllByRole("radio");
+    fireEvent.click(tiles[1]);
+    expect(onChoosePrinting).toHaveBeenCalledWith(choices[1]);
+    fireEvent.click(screen.getByRole("button", { name: copy.view.notThis }));
+    expect(onNotThis).toHaveBeenCalled();
+  });
+
   it("draws the second copy's line and press", () => {
-    draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "second", count: 2 } } });
+    draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: { kind: "second", count: 2 } } });
     expect(within(panel()).getByText(copy.again.already(2))).toBeTruthy();
     expect(screen.getByRole("button", { name: copy.again.addSecond })).toBeTruthy();
   });
@@ -199,7 +250,7 @@ describe("ScannerView", () => {
   });
 
   it("on the desktop draws the webcam panel with Stop and no tray or light", () => {
-    const p = draw({ layout: "desk", panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    const p = draw({ mode: "normal", layout: "desk", panel: { kind: "sure", guess: SOL, held: false, again: null } });
     expect(screen.getByText(copy.camera.webcam)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.camera.stop }));
     expect(p.onClose).toHaveBeenCalled();
@@ -316,7 +367,7 @@ describe("outlineLook", () => {
 
 describe("ScannerView, more", () => {
   it("ignores a right-click on Add: the context menu opens and nothing is held or added", () => {
-    const p = draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
+    const p = draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: null } });
     const add = screen.getByRole("button", { name: copy.view.add });
     fireEvent.pointerDown(add, { button: 2 });
     fireEvent.pointerUp(add, { button: 2 });

@@ -36,7 +36,7 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
-import type { ScanCapture } from "./scan/use-card-scan";
+import type { ScanCapture, ScanPicked } from "./scan/use-card-scan";
 import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
@@ -320,17 +320,20 @@ function AddMode({
    */
   const listRead = () => phaseRef.current === "saving" || phaseRef.current === "saved";
 
-  async function addScanned(guess: ScanGuess, mode: ScanMode, scan: ScanCapture): Promise<boolean> {
+  async function addScanned(guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked): Promise<boolean> {
     // A save in flight (or done) has already read the list: a card scanned now would land behind it, unsaved.
     if (listRead()) return false;
-    setScanPending((n) => n + 1);
-    let choices: PrintingChoice[] = [];
-    try {
-      choices = await loadPrintingChoices(guess.oracleId);
-    } catch {
-      choices = [];
-    } finally {
-      setScanPending((n) => n - 1);
+    let choices: PrintingChoice[] = picked?.choices ?? [];
+    // Normal's pick in the camera brings the printings it chose from; anything else reads them now.
+    if (!picked) {
+      setScanPending((n) => n + 1);
+      try {
+        choices = await loadPrintingChoices(guess.oracleId);
+      } catch {
+        choices = [];
+      } finally {
+        setScanPending((n) => n - 1);
+      }
     }
     if (choices.length === 0 || listRead()) {
       // The scanner says this one, over its own feed, while it is up; once it has closed the sheet says it.
@@ -343,7 +346,8 @@ function AddMode({
     setResults([]);
     setSearched(null);
     const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices, scan };
-    writeLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
+    const printing = picked?.printing ?? (mode === "fast" || choices.length === 1 ? choices[0] : null);
+    writeLines((ls) => (printing ? choosePrinting(openLine(ls, base), id, printing).lines : openLine(ls, base)));
     return true;
   }
 

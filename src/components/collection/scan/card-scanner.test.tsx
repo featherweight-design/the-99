@@ -55,7 +55,7 @@ describe("CardScanner", () => {
     outside.remove();
   });
 
-  it("gives focus back to the scanner when a keyboard Add takes away the press that held it", async () => {
+  it("gives focus back to the scanner when a pick in the camera takes away the printing that held it", async () => {
     const embedding = new Float32Array(256);
     embedding[0] = 1;
     const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: null, score: 0.97 };
@@ -74,16 +74,19 @@ describe("CardScanner", () => {
           fetch: (async () => new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })) as unknown as typeof fetch,
           wait: async () => {},
           now: () => (t += 200),
-          storage: null,
+          storage: { getItem: () => "normal", setItem: () => {} } as unknown as Storage,
+          loadChoices: async () => [
+            { scryfallId: "00000000-0000-4000-8000-000000000001", setCode: "c21", setName: null, collectorNumber: "1", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {} },
+          ],
         }}
         onAdd={vi.fn(async () => true)}
         onClose={vi.fn()}
         onNoneOfThese={vi.fn()}
       />,
     );
-    const add = await screen.findByRole("button", { name: collectionEditCopy.scan.view.add }, { timeout: 4000 });
-    add.focus();
-    fireEvent.keyDown(add, { key: "Enter" });
+    const tile = await screen.findByRole("radio", {}, { timeout: 4000 });
+    tile.focus();
+    fireEvent.click(tile);
     await screen.findByText(collectionEditCopy.scan.view.added("Sol Ring"));
     await waitFor(() => expect(document.activeElement?.hasAttribute("data-scan-close")).toBe(true));
   });

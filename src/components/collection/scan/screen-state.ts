@@ -1,3 +1,4 @@
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import type { ServerState } from "../../../lib/scan/server-scan";
 import type { ScanGuess, ScanPanel, ScanScreen } from "./scan-view";
 
@@ -24,12 +25,15 @@ export type ScanInputs = {
   lastAdded: { oracleId: string; emptiedSince: boolean } | null;
   /** An answer the player turned down with None of these: it is not offered again, and reading carries on. */
   dismissed: object | null;
+  /** Normal mode's printing step for the card read (or picked), and its printings once they load. */
+  choosing?: { guess: ScanGuess; choices: PrintingChoice[] | null } | null;
 };
 
 export function scanScreen(i: ScanInputs): ScanScreen {
   if (i.blocked) return { kind: "blocked" };
   const scanning = (panel: Extract<ScanScreen, { kind: "scanning" }>["panel"]): ScanScreen => ({ kind: "scanning", panel, dark: i.dark });
   if (i.added) return scanning({ kind: "added", name: i.added.name });
+  if (i.choosing) return scanning({ kind: "choose", guess: i.choosing.guess, choices: i.choosing.choices });
   if (i.held) return scanning({ kind: "sure", guess: i.held, held: true, again: againFor(i, i.held.oracleId) });
   const s = i.server;
   switch (s.kind) {
@@ -56,9 +60,11 @@ export function scanScreen(i: ScanInputs): ScanScreen {
 
 function againFor(i: ScanInputs, oracleId: string): Extract<ScanPanel, { kind: "sure" }>["again"] {
   const count = i.onList.get(oracleId) ?? 0;
-  if (count === 0) return null;
   const unbroken = i.lastAdded?.oracleId === oracleId && !i.lastAdded.emptiedSince;
-  return { kind: unbroken ? "duplicate" : "second", count };
+  // A card just added that never left the frame stays a duplicate even if its line was removed since (count 0): it is
+  // not taken again until the frame empties, and the panel says so rather than waiting on an add that never comes.
+  if (unbroken) return { kind: "duplicate", count };
+  return count === 0 ? null : { kind: "second", count };
 }
 
 export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null }): ScanGuess {

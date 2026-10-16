@@ -556,8 +556,10 @@ export const collectionEditCopy = {
       label: "Printing",
       fast: "Fast",
       normal: "Normal",
-      fastLine: "each card takes its first printing. You can change any of them on the list.",
-      normalLine: "you choose each card’s printing on the list, before you save.",
+      /** (reworded, for /copy-review) Fast adds with no press (Hugh, 2026-10-16). */
+      fastLine: "each card goes on the list as soon as it reads, at its first printing. You can change any of them on the list.",
+      /** (reworded, for /copy-review) Normal picks the printing in the camera (Hugh, 2026-10-16). */
+      normalLine: "you choose each card’s printing here, as you scan it.",
     },
     view: {
       looking: "Show a card to the camera",
@@ -570,6 +572,14 @@ export const collectionEditCopy = {
       notSure: "Not sure. Which is it?",
       sleeves: "Sleeves and glare make this harder. Tilt the card away from the light.",
       noneOfThese: "None of these",
+      /** (new, for /copy-review) Normal's printing step: the card read is not the one in hand. */
+      notThis: "Not this card",
+      /** (new, for /copy-review) Normal's printing step while the card's printings load. */
+      loadingPrintings: "Loading its printings…",
+      /** (new, for /copy-review) Fast: the card is going on the list, no press needed. */
+      adding: "Adding to the list…",
+      /** (new, for /copy-review) Fast: a card just added that never left the frame; a second copy needs it out first. */
+      takeOut: "To add another copy, take this one out of the frame first.",
       darkTorch: "It’s dark, so cards read slowly. Turn on the light, top right.",
       darkNoTorch: "It’s dark, so cards read slowly. Move closer to a lamp.",
       light: "Light",

@@ -1,11 +1,14 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { CLOSER_BELOW, outlineInBox, outlineShare, type OutlineStore } from "../../../lib/scan/outline";
+import { PrintingRegion } from "../../cards/printing-region";
 import { outlineLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
+const chooseCopy = collectionEditCopy.add.choose;
 
 /**
  * The scanner's screen (card-scan PR 3, `docs/superpowers/design-tables/card-scan-viewfinder.md`): the camera's feed
@@ -39,6 +42,9 @@ export type ScannerViewProps = {
   onCancelHold: () => void;
   onPick: (oracleId: string) => void;
   onNoneOfThese: () => void;
+  /** Normal mode's printing step: a printing chosen, and Not this card. */
+  onChoosePrinting?: (printing: PrintingChoice) => void;
+  onNotThis?: () => void;
   /** Opens the photo picker from the blocked screen (D6, W6). Unset, the blocked screen offers no photos. */
   onChoosePhotos?: () => void;
 };
@@ -299,6 +305,41 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       );
     case "sure":
       return <SurePanel {...p} panel={panel} box={box} />;
+    case "choose":
+      return (
+        <div data-testid="scan-panel" data-state="choose" className={box}>
+          <p className={H}>{panel.guess.name}</p>
+          {panel.choices === null ? (
+            <p className={BODY} role="status">
+              {copy.view.loadingPrintings}
+            </p>
+          ) : (
+            // The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card
+            // out of the scanner's panel, which clips; the phone's one row scrolls sideways.
+            <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40vh)] min-h-0 overflow-y-auto"}>
+            <PrintingRegion
+              role="choose"
+              source="catalog"
+              layout={phone ? "row" : "grid"}
+              id={`scan-printings-${panel.guess.oracleId}`}
+              printings={panel.choices}
+              intro={phone ? chooseCopy.introPhone(panel.choices.length) : chooseCopy.intro(panel.choices.length)}
+              cardName={panel.guess.name}
+              colorIdentity={[]}
+              onPick={(c) => p.onChoosePrinting?.(c)}
+              autoFocus={!phone}
+            />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={p.onNotThis}
+            className="min-h-[44px] self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)]"
+          >
+            {copy.view.notThis}
+          </button>
+        </div>
+      );
     case "added":
       return (
         <div data-testid="scan-panel" data-state="added" className={box}>
@@ -359,7 +400,13 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
   const label = again?.kind === "duplicate" ? copy.again.addAnother : again?.kind === "second" ? copy.again.addSecond : copy.view.add;
   // This press is down: a release adds only the press it ends, never one that began elsewhere or slid off.
   const down = useRef(false);
-  const press = (
+  // Fast has no press (Hugh, 2026-10-16): a sure card goes on by itself, and one that never left the frame is not
+  // taken again, so the panel says what is happening instead.
+  const press = p.mode === "fast" ? (
+    <p role="status" className={`m-0 leading-[1.5] ${phone ? "text-[14px]" : "max-w-[220px] text-[13px]"} text-[color:var(--fg-body)]`}>
+      {again?.kind === "duplicate" ? copy.view.takeOut : copy.view.adding}
+    </p>
+  ) : (
     <button
       type="button"
       data-held={held ? "" : undefined}
@@ -427,7 +474,7 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <b className="text-[16px] font-semibold text-[color:var(--fg)]">{guess.name}</b>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{guess.typeLine}</span>
-          {again?.kind === "duplicate" && <span className="font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
+          {again?.kind === "duplicate" && again.count > 0 && <span className="font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
           {again?.kind === "second" && <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.again.already(again.count)}</span>}
         </div>
         {!phone && press}
