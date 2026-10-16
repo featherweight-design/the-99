@@ -22,7 +22,7 @@ boards win).
 |---|---|---|
 | Collection › Wishlist: empty, lines, collected strip (W1 to W4, WP1 to WP4) | ✓ | ✓ |
 | Card details' Wishlist section and its stepper (D1 to D3, DP1, DP2) | ✓ | ✓ |
-| Friend page and the `>` on friend rows (P1 to P3, PP1 to PP3) | ✓ (finding 1) | ✓ (finding 1) |
+| Friend page and the `>` on friend rows (P1 to P3, PP1 to PP3) | ✓ | ✓ |
 | Stand-ins modal: friends section, titles, spares-only host (S1 to S4, O1 to O3) | ✓ | ✓ |
 | Shopping row's other-ways press and the key's spare item (SP1 to SP3, S5) | ✓ | ✓ |
 | All-decks cart's spare marks | ✓ | ✓ |
@@ -35,12 +35,13 @@ Inventories: `docs/superpowers/inventories/social-r2.json`, `social-r2-spares.js
 - `WantStepper` is the one stepper on the Wishlist tab and in card details.
 - The other-ways press is one component on deck rows and in the cart, and the Shopping key's spare item is the
   key's own.
-- The wishlist tile (`WishlistTileFace`) is shared by the tab and About, but **not** by the friend page (finding 1).
+- The wishlist tile (`WishlistTileFace`) is shared by the tab, About and, since #1900, the friend page (finding 1).
 
 ## Findings
 
 1. **The friend page's wishlist tiles cannot be pressed** (#1884). The board says a press opens card details as
-   usual, and the page rebuilds the tile instead of using `WishlistTileFace`. Assigned to its owner's lane.
+   usual, and the page rebuilt the tile instead of using `WishlistTileFace`. **Fixed in #1900**: the friend page
+   draws the Wishlist tab's tile, and a press opens card details.
 2. **The phone place strip overflowed at 390** (#1879). Five tabs and `+ Add` were wider than the phone, so the
    strip scrolled and Add showed half-cut. **Fixed here:** beside five tabs, the tabs close up and Add is its mark
    alone in a 44px square, named `Add cards` for a screen reader, as WP1 draws its trailing control.
