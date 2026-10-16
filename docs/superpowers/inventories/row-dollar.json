@@ -1,0 +1,120 @@
+{
+  "feature": "Row marks follow-up (#1913's rulings): the All view's `$` with its price in a tooltip, one more mark kept at each All tier, Shopping's +N at the tight tier, and the folded availability glyph's tap",
+  "note": "Run on a scratch branch of local-dev, whose audit account holds Gishath (deck id as on staging). 390 is the tight tier, 900 the middle (two-column grid), 1300 the wide.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "md-900",
+      "width": 900,
+      "height": 1000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "all-dollar",
+      "label": "Gishath All: a card to buy draws a bare `$`, no price",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "all-heavy",
+      "label": "Gishath All: a heavy row (combo and facts) keeps one more mark at each tier before its +N",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "shopping-plus",
+      "label": "Gishath Shopping: the price is kept, and the +N stands in for folded marks in the middle and tight tiers",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "all-dollar-tooltip",
+      "label": "Gishath All: the `$`'s tooltip under a fine pointer, the price and `needs buying`",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has(.font-mono[class*='text-[9'])",
+          "settle": 400
+        },
+        {
+          "hover": "[data-decklist-row] span.inline-flex:has(> span.font-mono[class*='rounded-[4px]'])",
+          "settle": 900
+        }
+      ],
+      "widths": [
+        "desktop"
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    }
+  ]
+}

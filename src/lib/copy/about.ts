@@ -862,7 +862,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Filled green: in your Collection. Hollow and dashed: not.',
       '“1 in a draft”, “none free” or “short” means something’s in the way. “short” also rings the row in red.',
-      'A card to buy shows its price, and “P” marks one you’re printing as a proxy.',
+      'A card to buy shows “$”, with its price a hover or tap away. “P” marks one you’re printing as a proxy.',
       'A bright edge marks rows you’ve changed since your last commit.',
     ],
     marksPending: true,

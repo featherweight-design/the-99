@@ -1558,31 +1558,42 @@ describe("DecklistRow, folding the marks", () => {
       const t = tokens(wrapperOf(n));
       expect(t.some((c) => c.includes("hidden"))).toBe(false);
     }
-    // The 4th folds at every width, the 2nd and 3rd below the wide tier, the 1st only in the tight one.
-    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("sr-only");
+    // One more mark kept at every tier than before the All row's price became a bare `$` (Hugh, 2026-10-16): all four at
+    // the wide tier, the first two at the middle one (a 900px grid column), the first alone in the tight one (a phone). The
+    // first never folds.
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).not.toContain("sr-only");
     expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("@max-[480px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[480px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("@max-[360px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[360px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).not.toContain("@max-[480px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger)).some((c) => c.includes("sr-only"))).toBe(false);
+  });
+
+  it("folds a fifth mark at every width, into the wide tier's +1", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...four, comboPartner: { oracleId: "scepter", name: "Isochron Scepter" } } as DeckDetailCard} newestAsOf={null} />);
+    const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
+    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
   });
 
   it("draws one +N per tier, aria-hidden, counting what that tier folds", () => {
     renderRow(<DecklistRow deckId="d1" card={four} newestAsOf={null} />);
     const plus = plusSpans();
-    expect(plus.map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+    // Four marks fold nothing at the wide tier, so it draws no +N; the middle tier folds two and the tight one three.
+    expect(plus.map((p) => p.textContent)).toEqual(["+2", "+3"]);
     for (const p of plus) expect(p.querySelector("[aria-hidden='true']")!.textContent).toMatch(/^\+\d$/);
-    expect(tokens(plus[0])).toContain("@min-[480px]:inline");
-    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["@min-[360px]:@max-[480px]:inline"]));
-    expect(tokens(plus[2])).toContain("@max-[360px]:inline");
+    expect(tokens(plus[0])).toEqual(expect.arrayContaining(["@min-[360px]:@max-[480px]:inline"]));
+    expect(tokens(plus[1])).toContain("@max-[360px]:inline");
   });
 
-  it("folds every mark of a Shopping row at the middle tier, and drops the +N in the tight one", () => {
+  // d9, 2026-10-16: a phone Shopping row is a tight one, so the +N stands in for its marks there too, or they reach no screen.
+  it("folds every mark of a Shopping row at the middle tier, and keeps one +N standing in for them in the middle and tight tiers", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...four, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />);
     for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[480px]:sr-only");
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+4"]);
-    expect(tokens(plus[0])).toContain("@min-[360px]:@max-[480px]:inline");
-    expect(tokens(plus[0])).not.toContain("@max-[360px]:inline");
+    expect(tokens(plus[0])).toEqual(expect.arrayContaining(["hidden", "@max-[480px]:inline"]));
+    expect(tokens(plus[0]).some((c) => c.startsWith("@min-"))).toBe(false);
   });
 
   it("keeps an inactive tier's visibility OUTSIDE a fine pointer's tooltip wrapper, so it is no empty flex item", () => {
@@ -1747,7 +1758,7 @@ describe("DecklistRow, the combo mark", () => {
   });
 
   // The heavy row: three facts and the combo are four marks, so the combo is the 4th and folds at every width.
-  it("is the last mark, so beside three facts it is the 4th and folds into the wide tier's +1", () => {
+  it("is the last mark, so beside three facts it is the 4th and folds below the wide tier", () => {
     renderRow(
       <DecklistRow
         deckId="d1"
@@ -1756,8 +1767,8 @@ describe("DecklistRow, the combo mark", () => {
       />,
     );
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
-    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
-    expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
+    expect(glyphWrap.className.split(/\s+/)).toContain("@max-[480px]:sr-only");
+    expect(plusSpans().map((p) => p.textContent)).toEqual(["+2", "+3"]);
   });
 });
 
@@ -1935,6 +1946,30 @@ describe("DecklistRow, one line at every width", () => {
   });
 
   // The +N's folded marks reach a phone through a tap (d9, 2026-10-16), and the tap opens the bubble, not card details.
+  // The folded availability glyph's word reaches a phone the same way (d9, 2026-10-16).
+  it("opens the availability marker's bubble on a tap with a coarse pointer, and the tap goes no further", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const fetchCard = vi.fn().mockResolvedValue(null);
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -1, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] } } as DeckDetailCard} newestAsOf={null} />
+        </CardDetailProvider>,
+      );
+      const marker = screen.getByText("short");
+      expect(marker.closest("[class*='pointer-coarse:after:h-[max(44px,100%)]']")).not.toBeNull();
+      await act(async () => { fireEvent.click(marker); });
+      expect(screen.getByTestId("fact-tooltip")).toBeInTheDocument();
+      expect(fetchCard).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("opens the +N's bubble on a tap with a coarse pointer, and the tap goes no further", async () => {
     vi.stubGlobal("matchMedia", (q: string) => ({
       matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
@@ -1947,11 +1982,90 @@ describe("DecklistRow, one line at every width", () => {
           <DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] } as DeckDetailCard} newestAsOf={null} />
         </CardDetailProvider>,
       );
-      const plus = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span[aria-hidden='true']")).find((el) => el.textContent === "+1")!;
+      const plus = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span[aria-hidden='true']")).find((el) => el.textContent === "+2")!;
       await act(async () => { fireEvent.click(plus); });
       expect(screen.getByTestId("fact-tooltip")).toBeInTheDocument();
       expect(fetchCard).not.toHaveBeenCalled();
       expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+// The All view draws a card to buy as a bare `$` (Hugh, 2026-10-16): the price is Shopping's, and the figure is one hover or
+// tap away in the `$`'s tooltip. Shopping keeps its figure.
+describe("DecklistRow, the All view's `$`", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const priced = { ...(card as DeckDetailCard), owned: false, price: { cents: 726, foilCents: null, etchedCents: null, asOf } } as DeckDetailCard;
+  const drawn = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [aria-hidden='true']")).map((el) => el.textContent);
+
+  it("draws `$` and no price on an All row, and still speaks the figure", () => {
+    renderRow(<DecklistRow deckId="d1" card={priced} newestAsOf={asOf} />);
+    expect(drawn()).toContain("$");
+    expect(drawn().some((t) => t?.includes("7.26"))).toBe(false);
+    expect(document.querySelector("[data-decklist-row] .sr-only")!.closest("[data-decklist-row]")!.textContent).toContain("7.26");
+  });
+
+  it("leaves a Shopping row's figure drawn", () => {
+    renderRow(<DecklistRow deckId="d1" card={priced} inShopping shoppingFigure={24} newestAsOf={asOf} />);
+    expect(screen.getAllByText((t) => t.includes("7.26")).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("fact-tooltip")).toBeNull();
+  });
+
+  it("opens the price and `needs buying` on a tap with a coarse pointer, and the tap goes no further", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const fetchCard = vi.fn().mockResolvedValue(null);
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <DecklistRow deckId="d1" card={priced} newestAsOf={asOf} />
+        </CardDetailProvider>,
+      );
+      const glyph = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [aria-hidden='true']")).find((el) => el.textContent === "$")!;
+      expect(glyph.closest("[class*='pointer-coarse:after:h-[max(44px,100%)]']")).not.toBeNull();
+      await act(async () => { fireEvent.click(glyph); });
+      expect(screen.getByTestId("fact-tooltip")).toHaveTextContent(addPanelCopy.unowned.glyphTip("$7.26"));
+      expect(fetchCard).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+// Inline triggers share one line with their neighbours (#1916, Copilot round 1): each one's coarse hit is 44px tall but reaches only
+// 3px past its sides, so the `+N`, the availability marker and the `$` never cover one another. jsdom does no hit testing, so this
+// pins the spelling; the geometry is that 3px is half the tightest gap between two of them (the name block's 6px).
+describe("DecklistRow, inline touch hits", () => {
+  it("draws the +N, the availability marker and the $ with a 44px-tall hit that stays inside half the gap", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const asOf = new Date("2026-09-20T00:00:00Z");
+      renderRow(
+        <DecklistRow
+          deckId="d1"
+          card={{
+            ...(card as DeckDetailCard), owned: false, facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"],
+            price: { cents: 726, foilCents: null, etchedCents: null, asOf },
+            availability: { owned: 1, hard: 1, soft: 0, free: -1, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] },
+          } as DeckDetailCard}
+          newestAsOf={asOf}
+        />,
+      );
+      const hits = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] [class*='pointer-coarse:after:h-[max(44px,100%)]']"));
+      const inline = hits.filter((el) => !el.matches("button"));
+      expect(inline.length).toBeGreaterThanOrEqual(3);
+      for (const el of inline) {
+        expect(el.className).toContain("pointer-coarse:after:w-[calc(100%+6px)]");
+        expect(el.className).not.toContain("pointer-coarse:after:w-[max(44px,100%)]");
+      }
     } finally {
       vi.unstubAllGlobals();
     }

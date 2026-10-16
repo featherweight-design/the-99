@@ -148,9 +148,10 @@ export function FactTooltip({
   lines?: readonly React.ReactNode[];
   /**
    * On a coarse pointer, a TAP opens the bubble (and a second tap, a tap elsewhere or a scroll closes it), and the tap goes no
-   * further, so the row under it does not open card details. For the deck row's `+N` alone (d9, 2026-10-16): the marks it
-   * folds have no other way onto a phone screen. Every other mark keeps the shipped rule, no tooltip on touch, because the
-   * row's own tap opens the modal where every fact is listed.
+   * further, so the row under it does not open card details. For two things on the deck row alone (d9, 2026-10-16): the `+N`,
+   * whose folded marks have no other way onto a phone screen, and the availability marker, whose word folds to a glyph on a
+   * narrow row. Every other mark keeps the shipped rule, no tooltip on touch, because the row's own tap opens the modal where
+   * every fact is listed.
    */
   tapOnTouch?: boolean;
   children: React.ReactNode;
