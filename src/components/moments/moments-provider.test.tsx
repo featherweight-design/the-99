@@ -264,6 +264,98 @@ describe("MomentsProvider", () => {
     expect(observed).toHaveLength(0);
   });
 
+  it("gives Esc's focus back to the control when it closes a bubble holding focus", () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    screen.getByRole("button", { name: "Dismiss" }).focus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Stats" }));
+  });
+
+  it("closes on a keyboard press of the control, which fires a click with no pointerdown", () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    fireEvent.click(screen.getByRole("button", { name: "Stats" }));
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+  });
+
+  it("keeps the ✕ out of the native tab order: Tab from the control is how it is reached", () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    expect(screen.getByRole("button", { name: "Dismiss" }).tabIndex).toBe(-1);
+    screen.getByRole("button", { name: "Stats" }).focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Dismiss" }));
+  });
+
+  it("shows beside whichever of a moment's controls is on screen, and points only that one at the note", () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Rail" />
+        <Control id="lineup" name="Tab bar" />
+      </MomentsProvider>,
+    );
+    onScreen("Tab bar");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    expect(screen.getByRole("button", { name: "Tab bar" }).hasAttribute("aria-describedby")).toBe(true);
+    expect(screen.getByRole("button", { name: "Rail" }).hasAttribute("aria-describedby")).toBe(false);
+    expect(screen.getByRole("button", { name: "Tab bar" }).hasAttribute("data-moment-halo")).toBe(true);
+  });
+
+  it("lets one control carry two moments, and the fixed order picks between them", () => {
+    function Shared() {
+      const a = useMomentAnchor("friend-spares", { eligible: true, copy: { tool: "Spares", line: "spares." } });
+      const b = useMomentAnchor("stand-ins", { eligible: true, copy: { tool: "Swap", line: "swap." } });
+      return (
+        <button
+          type="button"
+          ref={(el) => {
+            a.ref(el);
+            b.ref(el);
+          }}
+        >
+          Other ways
+        </button>
+      );
+    }
+    render(
+      <MomentsProvider live={[...LIVE, "friend-spares"]} spent={[]}>
+        <Shared />
+      </MomentsProvider>,
+    );
+    onScreen("Other ways");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Swap, a tip");
+  });
+
+  it("shows nothing while another tab holds the visit's claim", () => {
+    window.localStorage.setItem(VISIT_KEY, JSON.stringify({ last: Date.now(), taken: false, claim: { tab: "other", at: Date.now() } }));
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
   it("does nothing outside the provider", () => {
     render(<Control id="lineup" name="Stats" />);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("aria-describedby")).toBe(false);

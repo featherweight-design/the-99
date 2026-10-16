@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { VISIT_GAP_MS, VISIT_KEY, nextVisit, takeVisit, touchVisit } from "./visit";
+import { CLAIM_MS, VISIT_GAP_MS, VISIT_KEY, claimVisit, nextVisit, releaseClaim, takeVisit, touchVisit } from "./visit";
 
 describe("nextVisit", () => {
   it("starts a visit with no moment taken when storage holds nothing usable", () => {
@@ -41,5 +41,21 @@ describe("the stored visit", () => {
     });
     expect(touchVisit(5)).toEqual({ last: 5, taken: false });
     expect(() => takeVisit(6)).not.toThrow();
+  });
+
+  it("lets one tab claim the visit at a time, and frees it on a release or after the claim's life", () => {
+    expect(claimVisit("a", 1000)).toBe(true);
+    expect(claimVisit("b", 1500)).toBe(false);
+    expect(claimVisit("a", 1600)).toBe(true);
+    releaseClaim("b", 1700);
+    expect(claimVisit("b", 1800)).toBe(false);
+    releaseClaim("a", 1900);
+    expect(claimVisit("b", 2000)).toBe(true);
+    expect(claimVisit("a", 2000 + CLAIM_MS + 1)).toBe(true);
+  });
+
+  it("refuses a claim once the visit is taken", () => {
+    takeVisit(1000);
+    expect(claimVisit("a", 1100)).toBe(false);
   });
 });

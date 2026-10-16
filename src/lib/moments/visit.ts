@@ -9,7 +9,10 @@
 export const VISIT_GAP_MS = 30 * 60 * 1000;
 export const VISIT_KEY = "the99.moments.visit";
 
-export type Visit = { last: number; taken: boolean };
+export type Visit = { last: number; taken: boolean; claim?: { tab: string; at: number } };
+
+/** How long a tab's provisional claim stands without a spend: a tab that died mid-bubble frees the visit after it. */
+export const CLAIM_MS = 5000;
 
 /** The visit as of `now`, given what storage held: the same one, touched, or a new one after the gap. */
 export function nextVisit(stored: unknown, now: number): Visit {
@@ -18,7 +21,9 @@ export function nextVisit(stored: unknown, now: number): Visit {
     return { last: now, taken: false };
   }
   if (now - v.last > VISIT_GAP_MS || v.last > now) return { last: now, taken: false };
-  return { last: now, taken: v.taken };
+  const c = v.claim;
+  const claim = c && typeof c.tab === "string" && typeof c.at === "number" && now - c.at < CLAIM_MS ? c : undefined;
+  return claim ? { last: now, taken: v.taken, claim } : { last: now, taken: v.taken };
 }
 
 function read(): unknown {
@@ -43,6 +48,22 @@ export function touchVisit(now = Date.now()): Visit {
   const v = nextVisit(read(), now);
   write(v);
   return v;
+}
+
+/**
+ * Claims this visit's moment for `tab`, provisionally: false when the visit is taken or another tab holds a live claim.
+ * The spend (`takeVisit`) makes it final; a teardown before it gives it back (`releaseClaim`).
+ */
+export function claimVisit(tab: string, now = Date.now()): boolean {
+  const v = nextVisit(read(), now);
+  if (v.taken || (v.claim !== undefined && v.claim.tab !== tab)) return false;
+  write({ last: now, taken: false, claim: { tab, at: now } });
+  return true;
+}
+
+export function releaseClaim(tab: string, now = Date.now()) {
+  const v = nextVisit(read(), now);
+  if (v.claim?.tab === tab) write({ last: now, taken: v.taken });
 }
 
 /** This visit's moment is taken, in every tab. */

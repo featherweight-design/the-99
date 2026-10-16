@@ -22,7 +22,7 @@ const FOCUSABLE =
 // directions: Tab from the last control tries to focus an inert first element and
 // lands nowhere, and Shift+Tab from the first is never wrapped, so focus escapes the
 // dialog entirely.
-function visibleFocusables(root: HTMLElement): HTMLElement[] {
+export function visibleFocusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
       el.getClientRects().length > 0 &&

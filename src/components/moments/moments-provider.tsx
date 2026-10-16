@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { spendMomentAction } from "../../app/moments-actions";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { pickMoment, type MomentId } from "../../lib/moments/registry";
-import { takeVisit, touchVisit } from "../../lib/moments/visit";
+import { claimVisit, releaseClaim, takeVisit, touchVisit } from "../../lib/moments/visit";
 import type { MomentCopy } from "../../lib/copy/moments";
 import { MomentBubble, type MomentPlace } from "./moment-bubble";
 
@@ -37,9 +37,13 @@ type Showing = Anchor & { since: number };
 
 type Ctx = {
   register: (anchor: Anchor) => () => void;
-  showing: MomentId | null;
+  /** The control the bubble shows beside: one moment can have several anchors (each row, the rail and the tab bar). */
+  showingEl: HTMLElement | null;
   noteId: string;
 };
+
+/** This tab, for the visit's provisional claim. */
+const TAB_ID = Math.random().toString(36).slice(2);
 
 const MomentsContext = createContext<Ctx | null>(null);
 
@@ -86,8 +90,12 @@ export function MomentsProvider({
     for (const id of spentAtLoad) spent.current.add(id);
   }, [spentAtLoad]);
 
-  const anchors = useRef(new Map<MomentId, Anchor>());
-  const visible = useRef(new Set<MomentId>());
+  // One registration per (control, moment): a moment may have several controls (repeated rows, the rail and the tab
+  // bar) and a control several moments (M5 and M6 share the other-ways press). Each is cleaned up on its own.
+  const regs = useRef(new Map<number, Anchor>());
+  const byEl = useRef(new Map<Element, Set<number>>());
+  const visible = useRef(new Set<number>());
+  const nextReg = useRef(0);
   const observer = useRef<IntersectionObserver | null>(null);
   const windowTimer = useRef<number | null>(null);
   const spendTimer = useRef<number | null>(null);
@@ -123,6 +131,8 @@ export function MomentsProvider({
       if (spendTimer.current !== null) window.clearTimeout(spendTimer.current);
       spendTimer.current = null;
       if (byReader || Date.now() - s.since >= SPENT_AFTER_MS) spend(s.id);
+      // Torn down unspent: give the visit back to every tab.
+      else releaseClaim(TAB_ID);
       showingRef.current = null;
       setShowing(null);
       setAnnounce("");
@@ -140,10 +150,10 @@ export function MomentsProvider({
   const decide = useCallback(() => {
     windowTimer.current = null;
     if (showingRef.current !== null) return;
-    const onScreen = [...visible.current].filter((id) => {
-      const a = anchors.current.get(id);
-      return a !== undefined && clearOver(a.el);
-    });
+    const clear = [...visible.current]
+      .map((reg) => regs.current.get(reg))
+      .filter((a): a is Anchor => a !== undefined && clearOver(a.el));
+    const onScreen = [...new Set(clear.map((a) => a.id))];
     if (onScreen.length === 0) {
       // Covered, not gone: look again shortly, since a surface that locks nothing reports no close.
       if (visible.current.size > 0) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
@@ -153,7 +163,10 @@ export function MomentsProvider({
     lastTouch.current = Date.now();
     const id = pickMoment({ onScreen, live: liveSet, spent: spent.current, visitTaken: visit.taken });
     if (id === null) return;
-    const anchor = anchors.current.get(id)!;
+    // An exclusive claim on the visit across tabs, held until the spend takes it or a teardown releases it, so two tabs
+    // whose windows close close together never both show one.
+    if (!claimVisit(TAB_ID)) return;
+    const anchor = clear.find((a) => a.id === id)!;
     const next = { ...anchor, since: Date.now() };
     showingRef.current = next;
     setShowing(next);
@@ -179,24 +192,24 @@ export function MomentsProvider({
     observer.current = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          const id = (e.target as HTMLElement).dataset.momentAnchor as MomentId | undefined;
-          if (id === undefined) continue;
-          if (e.isIntersecting) visible.current.add(id);
-          else {
-            visible.current.delete(id);
-            if (showingRef.current?.id === id) close(false);
+          for (const reg of byEl.current.get(e.target) ?? []) {
+            if (e.isIntersecting) visible.current.add(reg);
+            else visible.current.delete(reg);
           }
+          if (!e.isIntersecting && showingRef.current?.el === e.target) close(false);
         }
         arm();
       },
       { threshold: 0.6 },
     );
-    for (const a of anchors.current.values()) observer.current.observe(a.el);
+    for (const el of byEl.current.keys()) observer.current.observe(el);
     return () => {
       observer.current?.disconnect();
       observer.current = null;
       if (windowTimer.current !== null) window.clearTimeout(windowTimer.current);
       if (spendTimer.current !== null) window.clearTimeout(spendTimer.current);
+      windowTimer.current = null;
+      spendTimer.current = null;
     };
   }, [arm, close, liveSet]);
 
@@ -233,21 +246,36 @@ export function MomentsProvider({
   const register = useCallback(
     (anchor: Anchor) => {
       if (!liveSet.has(anchor.id) || spent.current.has(anchor.id)) return () => {};
-      anchor.el.dataset.momentAnchor = anchor.id;
-      anchors.current.set(anchor.id, anchor);
-      observer.current?.observe(anchor.el);
+      const reg = nextReg.current++;
+      regs.current.set(reg, anchor);
+      let onEl = byEl.current.get(anchor.el);
+      if (onEl === undefined) {
+        onEl = new Set();
+        byEl.current.set(anchor.el, onEl);
+        observer.current?.observe(anchor.el);
+      } else if (observer.current) {
+        // Already watched: observe again so this registration hears the control's current state.
+        observer.current.unobserve(anchor.el);
+        observer.current.observe(anchor.el);
+      }
+      onEl.add(reg);
       return () => {
-        observer.current?.unobserve(anchor.el);
-        delete anchor.el.dataset.momentAnchor;
-        if (anchors.current.get(anchor.id)?.el === anchor.el) anchors.current.delete(anchor.id);
-        visible.current.delete(anchor.id);
-        if (showingRef.current?.id === anchor.id) close(false);
+        regs.current.delete(reg);
+        visible.current.delete(reg);
+        const set = byEl.current.get(anchor.el);
+        set?.delete(reg);
+        if (set !== undefined && set.size === 0) {
+          byEl.current.delete(anchor.el);
+          observer.current?.unobserve(anchor.el);
+        }
+        const s = showingRef.current;
+        if (s !== null && s.el === anchor.el && s.id === anchor.id) close(false);
       };
     },
     [liveSet, close],
   );
 
-  const ctx = useMemo<Ctx>(() => ({ register, showing: showing?.id ?? null, noteId }), [register, showing, noteId]);
+  const ctx = useMemo<Ctx>(() => ({ register, showingEl: showing?.el ?? null, noteId }), [register, showing, noteId]);
 
   return (
     <MomentsContext.Provider value={ctx}>
@@ -298,6 +326,6 @@ export function useMomentAnchor(
     if (!register || !eligible || el === null) return;
     return register({ id, el, copy: { tool, line }, place });
   }, [register, eligible, el, id, tool, line, place]);
-  const shown = ctx !== null && ctx.showing === id;
+  const shown = ctx !== null && el !== null && ctx.showingEl === el;
   return { ref: setEl, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
 }

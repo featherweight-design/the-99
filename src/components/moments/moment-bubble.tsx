@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { momentsCopy, type MomentCopy } from "../../lib/copy/moments";
+import { visibleFocusables } from "../../lib/a11y/dialog";
 import { TOUCH_HIT } from "../ui/touch-hit";
 
 /**
@@ -21,7 +22,6 @@ export type MomentPlace = "below" | "right";
 const GAP = 10;
 const EDGE = 16;
 const PHONE = 768;
-const TABBABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type Spot = { top: number; left: number; width: number; side: "below" | "above" | "right"; nib: number };
 
@@ -32,34 +32,44 @@ function tabBarHeight(anchor: HTMLElement): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-/** Where the bubble goes, in viewport coordinates. Pure over the boxes it is handed. */
-export function placeBubble(
-  r: { top: number; bottom: number; left: number; right: number },
-  size: { height: number },
-  view: { width: number; height: number; bottomInset: number },
-  place: MomentPlace,
-): Spot {
-  const width = Math.min(view.width < PHONE ? 358 : 300, view.width - EDGE * 2);
+type Box = { top: number; bottom: number; left: number; right: number };
+
+/** The bubble's width: at most 358 on a phone and 300 from it, and never wider than the bounds less 16px a side. */
+export function bubbleWidth(bounds: Box, phone: boolean): number {
+  return Math.min(phone ? 358 : 300, bounds.right - bounds.left - EDGE * 2);
+}
+
+/**
+ * Where the bubble goes, in viewport coordinates. Pure over the boxes it is handed. `bounds` is what the bubble may
+ * occupy: the viewport above the phone's tab bar, cut to the open modal's own box when it lives inside one, since the
+ * modal clips what overflows it.
+ */
+export function placeBubble(r: Box, size: { height: number }, bounds: Box, phone: boolean, place: MomentPlace): Spot {
+  const width = bubbleWidth(bounds, phone);
   const cx = (r.left + r.right) / 2;
   const cy = (r.top + r.bottom) / 2;
   if (place === "right") {
-    const top = Math.max(EDGE, Math.min(cy - size.height / 2, view.height - view.bottomInset - EDGE - size.height));
+    const top = Math.max(bounds.top + EDGE, Math.min(cy - size.height / 2, bounds.bottom - EDGE - size.height));
     return { top, left: r.right + GAP, width, side: "right", nib: Math.max(12, Math.min(cy - top, size.height - 12)) };
   }
-  const left = Math.max(EDGE, Math.min(cx - width / 2, view.width - EDGE - width));
+  const left = Math.max(bounds.left + EDGE, Math.min(cx - width / 2, bounds.right - EDGE - width));
   const nib = Math.max(12, Math.min(cx - left, width - 12));
   const below = r.bottom + GAP;
-  if (below + size.height <= view.height - view.bottomInset - EDGE || r.top - GAP - size.height < EDGE) {
+  if (below + size.height <= bounds.bottom - EDGE || r.top - GAP - size.height < bounds.top + EDGE) {
     return { top: below, left, width, side: "below", nib };
   }
   return { top: r.top - GAP - size.height, left, width, side: "above", nib };
 }
 
-/** The tabbable after `el` in document order, skipping anything inside `skip`. */
-function nextTabbable(el: HTMLElement, skip: HTMLElement): HTMLElement | null {
-  const all = [...document.querySelectorAll<HTMLElement>(TABBABLE)].filter((n) => !skip.contains(n));
+/**
+ * The control after `el` in tab order, skipping the bubble: the visible, reachable ones only (`visibleFocusables`), and
+ * inside the open modal when the control is in one, wrapping as its own trap does.
+ */
+function nextTabbable(el: HTMLElement, skip: HTMLElement, scope: HTMLElement): HTMLElement | null {
+  const all = visibleFocusables(scope).filter((n) => !skip.contains(n));
   const i = all.indexOf(el);
-  return i >= 0 ? (all[i + 1] ?? null) : null;
+  if (i < 0) return null;
+  return all[i + 1] ?? (scope === document.body ? null : (all[0] ?? null));
 }
 
 export function MomentBubble({
@@ -91,8 +101,20 @@ export function MomentBubble({
       const node = ref.current;
       if (!node) return;
       const r = anchor.getBoundingClientRect();
-      const view = { width: window.innerWidth, height: window.innerHeight, bottomInset: tabBarHeight(anchor) };
-      const s = placeBubble(r, { height: node.offsetHeight }, view, place);
+      const phone = window.innerWidth < PHONE;
+      let bounds: Box = { top: 0, left: 0, right: window.innerWidth, bottom: window.innerHeight - tabBarHeight(anchor) };
+      if (container !== document.body) {
+        const c = container.getBoundingClientRect();
+        bounds = {
+          top: Math.max(bounds.top, c.top),
+          left: Math.max(bounds.left, c.left),
+          right: Math.min(bounds.right, c.right),
+          bottom: Math.min(bounds.bottom, c.bottom),
+        };
+      }
+      // The final width first, so the height read is the height the bubble will have once placed.
+      node.style.width = `${bubbleWidth(bounds, phone)}px`;
+      const s = placeBubble(r, { height: node.offsetHeight }, bounds, phone, place);
       // Viewport to the container's own coordinates: the body's are the page's, a modal's are its box's.
       const parent = node.offsetParent as HTMLElement | null;
       if (parent === null || parent === document.body || parent === document.documentElement) {
@@ -113,7 +135,7 @@ export function MomentBubble({
       window.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
     };
-  }, [anchor, place]);
+  }, [anchor, place, container]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
@@ -136,30 +158,40 @@ export function MomentBubble({
       if (e.key === "Escape") {
         e.stopPropagation();
         e.preventDefault();
+        // Focus inside the bubble would be lost with it: hand it back to the control.
+        const inside = ref.current?.contains(document.activeElement) ?? false;
         onDismiss();
+        if (inside) anchor.focus();
         return;
       }
       if (e.key !== "Tab" || !ref.current) return;
       const at = document.activeElement;
+      // Stopped as well as prevented: a modal's own trap listens on window too, and would undo the move.
       if (at === anchor && !e.shiftKey) {
         e.preventDefault();
+        e.stopPropagation();
         closeRef.current?.focus();
       } else if (at === closeRef.current) {
         e.preventDefault();
+        e.stopPropagation();
         if (e.shiftKey) anchor.focus();
-        else (nextTabbable(anchor, ref.current) ?? anchor).focus();
+        else (nextTabbable(anchor, ref.current, container) ?? anchor).focus();
       }
     };
-    const onDown = (e: PointerEvent) => {
+    // A press anywhere but the bubble, by pointer or by keyboard and assistive tech (a click with no pointerdown).
+    // Caught on the way down, before the tool's own handler runs, and never prevented, so the tool still opens.
+    const onPress = (e: Event) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onDismiss();
     };
     window.addEventListener("keydown", onKey, true);
-    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointerdown", onPress, true);
+    window.addEventListener("click", onPress, true);
     return () => {
       window.removeEventListener("keydown", onKey, true);
-      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointerdown", onPress, true);
+      window.removeEventListener("click", onPress, true);
     };
-  }, [anchor, leaving, onDismiss]);
+  }, [anchor, container, leaving, onDismiss]);
 
   const shown = entered && !leaving && spot !== null;
   const nib =
@@ -184,7 +216,7 @@ export function MomentBubble({
       style={{
         top: spot?.top ?? 0,
         left: spot?.left ?? 0,
-        width: spot?.width,
+        width: spot?.width ?? undefined,
         visibility: spot === null ? "hidden" : undefined,
       }}
       className={
@@ -210,6 +242,8 @@ export function MomentBubble({
       <button
         ref={closeRef}
         type="button"
+        // Reached only after its control (the Tab handling above), never again at the portal's end of the document.
+        tabIndex={-1}
         aria-label={momentsCopy.dismiss}
         onClick={(e) => {
           // A keyboard press (no pointer, `detail` 0) puts focus back on the control rather than losing it.
