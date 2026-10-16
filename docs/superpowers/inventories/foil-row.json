@@ -109,7 +109,7 @@
     },
     {
       "id": "shopping-row-foil",
-      "label": "/decks/[id] Shopping: a foil row, the glint under the dot with the pips at the name's x (option B at 390, the shipped column at 900, two lines from lg)",
+      "label": "/decks/[id] Shopping: a foil card that is short (so Shopping lists it), the glint under the dot with the pips at the name's x (option B at 390, the shipped column at 900, two lines from lg)",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
