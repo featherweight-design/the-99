@@ -86,6 +86,13 @@
    "w": 4120,
    "h": 1248,
    "title": "Log and expiry · desktop"
+  },
+  "Desktop-Options.dc.html": {
+   "x": 0,
+   "y": 15975,
+   "w": 2760,
+   "h": 3451,
+   "title": "R2 · desktop seat layout · A vs B"
   }
  },
  "order": [
@@ -99,7 +106,8 @@
   "Setup-Desktop.dc.html",
   "Read-Desktop.dc.html",
   "Swap-Desktop.dc.html",
-  "Log-Desktop.dc.html"
+  "Log-Desktop.dc.html",
+  "Desktop-Options.dc.html"
  ],
  "notes": {
   "row1": {
@@ -134,6 +142,13 @@
    "x": 0,
    "y": 14047,
    "text": "Desktop (1300): logging and expiry",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row6": {
+   "x": 0,
+   "y": 15715,
+   "text": "R2: desktop seat layout, option A vs option B",
    "kind": "title1",
    "maxW": 4000
   }

@@ -16,6 +16,7 @@ BOARDS = {  # module: [(fn, filename)]
     "b_read": [("board_phone", "R1 - Read-Phone.dc.html"), ("board_desk", "R1 - Read-Desktop.dc.html")],
     "b_swap": [("board_phone", "R1 - Swap-Phone.dc.html"), ("board_desk", "R1 - Swap-Desktop.dc.html")],
     "b_log": [("board_phone", "R1 - Log-Phone.dc.html"), ("board_desk", "R1 - Log-Desktop.dc.html")],
+    "b_opts": [("board_desk", "R2 - Desktop-Options.dc.html")],
 }
 
 MEASURE = """() => {

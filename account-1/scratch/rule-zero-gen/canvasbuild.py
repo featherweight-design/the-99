@@ -9,6 +9,7 @@ ROWS = [
   ("Desktop (1300): entry and setup", [("R1 - Entry-Desktop","Entry-Desktop","Entry · desktop"),("R1 - Setup-Desktop","Setup-Desktop","Setup · desktop")]),
   ("Desktop (1300): the read and the swap", [("R1 - Read-Desktop","Read-Desktop","The read · desktop"),("R1 - Swap-Desktop","Swap-Desktop","Suggestion and swap · desktop")]),
   ("Desktop (1300): logging and expiry", [("R1 - Log-Desktop","Log-Desktop","Log and expiry · desktop")]),
+  ("R2: desktop seat layout, option A vs option B", [("R2 - Desktop-Options","Desktop-Options","R2 · desktop seat layout · A vs B")]),
 ]
 os.makedirs(OUT, exist_ok=True)
 boards, notes, y = {}, {}, 0
