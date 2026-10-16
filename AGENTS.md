@@ -903,6 +903,20 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
   write erased by the sweep and the raw id retired after the day.
 
+- **Card scanning matches on the server** (plan `2026-10-16-card-scan.md`, Hugh's decisions relayed 2026-10-16),
+  behind `CARD_SCAN_ENABLED`, which needs `COLLECTION_EDIT_ENABLED` (staging `'true'` from PR 1, production unset). The
+  phone runs the detector and the dhvazquez fp32 embedder and sends the 256-float fingerprint to
+  `POST /api/card-scan/match` (signed in, the switch re-checked for the reader, 404 off, `private, no-store`, counted
+  in the observe-only `card-scan` rate bucket). `scan_index` holds one pgvector `halfvec(256)` row per printing face
+  of the every-printing gallery under an HNSW cosine index, and `scan_index_meta` its version and model (a request
+  naming another model is 409). Each guess is the nearest row of a card not already guessed (`lookupGuesses`, one
+  repeatable-read transaction), so a card with hundreds of printings cannot crowd out the second and third
+  guesses. `pnpm db:seed:scan-index <dir>` publishes `export_index.py all --server`'s files in ONE transaction on a
+  NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, never defaulted, checked by `neon.branch_id`),
+  refusing a wrong model, a row off unit length or fewer than 100,000 rows; never through the Neon MCP. Until it
+  has run on a database, the endpoint there answers 503 `no-index`. Production's index comes by a copy step, not a
+  second embedding run. `pnpm probe:card-scan-match` proves it on a scratch branch.
+
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
   outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. **A card the collection
