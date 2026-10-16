@@ -67,14 +67,15 @@ export function placeBubble(r: Box, size: { height: number }, bounds: Box, phone
  */
 function nextTabbable(el: HTMLElement, skip: HTMLElement, scope: HTMLElement): HTMLElement | null {
   const all = visibleFocusables(scope).filter((n) => !skip.contains(n));
-  // The control, or the last stop inside it when it is a group (the Matchups switch is a radiogroup of radios).
-  let i = -1;
-  all.forEach((n, k) => {
-    if (el.contains(n)) i = k;
-  });
-  if (i < 0) return null;
-  return all[i + 1] ?? (scope === document.body ? null : (all[0] ?? null));
+  // After the control, or after the last stop inside it when it is a group (the Matchups switch is a radiogroup of
+  // radios). A control out of the tab order (an inactive tab, under roving tabindex) is placed by document order.
+  const next = all.findIndex((n) => !el.contains(n) && (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
+  if (next >= 0) return all[next];
+  return scope === document.body ? null : (all[0] ?? null);
 }
+
+/** What `focus()` can land on, whatever its place in the tab order. */
+const FOCUSABLE_SELF = "button, a[href], input, select, textarea, [tabindex]";
 
 export function MomentBubble({
   id,
@@ -160,7 +161,14 @@ export function MomentBubble({
   // control is a group that takes no focus of its own.
   const cameFrom = useRef<HTMLElement | null>(null);
   const backToControl = useCallback(() => {
-    const to = cameFrom.current?.isConnected && anchor.contains(cameFrom.current) ? cameFrom.current : anchor;
+    const from = cameFrom.current;
+    const to =
+      from?.isConnected && anchor.contains(from)
+        ? from
+        : anchor.matches(FOCUSABLE_SELF)
+          ? anchor
+          : // A group that takes no focus itself: its own stop (the selected radio, under roving tabindex).
+            (anchor.querySelector<HTMLElement>('[tabindex="0"]') ?? anchor.querySelector<HTMLElement>(FOCUSABLE_SELF) ?? anchor);
     to.focus();
   }, [anchor]);
   useEffect(() => {

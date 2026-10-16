@@ -173,9 +173,15 @@ async function run(page, steps) {
       await onPage(page, step.wait).first().waitFor({ state: "visible", timeout: 15_000 });
     }
     // A moment's bubble (discovery R1): portalled to the end of the document, outside `<main>`, so it is the one wait
-    // that is not page-scoped. It matches only the bubble's own note, never anything the shell draws.
-    if (step.waitNote === true) {
-      await page.locator('[role="note"][aria-label$=", a tip"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    // that is not page-scoped. It names the note it expects (`"Mana Balance, a tip"`), so another moment arriving in its
+    // place fails the row rather than photographing the wrong tip.
+    if (step.waitNote !== undefined) {
+      if (typeof step.waitNote !== "string") throw new Error("waitNote takes the note's accessible name");
+      await page.getByRole("note", { name: step.waitNote, exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
+    }
+    // A fresh visit for the next moment: the visit lives in this context's storage, and the row before took it.
+    if (step.clearVisit === true) {
+      await page.evaluate(() => window.localStorage.removeItem("the99.moments.visit"));
     }
     // A pointer resting on page content (a row's hover preview): the page's own scope, as every verb is. `at` rests it
     // at a point inside the element ({ x, y } in px from its top left), for a card that tilts toward the pointer.

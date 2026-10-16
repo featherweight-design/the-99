@@ -115,6 +115,15 @@ describe("M10, the Matchups switch", () => {
     }
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "after" }));
   });
+  it("a Dismiss reached directly hands focus to the group's own stop, not the unfocusable group", async () => {
+    wrap(<GameMatchups matchups={matchups(3)} />);
+    await seen(screen.getByRole("radiogroup"));
+    const radio = screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")!;
+    const dismiss = screen.getByRole("button", { name: momentsCopy.dismiss });
+    dismiss.focus();
+    fireEvent.click(dismiss, { detail: 0 });
+    expect(document.activeElement).toBe(radio);
+  });
   it("not before it", async () => {
     wrap(<GameMatchups matchups={matchups(2)} />);
     await seen(screen.getByRole("radiogroup"));
@@ -144,5 +153,28 @@ describe("the Analysis tab's anchor", () => {
     const note = screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.suggestedChanges.tool) });
     expect(tab.getAttribute("aria-describedby")).toBe(note.id);
     expect(screen.getByRole("tab", { name: "Your deck" }).getAttribute("aria-describedby")).toBeNull();
+  });
+  it("Tab from Dismiss goes on past the inactive tab, which is out of the tab order", async () => {
+    wrap(
+      <>
+        <Tabs />
+        <button type="button">after</button>
+      </>,
+    );
+    const tab = screen.getByRole("tab", { name: "Analysis" });
+    await seen(tab);
+    tab.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: momentsCopy.dismiss }));
+    const proto = Element.prototype.getClientRects;
+    Element.prototype.getClientRects = function () {
+      return [{}] as unknown as DOMRectList;
+    };
+    try {
+      fireEvent.keyDown(window, { key: "Tab" });
+    } finally {
+      Element.prototype.getClientRects = proto;
+    }
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "after" }));
   });
 });
