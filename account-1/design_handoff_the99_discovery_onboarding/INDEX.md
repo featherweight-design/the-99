@@ -1,4 +1,4 @@
-# The 99: Discovery and onboarding · R1 handoff package (the moments)
+# The 99: Discovery and onboarding · R1 handoff package (the moments), approved
 
 How a player learns what the app can do. R1 is the moments: a one-line, quiet introduction to a tool, pointed at the
 control that opens it, the first time the player's own data makes it useful.
@@ -20,7 +20,7 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboar
 | `Moment.dc.html` and the other parts | The bubble and the shipped screens every board mounts. |
 | `README.md` | Locks held, the calls with reasons, where each moment points, gaps G1–G10. |
 | `STATES-moments.md` | A moment's life, and the matrix per moment. |
-| `READINESS.md` | R1 for audit, and what engineering needs. |
+| `READINESS.md` | Green: R1 approved by Hugh, 2026-10-16. What engineering needs. |
 | `discovery · copy strings.ts` | Every line, as placeholders for `/copy-review`. |
 | `design-tables/discovery.md` | The property tables. |
 | `brand/` | The locked brand sheet. |

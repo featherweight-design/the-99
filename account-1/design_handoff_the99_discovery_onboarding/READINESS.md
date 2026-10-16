@@ -1,6 +1,8 @@
 # Discovery R1 · READINESS
 
-**Verdict: 🟡 R1, for Hugh's audit.** Every lock in the brief is held (README, "Brief locks, held"). The calls are made, with reasons, on `Main.dc.html`. What remains is Hugh's audit, his calls on G1 and G3, `/copy-review` for every line, and the engineering items below.
+**Verdict: 🟢 R1 approved by Hugh, 2026-10-16.** Before build: `/copy-review` of every line (E7) and the plan's E1–E6. Still Hugh's call, not blocking: G1 (M12's anchor) and G3 (a Card assignments About entry).
+
+*At audit (R1 as handed over):* Every lock in the brief is held (README, "Brief locks, held"). The calls are made, with reasons, on `Main.dc.html`. What remains is Hugh's audit, his calls on G1 and G3, `/copy-review` for every line, and the engineering items below.
 
 ## Drawn
 

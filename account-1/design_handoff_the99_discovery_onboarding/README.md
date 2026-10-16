@@ -2,7 +2,7 @@
 
 `design_handoff_the99_discovery_onboarding/` · 2026-10-16 · account 1 · mirrors `design_handoff_the99_upcoming_precons/`
 
-**Status: R1, for Hugh's audit.** Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
+**Status: R1, approved by Hugh, 2026-10-16.** Build from these files once every line has been through `/copy-review`. G1 and G3 stay open for Hugh and don't block R1; G10's folder name is kept as approved with the round. Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
 (main, #1914). R1 is the brief's round 1: the quiet form of a moment, all 16 moments placed over their shipped screens at
 1280 and 390, the collision rule, and the Friends Home card. R2 (the showcase and the "?" reference) and R3 (the tour, and
 the tools where the need is) follow the brief's split.
