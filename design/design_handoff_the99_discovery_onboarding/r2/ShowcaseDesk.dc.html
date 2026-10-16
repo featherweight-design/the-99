@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · About, Tools tab, 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="{{ frame }}">
+  <dc-import name="Rail" active="none" help="shown" h="{{ railH }}" hint-size="62px,3930px"></dc-import>
+  <main style="flex:1;min-width:0;padding:40px 56px 64px;box-sizing:border-box">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+      <div>
+        <h1 style="margin:0;font-family:'Cinzel',serif;font-size:34px;font-weight:600;color:#EDE6D8;letter-spacing:.01em">About The 99</h1>
+        <p style="margin:8px 0 0;font-size:15px;color:#C0B8A6">What each tool is for, shown on the screen it lives on.</p>
+      </div>
+    </div>
+    <div style="margin-top:26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2B241B">
+      <div role="tablist" aria-label="About" style="display:flex;gap:28px">
+        <button type="button" role="tab" aria-selected="true" style="background:none;border:0;border-bottom:2px solid #CF8745;padding:0 2px 12px;margin-bottom:-1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:#EDE6D8">Tools <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;font-weight:500">14</span></button>
+        <button type="button" role="tab" aria-selected="false" style="background:none;border:0;padding:0 2px 12px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:500;color:#A59C89">Reference <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">71</span></button>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;padding-bottom:12px">Every screen has a <span style="display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border:1px solid #3A3229;border-radius:6px;color:#A59C89">?</span> for its own entries</span>
+    </div>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+      <section aria-label="{{ g.label }}" style="margin-top:40px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px">
+          <h2 style="margin:0;font-family:'Cinzel',serif;font-size:21px;font-weight:600;color:#EDE6D8">{{ g.label }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">{{ g.sub }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:22px">
+          <sc-for list="{{ g.tools }}" as="t" hint-placeholder-count="3">
+            <dc-import name="ToolCard" tool="{{ t }}" cta="card" w="354" h="450" hint-size="354px,450px"></dc-import>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+    <section aria-label="Written for you" style="margin-top:40px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px">
+        <h2 style="margin:0;font-family:'Cinzel',serif;font-size:21px;font-weight:600;color:#EDE6D8">Written for you</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">uses credits</span>
+      </div>
+      <div style="border:1px solid #6B482A;border-radius:14px;background:#1E1A15;padding:20px 24px 8px;display:flex;flex-direction:column">
+        <p style="margin:0 0 14px;font-size:14.5px;line-height:1.55;color:#C0B8A6">These write something just for you, so each uses a credit. You get 5, and each comes back 24 hours after you use it.</p>
+        <div style="display:grid;grid-template-columns:300px minmax(0,1fr) 170px;align-items:center;gap:18px;min-height:52px;border-top:1px solid #2B241B"><span><span style="display:block;font-size:15px;font-weight:600;color:#EDE6D8">Overview</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">A deck’s Analysis tab</span></span><span style="font-size:14px;line-height:1.5;color:#C0B8A6">Reads the whole list and says what the deck does and how it wins.</span><span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #6B482A;border-radius:999px;padding:2px 9px;white-space:nowrap">1 credit each</span></div><div style="display:grid;grid-template-columns:300px minmax(0,1fr) 170px;align-items:center;gap:18px;min-height:52px;border-top:1px solid #2B241B"><span><span style="display:block;font-size:15px;font-weight:600;color:#EDE6D8">Suggested changes</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">A deck’s Analysis tab</span></span><span style="font-size:14px;line-height:1.5;color:#C0B8A6">Up to five swaps, read from your games, your notes and the list.</span><span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #6B482A;border-radius:999px;padding:2px 9px;white-space:nowrap">1 credit per run</span></div><div style="display:grid;grid-template-columns:300px minmax(0,1fr) 170px;align-items:center;gap:18px;min-height:52px;border-top:1px solid #2B241B"><span><span style="display:block;font-size:15px;font-weight:600;color:#EDE6D8">Look deeper, in Proposed cuts</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">A deck’s Analysis tab</span></span><span style="font-size:14px;line-height:1.5;color:#C0B8A6">Names the cards to cut, not just where the deck runs long.</span><span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #6B482A;border-radius:999px;padding:2px 9px;white-space:nowrap">1 credit per look</span></div><div style="display:grid;grid-template-columns:300px minmax(0,1fr) 170px;align-items:center;gap:18px;min-height:52px;border-top:1px solid #2B241B"><span><span style="display:block;font-size:15px;font-weight:600;color:#EDE6D8">Help me choose, with “Anything else?”</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">New deck</span></span><span style="font-size:14px;line-height:1.5;color:#C0B8A6">Reads what you type and ranks commanders against it.</span><span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #6B482A;border-radius:999px;padding:2px 9px;white-space:nowrap">1 credit per search</span></div><div style="display:grid;grid-template-columns:300px minmax(0,1fr) 170px;align-items:center;gap:18px;min-height:52px;border-top:1px solid #2B241B"><span><span style="display:block;font-size:15px;font-weight:600;color:#EDE6D8">Which deck needs it most?</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">A card’s details</span></span><span style="font-size:14px;line-height:1.5;color:#C0B8A6">Takes a card through each deck’s plan and names the ones it really helps.</span><span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #6B482A;border-radius:999px;padding:2px 9px;white-space:nowrap">1 credit per read</span></div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;border-top:1px solid #2B241B;padding-top:12px"><span style="font-size:13.5px;color:#A59C89">Finding a deck’s bracket is free, and so is reopening a past Help me choose.</span><a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#CF8745;text-decoration:none;padding:10px 0">How credits work ›</a></div>
+      </div>
+    </section>
+    <div style="margin-top:48px;padding-top:22px;border-top:1px solid #2B241B;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:14px;color:#A59C89">Everything else the app does is in the Reference, by screen.</span>
+      <a href="#" style="font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">Open the Reference →</a>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":3930},"$preview":{"width":1280,"height":3930}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const h = Number(this.props.h ?? 3930);
+    const groups = [
+      { label: 'Start a deck', sub: 'before there is a list', tools: ['hmc', 'precons'] },
+      { label: 'Tune it', sub: 'once there is a list', tools: ['topoff', 'cuts', 'suggested', 'mana'] },
+      { label: 'Buy smarter', sub: 'for what you don’t own', tools: ['standins', 'spares'] },
+      { label: 'Use what you own', sub: 'your Collection', tools: ['findadeck', 'wishlist', 'sync'] },
+      { label: 'Play', sub: 'after the game', tools: ['matchups', 'lineup', 'friends'] },
+    ];
+    return { groups, railH: h, frame: `width:1280px;height:${h}px;display:flex;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8` };
+  }
+}
+</script>
+</body>
+</html>
