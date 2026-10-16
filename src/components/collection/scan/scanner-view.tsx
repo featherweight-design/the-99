@@ -23,6 +23,8 @@ export type ScannerViewProps = {
   count: number;
   /** The image of the card just added (V5): the tray's count card flips to it for a moment. */
   flipTo?: string | null;
+  /** A transient problem (a lookup that failed, no connection), said over the feed and gone on its own. */
+  notice?: string | null;
   feed?: ReactNode;
   onMode: (m: ScanMode) => void;
   onTorch: () => void;
@@ -60,6 +62,16 @@ export function ScannerView(p: ScannerViewProps) {
         <Guide look={look} phone={phone} />
       </div>
       {phone && p.screen.dark && <DarkLine torch={p.torch} />}
+      {p.notice && (
+        <p
+          role="alert"
+          className={`z-[3] m-0 rounded-[12px] border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface)_92%,transparent)] px-[14px] py-[11px] text-[13.5px] leading-[1.5] text-[color:var(--fg)] ${
+            phone ? `absolute inset-x-[12px] ${p.screen.dark ? "top-[132px]" : "top-[72px]"}` : "mx-[14px] mt-[10px]"
+          }`}
+        >
+          {p.notice}
+        </p>
+      )}
       <div aria-live="polite" className="contents">
         <Panel {...p} panel={p.screen.panel} />
       </div>

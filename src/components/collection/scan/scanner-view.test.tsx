@@ -135,6 +135,11 @@ describe("ScannerView", () => {
     expect(p.onTorch).toHaveBeenCalled();
   });
 
+  it("says a transient problem as an alert, at both widths", () => {
+    draw({ notice: copy.lookupFailed });
+    expect(screen.getByRole("alert").textContent).toBe(copy.lookupFailed);
+  });
+
   it("closes from the ✕", () => {
     const p = draw();
     fireEvent.click(screen.getByRole("button", { name: copy.close }));
