@@ -14,7 +14,7 @@
    "x": 0,
    "y": 0,
    "w": 1700,
-   "h": 3015,
+   "h": 3019,
    "title": "Buying credits R1 · calls, rulings, gaps"
   },
   "Credit-Line.dc.html": {
@@ -33,30 +33,30 @@
   },
   "Billing-Page.dc.html": {
    "x": 0,
-   "y": 9646,
+   "y": 9650,
    "w": 2770,
-   "h": 8162,
+   "h": 8182,
    "title": "§2 · The Credits page, P1–P8"
   },
   "Plan-and-Cancel.dc.html": {
    "x": 0,
    "y": 3525,
    "w": 2200,
-   "h": 3882,
+   "h": 3902,
    "title": "§3 · The plan and cancelling it (A, decided)"
   },
   "Checkout-Return.dc.html": {
    "x": 2850,
-   "y": 9646,
+   "y": 9650,
    "w": 2770,
    "h": 4162,
    "title": "§4 · Back from Checkout, R1–R6"
   },
   "Blocked-and-Off.dc.html": {
    "x": 5700,
-   "y": 9646,
+   "y": 9650,
    "w": 2770,
-   "h": 5108,
+   "h": 5120,
    "title": "§5 and §6 · Blocked, and payments off"
   },
   "Menu-and-Delete.dc.html": {
@@ -77,14 +77,14 @@
    "x": 5130,
    "y": 3525,
    "w": 2600,
-   "h": 6001,
+   "h": 6005,
    "title": "R2 · Options (picked: A, M1)"
   },
   "Picks.dc.html": {
    "x": 7810,
    "y": 3525,
    "w": 2600,
-   "h": 3728,
+   "h": 3736,
    "title": "R2b · Picks: the crown’s diamond, the menu chip by state"
   }
  },

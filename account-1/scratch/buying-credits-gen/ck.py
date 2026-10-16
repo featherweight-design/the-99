@@ -455,7 +455,7 @@ def fan(n, cal=False, dim=False):
     v = OFFER_ART["v"]
     kind = "plan" if cal else "pack"
     if v == "diamond":
-        crown3 = '<span class="dm3"><i></i><i class="b"></i><i></i></span>' if cal else ''
+        crown3 = f'<span class="dm3">{crown(6, 8.5, 3)}</span>' if cal else ''
         return (f'<span class="dmk{" dim" if dim else ""}" aria-hidden="true">{crown3}<span class="dm"><b>{n}</b></span></span>')
     if v == "numeral":
         unit = "a month" if cal else "credits"
