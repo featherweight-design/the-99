@@ -68,6 +68,7 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["find-a-deck-read", "FIND_A_DECK_READ_ENABLED"],
       ["deck-tokens", "DECK_TOKENS_ENABLED"],
       ["stand-ins", "SWAP_TOOLS_ENABLED"],
+      ["friend-spares", "SOCIAL_FRIENDS_ENABLED"],
       ["shopping-got-it", "SHOPPING_MARK_BOUGHT_ENABLED"],
       ["precons", "PRECONS_ENABLED"],
       ["upcoming-precons", "UPCOMING_PRECONS_ENABLED"],
@@ -137,8 +138,8 @@ describe("an entry tied to a switch", () => {
     // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
     // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 14 too: it briefly
     // bumped to 15 (#1840), and went back, since a switched entry is announced by its id.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection", "friends", "opponents", "wishlist"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist] = later.map((id) => launch.filter((e) => e.id === id));
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection", "friends", "opponents", "wishlist", "friend-spares"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist, friendSpares] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
@@ -150,6 +151,8 @@ describe("an entry tied to a switch", () => {
     expect([...friends, ...opponents].map((e) => e.since)).toEqual([14, 14]);
     // The wishlist (Social R2's last PR) follows its own switch too: since: 14, no bump.
     expect(wishlist.map((e) => e.since)).toEqual([14]);
+    // So does a friend's spare (Social R2's last PR): since: 14, no bump.
+    expect(friendSpares.map((e) => e.since)).toEqual([14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "start-without-a-collection",
@@ -169,6 +172,7 @@ describe("an entry tied to a switch", () => {
       "find-a-deck-read",
       "deck-tokens",
       "stand-ins",
+      "friend-spares",
       "shopping-got-it",
       "precons",
       "upcoming-precons",

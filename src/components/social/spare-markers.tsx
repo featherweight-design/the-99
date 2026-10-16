@@ -116,6 +116,27 @@ export function SparesSheetHost() {
 }
 
 /**
+ * The provider's value over spares already in hand: no read and no modal, and a press opens nothing. For a figure that
+ * draws the rows' spare glyph over fixtures (the About entry for friends' spares), where the page reads no friend.
+ */
+export function StaticSparesProvider({
+  spares,
+  newestAsOf,
+  children,
+}: {
+  spares: readonly FriendSpare[];
+  newestAsOf: Date | null;
+  children: React.ReactNode;
+}) {
+  const value = useMemo<Ctx>(() => {
+    const byCard = new Map<string, FriendSpare[]>();
+    for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
+    return { byCard, opened: null, open: () => {}, close: () => {}, newestAsOf };
+  }, [spares, newestAsOf]);
+  return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
+}
+
+/**
  * The row's one other-ways press (#1875: a single press on the card row's second line, at both widths): ⇄ when a
  * cheaper stand-in can be looked for, the spare glyph when a friend holds a spare, both in that order, and nothing at
  * all when neither (no slot is kept: the buy tag sits at the right). It opens the stand-ins modal, which names the
@@ -209,35 +230,53 @@ export function SparesSheet({
   newestAsOf: Date | null;
   onClose: () => void;
 }) {
-  const name = printedFaceName(card);
   return (
     <HoverPreviewProvider waitForMove>
       <ModalChrome title={spareCopy.modalTitleSpares} closeLabel={spareCopy.close} onClose={onClose} width={640}>
-        <div data-testid="spares-sheet" className="flex flex-col gap-[12px] px-[16px] pb-[24px] pt-[14px] md:gap-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
-          <section
-            className="flex flex-col gap-[6px] rounded-[10px] border border-[color:var(--border)] px-[13px] pb-[12px] pt-[11px]"
-            style={{ background: "var(--bg)" }}
-          >
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
-              {spareCopy.replacing}
-            </span>
-            <ReplacingLine imageUri={card.imageUri ?? null}>
-              <Thumb imageUri={card.imageUri ?? null} side="head" />
-              <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
-              <CardDetailTrigger
-                oracleId={card.oracleId}
-                name={name}
-                className="cursor-pointer border-0 bg-transparent p-0 text-left text-[14px] font-semibold"
-                style={{ color: "var(--fg)", borderBottom: "1px dotted var(--accent)" }}
-              >
-                {name}
-              </CardDetailTrigger>
-              <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
-            </ReplacingLine>
-          </section>
-          <FriendSpareSection spares={spares} />
-        </div>
+        <SparesSheetBody card={card} spares={spares} newestAsOf={newestAsOf} />
       </ModalChrome>
     </HoverPreviewProvider>
+  );
+}
+
+/**
+ * The spares-only modal's body: the Replacing box and the friends. Its own component so the About entry for friends'
+ * spares draws the modal's own parts in place over a fixture (inside `ModalPanel`), with no overlay and no read.
+ */
+export function SparesSheetBody({
+  card,
+  spares,
+  newestAsOf,
+}: {
+  card: SpareCard;
+  spares: readonly FriendSpare[];
+  newestAsOf: Date | null;
+}) {
+  const name = printedFaceName(card);
+  return (
+    <div data-testid="spares-sheet" className="flex flex-col gap-[12px] px-[16px] pb-[24px] pt-[14px] md:gap-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
+      <section
+        className="flex flex-col gap-[6px] rounded-[10px] border border-[color:var(--border)] px-[13px] pb-[12px] pt-[11px]"
+        style={{ background: "var(--bg)" }}
+      >
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>
+          {spareCopy.replacing}
+        </span>
+        <ReplacingLine imageUri={card.imageUri ?? null}>
+          <Thumb imageUri={card.imageUri ?? null} side="head" />
+          <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
+          <CardDetailTrigger
+            oracleId={card.oracleId}
+            name={name}
+            className="cursor-pointer border-0 bg-transparent p-0 text-left text-[14px] font-semibold"
+            style={{ color: "var(--fg)", borderBottom: "1px dotted var(--accent)" }}
+          >
+            {name}
+          </CardDetailTrigger>
+          <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
+        </ReplacingLine>
+      </section>
+      <FriendSpareSection spares={spares} />
+    </div>
   );
 }

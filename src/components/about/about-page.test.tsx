@@ -24,6 +24,7 @@ import { BRACKET_NAMES } from "../../lib/copy/deck-analysis";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { deriveHeadline } from "../../lib/decks/game-headline";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { spareCopy } from "../../lib/copy/social";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { DECK_GROUPING_LABELS, deckSortOrderLabel } from "../../lib/copy/deck-sort";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -1827,6 +1828,27 @@ describe("figures that draw what their keys name", () => {
   it("combo-awareness is drawn open, so the source marker its key names is there", () => {
     const { container } = render(<AboutPage env={ENV_VIEW} seen={0} />);
     expect(specimen(container, "combo-awareness").textContent).toContain(comboAwarenessCopy.modal.qualifier);
+  });
+
+  it("friend-spares draws the spare glyph on the shared card's row only, and the spares-only modal in place", () => {
+    const Figure = FIGURES["friend-spares"]!;
+    const { container } = render(<Figure width="plate" creditLimit={5} />);
+    const el = specimen(container, "friend-spares");
+    const presses = el.querySelectorAll('[data-testid="other-ways"]');
+    // Demand Answers: the glyph alone. Valakut Awakening, over the $4 limit: ⇄ alone.
+    expect(presses).toHaveLength(2);
+    expect(presses[0].querySelector('[data-testid="spare-glyph"]')).not.toBeNull();
+    expect(presses[0].textContent).not.toContain("⇄");
+    expect(presses[1].querySelector('[data-testid="spare-glyph"]')).toBeNull();
+    expect(presses[1].textContent).toContain("⇄");
+    // The modal is drawn on the page, not as an overlay or a dialog.
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
+    const sheet = el.querySelector<HTMLElement>('[data-testid="spares-sheet-in-place"]')!;
+    expect(sheet.textContent).toContain(spareCopy.modalTitleSpares);
+    expect(sheet.textContent).toContain(spareCopy.section(2));
+    expect(sheet.textContent).toContain(spareCopy.viewOnly);
+    expect([...sheet.querySelectorAll('[data-testid="friend-spare"] b')].map((b) => b.textContent)).toEqual(["Max", "Colin"]);
+    expect(sheet.textContent).toContain(spareCopy.foot);
   });
 
   it("post-import's Still short is the contested row, with no receipt row under it", () => {

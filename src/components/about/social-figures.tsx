@@ -9,6 +9,15 @@ import { PodCard } from "../social/pod-card";
 import { GameMatchups } from "../decks/game-matchups";
 import { WISHLIST_TILE_SHELL, WishlistTileFace, type WishlistTileCard } from "../wishlist/wishlist-tile";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
+import { CardDetailProvider } from "../cards/card-detail-provider";
+import { DecklistRow } from "../decks/decklist-row";
+import { HoverPreviewProvider } from "../decks/hover-preview";
+import { ModalPanel } from "../decks/receipt-modal";
+import { SparesSheetBody, StaticSparesProvider } from "../social/spare-markers";
+import { SwapToolsProvider } from "../../lib/swaps/context";
+import { spareCopy } from "../../lib/copy/social";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { FriendSpare } from "../../lib/social/spares";
 import type { DeckGame } from "../../lib/decks/games";
 import { summarizeMatchups } from "../../lib/decks/matchups";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
@@ -144,5 +153,85 @@ export function WishlistFigureBody() {
         ))}
       </ul>
     </FitFigure>
+  );
+}
+
+/**
+ * `fixtures.friendSpares` (the board's E2): a deck with a $4 limit buying two cards. Demand Answers is under the limit
+ * and two friends can spare one, both through the Thursday pod; Valakut Awakening is over it, with no spare. Faces are
+ * initials: the board's faces are canvas assets that name no commander.
+ */
+const SPARES_AS_OF = new Date("2026-09-01T00:00:00.000Z");
+const spareRow = (over: Partial<DeckDetailCard> & Pick<DeckDetailCard, "oracleId" | "name" | "typeLine">): DeckDetailCard => ({
+  cardTypeGroup: "Instants",
+  role: "other",
+  cmc: 2,
+  owned: false,
+  quantity: 1,
+  auto: false,
+  manaCost: null,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
+  availability: null,
+  ...over,
+});
+const DEMAND_ANSWERS = spareRow({
+  oracleId: "about-spare-demand",
+  name: "Demand Answers",
+  typeLine: "Instant",
+  role: "draw",
+  manaCost: "{1}{R}",
+  imageUri: "https://cards.scryfall.io/normal/front/e/c/eca092fc-7c67-4a73-989e-5297bbaaea76.jpg?1783912883",
+  price: { cents: 26, foilCents: null, etchedCents: null, asOf: SPARES_AS_OF },
+});
+const VALAKUT = spareRow({
+  oracleId: "about-spare-valakut",
+  name: "Valakut Awakening // Valakut Stoneforge",
+  typeLine: "Instant // Land",
+  layout: "modal_dfc",
+  cmc: 3,
+  manaCost: "{2}{R}",
+  imageUri: "https://cards.scryfall.io/normal/front/2/2/228e551e-023a-4c9a-8f32-58dae6ffdf7f.jpg?1783929350",
+  price: { cents: 1390, foilCents: null, etchedCents: null, asOf: SPARES_AS_OF },
+});
+const friend = (publicId: string, displayName: string) => ({ publicId, displayName, commander: null, pods: ["Thursday pod"] });
+const FRIEND_SPARES: FriendSpare[] = [
+  { oracleId: DEMAND_ANSWERS.oracleId, friend: friend("about-colin", "Colin"), spare: 1 },
+  { oracleId: DEMAND_ANSWERS.oracleId, friend: friend("about-max", "Max"), spare: 2 },
+];
+
+/**
+ * Two Shopping rows, the first carrying the spare glyph in its other-ways press, then the spares-only modal that press
+ * opens, drawn IN PLACE: `ModalPanel` (the sheet's own header and body) in a box of the sheet's border and ground, with
+ * `SparesSheetBody` (its Replacing box and `FriendSpareSection`) inside. The rows read the spares through
+ * `StaticSparesProvider`, so the figure reads no friend; the swap tools' provider gives Valakut its `over $4` and ⇄.
+ */
+export function FriendSparesFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <SwapToolsProvider deckId="about-figure" deckName="HD - Kratos" storedLimitCents={400}>
+        <StaticSparesProvider spares={FRIEND_SPARES} newestAsOf={SPARES_AS_OF}>
+          <div className="flex flex-col gap-[18px]">
+            <div className="flex flex-col">
+              {[DEMAND_ANSWERS, VALAKUT].map((card) => (
+                <DecklistRow key={card.oracleId} deckId="about-figure" card={card} siblings={[]} inShopping newestAsOf={SPARES_AS_OF} />
+              ))}
+            </div>
+            <div
+              data-testid="spares-sheet-in-place"
+              className="flex w-full max-w-[640px] flex-col self-center overflow-hidden rounded-[14px] border border-[color:var(--border-strong)]"
+              style={{ background: "var(--surface-raised)", boxShadow: "var(--modal-shadow)" }}
+            >
+              <ModalPanel title={spareCopy.modalTitleSpares} closeLabel={spareCopy.close} onClose={noop}>
+                <HoverPreviewProvider waitForMove>
+                  <SparesSheetBody card={DEMAND_ANSWERS} spares={FRIEND_SPARES} newestAsOf={SPARES_AS_OF} />
+                </HoverPreviewProvider>
+              </ModalPanel>
+            </div>
+          </div>
+        </StaticSparesProvider>
+      </SwapToolsProvider>
+    </CardDetailProvider>
   );
 }
