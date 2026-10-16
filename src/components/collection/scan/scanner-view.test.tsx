@@ -160,7 +160,7 @@ describe("ScannerView", () => {
     });
     const onChoosePrinting = vi.fn();
     const onNotThis = vi.fn();
-    draw({ mode: "normal", panel: { kind: "choose", guess: SOL, choices: null }, onChoosePrinting, onNotThis });
+    draw({ mode: "normal", panel: { kind: "choose", guess: SOL, choices: null }, onChoosePrinting, onNotThis, outline: withCard() });
     expect(panel().dataset.state).toBe("choose");
     expect(within(panel()).getByRole("status").textContent).toBe(copy.view.loadingPrintings);
     expect(outlineEl().dataset.look).toBe("ok");
