@@ -14,7 +14,7 @@ import {
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan-lab/steady";
-import { CADENCE_MS, cadenceDone, logFrame, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
+import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
 import { TrueCardStep } from "./true-card-step";
 import { Checkbox } from "../ui/checkbox";
@@ -80,11 +80,16 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   // The cadence log's run while "Log every frame" is on (`cadence.ts`): the loop adds each frame's reading, and the
   // run is posted when its 30 seconds are up or the box is unticked. Readings only, never an image.
   const cadence = useRef<CadenceRun | null>(null);
+  // What the screen holds while a press holds it (`ScanControls`), so the log records what the player saw; and the
+  // window of the last run, so a tap pressed inside it keeps no frame even when its save lands after the run ended.
+  const heldDisplay = useRef<Display | null>(null);
+  const lastRun = useRef<{ start: number; end: number } | null>(null);
   const [logged, setLogged] = useState<number | null>(null);
   const finishLog = useCallback(async () => {
     const run = cadence.current;
     if (!run) return;
     cadence.current = null;
+    lastRun.current = { start: run.startedAt, end: clock() };
     setLogged(null);
     if (run.frames.length === 0) {
       setNote(copy.logEmpty);
@@ -185,7 +190,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
         steady.current = next;
         const run = cadence.current;
         if (run) {
-          const more = logFrame(run, r, next, now);
+          const more = logFrame(run, r, heldDisplay.current ?? next, now);
           cadence.current = more;
           if (more !== run) setLogged(more.frames.length);
           if (cadenceDone(more, now)) void finishLog();
@@ -270,8 +275,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     setMissed(null);
     const mine = ++tapSeq.current;
     let frame: string | null = null;
-    // A log run keeps readings only: no frame goes with a tap made while it runs.
-    if (keepFrame && crop && !cadence.current) {
+    // A log run keeps readings only: no frame goes with a tap PRESSED while it ran, whenever its save lands.
+    if (keepFrame && crop && !pressedDuringRun(tap.pressedAt, cadence.current, lastRun.current)) {
       const c = document.createElement("canvas");
       c.width = EMBED_W;
       c.height = EMBED_H;
@@ -309,7 +314,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record}>
+        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; }}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}

@@ -162,7 +162,7 @@ describe("ScanControls", () => {
     fireEvent.pointerDown(right);
     await act(async () => { fireEvent.click(right); });
     now.mockRestore();
-    expect(onVerdict).toHaveBeenCalledWith({ reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 300 }, true);
+    expect(onVerdict).toHaveBeenCalledWith({ reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 300, pressedAt: 10_000 }, true);
   });
 
   it("records the guess on screen when it changed longer ago than the grace", async () => {
@@ -171,7 +171,7 @@ describe("ScanControls", () => {
     render(<ScanControls display={at(NEXT, 9_000, ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={onVerdict} />);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.right })); });
     now.mockRestore();
-    expect(onVerdict).toHaveBeenCalledWith({ reading: NEXT, shown: NEXT, changedMsBeforeTap: 1000 }, true);
+    expect(onVerdict).toHaveBeenCalledWith({ reading: NEXT, shown: NEXT, changedMsBeforeTap: 1000, pressedAt: 10_000 }, true);
   });
 
   it("says it is unsure while nothing holds", () => {
@@ -198,7 +198,7 @@ describe("ScanControls", () => {
     fireEvent.pointerDown(right);
     await act(async () => { fireEvent.click(right); });
     now.mockRestore();
-    expect(onVerdict.mock.calls[1][0]).toEqual({ reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 200 });
+    expect(onVerdict.mock.calls[1][0]).toEqual({ reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 200, pressedAt: 11_200 });
   });
 
   it("judges a second press during a save at its own time, on the display still held", async () => {
@@ -215,8 +215,18 @@ describe("ScanControls", () => {
     await act(async () => { fireEvent.click(right); });
     now.mockRestore();
     expect(onVerdict.mock.calls.map((c) => c[0])).toEqual([
-      { reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 300 },
-      { reading: NEXT, shown: NEXT, changedMsBeforeTap: 1300 },
+      { reading: ZIRDA, shown: NEXT, changedMsBeforeTap: 300, pressedAt: 10_000 },
+      { reading: NEXT, shown: NEXT, changedMsBeforeTap: 1300, pressedAt: 11_000 },
     ]);
+  });
+
+  it("tells the page what the screen holds while a press holds it, and when it lets go", async () => {
+    const onHold = vi.fn();
+    render(<ScanControls display={at(ZIRDA)} keepFrame onKeepFrame={vi.fn()} onVerdict={vi.fn(async () => {})} onHold={onHold} />);
+    const right = screen.getByRole("button", { name: copy.right });
+    fireEvent.pointerDown(right);
+    expect(onHold).toHaveBeenLastCalledWith(expect.objectContaining({ reading: ZIRDA }));
+    await act(async () => { fireEvent.click(right); });
+    expect(onHold).toHaveBeenLastCalledWith(null);
   });
 });

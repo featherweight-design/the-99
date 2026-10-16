@@ -56,6 +56,15 @@ export function logFrame(run: CadenceRun, r: Reading, d: Display, now: number): 
   return { ...run, lastAt: now, frames: [...run.frames, frame] };
 }
 
+/** Whether a tap pressed at `pressedAt` fell inside a log run: the one running now, or the last one, which ended at
+ * `last.end`. Such a tap keeps no frame, even when its save lands after the run ended. */
+export function pressedDuringRun(
+  pressedAt: number, running: CadenceRun | null, last: { start: number; end: number } | null,
+): boolean {
+  if (running && pressedAt >= running.startedAt) return true;
+  return last !== null && pressedAt >= last.start && pressedAt <= last.end;
+}
+
 const round = (v: number) => Math.round(v * 10_000) / 10_000;
 
 export type CadenceLog = { indexVersion: string; frames: CadenceFrame[] };

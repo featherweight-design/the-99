@@ -46,6 +46,7 @@ export function ScanControls({
   keepFrame,
   onKeepFrame,
   onVerdict,
+  onHold,
   children,
 }: {
   /** What the screen says: the steady reading the camera loop published, and when it last changed. */
@@ -54,6 +55,9 @@ export function ScanControls({
   onKeepFrame: (on: boolean) => void;
   /** Saves a verdict on THIS tap: the held display at the press, when the press began in the controls area. */
   onVerdict: (tap: Tap, correct: boolean) => Promise<void>;
+  /** Told what the screen holds whenever a hold starts or ends (null when it ends), so a log of what the screen showed
+   * can follow the hold rather than the live display behind it. */
+  onHold?: (held: Display | null) => void;
   /** Under the controls: the tap count and the "What card was it?" step. */
   children?: ReactNode;
 }) {
@@ -89,6 +93,7 @@ export function ScanControls({
     }
     onScreen.current = h;
     setHeld(h);
+    if (h !== prev) onHold?.(h ? h.display : null);
   }
   // Verdicts still saving. Each took its OWN press's reading at its click and cleared the hold, so a second tap
   // while the first saves holds the reading in front of it then, never the first press's again.

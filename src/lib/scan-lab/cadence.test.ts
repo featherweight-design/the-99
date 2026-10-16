@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Reading } from "./reading";
 import type { Display } from "./steady";
-import { CADENCE_GAP_MS, CADENCE_MS, MAX_CADENCE_FRAMES, cadenceDone, logFrame, parseCadence, startCadence } from "./cadence";
+import { CADENCE_GAP_MS, CADENCE_MS, MAX_CADENCE_FRAMES, cadenceDone, logFrame, parseCadence, pressedDuringRun, startCadence } from "./cadence";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const card = (...ids: number[]): Reading => ({
@@ -42,6 +42,17 @@ describe("the cadence log", () => {
     expect(cadenceDone(run, CADENCE_MS)).toBe(true);
     expect(logFrame(run, card(1), showing(card(1)), CADENCE_MS + 500)).toBe(run);
     expect(MAX_CADENCE_FRAMES).toBe(600);
+  });
+});
+
+describe("pressedDuringRun", () => {
+  it("keeps no frame for a tap pressed inside a run, even when its save lands after the run ended", () => {
+    const running = startCadence(1000);
+    expect(pressedDuringRun(1500, running, null)).toBe(true);
+    expect(pressedDuringRun(900, running, null)).toBe(false);
+    // The run ended at 31,000; the tap was pressed at 30,900 and saves later, with no run open.
+    expect(pressedDuringRun(30_900, null, { start: 1000, end: 31_000 })).toBe(true);
+    expect(pressedDuringRun(31_100, null, { start: 1000, end: 31_000 })).toBe(false);
   });
 });
 
