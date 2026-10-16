@@ -69,7 +69,7 @@ The four fixed corners are gone. The detector already finds the card over the wh
 | shape | a closed polygon through the detector's four corners, mapped from the camera picture to the feed box as `object-fit: cover` draws it | same |
 | stroke | 3px, round joins | 2.5px, round joins |
 | no card in view | nothing is drawn | nothing is drawn |
-| a missed frame | the outline stays 300ms (`OUTLINE_HOLD_MS`), then goes | same |
+| a missed frame | the outline stays 1s (`OUTLINE_HOLD_MS`, two phone reads of about 400ms), then goes; a read that fails hides it the same way | same |
 | looking (`dash`): a card is seen, no answer yet | dashed `9 7`, `--fg` at 55% | same |
 | lit (`lit`): answers agree, or the frame is dark | solid `--accent` | same |
 | read (`ok`): a sure answer, or the light on | solid `--success` | same |

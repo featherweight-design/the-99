@@ -38,7 +38,11 @@ export function useFrameReader(outline?: OutlineStore): (source: Source) => Prom
     // No picture yet (the camera is still being asked for, or was refused): nothing to read, and no reason to load the
     // runtime and both models for a scanner that may never get one.
     const { width, height } = sourceSize(video);
-    if (!width || !height) return { frame: { kind: "none" }, cardInView: false, dark: false };
+    const live = "videoWidth" in video;
+    if (!width || !height) {
+      if (live) outline?.hide();
+      return { frame: { kind: "none" }, cardInView: false, dark: false };
+    }
     if (!pipe.current) {
       const held = sessionHolder<OrtSession>();
       sessions.current = held;
@@ -58,8 +62,12 @@ export function useFrameReader(outline?: OutlineStore): (source: Source) => Prom
         if (pipe.current === attempt) pipe.current = null;
       });
     }
-    const r = await (await pipe.current).read(video, () => alive.current);
-    const live = "videoWidth" in video;
+    // A read that fails (the models would not load, or a run threw) shows nothing for this frame, as no card does, and
+    // the error goes on to `useCardScan` as it always did.
+    const r = await (await pipe.current).read(video, () => alive.current).catch((e: unknown) => {
+      if (live) outline?.hide();
+      throw e;
+    });
     if (!r || r.kind === "none") {
       if (live) outline?.hide();
       return { frame: { kind: "none" }, cardInView: false, dark: r?.dark ?? false };

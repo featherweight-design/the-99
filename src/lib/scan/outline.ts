@@ -34,8 +34,12 @@ export function outlineShare(o: Outline): number {
 /** A card covering less of the picture than this is seen but too small to hold a match (measured: steady from about 12%). */
 export const CLOSER_BELOW = 0.12;
 
-/** How long an outline is kept after the detector last saw the card: one missed frame must not flicker it off. */
-export const OUTLINE_HOLD_MS = 300;
+/**
+ * How long an outline is kept after the card was last read: one missed frame must not flicker it off. A phone reads a
+ * frame in about 400ms (detector 153ms, embedder 251ms, the feasibility report), and the outline is published when a read
+ * ends, so the hold has to outlast two of them.
+ */
+export const OUTLINE_HOLD_MS = 1000;
 
 export type OutlineStore = {
   get(): Outline | null;
