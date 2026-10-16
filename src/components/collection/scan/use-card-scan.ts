@@ -208,10 +208,12 @@ export function useCardScan(
   // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
   const commit = useCallback(
     async (g: ScanGuess) => {
+      // A press during an add in flight still let go of its hold: clear it before the one-at-a-time guard, or the
+      // scanner would show Held, with the feed frozen, once the first add's panel goes.
+      setHeld(null);
       if (committing.current) return;
       committing.current = true;
       try {
-        setHeld(null);
         if (!(await onAdd(g, mode))) {
           onProblem("notAdded");
           return;

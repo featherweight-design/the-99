@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
-import { useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
+import { ADDED_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
 const unit = () => {
@@ -174,10 +174,16 @@ describe("useCardScan", () => {
     let land: (v: boolean) => void = () => {};
     onAdd.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
     await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    act(() => hook.result.current.hold());
     act(() => hook.result.current.add());
+    // A second press and release while the first add waits: it adds nothing, and leaves no hold behind.
+    act(() => hook.result.current.hold());
     act(() => hook.result.current.add());
     await act(async () => land(true));
     expect(onAdd).toHaveBeenCalledTimes(1);
+    // Once the added panel has gone, the scanner reads on rather than showing the second press's hold.
+    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
+    expect(hook.result.current.screen).not.toMatchObject({ panel: { held: true } });
   });
 
   it("never offers an answer that arrives after its card has left the frame", async () => {
