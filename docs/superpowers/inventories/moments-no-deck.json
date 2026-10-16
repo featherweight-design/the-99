@@ -1,0 +1,60 @@
+{
+  "feature": "Discovery R1, the moments: M12 Help me choose (plan 2026-10-16-moments.md), split from moments.json because it needs an account with no deck.",
+  "clearAbout": true,
+  "note": "Needs MOMENTS_ENABLED and HELP_ME_CHOOSE_ENABLED on, and E2E_AUDIT_USER_EMAIL naming an account with NO deck whose user_prefs.moments_spent does not hold `help-me-choose`. Every other moment is in moments.json, run as an account with decks.",
+  "out": "contact-sheets/moments-no-deck",
+  "rows": [
+    {
+      "id": "m12-help-me-choose-rail",
+      "label": "/commanders, an account with no deck (desktop): M12 Help me choose beside the rail's Discover",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Not sure where to start?, a tip"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "m12-help-me-choose-tab",
+      "label": "/commanders, an account with no deck (phone): M12 Help me choose above the tab bar's Discover",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Not sure where to start?, a tip"
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    }
+  ]
+}

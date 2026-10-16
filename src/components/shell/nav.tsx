@@ -575,9 +575,10 @@ export type AdminDoorProps = {
   friendsMoment?: boolean;
 };
 
-/** M12 (discovery R1): the reader has no deck, so on `/commanders` Discover carries Help me choose. */
+/** M12 (discovery R1): the reader has no deck, so on the `/commanders` list Discover carries Help me choose. */
 function helpOnSlot(helpMoment: boolean, pathname: string, href: string): boolean {
-  return helpMoment && href === "/discover" && isActive(pathname, "/commanders");
+  // The list itself, never a commander's own page under it: the tip is about where to start.
+  return helpMoment && href === "/discover" && pathname === "/commanders";
 }
 
 export function NavRail({

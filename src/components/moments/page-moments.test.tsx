@@ -75,8 +75,8 @@ describe("M12, Discover in the rail and the tab bar", () => {
     const bubble = note(momentsCopy.helpMeChoose.tool);
     expect(link.getAttribute("aria-describedby")).toBe(bubble?.id);
   });
-  it("stays away off /commanders", async () => {
-    pathname = "/decks";
+  it.each(["/decks", "/commanders/atraxa-praetors-voice"])("stays away on %s", async (path) => {
+    pathname = path;
     wrap(<TabBar locked={false} helpMoment />);
     await seen(discover());
     expect(screen.queryByRole("note")).toBeNull();

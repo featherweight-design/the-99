@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R1, the moments (plan 2026-10-16-moments.md). Rows land with the PR that mounts each moment: PR 1 is the foundation and draws nothing on its own.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row). The M12 rows need an account with no deck, M15 one whose collection came from an upload. M15 previews a pasted list and presses no confirm, so nothing is written.",
+  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row). M12 needs an account with no deck, so its rows are in `moments-no-deck.json`, run as that account. M15 needs one whose collection came from an upload; it previews a pasted list and presses no confirm, but a preview is not read-only: it inserts an unconfirmed `csv_uploads` row, which the runner does not remove. Run M15 against a fixture account on local-dev or a scratch branch, never staging or production.",
   "out": "contact-sheets/moments",
   "planned": [
     {
@@ -462,58 +462,6 @@
           "settle": 900,
           "waitNote": "Wishlist, a tip"
         }
-      ]
-    },
-    {
-      "id": "m12-help-me-choose-rail",
-      "label": "/commanders, an account with no deck (desktop): M12 Help me choose beside the rail's Discover",
-      "view": "src/components/shell/nav.tsx",
-      "steps": [
-        {
-          "goto": "/commanders",
-          "wait": "h1, h2"
-        },
-        {
-          "clearVisit": true
-        },
-        {
-          "goto": "/commanders",
-          "wait": "h1, h2",
-          "settle": 1500
-        },
-        {
-          "settle": 900,
-          "waitNote": "Not sure where to start?, a tip"
-        }
-      ],
-      "widths": [
-        "desktop"
-      ]
-    },
-    {
-      "id": "m12-help-me-choose-tab",
-      "label": "/commanders, an account with no deck (phone): M12 Help me choose above the tab bar's Discover",
-      "view": "src/components/shell/nav.tsx",
-      "steps": [
-        {
-          "goto": "/commanders",
-          "wait": "h1, h2"
-        },
-        {
-          "clearVisit": true
-        },
-        {
-          "goto": "/commanders",
-          "wait": "h1, h2",
-          "settle": 1500
-        },
-        {
-          "settle": 900,
-          "waitNote": "Not sure where to start?, a tip"
-        }
-      ],
-      "widths": [
-        "phone"
       ]
     },
     {
