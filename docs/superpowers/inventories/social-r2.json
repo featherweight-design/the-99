@@ -5,18 +5,6 @@
   "out": "contact-sheets/social-r2",
   "rows": [
     {
-      "id": "wishlist-empty",
-      "label": "/collection/wishlist: the empty state, search above one card (W1, WP1). Needs an account with no wishlist lines: run it alone, before seeding any",
-      "view": "src/app/collection/(list)/wishlist/page.tsx",
-      "steps": [
-        {
-          "goto": "/collection/wishlist",
-          "wait": "[data-testid=wishlist-empty]",
-          "settle": 2000
-        }
-      ]
-    },
-    {
       "id": "wishlist-collected",
       "label": "/collection/wishlist: the collected strip, meta row and grid (W3, W4)",
       "view": "src/app/collection/(list)/wishlist/page.tsx",
@@ -142,7 +130,7 @@
           "settle": 400
         },
         {
-          "wait": "[data-testid='stand-ins-sheet']",
+          "wait": "[data-testid='stand-ins-sheet']:not(:has([role=status])):not(:has([role=alert]))",
           "settle": 1500
         }
       ]
