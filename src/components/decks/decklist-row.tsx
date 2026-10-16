@@ -790,7 +790,13 @@ export function DecklistRow({
             the mark beside it, and the two views would disagree about one card
             one toggle apart. */}
         {card.availability && availState !== "free" && tag !== "proxy" && (
-          <span {...assignMoment} className="inline-flex flex-none">
+          <span
+            {...assignMoment}
+            // The marker takes no focus of its own, so while its moment shows it joins the tab order: Tab reaches it,
+            // then the bubble's Dismiss, and Esc or Dismiss hands focus back here. No tab stop otherwise.
+            tabIndex={assignMoment["aria-describedby"] ? 0 : undefined}
+            className="inline-flex flex-none rounded-[3px] focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]"
+          >
           {/* The word folds to the glyph and its count at a narrow row (L3), and a glyph alone is a tooltip's job: the marker's
               own spoken sentence, so the words stay one thing. On touch a tap opens it, as on the `+N` (d9, 2026-10-16), and the
               tap goes no further; its 44px hit is drawn past the marker. */}

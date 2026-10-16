@@ -339,6 +339,22 @@ describe("DecklistRow availability marker (#43)", () => {
       const bubble = screen.getByRole("note", { name: momentsCopy.noteName(momentsCopy.cardAssignments.tool) });
       expect(anchor.getAttribute("aria-describedby")).toBe(bubble.id);
     });
+    it("joins the tab order while it shows, reaching Dismiss and coming back on Esc", async () => {
+      const { momentsCopy } = await import("../../lib/copy/moments");
+      const anchor = (await mountWith(avail(-1, ["Atraxa"]))) as HTMLElement;
+      expect(anchor.getAttribute("tabindex")).toBe("0");
+      act(() => anchor.focus());
+      fireEvent.keyDown(anchor, { key: "Tab" });
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: momentsCopy.dismiss }));
+      fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+      expect(document.activeElement).toBe(anchor);
+      await act(async () => { vi.advanceTimersByTime(500); });
+      expect(anchor.hasAttribute("tabindex")).toBe(false);
+    });
+    it("is no tab stop without its moment", () => {
+      renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} newestAsOf={null} />);
+      expect(screen.getByText("short").closest("span.inline-flex.flex-none")!.hasAttribute("tabindex")).toBe(false);
+    });
     it("closes when the marker's own tooltip opens over it", async () => {
       const { momentsCopy } = await import("../../lib/copy/moments");
       const mm = window.matchMedia;

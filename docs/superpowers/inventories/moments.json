@@ -312,9 +312,12 @@
       ]
     },
     {
-      "id": "m8-find-a-deck",
-      "label": "card details from /collection, an owned card no deck uses: M8 Find a deck on the door",
+      "id": "m8-find-a-deck-desktop",
+      "label": "card details from /collection (desktop), an owned card no deck uses: M8 Find a deck on the door",
       "view": "src/components/cards/fits-door.tsx",
+      "widths": [
+        "desktop"
+      ],
       "steps": [
         {
           "goto": "/collection?card=${UNUSED_CARD}",
@@ -327,6 +330,10 @@
           "goto": "/collection?card=${UNUSED_CARD}",
           "wait": "[role=dialog]",
           "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid='fits-door']:visible",
+          "settle": 300
         },
         {
           "settle": 900,
@@ -335,21 +342,121 @@
       ]
     },
     {
-      "id": "m9-wishlist",
-      "label": "card details from /collection, a card the reader does not own: M9 Wishlist on `Add to wishlist`",
-      "view": "src/components/wishlist/card-wishlist.tsx",
+      "id": "m8-find-a-deck-phone",
+      "label": "card details from /collection (phone), an owned card no deck uses: M8 Find a deck on the door",
+      "view": "src/components/cards/fits-door.tsx",
+      "widths": [
+        "phone"
+      ],
       "steps": [
         {
-          "goto": "/collection?card=${UNOWNED_CARD}",
+          "goto": "/collection?card=${UNUSED_CARD}",
           "wait": "[role=dialog]"
         },
         {
           "clearVisit": true
         },
         {
-          "goto": "/collection?card=${UNOWNED_CARD}",
+          "goto": "/collection?card=${UNUSED_CARD}",
           "wait": "[role=dialog]",
           "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-testid='fits-door']:visible",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Find a deck, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m9-wishlist-desktop",
+      "label": "card details from a deck's Shopping row (desktop), a card the reader does not own: M9 Wishlist on `Add to wishlist`",
+      "view": "src/components/wishlist/card-wishlist.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${UNOWNED_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${UNOWNED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^${UNOWNED_CARD_NAME}",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=card-wishlist]",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Wishlist, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m9-wishlist-phone",
+      "label": "card details from a deck's Shopping row (phone), a card the reader does not own: M9 Wishlist on `Add to wishlist`",
+      "view": "src/components/wishlist/card-wishlist.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${UNOWNED_DECK}",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/${UNOWNED_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^${UNOWNED_CARD_NAME}",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details$",
+          "wait": "[data-testid=card-wishlist]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-testid=card-wishlist]",
+          "settle": 300
         },
         {
           "settle": 900,
