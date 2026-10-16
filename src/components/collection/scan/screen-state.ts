@@ -61,6 +61,6 @@ function againFor(i: ScanInputs, oracleId: string): Extract<ScanPanel, { kind: "
   return { kind: unbroken ? "duplicate" : "second", count };
 }
 
-function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null }): ScanGuess {
+export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null }): ScanGuess {
   return { oracleId: g.oracleId, name: g.name, typeLine: g.typeLine ?? "", imageUri: g.imageUri ?? null };
 }

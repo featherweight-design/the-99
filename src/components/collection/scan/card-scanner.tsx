@@ -7,7 +7,7 @@ import { ScannerView } from "./scanner-view";
 import { useFrameReader } from "./frame-reader";
 import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
-import { useCardScan, type CardScanDeps } from "./use-card-scan";
+import { useCardScan, type CardScanDeps, type ScanCapture } from "./use-card-scan";
 
 const copy = collectionEditCopy.scan;
 
@@ -33,10 +33,10 @@ export function CardScanner({
   listed: ReadonlyMap<string, number>;
   /** Test seams; the detector and embedder are the scanner's own, loaded and released with it. */
   deps?: Partial<CardScanDeps> & Pick<PhotoReaderDeps, "decode" | "thumb">;
-  onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>;
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture) => Promise<boolean>;
   onClose: () => void;
-  /** PR 4's search by name; until then None of these only reads on. */
-  onNoneOfThese?: () => void;
+  /** None of these (V6): the scan is turned down and the sheet's search by name takes over. */
+  onNoneOfThese: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
   const onProblem = useCallback((kind: "failed" | "refused" | "notAdded" | "noStart" | "photoFailed") => {
@@ -136,7 +136,7 @@ export function CardScanner({
         onPick={pick}
         onNoneOfThese={() => {
           dismiss();
-          onNoneOfThese?.();
+          onNoneOfThese();
         }}
         onChoosePhotos={choosePhotos}
       />

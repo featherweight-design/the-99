@@ -57,6 +57,6 @@ export function useFrameReader(): (source: Source) => Promise<FrameRead> {
     }
     const r = await (await pipe.current).read(video, () => alive.current);
     if (!r || r.kind === "none") return { frame: { kind: "none" }, cardInView: false, dark: r?.dark ?? false };
-    return { frame: { kind: "card", embedding: r.embedding }, cardInView: true, dark: r.dark };
+    return { frame: { kind: "card", embedding: r.embedding }, cardInView: true, dark: r.dark, crop: r.crop };
   }, []);
 }

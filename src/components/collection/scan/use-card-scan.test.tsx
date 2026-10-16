@@ -54,7 +54,7 @@ describe("useCardScan", () => {
     await waitFor(() => expect(hook.result.current.screen).toMatchObject({ kind: "scanning", panel: { kind: "sure" } }), { timeout: 4000 });
     expect(fetch).toHaveBeenCalledTimes(1);
     await act(async () => hook.result.current.add());
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast");
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast", expect.anything());
     await waitFor(() => expect(hook.result.current.count).toBe(1));
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } });
     expect(hook.result.current.flipTo).toBe("https://img/sol");
@@ -286,5 +286,33 @@ describe("useCardScan", () => {
     await act(async () => land(true));
     await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
     expect(hook.result.current.screen).not.toMatchObject({ panel: { held: true } });
+  });
+
+  it("hands each add the card's photo as read and the closest cards, the added one first (L2)", async () => {
+    const SIGNET = { ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", imageUri: "https://img/signet", score: 0.96 };
+    const fetch = vi.fn(() => json({ index: "all", guesses: [SOL, SIGNET], margin: 0.01 }));
+    const crop = new Float32Array(4);
+    const photo = vi.fn(() => "data:image/jpeg;base64,scan");
+    const { hook, onAdd } = setup(
+      { fetch: fetch as unknown as typeof globalThis.fetch, photo },
+      { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop },
+    );
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
+    await act(async () => hook.result.current.pick(SIGNET.oracleId));
+    expect(photo).toHaveBeenCalledWith(crop);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SIGNET.oracleId }), "fast", {
+      photo: "data:image/jpeg;base64,scan",
+      guesses: [
+        { oracleId: SIGNET.oracleId, name: "Arcane Signet", imageUri: "https://img/signet" },
+        { oracleId: SOL.oracleId, name: "Sol Ring", imageUri: "https://img/sol" },
+      ],
+    });
+  });
+
+  it("adds with no photo when no frame held a crop", async () => {
+    const { hook, onAdd } = setup();
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    await act(async () => hook.result.current.add());
+    expect(onAdd).toHaveBeenCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: null }));
   });
 });

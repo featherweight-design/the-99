@@ -108,6 +108,7 @@ describe("CardScanner", () => {
         }}
         onAdd={onAdd}
         onClose={vi.fn()}
+        onNoneOfThese={vi.fn()}
       />,
     );
     const input = screen.getByTestId<HTMLInputElement>("scan-photos-input");

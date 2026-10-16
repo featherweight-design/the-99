@@ -17,7 +17,7 @@ import { useInertPage } from "../../lib/a11y/inert-page";
 import { leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
 import { PICK_FROM_COLLECTION_HREF } from "../../lib/precons/pick";
 import {
-  canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, toPayload,
+  canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, swapScannedCard, toPayload,
   type AddLineState,
 } from "../../lib/collection/add-lines";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -36,6 +36,7 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
+import type { ScanCapture } from "./scan/use-card-scan";
 import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
@@ -150,10 +151,18 @@ function AddMode({
   }, [scanning]);
   // Scanned adds whose printings are still loading: the printing step waits for them before it asks.
   const [scanPending, setScanPending] = useState(0);
+  // The scanned line whose name was pressed, its fix open (card-scan L2): the scan's photo and closest cards.
+  const [fixChosen, setFixing] = useState<string | null>(null);
+  // A swap waiting on its card's printings: like a scanned add, it builds from the list it started with.
+  const [swapping, setSwapping] = useState(false);
   // The line whose printing is being asked for: the one opened, else (Normal mode's scanned lines wait for theirs)
   // the first still without one, once the scanner is closed and every scanned add has landed.
   const pickerFor =
     pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null)?.id ?? null) : null);
+
+  // The fix is open only while its line is on the list and nothing else is being asked: a line folded into a twin
+  // (by a swap, a printing or a finish) takes its fix with it, and a printing step asked elsewhere shows over it.
+  const fixing = fixChosen !== null && pickerFor === null && lines.some((l) => l.id === fixChosen) ? fixChosen : null;
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogCardResult[]>([]);
@@ -169,7 +178,7 @@ function AddMode({
   const saving = phase === "saving";
   // A scanned card still loading its printings lands on the list later: a search pick in the meantime would build
   // from a list without it, and drop it.
-  const searchDisabled = blocked || saving || scanPending > 0;
+  const searchDisabled = blocked || saving || scanPending > 0 || swapping;
   const trimmed = query.trim();
 
   // The debounced search. A ticket drops an answer that a newer keystroke has outdated.
@@ -237,10 +246,11 @@ function AddMode({
     // Escape and Back close the scanner first, back to the list it fills.
     if (scanning) return closeScanner();
     if (discarding) return setDiscarding(false);
+    if (fixing !== null) return setFixing(null);
     if (pickerFor !== null) return cancelPicker();
     if (dirty) return setDiscarding(true);
     onClose();
-  }, [saving, scanning, closeScanner, discarding, pickerFor, cancelPicker, dirty, onClose]);
+  }, [saving, scanning, closeScanner, discarding, fixing, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
@@ -250,6 +260,8 @@ function AddMode({
   async function pick(card: CatalogCardResult) {
     // Rows from an earlier query stay drawn while the next is pending: they are not this search.
     if (searchDisabled || searched !== trimmed) return;
+    // A search pick is a new line of its own: an open fix closes rather than coming back once the pick is done.
+    setFixing(null);
     setLoadingCard(card.name);
     setNotice(null);
     let choices: PrintingChoice[] = [];
@@ -285,7 +297,7 @@ function AddMode({
    */
   const listRead = () => phaseRef.current === "saving" || phaseRef.current === "saved";
 
-  async function addScanned(guess: ScanGuess, mode: ScanMode): Promise<boolean> {
+  async function addScanned(guess: ScanGuess, mode: ScanMode, scan: ScanCapture): Promise<boolean> {
     // A save in flight (or done) has already read the list: a card scanned now would land behind it, unsaved.
     if (listRead()) return false;
     setScanPending((n) => n + 1);
@@ -307,11 +319,42 @@ function AddMode({
     setQuery("");
     setResults([]);
     setSearched(null);
-    const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices };
+    const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices, scan };
     writeLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
     return true;
   }
 
+
+  /** L2: the scanned line becomes another of the cards its scan named, at that card's first printing. */
+  async function swapCard(lineId: string, oracleId: string, name: string) {
+    if (swapping || scanPending > 0) return;
+    setNotice(null);
+    setSwapping(true);
+    let choices: PrintingChoice[] = [];
+    try {
+      choices = await loadPrintingChoices(oracleId);
+    } catch {
+      choices = [];
+    } finally {
+      setSwapping(false);
+    }
+    // A save that began meanwhile has read the list: the swap would change a line it already sent.
+    if (listRead()) return;
+    if (choices.length === 0) return setNotice({ text: copy.printingsFailed, kind: "error" });
+    const r = swapScannedCard(linesRef.current, lineId, oracleId, choices);
+    // A swap onto a card another line already holds folds into that line, which the fix no longer describes.
+    if (r.merged) setFixing(null);
+    finish(r, lineId, name);
+  }
+
+  /** L2's way out, and V6's None of these: the scan is set aside and the sheet's own search by name takes over. */
+  function searchInstead(lineId: string | null) {
+    if (lineId !== null) {
+      writeLines((ls) => removeLine(ls, lineId));
+      setFixing(null);
+    }
+    closeScanner();
+  }
 
 
   /** Copies of each card on the list, for the scanner's tray and its "again". */
@@ -355,7 +398,7 @@ function AddMode({
   }
 
   async function save() {
-    if (!canSave(lines) || saving || scanPending > 0) return;
+    if (!canSave(lines) || saving || scanPending > 0 || swapping) return;
     phaseRef.current = "saving";
     setPhase("saving");
     // The desktop's scanner stays open beside Save; the save takes the sheet to its receipt, and the scanner goes.
@@ -423,7 +466,7 @@ function AddMode({
         </div>
 
         {phase !== "saved" && scanning && !phone && (
-          <CardScanner layout="desk" listed={listed} onAdd={addScanned} onClose={closeScanner} />
+          <CardScanner layout="desk" listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
         )}
         {phase !== "saved" && !(scanning && !phone) && (
           <div className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
@@ -578,10 +621,16 @@ function AddMode({
                     key={l.id}
                     line={l}
                     picking={pickerFor === l.id}
-                    collapsed={choosing !== null && choosing.id !== l.id}
+                    collapsed={(choosing !== null && choosing.id !== l.id) || (fixing !== null && fixing !== l.id)}
+                    fix={l.scan && choosing === null ? {
+                      open: fixing === l.id,
+                      onToggle: () => setFixing(fixing === l.id ? null : l.id),
+                      onSwap: (g) => void swapCard(l.id, g.oracleId, g.name),
+                      onSearch: () => searchInstead(l.id),
+                    } : undefined}
                     pulse={pulse?.id === l.id ? pulse.n : null}
                     phone={phone}
-                    disabled={saving}
+                    disabled={saving || swapping}
                     onOpenPicker={() => setPickerFor(pickerFor === l.id ? null : l.id)}
                     onChoose={(p) => finish(choosePrinting(linesRef.current, l.id, p), l.id, l.name)}
                     onFinish={(f) => {
@@ -593,6 +642,7 @@ function AddMode({
                     onRemove={() => {
                       writeLines((ls) => removeLine(ls, l.id));
                       if (pickerFor === l.id) setPickerFor(null);
+                      if (fixing === l.id) setFixing(null);
                     }}
                   />
                 ))}
@@ -611,7 +661,7 @@ function AddMode({
             <button
               type="button"
               // A scanned card whose printings are still loading is not on the list yet: Save waits for it.
-              disabled={!canSave(lines) || saving || scanPending > 0}
+              disabled={!canSave(lines) || saving || scanPending > 0 || swapping}
               onClick={() => void save()}
               className={`h-[46px] cursor-pointer rounded-[10px] px-[22px] text-[15px] font-semibold disabled:cursor-default disabled:opacity-40 md:h-auto md:rounded-[8px] md:px-[20px] md:py-[11px] md:text-[14px] ${PRIMARY}`}
             >
@@ -650,7 +700,7 @@ function AddMode({
 
       <p role="status" aria-live="polite" className="sr-only">{announce}</p>
       {scanning && phone && (
-        <CardScanner layout="phone" listed={listed} onAdd={addScanned} onClose={closeScanner} />
+        <CardScanner layout="phone" listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
       )}
     </div>
   );

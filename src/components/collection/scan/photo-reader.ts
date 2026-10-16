@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { lookupCard } from "../../../lib/scan/lookup";
 import type { Source } from "../../../lib/scan/pipeline";
+import type { ScanSource } from "../../../lib/collection/add-lines";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { nextFrame, type FrameRead } from "./use-card-scan";
 
@@ -55,7 +56,7 @@ const objectUrls = { create: (f: File) => URL.createObjectURL(f), revoke: (u: st
  */
 export function usePhotoReader(
   deps: PhotoReaderDeps,
-  onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>,
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanSource) => Promise<boolean>,
   mode: ScanMode,
   onProblem: (kind: "photoFailed" | "notAdded" | "noStart") => void,
 ): PhotoReader {
@@ -174,8 +175,11 @@ export function usePhotoReader(
     modeRef.current = mode;
   });
   const commit = useCallback(
-    async (id: number, guess: ScanGuess): Promise<boolean> => {
-      if (!(await onAdd(guess, modeRef.current))) {
+    async (id: number, guess: ScanGuess, named: ScanGuess[] = [guess]): Promise<boolean> => {
+      // A photo's line carries its closest cards for the fix, the added one first. No photo: a thumbnail's object URL
+      // is released with the scanner, before the review the fix is read in.
+      const guesses = [guess, ...named.filter((g) => g.oracleId !== guess.oracleId)].map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri }));
+      if (!(await onAdd(guess, modeRef.current, { photo: null, guesses }))) {
         onProblemRef.current("notAdded");
         return false;
       }
@@ -205,7 +209,7 @@ export function usePhotoReader(
       if (!guess || committing.current) return;
       hold(true);
       try {
-        await commit(rowId, guess);
+        await commit(rowId, guess, row?.state.kind === "notSure" ? row.state.guesses : [guess]);
       } finally {
         hold(false);
       }
