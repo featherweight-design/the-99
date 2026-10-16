@@ -1,6 +1,6 @@
 {
   "feature": "Social R2 PR 8a and PR A: friends with a spare in the stand-ins modal, and the card row's other-ways press with the Shopping key's spare item (handoff design_handoff_the99_social_r2 R3; foil addendum #1875, the press on line 2)",
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Shatterskull Smashing and Growing Rites of Itlimoc over its limit and Pantlaza under it, and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding Shatterskull and Pantlaza, neither holding Growing Rites. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx; the spares-only modal (SWAP_TOOLS_ENABLED off) by spare-markers.test.tsx. The pods-wrap row needs the friend who holds two Polyraptor spares to share through two pods with long enough names to wrap at 390: plant them as `Store league` (that friend's own pod, the reader a member) and `Thursday pod` (the reader's), so the line reads `shares with Store league and Thursday pod`.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Growing Rites of Itlimoc and the both card over its limit and Pantlaza under it, SPARES_BOTH_CARD naming that both card (the start of its name is enough), and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding the both card and Pantlaza, neither holding Growing Rites. The both card must be one the stand-ins read ANSWERS on that branch, so press its ⇄ once before seeding spares: on local-dev on 2026-10-15 Shatterskull Smashing had no stand-in and the row drew S3 rather than O1. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx; the spares-only modal (SWAP_TOOLS_ENABLED off) by spare-markers.test.tsx. The pods-wrap row needs the friend who holds two Polyraptor spares to share through two pods with long enough names to wrap at 390: plant them as `Store league` (that friend's own pod, the reader a member) and `Thursday pod` (the reader's), so the line reads `shares with Store league and Thursday pod`.",
   "out": "contact-sheets/social-r2-spares",
   "widths": [
     {
@@ -22,7 +22,7 @@
   "rows": [
     {
       "id": "both",
-      "label": "O1 Before you buy: Shatterskull's press holds ⇄ and the spare glyph, and opens the Replacing box, Friends with a spare, then the stand-ins",
+      "label": "O1 Before you buy: the both card's press holds ⇄ and the spare glyph, and opens the Replacing box, Friends with a spare, then the stand-ins",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
         {
@@ -42,7 +42,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^Cheaper stand-ins and friends with a spare of Shatterskull",
+          "name": "^Cheaper stand-ins and friends with a spare of ${SPARES_BOTH_CARD}",
           "wait": "[data-testid=friend-spares]",
           "settle": 2500
         }

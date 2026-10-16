@@ -323,6 +323,25 @@ describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () =>
     expect(within(strip()).getByText("History")).toBeInTheDocument();
   });
 
+  it("switch on, five tabs: the phone's Add is its mark alone, named for a reader, and the tabs close up (WP1)", () => {
+    pathname = "/collection";
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries wishlistEnabled />);
+    expect(tabNames()).toHaveLength(5);
+    const add = screen.getByTestId("collection-add-phone");
+    expect(add).toHaveAccessibleName("Add cards");
+    expect(add).not.toHaveTextContent("Add");
+    expect(add.className).toContain("min-w-[44px]");
+    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain("px-[7px]");
+  });
+
+  it("switch on, four tabs: the phone's Add keeps its word", () => {
+    pathname = "/collection";
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries />);
+    expect(tabNames()).toHaveLength(4);
+    expect(screen.getByTestId("collection-add-phone")).toHaveTextContent("Add");
+    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain("px-[11px]");
+  });
+
   it("switch on, empty collection: no Add in the head (the doors live in the empty state)", () => {
     withSwitch(true, EMPTY);
     expect(screen.queryByTestId("collection-add")).toBeNull();
