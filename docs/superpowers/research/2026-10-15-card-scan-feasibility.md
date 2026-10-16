@@ -640,9 +640,9 @@ screen showed something. So the sample:
 - holds no frame where the detector saw no card.
 
 Low light fails in time, as the guess flickering from one frame to the next, and a single kept frame cannot show
-that. Hugh reports low light as the one real problem, so measure it hardest. The lab's per-frame cadence log records
-every frame's top 3 for 30 seconds without a tap. That log, together with #1887's dwell and `changed_ms_before_tap`,
-is the measure; the 100% above is not.
+that. Hugh reports low light as the one real problem, so measure it hardest. The measure is a cadence
+log, being added to the lab: with it on, the lab records every frame's top 3 for 30 seconds without a tap, and keeps no
+frame. That log, with #1887's dwell and `changed_ms_before_tap`, is what measures low light; the 100% above does not.
 
 **Latency** (dhvazquez, on Hugh's phone, from the lab's own rows): median 501ms a frame, p90 701ms. The stages:
 
