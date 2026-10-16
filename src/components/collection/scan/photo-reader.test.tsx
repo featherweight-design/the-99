@@ -80,7 +80,7 @@ describe("usePhotoReader", () => {
     await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]));
     await act(() => result.current.addSure());
     expect(onAdd).toHaveBeenCalledTimes(2);
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "a" }), "normal");
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "a" }), "normal", expect.objectContaining({ photo: null }));
     expect(result.current.rows.map((r) => r.state.kind)).toEqual(["added", "added"]);
     // More photos append; the press then adds only the new sure one.
     act(() => result.current.choose([file("three.jpg")]));
@@ -111,7 +111,9 @@ describe("usePhotoReader", () => {
     await act(() => result.current.addSure());
     expect(onAdd).not.toHaveBeenCalled();
     await act(() => result.current.pick(result.current.rows[0].id, "b"));
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "b", name: "B" }), "fast");
+    // The line carries the photo's closest cards for the fix, the one pressed first.
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "b", name: "B" }), "fast", expect.objectContaining({ photo: null }));
+    expect((onAdd.mock.calls[0] as unknown[])[2]).toMatchObject({ guesses: [expect.objectContaining({ oracleId: "b" }), expect.objectContaining({ oracleId: "a" })] });
     expect(result.current.rows[0].state).toMatchObject({ kind: "added", guess: { oracleId: "b" } });
   });
 

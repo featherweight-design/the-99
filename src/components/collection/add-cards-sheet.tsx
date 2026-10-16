@@ -644,7 +644,11 @@ function AddMode({
                     collapsed={(choosing !== null && choosing.id !== l.id) || (fixing !== null && fixing !== l.id)}
                     fix={l.scan && choosing === null ? {
                       open: fixing === l.id,
-                      onToggle: () => setFixing(fixing === l.id ? null : l.id),
+                      onToggle: () => {
+                        // The fix and a reopened (optional) printing picker are one question at a time: the fix wins.
+                        if (fixing !== l.id) setPickerFor(null);
+                        setFixing(fixing === l.id ? null : l.id);
+                      },
                       onSwap: (g) => void swapCard(l.id, g.oracleId, g.name),
                       onSearch: () => searchInstead(l.id),
                     } : undefined}

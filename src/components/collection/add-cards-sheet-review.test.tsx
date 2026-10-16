@@ -264,5 +264,13 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
+
+  it("opens the fix over a printing picker the player reopened on that line", async () => {
+    await scanned();
+    fireEvent.click(await screen.findByRole("button", { name: copy.printingChipAria("Sol Ring", "C21 · #263") }));
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Sol Ring", expanded: false }));
+    expect(screen.getByRole("group", { name: scan.fix.regionLabel })).toBeTruthy();
+  });
 });
 
