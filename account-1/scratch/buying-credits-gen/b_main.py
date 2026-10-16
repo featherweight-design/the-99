@@ -53,11 +53,11 @@ GAPS = [
 ]
 
 DECIDE = (
-    '<div class="note" style="max-width:1580px;border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,#111319)">'
-    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: one yes or no, on R2b · Picks</b><ul>'
-    '<li><b>The menu chip by state (M1b).</b> M1’s chip carrying the crown’s diamond, with four states: holding credits, never bought, out of credits, plan expiring. Board <code>R2b · Picks</code>, bottom half.</li>'
-    '</ul><p class="cap" style="margin-top:8px"><b>Decided (2026-10-16):</b> cancel A (one tap, Keep my plan undoes it); menu entry A1, in the identity block; expiry warning 3 days out; '
-    'offer art A, the crown’s diamond, now on every board. Art in the app is only ever real cards or player images; everything else is our own graphics.</p></div>')
+    '<div class="note" style="max-width:1580px;border-color:var(--success);background:rgba(111,163,104,.07)">'
+    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Approved (Hugh, 2026-10-16)</b><ul>'
+    '<li>Cancel A, one tap with Keep my plan as the undo. Menu entry A1, drawn as the M1b chip in four states. Expiry warning 3 days out.</li>'
+    '<li>Offer art A, the crown’s diamond, on every board. Art is only ever real cards or player images; everything else is our own graphics.</li>'
+    '<li>Build from these boards with <code>R2b · Picks</code> for the offer art and the menu chip.</li></ul></div>')
 
 BOARDS = [
     ("R1 - Credit-Line", "§1 · the line in every state (L1–L8) on the CreditButton, 390 and desktop; the grammar"),
@@ -79,7 +79,7 @@ def board():
              + '<div class="cropped" style="width:390px"><div class="pg" style="gap:14px">' + balance((3, 5), plan=74, packs=40, new=False) + '</div></div>'
              + '<div class="cropped" style="width:390px"><div class="pg" style="gap:14px">' + plan_card("active", new=False) + '</div></div></div>')
     body = (
-        board_head("Buying credits · round 1 · for Hugh’s audit · 2026-10-16", "Buying credits R1: calls, rulings and gaps",
+        board_head("Buying credits · approved R2b · 2026-10-16", "Buying credits R1: calls, rulings and gaps",
                    "Brief: <code>docs/superpowers/design-briefs/2026-10-16-buying-credits.md</code>. Rulings closed, not reopened. "
                    "<b>The answer in one line:</b> when a reader runs out, the credit line they already read offers <code>Get more credits</code>; it leads to one Credits page "
                    "that shows what they have in the order it’s spent, sells the plan and a pack with their terms said before the press, and lets them cancel in one tap.")

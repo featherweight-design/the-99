@@ -1,8 +1,8 @@
-# Readiness · Buying credits R1
+# Readiness · Buying credits (R1 to R2b)
 
-**R1, for Hugh's audit (2026-10-16). Self-assessed: Amber until Hugh confirms the menu chip (R2b · Picks); Green for the build after that, with eight items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
+**Approved (LGTM, Hugh, 2026-10-16), R2b. Self-assessed: Green for the build, with seven items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
 
-**Build from** `The 99 - Buying Credits (R1).dc.html` for the calls and gaps, then the seven `R1 - *` boards (README "Start here"). Option B on Plan-and-Cancel is for Hugh's pick and is not built unless he picks it.
+**Build from** `The 99 - Buying Credits (R1).dc.html` for the calls and gaps, then the seven `R1 - *` boards (README "Start here"), with `R2b - Picks.dc.html` for the offer art and the menu chip, which supersede the card fan and the R1 menu line wherever those appear. Option B on Plan-and-Cancel was not picked and is not built. `R2 - Options` is the record of what Hugh picked from.
 
 **The brief's rulings, all closed, all honoured** (table on the main board, with frames)
 1. Prices, rollover with no cap while subscribed, expiry at period end after a cancel (stated at purchase, at cancel, before it happens), cancel in one obvious tap.
@@ -12,9 +12,9 @@
 5. Switch off: nothing about buying drawn, ever disabled; existing subscribers keep plan management.
 
 **Design's calls**
-- **Menu entry:** a line in the identity block, not a new row (A1). The row the brief proposed is A3, for comparison.
+- **Menu entry:** in the identity block, not a new row (A1), drawn as the M1b chip.
 - **Free and paid side by side:** one line on spending surfaces, free first then the paid total; on `/credits`, a total over three cells in spend order.
-- **Cancel:** one tap with `Keep my plan` as the undo (A); the brief's confirm is B.
+- **Cancel:** one tap with `Keep my plan` as the undo (A).
 - `Get more credits` sits on its own line under the credit line, only when nothing can be spent and payments are on.
 - The daily paid line shows on `/credits` from 15 of 20; the expiry warning 3 days out.
 
@@ -24,8 +24,7 @@
 
 **Decided (Hugh, 2026-10-16):** offer art A, the crown's diamond; art is only ever real cards or player images.
 
-**For Hugh** (R2b · Picks)
-1. **The menu chip by state (M1b):** yes, or notes.
+**Decided (Hugh, 2026-10-16):** menu count M1b, the chip carrying the crown's diamond, in four states.
 
 **Settle in the plan** (README gaps G1–G8)
 1. `creditsCopy` additions and the `Allowance` fields they need (paid used today, the paid limit, when paid is back, the plan's expiry).
