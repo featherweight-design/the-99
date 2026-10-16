@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R1 · M8–M9 in card details</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#95A4A6;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #2E3340;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9}
+.h .t{font-size:19px;font-weight:600;color:#C6D2D3}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 28px;max-width:1710px}
+.facts span{font-size:13px;line-height:1.5;color:#B3C0C2}
+.facts .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7C8A8C}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C;margin-bottom:8px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2340px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R1 · card details · 1280 dialog and 390 sheet · Kaldheim</span>
+    <h2 class="disp" style="margin:0;font-size:28px">Inside card details, the bubble sits on the dialog, not beside it</h2>
+    <p class="cap">Card details as shipped: the 820 × 620 dialog over the dimmed page at 1280, and the bottom sheet at 390. A sheet or dialog is open, but these two moments’ controls are inside it, so the “nothing open over the page” rule reads as “nothing open over the control”. At 390 the controls are on the full sheet only. The moment waits until the sheet is full and the control is on screen; the teaser never draws one.</p>
+  </div>
+
+  <section class="sec">
+    <div class="h"><span class="id">M8</span><span class="t">Find a deck · an owned card in no deck</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>Card details of a card the player owns that no deck holds (Dina, ×1, opened from Collection).</span>
+      <span><span class="mono">◇◇ Find a deck for it →</span>, the door in the footer (1280) or at the foot of the full sheet (390).</span>
+      <span><span class="mono">SWAP_TOOLS_ENABLED</span> · <span class="mono">fits-your-decks</span></span>
+      <span>Find a deck’s read spends a credit: the door opens the picker sheet and the read starts only from the press inside it. The bubble sits below the door, clear of the Mana Pool link above it.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · from Collection</div><dc-import name="CardDesk" card="dina" moment="m8" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · full sheet, door in view</div><dc-import name="CardPhone" card="dina" moment="m8" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M9</span><span class="t">Wishlist · a card the player does not own</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>Card details of a card the player does not own (Doctor Doom, ×0, opened from Discover).</span>
+      <span><span class="mono">Add to wishlist</span> in the Wishlist box.</span>
+      <span><span class="mono">SOCIAL_WISHLIST_ENABLED</span> · <span class="mono">wishlist</span></span>
+      <span>Free. Pressing it turns the button into the stepper in place, as shipped, and the bubble goes with the press.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · from Discover</div><dc-import name="CardDesk" card="doom" moment="m9" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · full sheet, box in view</div><dc-import name="CardPhone" card="doom" moment="m9" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2340}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>
