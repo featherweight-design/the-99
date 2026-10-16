@@ -378,7 +378,7 @@ export function useCardScan(
     depsRef.current.timer?.modePressed(now());
     setModeState(m);
     writeScanMode(depsRef.current.storage === undefined ? safeLocalStorage() : depsRef.current.storage, m);
-  }, [stopChoosing]);
+  }, [stopChoosing, now]);
 
   const current = screen.kind === "scanning" && screen.panel.kind === "sure" ? screen.panel.guess : null;
   const notSure = screen.kind === "scanning" && screen.panel.kind === "notSure" ? screen.panel.guesses : [];
