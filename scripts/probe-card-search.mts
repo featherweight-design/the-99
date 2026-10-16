@@ -45,14 +45,10 @@ async function main() {
 
     // Server time for the ranked search, as the database runs it: the round trip above is mostly network.
     const { nameSearch } = await import("../src/lib/cards/name-search");
-    const { cards } = await import("../src/db/schema");
+    const { searchAllCardsQuery } = await import("../src/lib/card-search/search");
     const { PgDialect } = await import("drizzle-orm/pg-core");
     for (const q of ["so", "sol", "drago"]) {
-      const m = nameSearch(q)!;
-      const ranked = db.select({ id: cards.oracleId }).from(cards)
-        .leftJoin(m.flavorHits, sql`${m.flavorHits.oracleId} = ${cards.oracleId}`)
-        .where(m.where).orderBy(m.rank, cards.name).limit(20);
-      const { sql: text, params } = new PgDialect().sqlToQuery(ranked.getSQL());
+      const { sql: text, params } = new PgDialect().sqlToQuery(searchAllCardsQuery(nameSearch(q)!).getSQL());
       const t = performance.now();
       await searchAllCards(q);
       const roundTrip = performance.now() - t;

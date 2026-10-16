@@ -2416,8 +2416,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   match, ties by name, at most 20; and the reader's signals are right for every case a row draws (owned summed
   across printings, a deck holding the card as commander, partner or list card, decks by name, an unmet wish marked
   and a met one not), while another account's copies, decks and wishes never reach them. It prints the ranked
-  search's round trip and its database execution time for a 2-, 3- and 5-letter query (about 25ms on local-dev's
-  catalog, 2026-10-16, so no trigram index). It writes, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
+  search's round trip and its database execution time for a 2-, 3- and 5-letter query (45 to 49ms on a
+  branch of local-dev, 2026-10-16, under the plan's ~50ms bar, so no trigram index). It writes, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
   reports, never staging, production or local-dev, and it removes its two made-up accounts' rows in a finally.
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count (summed across printings), that a write moves the owner's data stamp, that an unknown card and a quantity

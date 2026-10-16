@@ -43,8 +43,14 @@ export type CardSearchRow = CardSearchHit & CardSignals;
 export async function searchAllCards(query: string): Promise<CardSearchHit[]> {
   const match = nameSearch(query);
   if (!match) return [];
+  const rows = await searchAllCardsQuery(match);
+  return rows.map((r) => ({ ...r, flavorName: match.shownFlavor(r.name, r.flavorName) }));
+}
+
+/** The ranked read itself, apart so `probe:card-search` can EXPLAIN exactly the query that ships. */
+export function searchAllCardsQuery(match: NonNullable<ReturnType<typeof nameSearch>>) {
   const { flavorHits } = match;
-  const rows = await db
+  return db
     .select({
       oracleId: cards.oracleId,
       name: cards.name,
@@ -56,7 +62,6 @@ export async function searchAllCards(query: string): Promise<CardSearchHit[]> {
     .where(and(match.where, isGameCardWhere()))
     .orderBy(match.rank, asc(cards.name))
     .limit(SEARCH_LIMIT);
-  return rows.map((r) => ({ ...r, flavorName: match.shownFlavor(r.name, r.flavorName) }));
 }
 
 /**
