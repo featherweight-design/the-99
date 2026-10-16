@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R1, the moments: M12 Help me choose (plan 2026-10-16-moments.md), split from moments.json because it needs an account with no deck.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED and HELP_ME_CHOOSE_ENABLED on, and E2E_AUDIT_USER_EMAIL naming an account with NO deck whose user_prefs.moments_spent does not hold `help-me-choose`. Every other moment is in moments.json, run as an account with decks.",
+  "note": "Needs MOMENTS_ENABLED and HELP_ME_CHOOSE_ENABLED on, and E2E_AUDIT_USER_EMAIL naming an account with NO deck whose user_prefs.moments_spent does not hold `help-me-choose`. Every other moment is in moments.json, run as an account with decks. A row that shows its moment for a second spends it on the account, and the runner resets no database, so a row passes once per account: run one width, or one row, at a time, and empty `moments_spent` (or use a fresh fixture account) before the next.",
   "out": "contact-sheets/moments-no-deck",
   "rows": [
     {

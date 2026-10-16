@@ -137,7 +137,9 @@ function Card({
       onKeyDown={(e) => {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
-          if (!off) onPick();
+          // Through the card's own click, so a key picks exactly as a press does, and anything listening for the press
+          // (a moment's bubble, which a press dismisses) hears it.
+          if (!off) e.currentTarget.click();
         }
       }}
       // R2: on desktop the radio sits on the title row and everything below runs the card's full

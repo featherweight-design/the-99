@@ -1,7 +1,7 @@
 // The pages' moments (discovery R1, PR 4): each control registers its moment under the condition the screen's own data
 // gives it, and shows the bubble once on screen. The rules themselves are the provider's tests.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { ARRIVE_MS, MomentsProvider } from "./moments-provider";
 import { MOMENTS, type MomentId } from "../../lib/moments/registry";
@@ -129,6 +129,17 @@ describe("M15, the Sync card", () => {
     wrap(<UploadChoice {...base} sync={sync()} picked={null} onPick={() => {}} />);
     await seen(card());
     expect(card().getAttribute("aria-describedby")).toBe(note(momentsCopy.collectionSync.tool)?.id);
+  });
+  it.each(["Enter", " "])("picks Sync and closes the tip on %j, as a press does", async (key) => {
+    const onPick = vi.fn();
+    wrap(<UploadChoice {...base} sync={sync()} picked={null} onPick={onPick} />);
+    await seen(card());
+    expect(note(momentsCopy.collectionSync.tool)).toBeTruthy();
+    act(() => { fireEvent.keyDown(card(), { key }); });
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick).toHaveBeenCalledWith("sync");
+    await act(async () => { vi.advanceTimersByTime(500); });
+    expect(note(momentsCopy.collectionSync.tool)).toBeNull();
   });
   it("stays away while the card shows syncOff", async () => {
     wrap(<UploadChoice {...base} sync={sync({ unavailable: "noRecord" })} picked={null} onPick={() => {}} />);
