@@ -75,6 +75,12 @@ the 7 days.
   carries the invitation's URL or ticket, so the QR path can take the newcomer straight into sign-up without an email.
   Verify what the API answers for an email that already has an account. The response the sender sees must be the same
   either way, in wording AND in time, or the timing tells them which it was.
+- **The QR path must prove the newcomer owns the email.** An invitation's ticket is the credential Clerk normally
+  delivers TO the invited mailbox, so its holder is trusted with that address. Handed straight to whoever typed an
+  address, it would let someone register with another person's unused email. So the QR path verifies the mailbox
+  before an account exists: either the sign-up it hands over to still requires the email's own code, or the server
+  sends a code to the typed address and creates the invitation only once it comes back. Which of the two Clerk
+  supports is engineering's to verify; either way the newcomer meets one more step (open question 3).
 - **The reservation ledger is in the account purge.** A new per-user table fails `src/lib/account/purge.test.ts` until
   the purge handles it. The tree (who invited whom) needs its own rule there: purged with either account, or kept with
   the deleted side's id removed. That is engineering's call, and the purge coverage test enforces that it is made.
@@ -93,8 +99,8 @@ the 7 days.
 1. **The two-path chooser** at the top of Add a friend, as a dialog on desktop and a sheet on the phone, with the count
    in path 2, its 0 state ("Out of invites") and how each path's own screen follows.
 2. **The invite QR's live and expired states:** the countdown, what an expired QR shows, and making a new one.
-3. **The newcomer's scan-then-email screen:** one field, what it says about where the invitation goes, the moment it
-   hands over to sign-up, and a used or expired QR.
+3. **The newcomer's scan-then-email screen:** one field, what it says about where the invitation goes, the step that
+   proves they own the email (a code sent to it), the moment it hands over to sign-up, and a used or expired QR.
 4. **The remote email form**, and its one answer, "Invitation sent", whatever happened.
 5. **The count display** in the Add a friend dialog and on `/friends`, including at 0.
 6. **The invite-only page** for an uninvited visitor. Whether it carries a waitlist that /admin can approve is for
@@ -120,7 +126,7 @@ the 7 days.
 
 - **Add a friend, at 390 (sheet) and desktop (dialog):** the chooser; path 1 as today; path 2 with N invites, and at 0.
 - **The invite QR:** live with its countdown, expired, and a new one made.
-- **The newcomer's phone:** the email screen, the handover to sign-up, a QR already used or expired, and (if an open
+- **The newcomer's phone:** the email screen, the email's code (sent, entered, wrong, expired), the handover to sign-up, a QR already used or expired, and (if an open
   QR holds no invite) a QR redeemed after the sender's count reached 0.
 - **The remote form:** empty, sending, and "Invitation sent".
 - **`/friends`:** the count beside its own controls, with invites left and with none.
