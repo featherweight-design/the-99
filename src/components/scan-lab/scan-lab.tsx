@@ -8,10 +8,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scanLabCopy as copy } from "../../lib/copy/scan-lab";
-import {
-  DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor,
-} from "../../lib/scan/geometry";
-import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan/match";
+import { EMBED_H, EMBED_W } from "../../lib/scan/geometry";
+import { agreedRun, agreement, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan/reading";
 import { ageSteady, nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan/steady";
 import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
@@ -19,33 +17,10 @@ import { sessionHolder } from "../../lib/scan/sessions";
 import { TrueCardStep } from "./true-card-step";
 import { Checkbox } from "../ui/checkbox";
 import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
-import {
-  AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
-} from "../../lib/scan/models";
-import { isDark, torchOf, type Torch } from "../../lib/scan/camera";
+import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
+import { torchOf, type Torch } from "../../lib/scan/camera";
+import { framePipeline, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
-
-/** The slice of onnxruntime-web this page uses; it is loaded from the CDN, so it has no types here. */
-type OrtTensor = { data: Float32Array };
-type OrtSession = {
-  run(feeds: Record<string, unknown>): Promise<Record<string, OrtTensor>>;
-  release(): Promise<void>;
-  inputNames: string[];
-};
-type Ort = {
-  env: { wasm: { wasmPaths: string; numThreads: number } };
-  Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
-  InferenceSession: { create(url: string, opts?: Record<string, unknown>): Promise<OrtSession> };
-};
-
-const MAX_FRAME_EDGE = 1280;
-
-async function loadOrt(): Promise<Ort> {
-  const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.wasm.min.mjs`)) as Ort;
-  ort.env.wasm.wasmPaths = ORT_BASE;
-  ort.env.wasm.numThreads = 1;
-  return ort;
-}
 
 async function loadIndex(base: string): Promise<ScanIndex> {
   const root = base.endsWith("/") ? base : `${base}/`;
@@ -205,12 +180,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
       indexVersion.current = index?.meta.version ?? "server";
       if (!index) toggleServer(true);
       // each held as it loads, so a failed sibling or leaving the page releases it, even late
-      const load = (url: string) =>
-        ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then((s) => {
-          if (!sessions.current.accept(s)) throw new Error("left the page");
-          return s;
-        });
-      const [detector, embedder] = await Promise.all([load(DETECTOR_URL), load(EMBEDDER_URL)]);
+      const models = await loadModels(ort, (s) => {
+        if (!sessions.current.accept(s)) throw new Error("left the page");
+        return s;
+      });
       const video = videoRef.current;
       if (!video) {
         stream.current.close();
@@ -239,95 +212,62 @@ export function ScanLab({ indexBase, serverModel = null }: {
           if (cadenceDone(more, now)) void finishLog();
         }
       };
-      const frame = document.createElement("canvas");
-      const square = document.createElement("canvas");
-      square.width = square.height = DETECTOR_SIZE;
-      const fctx = frame.getContext("2d", { willReadFrequently: true });
-      const sctx = square.getContext("2d", { willReadFrequently: true });
-      if (!fctx || !sctx) throw new Error("no 2d canvas");
+      const pipe = framePipeline(ort, models, (fn) => sessions.current.use(fn));
       // No card: nothing a tap records may describe an earlier one, the kept frame included, but
       // the detector did run, so its timing is this frame's.
-      const noCard = (t0: number, t1: number) => {
+      const noCard = (t0: number, detMs: number) => {
         history.current = [];
         // the server path's run of agreeing frames breaks on a frame with no card, as the device path's does
         serverRun.current = null;
         server.current?.frame({ kind: "none" }, performance.now());
-        publish({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
+        publish({ kind: "none", detMs, totalMs: Math.round(performance.now() - t0) });
       };
       const loop = async () => {
         if (!running.current) return;
         const t0 = performance.now();
-        const vw = video.videoWidth, vh = video.videoHeight;
-        if (vw && vh) {
-          const s = Math.min(1, MAX_FRAME_EDGE / Math.max(vw, vh));
-          frame.width = Math.round(vw * s);
-          frame.height = Math.round(vh * s);
-          fctx.drawImage(video, 0, 0, frame.width, frame.height);
-          const lb = letterbox(frame.width, frame.height);
-          sctx.fillStyle = "#000";
-          sctx.fillRect(0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
-          sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
-          const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
-          // Darkness is read off the middle of the picture, never the letterbox's black bars.
-          const mid = sctx.getImageData(Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2))).data;
-          const isDarkNow = isDark(mid);
-          if (isDarkNow !== darkNow.current) {
-            darkNow.current = isDarkNow;
-            setDark(isDarkNow);
+        const read = await pipe.read(video, () => running.current);
+        if (!running.current) return;
+        if (read) {
+          if (read.dark !== darkNow.current) {
+            darkNow.current = read.dark;
+            setDark(read.dark);
           }
-          const detIn = new ort.Tensor("float32", rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE), [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-          const det = await sessions.current.use(() => detector.run({ [detector.inputNames[0]]: detIn }));
-          if (!running.current) return;
-          const t1 = performance.now();
-          const sharpness = det.sharpness.data[0];
-          const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
-          const big = quadArea(corners) > 0.05 * frame.width * frame.height;
-          if (sharpness >= SHARPNESS_GATE && big) {
-            const px = fctx.getImageData(0, 0, frame.width, frame.height).data;
-            const crop = warpToTensor(px, frame.width, frame.height, corners);
-            if (crop) {
-              const embIn = new ort.Tensor("float32", crop, [1, 3, EMBED_H, EMBED_W]);
-              const out = await sessions.current.use(() => embedder.run({ [embedder.inputNames[0]]: embIn }));
-              if (!running.current) return;
-              const t2 = performance.now();
-              const q = normalise(Object.values(out)[0].data);
-              const viaServer = server.current;
-              if (viaServer) {
-                // Asked once per steady card; until the answer lands the screen keeps what it shows.
-                const st = viaServer.frame({ kind: "card", embedding: q }, t2, t0);
-                if (st.kind === "match") {
-                  const { guesses, margin, sure, index: served } = st.result;
-                  const top = guesses[0]?.oracleId ?? "";
-                  serverRun.current = serverRun.current?.oracleId === top ? { oracleId: top, n: serverRun.current.n + 1 } : { oracleId: top, n: 1 };
-                  // the reading carries the server's index, so a tap on it records that one, not the device's
-                  publish({
-                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure, index: served,
-                    // from the frame that asked to the answer, not this later frame's own work
-                    detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: st.totalMs,
-                  });
-                } else {
-                  serverRun.current = null;
-                  // no answer for this frame: the screen may only lose what it shows, on time, and the log still
-                  // records the frame, as a card waiting on its answer
-                  const now = performance.now();
-                  const aged = ageSteady(steady.current, now);
-                  if (aged.changedAt !== steady.current.changedAt) setDisplay(aged);
-                  steady.current = aged;
-                  const run = cadence.current;
-                  if (run) {
-                    const more = logFrame(run, "pending", heldDisplay.current ?? aged, now);
-                    cadence.current = more;
-                    if (more !== run) setLogged(more.frames.length);
-                    if (cadenceDone(more, now)) void finishLog();
-                  }
+          if (read.kind === "none") {
+            noCard(t0, read.detMs);
+          } else {
+            const { crop, embedding: q, detMs, embMs } = read;
+            const t2 = performance.now();
+            const viaServer = server.current;
+            if (viaServer) {
+              // Asked once per steady card; until the answer lands the screen keeps what it shows.
+              const st = viaServer.frame({ kind: "card", embedding: q }, t2, t0);
+              if (st.kind === "match") {
+                const { guesses, margin, sure, index: served } = st.result;
+                const top = guesses[0]?.oracleId ?? "";
+                serverRun.current = serverRun.current?.oracleId === top ? { oracleId: top, n: serverRun.current.n + 1 } : { oracleId: top, n: 1 };
+                // the reading carries the server's index, so a tap on it records that one, not the device's
+                publish({
+                  kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure, index: served,
+                  // from the frame that asked to the answer, not this later frame's own work
+                  detMs, embMs, matchMs: st.ms, totalMs: st.totalMs,
+                });
+              } else {
+                serverRun.current = null;
+                // no answer for this frame: the screen may only lose what it shows, on time, and the log still
+                // records the frame, as a card waiting on its answer
+                const now = performance.now();
+                const aged = ageSteady(steady.current, now);
+                if (aged.changedAt !== steady.current.changedAt) setDisplay(aged);
+                steady.current = aged;
+                const run = cadence.current;
+                if (run) {
+                  const more = logFrame(run, "pending", heldDisplay.current ?? aged, now);
+                  cadence.current = more;
+                  if (more !== run) setLogged(more.frames.length);
+                  if (cadenceDone(more, now)) void finishLog();
                 }
-                setTimeout(tick, 60);
-                return;
               }
-              if (!index) {
-                setTimeout(tick, 60);
-                return;
-              }
+            } else if (index) {
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
@@ -337,13 +277,9 @@ export function ScanLab({ indexBase, serverModel = null }: {
               // the crop and the verdict it produced are published together, as one reading
               publish({
                 kind: "card", crop, guesses, margin, agreed, committed, index: index.meta.version,
-                detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
+                detMs, embMs, matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
-            } else {
-              noCard(t0, t1);
             }
-          } else {
-            noCard(t0, t1);
           }
         }
         setTimeout(tick, 60);
