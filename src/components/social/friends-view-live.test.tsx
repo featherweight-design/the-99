@@ -143,39 +143,23 @@ describe("/friends watches a shown link", () => {
     rerender(view([DAVE]));
     expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
   });
-  it("still reports a link accepted just before it expired, once the minute tick has dropped it from the list", async () => {
+  it("redraws for a link redeemed with no dialog open, even once the minute tick has dropped it, and draws no receipt", async () => {
     render(view([DAVE], [{ token: TOKEN, createdAt: NOW, expiresAt: new Date(NOW.getTime() + 30_000) }]));
     await tick(60_000);
     answer(false, { publicId: "p-mo", displayName: "Mo" });
     await tick(WATCH_MS);
     expect(nav.refresh).toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
-  });
-
-  it("does not welcome a friend again when they spend a second watched link", async () => {
-    const OTHER = "ZyXwVuTsRqPoNmLkJiHgFe";
-    const later = new Date("2026-10-22T21:41:00Z");
-    const links = [{ token: TOKEN, createdAt: NOW, expiresAt: later }, { token: OTHER, createdAt: NOW, expiresAt: later }];
-    const { rerender } = render(view([DAVE], links));
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ links: [
-      { token: TOKEN, open: false, friend: { publicId: "p-mo", displayName: "Mo" } }, { token: OTHER, open: true, friend: null },
-    ] }) });
-    await tick(WATCH_MS);
-    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: socialCopy.page.close }));
-    rerender(view([DAVE, MO], [links[1]]));
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ links: [{ token: OTHER, open: false, friend: { publicId: "p-mo", displayName: "Mo" } }] }) });
-    await tick(WATCH_MS);
-    expect(nav.refresh).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
   });
-  it("welcomes a friend who left and comes back through a watched link", async () => {
+
+  it("still turns the dialog into the receipt when a redraw that dropped the link lands before the answer", async () => {
     const later = new Date("2026-10-22T21:41:00Z");
-    const links = [{ token: TOKEN, createdAt: NOW, expiresAt: later }];
-    const { rerender } = render(view([DAVE, MO], links));
-    await tick(WATCH_MS);
-    rerender(view([DAVE], links));
+    const { rerender } = render(view([DAVE], [{ token: TOKEN, createdAt: NOW, expiresAt: later }]));
+    fireEvent.click(screen.getByRole("button", { name: /^Show the link made/ }));
+    rerender(view([DAVE, MO], []));
     answer(false, { publicId: "p-mo", displayName: "Mo" });
     await tick(WATCH_MS);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
   });
 });

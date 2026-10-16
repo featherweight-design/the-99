@@ -64,7 +64,7 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
   };
 }
 
-type Shown = { token: string; url: string; expiresAt: Date };
+type Shown = { token: string; url: string; expiresAt: Date; friendsBefore: ReadonlySet<string> };
 type Receipt = { publicId: string; displayName: string };
 
 export function FriendsView({
@@ -193,31 +193,29 @@ export function FriendsView({
   // the friend row arrives without a refresh. A new friend turns the dialog into the receipt Accept draws; a
   // link that ended any other way (declined, revoked elsewhere, or a friend you already had) only redraws.
   const router = useRouter();
-  // Who was already a friend is judged against the list as it stood when each link started being watched, never
-  // the list at the answer: a focus redraw can land first and already hold the new friend. A friend the watch
-  // has welcomed joins every baseline (so their spending a second link is not news), and anyone a redraw no
-  // longer lists leaves them (so a removed friend who comes back through a link is). The watch follows the
-  // server's links, not the minute tick's `open`: a link accepted just before it expired still reports.
+  // The receipt is the shown link's alone (the dialog turns into it): a link redeemed with no dialog open only
+  // redraws, and the friend row arrives with that. Whether the redeemer is new is judged against the friends as
+  // they stood when the dialog opened, never the list at the answer: a focus redraw can land first and already
+  // hold them. The watch follows the server's links, not the minute tick's `open`, so a link accepted just before
+  // it expired still redraws.
   const serverLinks = links.filter((l) => !revoked.has(l.token)).map((l) => l.token);
   const watched = shown ? [shown.token, ...serverLinks] : serverLinks;
-  const watchedKey = watched.join(",");
   const listedIds = useRef(new Set<string>());
-  const before = useRef(new Map<string, Set<string>>());
   useEffect(() => {
     listedIds.current = new Set(friends.map((f) => f.publicId));
-    for (const ids of before.current.values()) for (const id of ids) if (!listedIds.current.has(id)) ids.delete(id);
   }, [friends]);
+  const shownNow = useRef(shown);
   useEffect(() => {
-    for (const t of watchedKey ? watchedKey.split(",") : []) if (!before.current.has(t)) before.current.set(t, new Set(listedIds.current));
-  }, [watchedKey]);
+    shownNow.current = shown;
+  }, [shown]);
   const onEnded = useCallback((ended: InviteOutcome[]) => {
     router.refresh();
-    const made = ended.find((l) => l.friend && !(before.current.get(l.token) ?? listedIds.current).has(l.friend.publicId));
-    if (!made?.friend) return;
-    for (const ids of before.current.values()) ids.add(made.friend.publicId);
-    setReceipt(made.friend);
-    setWatchReceiptListed(listedIds.current.has(made.friend.publicId));
-    setShown((s) => (s && ended.some((l) => l.token === s.token) ? null : s));
+    const s = shownNow.current;
+    const friend = s ? ended.find((l) => l.token === s.token)?.friend : null;
+    if (!s || !friend || s.friendsBefore.has(friend.publicId)) return;
+    setReceipt(friend);
+    setWatchReceiptListed(listedIds.current.has(friend.publicId));
+    setShown(null);
   }, [router]);
   useInviteWatch(watched, onEnded);
   // Coming back to the window redraws the page, so anything that moved while it was away (a friend who accepted
@@ -267,7 +265,7 @@ export function FriendsView({
     setMaking(false);
     if (out?.ok) {
       showOpener.current = null;
-      setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt) });
+      setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
     }
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
@@ -341,7 +339,7 @@ export function FriendsView({
           timeZone={timeZone}
           onShow={(l) => {
             showOpener.current = document.activeElement as HTMLElement | null;
-            setShown({ token: l.token, url: linkUrl(l.token), expiresAt: l.expiresAt });
+            setShown({ token: l.token, url: linkUrl(l.token), expiresAt: l.expiresAt, friendsBefore: new Set(listedIds.current) });
           }}
           onRevoke={revoke}
         />
