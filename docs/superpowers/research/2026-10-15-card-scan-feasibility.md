@@ -580,7 +580,115 @@ The lab page matches on the phone only because a staging lab with no server inde
 - **Not done**: no browser run on a phone, no design. The page was built and type-checked, its
   pure modules are unit tested, and its model path was run end to end under Node.
 
+## Real photos, 2026-10-16
+
+The real-photo pass the Recommendation below asked for has run, and it supersedes that section. **Decision
+(d9, 2026-10-16): dhvazquez fp32 alone; DINOv2-small is dropped.**
+
+**Sample.** Hugh's own taps on staging's `/lab/scan`: 374 taps and 361 kept frames, read with SELECT alone. The
+measurement account is excluded. 360 frames have a known true card; the 361st is a City's Blessing, which is not a
+card in the index. The truth for a frame is:
+
+- a ✓ tap's stored guess;
+- else the card picked in the lab's "What card was it?" step (7 frames);
+- else a label read by eye from the kept frame (6 frames).
+
+Two of the eye labels are ✓ taps whose stored guess was a low-light flicker that replaced the right guess (Grizzled
+Angler) as the finger landed. The label overrides the stored guess there, so a tap slip is never counted as a model
+error. Since the lab fix of 2026-10-16 (#1887), every tap also stores `changed_ms_before_tap`. 282 taps carry it, and
+none came within 700ms of a change, so none is flagged.
+
+**Method.** Each frame is re-scored once against the every-printing gallery, a single frame with no multi-frame
+agreement. "Confident" means the top-1 beats the runner-up by 0.05 or more (0.10 on the summed score, which runs on
+twice the scale). The sum is the row-wise summed cosine. The agreement gate answers only when dhvazquez and DINOv2
+name the same card. "Confidently wrong" counts over all frames, with an exact one-sided 95% upper bound.
+
+Every rate below is over all 360 frames except "right, of its confident answers", which is over the frames the model
+answered.
+
+| model | top-1 | confident and right | right, of its confident answers | confidently wrong (95% upper) | no answer |
+|---|---|---|---|---|---|
+| dhvazquez fp32 | 94.4% | 88.6% (319) | 99.1% (319 of 322) | 3, 0.8% (2.1%) | 10.6% |
+| DINOv2-small | 35.8% | 18.9% (68) | 97.1% (68 of 70) | 2, 0.6% (1.7%) | 80.6% |
+| summed score | 92.5% | 84.2% (303) | 100% (303 of 303) | 0 (0.8%) | 15.8% |
+| agreement gate | n/a | 34.4% (124) | 100% (124 of 124) | 0 (0.8%) | 65.6% |
+
+On these real crops DINOv2-small has the true card in its top 5 for only 161 of 360 frames, so it adds nothing to the
+sum. The dhvazquez gate moves along one curve:
+
+| gate (margin) | confident and right | right, of its confident answers | confidently wrong (95% upper) | no answer |
+|---|---|---|---|---|
+| 0.02 | 92.2% | 97.6% (332 of 340) | 2.2% (4.0%) | 5.6% |
+| 0.05 | 88.6% | 99.1% (319 of 322) | 0.8% (2.1%) | 10.6% |
+| 0.10 | 83.1% | 100% (299 of 299) | 0.0% (0.8%) | 16.9% |
+
+**By condition** (dhvazquez; conditions read by eye from thumbnails of the kept crops, low light by mean luminance
+under 90 of 255, about the 10th percentile):
+
+| condition | n | top-1 | confidently wrong (95% upper) |
+|---|---|---|---|
+| low light | 39 | 100% | 0 (7.4%) |
+| sleeved, hazy | 60 | 88.3% | 2 (10.1%) |
+| glare | 16 | 93.8% | 0 (17.1%) |
+| foil | 12 | 100% | 0 (22.1%) |
+| full art or showcase | 50 | 98.0% | 0 (5.8%) |
+| none of the above | 203 | 94.6% | 1 (2.3%) |
+
+Sleeves with haze are the weakest condition measured.
+
+**The caveat that matters most: the sample is tap-biased.** Each row is the frame Hugh tapped, and he tapped once the
+screen showed something. So the sample:
+
+- leans toward frames dhvazquez already got right;
+- holds no frame where the detector saw no card.
+
+Low light fails in time, as the guess flickering from one frame to the next, and a single kept frame cannot show
+that. Hugh reports low light as the one real problem, so measure it hardest. The measure is a cadence
+log, being added to the lab: with it on, the lab records every frame's top 3 for 30 seconds without a tap, and keeps no
+frame. That log, with #1887's dwell and `changed_ms_before_tap`, is what measures low light; the 100% above does not.
+
+**Latency** (dhvazquez, on Hugh's phone, from the lab's own rows): median 501ms a frame, p90 701ms. The stages:
+
+- detector 153ms;
+- embedder 251ms;
+- match 101ms.
+
+The summed score needs both embeddings. DINOv2-small runs about 2.4 times dhvazquez's embedder on the laptop's
+native Python bench (106ms against 45ms). Carried to the phone's 251ms embedder, and run one after the other, DINOv2
+would add roughly 590ms a frame before its own match, more than doubling the frame. That is an **estimate**: it
+assumes sequential runs and the native ratio, and DINOv2 was never timed in the browser path, whose ratios differ.
+
+**Licenses** (re-read 2026-10-16 from each Hugging Face repo):
+
+- dhvazquez embedder and pose: MIT.
+- HanClinto ccgdetector-fastweb-single: MIT.
+- facebook/dinov2-small: Apache-2.0. The ONNX export pinned in `fetch_weights.py` (`onnx-community/dinov2-small`
+  at `8b1f705`) declares no license of its own; it is a conversion of the facebook repo. The model is dropped, so
+  nothing ships it; anything that ever does should convert from facebook's repo.
+
+The caveats under Licenses above still stand.
+
+**Recommendation.**
+
+- **Model:** dhvazquez fp32 alone.
+- **The bar is not established end to end.** The 90% bar is end-to-end top-1, and these figures are crop-level: the
+  tap-selected crops above, which favor frames already recognized and hold no detector failure. On those crops
+  dhvazquez reads 94.4% top-1. As one rule on a single crop, margin 0.05 answers 88.6% of frames right with 0.8%
+  confidently wrong (upper bound 2.1%), and 0.10 answers 83.1% right with none wrong (upper bound 0.8%). The end-to-end
+  figure needs untapped scan attempts, detection failures included: the cadence log, which also measures how far the
+  lab's 3-frame agreement and dwell close the gap.
+- **For Design, every scan is a suggestion the player confirms.** Nothing is added unseen.
+  - Above the confidence gate: one card, confirmed with one tap.
+  - Below it: "Not sure", with the top three to pick from. Expect about one card in six to one in ten to need a pick,
+    and more in sleeves.
+  - A batch scan ends on a review list where a wrong card is one tap to fix.
+
+The scripts and tags live in the research directory, outside the repo: the re-score, its report, the condition tags
+and the eye labels. No frame and no account id is in this document.
+
 ## Recommendation
+
+*Written before the real-photo pass; superseded by Real photos, 2026-10-16, above.*
 
 **Collect real photos with the lab page.** Do not go to Design yet, and do not drop the fallback.
 
