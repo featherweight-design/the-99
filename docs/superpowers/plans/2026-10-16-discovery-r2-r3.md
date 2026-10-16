@@ -40,11 +40,11 @@ Each of these closes a choice the handoff and the audits leave to engineering.
 1. **Three switches, all `feature`, all dark until Hugh flips them** (staging `'true'` from the PR that adds each one,
    production unset):
    - `ABOUT_TOOLS_ENABLED`, no parent: About's two tabs, the showcase, the Reference by screen, the note's move, the
-     banner's new target (E14) and the `Take the tour` press at About's head. Off: `/about` exactly as shipped.
+     banner's new target (E14). Off: `/about` exactly as shipped.
    - `HELP_PANEL_ENABLED`, needs `ABOUT_TOOLS_ENABLED`: the "?" in the rail and the header, and its panel. Its rows lead
      to the Reference, so it cannot stand without it.
-   - `FIRST_RUN_TOUR_ENABLED`, no parent (R3 gap 13): the tour, both ways in, and the account menu's `Take the tour`
-     row. With `MOMENTS_ENABLED` off the tour still runs.
+   - `FIRST_RUN_TOUR_ENABLED`, no parent (R3 gap 13): the tour, `/?tour=1`, and both `Take the tour` presses (About's
+     head, which also needs `ABOUT_TOOLS_ENABLED`, and the account menu's row). With `MOMENTS_ENABLED` off the tour still runs.
    - **No switch for the nudges and doors** (E1, E2, N1 to N3). Each follows its own tool's switch, as the handoff
      specifies (L1), and each is a word in a slot the screen already draws. A dark switch over them would hide nothing a
      reviewer cannot read in the diff, and N2's change (dropping the hub rule) is the shipped shortcut drawn under its
@@ -53,7 +53,7 @@ Each of these closes a choice the handoff and the audits leave to engineering.
      not own is stripped with no halo, so honoring the parameter is harmless with every other switch off.
 2. **One target registry for halos and the tour.** R1's registry is keyed by `MomentId`, and the landing (E11), Show me
    (C4) and the tour (E20) all need targets that are not moments (Stats for your decks, Friends and pods, the tour's
-   five stops). `src/lib/discovery/targets.ts` holds the closed set `TARGETS`: every `MomentId`, plus the tool ids with
+   stops). `src/lib/discovery/targets.ts` holds the closed set `TARGETS`: every `MomentId`, plus the tool ids with
    no moment, plus `tour:step-one`, `tour:collection`, `tour:commanders`, `tour:decks`, `tour:account`,
    `tour:banner` and `tour:friends`. `useTarget(id)` (in `src/components/discovery/targets-provider.tsx`) registers a
    control's element; `useMomentAnchor` calls it, so a moment's control is a target with no second registration.
@@ -64,7 +64,10 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    `switch` (R2 gap 8: Collection Sync's is `COLLECTION_SYNC_ENABLED`), `entry` (the About entry id its `How it works ›`
    opens), `target`, `lands` (`"deck"` with a deck tab and view, or a route), `credit` (the shipped chip string or
    null, per ruling 5) and `needsDeck`. The Written for you section's five spenders are a second constant beside it,
-   read off the credits entry's `captionLineSwitches` so each follows its own switch.
+   read off the credits entry's resolved caption, so each follows the switch `captionLineSwitches` gives its line.
+   Four of the five lines carry one today; `- Writing a deck’s Overview` does not, so R2·5 gives it the switch the
+   Overview's spend sits behind (read from its gate in `src/lib/synopsis/read.ts`), as an ordinary edit that re-pins
+   the content hash.
 4. **Screenshots** (E9, ruling 1, R2 gap 9) are captured by `pnpm capture:about` against `next start` on a **scratch
    Neon branch made from local-dev**, never staging or production. `scripts/about-fixtures.mts` builds the fixture
    account E9 lists (a deck under its body size, one over, a full deck with games and opponents, a row over its deck's
@@ -97,7 +100,7 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    - The replay's own strings (step 1's body and the three captions) go to `/copy-review` with the rest. They are copy
      and need no Design round.
    - **The two presses:** the account menu's row sits directly under `About The 99`, drawn as that row is. At About's
-     head it is a text press in the accent after the subtitle, drawn as `toReferencePress` is. Both are absent with the
+     head it is a text press in the accent after the subtitle, drawn as R2·5's `Open the Reference →` press is. Both are absent with the
      switch off.
 7. **Friends on the checklist** (ruling 3) needs the permanent Friends Home section, which is its own PR outside this
    plan, waiting on a Design addendum (moments plan, "Changes after approval"). That addendum must also say where the
@@ -108,12 +111,14 @@ Each of these closes a choice the handoff and the audits leave to engineering.
 ## Architecture, by layer
 
 - **Entries (E8, E12, R2 gaps 6 and 17).** `AboutEntry` gains `screen` (a closed set `ABOUT_SCREENS`, README-r2's 21) and
-  `view` for a deck's tabs. `visibleEntries` stays the one switch filter. Search (`src/lib/about/search.ts`) reads the
+  `view` for a deck's tabs. `visibleEntries` stays the one switch filter. Search is rewritten (`src/lib/about/search.ts` reads titles only today, `matchTitle`) to read the
   title, the caption and the keys of the RESOLVED entry, so a line `captionLineSwitches` strips is never matched, and
   marks the matched word. The ? panel's payload comes from `GET /api/about/entries` (signed in, `private, no-store`,
-  `HELP_PANEL_ENABLED` re-checked for the reader, 404 off): title, caption, keys, `screen`, `view`, no specimen. The
-  client-graph guard (`scripts/lib/client-graph.test.mts`) gains a rule that no page outside `/about` imports
-  `src/lib/copy/about.ts`.
+  `HELP_PANEL_ENABLED` re-checked for the reader, 404 off): title, caption, keys, `screen`, `view`, no specimen. `aboutEntries` moves out of
+  `src/lib/copy/about.ts` into its own module, `src/lib/copy/about-entries.ts`, and the client-graph guard
+  (`scripts/lib/client-graph.test.mts`) gains a rule that no page outside `/about` imports that module. The rule names
+  the entry list, not `about.ts`: the shell's account menu, `method-tag.tsx` and `provenance-panel.tsx` import
+  `about.ts`'s other copy, and stay as they are.
 - **Fits (E10, R2 gaps 1 to 3).** `loadToolFits(userId, env)` in `src/lib/discovery/fits.ts` runs on the server when
   `/about` loads, under `ABOUT_TOOLS_ENABLED`. Each tool's `fits(deck, facts)` is pure and compares against the deck's
   own body size (99, or 98 with a partner). Decks order by Home's `resume` touched order. Cheaper stand-ins reads the
@@ -160,17 +165,17 @@ copy gaps (R2 gaps 2 and 14, R3 gaps 9, 10 and 16).
 
 | PR | Scope | Depends on | Files (est.) |
 |---|---|---|---|
-| R2·1 · Entries | the three switches in the registry; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | — | ~14 |
+| R2·1 · Entries | the three switches in the registry; `aboutEntries` in its own module; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | — | ~14 |
 | R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares, Matchups and Stats for your decks | R2·1 | ~16 |
 | R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends and `/collection` (Find a deck); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests | R2·2 | ~16 |
 | R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture, `shots.generated.ts`, the budget and coverage tests | R2·1 | ~6 plus images |
-| R2·5 · Tools | About's tabs; `ToolCard` in its five states; the five groups at 1280 and the phone's sideways rows; Written for you; the visit recorded on the Reference only; `Take the tour` at About's head, behind `FIRST_RUN_TOUR_ENABLED` and drawn only once R3·1 has merged | R2·3, R2·4 | ~14 |
+| R2·5 · Tools | About's tabs; `ToolCard` in its five states; the five groups at 1280 and the phone's sideways rows; Written for you; the visit recorded on the Reference only | R2·3, R2·4 | ~14 |
 | R2·6 · Reference | entries by screen with the screens index; an opened entry with its frame; what's new; search over text; How it works last; the note as the last row, its dialog and sheet (E17); the banner's new target (E14) | R2·5 | ~16 |
 | R2·7 · Retire the specimens | the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6 | deletions |
 | R2·8 · The ? | the rail item and the header press; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.` | R2·6 | ~14 |
 | R2·9 · The ? over card details | R2 gap 5's stack at `md` and up: the inert exemption, the layering, the Tab stop, the focus hand-off and Escape | R2·8 | ~6 |
 | R3·1 · The tour | migration `tour_seen_at`; the spend action; `tourDue` in Home's payload; the SVG overlay; `TourCard`; steps 1 to 6 on first-run Home, with step 6's fallback; `ThemePicker` `panel="tour"`; the visit taken | R2·4, R2·6 | ~16 |
-| R3·2 · The tour again | `/?tour=1`; the real-app stops (decision 6); the account menu row | R3·1 | ~8 |
+| R3·2 · The tour again | `/?tour=1`; the real-app stops (decision 6); both `Take the tour` presses, About's head and the account menu row | R3·1 | ~8 |
 | R3·3 · Friends on the checklist | the shipped Friends section on the checklist where the addendum places it; step 6's sentence and second light | R3·1, the Friends Home PR | ~5 |
 | R3·4 · Doors | E1 on `/decks` and Home, E2 on `/commanders`, M12's anchor moved to E2's door, and the moments plan's M12 row updated | R2·1 | ~8 |
 | R3·5 · Nudges | N1, N2 and N2b on their own switches, N3 with its no-wrap test at 390 | R2·2 | ~12 |
