@@ -960,6 +960,13 @@
       "when": 1792110663885,
       "tag": "0136_scan_lab_cadence",
       "breakpoints": true
+    },
+    {
+      "idx": 137,
+      "version": "7",
+      "when": 1792119340597,
+      "tag": "0137_card_scan_index",
+      "breakpoints": true
     }
   ]
 }

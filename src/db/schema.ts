@@ -3503,3 +3503,40 @@ export const scanLabCadence = pgTable("scan_lab_cadence", {
 }, (t) => [
   index("scan_lab_cadence_user_idx").on(t.userId, t.createdAt),
 ]);
+
+/** pgvector's half-precision vector, `dimensions` values wide. Written as pgvector's text form (`[a,b,...]`). */
+const halfvec = customType<{ data: string; driverData: string; config: { dimensions: number } }>({
+  dataType: (config) => `halfvec(${config?.dimensions ?? 256})`,
+});
+
+/**
+ * Card scanning's index (plan `2026-10-16-card-scan.md`): one row per image of the every-printing gallery (a paper
+ * printing's front, and a double-faced card's back), embedded offline by the same model build the phone runs.
+ * `POST /api/card-scan/match` finds the rows nearest a phone's fingerprint and pools them by card. Replaced whole by
+ * `pnpm db:seed:scan-index` in one transaction with `scan_index_meta`. Holds no account data. `halfvec` because
+ * pgvector has no int8 vector, and fp16 keeps a cosine to about 1e-3, far inside the margins the scanner reads.
+ */
+export const scanIndex = pgTable("scan_index", {
+  scryfallId: uuid("scryfall_id").notNull(),
+  face: text("face").notNull(),
+  oracleId: uuid("oracle_id").notNull(),
+  embedding: halfvec("embedding", { dimensions: 256 }).notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.scryfallId, t.face] }),
+  check("scan_index_face_check", sql`${t.face} in ('front', 'back')`),
+  index("scan_index_embedding_idx").using("hnsw", t.embedding.op("halfvec_cosine_ops")),
+]);
+
+/**
+ * The one row naming the index `scan_index` holds: its version (`all-20261014`), the model build its rows were made
+ * by (a request naming another is refused), and how many rows it published. Written in the ingest's transaction.
+ */
+export const scanIndexMeta = pgTable("scan_index_meta", {
+  id: smallint("id").primaryKey().default(1),
+  version: text("version").notNull(),
+  model: text("model").notNull(),
+  rows: integer("rows").notNull(),
+  publishedAt: timestamp("published_at").notNull().defaultNow(),
+}, () => [
+  check("scan_index_meta_single", sql`id = 1`),
+]);

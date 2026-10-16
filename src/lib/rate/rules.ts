@@ -19,6 +19,8 @@ export const RATE_RULES = {
   "card-detail": { limit: 240, windowMs: 60_000 },
   /** `GET /api/collection-fields` and `GET /api/discovery-fields`: the background batch loops. */
   "draw-fields": { limit: 120, windowMs: 60_000 },
+  /** `POST /api/card-scan/match`: one lookup per stable detection, at most 2 a second while scanning a stack. */
+  "card-scan": { limit: 150, windowMs: 60_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;

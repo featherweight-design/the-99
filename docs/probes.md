@@ -2419,6 +2419,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (Social R2 G5), and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
+  real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
+  CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
+  transaction; `lookupGuesses` over pgvector's HNSW names the same first card as an exact fp32 scan of the same rows,
+  with scores within 2e-3 and margins within 4e-3 (halfvec); the most-printed card still gets three distinct guesses;
+  and a request naming another model is refused. It REPLACES `scan_index`, so `assertScratchBranch` refuses
+  production, staging and local-dev. Point the worktree's `.env` DATABASE_URL at a scratch branch made from local-dev,
+  migrated to 0137, and `SCAN_ROWS_DIR` at `export_index.py all --server`'s output.
 - `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that a non-digital
   Commander set released after today is upcoming, and one released in the last 30 days while no precon lists it
   (release day, `released: true`), but not one a precon lists (matched case-blind to MTGJSON's uppercase code), one
