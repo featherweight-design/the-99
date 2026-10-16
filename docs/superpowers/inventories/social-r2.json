@@ -1,9 +1,21 @@
 {
   "feature": "Social R2 (wishlist and friends' spares): the surfaces each PR adds. PR 4: the Collection › Wishlist tab (W1–W4, WP1–WP4). PR 7: the phone Shopping row's option B and the `over $N` key (handoff design_handoff_the99_social_r2, R3 - Rows-Phone options; plan 2026-10-15-social-r2.md)",
   "clearAbout": true,
-  "note": "PR 7 needs a deck with a Shopping list, SWAP_TOOLS_ENABLED=true and SHOPPING_MARK_BOUGHT_ENABLED=true (the tag is a button and the key draws both items), and SHEET_DECK naming it, with OVER_CARD a card in it over the deck's limit. Run it TWICE against the same data, once with PHONE_SHOPPING_ROW_B_ENABLED unset (the shipped row) and once with it 'true' (option B): the switch is the server's, so it is the server that changes between runs, and the sheet is written to the same `out`, so move contact-sheets/social-r2 aside between runs. The first row scrolls to the ⇄ on Plateau (named literally, since the `scrollTo` step takes no `${VAR}`: change it with OVER_CARD), so the rows' second line is in the photograph. Read-only: it presses the ⇄ and nothing else. Later R2 PRs add their rows here. PR 4's rows (wishlist-*): Needs SOCIAL_WISHLIST_ENABLED=true. For the populated rows, the signed-in account needs wishlist_items lines its collection does not reach and two wishlist_collected rows; seed them on a scratch branch. The empty row needs an account with no lines. The search rows press Add, which writes a line. Each width's stepper row adds a different card, so a run needs both cards off the list beforehand.",
+  "note": "PR 7 needs a deck with a Shopping list, SWAP_TOOLS_ENABLED=true and SHOPPING_MARK_BOUGHT_ENABLED=true (the tag is a button and the key draws both items), and SHEET_DECK naming it, with OVER_CARD a card in it over the deck's limit, named in full as the row names it (a two-face card with both faces, `A // B`). PHONE_SHOPPING_ROW_B_ENABLED was retired by #1886: option B is the only phone row, so one run covers it. The first row scrolls to the first ⇄ (or the phone row's combined press) on the list, so the rows' second line is in the photograph. Read-only: it presses the ⇄ and nothing else. Later R2 PRs add their rows here. PR 4's rows (wishlist-*): Needs SOCIAL_WISHLIST_ENABLED=true. For the populated rows, the signed-in account needs wishlist_items lines its collection does not reach and two wishlist_collected rows; seed them on a scratch branch. The empty row needs an account with no lines. The search rows press Add, which writes a line. Each width's stepper row adds a different card, so a run needs both cards off the list beforehand.",
   "out": "contact-sheets/social-r2",
   "rows": [
+    {
+      "id": "wishlist-empty",
+      "label": "/collection/wishlist: the empty state, search above one card (W1, WP1). Needs an account with no wishlist lines: run it alone, before seeding any",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/wishlist",
+          "wait": "[data-testid=wishlist-empty]",
+          "settle": 2000
+        }
+      ]
+    },
     {
       "id": "wishlist-collected",
       "label": "/collection/wishlist: the collected strip, meta row and grid (W3, W4)",
@@ -90,7 +102,7 @@
     },
     {
       "id": "pr7-shopping",
-      "label": "/decks/[id] Shopping: the phone row (switch on: name and ✕ on line 1, figure, ⇄ and tag on line 2, `over $N` in the key; off: the shipped row), the desktop row unchanged either way",
+      "label": "/decks/[id] Shopping: the phone row (name and ✕ on line 1, figure, the other-ways press and tag on line 2, `over $N` in the key), the desktop row with ⇄ and the spare press beside the tag",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -104,7 +116,7 @@
           "settle": 800
         },
         {
-          "scrollTo": "button[aria-label^='Cheaper stand-ins for Plateau,']",
+          "scrollTo": "button[aria-label^='Cheaper stand-ins']",
           "settle": 400
         }
       ]
@@ -130,7 +142,7 @@
           "settle": 400
         },
         {
-          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "wait": "[data-testid='stand-ins-sheet']",
           "settle": 1500
         }
       ]
