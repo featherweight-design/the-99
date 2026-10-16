@@ -949,7 +949,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens your collection',
     width: 'plate',
     caption:
-      'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nOwn both halves of a combo no deck is using yet? Your Collection flags it and names the partner. While you build, cards that would complete a combo in your deck get flagged in “Consider”, “Choose the last” and search.\n\nThe salt is between you and your table.',
+      'Some cards do something remarkable next to one other card. Heliod, Sun-Crowned and Walking Ballista are a classic pair.\n\nOwn both halves of a combo no deck is using yet? Your Collection flags it and names the partner. While you build, cards that would complete a combo in your deck get flagged in “Consider”, “Choose the last” and search. In a deck, a card whose two-card partner is in the same deck is marked on its row.\n\nThe salt is between you and your table.',
     keys: [
       'A card’s details list every partner: this deck’s first, then ones you own, then ones to buy.',
       'Only two-card combos are flagged.',
