@@ -60,7 +60,7 @@ Every spending surface draws one credit line through `CreditsText`: `4 of 5 left
 
 - **Out of free credits, no paid credits, payments on:** the line needs a way forward. Draw where "Get more credits" sits on that line, or beside it. It goes to the billing page (§2).
 - **Out of free credits, paid credits left:** the press is NOT disabled; the next run spends a paid credit. Draw how the line says that a press now spends a paid credit, and how many are left (for example plan and pack together, or split). Today this state draws the free count at 0 and nothing else.
-- **Daily paid limit reached:** paid credits are banked but today's 20 are used. The press is disabled; the line says when it reopens. Different from "out of credits": the player has credits and must not be told they need to buy more.
+- **Daily paid limit reached, and no free credit left:** paid credits are banked but today's 20 are used, and the free allowance is spent too. Only then is the press disabled; the line says when it reopens, which is whichever comes first: the next free credit (rolling 24 hours) or the paid limit's reset. A free credit that returns while the paid limit is still reached funds a run as usual. Different from "out of credits": the player has credits and must not be told they need to buy more.
 - **Blocked by a dispute:** a run can still spend free and banked credits that survived the revoke; only buying is blocked. Draw nothing new on the credit line for this; the block shows on the billing page (§5).
 - **Surfaces carrying the line today:** Suggested changes (tuning panel), the deck synopsis (overview), Proposed cuts, Help me choose's read (fits view), the intake read, and the analysis banner, method notice, empty analysis and read band. Phone and desktop for each; engineering will hand over an inventory of routes and widths.
 
@@ -112,11 +112,14 @@ A chargeback revokes the unspent credits it bought and blocks buying until Hugh 
 
 ### 6. Payments switched off
 
-For a reader with `PAYMENTS_ENABLED` off: no "Get more credits", no account menu entry, and the billing route is not found. The credit lines read exactly as they do today. Nothing to draw, but the handoff should say so, so no surface grows a disabled button.
+The switch stops NEW purchases; it must never strand a player who already pays or holds credits.
+
+- **A reader with no plan, no paid balance and no purchase history:** no "Get more credits", no account menu entry, and the billing route is not found. The credit lines read exactly as they do today. Nothing to draw, but the handoff should say so, so no surface grows a disabled button.
+- **A reader with a plan, a paid balance or past purchases** (for example after their group's override is removed, or while sales are stopped): the billing page and its account menu entry stay, showing balances, history, the plan card with **Cancel plan** and the update-card hand-off, and the refund line. Only the buy controls (packs, subscribing, resubscribing) and every "Get more credits" are gone. Draw this reduced page.
 
 ### 7. The account-deletion warning
 
-Q7 asks the delete flow to warn when a balance would be forfeited. Deletion today happens inside Clerk's hosted account page (`Manage account` in the account menu), which we cannot change. Design's call: either the warning lives on our billing page (a standing line under the balance), or the menu's `Manage account` gains an interstitial when a balance exists. Engineering has no preference beyond the ruling being met before the delete.
+Q7 asks the delete flow to warn when a balance would be forfeited. Deletion happens inside Clerk's hosted account page, which we cannot change, and the account menu's `Manage account` goes straight there. So the warning has to sit on that hand-off: when the reader holds paid credits (plan or pack), `Manage account` first shows a short interstitial naming the balance and that deleting the account forfeits it, then continues to Clerk. It applies whether or not payments are on for the reader, since a balance can outlive a switch. Draw the interstitial for phone and desktop. A standing line on the billing page may supplement it, but cannot replace it: a player can reach deletion without visiting billing.
 
 ## Not in this brief
 
