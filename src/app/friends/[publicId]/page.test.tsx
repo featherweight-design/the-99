@@ -12,6 +12,7 @@ const m = vi.hoisted(() => ({
   loadFriendWishlist: vi.fn(),
   unfriendAction: vi.fn(),
   replace: vi.fn(),
+  openCard: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -22,6 +23,15 @@ vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwi
 vi.mock("../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
 vi.mock("../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
 vi.mock("../actions", () => ({ unfriendAction: m.unfriendAction }));
+// Card details is its own surface, tested on its own: here a tile only has to be the press that opens it, for its card.
+vi.mock("../../../components/cards/card-detail-provider", () => ({
+  CardDetailProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  CardDetailTrigger: ({ oracleId, name, siblings, children }: { oracleId: string; name: string; siblings: unknown; children: React.ReactNode }) => (
+    <button type="button" aria-label={name} onClick={() => m.openCard(oracleId, siblings)}>
+      {children}
+    </button>
+  ),
+}));
 
 import FriendWishlistPage from "./page";
 import { FriendPage } from "../../../components/social/friend-page";
@@ -90,8 +100,18 @@ describe("FriendPage", () => {
     expect(head.textContent).toBe(`${p.head("Colin")}1${p.viewOnly}`);
     const tile = screen.getByRole("listitem");
     expect(within(tile).getByText("Rhystic Study")).toBeTruthy();
-    expect(within(tile).getByTestId("tile-sub").textContent).toBe("wants 2");
+    expect(within(tile).getByTestId("wishlist-tile-caption").textContent).toBe("wants 2");
     expect(tile.textContent).not.toMatch(/have|owned|collected/);
+  });
+
+  it("opens card details from a press on a tile, view only with no stepper", () => {
+    draw();
+    const tile = screen.getByRole("listitem");
+    fireEvent.click(within(tile).getByRole("button", { name: "Rhystic Study" }));
+    expect(m.openCard).toHaveBeenCalledWith(LINE.oracleId, [{ oracleId: LINE.oracleId, name: "Rhystic Study", imageUri: LINE.imageUri }]);
+    // The Wishlist tab's own face, and nothing to change a count with.
+    expect(within(tile).queryByRole("button", { name: /want one/i })).toBeNull();
+    expect(within(tile).getAllByRole("button")).toHaveLength(1);
   });
 
   it("draws the empty state with no tiles", () => {

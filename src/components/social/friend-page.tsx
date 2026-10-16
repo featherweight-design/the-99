@@ -1,7 +1,8 @@
 "use client";
 // A friend's page (Social R2 P2, P3, PP2, PP3): `‹ Friends`, Round 1's head (face, name, since and their commander)
-// with the row's same … menu, then their wishlist, view only. Cards are the collection's own tiles, captioned
-// `wants N` and never an owned count; a collected card has left the list (round 3), so there is no collected state.
+// with the row's same … menu, then their wishlist, view only. Its tiles are the Wishlist tab's own (`WishlistTileFace`),
+// captioned `wants N` and never an owned count, with no stepper; a press opens card details as on the tab. A collected
+// card has left the list (round 3), so there is no collected state.
 // Removing the friend from here leaves for `/friends`, where the list is the receipt.
 
 import Link from "next/link";
@@ -13,8 +14,9 @@ import { socialCopy } from "../../lib/copy/social";
 import { sinceDay } from "../../lib/social/when";
 import { unfriendAction } from "../../app/friends/actions";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
-import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
-import { HydratedImg, useHydrated } from "../ui/hydrated-art";
+import { useHydrated } from "../ui/hydrated-art";
+import { CardDetailProvider, CardDetailTrigger, type SiblingCard } from "../cards/card-detail-provider";
+import { WISHLIST_TILE_SHELL, WishlistTileFace } from "../wishlist/wishlist-tile";
 import { Face } from "./face";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FriendMenu } from "./friends-list";
@@ -47,6 +49,8 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
   }
 
   const since = f.since(sinceDay(friend.since, new Date(nowMs), timeZone));
+  // The tiles in their order, so card details steps through the friend's list.
+  const siblings: SiblingCard[] = lines.map((l) => ({ oracleId: l.oracleId, name: l.name, imageUri: l.imageUri }));
   return (
     <div className="mx-auto w-full max-w-[1300px] px-[14px] pt-[18px] pb-[34px] md:px-[34px] md:pt-[28px]">
       <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">
@@ -84,29 +88,27 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
           </div>
         </div>
       ) : (
-        <ul className={`m-0 grid list-none p-0 ${CARD_GRID_TRACKS} gap-[8px] pt-[12px] md:gap-[20px] md:pt-[16px]`}>
-          {lines.map((line, i) => (
-            <li key={line.oracleId} className={`${TILE_SHELL} bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
-              <div
-                className={`relative overflow-hidden ${TILE_ART_CLIP}`}
-                style={{ aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" }}
-              >
-                {line.imageUri ? (
-                  <HydratedImg
-                    src={line.imageUri}
+        <CardDetailProvider>
+          <ul className={`m-0 grid list-none p-0 ${CARD_GRID_TRACKS} gap-[8px] pt-[12px] md:gap-[20px] md:pt-[16px]`}>
+            {lines.map((line, i) => (
+              <li key={line.oracleId} className="flex flex-col">
+                {/* The whole tile is the press that opens card details, as on the Wishlist tab. */}
+                <CardDetailTrigger
+                  oracleId={line.oracleId}
+                  name={line.name}
+                  siblings={siblings}
+                  imageUri={line.imageUri}
+                  className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
+                >
+                  <WishlistTileFace
+                    tile={{ name: line.name, imageUri: line.imageUri, want: line.quantity, have: null }}
                     eager={i < EAGER_TILES}
-                    className="absolute inset-0 h-full w-full object-cover"
                   />
-                ) : null}
-              </div>
-              <CardTileCaption
-                name={line.name}
-                nameSub={<>{p.wants} <b className="font-semibold text-[color:var(--fg-body)]">{line.quantity}</b></>}
-                compact
-              />
-            </li>
-          ))}
-        </ul>
+                </CardDetailTrigger>
+              </li>
+            ))}
+          </ul>
+        </CardDetailProvider>
       )}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </div>
