@@ -4,7 +4,10 @@
 //   b. the CLI refuses a target that is not the branch it names, and writes nothing;
 //   c. `publishScanIndex` replaces the index and its meta row, all rows counted;
 //   d. `lookupGuesses` over pgvector's HNSW agrees with an exact fp32 scan of the same rows, pooled as the lab pools
-//      them: the same first card, every shared guess's score within 2e-3 (halfvec), and the margin within 4e-3;
+//      them: the same first card, every shared guess's score within 2e-3 (halfvec), the margin within 4e-3 wherever it
+//      is under 0.1 (near the scanner's 0.02 gate; a far runner-up is where HNSW's recall is weakest and the margin is
+//      already huge), and the same side of the gate every time, on rows nudged off themselves and on blends of two
+//      cards' rows, which put the margin near the gate;
 //   e. the most-printed card in the index still gets three distinct guesses;
 //   f. a request naming another model is refused, and nothing is read.
 //
@@ -58,10 +61,15 @@ try {
   check("b. a misnamed branch exits 2", wrong.status === 2, `${wrong.status} ${wrong.stderr}`);
   check("b. and says why", /reports branch/.test(wrong.stderr));
 
-  // c. publish
-  const t0 = Date.now();
-  await publishScanIndex(client, data, (s) => console.log(s));
-  console.log(`     published ${rows} rows in ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  // c. publish (`--reuse` keeps an index this probe already published with the same version and rows, to re-run d-f)
+  const held = (await client.query("select version, rows from scan_index_meta")).rows[0] as { version: string; rows: number } | undefined;
+  if (process.argv.includes("--reuse") && held?.version === data.version && held.rows === rows) {
+    console.log("     reusing the published index");
+  } else {
+    const t0 = Date.now();
+    await publishScanIndex(client, data, (s) => console.log(s));
+    console.log(`     published ${rows} rows in ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  }
   const meta = (await client.query("select version, model, rows from scan_index_meta")).rows[0] as { version: string; model: string; rows: number };
   check("c. the meta row names the index", meta.version === data.version && meta.model === SCAN_MODEL && meta.rows === rows, JSON.stringify(meta));
   const [{ n }] = (await client.query("select count(*)::int as n from scan_index")).rows as { n: number }[];
@@ -91,11 +99,23 @@ try {
     for (let i = 0; i < EMBED_DIM; i++) q[i] /= Math.sqrt(norm);
     return q;
   };
-  let sameTop = 0, worstScore = 0, worstMargin = 0;
+  // Half the length of the mix toward the other card: equal parts put the two cards' scores close together.
+  const blend = (r: number, s: number) => {
+    const q = new Float32Array(EMBED_DIM);
+    let norm = 0;
+    for (let i = 0; i < EMBED_DIM; i++) {
+      q[i] = data.vectors[r * EMBED_DIM + i] + 0.9 * data.vectors[s * EMBED_DIM + i];
+      norm += q[i] * q[i];
+    }
+    for (let i = 0; i < EMBED_DIM; i++) q[i] /= Math.sqrt(norm);
+    return q;
+  };
+  const GATE = 0.02;
+  let sameTop = 0, worstScore = 0, worstMargin = 0, gateFlips = 0, nearGate = 0;
   const ms: number[] = [];
-  for (let k = 0; k < QUERIES; k++) {
+  for (let k = 0; k < QUERIES * 2; k++) {
     const r = Math.floor(((k + 1) * 2654435761) % rows);
-    const q = nudged(r, k);
+    const q = k < QUERIES ? nudged(r, k) : blend(r, Math.floor(((k + 7) * 40503) % rows));
     const t = Date.now();
     const got = await lookupGuesses(q, SCAN_MODEL);
     ms.push(Date.now() - t);
@@ -109,15 +129,24 @@ try {
       const w = want.guesses.find((x) => x.oracleId === g.oracleId);
       if (w) worstScore = Math.max(worstScore, Math.abs(w.score - g.score));
     }
-    if (got.answer.margin !== null && want.margin !== null && got.answer.guesses[1]?.oracleId === want.guesses[1]?.oracleId) {
-      worstMargin = Math.max(worstMargin, Math.abs(got.answer.margin - want.margin));
+    // Compared whatever the runner-up: HNSW naming a different second card is exactly when its margin could
+    // overstate the confidence. One side having a margin and the other none is a failure of its own.
+    if ((got.answer.margin === null) !== (want.margin === null)) worstMargin = Infinity;
+    else if (got.answer.margin !== null && want.margin !== null) {
+      if ((got.answer.margin >= GATE) !== (want.margin >= GATE)) gateFlips += 1;
+      if (want.margin < 0.1) {
+        nearGate += 1;
+        worstMargin = Math.max(worstMargin, Math.abs(got.answer.margin - want.margin));
+      }
     }
   }
   ms.sort((a, b) => a - b);
-  console.log(`     ${sameTop}/${QUERIES} same first card; worst score gap ${worstScore.toFixed(5)}, worst margin gap ${worstMargin.toFixed(5)}; lookup median ${ms[ms.length >> 1]}ms, worst ${ms[ms.length - 1]}ms`);
-  check("d. HNSW names the exact scan's first card every time", sameTop === QUERIES, `${sameTop}/${QUERIES}`);
+  console.log(`     ${sameTop}/${QUERIES * 2} same first card; worst score gap ${worstScore.toFixed(5)}; ${nearGate} margins under 0.1, worst gap ${worstMargin.toFixed(5)}; ${gateFlips} gate flips; lookup median ${ms[ms.length >> 1]}ms, worst ${ms[ms.length - 1]}ms`);
+  check("d. HNSW names the exact scan's first card every time", sameTop === QUERIES * 2, `${sameTop}/${QUERIES * 2}`);
   check("d. scores within 2e-3 of fp32", worstScore <= 2e-3, worstScore.toFixed(5));
-  check("d. margins within 4e-3 of fp32", worstMargin <= 4e-3, worstMargin.toFixed(5));
+  check("d. some margins land near the gate", nearGate >= 10, `${nearGate}`);
+  check("d. margins under 0.1 within 4e-3 of fp32", worstMargin <= 4e-3, worstMargin.toFixed(5));
+  check("d. never the other side of the 0.02 gate", gateFlips === 0, `${gateFlips}`);
 
   // e. the most-printed card
   const per = new Map<string, number[]>();

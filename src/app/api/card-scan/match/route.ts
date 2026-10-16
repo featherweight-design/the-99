@@ -1,7 +1,9 @@
 // Card scanning's server match (plan `2026-10-16-card-scan.md` PR 1): the phone sends the embedder's fingerprint of
 // a card, and this answers with up to three guesses, one per card, and the margin between the first two. Its
 // contract, which PR 2's client is built against:
-//   - the reader comes from the Clerk session; signed out is 401;
+//   - the reader comes from the Clerk session. A signed-out request is turned away by the proxy's `auth.protect()`
+//     before it arrives (this path is not public), so a client reads ANY non-JSON answer as signed out; the 401
+//     below is the handler not trusting that, as `/api/card-detail`'s is;
 //   - `CARD_SCAN_ENABLED` is re-checked for that reader, and off answers 404, as a route that is not there;
 //   - the body is `{ model, embedding }`, the embedding base64 of 256 little-endian float32 at unit length; anything
 //     else is 400 before anything is read;
@@ -12,6 +14,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { cardScanEnabled } from "../../../../lib/card-scan/flag";
+import { readCapped } from "../../../../lib/http/read-capped";
 import { lookupGuesses } from "../../../../lib/card-scan/lookup";
 import { decodeEmbedding } from "../../../../lib/card-scan/match";
 import { observeHit } from "../../../../lib/rate/observe";
@@ -30,9 +33,10 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
   if (!cardScanEnabled(await requestSwitchEnv(userId))) return NextResponse.json(null, { status: 404, headers: HEADERS });
   await observeHit(userId, "card-scan");
-  const text = await req.text();
+  // Read as a stream and abandoned at the cap, so an oversized or chunked body is never buffered whole.
+  const text = await readCapped(req, MAX_BODY);
   let body: unknown = null;
-  if (text.length <= MAX_BODY) {
+  if (text !== null) {
     try {
       body = JSON.parse(text);
     } catch {

@@ -2423,10 +2423,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
   transaction; `lookupGuesses` over pgvector's HNSW names the same first card as an exact fp32 scan of the same rows,
-  with scores within 2e-3 and margins within 4e-3 (halfvec); the most-printed card still gets three distinct guesses;
+  on rows nudged off themselves and on blends of two cards (ambiguous fingerprints), with scores within 2e-3, margins
+  under 0.1 within 4e-3, and never the other side of the scanner's 0.02 gate; the most-printed card still gets three distinct guesses;
   and a request naming another model is refused. It REPLACES `scan_index`, so `assertScratchBranch` refuses
   production, staging and local-dev. Point the worktree's `.env` DATABASE_URL at a scratch branch made from local-dev,
-  migrated to 0137, and `SCAN_ROWS_DIR` at `export_index.py all --server`'s output.
+  migrated to 0137, and `SCAN_ROWS_DIR` at `export_index.py all --server`'s output; `--reuse` skips the 3-minute
+  publish when this probe already published the same index there. Mutation-checked: `EF_SEARCH` 100 fails the blends
+  (3 of 40 wrong first cards).
 - `pnpm probe:upcoming-precons` proves the upcoming-precons backend against a real database: that a non-digital
   Commander set released after today is upcoming, and one released in the last 30 days while no precon lists it
   (release day, `released: true`), but not one a precon lists (matched case-blind to MTGJSON's uppercase code), one

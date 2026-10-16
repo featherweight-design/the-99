@@ -2,8 +2,13 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { MAX_GUESSES, poolGuesses, vectorLiteral, type MatchAnswer, type NearRow } from "./match";
 
-/** HNSW's candidate list per read; above the default 40, because a guess is a top-1 under a filter. */
-const EF_SEARCH = 100;
+/**
+ * HNSW's candidate list per read. Measured by `probe:card-scan-match` on the real index: at 100, an ambiguous
+ * fingerprint (a blend of two cards) named the wrong first card in 3 of 40 and overstated a margin near the 0.02 gate
+ * by 0.33; at 400 every first card and every near-gate margin matched an exact scan (within 0.00006), for about the
+ * same lookup time. 1,000 bought nothing more.
+ */
+const EF_SEARCH = 400;
 
 export type IndexMeta = { version: string; model: string };
 
