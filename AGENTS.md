@@ -793,7 +793,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `-my-[3px]` so the row stays 34px). **The marks fold by the row's own width** (`FOLD`, a container query on `DecklistRow`'s wrapper, `@container`,
   at every width): wide is 480px and up, middle 360 to 479, tight under 360. All: the 4th mark and beyond at every width, every mark after the first at the
   middle tier, every mark at the tight one, and the availability word drops to its glyph (and a count) from the middle tier (d9, 2026-10-16); Shopping: every mark and the word at
-  the middle tier, and the `+N` too at the tight one. A folded mark is `sr-only`, never `display: none`, so a screen reader keeps it; the `+N` spans
+  the middle tier, with one `+N` standing in for them in the middle and tight tiers alike (d9, 2026-10-16: a phone Shopping row is a tight one). The folded availability glyph opens its word on a tap too (`tapOnTouch`, `TOUCH_HIT`). A folded mark is `sr-only`, never `display: none`, so a screen reader keeps it; the `+N` spans
   (one per tier) are aria-hidden, bare mono in `--fact`, and a fine pointer's hover, or a coarse pointer's tap (`tapOnTouch`), opens the tooltip listing what they hold (`FactTooltip`'s `lines`; the tap goes no further than the bubble), and while the pointer is on one the row's card preview is held off (`plusPointer`), so the tooltip is not covered. A two-faced card's
   row, tile and cart line print its front face beside the `//` mark (`frontFaceName`), never the whole `A // B` and the mark; the whole name stays the
   press's accessible name and the Mana Pool line's. The auto tag, the lock

@@ -111,10 +111,11 @@ const FOLD = {
     plusMid: "hidden @min-[360px]:@max-[480px]:inline",
     plusTight: "hidden @max-[360px]:inline",
   },
-  // Shopping: every mark at the middle tier, and the `+N` too in the tight one (its only `+N` is the middle tier's).
+  // Shopping: every mark at the middle tier, and the `+N` stands in for them there AND in the tight one (d9, 2026-10-16: a
+  // phone Shopping row is a tight one, and dropping the `+N` there left its marks no way onto the screen).
   shopping: {
     all: "@max-[480px]:sr-only",
-    plusMid: "hidden @min-[360px]:@max-[480px]:inline",
+    plus: "hidden @max-[480px]:inline",
   },
 } as const;
 /**
@@ -347,7 +348,7 @@ export function DecklistRow({
       </span>
     )),
     ...(inShopping
-      ? [plusN(0, FOLD.shopping.plusMid)]
+      ? [plusN(0, FOLD.shopping.plus)]
       : [plusN(3, FOLD.all.plusWide), plusN(1, FOLD.all.plusMid), plusN(0, FOLD.all.plusTight)]),
   ];
 
@@ -772,9 +773,10 @@ export function DecklistRow({
             one toggle apart. */}
         {card.availability && availState !== "free" && tag !== "proxy" && (
           <span className="inline-flex flex-none">
-          {/* The word folds to the glyph and its count at a narrow row (L3), and a glyph alone is a tooltip's job on a fine
-              pointer: the marker's own spoken sentence, so the words stay one thing. */}
-          <FactTooltip sentence={markerSentence ?? undefined}>
+          {/* The word folds to the glyph and its count at a narrow row (L3), and a glyph alone is a tooltip's job: the marker's
+              own spoken sentence, so the words stay one thing. On touch a tap opens it, as on the `+N` (d9, 2026-10-16), and the
+              tap goes no further; its 44px hit is drawn past the marker. */}
+          <FactTooltip tapOnTouch sentence={markerSentence ?? undefined}>
           <AvailabilityMarker bareOne
             foldWord={inShopping ? WORD_FOLD.shopping : WORD_FOLD.all}
             availability={card.availability}
@@ -811,7 +813,7 @@ export function DecklistRow({
             // absorb would overflow the box rather than clip inside it. The
             // ruling cost almost nothing to give up: what the marker used to
             // yield was the deck name, and there is no deck name left to yield.
-            className="shrink-0 font-mono text-[11.5px]"
+            className={`shrink-0 font-mono text-[11.5px] ${TOUCH_HIT}`}
           />
           </FactTooltip>
           </span>

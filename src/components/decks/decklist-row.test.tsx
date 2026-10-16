@@ -1576,13 +1576,14 @@ describe("DecklistRow, folding the marks", () => {
     expect(tokens(plus[2])).toContain("@max-[360px]:inline");
   });
 
-  it("folds every mark of a Shopping row at the middle tier, and drops the +N in the tight one", () => {
+  // d9, 2026-10-16: a phone Shopping row is a tight one, so the +N stands in for its marks there too, or they reach no screen.
+  it("folds every mark of a Shopping row at the middle tier, and keeps one +N standing in for them in the middle and tight tiers", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...four, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />);
     for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[480px]:sr-only");
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+4"]);
-    expect(tokens(plus[0])).toContain("@min-[360px]:@max-[480px]:inline");
-    expect(tokens(plus[0])).not.toContain("@max-[360px]:inline");
+    expect(tokens(plus[0])).toEqual(expect.arrayContaining(["hidden", "@max-[480px]:inline"]));
+    expect(tokens(plus[0]).some((c) => c.startsWith("@min-"))).toBe(false);
   });
 
   it("keeps an inactive tier's visibility OUTSIDE a fine pointer's tooltip wrapper, so it is no empty flex item", () => {
@@ -1935,6 +1936,30 @@ describe("DecklistRow, one line at every width", () => {
   });
 
   // The +N's folded marks reach a phone through a tap (d9, 2026-10-16), and the tap opens the bubble, not card details.
+  // The folded availability glyph's word reaches a phone the same way (d9, 2026-10-16).
+  it("opens the availability marker's bubble on a tap with a coarse pointer, and the tap goes no further", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const fetchCard = vi.fn().mockResolvedValue(null);
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -1, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] } } as DeckDetailCard} newestAsOf={null} />
+        </CardDetailProvider>,
+      );
+      const marker = screen.getByText("short");
+      expect(marker.closest("[class*='pointer-coarse:after:h-[max(44px,100%)]']")).not.toBeNull();
+      await act(async () => { fireEvent.click(marker); });
+      expect(screen.getByTestId("fact-tooltip")).toBeInTheDocument();
+      expect(fetchCard).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("opens the +N's bubble on a tap with a coarse pointer, and the tap goes no further", async () => {
     vi.stubGlobal("matchMedia", (q: string) => ({
       matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
