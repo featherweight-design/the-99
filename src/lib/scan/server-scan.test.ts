@@ -69,4 +69,14 @@ describe("serverScanner", () => {
     expect(states).toEqual(["looking", "idle"]);
     scanner.stop();
   });
+  it("never hands one card's answer back with another card's frame while the new card settles", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => ok());
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    let last: ServerState = { kind: "idle" };
+    for (const f of hold(card(0), 10)) { last = s.frame(f, clock); await flush(); clock += 150; }
+    expect(s.frame(card(0), clock).kind).toBe("match");
+    // card B replaces A with no empty frame: every frame before B settles answers nothing about A
+    for (let i = 0; i < 3; i++) { clock += 150; last = s.frame(card(1.5), clock); expect(last.kind).not.toBe("match"); }
+  });
 });

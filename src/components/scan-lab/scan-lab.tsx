@@ -95,6 +95,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
   // scanner, which asks the server once per steady card, in place of the index on this device.
   const server = useRef<ReturnType<typeof serverScanner> | null>(null);
   const [serverOn, setServerOn] = useState(false);
+  // Frames in a row the server's answer has stood for the card in view: the server path's "same answer on N frames".
+  const serverRun = useRef<{ oracleId: string; n: number } | null>(null);
   const onServerState = useCallback((st: ServerState) => {
     if (st.kind === "looking") setNote(copy.serverLooking);
     else if (st.kind === "retrying") setNote(copy.serverRetrying);
@@ -289,11 +291,17 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 // Asked once per steady card; until the answer lands the screen keeps what it shows.
                 const st = viaServer.frame({ kind: "card", embedding: q }, t2);
                 if (st.kind === "match") {
-                  const { guesses, margin, sure } = st.result;
+                  const { guesses, margin, sure, index: served } = st.result;
+                  const top = guesses[0]?.oracleId ?? "";
+                  serverRun.current = serverRun.current?.oracleId === top ? { oracleId: top, n: serverRun.current.n + 1 } : { oracleId: top, n: 1 };
+                  // a tap saved from a server answer records the server's index, not the one on this device
+                  indexVersion.current = served;
                   publish({
-                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: 0, committed: sure,
+                    kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure,
                     detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: Math.round(performance.now() - t0),
                   });
+                } else {
+                  serverRun.current = null;
                 }
                 setTimeout(tick, 60);
                 return;
@@ -302,6 +310,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 setTimeout(tick, 60);
                 return;
               }
+              indexVersion.current = index.meta.version;
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;

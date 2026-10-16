@@ -3,7 +3,7 @@
 // that settles forgets the answer, so the next card is a new scan. The answer for the card in view is held and handed
 // back on every frame until another card settles. Pure apart from the lookup it starts; the caller owns the clock.
 import { lookupCard, type LookupResult } from "./lookup";
-import { nextStableScan, startStableScan, type ScanFrame } from "./stable-card";
+import { nextStableScan, sameCard, startStableScan, type ScanFrame } from "./stable-card";
 
 export type ServerState =
   | { kind: "idle" }
@@ -19,6 +19,8 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   let scan = startStableScan(deps.now());
   let inFlight: AbortController | null = null;
   let state: ServerState = { kind: "idle" };
+  // The card the lookup in hand was made for: its answer describes this frame only while this frame is that card.
+  let askedFor: ScanFrame | null = null;
   const set = (s: ServerState) => {
     state = s;
     onState(s);
@@ -37,6 +39,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
         set({ kind: "idle" });
       } else if (out.event?.kind === "lookup") {
         forget();
+        askedFor = { kind: "card", embedding: out.event.embedding };
         const mine = new AbortController();
         inFlight = mine;
         const t0 = deps.now();
@@ -53,6 +56,9 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
           else set({ kind: "failed" });
         });
       }
+      // A match answers for the card it was asked about. While another card is settling in its place (no empty frame
+      // between), this frame is not that card, so the match is not handed back with it.
+      if (state.kind === "match" && !(askedFor && sameCard(askedFor, f))) return { kind: "idle" };
       return state;
     },
     /** Abandon any lookup in flight (the toggle went off, or the page was left). */

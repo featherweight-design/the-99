@@ -86,4 +86,9 @@ describe("lookupCard", () => {
     expect(redirected.fetch).toHaveBeenCalledTimes(1);
     expect(html.fetch).toHaveBeenCalledTimes(1);
   });
+  it("reads the proxy's own 404 to a signed-out request (not JSON) as unavailable, and the route's JSON 404 as off", async () => {
+    const proxy = deps({ ok: false, status: 404, json: async () => { throw new Error("html"); } } as never);
+    expect(await lookupCard(emb, MODEL, proxy)).toEqual({ kind: "refused", reason: "unavailable" });
+    expect(await lookupCard(emb, MODEL, deps(reply(404, null)))).toEqual({ kind: "refused", reason: "off" });
+  });
 });

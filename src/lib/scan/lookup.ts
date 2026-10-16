@@ -37,6 +37,14 @@ type Deps = { fetch: Fetch; wait: (ms: number) => Promise<void>; onRetry?: (atte
 
 const REFUSED: Record<number, "signedOut" | "off" | "badEmbedding" | "model"> = { 400: "badEmbedding", 401: "signedOut", 404: "off", 409: "model" };
 
+/** A refusal the ROUTE wrote is JSON; the proxy's own answer to a signed-out request (its 404) is not, and is unavailable. */
+async function refusalOf(res: { status: number; json(): Promise<unknown> }): Promise<LookupResult | null> {
+  const reason = REFUSED[res.status];
+  if (!reason) return null;
+  const isJson = await res.json().then(() => true, () => false);
+  return { kind: "refused", reason: isJson ? reason : "unavailable" };
+}
+
 /** One lookup, with its retries. `onRetry` fires before each retry, so the scanner can say it is retrying. */
 export async function lookupCard(embedding: Float32Array, model: string, deps: Deps): Promise<LookupResult> {
   const body = JSON.stringify({ model, embedding: encodeEmbedding(embedding) });
@@ -49,8 +57,8 @@ export async function lookupCard(embedding: Float32Array, model: string, deps: D
       // A signed-out request never reaches the route: the proxy answers it with Clerk's own redirect (followed here, to
       // a page that is not JSON) or its 404. So only the route's own JSON is read as an answer; a success that is not
       // it is unavailable, never retried.
-      const refused = REFUSED[res.status];
-      if (refused) return { kind: "refused", reason: refused };
+      const refused = await refusalOf(res);
+      if (refused) return refused;
       if (res.ok) {
         const body = (await res.json().catch(() => null)) as { index?: unknown; guesses?: unknown; margin?: unknown } | null;
         if (!body || typeof body.index !== "string" || !Array.isArray(body.guesses)) return { kind: "refused", reason: "unavailable" };
