@@ -524,6 +524,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   LINEUP_ENABLED: { label: "Lineup", description: "The Stats view on /decks, across every deck." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
   MANA_BALANCE_ENABLED: { label: "Mana Balance", description: "Mana Balance in the Tuning hub. Makes no model call." },
+  MOMENTS_ENABLED: { label: "Moments", description: "One-time tips beside a tool a player has not used yet. Each follows its tool’s switch." },
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
   NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },

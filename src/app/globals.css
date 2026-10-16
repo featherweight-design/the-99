@@ -1606,3 +1606,11 @@ html {
 @media (forced-colors: active) {
   .foil-glint path { fill: CanvasText; }
 }
+
+/* A moment's halo on its control while the bubble shows (discovery R1, `moment-bubble.tsx`). A shadow, so nothing
+   moves; `!important` because the control's own utilities set a shadow of their own on some surfaces. */
+[data-moment-halo] {
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--accent) 60%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--accent) 16%, transparent) !important;
+}

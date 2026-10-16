@@ -12,6 +12,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
+import { useMomentHold } from "../../lib/moments/hold";
 import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
@@ -196,6 +197,8 @@ function AccountPopover(props: PanelProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const chipRef = useRef<HTMLElement | null>(null);
   useDialogA11y(ref, props.onClose, { lockScroll: false, initialFocusRef: chipRef });
+  // No scroll lock, so the menu tells the moments itself that it is open over the page.
+  useMomentHold(true);
 
   return (
     <div

@@ -16,6 +16,7 @@ import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
+import { momentsEnabled } from "../moments/flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
@@ -61,6 +62,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   LINEUP_ENABLED: lineupEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
+  MOMENTS_ENABLED: momentsEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   NEVER_CUT_ENABLED: neverCutEnabled,
   NOTICES_ENABLED: noticesEnabled,
