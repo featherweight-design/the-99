@@ -249,6 +249,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, t1: number) => {
         history.current = [];
+        // the server path's run of agreeing frames breaks on a frame with no card, as the device path's does
+        serverRun.current = null;
         server.current?.frame({ kind: "none" }, performance.now());
         publish({ kind: "none", detMs: Math.round(t1 - t0), totalMs: Math.round(performance.now() - t0) });
       };

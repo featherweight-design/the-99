@@ -41,7 +41,8 @@ export const scanLabCopy = {
   serverMatch: "Match on the server",
   serverLooking: "Asking the server…",
   serverRetrying: "Unsure, retrying…",
-  serverFailed: "The server didn’t answer. Hold the card still to try again.",
+  // A lookup is made once per card that settles: the same card again needs the view to empty first (a short gap is not).
+  serverFailed: "The server didn’t answer. Take the card out of view until it says No card in view, then show it again.",
   serverRefused: {
     signedOut: "Sign in again to match on the server.",
     off: "Server matching is off for this account.",
