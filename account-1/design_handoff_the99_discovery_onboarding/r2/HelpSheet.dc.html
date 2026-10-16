@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · the screen's About sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<section role="dialog" aria-modal="{{ modal }}" aria-label="About this screen" style="{{ frame }}">
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="align-self:center;width:40px;height:4px;border-radius:999px;background:#494037;margin:8px 0 2px"></div></sc-if>
+  <header style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:{{ headPad }}">
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#8B8270">ABOUT THIS SCREEN</div>
+      <h2 style="margin:6px 0 0;font-family:'Cinzel',serif;font-size:20px;font-weight:600;color:#EDE6D8">{{ screenName }}</h2>
+    </div>
+    <button type="button" aria-label="Close" style="flex:none;width:44px;height:44px;margin:-8px -12px 0 0;background:none;border:0;cursor:pointer;color:#A59C89;font-size:20px;line-height:1">✕</button>
+  </header>
+  <div style="padding:0 {{ sidePad }} 12px">
+    <label style="display:flex;align-items:center;gap:10px;height:44px;box-sizing:border-box;padding:0 12px;border:1px solid {{ searchBorder }};border-radius:10px;background:#18140F">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#8B8270" stroke-width="1.6" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="M13 13l4.5 4.5"></path></svg>
+      <input type="search" value="{{ q }}" placeholder="Search all of About" aria-label="Search all of About" style="flex:1;min-width:0;background:none;border:0;outline:none;font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#EDE6D8">
+      <sc-if value="{{ hasQ }}" hint-placeholder-val="{{ false }}"><button type="button" aria-label="Clear search" style="background:none;border:0;color:#8B8270;font-size:14px;cursor:pointer;width:28px;height:28px">✕</button></sc-if>
+    </label>
+  </div>
+  <div style="flex:1;min-height:0;overflow:hidden;padding:0 {{ sidePad }}">
+    <sc-if value="{{ listMode }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;padding:6px 0 8px;border-bottom:1px solid #2B241B">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#A59C89">{{ hereLabel }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">{{ hereCount }}</span>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div style="{{ r.box }}">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <button type="button" aria-expanded="{{ r.expanded }}" style="flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit">
+              <span style="display:block;font-size:14.5px;font-weight:500;color:#EDE6D8;line-height:1.35">{{ r.title }}</span>
+              <span style="display:block;margin-top:3px;font-size:13px;line-height:1.45;color:#A59C89">{{ r.ex }}</span>
+            </button>
+            <sc-if value="{{ r.show }}" hint-placeholder-val="{{ false }}"><button type="button" style="flex:none;height:30px;padding:0 10px;border:1px solid #3A3229;border-radius:999px;background:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;white-space:nowrap">Show me</button></sc-if>
+          </div>
+          <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+              <p style="margin:0;font-size:13.5px;line-height:1.55;color:#C0B8A6">{{ r.more }}</p>
+              <sc-for list="{{ r.keys }}" as="k" hint-placeholder-count="2"><div style="display:flex;gap:8px;font-size:13px;line-height:1.5;color:#C0B8A6"><span style="color:#CF8745">·</span><span>{{ k }}</span></div></sc-for>
+              <a href="#" style="align-self:flex-start;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;text-decoration:none;padding:4px 0">Read the whole entry ›</a>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="padding:16px 0 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#A59C89">{{ elseLabel }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ elsewhere }}" as="e" hint-placeholder-count="4"><button type="button" style="height:34px;padding:0 12px;border:1px solid #3A3229;border-radius:999px;background:#1E1A15;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#C0B8A6">{{ e.label }} <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270">{{ e.n }}</span></button></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ hitsMode }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:6px 0 8px;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A59C89">{{ hitsLabel }}</div>
+      <sc-for list="{{ hits }}" as="h" hint-placeholder-count="4">
+        <a href="#" style="display:block;padding:12px 0;border-bottom:1px solid #2B241B;text-decoration:none">
+          <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;letter-spacing:.04em">{{ h.where }}</span>
+          <span style="display:block;margin-top:4px;font-size:14.5px;font-weight:500;color:#EDE6D8">{{ h.title }}</span>
+          <span style="display:block;margin-top:3px;font-size:13px;line-height:1.45;color:#A59C89">{{ h.pre }}<mark style="background:#6B482A;color:#EDE6D8;border-radius:3px;padding:0 2px">{{ h.hit }}</mark>{{ h.post }}</span>
+        </a>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ noneMode }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px 4px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:15px;color:#EDE6D8">Nothing in About mentions “{{ q }}”.</span>
+        <span style="font-size:13.5px;line-height:1.5;color:#A59C89">Search reads every entry’s title and text, on every screen.</span>
+        <a href="#" style="align-self:flex-start;margin-top:6px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:8px 0">See every entry →</a>
+      </div>
+    </sc-if>
+  </div>
+  <footer style="display:flex;align-items:center;justify-content:space-between;padding:12px {{ sidePad }} {{ footBottom }};border-top:1px solid #2B241B;background:#1A1611">
+    <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A59C89;text-decoration:none;padding:10px 0">Tools ›</a>
+    <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#CF8745;text-decoration:none;padding:10px 0">All of About ›</a>
+  </footer>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["desk","phone"],"default":"desk"},"screen":{"editor":"enum","options":["deck","shopping","collection"],"default":"shopping"},"q":{"editor":"text","default":""},"open":{"editor":"text","default":""},"h":{"editor":"int","default":758},"$preview":{"width":400,"height":758}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const mode = p.mode ?? 'desk', phone = mode === 'phone';
+    const screen = p.screen ?? 'shopping';
+    const q = (p.q ?? '').trim();
+    const open = p.open ?? '';
+    const h = Number(p.h ?? 758);
+    const S = {
+      shopping: {
+        name: 'A deck · Shopping', here: 'ON SHOPPING', els: 'ELSEWHERE ON THIS DECK',
+        rows: [
+          ['shopping', 'Your shopping list', 'Every card a deck wants that you can’t supply lands on its “Shopping” filter, priced from Mana Pool.', false],
+          ['buy-tag', 'What the cards you’re missing cost', 'When a deck needs a card you don’t own, it tells you what it’ll cost.', true],
+          ['stand-ins', 'Cheaper stand-ins', 'Some cards cost more than the job they do.', true],
+          ['friend-spares', 'When a friend has a spare', 'Before you buy a card, check whether a friend has one sitting idle.', false],
+          ['shopping-got-it', 'Marking a card you bought', 'The cards showed up. Now comes the part nobody looks forward to: logging them.', false],
+        ],
+        more: { 'stand-ins': ['Each deck has a price limit per card, $10 until you set your own, and anything over it gets flagged on “Shopping”.', ['A spell’s stand-ins keep at least one of its jobs, and say what they keep or lose.', 'Changed your mind? “Undo swap” puts the original card back.']] },
+        elsewhere: [['All', '13'], ['Stats', '1'], ['Notes', '1'], ['Analysis', '6'], ['Games', '3'], ['Versions', '2']],
+      },
+      deck: {
+        name: 'A deck · Your deck', here: 'ON YOUR DECK', els: 'ELSEWHERE ON THIS DECK',
+        rows: [
+          ['deck-page', 'Everything about a deck, on one page', 'Every deck gets a page of its own: the commander up top, how far along it is, and tabs for everything else.', false],
+          ['decklist-marks', 'Reading a decklist row', 'Each row tells you whether you own it, what it is, how many copies the deck wants, and whether anything’s in the way.', true],
+          ['roles', 'How much ramp, draw and removal you need', 'Most decks come up short in the same places: ramp, draw, removal, board wipes and lands.', true],
+          ['locked-cards', 'Locking your favorite cards', 'Lock a card and nothing in the app will offer to cut it.', true],
+          ['add-cards', 'Adding a card by name', 'Know exactly what you want? Type its name in the search under the deck’s tabs.', true],
+          ['decklist-order', 'Sorting your decklist', 'Your decklist sits in sections, grouped “By type” or “By role”.', true],
+          ['undo-removal', 'Putting a card back', 'Cut a card by mistake? Its row turns into an “Undo” that names it.', false],
+        ],
+        more: { roles: ['The role strip counts each one against what EDHREC decks like yours usually run.', ['One board wipe is a problem in a way eleven creatures rarely is.']] },
+        tail: '+ 6 more on this tab',
+        elsewhere: [['Shopping', '5'], ['Stats', '1'], ['Notes', '1'], ['Analysis', '6'], ['Games', '3'], ['Versions', '2']],
+      },
+      collection: {
+        name: 'Collection · Cards', here: 'ON CARDS', els: 'ELSEWHERE IN COLLECTION',
+        rows: [
+          ['browse', 'Finding a card in your Collection', 'Search by name, filter by color, type or set, sort by name, quantity and more.', true],
+          ['availability', 'Availability: what’s free, what’s taken, what to buy', 'A copy you own can only live in one committed deck at a time, so The 99 keeps track of which decks own which cards.', true],
+          ['collection-add', 'Adding cards by hand', 'Cracked a pack and don’t want to export your whole Collection for four cards? Press “Add cards”.', true],
+          ['card-marks', 'Bracket marks on every card', 'A card’s bracket marks follow it everywhere: your Collection, your decklists, “Consider” and search.', true],
+          ['combo-awareness', 'Spotting combos you already own', 'Own both halves of a combo no deck is using yet? Your Collection flags it and names the partner.', false],
+          ['card-detail', 'A closer look at any card', 'Press any card, anywhere, for a closer look at the art.', false],
+        ],
+        more: {},
+        elsewhere: [['Card details', '5'], ['Sets', '1'], ['Proxies', '1'], ['History', '1'], ['Wishlist', '1'], ['Upload a file', '4']],
+      },
+    };
+    const s = S[screen];
+    const rows = s.rows.map(([id, title, ex, show], i) => {
+      const isOpen = open === id;
+      const m = s.more[id] || ['', []];
+      return {
+        title, ex, show, open: isOpen, expanded: isOpen ? 'true' : 'false', more: m[0], keys: m[1],
+        box: `padding:12px 0;border-bottom:1px solid #2B241B;${isOpen ? 'background:linear-gradient(#1E1A15,#1E1A15) padding-box;margin:0 -12px;padding:12px 12px 14px;border-radius:10px;border-bottom-color:transparent;' : ''}`,
+      };
+    });
+    const HITS = {
+      combo: [
+        ['Collection', 'Spotting combos you already own', 'Own both halves of a ', 'combo', ' no deck is using yet? Your Collection flags it and names the partner.'],
+        ['Card details', 'Find a deck for it', 'Decks where it completes a ', 'combo', ' come first, then decks whose theme it fits.'],
+        ['Card details', 'A closer look at any card', 'Opened from a sheet or a ', 'combo', ' partner?'],
+      ],
+    };
+    const hits = (HITS[q.toLowerCase()] || []).map(([where, title, pre, hit, post]) => ({ where: where.toUpperCase(), title, pre, hit, post }));
+    const hasQ = q.length > 0;
+    const listMode = !hasQ, hitsMode = hasQ && hits.length > 0, noneMode = hasQ && hits.length === 0;
+    const sidePad = phone ? '16px' : '20px';
+    const frame = phone
+      ? `width:390px;height:${h}px;box-sizing:border-box;display:flex;flex-direction:column;background:#1A1611;border:1px solid #3A3229;border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.55);overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`
+      : `width:400px;height:${h}px;box-sizing:border-box;display:flex;flex-direction:column;background:#1A1611;border-left:1px solid #3A3229;box-shadow:-24px 0 60px rgba(0,0,0,.5);overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`;
+    return {
+      frame, phone, modal: phone ? 'true' : 'false', screenName: s.name, q, hasQ, listMode, hitsMode, noneMode,
+      headPad: phone ? '10px 16px 12px' : '22px 20px 14px', sidePad, footBottom: phone ? '22px' : '14px',
+      searchBorder: hasQ ? '#CF8745' : '#3A3229',
+      hereLabel: s.here, hereCount: s.tail || `${s.rows.length} entries`, rows, elseLabel: s.els,
+      elsewhere: s.elsewhere.map(([label, n]) => ({ label, n })),
+      hits, hitsLabel: `${hits.length} entries mention “${q}”, on every screen`,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · a showcase tool card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<article aria-label="{{ name }}" style="{{ frame }}">
+  <div style="position:relative;width:100%;aspect-ratio:3 / 2;background:#14110E;border-bottom:1px solid #2B241B;overflow:hidden">
+    <img src="{{ shot }}" alt="{{ alt }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+    <span aria-hidden="true" style="{{ haloBox }}"></span>
+  </div>
+  <div style="padding:{{ pad }};display:flex;flex-direction:column;gap:8px;flex:1">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+      <h3 style="margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:#EDE6D8;line-height:1.3">{{ name }}</h3>
+      <sc-if value="{{ hasMeta }}" hint-placeholder-val="{{ true }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:2px 9px;white-space:nowrap">{{ meta }}</span></sc-if>
+    </div>
+    <p style="margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.5;color:#C0B8A6">{{ line }}</p>
+    <div style="margin-top:auto;padding-top:6px;display:flex;flex-direction:column;gap:10px">
+      <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
+        <a href="#" style="display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;padding:8px 14px;border:1px solid #CF8745;border-radius:10px;color:#CF8745;text-decoration:none;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;text-align:center;line-height:1.3">{{ tryLabel }}</a>
+      </sc-if>
+      <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px dashed #494037;border-radius:10px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:#A59C89">{{ reason }}</span>
+          <sc-if value="{{ hasDoor }}" hint-placeholder-val="{{ false }}"><a href="#" style="align-self:flex-start;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:4px 0">{{ door }}</a></sc-if>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:28px">
+        <sc-if value="{{ many }}" hint-placeholder-val="{{ false }}"><button type="button" style="background:none;border:0;padding:6px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89">{{ moreLabel }} ▾</button></sc-if>
+        <sc-if value="{{ notMany }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+        <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:6px 0">How it works ›</a>
+      </div>
+    </div>
+  </div>
+</article>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tool":{"editor":"enum","options":["hmc","precons","topoff","cuts","suggested","mana","standins","spares","findadeck","wishlist","sync","matchups","lineup","friends"],"default":"cuts"},"fit":{"editor":"enum","options":["auto","one","many","none"],"default":"auto"},"w":{"editor":"int","default":372},"h":{"editor":"int","default":0},"$preview":{"width":372,"height":470}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const B = {
+      hmc: '572247f9a2c8cc59ecc184c7fc0ff47d', precons: '6a708eedf75ee5daef72cb13c7c8a98f', topoff: 'fd4ec0080ff1d012f8c37099ee3a86b8',
+      cuts: '846df531ca7b698d03c0ea5ca6aaee2e', suggested: '2a8cccedaf7246117c8d1562a5228672', mana: '0b7f30cd8f7698b7230d4271210836e8',
+      standins: 'db840d85bdb4ee1fb03fc01d358ed850', spares: 'd4d07541018b9973930d31d23d807a55', findadeck: 'c4eb0a7c674c81901658de5ae1a403ff',
+      wishlist: '3a2364376ca97ab0e88587a31e8be5af', sync: '9b4279b26d1b8fe6a05085769231bcd0', matchups: 'e558dd3781f2b345d382fac4cabf5ae0',
+      lineup: '4e2bf3e95b619dca1bb41c1169092624', friends: '7a9abc136b3d929d3e741fe0f2684f45',
+    };
+    const HB = {
+      hmc: [8.46, 66.54, 83.08, 16.92], precons: [8.46, 46.54, 83.08, 16.92], topoff: [8.33, 63.65, 83.33, 16.54],
+      cuts: [34.62, 30.58, 30.77, 9.62], suggested: [4.1, 18.85, 91.79, 46.92], mana: [4.1, 42.31, 91.79, 46.92],
+      standins: [54.36, 61.92, 6.41, 10.0], spares: [51.28, 33.46, 34.87, 6.54], findadeck: [4.62, 50.77, 38.46, 8.65],
+      wishlist: [9.49, 46.54, 81.03, 16.92], sync: [4.62, 33.46, 90.77, 64.5], matchups: [4.1, 29.23, 91.79, 17.31],
+      lineup: [4.1, 46.15, 33.59, 17.69], friends: [4.1, 42.12, 91.79, 18.46],
+    };
+    const T = {
+      hmc: { name: 'Help me choose', line: 'Say what you want, and we’ll rank commanders by how well they fit it, owned or not.', fit: 'one', tryLabel: 'Open Help me choose →' },
+      precons: { name: 'Precons', line: 'Any Commander precon, with how many of its cards you already own.', fit: 'one', tryLabel: 'Browse precons →' },
+      topoff: { name: 'Top off', meta: 'free', line: 'Ranks your own cards for a deck’s open slots. Nothing is added until you say so.', fit: 'none', tryLabel: 'Try it on Sai’s Workshop →', reason: 'Needs a deck under 99. All 21 of yours are full.' },
+      cuts: { name: 'Proposed cuts', meta: 'free', line: 'Counts where a deck runs long. A deeper look names the cuts.', fit: 'many', tryLabel: 'Try it on HD - Kratos →', more: '2 more are over' },
+      suggested: { name: 'Suggested changes', meta: '1 credit a run', line: 'Up to five swaps, read from your games, your notes and the list.', fit: 'many', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', more: '16 more are full', reason: 'Needs a full deck. None of yours is at 99 yet.' },
+      mana: { name: 'Mana Balance', meta: 'free', line: 'Counts every source of each color against what your spells ask for.', fit: 'many', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', more: '16 more are full' },
+      standins: { name: 'Cheaper stand-ins', line: 'For a card over your price limit: cards that do the same job for less.', fit: 'one', tryLabel: 'Try it on HD - Gishath →' },
+      spares: { name: 'Friends’ spares', line: 'A friend’s spare copy of a card your deck still needs, before you buy one.', fit: 'none', tryLabel: 'Try it on HD - Gishath →', reason: 'Needs a friend with a spare of a card you’re missing. Colin has none right now.', door: 'Open Friends →' },
+      findadeck: { name: 'Find a deck', line: 'Reads your decks for the one a card you own fits best.', fit: 'one', tryLabel: 'Try it on a card you own →' },
+      wishlist: { name: 'Wishlist', line: 'Cards you want that no deck is asking for. A card leaves once you have enough.', fit: 'one', tryLabel: 'Open your wishlist →' },
+      sync: { name: 'Collection Sync', line: 'Merges a new file with what you changed here, card by card, and asks only where both moved.', fit: 'one', tryLabel: 'Upload a file →', reason: 'Needs a file you uploaded before. Your Collection was added by hand.', door: 'Upload a file →' },
+      matchups: { name: 'Matchups', line: 'Splits a deck’s games by the commander, colors or friend across the table.', fit: 'one', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', reason: 'Needs a game logged with who you played against.' },
+      lineup: { name: 'Stats for your decks', line: 'Every deck side by side: when each last played, and how it went.', fit: 'one', tryLabel: 'See your decks on Stats →' },
+      friends: { name: 'Friends and pods', line: 'Add the people you play with, then seat them when you log a game.', fit: 'one', tryLabel: 'Open Friends →' },
+    };
+    const id = p.tool ?? 'cuts';
+    const t = T[id];
+    let fit = p.fit && p.fit !== 'auto' ? p.fit : t.fit;
+    const w = Number(p.w ?? 372), h = Number(p.h ?? 0);
+    const hb = HB[id];
+    const haloBox = `position:absolute;left:${hb[0]}%;top:${hb[1]}%;width:${hb[2]}%;height:${hb[3]}%;border-radius:9px;box-shadow:0 0 0 2px rgba(207,135,69,.75),0 0 0 6px rgba(207,135,69,.2),0 0 0 2000px rgba(20,17,14,.28);pointer-events:none`;
+    return {
+      name: t.name, line: t.line, meta: t.meta || '', hasMeta: !!t.meta,
+      shot: '/_blob/' + B[id], alt: `${t.name}, on a real screen of the app`, haloBox,
+      fits: fit !== 'none', noFit: fit === 'none', many: fit === 'many', notMany: fit !== 'many',
+      tryLabel: t.tryLabel, moreLabel: t.more || 'Another deck', reason: t.reason || '', door: t.door || '', hasDoor: !!t.door,
+      pad: w < 330 ? '14px 14px 12px' : '16px 18px 14px',
+      frame: `width:${w}px;${h ? `height:${h}px;` : ''}box-sizing:border-box;display:flex;flex-direction:column;background:#1E1A15;border:1px solid #2B241B;border-radius:14px;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
+    };
+  }
+}
+</script>
+</body>
+</html>

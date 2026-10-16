@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · About, Tools tab, 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="{{ frame }}">
+  <dc-import name="MobileHeader" help="shown" hint-size="390px,79px"></dc-import>
+  <main style="padding:24px 0 104px">
+    <div style="padding:0 16px">
+      <h1 style="margin:0;font-family:'Cinzel',serif;font-size:27px;font-weight:600;color:#EDE6D8">About The 99</h1>
+      <p style="margin:6px 0 0;font-size:14.5px;line-height:1.5;color:#C0B8A6">What each tool is for, shown on the screen it lives on.</p>
+      <a href="#" style="display:inline-block;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A59C89;text-decoration:none;padding:8px 0">Read Hugh’s letter ›</a>
+    </div>
+    <div role="tablist" aria-label="About" style="margin-top:10px;display:flex;gap:26px;padding:0 16px;border-bottom:1px solid #2B241B">
+      <button type="button" role="tab" aria-selected="true" style="background:none;border:0;border-bottom:2px solid #CF8745;padding:10px 2px 12px;margin-bottom:-1px;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:#EDE6D8">Tools <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;font-weight:500">14</span></button>
+      <button type="button" role="tab" aria-selected="false" style="background:none;border:0;padding:10px 2px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:500;color:#A59C89">Reference <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">71</span></button>
+    </div>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+      <section aria-label="{{ g.label }}" style="margin-top:30px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 16px;margin-bottom:12px">
+          <h2 style="margin:0;font-family:'Cinzel',serif;font-size:19px;font-weight:600;color:#EDE6D8">{{ g.label }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270">{{ g.count }}</span>
+        </div>
+        <div style="display:flex;gap:12px;overflow:hidden;padding:0 16px">
+          <sc-for list="{{ g.tools }}" as="t" hint-placeholder-count="2">
+            <div style="flex:none"><dc-import name="ToolCard" tool="{{ t }}" w="300" h="460" hint-size="300px,460px"></dc-import></div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+    <div style="margin:34px 16px 0;padding-top:18px;border-top:1px solid #2B241B;display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:14px;line-height:1.5;color:#A59C89">Everything else the app does is in the Reference, by screen.</span>
+      <a href="#" style="align-self:flex-start;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">Open the Reference →</a>
+    </div>
+  </main>
+  <div style="position:absolute;left:0;bottom:0"><dc-import name="TabBar" active="none" hint-size="390px,74px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":3110},"$preview":{"width":390,"height":3110}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const h = Number(this.props.h ?? 3110);
+    const groups = [
+      { label: 'Start a deck', count: '2 · swipe', tools: ['hmc', 'precons'] },
+      { label: 'Tune it', count: '4 · swipe', tools: ['topoff', 'cuts', 'suggested', 'mana'] },
+      { label: 'Buy smarter', count: '2 · swipe', tools: ['standins', 'spares'] },
+      { label: 'Use what you own', count: '3 · swipe', tools: ['findadeck', 'wishlist', 'sync'] },
+      { label: 'Play', count: '3 · swipe', tools: ['matchups', 'lineup', 'friends'] },
+    ];
+    return { groups, frame: `position:relative;width:390px;height:${h}px;background:#14110E;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8` };
+  }
+}
+</script>
+</body>
+</html>

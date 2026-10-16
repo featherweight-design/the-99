@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R2 · searching the Reference</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2180px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R2 · searching the Reference · 1280 and 390 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">Search reads every entry on every screen, and never dead-ends</h2>
+    <p class="cap">The same search as the ? panel. Results replace the list, each naming the screen its entry lives on, with the matching word marked. With no results the page says so, says what search reads, and offers every entry back. What’s new hides while a search is open.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">R2</span><span class="t">With results · “combo”</span></div>
+    <div class="frames">
+      <div><div class="w">1280</div><dc-import name="ReferenceDesk" q="combo" h="760" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390</div><dc-import name="ReferencePhone" q="combo" group="none" h="844" hint-size="390px,844px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">R3</span><span class="t">With none · “sideboard”</span></div>
+    <div class="frames">
+      <div><div class="w">1280</div><dc-import name="ReferenceDesk" q="sideboard" h="760" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390</div><dc-import name="ReferencePhone" q="sideboard" group="none" h="844" hint-size="390px,844px"></dc-import></div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2180}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>
