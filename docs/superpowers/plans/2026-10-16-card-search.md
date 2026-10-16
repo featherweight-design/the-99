@@ -13,16 +13,21 @@ this plan the same way. The resolutions:
    mount-once rewrite is **not** built. The provider gains one prop, `onDismiss`, which fires only when the reader
    closes the card (✕, Escape, the swipe or Back). Find a deck, Edit copies and a navigation are not a dismissal.
    On the deck page a card opened from search opens as it does off a deck: the search's provider takes no `deckId`.
-3. **History.** While the search is open it holds one entry (`useBackDismiss`). At the handover it gives that entry
-   up silently (`leaveDialogsForNavigation`) and the card pushes its own. On dismiss the search reopens and pushes a
-   fresh entry. So Back from the card returns to the search, and Back again returns to the page.
+3. **History.** While the search is open it holds one entry (`useBackDismiss`). At the handover it releases that
+   entry and the card opens only once the release's pop has landed, so the card pushes its own entry in the search's
+   place. `leaveDialogsForNavigation` is not the tool: it only marks entries as leaving, so neither the card nor the
+   release would take the search's entry back, and it would stay as an extra Back stop (Copilot round 1 on the
+   plan). On dismiss the search reopens and pushes a fresh entry. So Back from the card returns to the search, Back
+   again returns to the page, and one more Back reaches the route before it, however many handovers came between.
 4. **Quick return**:
    - The header becomes a new fixed overlay, with a spacer in the page's flow at its height.
    - It publishes `--header-offset` (0 while away, its height while shown). Sticky `top-0` heads ride under it by
      reading the variable: the collection filter bar, the cart view and the admin head.
    - It reads a general "a page field has focus" attribute, `data-field-focus` on `<html>`. This is built after
      `data-note-focus`, which stays as the note field's own.
-   - It ignores scroll for 300ms after a `reveal()`, a scroll restore or a navigation.
+   - It ignores scroll from a `reveal()` until that scroll completes or is cancelled (a 100ms wait plus a 320 to
+     700ms animation, so a fixed window would expire mid-scroll), and for 300ms after a scroll restore or a
+     navigation.
 5. **The iOS keyboard.** The sheet's input is mounted with the shell, never lazily, and `focus()` runs inside the
    icon's tap handler, so the keyboard rises in the same gesture.
 6. **The data.**
@@ -32,7 +37,7 @@ this plan the same way. The resolutions:
    - New: `loadCardSignals(userId, oracleIds)`, the reader's owned sums, the names of the decks holding each card
      (`deck_cards`, plus the commander and partner columns) and wishlist membership. Recent cards reuse it.
    - Art is `cards.image_uri`.
-   - The ilike is timed on a scratch branch, and a `pg_trgm` GIN index is added only if it is slow.
+   - The ilike is timed on a scratch branch, and a `pg_trgm` GIN index on `cards.name` is added only if it is slow.
 7. **Accessibility as drawn** (README call 7). Recent cards are cleared on sign-out.
 8. **The About entry is deferred to the About redesign** (Hugh, relayed by d9 2026-10-16: every new About entry is
    paused until the redesign is complete). D ships without it. The handoff's entry (`about · card search.ts`, switched
@@ -66,8 +71,8 @@ Four PRs, built in order and never stacked; each opens off `main` once the one b
 - Tests: the rank order (prefix, word start, any, then name), `.toSQL()` on the signal read (qualified columns, the
   reader in every join), and the actions' switch and signed-out answers.
 - **Timing.** On a scratch branch of local-dev, EXPLAIN ANALYZE the ranked search for 2-, 3- and 5-letter queries.
-  If any runs over ~50ms, add a `pg_trgm` GIN index on `lower(cards.name)` in the same PR, with the before and
-  after figures in the body.
+  If any runs over ~50ms, add a `pg_trgm` GIN index on `cards.name` (`gin_trgm_ops`, which serves `ilike`
+  directly) in the same PR, with the before and after figures for the whole query in the body.
 - Probe `pnpm probe:card-search` on a scratch branch: a fixture user's owned, deck (commander, partner and body
   cases) and wishlist signals come back right, and another user's never do.
 
@@ -81,13 +86,17 @@ Hugh's lock 5 is a redesign of the header on every phone screen, so it ships uns
   - **back** after 12px of upward travel from the lowest point (200ms, the sheet curve), with a shadow.
   - **Frozen** while a scroll lock is held (a sheet or modal).
   - **Away and held** while `html[data-field-focus]` is set.
-  - **Ignores scroll** for 300ms after `reveal()` (which marks it), a popstate, or a pathname change. A new page
-    arrives with the header in place.
+  - **Ignores scroll** while a `reveal()` runs (it marks its start and its end or cancellation), and for 300ms after
+    a popstate or a pathname change. A new page arrives with the header in place. The hook tests cover a long upward
+    reveal.
   - **Reduced motion:** no slide.
 - `--header-offset` on `<html>`. `sticky top-0` heads become `top-[var(--header-offset,0px)]` below md:
-  `collection/filter-bar.tsx` (both), `cart/cart-view.tsx` and `admin/admin-head.tsx`. The rest (the rail, the
-  create picker, top-off, tuning history, set grid) are desktop-only or inside sheets; each is checked and listed
-  in the PR.
+  `collection/filter-bar.tsx` (both), `cart/cart-view.tsx` and the collapsed set-grid head
+  (`sets/set-grid-view.tsx`, sticky on phones too). The admin head sets an inline negative `top` through
+  `usePinnedHead`, which a utility would not override, and Accounts, Switches and Costs pin their own bars from
+  `--admin-head-h`, so the offset is composed into both: the head's inline `top` and every bar's. All four admin
+  pages are checked on a phone. The rest (the rail, the create picker, top-off, tuning history) are desktop-only or
+  inside sheets; each is checked and listed in the PR.
 - `data-field-focus`: one document-level `focusin`/`focusout` listener in the shell sets it while an `input`,
   `textarea`, `select` or `contenteditable` element inside `<main>` has focus. The deck's Add a card field is the
   case lock 7 needs. The TabBar's `data-note-focus` hiding is unchanged.
@@ -123,7 +132,8 @@ Hugh's lock 5 is a redesign of the header on every phone screen, so it ships uns
   in one press. Focus returns to the icon.
 - New strings: `src/lib/copy/card-search.ts`, from the handoff's file, through `/copy-review` first.
 - Probe `pnpm probe:card-search-ui` (390). It opens the sheet, types, presses a result, asserts Find a deck on the
-  card, then Back twice: search with the query standing, then the page. Run on the deck page as well.
+  card, then Back twice: search with the query standing, then the page; one more Back reaches the route before it.
+  It repeats with two handovers before the Backs. Run on the deck page as well.
 - Contact sheet `card-search-phone.json` at 360, 375 and 390: S1 to S7, H2, H3, the header with the offline pill,
   and the deck page (DP1, DP4).
 
