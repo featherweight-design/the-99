@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-16T21:10:00Z
+branch read this turn: main 4009713 (brief `2026-10-16-buying-credits.md`, `ui/credits-text.tsx`, `ui/credit-button.tsx`, `copy/credits.ts`, `shell/account-menu.tsx`, `social/social-modal.tsx`, `decks/tuning-panel.tsx`, `decks/synopsis-controls.tsx`, `decks/cuts-free-count.tsx`, `app/not-found.tsx`, `theme/themes.ts`, `model/allowance-rule.ts`; tuning hub README/STATES)
+
+### Updated in this project
+- **Buying credits R1, for Hugh's audit.** `design_handoff_the99_buying_credits/`: main board (three calls, rulings, gaps G1–G11), Credit-Line (L1–L8), Surfaces, Billing-Page (P1–P8), Plan-and-Cancel (K1–K6, options A/B), Checkout-Return (R1–R6), Blocked-and-Off (B1, O1–O4), Menu-and-Delete (A1–A3, D1–D2); README, STATES, READINESS, copy strings, canvas.json. Design canvas: "The 99 · Buying credits R1". Generator in `scratch/buying-credits-gen/` for R2.
+
+### Earlier entry
 date: 2026-10-16T18:00:00Z
 branch read this turn: main 875f54c (brief `2026-10-16-card-search.md`, `shell/nav.tsx`, `pwa/offline-pill.tsx`, `pwa/install-slot.tsx`, `wishlist/wishlist-search.tsx`, `decks/quick-add-bar.tsx`, `decks/card-search-row.tsx`, `decks/builder-shell.tsx` (dock), `collection/catalog-read.ts`, `cards/name-search.ts`, `marks.tsx`, `copy/about.ts`, stacked sheets README)
 
