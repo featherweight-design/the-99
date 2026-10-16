@@ -359,6 +359,9 @@ const NOT_A_ROW = new Set<string>([
   // A file with a row or a name that previews AND a tile that does not: the tile half is held by the `*Tile` guard below.
   "components/decks/precons/announced-parts.tsx",
   "components/decks/receipt-modal.tsx",
+  // Card search's results: each row already draws the card's art, and a press hands over to card details through
+  // the history (`afterDialogsReleased`); there is no pointer to rest on the phone, and the desktop field's rows are PR D's.
+  "components/card-search/search-layer.tsx",
 ]);
 
 describe("the row guard's own failure paths", () => {

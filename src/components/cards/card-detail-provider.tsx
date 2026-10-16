@@ -576,6 +576,7 @@ export function CardDetailProvider({
   deckPrintingPicks = null,
   viewPrintings = null,
   collectionEdit = false,
+  onDismiss,
 }: {
   children: ReactNode;
   /**
@@ -635,6 +636,13 @@ export function CardDetailProvider({
    * with `COLLECTION_EDIT_ENABLED` on, so every other surface keeps a read-only receipt.
    */
   collectionEdit?: boolean;
+  /**
+   * The READER closed the card: the ✕ or the pill, Escape, hardware Back, the backdrop or the swipe (`dismiss`),
+   * after the close and never for a step back along the partner trail. Every other close is not one: Find a deck,
+   * Edit copies, a token jump or a navigation call `close`. Card search reopens itself from it (plan
+   * `2026-10-16-card-search.md`, resolution 2).
+   */
+  onDismiss?: () => void;
   /**
    * Fired when a printing pick is ATTEMPTED, and again when it settles — including when
    * the write was refused and the modal has rolled its own state back. It is a nudge that
@@ -1258,6 +1266,10 @@ export function CardDetailProvider({
   // Every close of the live card goes through here: the ✕ or the pill, Escape, hardware Back and
   // the backdrop. A card over a sheet on the phone drops before it goes (stacked sheets R1: "the
   // card drops in about two-thirds of its rise", never sideways); anywhere else, and under reduced motion, it is a swap.
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
   const dismiss = useCallback(() => {
     if (leavingTimer.current !== null) return;
     if (stepBack()) return;
@@ -1265,6 +1277,7 @@ export function CardDetailProvider({
     const still = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     if (sheetsBelow === 0 || !phone || still) {
       close();
+      onDismissRef.current?.();
       return;
     }
     setLeaving(true);
@@ -1272,6 +1285,7 @@ export function CardDetailProvider({
       leavingTimer.current = null;
       setLeaving(false);
       close();
+      onDismissRef.current?.();
     }, STACK_DROP_MS);
   }, [close, sheetsBelow, stepBack]);
   useEffect(() => () => {

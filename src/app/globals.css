@@ -767,6 +767,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
   to { box-shadow: 0 0 0 2px transparent; }
 }
+/* Card search's bar while a read is in flight (S3): the drawn 38% fill, run across the track. */
+@keyframes search-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(265%); }
+}
 @keyframes filter-sheet-in {
   0% { transform: translateY(100%); }
   100% { transform: translateY(0); }
@@ -847,6 +852,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-sheet-in { animation: filter-sheet-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
 /* A line the Add cards sheet folded a duplicate into: its edge pulses once (240ms). */
 .anim-line-pulse { animation: line-pulse 240ms var(--motion-ease) both; }
+.anim-search-progress { animation: search-progress 1100ms var(--motion-ease) infinite; }
 .anim-menu-in { animation: menu-in var(--motion-quick) var(--motion-ease) both; }
 .anim-sheet-up { animation: sheet-up var(--motion-duration) var(--motion-ease) both; }
 /* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
@@ -1366,6 +1372,8 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
   /* Reduced motion: the sheet appears in place, no translate. */
   .anim-sheet-in,
   .anim-line-pulse,
+  /* The search bar stands still at its drawn 38%. */
+  .anim-search-progress,
   /* Both account-menu surfaces appear at final position, fully opaque. */
   .anim-menu-in,
   .anim-backdrop-in,

@@ -1,5 +1,7 @@
 "use client";
 
+import { useCardSearch } from "../card-search/card-search";
+import { useOnlineStatus } from "../../lib/pwa/use-online-status";
 import { useCallback, useEffect, useState } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
@@ -15,6 +17,9 @@ import { IosInstallSheet } from "./ios-install-sheet";
  * neither a held prompt nor iPhone Safari. It decides after mount, so the server draws nothing.
  */
 export function InstallSlot() {
+  const search = useCardSearch();
+  const online = useOnlineStatus();
+  const yieldToSearch = search !== null && !online;
   const [held, setHeld] = useState<BeforeInstallPromptEvent | null>(null);
   const [ios, setIos] = useState(false);
   const [dismissed, setDismissed] = useState(true);
@@ -62,7 +67,9 @@ export function InstallSlot() {
   if (dismissed || (!held && !ios)) return null;
   return (
     <>
-      <div className="flex items-center" data-install-slot>
+      {/* Under 390px, while offline, the slot steps aside for card search's icon, and returns the moment the
+          offline pill goes (card search G5): pill, install, search and account do not fit beside the wordmark there. */}
+      <div className={`flex items-center ${yieldToSearch ? "max-[390px]:hidden" : ""}`} data-install-slot>
         <button
           type="button"
           onClick={onPress}
