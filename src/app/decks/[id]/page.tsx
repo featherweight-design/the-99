@@ -529,7 +529,7 @@ export default async function DeckBuilderPage({
     ...card,
     price: priced ? priceFor(priced, id, card.oracleId) : null,
   });
-  const cards = detail.cards.map((c) => ({ ...withPrice(c), ...deckComboFields(c.oracleId, inDeckCombos) }));
+  const cards = detail.cards.map(withPrice).map((c) => ({ ...c, ...deckComboFields(c.oracleId, inDeckCombos) }));
   // The commanders carry a price for the same reason, and on the same rule: the Shopping list
   // draws an unowned or spoken-for commander in its own group, priced like the rows below it.
   const commander = withPrice(detail.commander);

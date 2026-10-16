@@ -33,7 +33,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { ComboMark } from "../cards/combo-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
-import { cardMarkCopy } from "../../lib/copy/card-mark";
+import { cardMarkCopy, type CardFact } from "../../lib/copy/card-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
@@ -306,33 +306,9 @@ export function DecklistRow({
       ? comboAwarenessCopy.deckTooltip.inDeckMore(combo.name, card.comboOtherPartners)
       : comboAwarenessCopy.deckTooltip.inDeck(combo.name)
     : null;
-  const marks: { key: string; node: React.ReactNode; line: React.ReactNode }[] = [
-    ...(card.facts ?? []).map((fact) => ({
-      key: fact,
-      node: (
-        <FactTooltip fact={fact}>
-          <CardFactMark fact={fact} />
-        </FactTooltip>
-      ),
-      line: (
-        <>
-          <CardFactMark fact={fact} />
-          {cardMarkCopy[fact]}
-        </>
-      ),
-    })),
-    ...(combo && comboSentence
-      ? [{
-          key: "combo",
-          node: <ComboMark partnerName={combo.name} otherPartners={card.comboOtherPartners} scope="deck" />,
-          line: (
-            <>
-              <ComboGlyph />
-              {comboSentence}
-            </>
-          ),
-        }]
-      : []),
+  const marks: ({ kind: "fact"; fact: CardFact } | { kind: "combo"; sentence: string })[] = [
+    ...(card.facts ?? []).map((fact) => ({ kind: "fact" as const, fact })),
+    ...(comboSentence ? [{ kind: "combo" as const, sentence: comboSentence }] : []),
   ];
   const markFold = (i: number): string =>
     inShopping ? FOLD.shopping.all : i >= 3 ? FOLD.all.fourth : i >= 1 ? FOLD.all.afterFirst : FOLD.all.all;
@@ -344,7 +320,19 @@ export function DecklistRow({
       // item around its child): an inactive tier is then no flex item at all, and takes none of the name block's gap.
       <span key={className} className={`${className} flex-none font-mono text-[11px] leading-none`}>
         <FactTooltip
-          lines={folded.map((m) => m.line)}
+          lines={folded.map((m) =>
+            m.kind === "fact" ? (
+              <>
+                <CardFactMark fact={m.fact} />
+                {cardMarkCopy[m.fact]}
+              </>
+            ) : (
+              <>
+                <ComboGlyph />
+                {m.sentence}
+              </>
+            ),
+          )}
         >
           <span aria-hidden="true" style={{ color: "var(--fact)" }}>
             +{folded.length}
@@ -355,8 +343,14 @@ export function DecklistRow({
   };
   const factMarks = [
     ...marks.map((m, i) => (
-      <span key={m.key} className={`inline-flex flex-none ${markFold(i)}`}>
-        {m.node}
+      <span key={m.kind === "fact" ? m.fact : "combo"} className={`inline-flex flex-none ${markFold(i)}`}>
+        {m.kind === "fact" ? (
+          <FactTooltip fact={m.fact}>
+            <CardFactMark fact={m.fact} />
+          </FactTooltip>
+        ) : (
+          <ComboMark partnerName={combo!.name} otherPartners={card.comboOtherPartners} scope="deck" />
+        )}
       </span>
     )),
     ...(inShopping
