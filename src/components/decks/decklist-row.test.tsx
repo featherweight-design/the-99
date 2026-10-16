@@ -1824,6 +1824,8 @@ describe("DecklistRow, the two-line row and the foil glint", () => {
     expect(meta.firstElementChild).toBe(slot);
     expect(tokens(meta)).toContain("md:order-5");
     expect(tokens(slot)).toContain("md:-ml-[18px]");
+    // Below md the dot column is 7px + 9px gap, so the indent is 16, not 18.
+    expect(tokens(slot)).toContain("-ml-[16px]");
     // Never in line 1: the glint is not in the name's block, and its line is the meta line (`md:order-5`), after the break.
     const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
     expect(name.parentElement!.contains(glint)).toBe(false);
@@ -1847,12 +1849,12 @@ describe("DecklistRow, the two-line row and the foil glint", () => {
     expect(screen.queryByTestId("foil-mark")).toBeNull();
   });
 
-  it("draws the glint on a Shopping row beneath the dot too, in the line-2 indent from lg and below md", () => {
+  it("draws the glint on a Shopping row beneath the dot too, in the line-2 indent below md and from md", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: true }} inShopping newestAsOf={null} />);
     const slot = screen.getByTestId("foil-mark").closest("span.flex-none")!;
     expect(tokens(slot)).toContain("max-md:-ml-[16px]");
-    expect(tokens(slot)).toContain("lg:-ml-[18px]");
-    expect(tokens(slot)).not.toContain("md:-ml-[18px]");
+    expect(tokens(slot)).toContain("md:-ml-[18px]");
+    expect(tokens(slot)).not.toContain("lg:-ml-[18px]");
   });
 
   it("gives a live row and its receipt the same minimum height, so the rows below do not move on Undo", () => {

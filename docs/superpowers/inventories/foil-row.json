@@ -51,7 +51,7 @@
     },
     {
       "id": "all-row-phone",
-      "label": "/decks/[id] All, List view on the phone: the shipped row (name over pips), the glint at the head of its meta line",
+      "label": "/decks/[id] All, List view on the phone: the shipped row (name over pips), the glint at the head of its meta line, under the dot, pips at the name's x",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -103,6 +103,31 @@
         },
         {
           "scrollTo": "[data-decklist-row]:has(button[aria-label^='Cheaper stand-ins for'])",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "shopping-row-foil",
+      "label": "/decks/[id] Shopping: a foil row, the glint under the dot with the pips at the name's x (option B at 390, the shipped column at 900, two lines from lg)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FOIL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid='foil-mark'])",
           "settle": 400
         }
       ]
