@@ -55,13 +55,13 @@ def board():
 
     # handover: card details from result 3 (Heroes in a Half Shell), unstacked
     c = CARDS["heroes"]
-    h1 = phone(f'<div class="pwash" style="background-image:url(art/heroes.jpg)"></div><span class="pcount">3 of 10</span><span class="pclose">✕</span>'
+    h1 = phone(f'<div class="pwash wash-heroes"></div><span class="pcount">3 of 10</span><span class="pclose">✕</span>'
                f'<div class="pcard" style="transform:rotate(-1deg)"><img src="art/heroes.jpg" alt=""></div>'
                f'<div class="tsr"><span class="grip"></span><h3 style="margin:0;font:700 22px/1.15 \'Chakra Petch\',sans-serif">Heroes in a Half Shell</h3>'
                f'<span style="font-size:14px;color:var(--fg-muted);margin-top:6px">{c["type"]}</span>'
                f'<span style="display:flex;gap:4px;margin-top:12px"><span class="pip" style="width:22px;height:22px;font-size:12px;background:#D9D6CF">W</span><span class="pip" style="width:22px;height:22px;background:var(--u)"></span><span class="pip" style="width:22px;height:22px;background:var(--b)"></span><span class="pip" style="width:22px;height:22px;background:var(--r)"></span><span class="pip" style="width:22px;height:22px;background:var(--g)"></span></span>'
                f'<div style="margin-top:auto;display:flex;gap:10px"><span class="obtn" style="flex:1;justify-content:center;margin:0">All details</span></div></div>')
-    h2 = phone(f'<div class="pwash" style="background-image:url(art/heroes.jpg)"></div><span class="pcount">3 of 10</span><span class="pclose">✕</span>'
+    h2 = phone(f'<div class="pwash wash-heroes"></div><span class="pcount">3 of 10</span><span class="pclose">✕</span>'
                f'<div class="psheet"><span class="grip"></span><div class="psb">'
                f'<h3 style="margin:0;font:700 24px/1.12 \'Chakra Petch\',sans-serif;padding-right:40px">Heroes in a Half Shell</h3>'
                f'<span style="font-size:14px;color:var(--fg-muted);margin-top:-6px">{c["type"]}</span>'

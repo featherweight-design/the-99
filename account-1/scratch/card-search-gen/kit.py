@@ -247,6 +247,7 @@ a{color:var(--accent)}
 .lk{display:inline-flex;align-items:center;gap:8px;font:500 15px 'IBM Plex Sans',sans-serif;color:var(--accent);text-decoration:underline;text-decoration-color:rgba(255,77,154,.5);text-underline-offset:4px;white-space:nowrap}
 .wbtn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:8px;border:1px solid var(--accent);color:var(--accent);font:600 13px 'IBM Plex Sans',sans-serif;white-space:nowrap;align-self:flex-start}
 /* phone card sheet, as shipped */
+.wash-heroes{background-image:url(art/heroes.jpg)}
 .pwash{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(26px);opacity:.5}
 .pcount{position:absolute;left:24px;top:24px;z-index:2;height:34px;padding:0 13px;border-radius:999px;background:rgba(32,34,42,.85);display:flex;align-items:center;font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .pclose{position:absolute;right:20px;top:22px;z-index:2;width:36px;height:36px;border-radius:50%;background:rgba(32,34,42,.9);display:flex;align-items:center;justify-content:center;font-size:15px}
