@@ -1,8 +1,9 @@
+import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
 import { encodeEmbedding, LOOKUP_BACKOFF_MS, lookupCard, marginClears } from "./lookup";
 import { AGREE_MARGIN } from "./models";
 
-const MODEL = "dhvazquez/mtg_card_identification_embeddings@653d88d fp32";
+const MODEL = SCAN_MODEL;
 const emb = new Float32Array(256).fill(1 / 16);
 const reply = (status: number, body: unknown = {}) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const MATCH = { index: "all-20261014", guesses: [{ oracleId: "o1", name: "Sol Ring", scryfallId: "s1", score: 0.93 }, { oracleId: "o2", name: "Mana Crypt", scryfallId: "s2", score: 0.6 }], margin: 0.33 };

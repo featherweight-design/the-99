@@ -102,14 +102,16 @@ export function ScanLab({ indexBase, serverModel = null }: {
     else if (st.kind === "refused") setNote(copy.serverRefused[st.reason]);
     else setNote(null);
   }, []);
-  const toggleServer = (on: boolean) => {
+  const toggleServer = useCallback((on: boolean) => {
     server.current?.stop();
     server.current = on && serverModel
       ? serverScanner(serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)), now: clock }, onServerState)
       : null;
     setServerOn(server.current !== null);
     setNote(null);
-  };
+  }, [serverModel, onServerState]);
+  // No index on this deployment: the lab still runs, matching on the server alone, when the reader may.
+  const serverOnly = !indexBase && serverModel !== null;
   const [torch, setTorch] = useState<Torch | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const toggleTorch = async (on: boolean) => {
@@ -171,7 +173,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       setStatus("error");
       setError(`${copy.failed} ${e instanceof Error ? e.message : ""}`);
     };
-    if (!indexBase) {
+    if (!indexBase && !serverModel) {
       setStatus("error");
       setError(copy.noIndex);
       return;
@@ -185,7 +187,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
     try {
       const [ort, index, media] = await Promise.all([
         loadOrt(),
-        loadIndex(indexBase),
+        indexBase ? loadIndex(indexBase) : Promise.resolve(null),
         navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
@@ -195,7 +197,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
           return m;
         }),
       ]);
-      indexVersion.current = index.meta.version;
+      indexVersion.current = index?.meta.version ?? "server";
+      if (!index) toggleServer(true);
       // each held as it loads, so a failed sibling or leaving the page releases it, even late
       const load = (url: string) =>
         ort.InferenceSession.create(url, { executionProviders: ["wasm"] }).then((s) => {
@@ -295,6 +298,10 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 setTimeout(tick, 60);
                 return;
               }
+              if (!index) {
+                setTimeout(tick, 60);
+                return;
+              }
               const guesses = topOracles(index, q, 5);
               const t3 = performance.now();
               const margin = guesses.length > 1 ? guesses[0].score - guesses[1].score : 1;
@@ -322,7 +329,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
     } catch (e) {
       fail(e);
     }
-  }, [indexBase, finishLog]);
+  }, [indexBase, serverModel, finishLog, toggleServer]);
 
   const record = useCallback(async (tap: Tap, correct: boolean) => {
     // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
@@ -377,7 +384,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
             {note ? ` · ${note}` : ""}
           </span>
           {/* Outside the controls area, so ticking it never holds the reading. */}
-          {serverModel && (
+          {serverModel && !serverOnly && (
             <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
               <Checkbox checked={serverOn} onChange={toggleServer} />
               {copy.serverMatch}

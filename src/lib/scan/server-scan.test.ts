@@ -1,12 +1,13 @@
 // The lab's recorded behavior, on the server path: the dwell before a card is asked about, one lookup per stable card
 // however long it stays, a new lookup for a second copy after the frame empties, and the retry with its own state.
+import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
 import { DWELL_MS } from "./track";
 import { LOOKUP_BACKOFF_MS } from "./lookup";
 import { serverScanner, type ServerState } from "./server-scan";
 import type { ScanFrame } from "./stable-card";
 
-const MODEL = "dhvazquez/mtg_card_identification_embeddings@653d88d fp32";
+const MODEL = SCAN_MODEL;
 const MATCH = { index: "all-20261014", guesses: [{ oracleId: "o1", name: "Sol Ring", scryfallId: "s1", score: 0.93 }, { oracleId: "o2", name: "Mana Crypt", scryfallId: "s2", score: 0.6 }], margin: 0.33 };
 const card = (x: number): ScanFrame => ({ kind: "card", embedding: new Float32Array([Math.cos(x), Math.sin(x)]) });
 const none: ScanFrame = { kind: "none" };

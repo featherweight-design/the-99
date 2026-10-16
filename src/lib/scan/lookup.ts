@@ -1,12 +1,10 @@
-// The phone's half of `POST /api/card-scan/match` (plan `2026-10-16-card-scan.md`): it sends the card's embedding,
+// The phone's half of `POST /api/card-scan/match` (served by `src/app/api/card-scan/match`) (plan `2026-10-16-card-scan.md`): it sends the card's embedding,
 // never the frame, once per stable card (`stable-card.ts`), and turns the answer into what a scanner shows. A failure
 // that may pass (the network, a server error, an index not yet loaded) is retried with a backoff while the scanner
 // says it is unsure and retrying; one that will not pass (signed out, the switch off, a model the server does not
 // hold, a body it cannot read) is not.
-import type { Guess } from "./match";
+import type { Guess as ServerGuess } from "../card-scan/match";
 import { AGREE_MARGIN } from "./models";
-
-export type ServerGuess = Guess & { scryfallId: string };
 
 export type LookupResult =
   | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
