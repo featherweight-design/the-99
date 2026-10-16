@@ -27,3 +27,5 @@ Both fixed (`add-line.tsx:90`, `:258`). 0 gaps remain.
 - The desktop opens the fix in place, as the phone does: the board draws no open fix at 1300.
 - Search for it instead removes that scanned line (the player has said it is wrong) and puts focus in the search.
   None of these closes the scanner onto the search. A swap keeps the region open, now ticking the new card.
+- The tiles keep the scan's order through a swap (the card first added leads, as L2 draws it) and the tick moves:
+  reordering on each swap sent a keyboard reader's arrows back and forth between the first two (review round 2).

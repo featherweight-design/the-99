@@ -110,13 +110,13 @@ describe("add lines", () => {
     };
     const scanned = (q = 2) => setQuantity(choosePrinting([{ ...openLine([], base([choice()]))[0], scan }], "a", choice()).lines, "a", q);
 
-    it("takes the other card at its first printing, keeps the count and the scan, and leads with it", () => {
+    it("takes the other card at its first printing, keeping the count, the scan and the guesses' order", () => {
       const first = choice({ setCode: "wwk", collectorNumber: "133", finishes: ["foil"] });
       const { lines, merged } = swapScannedCard(scanned(), "a", OTHER, [first, choice({ setCode: "c13" })]);
       expect(merged).toBeNull();
       expect(lines[0]).toMatchObject({ oracleId: OTHER, name: "Mind Stone", imageUri: "m.jpg", printing: first, finish: "foil", quantity: 2 });
       expect(lines[0].scan?.photo).toBe(scan.photo);
-      expect(lines[0].scan?.guesses.map((g) => g.oracleId)).toEqual([OTHER, OID]);
+      expect(lines[0].scan?.guesses.map((g) => g.oracleId)).toEqual([OID, OTHER]);
     });
 
     it("folds into a line that already holds the card it becomes", () => {

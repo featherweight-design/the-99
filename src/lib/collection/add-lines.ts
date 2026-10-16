@@ -79,17 +79,17 @@ export function choosePrinting<L extends AddLineState>(lines: L[], id: string, p
 
 /**
  * A scanned line put right (card-scan L2): it becomes another of the cards its scan named, at that card's first
- * printing, keeping its count and its scan. The card now on the line leads the scan's guesses, as the tiles draw it.
+ * printing, keeping its count and its scan. The guesses keep the scan's order (the card first added leads, as L2
+ * draws it), so the tiles do not move under a keyboard reader's arrows: the tick moves instead.
  * A line that becomes a holding another line names folds into it, as any printing change does.
  */
 export function swapScannedCard(lines: AddLineState[], id: string, oracleId: string, choices: PrintingChoice[]) {
   const line = lines.find((l) => l.id === id);
   const guess = line?.scan?.guesses.find((g) => g.oracleId === oracleId);
   if (!line?.scan || !guess || choices.length === 0) return { lines, merged: null };
-  const guesses = [guess, ...line.scan.guesses.filter((g) => g.oracleId !== oracleId)];
   const next = lines.map((l) =>
     l.id === id
-      ? { ...l, oracleId, name: guess.name, imageUri: guess.imageUri, choices, printing: choices[0], finish: defaultFinish(choices[0]), scan: { ...line.scan!, guesses } }
+      ? { ...l, oracleId, name: guess.name, imageUri: guess.imageUri, choices, printing: choices[0], finish: defaultFinish(choices[0]) }
       : l,
   );
   return fold(next, id);

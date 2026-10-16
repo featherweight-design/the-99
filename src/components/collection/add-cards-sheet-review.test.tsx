@@ -32,6 +32,7 @@ vi.mock("./scan/card-scanner", () => ({
     <div data-testid="fake-scanner">
       <button type="button" onClick={() => p.onAdd(SOL, "fast", CAPTURE)}>fast add</button>
       <button type="button" onClick={() => p.onAdd(SOL, "normal", CAPTURE)}>normal add</button>
+      <button type="button" onClick={() => p.onAdd(SOL, "fast", { ...CAPTURE, guesses: [...CAPTURE.guesses, { oracleId: "33333333-3333-4333-8333-333333333333", name: "Arcane Signet", imageUri: null }] })}>three add</button>
       <button type="button" onClick={p.onNoneOfThese}>none of these</button>
       <button type="button" onClick={p.onClose}>close scanner</button>
     </div>
@@ -177,8 +178,27 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     choices.mockResolvedValueOnce([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
     fireEvent.keyDown(tiles[0], { key: "ArrowRight" });
     await waitFor(() => expect(choices).toHaveBeenLastCalledWith(STONE.oracleId));
-    // Mind Stone is now on the line, leads the tiles, and has focus.
+    // Mind Stone is now on the line, ticked where it stood, and has focus.
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: /Mind Stone/ })));
     expect(screen.getByRole("radio", { name: /Mind Stone/ }).getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("walks all three closest cards with the arrows, the tiles holding still as the tick moves", async () => {
+    const SIGNET = { oracleId: "33333333-3333-4333-8333-333333333333", name: "Arcane Signet", imageUri: null };
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "three add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sol Ring", expanded: false }));
+    const names = () => screen.getAllByRole("radio").map((t) => t.textContent?.replace(scan.fix.onList, "").replace("✓", "").trim());
+    const order = names();
+    screen.getAllByRole("radio")[0].focus();
+    for (const card of [STONE, SIGNET]) {
+      fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
+      await waitFor(() => expect(screen.getByRole("radio", { name: new RegExp(card.name) }).getAttribute("aria-checked")).toBe("true"));
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: new RegExp(card.name) })));
+    }
+    expect(names()).toEqual(order);
   });
 });
