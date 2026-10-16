@@ -75,7 +75,7 @@
         {
           "openSearch": true,
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "settle": 600
         }
       ],
@@ -93,7 +93,7 @@
         {
           "openSearch": true,
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "searchScroll": 400,
           "settle": 400
         }
@@ -112,7 +112,7 @@
         {
           "openSearch": true,
           "searchType": "zqxzq",
-          "searchWait": "No card is named",
+          "searchWait": "No card is named “zqxzq”",
           "settle": 400
         }
       ],
@@ -130,7 +130,7 @@
         {
           "openSearch": true,
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "searchPick": 0,
           "settle": 2500
         }
@@ -149,7 +149,7 @@
         {
           "openSearch": true,
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "searchPick": 2,
           "settle": 2500
         },
@@ -227,7 +227,7 @@
         {
           "openSearch": true,
           "searchType": "giada",
-          "searchWait": "card",
+          "searchWait": "3 cards",
           "settle": 600
         }
       ],
@@ -272,7 +272,7 @@
         {
           "openSearch": true,
           "searchType": "sol",
-          "searchWait": "cards",
+          "searchWait": "20 cards",
           "settle": 400
         },
         {

@@ -218,7 +218,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     [recents, recentSignals],
   );
   // What ↑ ↓ and ↵ move through: the results while searching, else the recent cards; nothing offline.
-  const list = !online ? [] : searching ? (phase === "failed" ? [] : rows) : recentRows;
+  // Only rows that are drawn: none before their chunk has arrived, none behind a failure panel.
+  const list = !online || Layer === null ? [] : searching ? (phase === "failed" ? [] : rows) : recentsFailed ? [] : recentRows;
 
   const pick = useCallback(
     (from: readonly CardSearchRow[], index: number) => {
@@ -284,7 +285,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     // The row that opened the card; after a failed read there is no row, and focus goes to Try again instead.
     const target =
       body.querySelector<HTMLElement>(`[data-card-search-row="${CSS.escape(returned)}"]`) ??
-      body.querySelector<HTMLElement>("[data-card-search-retry]");
+      body.querySelector<HTMLElement>("[data-card-search-retry]") ??
+      // Neither (the opening row was replaced by a newer search while the card was up): the sheet itself.
+      inputRef.current?.closest<HTMLElement>('[role="dialog"]');
     target?.focus({ preventScroll: true });
   }, [open, returned]);
 
@@ -305,6 +308,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const onClear = useCallback(() => {
     clearRecent(userId);
     setRecents([]);
+    setActive(-1);
     inputRef.current?.focus();
   }, [userId]);
 
@@ -327,6 +331,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const escape = useCallback(() => {
     if (query.length > 0) {
       setQuery("");
+      setActive(-1);
       inputRef.current?.focus();
     } else close();
   }, [query, close]);
@@ -334,6 +339,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const changeQuery = useCallback((next: string) => {
     setQuery(next);
     setReturned(null);
+    // The list under the keys changes with the query (results, then recents), so no old place in it carries over.
+    setActive(-1);
     // A new query is a new attempt: the failure belonged to the last one.
     setPhase((p) => (p === "failed" ? "idle" : p));
   }, []);

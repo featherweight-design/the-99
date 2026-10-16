@@ -219,7 +219,7 @@ async function run(page, steps) {
       await searchSheet.getByRole("combobox").fill(step.searchType, { timeout: 15_000 });
     }
     if (step.searchWait !== undefined) {
-      await searchSheet.getByText(step.searchWait).first().waitFor({ state: "visible", timeout: 15_000 });
+      await searchSheet.getByText(step.searchWait, { exact: true }).first().waitFor({ state: "visible", timeout: 15_000 });
     }
     if (step.searchPick !== undefined) {
       await searchSheet.getByRole("option").nth(step.searchPick).click({ timeout: 15_000 });
