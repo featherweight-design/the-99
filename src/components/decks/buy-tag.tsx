@@ -86,7 +86,7 @@ function Tail({
   fact: PriceFact | null;
   state: PriceState;
   variant: BuyTagVariant;
-  reserveSlot: boolean | "md";
+  reserveSlot: boolean;
   /** True where the tag already speaks the price in its own sentence. */
   silent: boolean;
   /**
@@ -118,9 +118,6 @@ function Tail({
           decimal point rather than on the word before it.
           FIGURE_SLOT is what that column actually needs — see the constant. */}
       <span
-        // `md` reserves the slot from 768px up only. Below it the Shopping row is two lines and
-        // every pixel goes to the name, so the figure hugs the word (Hugh, 2026-09-26).
-        className={reserveSlot === "md" ? "md:inline-block md:min-w-[46px] md:text-right" : undefined}
         style={{
           color: pending ? "var(--fg-muted)" : FIGURE_INK[variant],
           ...(reserveSlot === true
@@ -206,10 +203,9 @@ export function BuyTag({
   /** Server-built; only the labelled (tile) variant speaks it. */
   provenance?: ProvenanceForm | null;
   /**
-   * Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. `"md"` reserves
-   * it from 768px up only (the class spells `FIGURE_SLOT`'s 46px, since a class cannot read it).
+   * Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns.
    */
-  reserveSlot?: boolean | "md";
+  reserveSlot?: boolean;
   /**
    * `collapsed` draws a LIVE price's figure (with its foil/etched qualifier, where the fact
    * carries one) in the same box, ink, radius and position — the All tab is a list being
@@ -374,8 +370,9 @@ function PressableTag({ press, overLimit, foldOver, children }: { press: BuyTagP
         e.stopPropagation();
         if (pressState === "rest") onPress(e.currentTarget);
       }}
-      // The ring is the plate's, not the button's: below md the button is the whole 44px hit.
-      className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] md:before:hidden ${
+      // The ring is the plate's, not the button's: on a coarse pointer the button is a 44px-tall hit, drawn past the plate so a
+      // 34px row stays 34px; a fine pointer's hit is the button itself.
+      className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] pointer-fine:before:hidden ${
         live ? "cursor-pointer" : "cursor-default"
       }`}
     >

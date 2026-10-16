@@ -486,7 +486,7 @@ describe("the figures", () => {
     // passes classes rather than an inline style — so this reads the class the
     // row supplies. `rounded-full` alone matches every mana pip.
     const dots = [...plate.querySelectorAll("span")].filter((el) =>
-      el.className.toString().includes("w-[7px]"),
+      el.className.toString().includes("w-[8px]"),
     );
     expect(dots.length, "the ownership dots drew nothing").toBe(
       DECKLIST_MARK_ROWS.length,
@@ -718,7 +718,7 @@ describe("the figures", () => {
     // the real dot carries.
     const dots = [...plate.querySelectorAll("span")].filter((el) => {
       const c = el.className.toString();
-      return c.includes("w-[7px]") && c.includes("rounded-full");
+      return c.includes("w-[8px]") && c.includes("rounded-full");
     });
     expect(dots.length, "the live rows either side drew nothing").toBe(2);
   });
@@ -795,7 +795,7 @@ describe("the figures", () => {
     // Both rows carry the buy mark, including the owned one.
     const dots = [...plate.querySelectorAll("span")].filter((el) => {
       const c = el.className.toString();
-      return c.includes("w-[7px]") && c.includes("rounded-full");
+      return c.includes("w-[8px]") && c.includes("rounded-full");
     });
     expect(dots.filter((el) => el.className.toString().includes("dashed")).length).toBe(1);
     expect(dots.length).toBe(2);

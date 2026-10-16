@@ -14,7 +14,6 @@ await (await import("../cards/card-detail-provider")).warmCardModal();
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { PendingChangeProvider } from "./pending-change";
 import { COST_TRACK } from "../ui/cost-pips";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -65,7 +64,6 @@ vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(),
 const { DecklistRow } = await import("./decklist-row");
 const { HoverPreviewProvider } = await import("./hover-preview");
 const { GotItProvider } = await import("./got-it");
-const { commanderAsRow } = await import("../../lib/decks/shopping");
 const { DeckPageSwitches } = await import("./deck-page-switches");
 const { BuilderShell } = await import("./builder-shell");
 
@@ -157,15 +155,12 @@ describe("DecklistRow", () => {
 // #179 — a phone deck could be filled and never emptied: the ✕ was `hidden
 // md:block`. The glyph is unchanged; the target is the padding around it.
 describe("DecklistRow remove control (#179)", () => {
-  it("renders the ✕ at phone width with a 44px hit box", () => {
+  it("renders the ✕ at every width as a 26px column", () => {
     renderRow(<DecklistRow deckId="d1" card={card}  newestAsOf={null}/>);
 
     const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
     expect(remove.className).not.toContain("hidden");
-    expect(remove.className).toContain("w-[44px]");
-    expect(remove.className).toContain("h-[44px]");
-    // From md the ✕ is a fixed 26px column, so it lines up down the list (L6).
-    expect(remove.className).toContain("md:w-[26px]");
+    expect(remove.className).toContain("w-[26px]");
     expect(remove.className).toContain("text-[13px]");
   });
 
@@ -904,112 +899,7 @@ describe("DecklistRow auto tag (#130)", () => {
   });
 });
 
-// #350 — the printed cost on the row.
-describe("DecklistRow cost pips (#350)", () => {
-  const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
-  const rowShell = () => document.querySelector(".group")!;
 
-  it("draws the cost as two runs on an All row, one per width, so it is spoken once", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
-    const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
-    expect(spoken).toHaveLength(2);
-    // The meta line under the name below md, and the fixed pip track from md; `display: none` keeps one in the tree.
-    const wrappers = spoken.map((el) => el.closest("span[class*='flex']")!.className.split(/\s+/));
-    expect(wrappers.some((c) => c.includes("md:hidden"))).toBe(true);
-    expect(wrappers.some((c) => c.includes("hidden") && c.includes("md:flex"))).toBe(true);
-  });
-
-  it("keeps the two runs, one per width, on a row that is not two-line (a read-only precon row)", () => {
-    renderRow(<DecklistRow deckId="" card={withCost} readOnly newestAsOf={null}/>);
-    const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
-    expect(spoken).toHaveLength(2);
-    const wrappers = spoken.map((el) => el.parentElement!.className);
-    expect(wrappers.some((c) => c.includes("hidden") && c.includes("md:flex"))).toBe(true);
-    expect(wrappers.some((c) => c.includes("md:hidden"))).toBe(true);
-  });
-
-  it("grows the phone row to 52px for the meta line it now carries", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost}  newestAsOf={null}/>);
-    expect(rowShell().className).toContain("min-h-[52px]");
-  });
-
-  it("leaves a land at 44px", () => {
-    renderRow(
-      <DecklistRow
-        deckId="d1"
-        card={{ ...card, manaCost: null, cardTypeGroup: "Lands" } as DeckDetailCard}
-       newestAsOf={null}/>,
-    );
-    expect(rowShell().className).toContain("min-h-[44px]");
-  });
-
-  // The height is the group's, not the card's. Ancestral Vision and Restore
-  // Balance have no printed cost and are not lands, and a row that measured its
-  // own cost would sit 8px short in the middle of a column of Sorceries.
-  it("keeps a costless spell at its group's height", () => {
-    renderRow(
-      <DecklistRow
-        deckId="d1"
-        card={{ ...card, manaCost: null, cardTypeGroup: "Sorceries" } as DeckDetailCard}
-       newestAsOf={null}/>,
-    );
-    expect(rowShell().className).toContain("min-h-[52px]");
-    // No pips, though — the row has the line, and nothing to put on it.
-    expect(screen.queryByText(spokenManaCost("{1}"))).toBeNull();
-  });
-
-  it("holds the desktop track at a fixed width whatever the cost costs (a read-only row keeps its track)", () => {
-    renderRow(<DecklistRow deckId="" card={withCost} readOnly newestAsOf={null}/>);
-    const track = document.querySelector(".hidden.md\\:flex > span")!;
-    expect(track).toHaveStyle({ width: `${COST_TRACK}px` });
-  });
-
-  it("puts the cost alone on the meta line, in All and in Shopping: no EDHREC figure is drawn (foil addendum R4)", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }}  newestAsOf={null}/>);
-    expect(screen.queryByText(/edhrec/)).toBeNull();
-    cleanup();
-    renderRow(
-      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping  newestAsOf={null}/>,
-    );
-    expect(screen.queryByText(/edhrec/)).toBeNull();
-    expect(screen.queryByText(recommendationsCopy.shopping.rowFigure("24"))).toBeNull();
-    expect(screen.queryByText(recommendationsCopy.shopping.rowFigureDesktop("24"))).toBeNull();
-    expect(screen.getByText(spokenManaCost("{2}{U}{B}"))).toBeInTheDocument();
-  });
-});
-
-// Hugh, 2026-09-26: between md and lg a Shopping row is the phone's two lines, the pips under the
-// name, so the name keeps the row's width; `over $X` stacks with the buy tag as one group, and the
-// tag's figure hugs its word there.
-describe("DecklistRow in Shopping, md to lg", () => {
-  const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
-  const rowShell = () => document.querySelector(".group")!;
-
-  it("draws the pips on a Shopping row's phone meta line only: from md it is one line with no pip track", () => {
-    renderRow(
-      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />,
-    );
-    const meta = screen.getByText(spokenManaCost("{2}{U}{B}")).closest("span.flex")!;
-    // Hidden from md, and no pip track beside the name (Shopping has no pips and no EDHREC figure on one line, L2).
-    expect(meta.className.split(/\s+/)).toContain("md:hidden");
-    expect(document.querySelector(".hidden.md\\:flex > span")).toBeNull();
-    // One 34px line from md, option B below it.
-    expect(rowShell().className).toContain("md:min-h-[34px]");
-    expect(rowShell().className.split(/\s+/)).not.toContain("md:flex-wrap");
-    expect(rowShell().className.split(/\s+/)).toContain("max-md:flex-wrap");
-  });
-
-  it("makes the All tab's row one 34px line from md, with the pip track last before the ✕", () => {
-    renderRow(<DecklistRow deckId="d1" card={withCost} newestAsOf={null} />);
-    const track = document.querySelector(".hidden.md\\:flex")!;
-    expect(track.className.split(/\s+/)).toContain("md:order-1");
-    expect(rowShell().className).toContain("md:min-h-[34px]");
-    expect(rowShell().className).not.toContain("md:min-h-[58px]");
-    expect(rowShell().className.split(/\s+/)).not.toContain("md:flex-wrap");
-    // The phone is the shipped row: no max-md line classes on an All row.
-    expect(rowShell().className).not.toContain("max-md:");
-  });
-});
 
 // #350 — the All tab collapses the tag; Shopping keeps it whole.
 describe("DecklistRow buy tag density (#350)", () => {
@@ -1651,266 +1541,7 @@ describe("DecklistRow readOnly count", () => {
   });
 });
 
-// Social R2 PR 7: the phone Shopping row's option B (for everyone since the foil mark's PR 2). Below md the name and
-// the ✕ take line 1 and `over $N` folds into the outlined tag; every phone class is `max-md:`.
-describe("DecklistRow, phone Shopping row option B", () => {
-  const asOf = new Date("2026-09-20T00:00:00Z");
-  const priced = (cents: number, extra: Partial<DeckDetailCard> = {}) =>
-    ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf }, ...extra }) as DeckDetailCard;
-  const inB = (ui: React.ReactNode) =>
-    renderRow(
-      <DeckPageSwitches howItWorks={false}>
-        <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>
-          <GotItProvider deckId="d1">{ui}</GotItProvider>
-        </SwapToolsProvider>
-      </DeckPageSwitches>,
-    );
-  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
-  const overStack = () => screen.getAllByText(swapToolsCopy.row.over("$10")).filter((el) => el.className.includes("block md:hidden"));
 
-  it("puts the name and ✕ on line 1 and the figure, ⇄ and tag on line 2", () => {
-    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    expect(row().className).toContain("max-md:flex-wrap");
-    // The break between the lines is an empty aria-hidden element.
-    const br = row().querySelector<HTMLElement>("[aria-hidden='true'].max-md\\:basis-full");
-    expect(br).not.toBeNull();
-    expect(br!.textContent).toBe("");
-    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
-    expect(remove.className).toContain("max-md:order-2");
-    const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
-    expect(swap.className).toContain("max-md:order-7");
-    // The press takes 3px off each side of the line from md, so a row holding it stays 34px (L8).
-    expect(swap.className).toContain("md:-my-[3px]");
-    // The other-ways press (#1875): a 44px hit below md around the 36px press it draws, 26px from md.
-    expect(swap.className).toContain("h-[44px]");
-    expect(swap.firstElementChild!.className).toContain("h-[36px]");
-    expect(swap.firstElementChild!.className).toContain("md:h-[26px]");
-    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
-    expect(tag.parentElement!.className).toContain("max-md:order-8");
-    expect(tag.parentElement!.className).toContain("max-md:min-h-[44px]");
-    // From md the tag is its own fixed 84px column, after every flowing item and before the ✕ (L6).
-    expect(tag.parentElement!.className).toContain("md:min-w-[84px]");
-    expect(tag.parentElement!.className).toContain("md:order-1");
-    expect(remove.className).toContain("md:order-2");
-  });
-
-  it("folds `over $10` into the outlined tag: spoken, no longer drawn under it", () => {
-    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    // No visible stack below md: the copy beside the tag is screen-reader text there.
-    expect(overStack()).toHaveLength(0);
-    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
-    const under = screen.getAllByText(swapToolsCopy.row.over("$10")).find((el) => el.className.split(/\s+/).includes("sr-only"))!;
-    // Screen-reader text at every width: the limit is the tag's outline and the key's `over $N`, never words under it.
-    expect(under.className).not.toContain("md:hidden");
-    expect(tag.getAttribute("aria-describedby")).toContain(under.id);
-    // The plate keeps its ring and drops its resting wash at every width, and keeps the hover and press washes.
-    const plate = tag.firstElementChild as HTMLElement;
-    expect(plate.style.boxShadow).toBe(OVER_LIMIT_RING);
-    const cls = plate.className.split(/\s+/);
-    expect(cls).toContain("bg-transparent");
-    expect(cls.some((c) => c.startsWith("md:group-hover/buy:bg-"))).toBe(true);
-    expect(cls.some((c) => c.startsWith("group-active/buy:bg-"))).toBe(true);
-    expect(cls.some((c) => c.startsWith("bg-[color-mix"))).toBe(false);
-  });
-
-  it("leaves a row under the limit with its wash and no ⇄", () => {
-    inB(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
-    expect((tag.firstElementChild as HTMLElement).className).not.toContain("max-md:bg-transparent");
-    expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
-  });
-
-  // From md too since d9's ruling (2026-10-16): the row prints the front face beside the `//` mark, never `A // B` and the mark.
-  it("shows a two-face card's front face on the phone and from md, the whole name only in its accessible name", () => {
-    const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
-    inB(<DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    const front = screen.getByText("Delver of Secrets", { selector: "span.md\\:hidden" });
-    const fromMd = screen.getByText("Delver of Secrets", { selector: "span.hidden" });
-    expect(front).toBeInTheDocument();
-    expect(fromMd.className).toContain("md:inline");
-    expect(screen.queryByText("Delver of Secrets // Insectile Aberration")).toBeNull();
-    // The trigger's accessible name stays the whole card.
-    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Delver of Secrets // Insectile Aberration") })).toBeInTheDocument();
-  });
-
-  it("changes no md size of the ✕: its 44px slot is the shipped one, and the press's hit is the press from md", () => {
-    inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
-    const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
-    expect(remove.className).toContain("w-[44px] h-[44px]");
-    expect(remove.className).toContain("md:w-[26px] md:h-auto");
-    expect(swap.className).toContain("md:h-auto");
-    // Every phone class is max-md:, so no `max-lg:` or `lg:` size is spelled for B.
-    expect(row().innerHTML).not.toContain("max-lg:");
-  });
-
-  it("leaves a receipt and a held slot as tall as the row they replace below md", () => {
-    for (const slot of [{ spent: true }, { held: true }]) {
-      inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} {...slot} />);
-      expect(row().className).toContain("max-md:min-h-[96px]");
-      cleanup();
-    }
-  });
-
-  it("draws a land with no EDHREC figure in the same two lines, and keeps no slot for a press it does not draw", () => {
-    const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null, name: "Sunken Ruins // Back" , layout: "transform" } as DeckDetailCard;
-    inB(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
-    expect(row().className).toContain("max-md:flex-wrap");
-    expect(row().querySelector("[aria-hidden='true'].max-md\\:basis-full")).not.toBeNull();
-    expect(screen.getByText("Sunken Ruins", { selector: "span.md\\:hidden" })).toBeInTheDocument();
-    cleanup();
-    inB(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    // #1875: neither a stand-in nor a spare is no press and no reserved slot.
-    expect(screen.queryByTestId("other-ways")).toBeNull();
-    expect(row().querySelector("span[aria-hidden='true'].flex-none.w-\\[22px\\]")).toBeNull();
-  });
-
-  it("cuts a recounted two-face card's label to the front face, on the phone and from md", () => {
-    const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
-    renderRow(
-      <PendingChangeProvider value={{ moves: new Map([[dfc.oracleId, { from: 1, to: 2 }]]) }}>
-        <DeckPageSwitches howItWorks={false}>
-          <DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />
-        </DeckPageSwitches>
-      </PendingChangeProvider>,
-    );
-    const phone = document.querySelector<HTMLElement>("span.md\\:hidden[aria-hidden='true']")!;
-    expect(phone.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
-    expect(document.querySelector("span.hidden.md\\:inline")!.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
-  });
-
-  it("gives a two-face commander's Shopping row its front face from the catalog layout, and draws no new mark", () => {
-    const row1 = commanderAsRow({
-      oracleId: "esika", name: "Esika, God of the Tree // The Prismatic Bridge", colorIdentity: [], manaCost: null, typeLine: "Legendary Creature",
-      oracleText: null, imageUri: null, artCropUri: null, owned: false, layout: "transform", price: { cents: 500, foilCents: null, etchedCents: null, asOf },
-    } as never);
-    expect(row1.layout).toBeUndefined();
-    inB(<DecklistRow deckId="d1" card={row1} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
-    expect(screen.getByText("Esika, God of the Tree", { selector: "span.md\\:hidden" })).toBeInTheDocument();
-  });
-
-  it("keeps a Shopping land with no figure at the shipped shell height from md, and cuts a renamed two-face commander to its front face", () => {
-    const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null } as DeckDetailCard;
-    inB(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
-    expect(row().className).toContain("min-h-[44px] md:min-h-[34px]");
-    expect(row().className).not.toContain("min-h-[52px]");
-    cleanup();
-    const renamed = priced(1500, { printedName: "Esika, Printed // Other Face", name: "Esika // Bridge", layout: "transform" } as Partial<DeckDetailCard>);
-    inB(<DecklistRow deckId="d1" card={renamed} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    expect(screen.getByText("Esika, Printed", { selector: "span.md\\:hidden" })).toBeInTheDocument();
-  });
-
-  it("changes nothing outside Shopping", () => {
-    inB(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
-    expect(row().className).not.toContain("max-md:");
-  });
-});
-
-// The one-line card row (card rows addendum L1): one 34px line from md in All and Shopping, the glint in the filled dot's
-// place from md and under it on the phone, and the marks folding by the row's own width.
-describe("DecklistRow, the one-line row and the foil glint", () => {
-  const foiled = (over: Partial<DeckDetailCard> = {}) =>
-    ({ ...(card as DeckDetailCard), imageUri: "https://cards.example/c.jpg", foil: "foil", manaCost: "{2}{U}", ...over }) as DeckDetailCard;
-  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
-  const tokens = (el: Element) => el.className.split(/\s+/);
-
-  it("lays an All row out as one line from md and wraps nothing", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: false }} newestAsOf={null} />);
-    expect(tokens(row())).not.toContain("md:flex-wrap");
-    expect(row().querySelector("[aria-hidden='true'].md\\:basis-full")).toBeNull();
-    expect(tokens(row())).toContain("md:min-h-[34px]");
-    // The ✕ is last by order, after the pip track.
-    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria(card.name) });
-    expect(tokens(remove)).toContain("md:order-2");
-  });
-
-  it("draws the glint in the filled dot's place from md, centred on its 8px slot, and keeps the dot below md", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled()} newestAsOf={null} />);
-    const glints = screen.getAllByTestId("foil-mark");
-    // Two draws, one per width: the ownership slot from md, and the phone's meta line under the dot.
-    expect(glints).toHaveLength(2);
-    const inSlot = glints.map((g) => g.closest("span.flex-none")!).find((el) => tokens(el).includes("md:flex"))!;
-    expect(tokens(inSlot)).toEqual(expect.arrayContaining(["hidden", "md:flex", "w-[8px]", "h-[8px]"]));
-    const dot = row().querySelector<HTMLElement>("[aria-hidden='true'].md\\:hidden.rounded-full, .md\\:hidden.w-\\[7px\\]")!;
-    expect(dot).not.toBeNull();
-  });
-
-  it("keeps the phone's glint on the meta line under the dot, 16px in, and hides it from md", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled()} newestAsOf={null} />);
-    const phone = screen.getAllByTestId("foil-mark").map((g) => g.closest("span.flex-none")!).find((el) => tokens(el).includes("max-md:-ml-[16px]"))!;
-    expect(tokens(phone)).toEqual(expect.arrayContaining(["max-md:-ml-[16px]", "max-md:-mr-[1px]", "md:hidden"]));
-    const meta = phone.parentElement!;
-    // First on the meta line, before the pips.
-    expect(meta.firstElementChild).toBe(phone);
-    expect(tokens(meta)).toContain("md:hidden");
-  });
-
-  it("draws no glint in the dot's place from md on a dashed or proxied row, or a stepper row", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: false }} newestAsOf={null} />);
-    // Only the phone's meta-line glint: the dot would not be filled.
-    expect(screen.getAllByTestId("foil-mark")).toHaveLength(1);
-    cleanup();
-    renderRow(<DecklistRow deckId="d1" card={foiled({ typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", name: "Forest", manaCost: null })} newestAsOf={null} />);
-    expect(screen.queryAllByTestId("foil-mark").filter((g) => tokens(g.closest("span.flex-none")!).includes("md:flex"))).toHaveLength(0);
-  });
-
-  it("says the finish in the row's description, once, and draws the glints silent", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled({ foil: "etched" })} newestAsOf={null} />);
-    const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
-    const ids = name.getAttribute("aria-describedby")!.split(" ");
-    const said = ids.map((id) => document.getElementById(id)?.textContent).filter((t) => t === "etched foil");
-    expect(said).toHaveLength(1);
-    for (const g of screen.getAllByTestId("foil-mark")) expect(g.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("draws nothing for a plain card, a part-foil one, or one with no art", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled({ foil: undefined })} newestAsOf={null} />);
-    expect(screen.queryByTestId("foil-mark")).toBeNull();
-    cleanup();
-    renderRow(<DecklistRow deckId="d1" card={foiled({ imageUri: null })} newestAsOf={null} />);
-    expect(screen.queryByTestId("foil-mark")).toBeNull();
-  });
-
-  it("draws a Shopping row's glint the same way: in the dot's place from md, under it below", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: true }} inShopping newestAsOf={null} />);
-    const slots = screen.getAllByTestId("foil-mark").map((g) => g.closest("span.flex-none")!);
-    expect(slots.some((el) => tokens(el).includes("md:flex"))).toBe(true);
-    expect(slots.some((el) => tokens(el).includes("max-md:-ml-[16px]"))).toBe(true);
-  });
-
-  it("gives a live row and its receipt the same minimum height, so the rows below do not move on Undo", () => {
-    const mins = (el: Element) => el.className.split(/\s+/).filter((c) => c.includes("min-h-") && !c.startsWith("max-md:")).sort();
-    for (const [name, c] of [["card", foiled()], ["land", foiled({ cardTypeGroup: "Lands", typeLine: "Land", manaCost: null, name: "Sunken Ruins" })]] as const) {
-      renderRow(<DecklistRow deckId="d1" card={c} newestAsOf={null} />);
-      const live = mins(row());
-      // One 34px line from md, the same string the receipt's slot takes.
-      expect(live).toContain("md:min-h-[34px]");
-      cleanup();
-      renderRow(<DecklistRow deckId="d1" card={c} spent newestAsOf={null} />);
-      const slot = mins(document.querySelector("[class*='rounded-[7px]'][class*='min-h-']")!);
-      expect({ name, slot }).toEqual({ name, slot: live });
-      cleanup();
-    }
-  });
-
-  it("keeps the auto tag ahead of the ✕ and the pip track, so it flows left of the fixed columns", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled({ auto: true })} newestAsOf={null} />);
-    const tag = row().querySelector<HTMLElement>("span.contents")!;
-    expect(tag).not.toBeNull();
-    // Unordered: it sits at order 0, before the pip track (order 1) and the ✕ (order 2), and never folds.
-    expect(tokens(tag)).not.toContain("md:order-1");
-    const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
-    expect(name.compareDocumentPosition(tag) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria(card.name) });
-    expect(tag.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("leaves a basic land's stepper row as it was: one line, the pip track beside the name", () => {
-    renderRow(<DecklistRow deckId="d1" card={foiled({ typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", name: "Forest", manaCost: null })} newestAsOf={null} />);
-    expect(tokens(row())).not.toContain("md:flex-wrap");
-    expect(row().querySelector("[aria-hidden='true'].md\\:basis-full")).toBeNull();
-  });
-});
 
 // The marks fold by the row's own width (L3). Class-level: jsdom computes no layout, so these pin the spelling of each tier.
 describe("DecklistRow, folding the marks", () => {
@@ -1928,11 +1559,11 @@ describe("DecklistRow, folding the marks", () => {
       expect(t.some((c) => c.includes("hidden"))).toBe(false);
     }
     // The 4th folds at every width, the 2nd and 3rd below the wide tier, the 1st only in the tight one.
-    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("md:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("md:@max-[479px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("md:@max-[479px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("md:@max-[359px]:sr-only");
-    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("md:@max-[479px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.tutor))).toContain("sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.extraTurns))).toContain("@max-[479px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.massLandDenial))).toContain("@max-[479px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).toContain("@max-[359px]:sr-only");
+    expect(tokens(wrapperOf(cardMarkCopy.gameChanger))).not.toContain("@max-[479px]:sr-only");
   });
 
   it("draws one +N per tier, aria-hidden, counting what that tier folds", () => {
@@ -1940,18 +1571,18 @@ describe("DecklistRow, folding the marks", () => {
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
     for (const p of plus) expect(p.querySelector("[aria-hidden='true']")!.textContent).toMatch(/^\+\d$/);
-    expect(tokens(plus[0])).toContain("md:@min-[479px]:inline");
-    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["md:@min-[359px]:@max-[479px]:inline"]));
-    expect(tokens(plus[2])).toContain("md:@max-[359px]:inline");
+    expect(tokens(plus[0])).toContain("@min-[479px]:inline");
+    expect(tokens(plus[1])).toEqual(expect.arrayContaining(["@min-[359px]:@max-[479px]:inline"]));
+    expect(tokens(plus[2])).toContain("@max-[359px]:inline");
   });
 
   it("folds every mark of a Shopping row at the middle tier, and drops the +N in the tight one", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...four, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />);
-    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("md:@max-[479px]:sr-only");
+    for (const n of [cardMarkCopy.gameChanger, cardMarkCopy.tutor]) expect(tokens(wrapperOf(n))).toContain("@max-[479px]:sr-only");
     const plus = plusSpans();
     expect(plus.map((p) => p.textContent)).toEqual(["+4"]);
-    expect(tokens(plus[0])).toContain("md:@min-[359px]:@max-[479px]:inline");
-    expect(tokens(plus[0])).not.toContain("md:@max-[359px]:inline");
+    expect(tokens(plus[0])).toContain("@min-[359px]:@max-[479px]:inline");
+    expect(tokens(plus[0])).not.toContain("@max-[359px]:inline");
   });
 
   it("keeps an inactive tier's visibility OUTSIDE a fine pointer's tooltip wrapper, so it is no empty flex item", () => {
@@ -1978,32 +1609,18 @@ describe("DecklistRow, folding the marks", () => {
     expect(document.querySelector("[data-decklist-row]")!.parentElement!.className.split(/\s+/)).toContain("@container");
   });
 
-  it("keeps a foil nonbasic land's phone glint: the land keeps the meta line the glint rides", () => {
-    const land = { ...(card as DeckDetailCard), imageUri: "https://cards.example/c.jpg", foil: "foil", cardTypeGroup: "Lands", typeLine: "Land", manaCost: null, name: "Sunken Ruins", owned: true } as DeckDetailCard;
-    renderRow(<DecklistRow deckId="d1" card={land} newestAsOf={null} />);
-    const glints = screen.getAllByTestId("foil-mark");
-    expect(glints.some((g) => tokens(g.closest("span.flex-none")!).includes("max-md:-ml-[16px]"))).toBe(true);
-    expect(document.querySelector<HTMLElement>("[data-decklist-row]")!.className).toContain("min-h-[52px]");
-  });
-
   it("lets a qualified price grow the buy column leftward rather than over its neighbour", () => {
     const asOf = new Date("2026-09-20T00:00:00Z");
     const priced = { ...(card as DeckDetailCard), owned: false, price: { cents: null, foilCents: null, etchedCents: 1250, asOf } } as DeckDetailCard;
     renderRow(<DecklistRow deckId="d1" card={priced} inShopping shoppingFigure={24} newestAsOf={asOf} />);
-    const slot = document.querySelector<HTMLElement>("[data-decklist-row] .md\\:min-w-\\[84px\\]")!;
+    const slot = document.querySelector<HTMLElement>("[data-decklist-row] .min-w-\\[84px\\]")!;
     expect(slot).not.toBeNull();
-    expect(tokens(slot)).not.toContain("md:w-[84px]");
+    expect(tokens(slot)).not.toContain("w-[84px]");
     // The fixture really is the wide one: an etched-only price draws its qualifier.
     expect(slot.textContent).toContain("etched");
   });
 
-  it("keeps the 72px pip track for a costless All row, so its price lines up with a costed row's", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), manaCost: null }} newestAsOf={null} />);
-    const track = document.querySelector<HTMLElement>("[data-decklist-row] span[aria-hidden='true'].md\\:block.w-\\[72px\\]")!;
-    expect(track).not.toBeNull();
-    expect(tokens(track)).toContain("md:order-1");
-    cleanup();
-    // A read-only row and a Shopping row keep the layouts they had: no reserved track.
+  it("reserves no 72px track on a read-only row", () => {
     renderRow(<DecklistRow deckId="" card={{ ...(card as DeckDetailCard), manaCost: null }} readOnly newestAsOf={null} />);
     expect(document.querySelector("[data-decklist-row] span.w-\\[72px\\]")).toBeNull();
   });
@@ -2024,7 +1641,7 @@ describe("DecklistRow, folding the marks", () => {
   it("folds an All row's marker word to its glyph at the middle tier, keeping a count and the spoken sentence", () => {
     const over = { ...(card as DeckDetailCard), availability: { owned: 1, hard: 1, soft: 0, free: -2, claims: [] } };
     renderRow(<DecklistRow deckId="d1" card={over} newestAsOf={null} />);
-    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("md:@max-[479px]:hidden"));
+    const folded = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span")).filter((el) => tokens(el).includes("@max-[479px]:hidden"));
     expect(folded.length).toBeGreaterThan(0);
     // The count stays outside the folded span, and the sentence is read in full.
     expect(document.querySelector("[data-decklist-row]")!.textContent).toContain("2");
@@ -2139,7 +1756,7 @@ describe("DecklistRow, the combo mark", () => {
       />,
     );
     const glyphWrap = screen.getAllByTestId("combo-glyph")[0].closest("span.inline-flex.flex-none")!;
-    expect(glyphWrap.className.split(/\s+/)).toContain("md:sr-only");
+    expect(glyphWrap.className.split(/\s+/)).toContain("sr-only");
     expect(plusSpans().map((p) => p.textContent)).toEqual(["+1", "+3", "+4"]);
   });
 });
@@ -2205,5 +1822,138 @@ describe("DecklistRow, a two-faced card's name", () => {
   it("keeps both halves of a split card, which has one face", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice", layout: "split" } as DeckDetailCard} newestAsOf={null} />);
     expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
+  });
+});
+
+// THE ONE-LINE ROW AT EVERY WIDTH (Hugh, 2026-10-16): the phone draws the boards' tight tier on one 34px line, so no class in
+// the row is gated on `md` and nothing wraps. Class-level: jsdom computes no layout, so these pin the spelling.
+describe("DecklistRow, one line at every width", () => {
+  const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
+  const foiled = (over: Partial<DeckDetailCard> = {}) =>
+    ({ ...(card as DeckDetailCard), imageUri: "https://cards.example/c.jpg", foil: "foil", manaCost: "{2}{U}", ...over }) as DeckDetailCard;
+  const row = () => document.querySelector<HTMLElement>("[data-decklist-row]")!;
+  const tokens = (el: Element) => el.className.split(/\s+/);
+  // The buy tag's own type steps up at md (`PLACEMENT.row`, shared with the synergy rows), which moves no layout.
+  const gated = (el: Element) =>
+    tokens(el).filter((c) => (c.startsWith("md:") || c.startsWith("max-md:")) && c !== "md:text-[9.5px]");
+
+  it("draws every row one 34px line, gating nothing on md, in All, Shopping and for a land", () => {
+    for (const c of [
+      <DecklistRow key="a" deckId="d1" card={withCost} newestAsOf={null} />,
+      <DecklistRow key="s" deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />,
+      <DecklistRow key="l" deckId="d1" card={{ ...card, manaCost: null, cardTypeGroup: "Lands" } as DeckDetailCard} newestAsOf={null} />,
+    ]) {
+      renderRow(c);
+      expect(tokens(row())).toContain("min-h-[34px]");
+      expect(tokens(row())).not.toContain("flex-wrap");
+      expect(Array.from(row().querySelectorAll("*")).flatMap(gated)).toEqual([]);
+      cleanup();
+    }
+  });
+
+  it("draws an All row's cost once, in the fixed 72px track last before the ✕", () => {
+    renderRow(<DecklistRow deckId="d1" card={withCost} newestAsOf={null} />);
+    const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
+    expect(spoken).toHaveLength(1);
+    const track = spoken[0].closest("span.flex.flex-none")!;
+    expect(tokens(track)).toContain("order-1");
+    expect(track.querySelector("span")).toHaveStyle({ width: `${COST_TRACK}px` });
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    expect(tokens(remove)).toContain("order-2");
+  });
+
+  it("keeps the 72px track empty for a costless All row, so its price lines up with a costed row's", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, manaCost: null, cardTypeGroup: "Lands" } as DeckDetailCard} newestAsOf={null} />);
+    expect(row().querySelector("span.w-\\[72px\\].order-1")).not.toBeNull();
+  });
+
+  it("draws no pips and no EDHREC figure on a Shopping row, with the buy tag in its 84px column and the ✕ after it", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />);
+    expect(screen.queryByText(spokenManaCost("{2}{U}{B}"))).toBeNull();
+    expect(screen.queryByText(/edhrec/)).toBeNull();
+    expect(row().querySelector("span.order-1.min-w-\\[84px\\]")).not.toBeNull();
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    expect(tokens(remove)).toContain("order-2");
+  });
+
+  it("keeps the ✕ a 26px column with a coarse pointer's 44px hit drawn past it", () => {
+    renderRow(<DecklistRow deckId="d1" card={card} newestAsOf={null} />);
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    expect(tokens(remove)).toEqual(expect.arrayContaining(["w-[26px]", "pointer-coarse:after:h-[max(44px,100%)]", "pointer-coarse:after:w-[max(44px,100%)]"]));
+    expect(tokens(remove)).not.toContain("w-[44px]");
+  });
+
+  // L5 at every width (d9, 2026-10-16): the glint TAKES the filled dot's place; the phone no longer draws both.
+  it("draws a foil owned card's glint in the dot's place and no dot, at every width", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled()} newestAsOf={null} />);
+    const glints = screen.getAllByTestId("foil-mark");
+    expect(glints).toHaveLength(1);
+    const slot = glints[0].closest("span.flex-none")!;
+    expect(tokens(slot)).toEqual(expect.arrayContaining(["flex", "w-[8px]", "h-[8px]"]));
+    expect(tokens(slot)).not.toContain("hidden");
+    const dot = row().firstElementChild!;
+    expect(tokens(dot)).toContain("hidden");
+  });
+
+  it("keeps the dot and draws no glint in its place on a dashed, proxied or stepper row", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...foiled(), owned: false }} newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+    cleanup();
+    renderRow(<DecklistRow deckId="d1" card={foiled({ proxied: true })} newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+    cleanup();
+    renderRow(<DecklistRow deckId="d1" card={foiled({ typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", name: "Forest", manaCost: null })} newestAsOf={null} />);
+    expect(screen.queryByTestId("foil-mark")).toBeNull();
+  });
+
+  it("says the finish in the row's description, once, and draws the glint silent", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled({ foil: "etched" })} newestAsOf={null} />);
+    const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
+    const ids = name.getAttribute("aria-describedby")!.split(" ");
+    expect(ids.map((id) => document.getElementById(id)?.textContent).filter((t) => t === "etched foil")).toHaveLength(1);
+    for (const g of screen.getAllByTestId("foil-mark")) expect(g.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("gives a live row and its receipt the same minimum height, so the rows below do not move on Undo", () => {
+    const mins = (el: Element) => tokens(el).filter((c) => c.includes("min-h-")).sort();
+    for (const inShopping of [false, true]) {
+      renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: !inShopping }} inShopping={inShopping} newestAsOf={null} />);
+      const live = mins(row());
+      cleanup();
+      renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: !inShopping }} inShopping={inShopping} spent newestAsOf={null} />);
+      expect(mins(document.querySelector("[class*='rounded-[7px]'][class*='min-h-']")!)).toEqual(live);
+      cleanup();
+    }
+  });
+
+  it("keeps the auto tag ahead of the pip track and the ✕, so it flows left of the fixed columns", () => {
+    renderRow(<DecklistRow deckId="d1" card={foiled({ auto: true })} newestAsOf={null} />);
+    const tag = row().querySelector<HTMLElement>("span.contents")!;
+    expect(tokens(tag)).not.toContain("order-1");
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria(card.name) });
+    expect(tag.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // The +N's folded marks reach a phone through a tap (d9, 2026-10-16), and the tap opens the bubble, not card details.
+  it("opens the +N's bubble on a tap with a coarse pointer, and the tap goes no further", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: coarse"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      const fetchCard = vi.fn().mockResolvedValue(null);
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), facts: ["gameChanger", "massLandDenial", "extraTurns", "tutor"] } as DeckDetailCard} newestAsOf={null} />
+        </CardDetailProvider>,
+      );
+      const plus = Array.from(document.querySelectorAll<HTMLElement>("[data-decklist-row] span[aria-hidden='true']")).find((el) => el.textContent === "+1")!;
+      await act(async () => { fireEvent.click(plus); });
+      expect(screen.getByTestId("fact-tooltip")).toBeInTheDocument();
+      expect(fetchCard).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

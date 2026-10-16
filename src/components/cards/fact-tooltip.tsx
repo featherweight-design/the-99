@@ -136,6 +136,7 @@ export function FactTooltip({
   fact,
   sentence,
   lines,
+  tapOnTouch = false,
   children,
 }: {
   fact?: CardFact;
@@ -145,6 +146,13 @@ export function FactTooltip({
    * addendum, L4). Wins over `fact` and `sentence`. Same chrome, delays and pointer rule as the rest.
    */
   lines?: readonly React.ReactNode[];
+  /**
+   * On a coarse pointer, a TAP opens the bubble (and a second tap, a tap elsewhere or a scroll closes it), and the tap goes no
+   * further, so the row under it does not open card details. For the deck row's `+N` alone (d9, 2026-10-16): the marks it
+   * folds have no other way onto a phone screen. Every other mark keeps the shipped rule, no tooltip on touch, because the
+   * row's own tap opens the modal where every fact is listed.
+   */
+  tapOnTouch?: boolean;
   children: React.ReactNode;
 }) {
   // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
@@ -175,14 +183,15 @@ export function FactTooltip({
   // state cannot be forgotten the way a dependency list can.
   // NO TOOLTIP ON TOUCH, which is the shipped rule and the one the combo mark inherits: the
   // row's own tap opens the modal, where every partner and state is listed.
-  if (!fine) return <>{children}</>;
+  if (!fine && !tapOnTouch) return <>{children}</>;
+  const tap = !fine;
   const text = sentence ?? (fact ? cardMarkCopy.tooltip[fact] : "");
-  if (lines && lines.length > 0) return <FinePointerTooltip text="" lines={lines}>{children}</FinePointerTooltip>;
+  if (lines && lines.length > 0) return <FinePointerTooltip key={String(tap)} tap={tap} text="" lines={lines}>{children}</FinePointerTooltip>;
   if (!text) return <>{children}</>;
-  return <FinePointerTooltip text={text}>{children}</FinePointerTooltip>;
+  return <FinePointerTooltip key={String(tap)} tap={tap} text={text}>{children}</FinePointerTooltip>;
 }
 
-function FinePointerTooltip({ text, lines, children }: { text: string; lines?: readonly React.ReactNode[]; children: React.ReactNode }) {
+function FinePointerTooltip({ text, lines, tap = false, children }: { text: string; lines?: readonly React.ReactNode[]; tap?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
   // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
@@ -232,6 +241,26 @@ function FinePointerTooltip({ text, lines, children }: { text: string; lines?: r
   }, [open]);
 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
+  const openNow = () => {
+    const el = anchor.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setMark(rect);
+      setPlace(placeBubble(rect, { width: 0, height: 0 }, placementBoxFor(el)));
+    }
+    setOpen(true);
+  };
+
+  // A tap opened it, so a tap anywhere else closes it: there is no pointer leaving to do that on touch.
+  useEffect(() => {
+    if (!open || !tap) return;
+    const close = (e: PointerEvent) => {
+      if (anchor.current && e.target instanceof Node && anchor.current.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  }, [open, tap]);
 
   return (
     <span
@@ -241,19 +270,22 @@ function FinePointerTooltip({ text, lines, children }: { text: string; lines?: r
       // svg inside it keeps its width and overflows.
       ref={anchor}
       className="relative inline-flex shrink-0"
-      onPointerEnter={() => {
-        cancel();
-        timer.current = setTimeout(() => {
-          const el = anchor.current;
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            setMark(rect);
-            setPlace(placeBubble(rect, { width: 0, height: 0 }, placementBoxFor(el)));
+      {...(tap
+        ? {
+            onClick: (e: React.MouseEvent) => {
+              // The tap is the bubble's: the row under it would otherwise open card details.
+              e.stopPropagation();
+              if (open) setOpen(false);
+              else openNow();
+            },
           }
-          setOpen(true);
-        }, OPEN_DELAY_MS);
-      }}
-      onPointerLeave={() => { cancel(); setOpen(false); }}
+        : {
+            onPointerEnter: () => {
+              cancel();
+              timer.current = setTimeout(openNow, OPEN_DELAY_MS);
+            },
+            onPointerLeave: () => { cancel(); setOpen(false); },
+          })}
     >
       {children}
       {/* PORTALLED TO THE BODY, which fixes two defects. Drawn inside its mark, the bubble

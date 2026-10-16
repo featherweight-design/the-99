@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -46,22 +46,11 @@ describe("SwapReceiptRow", () => {
     expect(screen.getByText(swapToolsCopy.row.receiptAria("Plateau", "Rugged Prairie"))).toHaveClass("sr-only");
   });
 
-  it("keeps the 96px of option B's row below md only when told it replaces a whole row", async () => {
-    const shell = () => screen.getByTestId("swap-receipt").firstElementChild as HTMLElement;
-    await act(async () => {
-      render(
-        <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
-          <SwapReceiptRow receipt={base} tall />
-        </SwapToolsProvider>,
-      );
-    });
-    expect(shell().className).toContain("max-md:min-h-[96px]");
-    // From md the row is one 34px line, and so is the receipt: no taller form is spelled.
-    expect(shell().className).toContain("md:min-h-[34px]");
-    expect(shell().className).not.toContain("58px");
-    cleanup();
+  it("is one 34px line at every width, the row it replaces", async () => {
     await draw(base);
-    expect(shell().className).not.toContain("96px");
+    const shell = screen.getByTestId("swap-receipt").firstElementChild as HTMLElement;
+    expect(shell.className.split(/\s+/)).toContain("min-h-[34px]");
+    expect(shell.className).not.toMatch(/96px|44px|md:/);
   });
 
   it("names a free copy", async () => {

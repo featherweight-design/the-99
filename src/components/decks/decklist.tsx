@@ -1260,7 +1260,7 @@ export function Decklist({
                 style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
               >
                 {placeReceipts(groupCards, receiptsInSection(key), sort.key, compareCards).map((item) => {
-                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} tall />;
+                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} />;
                   const card = item.card;
                   const row = (
                     <DecklistRow

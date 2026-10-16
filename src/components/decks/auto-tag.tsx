@@ -6,9 +6,10 @@
 //
 // Geometry is BuyTag's exactly, hueless: mono 9.5px --fg-locked on --elevated,
 // radius 4px, padding 1px 5px. Hover/focus take label --accent, border 1px
-// --accent-shadow. On phone the row already provides 44px height, so this tag
-// pads out to the full hit box without growing its own visual box.
+// --accent-shadow. A coarse pointer's 44px hit is drawn past the button
+// (TOUCH_HIT), so the one-line row keeps its 34px height.
 
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { useState } from "react";
 import { keepAutoCard } from "../../app/decks/actions";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -57,13 +58,13 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
         disabled={isPending}
         aria-label={recommendationsCopy.auto.keepAria(name)}
         aria-busy={isPending || undefined}
-        // Phone gets the 44px target from min-height, not padding. The button is
-        // the hit area alone and carries no plate: the row marks an
+        // A coarse pointer gets the 44px target from TOUCH_HIT, drawn past the
+        // button, so the one-line row stays 34px. The button carries no plate: the row marks an
         // over-committed card with an inset ring, and an inset shadow paints
         // beneath its children, so a background stretched to the full row height
         // erases the ring across the tag's width.
         className={
-          "flex-none self-center min-h-[44px] md:min-h-0" +
+          "flex-none self-center " + TOUCH_HIT +
           " flex items-center bg-transparent border-none p-0" +
           " cursor-pointer disabled:opacity-50 disabled:cursor-default"
         }
@@ -72,7 +73,7 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
         <span
           className={
             "font-mono rounded-[4px] px-[5px] py-[1px]" +
-            " text-[9px] md:text-[9.5px] leading-none" +
+            " text-[9.5px] leading-none" +
             " border bg-elevated" +
             (active
               ? " text-accent border-accent-shadow"
