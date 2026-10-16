@@ -77,15 +77,15 @@ export function SearchRow({
       onClick={(e) => onPick(e.currentTarget)}
       onKeyDown={onKey}
       data-card-search-row={row.oracleId}
-      className={`flex min-h-[72px] cursor-pointer items-center gap-3 rounded-[8px] py-2 pr-[10px] pl-4 outline-none ${
+      className={`flex min-h-[72px] cursor-pointer md:min-h-[58px] items-center gap-3 rounded-[8px] py-2 pr-[10px] pl-4 outline-none ${
         first ? "" : "border-t border-solid border-[color:var(--border)]"
       } ${active ? "bg-[color:var(--elevated)]" : ""} ${returned ? "shadow-[inset_0_0_0_2px_var(--accent)]" : ""}`}
     >
-      <span className="h-14 w-10 flex-none overflow-hidden rounded-[4px] bg-[color:var(--surface-sunken)] shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.35)]">
+      <span className="h-14 w-10 flex-none overflow-hidden md:h-[42px] md:w-[30px] rounded-[4px] bg-[color:var(--surface-sunken)] shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.35)]">
         {row.imageUri ? <FadingImg src={row.imageUri} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="line-clamp-2 text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)]">
+        <span className="line-clamp-2 text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)] md:text-[14px]">
           <Matched text={row.name} query={query} />
         </span>
         {row.flavorName ? (

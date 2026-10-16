@@ -208,13 +208,19 @@ async function run(page, steps) {
     // than page, so it is the one step reached outside `onPage`: named by the slot's own
     // `aria-label` inside the rail, never by a free selector, so it cannot wander into the page.
     if (step.hoverRail !== undefined) {
-      await page.locator(`aside a[aria-label="${step.hoverRail}"]`).first().hover({ timeout: 15_000 });
+      await page.locator(`aside :is(a, button)[aria-label="${step.hoverRail}"]`).first().hover({ timeout: 15_000 });
     }
     // Card search lives in the shell, not the page: its sheet is reached through the header's icon by its own name,
     // and every step after that is scoped to the sheet by ITS name, so none of them can wander into the page.
     const searchSheet = page.getByRole("dialog", { name: "Search all cards" });
     if (step.openSearch) {
       await page.locator('header button[aria-label="Search all cards"]').first().click({ timeout: 15_000 });
+      await searchSheet.waitFor({ state: "visible", timeout: 15_000 });
+    }
+    // The desktop's rail slot is a button in the shell's rail, reached by its own name inside the rail; the search it
+    // opens is then the same dialog as above, and every later step goes through it.
+    if (step.clickRail !== undefined) {
+      await page.locator(`aside button[aria-label="${step.clickRail}"]`).first().click({ timeout: 15_000 });
       await searchSheet.waitFor({ state: "visible", timeout: 15_000 });
     }
     if (step.searchType !== undefined) {
@@ -234,6 +240,7 @@ async function run(page, steps) {
     if (step.back) await page.goBack();
     // The browser's own offline switch, for the surfaces that change with the connection.
     if (step.offline !== undefined) await page.context().setOffline(step.offline);
+    if (step.pressKey !== undefined) await page.keyboard.press(step.pressKey);
     if (step.settle !== undefined) await page.waitForTimeout(step.settle);
     // A surface that only exists part-way down the page — the set head's collapsed bar, the
     // foot of a long column — is reached by scrolling to it, which is a step like any other

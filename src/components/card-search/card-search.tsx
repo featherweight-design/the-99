@@ -166,7 +166,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     openerRef.current?.focus();
   }, []);
 
-  useScrollLock(open);
+  // The desktop's dropdown is not modal, and the page behind it keeps its scroll.
+  useScrollLock(open && !desktop);
   // One history entry while the sheet is up, so Back closes it in one press (resolution 3).
   useBackDismiss(open, close);
 
@@ -292,13 +293,6 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   }, [open, returned]);
 
   // A navigation takes the sheet with it; the card it opened is closed by the layer (never as a dismissal).
-  // Turned past md with the sheet up (a phone rotated to landscape), the phone frame is not drawn, so the search
-  // closes rather than hold the page's scroll and a Back entry under nothing.
-  const [wasDesktop, setWasDesktop] = useState(desktop);
-  if (wasDesktop !== desktop) {
-    setWasDesktop(desktop);
-    if (desktop) setOpen(false);
-  }
   const [shownOn, setShownOn] = useState(pathname);
   if (shownOn !== pathname) {
     setShownOn(pathname);
