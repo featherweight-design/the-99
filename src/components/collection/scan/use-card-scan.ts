@@ -54,8 +54,11 @@ export type CardScan = {
 export function useCardScan(
   active: boolean,
   deps: CardScanDeps,
-  onAdd: (guess: ScanGuess, mode: ScanMode) => void,
-  onProblem: (kind: "failed" | "refused") => void,
+  /** Puts the card on the list; answers false when it could not (its printings would not load). */
+  onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>,
+  onProblem: (kind: "failed" | "refused" | "notAdded") => void,
+  /** Copies already on the list when the scanner opens, by oracle id, so the tray and "again" start from the list. */
+  listed: ReadonlyMap<string, number> = new Map(),
 ): CardScan {
   // The caller's deps are read through a ref, so a new object each render never restarts the camera or the loop.
   const depsRef = useRef(deps);
@@ -69,7 +72,7 @@ export function useCardScan(
   const [read, setRead] = useState<{ cardInView: boolean; dark: boolean }>({ cardInView: false, dark: false });
   const [held, setHeld] = useState<ScanGuess | null>(null);
   const [added, setAdded] = useState<{ name: string; imageUri: string | null } | null>(null);
-  const [onList, setOnList] = useState<Map<string, number>>(() => new Map());
+  const [onList, setOnList] = useState<Map<string, number>>(() => new Map(listed));
   const [lastAdded, setLastAdded] = useState<{ oracleId: string; emptiedSince: boolean } | null>(null);
   const [dismissed, setDismissed] = useState<object | null>(null);
   // Dark only once a dark frame has held for `DARK_HOLD_MS` (READINESS: "for about 1s"), so one dim frame never
@@ -133,6 +136,9 @@ export function useCardScan(
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
         if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         scanner.frame(r.frame, now(), t);
+        // Always hand the browser a turn: a read that answers at once (the camera has no size yet, or no card)
+        // would otherwise spin this loop on resolved promises and starve the very events that give the video its size.
+        await nextFrame();
       }
     })();
     return () => {
@@ -158,15 +164,19 @@ export function useCardScan(
   const inputs = { blocked, server, cardInView: read.cardInView, dark: read.dark, held, added, onList, lastAdded, dismissed };
   const screen = scanScreen(inputs);
 
+  // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
   const commit = useCallback(
-    (g: ScanGuess) => {
-      onAdd(g, mode);
+    async (g: ScanGuess) => {
+      setHeld(null);
+      if (!(await onAdd(g, mode))) {
+        onProblem("notAdded");
+        return;
+      }
       setOnList((m) => new Map(m).set(g.oracleId, (m.get(g.oracleId) ?? 0) + 1));
       setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
       setAdded({ name: g.name, imageUri: g.imageUri });
-      setHeld(null);
     },
-    [onAdd, mode],
+    [onAdd, mode, onProblem],
   );
 
   // Through useCallback, so a render never reads the deps ref: only the press does.
@@ -196,14 +206,19 @@ export function useCardScan(
     cancelHold: () => setHeld(null),
     add: () => {
       const g = held ?? current;
-      if (g) commit(g);
+      if (g) void commit(g);
     },
     dismiss: () => setDismissed(server.kind === "match" ? server.result : null),
     pick: (oracleId) => {
       const g = notSure.find((x) => x.oracleId === oracleId);
-      if (g) commit(g);
+      if (g) void commit(g);
     },
   };
+}
+
+/** The next animation frame, or a short timeout where there is none (a test DOM, a hidden tab's throttle aside). */
+export function nextFrame(): Promise<void> {
+  return new Promise((r) => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => r()) : setTimeout(r, 16)));
 }
 
 function safeLocalStorage(): Storage | null {

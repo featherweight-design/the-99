@@ -51,7 +51,7 @@ describe("ScannerView", () => {
   it("shows no name before three answers agree, with the agreeing count as dots (V2)", () => {
     draw({ panel: { kind: "unsure", agreeing: 2 } });
     expect(panel().dataset.state).toBe("unsure");
-    expect(panel().getAttribute("role")).toBe("status");
+    expect(panel().closest("[aria-live=polite]")).toBeTruthy();
     expect(panel().querySelectorAll("i[data-on]")).toHaveLength(2);
     expect(screen.getByTestId("scan-guide").dataset.look).toBe("lit");
     expect(panel().textContent).not.toContain("Sol Ring");
@@ -66,7 +66,18 @@ describe("ScannerView", () => {
     fireEvent.pointerDown(add);
     expect(p.onHold).toHaveBeenCalled();
     fireEvent.pointerUp(add);
-    expect(p.onAdd).toHaveBeenCalled();
+    expect(p.onAdd).toHaveBeenCalledTimes(1);
+    // A pointer's own click is not a second add; a click with no pointer (assistive tech) is one.
+    fireEvent.click(add, { detail: 1 });
+    expect(p.onAdd).toHaveBeenCalledTimes(1);
+    fireEvent.click(add, { detail: 0 });
+    expect(p.onAdd).toHaveBeenCalledTimes(2);
+    // A held Enter adds once, not once per repeat.
+    fireEvent.keyDown(add, { key: "Enter" });
+    fireEvent.keyDown(add, { key: "Enter", repeat: true });
+    expect(p.onAdd).toHaveBeenCalledTimes(3);
+    fireEvent.pointerCancel(add);
+    expect(p.onCancelHold).toHaveBeenCalled();
     expect(screen.getByTestId("scan-tray-count").textContent).toBe("3 on the list");
     expect(screen.getByRole("button", { name: copy.view.review(3) })).toBeTruthy();
   });
@@ -96,7 +107,7 @@ describe("ScannerView", () => {
     expect(card.hasAttribute("data-flip")).toBe(true);
     expect(card.querySelector("img")?.getAttribute("src")).toBe("https://img/sol");
     expect(screen.getByTestId("scan-flight").getAttribute("aria-hidden")).toBe("true");
-    expect(panel().getAttribute("role")).toBe("status");
+    expect(panel().closest("[aria-live=polite]")).toBeTruthy();
     expect(panel().textContent).toContain(copy.view.added("Sol Ring"));
     expect(panel().textContent).toContain(copy.view.next);
   });

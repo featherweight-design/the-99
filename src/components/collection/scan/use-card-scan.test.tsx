@@ -16,7 +16,11 @@ const stream = () => {
 const json = (body: unknown, status = 200) =>
   Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }));
 
-function setup(over: Partial<CardScanDeps> = {}, frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false }) {
+function setup(
+  over: Partial<CardScanDeps> = {},
+  frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false },
+  listed: ReadonlyMap<string, number> = new Map(),
+) {
   let t = 0;
   const fetch = vi.fn(() => json({ index: "all", guesses: [SOL], margin: null }));
   const deps: CardScanDeps = {
@@ -31,10 +35,10 @@ function setup(over: Partial<CardScanDeps> = {}, frame: FrameRead = { frame: { k
     storage: null,
     ...over,
   };
-  const onAdd = vi.fn();
+  const onAdd = vi.fn(async () => true);
   const onProblem = vi.fn();
   // A fresh callback every render, as an inline caller passes: the problem must still be said once.
-  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k)));
+  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k), listed));
   act(() => hook.result.current.attachVideo(document.createElement("video")));
   return { hook, onAdd, onProblem, fetch };
 }
@@ -44,9 +48,9 @@ describe("useCardScan", () => {
     const { hook, onAdd, fetch } = setup();
     await waitFor(() => expect(hook.result.current.screen).toMatchObject({ kind: "scanning", panel: { kind: "sure" } }), { timeout: 4000 });
     expect(fetch).toHaveBeenCalledTimes(1);
-    act(() => hook.result.current.add());
+    await act(async () => hook.result.current.add());
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast");
-    expect(hook.result.current.count).toBe(1);
+    await waitFor(() => expect(hook.result.current.count).toBe(1));
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } });
     expect(hook.result.current.flipTo).toBe("https://img/sol");
   });
@@ -96,6 +100,30 @@ describe("useCardScan", () => {
     await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
     act(() => hook.result.current.dismiss());
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+  });
+
+  it("never spins on a read that answers at once (a camera with no size yet)", async () => {
+    let reads = 0;
+    const { hook } = setup({ readFrame: () => { reads += 1; return Promise.resolve({ frame: { kind: "none" }, cardInView: false, dark: false }); } });
+    // The loop yields a frame between reads, so the test's own timers still run and reads stay bounded.
+    await new Promise((r) => setTimeout(r, 100));
+    expect(reads).toBeLessThan(50);
+    expect(hook.result.current.screen.kind).toBe("scanning");
+  });
+
+  it("says nothing is on the list when the add could not land, and counts nothing", async () => {
+    const { hook, onAdd, onProblem } = setup();
+    onAdd.mockResolvedValueOnce(false);
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    await act(async () => hook.result.current.add());
+    expect(onProblem).toHaveBeenCalledWith("notAdded");
+    expect(hook.result.current.count).toBe(0);
+  });
+
+  it("starts from the cards already on the list, so a listed card is a second copy", async () => {
+    const { hook } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
+    expect(hook.result.current.count).toBe(2);
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "second", count: 2 } } }), { timeout: 4000 });
   });
 
   it("offers no light on a camera without a torch", async () => {

@@ -16,10 +16,9 @@ vi.mock("../../app/collection/edit-actions", () => ({
 }));
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: vi.fn() }) }));
-vi.mock("./scan/frame-reader", () => ({ useFrameReader: () => async () => ({ frame: { kind: "none" }, cardInView: false, dark: false }) }));
 // The scanner is its own surface, tested on its own: here it only has to hand the sheet a card, and close.
 vi.mock("./scan/card-scanner", () => ({
-  CardScanner: ({ layout, onAdd, onClose }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => void; onClose: () => void }) => (
+  CardScanner: ({ layout, onAdd, onClose }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => Promise<boolean>; onClose: () => void }) => (
     <div data-testid="fake-scanner" data-layout={layout}>
       <button type="button" onClick={() => onAdd(SOL, "fast")}>fast add</button>
       <button type="button" onClick={() => onAdd(SOL, "normal")}>normal add</button>
@@ -66,12 +65,35 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
   });
 
-  it("says so when a scanned card's printings could not be read", async () => {
+  it("asks for a Normal add's printing only once it has landed, even when Review came first", async () => {
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "normal add" }));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
+    land(TWO);
+    await waitFor(() => expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeTruthy());
+    expect(screen.getByText("Secret Lair", { exact: false })).toBeTruthy();
+  });
+
+  it("puts nothing on the list when a scanned card's printings could not be read", async () => {
     choices.mockResolvedValueOnce([]);
     render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
     fireEvent.click(screen.getByRole("button", { name: scan.press }));
     fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(choices).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
-    await waitFor(() => expect(screen.getByText(copy.printingsFailed)).toBeTruthy());
+    expect(screen.getByText(copy.nothingYet)).toBeTruthy();
+  });
+
+  it("closes the scanner, not the sheet, on Escape", () => {
+    const onClose = vi.fn();
+    render(<AddCardsSheet mode="add" onClose={onClose} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByTestId("fake-scanner")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

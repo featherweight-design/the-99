@@ -36,7 +36,6 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
-import { useFrameReader } from "./scan/frame-reader";
 import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
@@ -123,15 +122,19 @@ function AddMode({
   // `went`: what the block is built from, so its foot can follow each row's Change (`whereItWent`).
   const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string; went: WentInputs | null } | null>(null);
   const [discarding, setDiscarding] = useState(false);
-  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerChosen, setPickerFor] = useState<string | null>(null);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; kind: "combined" | "error" } | null>(null);
   const [announce, setAnnounce] = useState("");
   const [pulse, setPulse] = useState<{ id: string; n: number } | null>(null);
   // The scanner over the sheet (phone) or in place of the search (desktop), card-scan PR 3.
   const [scanning, setScanning] = useState(false);
-  const readFrame = useFrameReader();
-  const scanDeps = useMemo(() => ({ readFrame }), [readFrame]);
+  // Scanned adds whose printings are still loading: the printing step waits for them before it asks.
+  const [scanPending, setScanPending] = useState(0);
+  // The line whose printing is being asked for: the one opened, else (Normal mode's scanned lines wait for theirs)
+  // the first still without one, once the scanner is closed and every scanned add has landed.
+  const pickerFor =
+    pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null)?.id ?? null) : null);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogCardResult[]>([]);
@@ -193,20 +196,23 @@ function AddMode({
   }, [discarding]);
 
   const cancelPicker = useCallback(() => {
+    // The line being asked about goes if it never got its printing; a reopened one keeps the printing it had. Only
+    // that line: scanned Normal-mode lines still waiting keep their place, and the next is asked for.
+    setLines((ls) => ls.filter((l) => l.printing !== null || l.id !== pickerFor));
     setPickerFor(null);
-    // A line that never got its printing goes; a reopened one keeps the printing it had.
-    setLines((ls) => ls.filter((l) => l.printing !== null));
-  }, []);
+  }, [pickerFor]);
 
   // Escape and the close button share one answer, in order: the question, the picker, the list.
   const requestClose = useCallback(() => {
     // A write in flight cannot be called back, so it cannot be discarded either.
     if (saving) return;
+    // Escape and Back close the scanner first, back to the list it fills.
+    if (scanning) return setScanning(false);
     if (discarding) return setDiscarding(false);
     if (pickerFor !== null) return cancelPicker();
     if (dirty) return setDiscarding(true);
     onClose();
-  }, [saving, discarding, pickerFor, cancelPicker, dirty, onClose]);
+  }, [saving, scanning, discarding, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
@@ -249,33 +255,36 @@ function AddMode({
    * Normal leaves the line without one, and the sheet's own printing step asks for it once the scanner closes. The
    * update is functional, because adds arrive faster than this component re-renders.
    */
-  async function addScanned(guess: ScanGuess, mode: ScanMode) {
+  async function addScanned(guess: ScanGuess, mode: ScanMode): Promise<boolean> {
+    setScanPending((n) => n + 1);
     let choices: PrintingChoice[] = [];
     try {
       choices = await loadPrintingChoices(guess.oracleId);
     } catch {
       choices = [];
+    } finally {
+      setScanPending((n) => n - 1);
     }
-    if (choices.length === 0) {
-      setNotice({ text: copy.printingsFailed, kind: "error" });
-      return;
-    }
+    // The scanner says this one, over its own feed; the sheet's notice would sit under it on a phone.
+    if (choices.length === 0) return false;
     const id = crypto.randomUUID();
     const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices };
     setLines((ls) => (mode === "fast" || choices.length === 1 ? choosePrinting(openLine(ls, base), id, choices[0]).lines : openLine(ls, base)));
-    setAnnounce(copy.announceAdded(guess.name));
+    return true;
   }
 
   function closeScanner() {
     setScanning(false);
-    // Normal mode's lines wait for their printing; the first is asked for straight away.
-    setLines((ls) => {
-      const first = ls.find((l) => l.printing === null);
-      if (first) setPickerFor(first.id);
-      return ls;
-    });
     queueMicrotask(() => searchRef.current?.focus());
   }
+
+
+  /** Copies of each card on the list, for the scanner's tray and its "again". */
+  const listed = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of lines) m.set(l.oracleId, (m.get(l.oracleId) ?? 0) + l.quantity);
+    return m;
+  }, [lines]);
 
   function finish(r: ReturnType<typeof choosePrinting>, id: string, name: string) {
     setLines(r.lines);
@@ -359,7 +368,7 @@ function AddMode({
       aria-labelledby={titleId}
       className={SHEET_PANEL_CLASS}
     >
-      <div inert={discarding || undefined} className="flex min-h-0 flex-1 flex-col">
+      <div inert={discarding || (scanning && phone) || undefined} className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">
           <h2 id={titleId} className="m-0 flex-1 font-display text-[19px] font-bold md:text-[21px]">
             {copy.title}
@@ -376,7 +385,7 @@ function AddMode({
         </div>
 
         {phase !== "saved" && scanning && !phone && (
-          <CardScanner layout="desk" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} />
+          <CardScanner layout="desk" listed={listed} onAdd={addScanned} onClose={closeScanner} />
         )}
         {phase !== "saved" && !(scanning && !phone) && (
           <div className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
@@ -602,7 +611,7 @@ function AddMode({
 
       <p role="status" aria-live="polite" className="sr-only">{announce}</p>
       {scanning && phone && (
-        <CardScanner layout="phone" deps={scanDeps} onAdd={addScanned} onClose={closeScanner} />
+        <CardScanner layout="phone" listed={listed} onAdd={addScanned} onClose={closeScanner} />
       )}
     </div>
   );

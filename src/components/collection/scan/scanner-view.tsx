@@ -72,7 +72,8 @@ export function ScannerView(p: ScannerViewProps) {
           {p.notice}
         </p>
       )}
-      <div aria-live="polite" className="contents">
+      {/* One live region for the guess: a plain element, since WebKit drops `display: contents` from the tree. */}
+      <div aria-live="polite">
         <Panel {...p} panel={p.screen.panel} />
       </div>
       {phone && p.flipTo && (
@@ -157,7 +158,7 @@ function TopBar(p: ScannerViewProps) {
   const dark = p.screen.kind === "scanning" && p.screen.dark;
   return (
     <div className="absolute inset-x-0 top-0 z-[3] flex h-[68px] items-center gap-[10px] px-[12px] pt-[12px]">
-      <button type="button" aria-label={copy.close} onClick={p.onClose} className={`${ROUND} ${SCRIM} text-[15px]`}>
+      <button type="button" data-scan-close="" aria-label={copy.close} onClick={p.onClose} className={`${ROUND} ${SCRIM} text-[15px]`}>
         ✕
       </button>
       <ModeSegment mode={p.mode} onMode={p.onMode} desk={false} />
@@ -198,6 +199,7 @@ function DeskHead(p: ScannerViewProps & { withMode: boolean }) {
       {p.withMode && <ModeSegment mode={p.mode} onMode={p.onMode} desk />}
       <button
         type="button"
+        data-scan-close=""
         onClick={p.onClose}
         className="rounded-[8px] border border-[color:var(--border-strong)] bg-transparent px-[12px] py-[7px] text-[13px] text-[color:var(--fg)]"
       >
@@ -251,7 +253,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       );
     case "unsure":
       return (
-        <div data-testid="scan-panel" data-state="unsure" role="status" className={box}>
+        <div data-testid="scan-panel" data-state="unsure" className={box}>
           <div className="flex items-center justify-between">
             <p className={H}>{copy.view.unsure}</p>
             <span aria-hidden="true" className="flex gap-[6px]">
@@ -271,7 +273,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       return <SurePanel {...p} panel={panel} box={box} />;
     case "added":
       return (
-        <div data-testid="scan-panel" data-state="added" role="status" className={box}>
+        <div data-testid="scan-panel" data-state="added" className={box}>
           <p className={H}>
             <span aria-hidden="true" className="text-[color:var(--success)]">✓ </span>
             {copy.view.added(panel.name)}
@@ -331,13 +333,31 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
     <button
       type="button"
       data-held={held ? "" : undefined}
-      onPointerDown={p.onHold}
-      onPointerUp={p.onAdd}
+      onPointerDown={(e) => {
+        // A touch captures the pointer to the button, so sliding off would never leave it: let go of the capture,
+        // and the finger's leave cancels the hold as the design asks.
+        if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+        p.onHold();
+      }}
+      onPointerUp={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const inside = r.width === 0 || (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
+        if (inside) p.onAdd();
+        else p.onCancelHold();
+      }}
       onPointerLeave={held ? p.onCancelHold : undefined}
+      onPointerCancel={p.onCancelHold}
+      // Assistive tech that activates with a click and no pointer (detail 0) still adds; a pointer's click is the
+      // pointerup above, so it is not counted twice.
+      onClick={(e) => {
+        if (e.detail === 0) p.onAdd();
+      }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if ((e.key === "Enter" || e.key === " ") && !e.repeat) {
           e.preventDefault();
           p.onAdd();
+        } else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
         }
       }}
       className={
@@ -450,7 +470,7 @@ function CameraBlocked(p: ScannerViewProps) {
   return (
     <section data-testid="scanner" data-layout="phone" className="absolute inset-0 z-40 flex flex-col bg-[color:var(--bg)]">
       <div className="relative h-[60px] px-[12px] pt-[12px]">
-        <button type="button" aria-label={copy.close} onClick={p.onClose} className={`${ROUND} bg-[color:var(--elevated)] text-[15px] text-[color:var(--fg)]`}>
+        <button type="button" data-scan-close="" aria-label={copy.close} onClick={p.onClose} className={`${ROUND} bg-[color:var(--elevated)] text-[15px] text-[color:var(--fg)]`}>
           ✕
         </button>
       </div>

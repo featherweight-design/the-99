@@ -737,12 +737,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0%, 100% { transform: translate3d(0, 0, 0); }
   50% { transform: translate3d(0, -10px, 0); }
 }
-/* Card scanning V5: an added card tips and flies down-left into the tray's count card. No duration was drawn;
+/* Card scanning V5: an added card tips and flies down-left into the tray's count card (its centre from about 205,547
+   to the count card's about 45,798 on the 390x844 frame). No duration was drawn;
    450ms ease-in reads as one motion and lands inside the count card's ~0.8s flip. Under reduced motion it is never
    drawn (scanner-view.tsx), so the count simply ticks. */
 @keyframes scan-fly {
   0% { transform: rotate(0deg) scale(1); opacity: 0.95; }
-  100% { transform: translate(-150px, 330px) rotate(-14deg) scale(0.3); opacity: 0; }
+  100% { transform: translate(-160px, 251px) rotate(-14deg) scale(0.3); opacity: 0; }
 }
 @keyframes dots {
   0%, 100% { opacity: 0.25; }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { ScannerView } from "./scanner-view";
+import { useFrameReader } from "./frame-reader";
 import { useCardScan, type CardScanDeps } from "./use-card-scan";
 
 const copy = collectionEditCopy.scan;
@@ -18,31 +19,43 @@ export const NOTICE_MS = 3000;
  */
 export function CardScanner({
   layout,
+  listed,
   deps,
   onAdd,
   onClose,
   onNoneOfThese,
 }: {
   layout: "phone" | "desk";
-  deps: CardScanDeps;
-  onAdd: (guess: ScanGuess, mode: ScanMode) => void;
+  /** Copies on the sheet's list as the scanner opens. */
+  listed: ReadonlyMap<string, number>;
+  /** Test seams; the detector and embedder are the scanner's own, loaded and released with it. */
+  deps?: Partial<CardScanDeps>;
+  onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>;
   onClose: () => void;
   /** PR 4's search by name; until then None of these only reads on. */
   onNoneOfThese?: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
-  const onProblem = useCallback((kind: "failed" | "refused") => {
+  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded") => {
+    if (kind === "notAdded") return setNotice(collectionEditCopy.add.printingsFailed);
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     // A refusal (signed out, switch off) and a failure read the same to a player: the card was not checked.
-    void kind;
     setNotice(offline ? copy.offlineBody : copy.lookupFailed);
   }, []);
+  // Focus moves into the scanner as it opens (its ✕, or Stop on the desktop), so a keyboard and a screen reader start
+  // there rather than on a press it covers or one that went away.
+  useEffect(() => {
+    document.querySelector<HTMLElement>("[data-testid=scanner] [data-scan-close]")?.focus();
+  }, []);
+  // The detector and embedder live and die with the scanner, so closing it releases the models' memory.
+  const readFrame = useFrameReader();
+  const scanDeps = useMemo(() => ({ readFrame, ...deps }), [readFrame, deps]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), NOTICE_MS);
     return () => clearTimeout(t);
   }, [notice]);
-  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, deps, onAdd, onProblem);
+  const { screen, mode, torch, count, flipTo, attachVideo, setMode, toggleTorch, hold, add, cancelHold, pick, dismiss } = useCardScan(true, scanDeps, onAdd, onProblem, listed);
   return (
     <ScannerView
       layout={layout}
