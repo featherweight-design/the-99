@@ -256,20 +256,16 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   // The reader closed the card: the search comes back as it was, the keyboard down and the field unfocused, with
   // the ring on the row that opened it (H3).
-  // Not past md, where no frame is drawn (a phone rotated while the card was up).
-  const desktopRef = useRef(desktop);
-  useEffect(() => {
-    desktopRef.current = desktop;
-  }, [desktop]);
+  // At md and up the desktop's frame is drawn (PR D), so the search comes back there too (D8).
   const onCardDismissed = useCallback(() => {
-    if (!desktopRef.current) setOpen(true);
+    setOpen(true);
   }, []);
 
   // The card's read failed, so no card came up: the search comes back with the failure and Try again (S6).
   const onCardFailed = useCallback(() => {
     if (searching) setPhase("failed");
     else setRecentsFailed(true);
-    if (!desktopRef.current) setOpen(true);
+    setOpen(true);
   }, [searching]);
 
   // The keyboard's place stays in view: `aria-activedescendant` moves no scroll of its own.

@@ -224,10 +224,6 @@ function Rows({
   listboxId,
   onPick,
 }: SearchLayerProps & { from: CardSearchRow[]; matchQuery: string }) {
-  // The keyboard's row stays in view as ↑ ↓ move it down a list that scrolls.
-  useEffect(() => {
-    if (active >= 0) document.getElementById(`${listboxId}-${active}`)?.scrollIntoView({ block: "nearest" });
-  }, [active, listboxId]);
   return (
     <div role="listbox" id={listboxId} aria-label={cardSearchCopy.label}>
       {from.map((row, i) => (
