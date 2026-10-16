@@ -20,11 +20,12 @@ export function isSearchShortcut(e: KeyLike, mac: boolean): boolean {
 
 /**
  * Whether a dialog other than the search's own is up over the page. The search never opens over one: the dialog
- * is modal and the page behind it is inert. Read from the DOM because many surfaces lock nothing.
+ * is modal and the page behind it is inert. A dialog under `[hidden]` or `[inert]` (the About page's figures) is
+ * a specimen, not a surface a reader can use. Read from the DOM because many surfaces lock nothing.
  */
 export function dialogIsUp(root: Pick<Document, "querySelectorAll">, own: Element | null): boolean {
   for (const el of root.querySelectorAll('[aria-modal="true"], [role="dialog"], [role="menu"]')) {
-    if (el === own || own?.contains(el) || el.closest("[hidden]")) continue;
+    if (el === own || own?.contains(el) || el.closest("[hidden], [inert]")) continue;
     return true;
   }
   return false;

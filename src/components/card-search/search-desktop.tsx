@@ -70,7 +70,8 @@ function DesktopFrame() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isSearchShortcut(e, mac)) return;
-      if (!isOpen && dialogIsUp(document, frameRef.current)) return;
+      // Also while open: Tab can leave this non-modal frame into the account menu or a page dialog.
+      if (dialogIsUp(document, frameRef.current)) return;
       e.preventDefault();
       if (isOpen) {
         // Already open: refocus the field, and leave the opener (where focus returns on close) as it was.
@@ -98,6 +99,8 @@ function DesktopFrame() {
         role={isOpen ? "dialog" : undefined}
         aria-labelledby="card-search-heading-desktop"
         hidden={!isOpen}
+        // Focusable like the phone frame: the shared lowerKeyboard() and a card dismissal put focus here.
+        tabIndex={-1}
         data-card-search-sheet=""
         data-card-search-frame="desktop"
         // Its top is the slot's (73px under the mark: 14 + 39 + 20; the touch rail's are 69 and 61), 12px out from the rail.
@@ -115,7 +118,7 @@ function DesktopFrame() {
           <SearchField
             ref={inputRef}
             containerClassName="h-[46px] min-w-0 gap-3 rounded-none border-0 bg-transparent pr-[10px] pl-4 focus-within:shadow-none"
-            className="text-[15px] whitespace-nowrap"
+            className="text-[15px] whitespace-nowrap touch:text-base"
             leading={
               <span className="flex-none text-[color:var(--fg-muted)]">
                 <SearchGlyph size={18} />

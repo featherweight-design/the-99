@@ -42,7 +42,11 @@ describe("isMacPlatform", () => {
 describe("dialogIsUp", () => {
   const el = (attrs: Record<string, string>, parent?: unknown) => ({
     ...attrs,
-    closest: (sel: string) => (sel === "[hidden]" && attrs.hiddenAncestor ? {} : null),
+    closest: (sel: string) => {
+      if (attrs.hiddenAncestor && sel.includes("[hidden]")) return {};
+      if (attrs.inertAncestor && sel.includes("[inert]")) return {};
+      return null;
+    },
     contains: () => false,
     parent,
   });
@@ -55,5 +59,8 @@ describe("dialogIsUp", () => {
   it("is true for another dialog, false when it is hidden", () => {
     expect(dialogIsUp(doc([el({})]), null)).toBe(true);
     expect(dialogIsUp(doc([el({ hiddenAncestor: "1" })]), null)).toBe(false);
+  });
+  it("is false for a dialog inside an inert figure", () => {
+    expect(dialogIsUp(doc([el({ inertAncestor: "1" })]), null)).toBe(false);
   });
 });

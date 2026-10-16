@@ -70,6 +70,23 @@ describe("the search on the desktop", () => {
     expect(frame()).toBeNull();
   });
 
+  it("a second press does not pull focus back into the field while another dialog is up", async () => {
+    mount("Win32");
+    await press({ ctrlKey: true });
+    render(<div role="dialog" aria-modal="true" aria-label="Account" />);
+    const other = screen.getByRole("dialog", { name: "Account" });
+    other.tabIndex = -1;
+    other.focus();
+    await press({ ctrlKey: true });
+    expect(document.activeElement).toBe(other);
+  });
+
+  it("is focusable as a frame, so lowering the keyboard and a card's return land inside it", async () => {
+    mount("Win32");
+    await press({ ctrlKey: true });
+    expect(frame()?.getAttribute("tabindex")).toBe("-1");
+  });
+
   it("is not modal and shows the shortcut until typing starts, with no foot line before results", async () => {
     mount("MacIntel");
     await press({ metaKey: true });
