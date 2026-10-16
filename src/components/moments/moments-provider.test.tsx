@@ -414,6 +414,48 @@ describe("MomentsProvider", () => {
     }
   });
 
+  it("never shows beside an inert control, which something inside its own surface covers", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <div inert>
+          <Control id="lineup" name="Stats" />
+        </div>
+      </MomentsProvider>,
+    );
+    act(() => notify!([{ target: document.querySelector("button")!, isIntersecting: true }]));
+    await advance(ARRIVE_MS * 3);
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("writes a failed spend again, until the server takes it", async () => {
+    spendMomentAction.mockRejectedValueOnce(new Error("offline"));
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    await advance(0);
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    await advance(15_000);
+    expect(spendMomentAction).toHaveBeenCalledTimes(2);
+    await advance(15_000);
+    expect(spendMomentAction).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves storage alone with nothing live", async () => {
+    render(
+      <MomentsProvider live={[]} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    fireEvent.pointerDown(window);
+    await advance(ARRIVE_MS);
+    expect(window.localStorage.getItem(VISIT_KEY)).toBeNull();
+  });
+
   it("does nothing outside the provider", async () => {
     render(<Control id="lineup" name="Stats" />);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("aria-describedby")).toBe(false);

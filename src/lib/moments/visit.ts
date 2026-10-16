@@ -43,6 +43,11 @@ function write(v: Visit) {
   }
 }
 
+/** The visit as storage holds it now, without touching it: for deciding, where a write would race another tab. */
+export function peekVisit(now = Date.now()): Visit {
+  return nextVisit(read(), now);
+}
+
 /** Marks the reader present now and answers the visit: a read and a write, so call it on activity, not per frame. */
 export function touchVisit(now = Date.now()): Visit {
   const v = nextVisit(read(), now);

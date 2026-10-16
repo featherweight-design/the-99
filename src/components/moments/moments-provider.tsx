@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { spendMomentAction } from "../../app/moments-actions";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { pickMoment, type MomentId } from "../../lib/moments/registry";
-import { claimVisit, releaseClaim, takeVisit, touchVisit, withVisitLock, VISIT_KEY } from "../../lib/moments/visit";
+import { claimVisit, peekVisit, releaseClaim, takeVisit, touchVisit, withVisitLock, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentCopy } from "../../lib/copy/moments";
 import { MomentBubble, type MomentPlace } from "./moment-bubble";
 
@@ -27,6 +27,8 @@ import { MomentBubble, type MomentPlace } from "./moment-bubble";
  */
 export const ARRIVE_MS = 600;
 export const SPENT_AFTER_MS = 1000;
+/** How long a failed spend waits before it is written again. */
+const PERSIST_RETRY_MS = 15_000;
 /** `--motion-exit-quick`. */
 const LEAVE_MS = 140;
 /** Activity closer together than this touches the visit once. */
@@ -54,6 +56,8 @@ const MomentsContext = createContext<Ctx | null>(null);
  */
 const OVER_PAGE = '[aria-modal="true"], [role="dialog"], [role="menu"]';
 function clearOver(el: HTMLElement): boolean {
+  // An inert control is covered by something inside its own surface (card details' zoom and inner views).
+  if (el.closest("[inert]") !== null) return false;
   const { locks, holds } = overPageCount();
   if (holds > 0) return false;
   const open = [...document.querySelectorAll<HTMLElement>(OVER_PAGE)].filter((n) => n.getClientRects().length > 0);
@@ -86,6 +90,10 @@ export function MomentsProvider({
   // Keyed on the ids, not the array: each shell render hands a new one, and the observer must not restart for it.
   const liveKey = live.join(",");
   const liveSet = useMemo(() => new Set<string>(liveKey === "" ? [] : liveKey.split(",")), [liveKey]);
+  const liveSize = useRef(liveSet.size);
+  useEffect(() => {
+    liveSize.current = liveSet.size;
+  }, [liveSet]);
   const spent = useRef(new Set<string>(spentAtLoad));
   // A fresh server render of the shell carries the account's set again; union, never replace, so a spend the
   // server has not yet answered is not forgotten.
@@ -112,27 +120,43 @@ export function MomentsProvider({
   const channel = useRef<BroadcastChannel | null>(null);
   const noteId = useId();
 
+  // A spend the server has not acknowledged is kept and written again, after a pause and on the next activity: the
+  // write is idempotent, and a lost one would show a dismissed moment again after a reload.
+  const unsaved = useRef(new Set<MomentId>());
+  const persist = useCallback((id: MomentId) => {
+    unsaved.current.add(id);
+    spendMomentAction(id).then(
+      () => unsaved.current.delete(id),
+      () => window.setTimeout(() => {
+        if (unsaved.current.has(id)) persistRef.current(id);
+      }, PERSIST_RETRY_MS),
+    );
+  }, []);
+  const persistRef = useRef(persist);
+
   // Activity touches the visit, and a visit that just began after 30 minutes away reconsiders every control already on
   // screen, since none of them will report a fresh intersection.
   const armRef = useRef<() => void>(() => {});
   const touch = useCallback(() => {
+    // Nothing live: the visit is not this page's business, and storage is left alone.
+    if (liveSize.current === 0) return;
     const now = Date.now();
     if (now - lastTouch.current < TOUCH_EVERY_MS) return;
     lastTouch.current = now;
     // The clock is read inside the lock: one read before it can trail a write another holder made since, and a visit
     // stamped after `now` reads as a clock gone backwards, which starts a fresh visit and drops a live claim.
     void withVisitLock(() => touchVisit()).then(() => armRef.current());
+    for (const id of unsaved.current) persistRef.current(id);
   }, []);
+
 
   const spend = useCallback((id: MomentId) => {
     if (spent.current.has(id)) return;
     spent.current.add(id);
     void withVisitLock(() => takeVisit());
     channel.current?.postMessage(id);
-    spendMomentAction(id).catch(() => {
-      // The visit is already taken and the set holds it for this page; the account learns on the next spend.
-    });
-  }, []);
+    persist(id);
+  }, [persist]);
 
   /** Closes the bubble. `byReader` spends it at once; a teardown spends it only past `SPENT_AFTER_MS`. */
   const close = useCallback(
@@ -186,8 +210,8 @@ export function MomentsProvider({
       if (visible.current.size > 0) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
       return;
     }
-    const visit = touchVisit();
-    lastTouch.current = Date.now();
+    // Read only: a write here would race another tab's claim, and ping its storage listener into deciding again.
+    const visit = peekVisit();
     const id = pickMoment({ onScreen, live: liveSet, spent: spent.current, visitTaken: visit.taken });
     if (id === null) return;
     // An exclusive claim on the visit across tabs, made under the visit lock and held until the spend takes it or a
