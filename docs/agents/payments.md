@@ -54,4 +54,18 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   unattributed, and a grant holding it commits before the purge deletes the lots.
   `pnpm check:payments-reads` fails when code under `src/` outside `src/lib/payments/` imports `stripe` or names a
   Stripe table, and runs against the shipped tree inside `pnpm test`. `pnpm probe:payments-webhook` proves the
-  grant transaction on a scratch branch. Creating a Checkout session is K1b.
+  grant transaction on a scratch branch.
+
+- **Creating a Checkout Session** (K1b) is `buyPackAction` (`src/app/credits/actions.ts`), behind `PAYMENTS_ENABLED`
+  (unset on production and on staging until Hugh's Stripe test keys exist; Hugh's group first, Q13; the `off` literal
+  stops every sale while the webhook keeps settling). It takes a pack id from the closed registry and a uuid press id,
+  nothing else, and refuses a reader without a verified email. `createPackCheckout` (`checkout.ts`) refuses the 11th
+  Session in an hour (`checkout` in `RATE_RULES`, the one ENFORCED bucket, whatever `RATE_LIMIT_ENABLED` says), makes
+  the reader's Stripe Customer once (`ensureCustomer`: a per-account idempotency key, then the mapping read back, so a
+  race keeps the stored one), and creates the Session from `packCheckoutParams` under the press's idempotency key: the
+  facts `decideFulfilment` checks (one item at the registry's Price, the customer, `client_reference_id`,
+  `metadata.app`, `pack` and `user_id`, on the PaymentIntent too), cards only, Stripe Tax, and return URLs on
+  `APP_ORIGIN`, never a request header (unset or not a bare `https` origin, nothing is created). Stripe Tax is why each
+  pack Price must be tax-EXCLUSIVE: an inclusive Price makes the amount net of tax differ from the registry's, and the
+  webhook refuses that payment as `amount`. A test builds a Session's params and runs them through `decideFulfilment`,
+  so the two halves cannot drift. Nothing is granted on the return.

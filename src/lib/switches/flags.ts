@@ -23,6 +23,7 @@ import { noticesEnabled } from "../notices/flag";
 import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
+import { paymentsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
@@ -68,6 +69,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   NOTICES_ENABLED: noticesEnabled,
   NO_COLLECTION_ENTRY_ENABLED: noCollectionEntryEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
+  PAYMENTS_ENABLED: paymentsEnabled,
   PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,

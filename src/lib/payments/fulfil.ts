@@ -3,7 +3,8 @@ import type Stripe from "stripe";
 import { db } from "../../db";
 import { creditGrants, paymentRecords, stripeCustomers, stripeEvents } from "../../db/schema";
 import { decideFulfilment, type Decision, type FetchedSession } from "./fulfil-rule";
-import { PACKS, packsConfigured } from "./packs";
+import { packsConfigured } from "./packs";
+import { packPriceEnv } from "./stripe";
 
 /**
  * The webhook's one job for a completed Checkout Session (payments scope §5.3, §5.5). SERVER-ONLY.
@@ -37,7 +38,7 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
       ? await tx.select({ userId: stripeCustomers.userId }).from(stripeCustomers)
         .where(eq(stripeCustomers.stripeCustomerId, fetched.customerId)).for("share")
       : [];
-    const decision = decideFulfilment(fetched, mapped?.userId ?? null, priceEnv());
+    const decision = decideFulfilment(fetched, mapped?.userId ?? null, packPriceEnv());
     if (decision.kind === "refuse") return { outcome: "refuse" as const, reason: decision.reason };
     const recorded = await tx.insert(paymentRecords)
       .values({ ...decision.record, status: decision.kind === "grant" ? "granted" : "unattributed" })
@@ -56,12 +57,7 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
 
 /** Whether the pack registry can judge a Session at all (`packsConfigured`): the route answers 503 until it can. */
 export function paymentsConfigured(): boolean {
-  return packsConfigured(priceEnv());
-}
-
-/** The Price ids the packs name, by member read: the registry's own variables and nothing else. */
-function priceEnv(): Record<string, string | undefined> {
-  return Object.fromEntries(Object.values(PACKS).map((p) => [p.priceEnv, process.env[p.priceEnv]]));
+  return packsConfigured(packPriceEnv());
 }
 
 const idOf = (v: string | { id: string } | null | undefined): string | null =>
