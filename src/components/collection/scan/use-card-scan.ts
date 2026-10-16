@@ -101,6 +101,8 @@ export function useCardScan(
   const torchBusy = useRef(false);
   // The newest frame that held a card: the card an add is pressed for is still in view, so its photo is this one.
   const lastCrop = useRef<Float32Array | null>(null);
+  // What the scanner saw as a hold began (V4): the frozen guess's own photo and closest cards.
+  const heldSnap = useRef<{ oracleId: string; named: ScanGuess[]; crop: Float32Array | null } | null>(null);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
   useEffect(() => {
@@ -226,8 +228,11 @@ export function useCardScan(
       if (committing.current) return;
       committing.current = true;
       try {
-        const named = server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [];
-        const crop = lastCrop.current;
+        // A held card adds what the scanner saw when the press went down; frames read since are another moment.
+        const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : null;
+        heldSnap.current = null;
+        const named = snap ? snap.named : server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [];
+        const crop = snap ? snap.crop : lastCrop.current;
         const capture: ScanCapture = {
           photo: crop ? (depsRef.current.photo ?? photoOf)(crop) : null,
           guesses: [g, ...named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
@@ -278,8 +283,19 @@ export function useCardScan(
           torchBusy.current = false;
         });
     },
-    hold: () => current && setHeld(current),
-    cancelHold: () => setHeld(null),
+    hold: () => {
+      if (!current) return;
+      heldSnap.current = {
+        oracleId: current.oracleId,
+        named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [],
+        crop: lastCrop.current,
+      };
+      setHeld(current);
+    },
+    cancelHold: () => {
+      heldSnap.current = null;
+      setHeld(null);
+    },
     add: () => {
       const g = held ?? current;
       if (g) void commit(g);

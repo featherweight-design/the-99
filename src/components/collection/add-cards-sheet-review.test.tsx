@@ -167,5 +167,18 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     await waitFor(() => expect(screen.getByText(copy.summary(2, 2))).toBeTruthy());
     expect(screen.queryByRole("group", { name: scan.fix.regionLabel })).toBeNull();
   });
-});
 
+  it("moves through the closest cards with the arrow keys, ticked tile the only tab stop", async () => {
+    await scanned();
+    fireEvent.click(await screen.findByRole("button", { name: "Sol Ring", expanded: false }));
+    const tiles = screen.getAllByRole("radio");
+    expect(tiles.map((t) => t.tabIndex)).toEqual([0, -1]);
+    tiles[0].focus();
+    choices.mockResolvedValueOnce([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
+    fireEvent.keyDown(tiles[0], { key: "ArrowRight" });
+    await waitFor(() => expect(choices).toHaveBeenLastCalledWith(STONE.oracleId));
+    // Mind Stone is now on the line, leads the tiles, and has focus.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("radio", { name: /Mind Stone/ })));
+    expect(screen.getByRole("radio", { name: /Mind Stone/ }).getAttribute("aria-checked")).toBe("true");
+  });
+});

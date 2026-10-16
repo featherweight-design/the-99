@@ -315,4 +315,25 @@ describe("useCardScan", () => {
     await act(async () => hook.result.current.add());
     expect(onAdd).toHaveBeenCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: null }));
   });
+
+  it("adds a held card with the photo and closest cards from when the press went down", async () => {
+    const first = new Float32Array([1, 0, 0, 0]);
+    const later = new Float32Array([0, 1, 0, 0]);
+    let crop = first;
+    const photo = vi.fn((c: Float32Array) => (c === first ? "data:first" : "data:later"));
+    const { hook, onAdd } = setup({
+      photo,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false, crop };
+      },
+    });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
+    act(() => hook.result.current.hold());
+    // A frame read finishes while the press is still down.
+    crop = later;
+    await new Promise((r) => setTimeout(r, 30));
+    await act(async () => hook.result.current.add());
+    expect(onAdd).toHaveBeenCalledWith(expect.anything(), "fast", expect.objectContaining({ photo: "data:first" }));
+  });
 });

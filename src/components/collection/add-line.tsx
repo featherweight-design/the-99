@@ -3,7 +3,7 @@
 // art, a printing chip that reopens the picker, a Foil chip, a stepper and the holdings note. A line
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
@@ -239,6 +239,29 @@ function ScanFix({ line, scan, fix, disabled }: {
   fix: NonNullable<AddLineProps["fix"]>;
   disabled: boolean;
 }) {
+  // A radio group's own keys, as the printing region has them: arrows move and choose, Home and End jump to the ends,
+  // Tab leaves (only the ticked tile is a tab stop), and nothing wraps.
+  const group = useRef<HTMLDivElement>(null);
+  function onKey(e: React.KeyboardEvent, index: number) {
+    const last = scan.guesses.length - 1;
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? Math.min(index + 1, last)
+        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? Math.max(index - 1, 0)
+          : e.key === "Home" ? 0
+            : e.key === "End" ? last
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    if (next === index || disabled) return;
+    fix.onSwap(scan.guesses[next]);
+  }
+  // A swap reorders the tiles (the card on the line leads) and holds them while it loads: focus follows the ticked
+  // tile, if it was in the group.
+  useEffect(() => {
+    const g = group.current;
+    if (!g || !g.contains(document.activeElement)) return;
+    g.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+  }, [line.oracleId, disabled]);
   return (
     <div
       id={`scan-fix-${line.id}`}
@@ -256,8 +279,8 @@ function ScanFix({ line, scan, fix, disabled }: {
         {fixCopy.question}
       </p>
       {/* Clipped as drawn, with 5px of room inside the clip for the ticked tile's ring (2px at a 3px offset). */}
-      <div role="radiogroup" aria-label={fixCopy.regionLabel} className="-m-[5px] flex gap-[10px] overflow-hidden p-[5px]">
-        {scan.guesses.map((g) => {
+      <div ref={group} role="radiogroup" aria-label={fixCopy.regionLabel} className="-m-[5px] flex gap-[10px] overflow-hidden p-[5px]">
+        {scan.guesses.map((g, i) => {
           const on = g.oracleId === line.oracleId;
           return (
             <button
@@ -265,9 +288,12 @@ function ScanFix({ line, scan, fix, disabled }: {
               type="button"
               role="radio"
               aria-checked={on}
-              disabled={disabled}
-              onClick={() => !on && fix.onSwap(g)}
-              className="flex w-[96px] flex-none cursor-pointer flex-col border-0 bg-transparent p-0 text-left text-[color:var(--fg)] disabled:cursor-default"
+              // Held, not disabled, while a swap loads: a disabled button drops focus to the page.
+              aria-disabled={disabled || undefined}
+              tabIndex={on ? 0 : -1}
+              onClick={() => !on && !disabled && fix.onSwap(g)}
+              onKeyDown={(e) => onKey(e, i)}
+              className="flex w-[96px] flex-none cursor-pointer flex-col border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default"
             >
               <span
                 className="relative block aspect-[63/88] w-[96px] overflow-hidden rounded-[10px] shadow-[inset_0_0_0_1px_rgba(0,0,0,.35)]"
