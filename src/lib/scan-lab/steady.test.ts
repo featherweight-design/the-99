@@ -66,10 +66,10 @@ describe("tapTarget", () => {
   const display = { reading: OTHER, changedAt: 10_000, before: ANGLER };
 
   it("records a press 300ms after a change against the guess shown before it", () => {
-    expect(tapTarget(display, 10_300)).toEqual({ reading: ANGLER, shown: OTHER, changedMsBeforeTap: 300 });
+    expect(tapTarget(display, 10_300)).toEqual({ reading: ANGLER, shown: OTHER, changedMsBeforeTap: 300, pressedAt: 10_300 });
   });
 
   it("records the guess on screen once the change is older than the grace", () => {
-    expect(tapTarget(display, 10_000 + CHANGE_GRACE_MS)).toEqual({ reading: OTHER, shown: OTHER, changedMsBeforeTap: CHANGE_GRACE_MS });
+    expect(tapTarget(display, 10_000 + CHANGE_GRACE_MS)).toEqual({ reading: OTHER, shown: OTHER, changedMsBeforeTap: CHANGE_GRACE_MS, pressedAt: 10_000 + CHANGE_GRACE_MS });
   });
 });

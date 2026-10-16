@@ -38,7 +38,7 @@ import { ownedSupportLock } from "../discovery/owned-support-lock";
  * credits are forfeited with the account (Hugh, Q7, 2026-10-13); `decks` goes before `deck_folders` only for tidiness (`folder_id` sets null).
  */
 export const PURGE_ORDER = [
-  "scan_lab_results",
+  "scan_lab_results", "scan_lab_cadence",
   "deck_token_joins", "deck_token_printings", "token_ownership", "token_printing_holdings", "token_reads",
   "card_assignments", "pull_releases",
   "deck_suggestion_runs", "deck_synopses", "intake_reads", "intake_read_stops", "fits_reads",

@@ -14,8 +14,10 @@ import {
 import { agreedRun, agreement, normalise, parseIndex, topOracles, type IndexMeta, type ScanIndex } from "../../lib/scan-lab/match";
 import { readingCrop, streamHolder, tapBody, type Reading } from "../../lib/scan-lab/reading";
 import { nextSteady, startSteady, type Display, type SteadyState } from "../../lib/scan-lab/steady";
+import { CADENCE_MS, cadenceDone, logFrame, pressedDuringRun, startCadence, type CadenceRun } from "../../lib/scan-lab/cadence";
 import { sessionHolder } from "../../lib/scan-lab/sessions";
 import { TrueCardStep } from "./true-card-step";
+import { Checkbox } from "../ui/checkbox";
 import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import {
   AGREE_FRAMES, AGREE_MARGIN, DETECTOR_URL, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE,
@@ -52,6 +54,9 @@ async function loadIndex(base: string): Promise<ScanIndex> {
   return parseIndex(meta, bin);
 }
 
+// The camera loop's own clock; read from handlers, never while rendering.
+const clock = () => performance.now();
+
 export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const running = useRef(false);
@@ -72,6 +77,42 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
   const [missed, setMissed] = useState<string | null>(null);
   const tapSeq = useRef(0);
   const indexVersion = useRef("unknown");
+  // The cadence log's run while "Log every frame" is on (`cadence.ts`): the loop adds each frame's reading, and the
+  // run is posted when its 30 seconds are up or the box is unticked. Readings only, never an image.
+  const cadence = useRef<CadenceRun | null>(null);
+  // What the screen holds while a press holds it (`ScanControls`), so the log records what the player saw; and the
+  // window of the last run, so a tap pressed inside it keeps no frame even when its save lands after the run ended.
+  const heldDisplay = useRef<Display | null>(null);
+  const lastRun = useRef<{ start: number; end: number } | null>(null);
+  const [logged, setLogged] = useState<number | null>(null);
+  const finishLog = useCallback(async () => {
+    const run = cadence.current;
+    if (!run) return;
+    cadence.current = null;
+    lastRun.current = { start: run.startedAt, end: clock() };
+    setLogged(null);
+    if (run.frames.length === 0) {
+      setNote(copy.logEmpty);
+      return;
+    }
+    const res = await fetch("/api/scan-lab/cadence", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ indexVersion: indexVersion.current, frames: run.frames }),
+    }).catch(() => null);
+    setNote(res?.ok ? copy.logged(run.frames.length) : copy.logFailed);
+  }, []);
+  const toggleLog = (on: boolean) => {
+    if (!on) {
+      void finishLog();
+      return;
+    }
+    const run = startCadence(clock());
+    cadence.current = run;
+    setLogged(0);
+    // A camera that stops sending frames still ends the run on time.
+    setTimeout(() => { if (cadence.current?.startedAt === run.startedAt) void finishLog(); }, CADENCE_MS + 1000);
+  };
 
   useEffect(() => {
     const held = stream.current;
@@ -143,9 +184,17 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       setDisplay(steady.current);
       // Each frame's reading goes through the dwell; the screen re-renders only when what it shows moved.
       const publish = (r: Reading) => {
-        const next = nextSteady(steady.current, r, performance.now());
+        const now = performance.now();
+        const next = nextSteady(steady.current, r, now);
         if (next.reading !== steady.current.reading || next.changedAt !== steady.current.changedAt) setDisplay(next);
         steady.current = next;
+        const run = cadence.current;
+        if (run) {
+          const more = logFrame(run, r, heldDisplay.current ?? next, now);
+          cadence.current = more;
+          if (more !== run) setLogged(more.frames.length);
+          if (cadenceDone(more, now)) void finishLog();
+        }
       };
       const frame = document.createElement("canvas");
       const square = document.createElement("canvas");
@@ -216,7 +265,7 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     } catch (e) {
       fail(e);
     }
-  }, [indexBase]);
+  }, [indexBase, finishLog]);
 
   const record = useCallback(async (tap: Tap, correct: boolean) => {
     // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
@@ -226,7 +275,8 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
     setMissed(null);
     const mine = ++tapSeq.current;
     let frame: string | null = null;
-    if (keepFrame && crop) {
+    // A log run keeps readings only: no frame goes with a tap PRESSED while it ran, whenever its save lands.
+    if (keepFrame && crop && !pressedDuringRun(tap.pressedAt, cadence.current, lastRun.current)) {
       const c = document.createElement("canvas");
       c.width = EMBED_W;
       c.height = EMBED_H;
@@ -264,11 +314,16 @@ export function ScanLab({ indexBase }: { indexBase: string | null }) {
       {status === "error" && <p className="m-0 text-[14px]">{error}</p>}
       <video ref={videoRef} playsInline muted autoPlay className="w-full rounded-[8px]" />
       {status === "running" && (
-        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record}>
+        <ScanControls display={display} keepFrame={keepFrame} onKeepFrame={setKeepFrame} onVerdict={record} onHold={(h) => { heldDisplay.current = h; }}>
           <span className="text-[12px] text-[color:var(--fg-muted)]">
             {copy.taps(taps.n, taps.right)}
             {note ? ` · ${note}` : ""}
           </span>
+          {/* Outside the controls area, so ticking it never holds the reading. */}
+          <label className="flex touch-manipulation items-center gap-[8px] text-[14px]">
+            <Checkbox checked={logged !== null} onChange={toggleLog} />
+            {logged === null ? copy.logFrames : copy.logging(logged)}
+          </label>
           {/* Under the controls, so opening it never moves them; keyed so a new miss starts empty. */}
           {missed && (
             <TrueCardStep

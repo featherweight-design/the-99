@@ -17,6 +17,12 @@ export const scanLabCopy = {
   right: "✓ Right card",
   wrong: "✗ Wrong card",
   keepFrame: "Keep this frame",
+  // The cadence log: 30 seconds of every frame's reading, no tap and no image.
+  logFrames: "Log every frame for 30 seconds",
+  logging: (n: number) => `Logging every frame · ${n} so far`,
+  logged: (n: number) => `Logged ${n} ${n === 1 ? "frame" : "frames"}`,
+  logEmpty: "No frames logged",
+  logFailed: "The log didn’t save.",
   saved: "Saved",
   saveFailed: "Didn’t save. Try the tap again.",
   timings: (det: number, emb: number, match: number) => `corners ${det} ms · embed ${emb} ms · match ${match} ms`,

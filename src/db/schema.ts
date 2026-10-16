@@ -3487,3 +3487,19 @@ export const scanLabResults = pgTable("scan_lab_results", {
   index("scan_lab_results_user_idx").on(t.userId, t.createdAt),
   check("scan_lab_results_latency_check", sql`${t.latencyMs} >= 0`),
 ]);
+
+/**
+ * The scan lab's cadence log: one row per 30-second run with "Log every frame" on, holding what each frame read
+ * (its top 3 and margin) and what the screen showed, with no tap and no image (`src/lib/scan-lab/cadence.ts`).
+ * It measures low-light flicker and the dwell over time. Purged with the account.
+ */
+export const scanLabCadence = pgTable("scan_lab_cadence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  indexVersion: text("index_version").notNull(),
+  frameCount: smallint("frame_count").notNull(),
+  frames: jsonb("frames").notNull(),
+}, (t) => [
+  index("scan_lab_cadence_user_idx").on(t.userId, t.createdAt),
+]);

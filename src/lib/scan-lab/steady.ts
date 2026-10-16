@@ -61,8 +61,8 @@ export function nextSteady(s: SteadyState, r: Reading, now: number): SteadyState
 /** What a verdict pressed at `pressAt` is recorded against, and how long before the press the screen last changed. A
  * change inside `CHANGE_GRACE_MS` is one the player was not yet reacting to, so the verdict goes to the reading shown
  * before it, and `shown` keeps what was on screen at the press. */
-export function tapTarget(d: Display, pressAt: number): { reading: Reading | null; changedMsBeforeTap: number; shown: Reading | null } {
+export function tapTarget(d: Display, pressAt: number): { reading: Reading | null; changedMsBeforeTap: number; shown: Reading | null; pressedAt: number } {
   const changedMsBeforeTap = Math.max(0, Math.round(pressAt - d.changedAt));
   const reading = changedMsBeforeTap < CHANGE_GRACE_MS ? d.before : d.reading;
-  return { reading, changedMsBeforeTap, shown: d.reading };
+  return { reading, changedMsBeforeTap, shown: d.reading, pressedAt: pressAt };
 }
