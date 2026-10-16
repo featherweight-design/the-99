@@ -386,6 +386,7 @@ export function AvailabilityMarker({
   linkDeck = false,
   className,
   glyphOnly = false,
+  foldWord,
   ...opts
 }: {
   availability: AvailabilitySummary;
@@ -448,6 +449,12 @@ export function AvailabilityMarker({
    * key entry has no caption row to share.
    */
   glyphOnly?: boolean;
+  /**
+   * Row density: classes that fold the WORD away at some width (`@max-[359px]:hidden`, from a container query), leaving the
+   * glyph and, above one, its count. The word stays in the spoken sentence either way. A prefix with a count in it
+   * (`short 2`, `1 in a draft`) folds only its words around the count; one with none (`short`, `none free`) folds whole.
+   */
+  foldWord?: string;
 } & MarkerOpts) {
   // Dev only: production strips it, so a late regression degrades to the
   // duplicated announcement rather than a blank screen for the player.
@@ -476,6 +483,7 @@ export function AvailabilityMarker({
   // `glyphOnly` always speaks, whether or not the caller also passed `spoken`: with no visible
   // word left to aria-hide, a glyph-only chip given neither prop would announce nothing at all.
   const prose = spoken || glyphOnly ? markerAria(availability, effective) : null;
+  const counted = foldWord ? /^(\D*?)(\d+)(.*)$/.exec(text.prefix) : null;
 
   return (
     <span
@@ -555,9 +563,18 @@ export function AvailabilityMarker({
             // The caption box already sets the family, the size and the weight
             // for every occupant, so the label only adds the tracking there.
             chip && (plate ? "font-mono text-[8.5px] font-semibold tracking-[0.02em]" : "tracking-[0.02em]"),
+            foldWord && !counted && foldWord,
           )}
         >
-          {text.prefix}
+          {counted ? (
+            <>
+              {counted[1] ? <span className={foldWord}>{counted[1]}</span> : null}
+              {counted[2]}
+              {counted[3] ? <span className={foldWord}>{counted[3]}</span> : null}
+            </>
+          ) : (
+            text.prefix
+          )}
         </span>
       )}
       {!glyphOnly && text.deck &&

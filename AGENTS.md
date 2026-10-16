@@ -783,19 +783,22 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached through anything but
   `process.env` itself, or an env built by hand from member reads.
 
-- **The two-line card row** (foil mark PR 2, plan `2026-10-15-foil-mark.md`; Hugh's rulings 2026-10-15). `DecklistRow` wraps its
-  shell in two lines by CSS `order`, in three forms with one slot table each (`PHONE_B`, `TWO_MD`, `TWO_LG`, every class spelled
-  whole and prefixed, so a width a table does not cover is the row it was): **below `md` a Shopping row** is option B (Social R2
-  PR 7, no switch since `PHONE_SHOPPING_ROW_B_ENABLED` was retired by migration 0134), **from `md` an All row**, and **from `lg` a
-  Shopping row**. Line 1 is the dot, the name with its fact marks, and the ✕; a zero-height break ends it; line 2 is the glint (under
-  the dot, in the indent that puts the pips at the name's x, so the name keeps its x), the pips, the availability marker, ⇄ and the
-  buy tag. The phone All row and a Shopping row from `md` to `lg` are the shipped rows. A basic land's stepper row and a read-only
-  precon row stay one line. `over $N` is the buy tag's outline and the key's item, never beside the pips; a Shopping row draws no EDHREC
-  figure at any width. The glint is the foil mark (`FoilGlint`): drawn by the film's rule (`imageUri ? foil : undefined`), spoken in the row's
-  description (`foilMarkCopy.name`), and on a precon's read-only list row it replaces the printed `· foil` (`printedFoil`, art not required).
-  `ShoppingKey` is one grid (`cheaper stand-ins`, the friend-spare item's position, `press to add`, the outlined `over $N`); the spare
-  position holds `friend has a spare` while a friend's spare is shown (Social R2 PR A, the other-ways press). The deck's mark key names `foil` in every view when a row or tile in view
-  draws the glint (a foil basic land is a tile only). `docs/superpowers/inventories/foil-row.json` holds the rows, at 390, 900 and 1300.
+- **The one-line card row** (card rows addendum L1, Hugh 2026-10-16, replacing the foil mark PR 2's two-line row, #1886). Every card row is one
+  34px line from `md`, in All and Shopping; below `md` the phone keeps its rows (the All row as shipped, Shopping's option B, whose slots are
+  `SHOPPING_SLOTS` in `decklist-row.tsx`, every class `max-md:` or `md:` and spelled whole). **The right-hand columns are fixed, by `order`**: All's
+  72px pip track and the ✕ (the marker, the price, the auto tag and the lock mark flow left of them), Shopping's 84px buy tag and the ✕. A Shopping row
+  draws no pips and no EDHREC figure from `md`; All draws no other-ways press at any width (the press, `OtherWaysPress`, is Shopping's, 26px with
+  `md:-my-[3px]` so the row stays 34px). **The marks fold by the row's own width** (`FOLD`, a container query on `DecklistRow`'s wrapper, `@container`,
+  from `md` only): wide is 479px and up, middle 359 to 479, tight under 359. All: the 4th mark and beyond at every width, every mark after the first at the
+  middle tier, every mark at the tight one, and the availability word drops to its glyph (and a count) at the tight one; Shopping: every mark and the word at
+  the middle tier, and the `+N` too at the tight one. A folded mark is `sr-only`, never `display: none`, so a screen reader keeps it; the `+N` spans
+  (one per tier) are aria-hidden, bare mono in `--fact`, and a fine pointer's tooltip lists what they hold (`FactTooltip`'s `lines`). The auto tag, the lock
+  mark and the ownership slot never fold. **The glint takes a filled dot's place from `md`** (centred on its 8px slot; a dashed or proxied row, and a stepper
+  row, draw none there) and sits under the dot on the phone's meta line, the pips at the name's x (`PHONE_GLINT`). A basic land's stepper row and a read-only
+  precon row stay as they were. `over $N` folds into the buy tag's outline at every width, with its words in the tag's description and the key's item.
+  `ShoppingKey` is one grid (`cheaper stand-ins`, the friend-spare item's position, `press to add`, the outlined `over $N`). The deck's mark key names `foil` in every view when a
+  row or tile in view draws the glint (a foil basic land is a tile only). `docs/superpowers/inventories/foil-row.json` holds the rows, at 390, 800, 900 and 1300.
+  The combo mark is not on the row yet (PR 2 of the addendum).
 
 - **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
   `COLLECTION_EDIT_ENABLED` (staging `'true'` from the plan's PR 2, production unset until Hugh flips it; off, the upload

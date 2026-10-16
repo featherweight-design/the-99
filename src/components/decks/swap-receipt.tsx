@@ -91,7 +91,7 @@ export function landOnReceipt(swapId: string): () => void {
 
 /**
  * `tall` (phone Shopping row option B): a receipt that replaces a whole row, not one beneath a surviving card, keeps
- * the 96px that row had below `md` and the 58px of its two lines from `lg`, so the rows under it do not move when it arrives and again on Undo.
+ * the 96px that row had below `md`, so the rows under it do not move when it arrives and again on Undo. From `md` the row is one 34px line and so is the receipt.
  */
 export function SwapReceiptRow({ receipt, tall = false }: { receipt: SwapReceipt; tall?: boolean }) {
   const tools = useSwapTools();
@@ -125,7 +125,7 @@ export function SwapReceiptRow({ receipt, tall = false }: { receipt: SwapReceipt
   return (
     <div data-testid="swap-receipt" data-swap-id={receipt.swapId}>
       <div
-        className={`flex items-center gap-[9px] md:gap-[10px] min-h-[44px] md:min-h-[34px]${tall ? " max-md:min-h-[96px] lg:min-h-[58px]" : ""} pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] rounded-[7px] border border-dashed border-[color:var(--border-strong)]`}
+        className={`flex items-center gap-[9px] md:gap-[10px] min-h-[44px] md:min-h-[34px]${tall ? " max-md:min-h-[96px]" : ""} pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] rounded-[7px] border border-dashed border-[color:var(--border-strong)]`}
         style={{ background: "var(--surface-sunken)" }}
       >
         <span aria-hidden="true" className="flex-none w-[8px] h-[8px]" />

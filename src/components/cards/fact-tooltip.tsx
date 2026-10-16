@@ -135,10 +135,16 @@ export function placeBubble(
 export function FactTooltip({
   fact,
   sentence,
+  lines,
   children,
 }: {
   fact?: CardFact;
   sentence?: string;
+  /**
+   * A bubble of several lines, one per entry, each a glyph and its name: what the row's `+N` holds (the card rows
+   * addendum, L4). Wins over `fact` and `sentence`. Same chrome, delays and pointer rule as the rest.
+   */
+  lines?: readonly React.ReactNode[];
   children: React.ReactNode;
 }) {
   // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
@@ -171,11 +177,12 @@ export function FactTooltip({
   // row's own tap opens the modal, where every partner and state is listed.
   if (!fine) return <>{children}</>;
   const text = sentence ?? (fact ? cardMarkCopy.tooltip[fact] : "");
+  if (lines && lines.length > 0) return <FinePointerTooltip text="" lines={lines}>{children}</FinePointerTooltip>;
   if (!text) return <>{children}</>;
   return <FinePointerTooltip text={text}>{children}</FinePointerTooltip>;
 }
 
-function FinePointerTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function FinePointerTooltip({ text, lines, children }: { text: string; lines?: readonly React.ReactNode[]; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
   // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
@@ -264,7 +271,7 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
             data-testid="fact-tooltip"
             data-side={place.below ? "below" : "above"}
             data-align={place.align}
-            className="pointer-events-none fixed z-50 w-max rounded-[7px] px-[9px] py-[6px] text-left text-[11.5px] font-normal normal-case tracking-normal leading-[1.45] whitespace-normal"
+            className={`pointer-events-none fixed z-50 w-max rounded-[7px] px-[9px] py-[6px] text-left text-[11.5px] font-normal normal-case tracking-normal leading-[1.45] whitespace-normal${lines ? " flex flex-col gap-[5px]" : ""}`}
             style={{
               left: mark.left + place.left,
               top: place.below ? mark.bottom + 6 : mark.top - 6,
@@ -276,7 +283,11 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
               boxShadow: "0 4px 14px color-mix(in srgb, var(--bg) 70%, transparent)",
             }}
           >
-            {text}
+            {lines
+              ? lines.map((line, i) => (
+                  <span key={i} className="flex items-center gap-[7px]">{line}</span>
+                ))
+              : text}
           </span>,
           document.body,
         )}

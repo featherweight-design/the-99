@@ -56,7 +56,9 @@ describe("SwapReceiptRow", () => {
       );
     });
     expect(shell().className).toContain("max-md:min-h-[96px]");
-    expect(shell().className).toContain("lg:min-h-[58px]");
+    // From md the row is one 34px line, and so is the receipt: no taller form is spelled.
+    expect(shell().className).toContain("md:min-h-[34px]");
+    expect(shell().className).not.toContain("58px");
     cleanup();
     await draw(base);
     expect(shell().className).not.toContain("96px");

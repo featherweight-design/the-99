@@ -615,3 +615,32 @@ describe("AvailabilityMarker glyphOnly", () => {
     expect((second as HTMLElement).style.left).toBe("5px");
   });
 });
+
+// The one-line card row folds the word to the glyph at a narrow row (card rows addendum L3), and keeps a count.
+describe("AvailabilityMarker foldWord", () => {
+  const over = (free: number) => ({ owned: 1, hard: 1, soft: 0, free, claims: [] });
+  const FOLD = "md:@max-[359px]:hidden";
+
+  it("folds a bare `short` whole and leaves the sentence for assistive tech", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={over(-1)} spoken nameless bareOne foldWord={FOLD} />,
+    );
+    const word = Array.from(container.querySelectorAll("span")).find((el) => el.textContent === "short")!;
+    expect(word.className.split(/\s+/)).toContain(FOLD);
+    expect(container.querySelector(".sr-only")!.textContent).toBe(markerAria(over(-1), { nameless: true, bareOne: true }));
+  });
+
+  it("keeps the count when the word folds: `short 2` folds the word and leaves the 2", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={over(-2)} spoken nameless bareOne foldWord={FOLD} />,
+    );
+    const folded = Array.from(container.querySelectorAll("span")).filter((el) => el.className.split(/\s+/).includes(FOLD));
+    expect(folded.map((el) => el.textContent?.trim())).toEqual(["short"]);
+    expect(container.textContent).toContain("2");
+  });
+
+  it("changes nothing when no fold is asked for", () => {
+    const { container } = render(<AvailabilityMarker availability={over(-2)} nameless bareOne />);
+    expect(container.querySelector(`.${CSS.escape(FOLD)}`)).toBeNull();
+  });
+});

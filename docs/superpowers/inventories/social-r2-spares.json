@@ -1,6 +1,6 @@
 {
-  "feature": "Social R2 PR 8a and PR A: friends with a spare in the stand-ins modal, and the card row's other-ways press with the Shopping key's spare item (handoff design_handoff_the99_social_r2 R3; foil addendum #1875, the press on line 2)",
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Growing Rites of Itlimoc and the both card over its limit and Pantlaza under it, SPARES_BOTH_CARD naming that both card (the start of its name is enough), and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding the both card and Pantlaza, neither holding Growing Rites. The both card must be one the stand-ins read ANSWERS on that branch, so press its ⇄ once before seeding spares: on local-dev on 2026-10-15 Shatterskull Smashing had no stand-in and the row drew S3 rather than O1. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx; the spares-only modal (SWAP_TOOLS_ENABLED off) by spare-markers.test.tsx. The pods-wrap row needs the friend who holds two Polyraptor spares to share through two pods with long enough names to wrap at 390: plant them as `Store league` (that friend's own pod, the reader a member) and `Thursday pod` (the reader's), so the line reads `shares with Store league and Thursday pod`.",
+  "feature": "Social R2 PR 8a and PR A: friends with a spare in the stand-ins modal, and the card row's other-ways press with the Shopping key's spare item (handoff design_handoff_the99_social_r2 R3; foil addendum #1875; the card rows addendum L2: the press is Shopping's alone, on its one line, and All draws none)",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and SWAP_TOOLS_ENABLED on for the reader, SPARES_DECK naming a deck whose Shopping list holds Polyraptor, Growing Rites of Itlimoc and the both card over its limit and Pantlaza under it, SPARES_BOTH_CARD naming that both card (the start of its name is enough), and fixtures: two friends sharing spares with pods the reader is in, both holding Polyraptor (one through two pods), one holding the both card and Pantlaza, neither holding Growing Rites. The both card must be one the stand-ins read ANSWERS on that branch, so press its ⇄ once before seeding spares: on local-dev on 2026-10-15 Shatterskull Smashing had no stand-in and the row drew S3 rather than O1. The rows write nothing, but the fixtures are social and collection rows: plant them on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit. The title's wait, a failed read and O2 (nothing cheaper) are held by stand-ins-spares.test.tsx; the spares-only modal (SWAP_TOOLS_ENABLED off) by spare-markers.test.tsx. The pods-wrap row needs the friend who holds two Polyraptor spares to share through two pods with long enough names to wrap at 390: plant them as `Store league` (that friend's own pod, the reader a member) and `Thursday pod` (the reader's), so the line reads `shares with Store league and Thursday pod`. The All rows are gone: since the one-line row (card rows addendum L2, Hugh 2026-10-16) All carries no other-ways press at any width, and `decklist-row.test.tsx` holds that.",
   "out": "contact-sheets/social-r2-spares",
   "widths": [
     {
@@ -136,7 +136,7 @@
     },
     {
       "id": "shopping-press",
-      "label": "S2 Shopping line 2: the other-ways press before the buy tag (⇄ and the glyph on Polyraptor, the glyph alone on Pantlaza, nothing on a row with neither)",
+      "label": "S2 Shopping, one line from md: the other-ways press before the buy tag (⇄ and the glyph on Polyraptor, the glyph alone on Pantlaza, nothing on a row with neither)",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -194,68 +194,6 @@
           "wait": "[data-testid=friend-spares]",
           "settle": 2500
         }
-      ]
-    },
-    {
-      "id": "all-view",
-      "label": "S4 All: the glyph on a missing card's line 2, nothing on an owned row",
-      "view": "src/components/decks/decklist-row.tsx",
-      "steps": [
-        {
-          "goto": "/decks/${SPARES_DECK}",
-          "wait": "main, [role=main], h1",
-          "settle": 1500
-        },
-        {
-          "goto": "/decks/${SPARES_DECK}",
-          "wait": "[role=tablist]",
-          "settle": 1500
-        },
-        {
-          "wait": "[data-testid=spare-glyph]",
-          "settle": 600
-        },
-        {
-          "scrollTo": "[data-decklist-row]:has([data-testid=spare-glyph])",
-          "settle": 400
-        }
-      ],
-      "widths": [
-        "md-900",
-        "desktop"
-      ]
-    },
-    {
-      "id": "all-view-phone",
-      "label": "S4 All, List view on the phone: the glyph on a missing card's row",
-      "view": "src/components/decks/decklist-row.tsx",
-      "steps": [
-        {
-          "goto": "/decks/${SPARES_DECK}",
-          "wait": "main, [role=main], h1",
-          "settle": 1500
-        },
-        {
-          "goto": "/decks/${SPARES_DECK}",
-          "wait": "[role=tablist]",
-          "settle": 1500
-        },
-        {
-          "clickRole": "button",
-          "name": "List view",
-          "settle": 600
-        },
-        {
-          "wait": "[data-testid=spare-glyph]",
-          "settle": 1500
-        },
-        {
-          "scrollTo": "[data-decklist-row]:has([data-testid=spare-glyph])",
-          "settle": 400
-        }
-      ],
-      "widths": [
-        "phone"
       ]
     },
     {
