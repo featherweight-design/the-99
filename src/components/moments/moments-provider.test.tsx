@@ -28,6 +28,13 @@ class FakeObserver {
   }
 }
 
+/** Timers, then the promises they start (the visit claim runs on a microtask). */
+async function advance(ms: number) {
+  await act(async () => {
+    vi.advanceTimersByTime(ms);
+  });
+}
+
 function onScreen(name: string, isIntersecting = true) {
   const el = screen.getByRole("button", { name });
   act(() => notify!([{ target: el, isIntersecting }]));
@@ -52,7 +59,7 @@ function Hold() {
   );
 }
 
-const LIVE: MomentId[] = ["top-off", "lineup", "suggested-changes", "stand-ins"];
+const LIVE: MomentId[] = ["top-off", "lineup", "suggested-changes", "stand-ins", "wishlist"];
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -70,7 +77,7 @@ afterEach(() => {
 });
 
 describe("MomentsProvider", () => {
-  it("arrives the tie window after its control comes on screen, as a named note the control points at", () => {
+  it("arrives the tie window after its control comes on screen, as a named note the control points at", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
@@ -78,26 +85,27 @@ describe("MomentsProvider", () => {
     );
     onScreen("Stats");
     expect(screen.queryByRole("note")).toBeNull();
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     const note = screen.getByRole("note", { name: "Stats, a tip" });
     expect(screen.getByRole("button", { name: "Stats" }).getAttribute("aria-describedby")).toBe(note.id);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("data-moment-halo")).toBe(true);
     expect(document.querySelector("[aria-live=polite]")!.textContent).toBe("Stats opens Stats.");
   });
 
-  it("is spent after a second on screen, which takes the visit in every tab", () => {
+  it("is spent after a second on screen, which takes the visit in every tab", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS + SPENT_AFTER_MS));
+    await advance(ARRIVE_MS);
+    await advance(SPENT_AFTER_MS);
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
     expect(JSON.parse(window.localStorage.getItem(VISIT_KEY)!).taken).toBe(true);
   });
 
-  it("gives a tie inside the window to the fixed order", () => {
+  it("gives a tie inside the window to the fixed order", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="stand-ins" name="Swap" />
@@ -105,40 +113,40 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Swap");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS / 2));
+    await advance(ARRIVE_MS / 2);
     onScreen("Analysis");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS / 2));
+    await advance(ARRIVE_MS / 2);
     expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Analysis, a tip");
   });
 
-  it("closes on the ✕ and is spent at once, never to return", () => {
+  it("closes on the ✕ and is spent at once, never to return", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("data-moment-halo")).toBe(false);
   });
 
-  it("closes on Esc", () => {
+  it("closes on Esc", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
   });
 
-  it("closes on a press of the control, and the press still goes on to its tool", () => {
+  it("closes on a press of the control, and the press still goes on to its tool", async () => {
     const opened = vi.fn();
     function Pressable() {
       const anchor = useMomentAnchor("lineup", { eligible: true, copy: { tool: "Stats", line: "opens Stats." } });
@@ -154,7 +162,7 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     const control = screen.getByRole("button", { name: "Stats" });
     fireEvent.pointerDown(control);
     fireEvent.click(control);
@@ -163,7 +171,7 @@ describe("MomentsProvider", () => {
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
   });
 
-  it("waits while a dialog that locks nothing is drawn over the page, and arrives once it is gone", () => {
+  it("waits while a dialog that locks nothing is drawn over the page, and arrives once it is gone", async () => {
     function Popover() {
       const [open, setOpen] = useState(true);
       return open ? (
@@ -187,47 +195,47 @@ describe("MomentsProvider", () => {
     };
     try {
       onScreen("Stats");
-      act(() => vi.advanceTimersByTime(ARRIVE_MS * 3));
+      await advance(ARRIVE_MS * 3);
       expect(screen.queryByRole("note")).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: "done" }));
-      act(() => vi.advanceTimersByTime(1000));
+      await advance(1000);
       expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
     } finally {
       Element.prototype.getClientRects = proto;
     }
   });
 
-  it("is not spent when the page tears it down inside a second, and the visit stays free", () => {
+  it("is not spent when the page tears it down inside a second, and the visit stays free", async () => {
     const { rerender } = render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS + SPENT_AFTER_MS / 2));
+    await advance(ARRIVE_MS + SPENT_AFTER_MS / 2);
     rerender(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" eligible={false} />
       </MomentsProvider>,
     );
-    act(() => vi.advanceTimersByTime(SPENT_AFTER_MS));
+    await advance(SPENT_AFTER_MS);
     expect(spendMomentAction).not.toHaveBeenCalled();
     expect(JSON.parse(window.localStorage.getItem(VISIT_KEY)!).taken).toBe(false);
   });
 
-  it("closes when its control scrolls out of view", () => {
+  it("closes when its control scrolls out of view", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     onScreen("Stats", false);
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
   });
 
-  it("waits while something is open over the page, and arrives once it closes", () => {
+  it("waits while something is open over the page, and arrives once it closes", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Hold />
@@ -235,14 +243,14 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS * 3));
+    await advance(ARRIVE_MS * 3);
     expect(screen.queryByRole("note")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "close menu" }));
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
   });
 
-  it("shows nothing once the visit's moment is taken, nor for a spent moment, nor one not live", () => {
+  it("shows nothing once the visit's moment is taken, nor for a spent moment, nor one not live", async () => {
     window.localStorage.setItem(VISIT_KEY, JSON.stringify({ last: Date.now(), taken: true }));
     render(
       <MomentsProvider live={LIVE} spent={[]}>
@@ -250,7 +258,7 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.queryByRole("note")).toBeNull();
     cleanup();
     window.localStorage.clear();
@@ -264,47 +272,47 @@ describe("MomentsProvider", () => {
     expect(observed).toHaveLength(0);
   });
 
-  it("gives Esc's focus back to the control when it closes a bubble holding focus", () => {
+  it("gives Esc's focus back to the control when it closes a bubble holding focus", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     screen.getByRole("button", { name: "Dismiss" }).focus();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Stats" }));
   });
 
-  it("closes on a keyboard press of the control, which fires a click with no pointerdown", () => {
+  it("closes on a keyboard press of the control, which fires a click with no pointerdown", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     fireEvent.click(screen.getByRole("button", { name: "Stats" }));
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
   });
 
-  it("keeps the ✕ out of the native tab order: Tab from the control is how it is reached", () => {
+  it("keeps the ✕ out of the native tab order: Tab from the control is how it is reached", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.getByRole("button", { name: "Dismiss" }).tabIndex).toBe(-1);
     screen.getByRole("button", { name: "Stats" }).focus();
     fireEvent.keyDown(window, { key: "Tab" });
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Dismiss" }));
   });
 
-  it("shows beside whichever of a moment's controls is on screen, and points only that one at the note", () => {
+  it("shows beside whichever of a moment's controls is on screen, and points only that one at the note", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Rail" />
@@ -312,13 +320,13 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Tab bar");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.getByRole("button", { name: "Tab bar" }).hasAttribute("aria-describedby")).toBe(true);
     expect(screen.getByRole("button", { name: "Rail" }).hasAttribute("aria-describedby")).toBe(false);
     expect(screen.getByRole("button", { name: "Tab bar" }).hasAttribute("data-moment-halo")).toBe(true);
   });
 
-  it("lets one control carry two moments, and the fixed order picks between them", () => {
+  it("lets one control carry two moments, and the fixed order picks between them", async () => {
     function Shared() {
       const a = useMomentAnchor("friend-spares", { eligible: true, copy: { tool: "Spares", line: "spares." } });
       const b = useMomentAnchor("stand-ins", { eligible: true, copy: { tool: "Swap", line: "swap." } });
@@ -340,11 +348,11 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Other ways");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Swap, a tip");
   });
 
-  it("shows nothing while another tab holds the visit's claim", () => {
+  it("shows nothing while another tab holds the visit's claim", async () => {
     window.localStorage.setItem(VISIT_KEY, JSON.stringify({ last: Date.now(), taken: false, claim: { tab: "other", at: Date.now() } }));
     render(
       <MomentsProvider live={LIVE} spent={[]}>
@@ -352,11 +360,61 @@ describe("MomentsProvider", () => {
       </MomentsProvider>,
     );
     onScreen("Stats");
-    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    await advance(ARRIVE_MS);
     expect(screen.queryByRole("note")).toBeNull();
   });
 
-  it("does nothing outside the provider", () => {
+  it("shows nothing on a hidden page, and tears a bubble down unspent when the page hides inside its second", async () => {
+    const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    expect(screen.queryByRole("note")).toBeNull();
+    hidden.mockReturnValue(false);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
+    hidden.mockReturnValue(true);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await advance(SPENT_AFTER_MS);
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    hidden.mockRestore();
+  });
+
+  it("shows in the foreground card details while a covered one stays drawn behind it", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <div role="dialog" aria-modal="true" aria-label="covered">
+          <button type="button">behind</button>
+        </div>
+        <div role="dialog" aria-modal="true" aria-label="front">
+          <Control id="wishlist" name="Add to wishlist" />
+        </div>
+      </MomentsProvider>,
+    );
+    const proto = Element.prototype.getClientRects;
+    Element.prototype.getClientRects = function () {
+      return [{}] as unknown as DOMRectList;
+    };
+    try {
+      onScreen("Add to wishlist");
+      await advance(ARRIVE_MS);
+      expect(screen.getByRole("note", { name: "Add to wishlist, a tip" })).toBeTruthy();
+    } finally {
+      Element.prototype.getClientRects = proto;
+    }
+  });
+
+  it("does nothing outside the provider", async () => {
     render(<Control id="lineup" name="Stats" />);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("aria-describedby")).toBe(false);
   });

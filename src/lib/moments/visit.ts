@@ -70,3 +70,16 @@ export function releaseClaim(tab: string, now = Date.now()) {
 export function takeVisit(now = Date.now()) {
   write({ last: now, taken: true });
 }
+
+const LOCK = "the99.moments.visit";
+
+/**
+ * Runs a visit read-modify-write under one lock shared by every tab (the Web Locks API), so two tabs cannot both read
+ * an unclaimed visit and both claim it, nor a touch in one overwrite a claim the other just wrote. A browser without
+ * the API runs it as it is: one tab's own writes never race each other.
+ */
+export function withVisitLock<T>(fn: () => T): Promise<T> {
+  const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+  if (!locks) return Promise.resolve().then(fn);
+  return locks.request(LOCK, () => fn()).catch(() => fn());
+}

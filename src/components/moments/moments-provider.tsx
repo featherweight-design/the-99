@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { spendMomentAction } from "../../app/moments-actions";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { pickMoment, type MomentId } from "../../lib/moments/registry";
-import { claimVisit, releaseClaim, takeVisit, touchVisit } from "../../lib/moments/visit";
+import { claimVisit, releaseClaim, takeVisit, touchVisit, withVisitLock, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentCopy } from "../../lib/copy/moments";
 import { MomentBubble, type MomentPlace } from "./moment-bubble";
 
@@ -47,12 +47,6 @@ const TAB_ID = Math.random().toString(36).slice(2);
 
 const MomentsContext = createContext<Ctx | null>(null);
 
-/** The topmost open modal surface, which is the last one in the document: every sheet and dialog portals to the end. */
-function topModal(): Element | null {
-  const all = document.querySelectorAll('[aria-modal="true"]');
-  return all.length > 0 ? all[all.length - 1] : null;
-}
-
 /**
  * Whether a moment for this control may show now: nothing open over the page, or the control is inside what is on
  * top. Read two ways, because neither alone sees every surface: the counters (`lib/moments/hold.ts`) see what locks
@@ -64,8 +58,17 @@ function clearOver(el: HTMLElement): boolean {
   if (holds > 0) return false;
   const open = [...document.querySelectorAll<HTMLElement>(OVER_PAGE)].filter((n) => n.getClientRects().length > 0);
   if (locks === 0 && open.length === 0) return true;
-  const top = topModal();
-  return top !== null && top.contains(el) && open.every((n) => n.contains(el) || n.contains(top));
+  // A control in a modal may show while nothing is drawn over that modal. Every surface portals to the end of the
+  // document, so one drawn over it FOLLOWS it; one before it (a covered card details behind the foreground one) is
+  // under it and does not count.
+  const mine = el.closest<HTMLElement>('[aria-modal="true"]');
+  if (mine === null) return false;
+  return open.every(
+    (n) =>
+      n.contains(el) ||
+      n.contains(mine) ||
+      (mine.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) === 0,
+  );
 }
 
 /** While a control is on screen but something is open over it, how often to look again. */
@@ -105,19 +108,27 @@ export function MomentsProvider({
   const [leaving, setLeaving] = useState<Showing | null>(null);
   const [announce, setAnnounce] = useState("");
   const lastTouch = useRef(0);
+  // Spent ids reach every other open tab of this browser, so a tab loaded before a spend never shows it again.
+  const channel = useRef<BroadcastChannel | null>(null);
   const noteId = useId();
 
+  // Activity touches the visit, and a visit that just began after 30 minutes away reconsiders every control already on
+  // screen, since none of them will report a fresh intersection.
+  const armRef = useRef<() => void>(() => {});
   const touch = useCallback(() => {
     const now = Date.now();
     if (now - lastTouch.current < TOUCH_EVERY_MS) return;
     lastTouch.current = now;
-    touchVisit(now);
+    // The clock is read inside the lock: one read before it can trail a write another holder made since, and a visit
+    // stamped after `now` reads as a clock gone backwards, which starts a fresh visit and drops a live claim.
+    void withVisitLock(() => touchVisit()).then(() => armRef.current());
   }, []);
 
   const spend = useCallback((id: MomentId) => {
     if (spent.current.has(id)) return;
     spent.current.add(id);
-    takeVisit();
+    void withVisitLock(() => takeVisit());
+    channel.current?.postMessage(id);
     spendMomentAction(id).catch(() => {
       // The visit is already taken and the set holds it for this page; the account learns on the next spend.
     });
@@ -132,7 +143,7 @@ export function MomentsProvider({
       spendTimer.current = null;
       if (byReader || Date.now() - s.since >= SPENT_AFTER_MS) spend(s.id);
       // Torn down unspent: give the visit back to every tab.
-      else releaseClaim(TAB_ID);
+      else void withVisitLock(() => releaseClaim(TAB_ID));
       showingRef.current = null;
       setShowing(null);
       setAnnounce("");
@@ -145,11 +156,27 @@ export function MomentsProvider({
     [spend],
   );
 
+  const show = useCallback(
+    (anchor: Anchor) => {
+      const id = anchor.id;
+      const next = { ...anchor, since: Date.now() };
+      showingRef.current = next;
+      setShowing(next);
+      setAnnounce(`${anchor.copy.tool} ${anchor.copy.line}`);
+      spendTimer.current = window.setTimeout(() => {
+        spendTimer.current = null;
+        spend(id);
+      }, SPENT_AFTER_MS);
+    },
+    [spend],
+  );
+
   // The retry re-enters `decide` through this, since a callback cannot name itself before it is declared.
   const decideRef = useRef<() => void>(() => {});
   const decide = useCallback(() => {
     windowTimer.current = null;
-    if (showingRef.current !== null) return;
+    // A hidden page shows nothing: its time on screen would be counted without a reader seeing it.
+    if (showingRef.current !== null || document.hidden) return;
     const clear = [...visible.current]
       .map((reg) => regs.current.get(reg))
       .filter((a): a is Anchor => a !== undefined && clearOver(a.el));
@@ -163,28 +190,62 @@ export function MomentsProvider({
     lastTouch.current = Date.now();
     const id = pickMoment({ onScreen, live: liveSet, spent: spent.current, visitTaken: visit.taken });
     if (id === null) return;
-    // An exclusive claim on the visit across tabs, held until the spend takes it or a teardown releases it, so two tabs
-    // whose windows close close together never both show one.
-    if (!claimVisit(TAB_ID)) return;
-    const anchor = clear.find((a) => a.id === id)!;
-    const next = { ...anchor, since: Date.now() };
-    showingRef.current = next;
-    setShowing(next);
-    setAnnounce(`${anchor.copy.tool} ${anchor.copy.line}`);
-    spendTimer.current = window.setTimeout(() => {
-      spendTimer.current = null;
-      spend(id);
-    }, SPENT_AFTER_MS);
-  }, [liveSet, spend]);
+    // An exclusive claim on the visit across tabs, made under the visit lock and held until the spend takes it or a
+    // teardown releases it, so two tabs whose windows close together never both show one. Refused while another tab
+    // holds it: look again, since that claim may be released or expire.
+    void withVisitLock(() => claimVisit(TAB_ID)).then((ok) => {
+      if (!ok) {
+        if (windowTimer.current === null) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
+        return;
+      }
+      const anchor = clear.find((a) => a.id === id)!;
+      if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
+        void withVisitLock(() => releaseClaim(TAB_ID));
+        return;
+      }
+      show(anchor);
+    });
+  }, [liveSet, show]);
 
+
+
+  // Hidden, a bubble is torn down (unspent inside its second); visible again, the controls on screen are reconsidered.
+  // Another tab releasing or taking the visit, or spending a moment, is heard here too.
   useEffect(() => {
-    decideRef.current = decide;
-  }, [decide]);
+    const onVisibility = () => {
+      if (document.hidden) close(false);
+      else armRef.current();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === VISIT_KEY) armRef.current();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("storage", onStorage);
+    if (typeof BroadcastChannel !== "undefined") {
+      channel.current = new BroadcastChannel("the99.moments.spent");
+      channel.current.onmessage = (e: MessageEvent) => {
+        if (typeof e.data !== "string") return;
+        spent.current.add(e.data);
+        const s = showingRef.current;
+        if (s !== null && s.id === e.data) close(false);
+      };
+    }
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("storage", onStorage);
+      channel.current?.close();
+      channel.current = null;
+    };
+  }, [close]);
 
   const arm = useCallback(() => {
     if (windowTimer.current !== null || showingRef.current !== null || visible.current.size === 0) return;
     windowTimer.current = window.setTimeout(decide, ARRIVE_MS);
   }, [decide]);
+  useEffect(() => {
+    decideRef.current = decide;
+    armRef.current = arm;
+  }, [decide, arm]);
 
   useEffect(() => {
     // Nothing live (the switch off, or every tool off): no observer, and every anchor stays inert.
