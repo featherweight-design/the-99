@@ -15,6 +15,17 @@ export type WishlistTileCard = { name: string; imageUri: string | null; want: nu
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
 export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
 
+/** The caption's parts: `want N · have M`, or `wants N` on a friend's tile (`have: null`). */
+function captionParts(tile: WishlistTileCard): CopyPart[] {
+  return tile.have === null ? wishlistCopy.tile.wants(tile.want) : wishlistCopy.tile.caption(tile.want, tile.have);
+}
+
+/** The caption as words, for the press's accessible name: the press's own label replaces its content's, so a name
+ * without this would never speak the count. */
+export function wishlistCaptionText(tile: WishlistTileCard): string {
+  return captionParts(tile).map((p) => p.text).join("");
+}
+
 /** Copy parts as the boards draw them: a strong part in the caller's strong class. */
 export function Parts({ parts, strong }: { parts: readonly CopyPart[]; strong: string }) {
   return (
@@ -58,7 +69,7 @@ export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eage
         <span className="truncate text-[12px] font-semibold leading-[16px] text-[color:var(--fg)] md:text-[13px] md:leading-[17px]">{tile.name}</span>
         <span data-testid="wishlist-tile-caption" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-faint)] md:text-[9.5px]">
           <Parts
-            parts={tile.have === null ? wishlistCopy.tile.wants(tile.want) : wishlistCopy.tile.caption(tile.want, tile.have)}
+            parts={captionParts(tile)}
             strong="font-semibold text-[color:var(--fg-body)]"
           />
         </span>

@@ -26,8 +26,9 @@ vi.mock("../actions", () => ({ unfriendAction: m.unfriendAction }));
 // Card details is its own surface, tested on its own: here a tile only has to be the press that opens it, for its card.
 vi.mock("../../../components/cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  CardDetailTrigger: ({ oracleId, name, siblings, children }: { oracleId: string; name: string; siblings: unknown; children: React.ReactNode }) => (
-    <button type="button" aria-label={name} onClick={() => m.openCard(oracleId, siblings)}>
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
+  CardDetailTrigger: ({ oracleId, name, ariaLabel, siblings, children }: { oracleId: string; name: string; ariaLabel?: string; siblings: unknown; children: React.ReactNode }) => (
+    <button type="button" aria-label={ariaLabel ?? name} onClick={() => m.openCard(oracleId, siblings)}>
       {children}
     </button>
   ),
@@ -107,7 +108,7 @@ describe("FriendPage", () => {
   it("opens card details from a press on a tile, view only with no stepper", () => {
     draw();
     const tile = screen.getByRole("listitem");
-    fireEvent.click(within(tile).getByRole("button", { name: "Rhystic Study" }));
+    fireEvent.click(within(tile).getByRole("button", { name: "View details for Rhystic Study, wants 2" }));
     expect(m.openCard).toHaveBeenCalledWith(LINE.oracleId, [{ oracleId: LINE.oracleId, name: "Rhystic Study", imageUri: LINE.imageUri }]);
     // The Wishlist tab's own face, and nothing to change a count with.
     expect(within(tile).queryByRole("button", { name: /want one/i })).toBeNull();

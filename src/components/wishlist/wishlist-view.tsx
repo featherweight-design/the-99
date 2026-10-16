@@ -8,14 +8,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { wishlistCopy } from "../../lib/copy/wishlist";
-import { CardDetailProvider, CardDetailTrigger, type SiblingCard } from "../cards/card-detail-provider";
+import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { ArrivalDismiss } from "../decks/arrival-strip";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { GRID_EAGER_TILES } from "../collection/grid-view";
 import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
 import { WishlistSearch } from "./wishlist-search";
-import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace } from "./wishlist-tile";
+import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } from "./wishlist-tile";
 
 const copy = wishlistCopy;
 
@@ -168,6 +168,7 @@ function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager
         name={tile.name}
         siblings={siblings}
         imageUri={tile.imageUri}
+        ariaLabel={`${cardDetailCopy.triggerAria(tile.name)}, ${wishlistCaptionText(tile)}`}
         className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
       >
         <WishlistTileFace tile={tile} eager={eager} />

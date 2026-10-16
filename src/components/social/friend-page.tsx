@@ -15,8 +15,8 @@ import { sinceDay } from "../../lib/social/when";
 import { unfriendAction } from "../../app/friends/actions";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { useHydrated } from "../ui/hydrated-art";
-import { CardDetailProvider, CardDetailTrigger, type SiblingCard } from "../cards/card-detail-provider";
-import { WISHLIST_TILE_SHELL, WishlistTileFace } from "../wishlist/wishlist-tile";
+import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
+import { WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText, type WishlistTileCard } from "../wishlist/wishlist-tile";
 import { Face } from "./face";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FriendMenu } from "./friends-list";
@@ -90,7 +90,9 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
       ) : (
         <CardDetailProvider>
           <ul className={`m-0 grid list-none p-0 ${CARD_GRID_TRACKS} gap-[8px] pt-[12px] md:gap-[20px] md:pt-[16px]`}>
-            {lines.map((line, i) => (
+            {lines.map((line, i) => {
+              const tile: WishlistTileCard = { name: line.name, imageUri: line.imageUri, want: line.quantity, have: null };
+              return (
               <li key={line.oracleId} className="flex flex-col">
                 {/* The whole tile is the press that opens card details, as on the Wishlist tab. */}
                 <CardDetailTrigger
@@ -98,15 +100,14 @@ export function FriendPage({ friend, lines, nowMs }: { friend: Friend; lines: Fr
                   name={line.name}
                   siblings={siblings}
                   imageUri={line.imageUri}
+                  ariaLabel={`${cardDetailCopy.triggerAria(line.name)}, ${wishlistCaptionText(tile)}`}
                   className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
                 >
-                  <WishlistTileFace
-                    tile={{ name: line.name, imageUri: line.imageUri, want: line.quantity, have: null }}
-                    eager={i < EAGER_TILES}
-                  />
+                  <WishlistTileFace tile={tile} eager={i < EAGER_TILES} />
                 </CardDetailTrigger>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </CardDetailProvider>
       )}

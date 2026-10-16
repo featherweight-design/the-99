@@ -22,8 +22,9 @@ vi.mock("../../app/collection/wishlist/actions", () => ({
 // Card details is its own surface, tested on its own: here a tile only has to be a press that names its card.
 vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
-  CardDetailTrigger: ({ name, children }: { name: string; children: ReactNode }) => (
-    <button type="button" aria-label={name}>
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
+  CardDetailTrigger: ({ name, ariaLabel, children }: { name: string; ariaLabel?: string; children: ReactNode }) => (
+    <button type="button" aria-label={ariaLabel ?? name} data-card={name}>
       {children}
     </button>
   ),
@@ -64,7 +65,7 @@ describe("the list", () => {
     const tiles = screen.getAllByTestId("wishlist-tile");
     expect(tiles).toHaveLength(2);
     expect(within(tiles[0]!).getByTestId("wishlist-tile-caption")).toHaveTextContent("want 2 · have 1");
-    expect(within(tiles[0]!).getByRole("button", { name: "Sol Ring" })).toBeInTheDocument();
+    expect(within(tiles[0]!).getByRole("button", { name: "View details for Sol Ring, want 2 · have 1" })).toBeInTheDocument();
     expect(screen.getByText(wishlistCopy.page.meta(2))).toBeInTheDocument();
     expect(screen.queryByTestId("wishlist-empty")).toBeNull();
   });
@@ -88,7 +89,7 @@ describe("the list", () => {
 
   it("sorts by name on request, newest first otherwise", () => {
     view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet", addedAt: "2026-10-01T00:00:00.000Z" })] });
-    const names = () => screen.getAllByTestId("wishlist-tile").map((t) => within(t).getByRole("button").getAttribute("aria-label"));
+    const names = () => screen.getAllByTestId("wishlist-tile").map((t) => within(t).getByRole("button").getAttribute("data-card"));
     expect(names()).toEqual(["Sol Ring", "Arcane Signet"]);
     fireEvent.change(screen.getByRole("combobox", { name: wishlistCopy.page.sort.label }), { target: { value: "name" } });
     expect(names()).toEqual(["Arcane Signet", "Sol Ring"]);
