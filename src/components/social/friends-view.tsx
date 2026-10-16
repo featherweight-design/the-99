@@ -8,10 +8,11 @@
 // they take it, during render (never in an effect, or the old value paints once first). A press's optimistic value
 // stands only until that redraw lands, or its own write answers.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { Friend } from "../../lib/social/access";
-import type { OpenInvite, OwnProfile } from "../../lib/social/friends";
+import type { InviteOutcome, OpenInvite, OwnProfile } from "../../lib/social/friends";
 import type { CommanderTile } from "../../lib/decks/commander-picker";
 import { socialCopy } from "../../lib/copy/social";
 import { ACCEPTED_PARAM, invitePath } from "../../lib/social/client-rules";
@@ -27,9 +28,12 @@ import { AddFriendDialog } from "./add-friend-dialog";
 import { CommanderPicker } from "./commander-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
+import { useInviteWatch } from "./use-invite-watch";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
+/** Coming back to the window redraws the page, at most this often. */
+const FOCUS_REFRESH_MS = 10_000;
 
 /** What a redraw is compared by: the fields the head draws. */
 function drawnKey(p: OwnProfile): string {
@@ -60,7 +64,8 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
   };
 }
 
-type Shown = { url: string; expiresAt: Date };
+type Shown = { token: string; url: string; expiresAt: Date };
+type Receipt = { publicId: string; displayName: string };
 
 export function FriendsView({
   profile,
@@ -118,7 +123,7 @@ export function FriendsView({
     },
   }));
   const [picking, setPicking] = useState(false);
-  const [receipt, setReceipt] = useState(accepted);
+  const [receipt, setReceipt] = useState<Receipt | null>(accepted);
   // A redraw that resolves a different friend (or none: the friendship ended) replaces the receipt; the same one
   // keeps a receipt the reader closed, closed.
   const acceptedId = accepted?.publicId ?? null;
@@ -171,6 +176,34 @@ export function FriendsView({
     }, CLOCK_TICK_MS);
     return () => clearInterval(t);
   }, [ticking]);
+  // A link redeemed while it is shown or open (a friend scanned the QR code and accepted) redraws the page, so
+  // the friend row arrives without a refresh. A new friend turns the dialog into the receipt Accept draws; a
+  // link that ended any other way (declined, revoked elsewhere, or a friend you already had) only redraws.
+  const router = useRouter();
+  const listedIds = useRef(new Set<string>());
+  useEffect(() => {
+    listedIds.current = new Set(friends.map((f) => f.publicId));
+  }, [friends]);
+  const onEnded = useCallback((ended: InviteOutcome[]) => {
+    router.refresh();
+    const made = ended.find((l) => l.friend && !listedIds.current.has(l.friend.publicId));
+    if (!made?.friend) return;
+    setReceipt(made.friend);
+    setShown((s) => (s && ended.some((l) => l.token === s.token) ? null : s));
+  }, [router]);
+  useInviteWatch(shown ? [shown.token, ...open.map((l) => l.token)] : open.map((l) => l.token), onEnded);
+  // Coming back to the window redraws the page, so anything that moved while it was away (a friend who accepted
+  // on another device, a removal) arrives without a refresh.
+  const focusedAt = useRef(0);
+  useEffect(() => {
+    const onFocus = () => {
+      if (Date.now() - focusedAt.current < FOCUS_REFRESH_MS) return;
+      focusedAt.current = Date.now();
+      router.refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [router]);
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
 
   async function rename(next: string) {
@@ -206,7 +239,7 @@ export function FriendsView({
     setMaking(false);
     if (out?.ok) {
       showOpener.current = null;
-      setShown({ url: out.url, expiresAt: new Date(out.expiresAt) });
+      setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt) });
     }
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
@@ -280,7 +313,7 @@ export function FriendsView({
           timeZone={timeZone}
           onShow={(l) => {
             showOpener.current = document.activeElement as HTMLElement | null;
-            setShown({ url: linkUrl(l.token), expiresAt: l.expiresAt });
+            setShown({ token: l.token, url: linkUrl(l.token), expiresAt: l.expiresAt });
           }}
           onRevoke={revoke}
         />

@@ -165,6 +165,47 @@ export async function listOpenInvites(viewerId: string, now = new Date(), q: Rea
   return openInvitesQuery(viewerId, now, q);
 }
 
+export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: string } | null };
+
+/**
+ * What became of the viewer's own links, for /friends' watch while one is shown or open: whether each is still
+ * open, and, for one redeemed by someone who is now the viewer's friend, that friend. Only the viewer's own
+ * tokens are read (the inviter is the viewer, in the statement), and the redeemer is named only through the
+ * viewer's own link row to them, so a redeemer who has since been removed is not named. A token the viewer does
+ * not own, or that no longer exists, is absent from the answer.
+ */
+export function inviteOutcomesQuery(viewerId: string, tokens: string[], q: Reader = db) {
+  return q
+    .select({
+      token: friendInvites.token,
+      redeemedAt: friendInvites.redeemedAt,
+      declinedAt: friendInvites.declinedAt,
+      revokedAt: friendInvites.revokedAt,
+      expiresAt: friendInvites.expiresAt,
+      publicId: socialProfiles.publicId,
+      displayName: socialProfiles.displayName,
+    })
+    .from(friendInvites)
+    .leftJoin(friendLinks, and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, friendInvites.redeemedBy)))
+    .leftJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .where(and(eq(friendInvites.inviterUserId, viewerId), inArray(friendInvites.token, tokens)));
+}
+
+type OutcomeRow = Awaited<ReturnType<typeof inviteOutcomesQuery>>[number];
+
+export function shapeOutcome(r: OutcomeRow, now: Date): InviteOutcome {
+  return {
+    token: r.token,
+    open: inviteState(r, now) === "open",
+    friend: r.redeemedAt && r.publicId && r.displayName ? { publicId: r.publicId, displayName: r.displayName } : null,
+  };
+}
+
+export async function inviteOutcomes(viewerId: string, tokens: string[], now = new Date(), q: Reader = db): Promise<InviteOutcome[]> {
+  if (tokens.length === 0) return [];
+  return (await inviteOutcomesQuery(viewerId, tokens, q)).map((r) => shapeOutcome(r, now));
+}
+
 /** Both directed rows, in `friendshipRows`' order, and nothing if the friendship already stands. */
 async function befriendIn(tx: Tx, a: string, b: string): Promise<void> {
   await tx.insert(friendLinks).values(friendshipRows(a, b)).onConflictDoNothing();
