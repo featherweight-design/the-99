@@ -7,6 +7,8 @@
 
 import { useId } from "react";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 import { ADD_OVERLAP_NOTE_AT } from "../../lib/collection/upload-preview";
 import type { SyncUnavailable, UploadMode } from "../../app/collection/actions";
 import type { SyncPick } from "../../lib/collection/sync";
@@ -97,6 +99,7 @@ function Card({
   figure,
   unavailable,
   onPick,
+  moment = false,
   children,
 }: {
   mode: UploadMode;
@@ -112,18 +115,22 @@ function Card({
    */
   unavailable?: string;
   onPick: () => void;
+  /** M15 (discovery R1): the Sync card is Collection Sync's moment while it can be picked (never under `syncOff`). */
+  moment?: boolean;
   children?: React.ReactNode;
 }) {
   const titleId = useId();
   const reasonId = useId();
   const off = unavailable !== undefined;
+  const syncMoment = useMomentAnchor("collection-sync", { eligible: moment && !off, copy: momentsCopy.collectionSync });
   return (
     <div
+      {...syncMoment}
       role="radio"
       aria-checked={picked}
       aria-disabled={off || undefined}
       aria-labelledby={off ? titleId : undefined}
-      aria-describedby={off ? reasonId : undefined}
+      aria-describedby={off ? reasonId : syncMoment["aria-describedby"]}
       tabIndex={tabbable ? 0 : -1}
       data-choice={mode}
       onClick={off ? undefined : onPick}
@@ -419,6 +426,7 @@ export function UploadChoice({
               figure={syncFigure}
               unavailable={syncOff}
               onPick={() => onPick("sync")}
+              moment
             >
               {syncNoteLine ? <Note text={syncNoteLine} /> : null}
             </Card>

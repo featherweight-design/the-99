@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R1, the moments (plan 2026-10-16-moments.md). Rows land with the PR that mounts each moment: PR 1 is the foundation and draws nothing on its own.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row).",
+  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row). The M12 rows need an account with no deck, M15 one whose collection came from an upload. M15 previews a pasted list and presses no confirm, so nothing is written.",
   "out": "contact-sheets/moments",
   "planned": [
     {
@@ -461,6 +461,152 @@
         {
           "settle": 900,
           "waitNote": "Wishlist, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m12-help-me-choose-rail",
+      "label": "/commanders, an account with no deck (desktop): M12 Help me choose beside the rail's Discover",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Not sure where to start?, a tip"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "m12-help-me-choose-tab",
+      "label": "/commanders, an account with no deck (phone): M12 Help me choose above the tab bar's Discover",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/commanders",
+          "wait": "h1, h2",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Not sure where to start?, a tip"
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "m13-lineup",
+      "label": "/decks, an account with three decks or more, on Tiles: M13 Stats on the view switch",
+      "view": "src/components/decks/lineup/stats-view-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[role=tablist]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "settle": 900,
+          "waitNote": "Stats, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m14-precons",
+      "label": "/decks/new, the picker: M14 Precons on `Browse precons →`",
+      "view": "src/components/decks/precons/precon-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "wait": "[data-testid=precon-door]"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/decks/new",
+          "wait": "[data-testid=precon-door]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=precon-door] a",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Own a precon?, a tip"
+        }
+      ]
+    },
+    {
+      "id": "m15-collection-sync",
+      "label": "/collection/replace, a second upload's choice step: M15 Sync on the Sync card (an account with an anchor upload, so the card does not show syncOff)",
+      "view": "src/components/collection/upload-choice.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible"
+        },
+        {
+          "clearVisit": true
+        },
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Paste a list instead",
+          "wait": "textarea",
+          "settle": 300
+        },
+        {
+          "fill": "textarea",
+          "text": "1 Sol Ring",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Preview",
+          "wait": "[role=radiogroup]",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[data-choice=sync]",
+          "settle": 300
+        },
+        {
+          "settle": 900,
+          "waitNote": "Sync, a tip"
         }
       ]
     }

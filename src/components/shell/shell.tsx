@@ -84,6 +84,11 @@ export default async function Shell({
     moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
       ? await perfRead("shell.friendsAfterGame", () => friendsAfterGameDue(userId))
       : false;
+  // M12's condition (no deck yet) is read only while that moment is live and unspent.
+  const helpMoment =
+    moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
+      ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
+      : false;
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
@@ -99,7 +104,7 @@ export default async function Shell({
     <NavigationPendingProvider stall={stall}>
       <MomentsProvider live={moments} spent={spentMoments}>
       <div className="flex min-h-dvh flex-1">
-        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} />
         <div className="flex min-w-0 flex-1 flex-col">
           <MobileHeader theme={theme} {...door} friendsMoment={friendsMoment} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
@@ -113,7 +118,7 @@ export default async function Shell({
             {children}
           </ShellMain>
         </div>
-        <TabBar locked={locked} openLock={openLock} />
+        <TabBar locked={locked} openLock={openLock} helpMoment={helpMoment} />
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>

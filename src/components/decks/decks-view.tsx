@@ -393,7 +393,7 @@ export function DecksView({
   const statsOn = lineup !== null && view === "stats" && heldStats !== null;
   // The deck a tile's `See it among your decks` chose, for Stats to open on; a press on the switch clears it.
   const [amongDeck, setAmongDeck] = useState<string | null>(null);
-  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={(next) => { setAmongDeck(null); onView(next); }} busy={statsPending} /> : null;
+  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={(next) => { setAmongDeck(null); onView(next); }} busy={statsPending} moment={serverDecks.length >= 3} /> : null;
 
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a

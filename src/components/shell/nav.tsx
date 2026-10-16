@@ -19,6 +19,8 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { nameList } from "../../lib/copy/deck-analysis";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { reveal } from "../../lib/ui/reveal";
+import { momentsCopy } from "../../lib/copy/moments";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -534,17 +536,26 @@ type NavSlotProps = {
   className: string;
   // The pointer rail's name tag listens on its slots (useRailTag). The tab bar passes none.
   handlers?: ReturnType<ReturnType<typeof useRailTag>["bind"]>;
+  /** The slot is a moment's anchor (M12 on Discover). */
+  moment?: boolean;
   children: React.ReactNode;
 };
 
 // No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
 // tooltip would show beside it.
-function NavSlot({ href, name, active, pip, className, handlers, children }: NavSlotProps) {
+function NavSlot({ href, name, active, pip, className, handlers, moment = false, children }: NavSlotProps) {
+  // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's.
+  const helpMoment = useMomentAnchor("help-me-choose", {
+    eligible: moment,
+    copy: momentsCopy.helpMeChoose,
+    place: pip === "rail" ? "right" : "below",
+  });
   return (
     <Link
       href={href}
       aria-label={name}
       {...handlers}
+      {...helpMoment}
       aria-current={active ? "page" : undefined}
       className={`relative ${className}`}
     >
@@ -564,6 +575,11 @@ export type AdminDoorProps = {
   friendsMoment?: boolean;
 };
 
+/** M12 (discovery R1): the reader has no deck, so on `/commanders` Discover carries Help me choose. */
+function helpOnSlot(helpMoment: boolean, pathname: string, href: string): boolean {
+  return helpMoment && href === "/discover" && isActive(pathname, "/commanders");
+}
+
 export function NavRail({
   locked,
   openLock = null,
@@ -572,7 +588,8 @@ export function NavRail({
   adminEnv,
   friends,
   friendsMoment,
-}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey } & AdminDoorProps) {
+  helpMoment = false,
+}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean } & AdminDoorProps) {
   const pathname = usePathname();
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
   // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
@@ -641,6 +658,7 @@ export function NavRail({
               active={active}
               pip="rail"
               handlers={bind(href, label)}
+              moment={helpOnSlot(helpMoment, pathname, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
@@ -678,7 +696,7 @@ export function NavRail({
 // §Tab bar container / §Tab item Active / §Tab item Idle
 // ---------------------------------------------------------------------------
 
-export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?: OpenLock }) {
+export function TabBar({ locked, openLock = null, helpMoment = false }: { locked: boolean; openLock?: OpenLock; helpMoment?: boolean }) {
   const pathname = usePathname();
 
   const live = liveItems(locked, openLock).map(({ href, label }) => {
@@ -693,6 +711,7 @@ export function TabBar({ locked, openLock = null }: { locked: boolean; openLock?
         // 13 reserves colour for status. One `color` on the slot serves both
         // the icon (currentColor) and the label.
         pip="tab"
+        moment={helpOnSlot(helpMoment, pathname, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
             ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"

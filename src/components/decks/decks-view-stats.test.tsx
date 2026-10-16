@@ -13,7 +13,9 @@ vi.mock("../../app/decks/folder-actions", () => ({
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/decks",
 }));
+vi.mock("../../app/moments-actions", () => ({ spendMomentAction: async () => {} }));
 
 import { DecksView } from "./decks-view";
 import type { DeckListItem } from "../../lib/decks/read";
@@ -209,5 +211,37 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     // Both fills revert together: Tiles is drawn selected again and Stats is not.
     expect(screen.getByRole("tab", { name: "Tiles" })).toHaveClass("bg-[color:var(--elevated)]");
     expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveClass("bg-[color:var(--elevated)]");
+  });
+});
+
+// M13 (discovery R1): the switch carries Stats' moment from the third deck.
+describe("DecksView: Stats' moment", () => {
+  it.each([[3, true], [2, false]])("with %i decks, arrives: %s", async (count, arrives) => {
+    const { MomentsProvider, ARRIVE_MS } = await import("../moments/moments-provider");
+    const { momentsCopy } = await import("../../lib/copy/moments");
+    let notify: ((e: { target: Element; isIntersecting: boolean }[]) => void) | null = null;
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(cb: typeof notify) { notify = cb; }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+    vi.useFakeTimers();
+    try {
+      const decks = Array.from({ length: count }, (_, i) => ({ ...DECK, id: `d${i}`, name: `Deck ${i}` }));
+      render(
+        <MomentsProvider live={["lineup"]} spent={[]}>
+          <DecksView decks={decks} folders={[]} shopping={SHOPPING} buildable={0} cards={0} now={NOW} lineup={{ data: null, view: "tiles", foldServer: null }} />
+        </MomentsProvider>,
+      );
+      const group = screen.getAllByRole("tablist")[0].parentElement!;
+      act(() => notify!([{ target: group, isIntersecting: true }]));
+      await act(async () => { vi.advanceTimersByTime(ARRIVE_MS); });
+      const note = screen.queryByRole("note", { name: momentsCopy.noteName(momentsCopy.lineup.tool) });
+      expect(note !== null).toBe(arrives);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -2,8 +2,11 @@
 // choose's box verbatim, directly under it, or first when that door is off. It goes to the list,
 // whose back link then reads New deck; 181 decklists want the list's search and order, not an
 // inline pick.
+"use client";
 
 import Link from "next/link";
+import { momentsCopy } from "../../../lib/copy/moments";
+import { useMomentAnchor } from "../../moments/moments-provider";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { PendingReporter } from "../../shell/pending-reporter";
 
@@ -11,6 +14,8 @@ const copy = preconsCopy.door;
 const HREF = "/decks/precons?from=new";
 
 export function PreconDoor() {
+  // M14 (discovery R1): `Browse precons →` is the Precons moment wherever the picker draws it.
+  const preconMoment = useMomentAnchor("precons", { eligible: true, copy: momentsCopy.precons });
   return (
     <div
       data-testid="precon-door"
@@ -21,6 +26,7 @@ export function PreconDoor() {
         <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] md:text-[13px]">{copy.body}</p>
       </div>
       <Link
+        {...preconMoment}
         href={HREF}
         className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline md:h-[38px]"
       >
