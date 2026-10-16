@@ -46,6 +46,7 @@ describe("the shared checkbox", () => {
       "src/components/social/pod-card.tsx",
       "src/components/social/pod-add-friends.tsx",
       "src/components/scan-lab/scan-controls.tsx",
+      "src/components/scan-lab/scan-lab.tsx",
     ];
     for (const f of users) {
       expect(readFileSync(join(process.cwd(), f), "utf8"), f).toMatch(/import \{ Checkbox \} from "[./]+(?:ui\/)?checkbox"/);
