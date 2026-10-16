@@ -1,5 +1,5 @@
 // The card-scan lab's BROWSER code path, run under Node: onnxruntime-web's WASM backend on one thread,
-// with the lab's own JS warp and kNN (src/lib/scan-lab). Research only, not part of the app.
+// with the lab's own JS warp and kNN (src/lib/scan). Research only, not part of the app.
 //
 // 1. Parity: on scenes `parity_scenes.py` rendered, the lab's corners and embeddings against Python's.
 //    The lab ships the fp32 embedder, so the fp32 cosine is the parity figure: expected.json must carry

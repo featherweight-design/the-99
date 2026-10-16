@@ -563,7 +563,7 @@ The lab page matches on the phone only because a staging lab with no server inde
   capped at 400 KB) is stored only when "Keep this frame" is ticked. The table is purged with the
   account.
 - **Files** (the lab page, merged in #1814):
-  - `src/lib/scan-lab/*` (pure geometry, matching and result parsing, all unit tested);
+  - `src/lib/scan/*` (pure geometry and matching) and `src/lib/scan-lab/*` (result parsing), all unit tested (the shared modules moved to `src/lib/scan` on 2026-10-16);
   - `src/components/scan-lab/scan-lab.tsx`;
   - migration `0129_scan_lab` (the new table, plus the switch added to `flag_overrides`' check);
   - registry, flags and admin copy entries.
@@ -747,7 +747,7 @@ and the eye labels. No frame and no account id is in this document.
       printings rendered with fixed seeds, as raw RGBA frames and detector squares, and
       `expected.json` with Python's corners, sharpness and both embeddings of the detected warp
       (`emb` int8, `emb32` fp32). Then `wasm_bench.mjs` for the browser-path parity and WASM
-      latency. It runs the lab's own `src/lib/scan-lab` code, refuses a parity set with no `emb32`,
+      latency. It runs the lab's own `src/lib/scan` code, refuses a parity set with no `emb32`,
       and needs onnxruntime-web 1.27.0 installed outside the repository (see its header).
 
 ## Appendix: every table the run printed
