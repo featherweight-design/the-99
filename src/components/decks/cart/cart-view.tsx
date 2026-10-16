@@ -14,7 +14,8 @@ import { CartCheckout } from "./cart-checkout";
 import { CartHeldSlot, CartLine } from "./cart-line";
 import { CartGotItProvider, useCartGotIt } from "./cart-got-it";
 import { BackBand } from "./back-band";
-import { ShoppingKeyBuy } from "../shopping-key";
+import { ShoppingKeyBuy, ShoppingKeySpare } from "../shopping-key";
+import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../social/spare-markers";
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
@@ -68,11 +69,14 @@ export function CartView({
   initialView = "card",
   focusDeckId = null,
   buyEnabled = false,
+  socialFriends = false,
 }: {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
   /** I got it on a cart line (cart PR 6): `SHOPPING_MARK_BOUGHT_ENABLED` and its collection switch. */
   buyEnabled?: boolean;
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
+  socialFriends?: boolean;
   /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. */
   initialView?: CartViewMode;
   /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
@@ -99,6 +103,7 @@ export function CartView({
   });
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
+  const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
 
   // Commanders first, then the cards most SELECTED decks need, then A to Z (A2, A3): the order is
   // re-read as decks are selected, and a line no selected deck needs drops out.
@@ -162,6 +167,11 @@ export function CartView({
     return out;
   }, [cart]);
   const brews = cart.decks.some((d) => d.brew && selected.has(d.id));
+  // The cards the list draws now, which the key's spare item names only while one of them shows the glyph: the
+  // selected lines by card, the open selected decks' lines by deck (a folded or unselected group draws none).
+  const drawnIds = useMemo(() => new Set(byDeck
+    ? cart.decks.filter((d) => selected.has(d.id) && open.has(d.id)).flatMap((d) => (groupLines.get(d.id) ?? []).map((l) => l.oracleId))
+    : lines.map((l) => l.oracleId)), [byDeck, cart.decks, selected, open, groupLines, lines]);
 
   const toggle = (id: string) => setSelected((prev) => {
     const next = new Set(prev);
@@ -260,12 +270,11 @@ export function CartView({
               >
                 {/* The switch has nothing to switch between with one deck (E1); the buy key sits
                     beside it, alone, while there is a line to press. */}
-                {cart.decks.length >= 2 || showKey ? (
-                  <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
-                    {cart.decks.length >= 2 ? <ViewSwitch view={view} onView={chooseView} /> : <span />}
-                    {showKey ? <ShoppingKeyBuy /> : null}
-                  </div>
-                ) : null}
+                <CartKeyRow
+                  viewSwitch={cart.decks.length >= 2 ? <ViewSwitch view={view} onView={chooseView} /> : null}
+                  showBuy={showKey}
+                  drawn={drawnIds}
+                />
                 <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
                   {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
                 </h2>
@@ -275,6 +284,8 @@ export function CartView({
               {/* The provider sits OUTSIDE the scroll box: it draws the modal where it is mounted, and the dialog's
                   scroll lock looks for a scrollable ancestor, so mounted inside it would let the cart scroll behind. */}
               <CardDetailProvider>
+              {/* The spares-only modal a line's spare press opens (S5): inside this provider, since it opens card details. */}
+              <SparesSheetHost />
               <div
                 tabIndex={0}
                 role="region"
@@ -322,7 +333,33 @@ export function CartView({
       </div>
     </div>
   );
-  return buyEnabled ? (
-    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{page}</CartGotItProvider>
+  // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
+  const withSpares = socialFriends ? (
+    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false}>{page}</FriendSparesProvider>
   ) : page;
+  return buyEnabled ? (
+    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
+  ) : withSpares;
+}
+
+/**
+ * The row above the list: the view switch (two decks or more, E1) and the key. The key names the buy press while a line
+ * has one (card view, I got it on) and the spare glyph while a line draws it (S5, either view). Nothing at all with
+ * none of the three.
+ */
+function CartKeyRow({ viewSwitch, showBuy, drawn }: { viewSwitch: React.ReactNode; showBuy: boolean; drawn: ReadonlySet<string> }) {
+  const spares = usePageSpares();
+  const showSpare = spares !== null && [...drawn].some((id) => spares.byCard.has(id));
+  if (!viewSwitch && !showBuy && !showSpare) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
+      {viewSwitch ?? <span />}
+      {showBuy || showSpare ? (
+        <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[6px]">
+          <ShoppingKeySpare among={drawn} />
+          {showBuy ? <ShoppingKeyBuy /> : null}
+        </span>
+      ) : null}
+    </div>
+  );
 }

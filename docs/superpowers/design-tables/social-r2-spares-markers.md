@@ -142,3 +142,13 @@ Precedence: #1875 is the later ruling (R3/R4, Hugh) and overrides Social R2 wher
 8. Spare glyph in the phone press: Social 17px with stroke `#8FA6BE` hard-coded; #1875 16px `currentColor` in a `--fact` wrapper.
 9. Phone row padding: Social 12px 6px 10px 14px with 8px 14px 0 margin; #1875 12px 6px 10px 12px in a 14px-padded list.
 10. Accessible name: `markerAria` names the spare-only marker; no string covers the combined press when it holds ⇄ (both or stand-in only). Not set by either handoff.
+
+## Component: cart lines (Shopping for all decks, S5; PR B)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| Press | the other-ways press, spare glyph only (the cart has no stand-ins, so never ⇄) | same |
+| Position | before the line's buy tag, 8px gap | same |
+| Opens | the spares-only modal: Replacing box with the line's name, art and figure; the friends; the foot line | same |
+| Key | `spareCopy.key` beside the view switch, before `press to add`; drawn while a line shows a spare, in either view | same |
+| Absent | no spare on any line, the switch off, or the read failed: no press and no key item; the cart is otherwise unchanged | same |

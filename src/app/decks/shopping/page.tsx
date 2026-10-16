@@ -14,6 +14,7 @@ import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
 
@@ -53,6 +54,8 @@ export default async function AllDecksShoppingPage({
       initialView={initialView}
       focusDeckId={deck}
       buyEnabled={shoppingMarkBoughtEnabled(env)}
+      // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
+      socialFriends={socialFriendsEnabled(env)}
     />
   );
 }

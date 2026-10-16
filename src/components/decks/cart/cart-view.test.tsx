@@ -22,6 +22,11 @@ vi.mock("../../cards/card-detail-provider", async () => {
       if (!React.useContext(Mounted)) throw new Error("useCardDetail must be used inside a CardDetailProvider");
       return <button type="button" aria-label={name}>{children}</button>;
     },
+    // The spares-only modal's chrome registers itself with the provider; the same mount check holds for it.
+    useCardDetail: () => {
+      if (!React.useContext(Mounted)) throw new Error("useCardDetail must be used inside a CardDetailProvider");
+      return { registerSheet: () => () => {}, openOracleId: null, revealing: false, close: () => {} };
+    },
   };
 });
 
@@ -30,6 +35,7 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 import { priceCopy } from "../../../lib/copy/price";
 import type { CartPayload } from "../../../lib/decks/cart";
+import { spareCopy } from "../../../lib/copy/social";
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
@@ -457,5 +463,99 @@ describe("CartView by deck (A5)", () => {
       render(<CartView cart={cart()} provenance={provenance} buyEnabled initialView="deck" />);
       expect(screen.queryByText(gotItCopy.row.keyBuy)).toBeNull();
     });
+  });
+});
+
+// Social R2 PR B (S5): the spare glyph on the cart's lines, the key's spare item, and the spares-only modal.
+describe("CartView, friends' spares", () => {
+  const spareAnswer = {
+    ok: true,
+    json: async () => ({
+      spares: [{ oracleId: "tower", friend: { publicId: "p", displayName: "Ana", commander: null, pods: ["Thursday pod"] }, spare: 1 }],
+    }),
+  };
+  const withFetch = async (run: (fetchMock: ReturnType<typeof vi.fn>) => Promise<void>) => {
+    const fetchMock = vi.fn().mockResolvedValue(spareAnswer);
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await run(fetchMock);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it("draws the glyph on the line a friend holds a spare of, and on no other", async () => {
+    await withFetch(async () => {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends />); });
+      const items = list().getAllByRole("listitem");
+      const tower = items.find((li) => li.textContent?.startsWith("Command Tower"))!;
+      expect(within(tower).getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
+      expect(list().getAllByTestId("other-ways")).toHaveLength(1);
+      // The line's own classes join the press's as separate tokens, so neither the phone pull nor md's auto height is lost.
+      const classes = within(tower).getByTestId("other-ways").className.split(/\s+/);
+      expect(classes).toEqual(expect.arrayContaining(["md:h-auto", "-my-[9px]", "md:my-0"]));
+    });
+  });
+
+  it("names the glyph in the key, with I got it off and one deck, and opens the spares-only modal", async () => {
+    await withFetch(async () => {
+      const one = cart({ decks: [cart().decks[0]], lines: [cart().lines[2]] });
+      await act(async () => { render(<CartView cart={one} provenance={provenance} socialFriends />); });
+      expect(screen.getByTestId("spare-key").textContent).toContain(spareCopy.key);
+      await act(async () => { fireEvent.click(screen.getByRole("button", { name: spareCopy.markerAria("Command Tower") })); });
+      const dialog = screen.getByRole("dialog", { name: spareCopy.modalTitleSpares });
+      expect(within(dialog).getAllByTestId("friend-spare")).toHaveLength(1);
+    });
+  });
+
+  it("reads nothing and draws nothing with the switch off", async () => {
+    await withFetch(async (fetchMock) => {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} />); });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(screen.queryByTestId("other-ways")).toBeNull();
+      expect(screen.queryByTestId("spare-key")).toBeNull();
+    });
+  });
+});
+
+describe("CartView, friends' spares by deck and on selection", () => {
+  const spareAnswer = {
+    ok: true,
+    json: async () => ({
+      spares: [{ oracleId: "tower", friend: { publicId: "p", displayName: "Ana", commander: null, pods: [] }, spare: 1 }],
+    }),
+  };
+  it("draws the glyph on a deck group's line too", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
+    try {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" focusDeckId="gishath" />); });
+      expect(list().getByRole("button", { name: spareCopy.markerAria("Command Tower") })).toBeTruthy();
+      expect(screen.getByTestId("spare-key")).toBeTruthy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("names no spare in the key while every group holding one is folded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
+    try {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends initialView="deck" />); });
+      expect(list().queryByTestId("other-ways")).toBeNull();
+      expect(screen.queryByTestId("spare-key")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("drops the key's spare item when the only deck needing that card is unselected", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(spareAnswer));
+    try {
+      await act(async () => { render(<CartView cart={cart()} provenance={provenance} socialFriends />); });
+      expect(screen.getByTestId("spare-key")).toBeTruthy();
+      fireEvent.click(screen.getByRole("checkbox", { name: copy.selections.aria("HD - Gishath", true) }));
+      expect(screen.queryByTestId("spare-key")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

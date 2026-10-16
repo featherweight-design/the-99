@@ -11,6 +11,7 @@ import { BuyTag } from "../buy-tag";
 import { lineFact } from "./cart-line";
 import { Chevron } from "../../ui/chevron";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { OtherWaysPress } from "../../social/spare-markers";
 import { Checkbox } from "../../ui/checkbox";
 
 export function CartDeckGroup({
@@ -111,7 +112,15 @@ export function CartDeckGroup({
                     </span>
                   ) : null}
                 </div>
-                <span className="mt-[3px] flex-none">
+                {/* S5: the spare glyph before the tag, as the By card line draws it. */}
+                <span className="mt-[3px] flex flex-none items-center gap-[8px]">
+                  <OtherWaysPress
+                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: null, imageUri: line.imageUri ?? null, price: fact }}
+                    standIn={false}
+                    standInAria=""
+                    limitFigure=""
+                    className="-my-[9px] md:my-0"
+                  />
                   <BuyTag variant="row" reserveSlot price={fact} newestAsOf={newestAsOf} />
                 </span>
               </li>

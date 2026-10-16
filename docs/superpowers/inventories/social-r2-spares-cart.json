@@ -1,0 +1,84 @@
+{
+  "feature": "Social R2 PR B: friends' spares on Shopping for all decks (handoff design_handoff_the99_social_r2 S5: the same marker on cart lines; the cart otherwise unchanged)",
+  "note": "Needs ALL_DECKS_CART_ENABLED and SOCIAL_FRIENDS_ENABLED on for the reader, and the fixtures social-r2-spares.json names (two friends sharing spares of Polyraptor, Shatterskull and Pantlaza with pods the reader is in), on a scratch branch off local-dev ONLY. The first cell of a run lands on the Welcome page, so each row opens with a throwaway visit.",
+  "out": "contact-sheets/social-r2-spares-cart",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "cart-lines",
+      "label": "S5 the cart's lines: the spare glyph before the buy tag on Polyraptor, Shatterskull and Pantlaza, nothing on other lines",
+      "view": "src/components/decks/cart/cart-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "li:has([data-testid=spare-glyph])",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "cart-key",
+      "label": "S5 the key row: friend has a spare beside the view switch (and press to add with I got it on)",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 2000
+        },
+        {
+          "scrollTo": "[data-testid=spare-key]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "cart-opens",
+      "label": "S5 the glyph on Pantlaza opens the spares-only modal: Replacing box with the line's figure, the friends, the foot line",
+      "view": "src/components/social/spare-markers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/shopping",
+          "wait": "[data-testid=spare-glyph]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Friends with a spare of Pantlaza",
+          "wait": "[data-testid=spares-sheet]",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}

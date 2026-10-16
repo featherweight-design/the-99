@@ -9,6 +9,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+
+/** What the press and the spares-only modal draw of a card: a deck row's card, or a cart line mapped to it. */
+export type SpareCard = Pick<DeckDetailCard, "oracleId" | "name" | "printedName" | "layout" | "imageUri" | "price">;
 import { printedFaceName } from "../../lib/collection/browse";
 import { spareCopy } from "../../lib/copy/social";
 import { MAX_SPARES_BATCH } from "../../lib/social/client-rules";
@@ -47,9 +50,10 @@ type Ctx = {
   /** The cards with a spare, and their friends. */
   byCard: ReadonlyMap<string, FriendSpare[]>;
   /** The card whose spares-only modal is open (swap tools off), or null. */
-  opened: DeckDetailCard | null;
-  open: (card: DeckDetailCard) => void;
+  opened: SpareCard | null;
+  open: (card: SpareCard) => void;
   close: () => void;
+  newestAsOf: Date | null;
 };
 
 const SparesContext = createContext<Ctx | null>(null);
@@ -62,16 +66,20 @@ export function usePageSpares(): Ctx | null {
 export function FriendSparesProvider({
   oracleIds,
   newestAsOf,
+  hostSheet = true,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
   oracleIds: readonly string[];
   newestAsOf: Date | null;
+  /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
+   *  which then renders `SparesSheetHost` itself. */
+  hostSheet?: boolean;
   children: React.ReactNode;
 }) {
   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
   const [spares, setSpares] = useState<FriendSpare[]>([]);
-  const [opened, setOpened] = useState<DeckDetailCard | null>(null);
+  const [opened, setOpened] = useState<SpareCard | null>(null);
   useEffect(() => {
     if (!key) return;
     let live = true;
@@ -88,15 +96,22 @@ export function FriendSparesProvider({
     const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, opened, open: setOpened, close: () => setOpened(null) };
-  }, [spares, opened, key]);
+    return { byCard, opened, open: setOpened, close: () => setOpened(null), newestAsOf };
+  }, [spares, opened, key, newestAsOf]);
   return (
     <SparesContext.Provider value={value}>
       {children}
-      {opened ? (
-        <SparesSheet card={opened} spares={value.byCard.get(opened.oracleId) ?? []} newestAsOf={newestAsOf} onClose={value.close} />
-      ) : null}
+      {hostSheet ? <SparesSheetHost /> : null}
     </SparesContext.Provider>
+  );
+}
+
+/** The spares-only modal for the card the press opened, where it is mounted; nothing while none is open. */
+export function SparesSheetHost() {
+  const ctx = usePageSpares();
+  if (!ctx?.opened) return null;
+  return (
+    <SparesSheet card={ctx.opened} spares={ctx.byCard.get(ctx.opened.oracleId) ?? []} newestAsOf={ctx.newestAsOf} onClose={ctx.close} />
   );
 }
 
@@ -114,9 +129,9 @@ export function OtherWaysPress({
   limitFigure,
   className = "",
 }: {
-  card: DeckDetailCard;
+  card: SpareCard;
   /** Opens the row's stand-ins modal: a deck row with the swap tools on whose card may be cut (never a locked one).
-   *  Absent, the press opens the spares-only modal. */
+   *  Absent (a locked row, the cart), the press opens the spares-only modal. */
   openStandIns?: () => void;
   /** The row may look for cheaper stand-ins (the swap tools' over-limit rule, decided by the row). */
   standIn: boolean;
@@ -145,7 +160,7 @@ export function OtherWaysPress({
       onClick={() => (tools && openStandIns ? openStandIns() : ctx?.open(card))}
       // The phone keeps the shipped 44px-tall hit around the 36px press it draws, as wide as the press (#1875 sets it
       // flush beside the tag); from md the hit is the press.
-      className={`flex h-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 md:h-auto${className}`}
+      className={`flex h-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 md:h-auto ${className}`}
     >
       <span
         aria-hidden="true"
@@ -163,10 +178,11 @@ export function OtherWaysPress({
   );
 }
 
-/** The key's item, drawn only while a spare is (S2: none in S1). */
-export function SpareKeyItem({ className }: { className: string }) {
+/** The key's item, drawn only while a spare is (S2: none in S1): among `among` when given, the cards a view draws. */
+export function SpareKeyItem({ className, among }: { className: string; among?: ReadonlySet<string> }) {
   const ctx = usePageSpares();
   if (!ctx || ctx.byCard.size === 0) return null;
+  if (among && ![...among].some((id) => ctx.byCard.has(id))) return null;
   return (
     <span className={className} data-testid="spare-key">
       <span className="flex w-[18px] justify-center text-[color:var(--fact)]">
@@ -188,7 +204,7 @@ export function SparesSheet({
   newestAsOf,
   onClose,
 }: {
-  card: DeckDetailCard;
+  card: SpareCard;
   spares: readonly FriendSpare[];
   newestAsOf: Date | null;
   onClose: () => void;
