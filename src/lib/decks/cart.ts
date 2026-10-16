@@ -46,6 +46,8 @@ export type CartLine = {
   name: string;
   /** The art the line previews with: the printing the player owns, else the catalog's. Drawn only, never merged on. */
   imageUri?: string | null;
+  /** Scryfall's layout word, so a two-faced card prints its front face and the `//` mark. Drawn only. */
+  layout?: string | null;
   /** Some deck on the line buys it as its unowned commander (H28). Per selection: `selectLine`. */
   commander: boolean;
   /**

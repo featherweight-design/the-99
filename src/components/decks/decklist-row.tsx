@@ -3,7 +3,7 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
-import { faceNames, hasFrontFaceCost, isTwoFaced } from "../../lib/cards/faces";
+import { faceNames, frontFaceName, hasFrontFaceCost, isTwoFaced } from "../../lib/cards/faces";
 import { useId, useState } from "react";
 import { removeCardFromDeck, setBasicQuantity } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -469,8 +469,10 @@ export function DecklistRow({
   // Two strings, because they answer different questions. The visible one is a
   // front face and may clip; the accessible one is whole and never does. The
   // modal — one tap away on this very name — is the recovery path for the clip.
-  const displayName = printedFaceName(card);
+  // The front face of a two-faced card, beside the `//` mark the row draws for it (d9, 2026-10-16): the whole oracle string
+  // and the mark said the back face twice, and cost the row half its name. The full name is the trigger's accessible name.
   const fullName = printedNameOf(card);
+  const displayName = frontFaceName(fullName, card.layout);
   // Option B's phone name: the front face of a two-face card, from the name the row speaks (a printed name when the
   // player owns a renamed copy). From `md` the row prints what it printed. Null for a one-face card.
   const frontFace = isTwoFaced(card.layout ?? card.catalogLayout) ? faceNames(fullName).front : null;

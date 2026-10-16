@@ -46,7 +46,7 @@ export async function loadCart(
       return null;
     }),
     cartDecksQuery(userId, deckIds),
-    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri })
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, layout: cards.layout })
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
@@ -65,9 +65,14 @@ export async function loadCart(
 
   const built = buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership);
   const catalogArt = new Map(cardRows.map((c) => [c.oracleId, c.imageUri]));
+  const layouts = new Map(cardRows.map((c) => [c.oracleId, c.layout]));
   return {
     ...built,
-    lines: built.lines.map((l) => ({ ...l, imageUri: ownedArt.get(l.oracleId) ?? catalogArt.get(l.oracleId) ?? null })),
+    lines: built.lines.map((l) => ({
+      ...l,
+      imageUri: ownedArt.get(l.oracleId) ?? catalogArt.get(l.oracleId) ?? null,
+      layout: layouts.get(l.oracleId) ?? null,
+    })),
     totalDecks: total,
   };
 }

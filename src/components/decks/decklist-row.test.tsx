@@ -1720,13 +1720,15 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
   });
 
-  it("shows a two-face card's front face on the phone and the whole name from md", () => {
+  // From md too since d9's ruling (2026-10-16): the row prints the front face beside the `//` mark, never `A // B` and the mark.
+  it("shows a two-face card's front face on the phone and from md, the whole name only in its accessible name", () => {
     const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
     inB(<DecklistRow deckId="d1" card={dfc} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     const front = screen.getByText("Delver of Secrets", { selector: "span.md\\:hidden" });
-    const whole = screen.getByText("Delver of Secrets // Insectile Aberration", { selector: "span.hidden" });
+    const fromMd = screen.getByText("Delver of Secrets", { selector: "span.hidden" });
     expect(front).toBeInTheDocument();
-    expect(whole.className).toContain("md:inline");
+    expect(fromMd.className).toContain("md:inline");
+    expect(screen.queryByText("Delver of Secrets // Insectile Aberration")).toBeNull();
     // The trigger's accessible name stays the whole card.
     expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Delver of Secrets // Insectile Aberration") })).toBeInTheDocument();
   });
@@ -1763,7 +1765,7 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(row().querySelector("span[aria-hidden='true'].flex-none.w-\\[22px\\]")).toBeNull();
   });
 
-  it("cuts a recounted two-face card's phone label to the front face, and keeps the whole one from md", () => {
+  it("cuts a recounted two-face card's label to the front face, on the phone and from md", () => {
     const dfc = priced(1500, { name: "Delver of Secrets // Insectile Aberration", layout: "transform" } as Partial<DeckDetailCard>);
     renderRow(
       <PendingChangeProvider value={{ moves: new Map([[dfc.oracleId, { from: 1, to: 2 }]]) }}>
@@ -1774,7 +1776,7 @@ describe("DecklistRow, phone Shopping row option B", () => {
     );
     const phone = document.querySelector<HTMLElement>("span.md\\:hidden[aria-hidden='true']")!;
     expect(phone.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
-    expect(document.querySelector("span.hidden.md\\:inline")!.textContent).toContain("Insectile Aberration");
+    expect(document.querySelector("span.hidden.md\\:inline")!.textContent).toBe(deckImportCopy.update.diff.recountedItem("Delver of Secrets", "1", "2"));
   });
 
   it("gives a two-face commander's Shopping row its front face from the catalog layout, and draws no new mark", () => {
@@ -2188,5 +2190,20 @@ describe("DecklistRow, the +N and the row's preview", () => {
     fireEvent.mouseOut(chip(), { clientX: 120, clientY: 100, relatedTarget: name });
     act(() => void vi.advanceTimersByTime(1000));
     expect(preview()).not.toBeNull();
+  });
+});
+
+// A two-faced card's All row prints its front face beside the `//` mark (d9, 2026-10-16), and a split card keeps both halves.
+describe("DecklistRow, a two-faced card's name", () => {
+  it("prints the front face and the mark, with the whole name as the press's name", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, name: "Reidane, God of the Worthy // Valkmira, Protector's Shield", layout: "modal_dfc" } as DeckDetailCard} newestAsOf={null} />);
+    expect(screen.getByText("Reidane, God of the Worthy")).toBeInTheDocument();
+    expect(screen.queryByText(/Valkmira, Protector's Shield/)).toBeNull();
+    expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Reidane, God of the Worthy // Valkmira, Protector's Shield") })).toBeInTheDocument();
+  });
+
+  it("keeps both halves of a split card, which has one face", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, name: "Fire // Ice", layout: "split" } as DeckDetailCard} newestAsOf={null} />);
+    expect(screen.getByText("Fire // Ice")).toBeInTheDocument();
   });
 });

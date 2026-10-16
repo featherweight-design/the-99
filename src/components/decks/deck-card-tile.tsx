@@ -21,7 +21,7 @@
 
 import { useId, useState } from "react";
 
-import { hasFrontFaceCost } from "../../lib/cards/faces";
+import { frontFaceName, hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -200,8 +200,9 @@ export function DeckCardTile({
   // no foil and not-owned have none. It is spoken here, ahead of the facts, because the glint is `silent`.
   const foilFinish = card.imageUri ? card.foil : undefined;
   const markClause = foilSpoken(foilFinish) + factClause;
-  const displayName = printedFaceName(card);
+  // The front face of a two-faced card, beside the `//` mark in the name's trail, as on the row (d9, 2026-10-16).
   const fullName = printedNameOf(card);
+  const displayName = frontFaceName(fullName, card.layout);
   // Null unless the string holds symbols this app can draw, so both branches
   // below agree on what "has a cost" means.
   const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;
