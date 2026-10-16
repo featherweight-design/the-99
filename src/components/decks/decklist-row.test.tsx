@@ -24,6 +24,8 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { SwapToolsProvider, useSwapTools } from "../../lib/swaps/context";
 import { OVER_LIMIT_RING } from "./buy-tag";
+import { FriendSparesProvider } from "../social/spare-markers";
+import { spareCopy } from "../../lib/copy/social";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -1673,9 +1675,10 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(remove.className).toContain("max-md:order-2");
     const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
     expect(swap.className).toContain("max-md:order-7");
-    // The 44px hit is kept; the drawn press inside it is 40x36.
-    expect(swap.className).toContain("w-[44px] h-[44px]");
-    expect(swap.firstElementChild!.className).toContain("max-md:w-[40px]");
+    // The other-ways press (#1875): a 44px hit below md around the 36px press it draws, 26px from md.
+    expect(swap.className).toContain("h-[44px]");
+    expect(swap.firstElementChild!.className).toContain("h-[36px]");
+    expect(swap.firstElementChild!.className).toContain("md:h-[26px]");
     const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") });
     expect(tag.parentElement!.className).toContain("max-md:order-8");
     expect(tag.parentElement!.className).toContain("max-md:min-h-[44px]");
@@ -1719,13 +1722,13 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Delver of Secrets // Insectile Aberration") })).toBeInTheDocument();
   });
 
-  it("changes no md size: the 44px slots are the shipped ones, so the md-to-lg band is the shipped row", () => {
+  it("changes no md size of the ✕: its 44px slot is the shipped one, and the press's hit is the press from md", () => {
     inB(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
     const swap = screen.getByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
-    for (const el of [remove, swap]) expect(el.className).toContain("w-[44px] h-[44px]");
+    expect(remove.className).toContain("w-[44px] h-[44px]");
     expect(remove.className).toContain("md:w-auto md:h-auto");
-    expect(swap.className).toContain("md:w-[22px] md:h-[20px]");
+    expect(swap.className).toContain("md:h-auto");
     // Every phone class is max-md:, so no `max-lg:` or `lg:` size is spelled for B.
     expect(row().innerHTML).not.toContain("max-lg:");
   });
@@ -1738,7 +1741,7 @@ describe("DecklistRow, phone Shopping row option B", () => {
     }
   });
 
-  it("draws a land with no EDHREC figure in the same two lines, and keeps the shipped 22px spacer, hidden on the phone", () => {
+  it("draws a land with no EDHREC figure in the same two lines, and keeps no slot for a press it does not draw", () => {
     const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null, name: "Sunken Ruins // Back" , layout: "transform" } as DeckDetailCard;
     inB(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
     expect(row().className).toContain("max-md:flex-wrap");
@@ -1746,9 +1749,9 @@ describe("DecklistRow, phone Shopping row option B", () => {
     expect(screen.getByText("Sunken Ruins", { selector: "span.md\\:hidden" })).toBeInTheDocument();
     cleanup();
     inB(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
-    const spacer = row().querySelector<HTMLElement>("span[aria-hidden='true'].flex-none.w-\\[22px\\]")!;
-    // The shipped spacer: hidden on the phone, drawn from md.
-    expect(spacer.className).toContain("hidden md:block");
+    // #1875: neither a stand-in nor a spare is no press and no reserved slot.
+    expect(screen.queryByTestId("other-ways")).toBeNull();
+    expect(row().querySelector("span[aria-hidden='true'].flex-none.w-\\[22px\\]")).toBeNull();
   });
 
   it("cuts a recounted two-face card's phone label to the front face, and keeps the whole one from md", () => {
@@ -1883,5 +1886,78 @@ describe("DecklistRow, the two-line row and the foil glint", () => {
     renderRow(<DecklistRow deckId="d1" card={foiled({ typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", name: "Forest", manaCost: null })} newestAsOf={null} />);
     expect(tokens(row())).not.toContain("md:flex-wrap");
     expect(row().querySelector("[aria-hidden='true'].md\\:basis-full")).toBeNull();
+  });
+});
+
+// Social R2 PR A: the other-ways press reads a friend's spare on every row the deck is buying (#1875: All's missing
+// rows too), at both widths, beside or instead of ⇄.
+describe("DecklistRow, the other-ways press", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const missing = (cents: number) =>
+    ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf } }) as DeckDetailCard;
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        spares: [{ oracleId: card.oracleId, friend: { publicId: "p", displayName: "Ana", commander: null, pods: [] }, spare: 1 }],
+      }),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  const withSpares = async (ui: React.ReactNode, tools = true) => {
+    await act(async () => {
+      renderRow(
+        <DeckPageSwitches howItWorks={false}>
+          <FriendSparesProvider oracleIds={[card.oracleId]} newestAsOf={asOf}>
+            {tools ? (
+              <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>{ui}</SwapToolsProvider>
+            ) : (
+              ui
+            )}
+          </FriendSparesProvider>
+        </DeckPageSwitches>,
+      );
+    });
+  };
+
+  it("draws the spare glyph on an All row the deck is missing, named for the spare", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(500)} newestAsOf={asOf} />);
+    const press = screen.getByTestId("other-ways");
+    expect(press.getAttribute("aria-label")).toBe(spareCopy.markerAria("Sol Ring"));
+    expect(press.textContent).not.toContain("⇄");
+  });
+
+  it("draws the press before the buy tag in the DOM, for the widths no slot table orders", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(500)} newestAsOf={asOf} />);
+    const press = screen.getByTestId("other-ways");
+    const tag = screen.getByText(/buy/i, { selector: "span" });
+    expect(press.compareDocumentPosition(tag) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws nothing on a row the collection holds", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={{ ...(card as DeckDetailCard), owned: true }} newestAsOf={asOf} />);
+    expect(screen.queryByTestId("other-ways")).toBeNull();
+  });
+
+  it("holds ⇄ and the glyph on an over-limit Shopping row, replacing the row's own ⇄", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    const presses = screen.getAllByTestId("other-ways");
+    expect(presses).toHaveLength(1);
+    expect(presses[0].getAttribute("aria-label")).toBe(spareCopy.pressBothAria("Sol Ring", "$10"));
+    expect(screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") })).toBeNull();
+  });
+
+  it("offers no ⇄ on an All row over the limit: stand-ins open from Shopping alone", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(1500)} newestAsOf={asOf} />);
+    expect(screen.getByTestId("other-ways").textContent).not.toContain("⇄");
+  });
+
+  it("opens the spares-only modal with the swap tools off", async () => {
+    await withSpares(<DecklistRow deckId="d1" card={missing(500)} inShopping newestAsOf={asOf} />, false);
+    await act(async () => { fireEvent.click(screen.getByTestId("other-ways")); });
+    expect(screen.getByRole("dialog", { name: spareCopy.modalTitleSpares })).toBeInTheDocument();
   });
 });

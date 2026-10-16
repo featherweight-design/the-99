@@ -246,6 +246,8 @@ const DEFINES_PRESS = new Set([
  */
 const COMPOSED_ROWS: Record<string, string[]> = {
   "components/collection/browser.tsx": ["components/collection/rows-view.tsx"],
+  // The spares-only modal's Replacing line is the stand-ins modal's own `ReplacingLine`, which previews the card.
+  "components/social/spare-markers.tsx": ["components/decks/stand-ins-sheet.tsx"],
 };
 
 /**
@@ -411,7 +413,8 @@ describe("every card row has a hover preview and a press that opens card details
       expect(importsBinding(files[owner], "HoverPreviewProvider"), `${owner} mounts no provider`).toBe(true);
       expect(hasPress(files[owner]), `${owner} opens no card details`).toBe(true);
       for (const child of children) {
-        expect(importsBinding(files[child], "PreviewButton"), `${child} draws no preview`).toBe(true);
+        // A child previews through `PreviewButton` or a row shell of its own (`usePreviewRow`).
+        expect(importsBinding(files[child], "PreviewButton") || importsBinding(files[child], "usePreviewRow"), `${child} draws no preview`).toBe(true);
       }
     }
   });

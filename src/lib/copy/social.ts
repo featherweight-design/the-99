@@ -229,4 +229,12 @@ export const spareCopy = {
   via: (pods: readonly string[]) => `shares with ${new Intl.ListFormat("en-US", { type: "conjunction" }).format(pods)}`,
   count: (n: number) => spares(n),
   foot: "A spare is a copy none of their decks uses, drafts included. Reach out to offer a trade or bargain your prized family goat, and it’s yours!",
+  /** The Shopping key's item, beside the press's spare glyph, at both widths (S2). */
+  key: "friend has a spare",
+  /** The other-ways press holding the spare glyph alone, on any row the deck is buying; it opens that card's modal. */
+  markerAria: (card: string) => `Friends with a spare of ${card}`,
+  /** The row's one press when it holds both ⇄ and a friend's spare (#1875). */
+  pressBothAria: (card: string, limit: string) => `Cheaper stand-ins and friends with a spare of ${card}, over your ${limit} limit`,
+  /** The spares-only modal's Replacing box: no deck line, since it can open where no one deck is meant (the cart). */
+  replacing: "replacing",
 } as const;

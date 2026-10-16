@@ -100,8 +100,9 @@ export type SpareFriend = {
 };
 export type FriendSpare = { oracleId: string; friend: SpareFriend; spare: number };
 
-/** The most cards one spares read asks about: a request past it is refused rather than cut. */
-export const MAX_SPARES_BATCH = 200;
+// The most cards one spares read asks about: a request past it is refused rather than cut. It lives in client-rules
+// so the deck page batches by the same number the route refuses past.
+export { MAX_SPARES_BATCH } from "./client-rules";
 
 /**
  * Each granting friend's claim model narrowed to `asked`, in input order, at most CLAIM_MODELS_AT_ONCE at a

@@ -794,7 +794,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   figure at any width. The glint is the foil mark (`FoilGlint`): drawn by the film's rule (`imageUri ? foil : undefined`), spoken in the row's
   description (`foilMarkCopy.name`), and on a precon's read-only list row it replaces the printed `· foil` (`printedFoil`, art not required).
   `ShoppingKey` is one grid (`cheaper stand-ins`, the friend-spare item's position, `press to add`, the outlined `over $N`); the spare
-  position is EMPTY until the Social R2 spare press fills it. The deck's mark key names `foil` in every view when a row or tile in view
+  position holds `friend has a spare` while a friend's spare is shown (Social R2 PR A, the other-ways press). The deck's mark key names `foil` in every view when a row or tile in view
   draws the glint (a foil basic land is a tile only). `docs/superpowers/inventories/foil-row.json` holds the rows, at 390, 900 and 1300.
 
 - **Collection Sync** (plan `2026-10-15-collection-sync.md`), behind `COLLECTION_SYNC_ENABLED`, which needs
