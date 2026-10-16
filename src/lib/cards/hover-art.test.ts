@@ -428,7 +428,7 @@ describe("every card row has a hover preview and a press that opens card details
     }
   });
 
-  it("no component named *Tile draws a hover preview, wherever it lives (Hugh)", () => {
+  it("no component named *Tile draws a hover preview, wherever it lives (Hugh, 2026-10-16 UTC)", () => {
     // `TILE_VIEWS` names whole files; this is the other half: a tile that shares a file with a row (the Announced group's
     // revealed commander) is found by its COMPONENT's name, over every component in the tree.
     const offenders = Object.entries(files)

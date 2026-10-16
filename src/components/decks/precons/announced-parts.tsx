@@ -6,7 +6,7 @@
 //
 // A revealed commander opens its card details on a press (`CardDetailTrigger`; Hugh, 2026-10-15, reversing G2's
 // "links nowhere"). In ROWS the opened row's small strip also draws the hover preview, as every card thumb in a row
-// does (`preview`); in TILES it draws none (Hugh: a tile's art is already about the size of one, and the
+// does (`preview`); in TILES it draws none (Hugh, 2026-10-16 UTC, superseding that reversal for tiles: a tile's art is already about the size of one, and the
 // rule is no hover preview in tile view; `hover-art.test.ts` fails any `*Tile` component that draws one). In tiles each
 // set's commanders are drawn as the precon list's own tiles, in its own grid (`PRECON_TILES_CLASS`), so they are
 // the decklists' size. Outside a `CardDetailProvider` (About's

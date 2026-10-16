@@ -295,7 +295,7 @@ const WIDTH_CLASS = {
   760: "md:w-[760px] ",
 } as const;
 
-/** A card: its art, its name under it, and a press that opens the card modal on top. A tile draws no hover preview (Hugh). */
+/** A card: its art, its name under it, and a press that opens the card modal on top. A tile draws no hover preview (Hugh, 2026-10-16 UTC). */
 export function ReceiptTile({
   card,
   art,

@@ -184,7 +184,7 @@ describe("AnnouncedGroup", () => {
       expect(tile.className).toContain(TILE_FOCUS_RING);
     });
 
-    it("draws each one with the shared trigger and NO hover preview, in tiles (Hugh)", () => {
+    it("draws each one with the shared trigger and NO hover preview, in tiles (Hugh, 2026-10-16 UTC, superseding the 2026-10-15 reversal for tiles)", () => {
       draw({ opensByItself: true });
       const presses = screen.getAllByTestId("revealed-press");
       expect(presses).toHaveLength(16);
