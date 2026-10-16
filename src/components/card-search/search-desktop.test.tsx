@@ -119,6 +119,13 @@ describe("the search on the desktop", () => {
     expect(combobox().getAttribute("aria-activedescendant")).toBeNull();
   });
 
+  it("is no dialog in the DOM until it opens", async () => {
+    mount("Win32");
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    await press({ ctrlKey: true });
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+  });
+
   it("closes on a press outside", async () => {
     mount("Win32");
     await press({ ctrlKey: true });

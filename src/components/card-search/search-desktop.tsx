@@ -94,9 +94,11 @@ function DesktopFrame() {
       {isOpen ? <div aria-hidden className="fixed inset-0 z-[39]" onPointerDown={closeSearch} /> : null}
       <div
         ref={frameRef}
-        role="dialog"
+        // A dialog only while it is up: a closed one still matches `[role="dialog"]`, which the swap receipt waits out.
+        role={isOpen ? "dialog" : undefined}
         aria-labelledby="card-search-heading-desktop"
         hidden={!isOpen}
+        data-card-search-sheet=""
         data-card-search-frame="desktop"
         // Its top is the slot's (73px under the mark: 14 + 39 + 20; the touch rail's are 69 and 61), 12px out from the rail.
         className="fixed top-[73px] left-[calc(var(--rail-w)+12px)] z-40 flex w-[540px] flex-col gap-2 touch:top-[69px] touch-short:top-[61px]"
