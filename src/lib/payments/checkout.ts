@@ -56,11 +56,16 @@ export async function createPackCheckout(
  * after the insert is the one stored, so a later race can never leave two mappings for one account.
  *
  * The Customer is tagged with this app and the account (the Stripe account is shared with Concert Crawl);
- * its email is the reader's verified address, for Stripe's receipts.
+ * its email is the reader's verified address, for Stripe's receipts. A returning reader's Customer is given
+ * their CURRENT verified address before each Session, so a changed email never leaves Checkout and its
+ * receipts on the old one.
  */
 export async function ensureCustomer(stripe: Stripe, userId: string, email: string | null): Promise<string> {
   const existing = await mappedCustomer(userId);
-  if (existing) return existing;
+  if (existing) {
+    if (email) await stripe.customers.update(existing, { email });
+    return existing;
+  }
   const customer = await stripe.customers.create(
     { ...(email ? { email } : {}), metadata: { app: PAYMENTS_APP, user_id: userId } },
     { idempotencyKey: `${PAYMENTS_APP}:customer:${userId}` },

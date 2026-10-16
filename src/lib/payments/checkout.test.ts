@@ -35,8 +35,9 @@ vi.mock("../rate/observe", () => ({ recordHit: vi.fn(async () => ++state.hits) }
 import { createPackCheckout, ensureCustomer } from "./checkout";
 
 const create = vi.fn(async () => ({ id: "cus_new" }));
+const update = vi.fn(async (id: string) => ({ id }));
 const sessionCreate = vi.fn(async () => ({ url: "https://checkout.stripe.com/c/pay/cs_1" }));
-const stripe = { customers: { create }, checkout: { sessions: { create: sessionCreate } } } as unknown as Stripe;
+const stripe = { customers: { create, update }, checkout: { sessions: { create: sessionCreate } } } as unknown as Stripe;
 const ACTION = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
@@ -44,6 +45,7 @@ beforeEach(() => {
   state.hits = 0;
   state.inserts = 0;
   create.mockClear();
+  update.mockClear();
   sessionCreate.mockClear();
   state.raceWinner = null;
   vi.stubEnv("STRIPE_PRICE_PACK_40", "price_pack40");
@@ -52,10 +54,17 @@ beforeEach(() => {
 });
 
 describe("ensureCustomer", () => {
-  it("returns a stored mapping without asking Stripe", async () => {
+  it("returns a stored mapping, giving its Customer the reader's current verified email", async () => {
     state.mapping.set("user_a", "cus_old");
-    expect(await ensureCustomer(stripe, "user_a", "a@x.dev")).toBe("cus_old");
+    expect(await ensureCustomer(stripe, "user_a", "new@x.dev")).toBe("cus_old");
     expect(create).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith("cus_old", { email: "new@x.dev" });
+  });
+
+  it("leaves a stored Customer's email alone when the reader has none", async () => {
+    state.mapping.set("user_a", "cus_old");
+    expect(await ensureCustomer(stripe, "user_a", null)).toBe("cus_old");
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("creates one tagged Customer under a per-account idempotency key, and stores the mapping", async () => {
@@ -65,6 +74,7 @@ describe("ensureCustomer", () => {
       { idempotencyKey: "the-99:customer:user_a" },
     );
     expect(state.mapping.get("user_a")).toBe("cus_new");
+    expect(update).not.toHaveBeenCalled();
   });
 
   // A race lost: another request stored its mapping between this one's read and its insert. The stored one
