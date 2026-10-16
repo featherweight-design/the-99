@@ -162,6 +162,22 @@ describe("the search", () => {
     expect(within(list).getByTestId("want-stepper")).toBeInTheDocument();
   });
 
+  it("moves the floor with what a write answers the collection holds, so the next step still cannot remove the line", async () => {
+    // The collection grew from 1 to 3 while the results stood; a step to 5 answers have 3, so − stops at 4.
+    m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 4 }] });
+    m.setWant
+      .mockResolvedValueOnce({ ok: true, status: "wanted", want: 5, have: 3 })
+      .mockResolvedValueOnce({ ok: true, status: "wanted", want: 4, have: 3 });
+    view({ tiles: [tile()] });
+    const list = await search("sol");
+    await act(async () => fireEvent.click(within(list).getByRole("button", { name: wishlistCopy.details.more })));
+    const fewer = within(list).getByRole("button", { name: wishlistCopy.details.fewer });
+    expect(fewer).not.toHaveAttribute("aria-disabled");
+    await act(async () => fireEvent.click(fewer));
+    expect(m.setWant).toHaveBeenLastCalledWith(SOL, 4);
+    expect(within(list).getByRole("button", { name: wishlistCopy.details.fewer })).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("names each stepper by its card, and puts focus back in the field when a held answer takes the stepper away", async () => {
     // The collection reached the want elsewhere while the result stood: the write answers `held` and the line goes.
     m.search.mockResolvedValue({ ok: true, results: [{ oracleId: SOL, name: "Sol Ring", imageUri: null, owned: 1, want: 2 }] });

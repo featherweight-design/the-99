@@ -71,6 +71,7 @@ export function WishlistSearch({
           if (mine !== ticket.current) return;
           setResults(r.ok ? r.results : []);
           setConfirmed(new Map());
+          setOwned(new Map()); // a fresh search reads the collection afresh
           setFailed(!r.ok);
           setSearched(trimmed);
         })
@@ -107,6 +108,11 @@ export function WishlistSearch({
   const wantOf = (r: WishlistSearchResult) =>
     pending.get(r.oracleId)?.want ?? (confirmed.has(r.oracleId) ? confirmed.get(r.oracleId)! : r.want);
   const confirm = (oracleId: string, want: number | null) => setConfirmed((prev) => new Map(prev).set(oracleId, want));
+  // What the collection holds, as the newest write answered it (a result's own count is read once, with the search),
+  // so the stepper's floor and the sub line follow a collection that grew while the results stood.
+  const [owned, setOwned] = useState<Map<string, number>>(new Map());
+  const ownedOf = (r: WishlistSearchResult) => owned.get(r.oracleId) ?? r.owned;
+  const heard = (oracleId: string, have: number) => setOwned((prev) => new Map(prev).set(oracleId, have));
 
   // The press that started an Add hands focus to the stepper that replaces it, and only while it still holds focus when
   // the write lands: a reader who typed on, closed the panel or moved anywhere else keeps their focus.
@@ -116,6 +122,7 @@ export function WishlistSearch({
     try {
       const out = await addToWishlistAction(r.oracleId);
       if (!out.ok) throw new Error(out.reason);
+      heard(r.oracleId, out.have);
       // `held`: the collection already reaches the want, so no line stands and the press stays as it was.
       if (out.status === "wanted") {
         if (document.activeElement === press) setFresh((prev) => new Set(prev).add(r.oracleId));
@@ -137,6 +144,7 @@ export function WishlistSearch({
     try {
       const out = await setWishlistWantAction(id, next);
       if (!out.ok) throw new Error(out.reason);
+      heard(id, out.have);
       const want = out.status === "wanted" ? out.want : null;
       confirm(id, want);
       if (want === null) setRefocus((n) => n + 1);
@@ -208,11 +216,11 @@ export function WishlistSearch({
                       <span className="truncate font-mono text-[11px] text-[color:var(--fg-faint)]">
                         {want !== null ? (
                           <>
-                            <span className="hidden md:inline">{copy.page.search.haveOnList(r.owned)}</span>
+                            <span className="hidden md:inline">{copy.page.search.haveOnList(ownedOf(r))}</span>
                             <span className="md:hidden">{copy.page.search.onList}</span>
                           </>
                         ) : (
-                          copy.page.search.have(r.owned)
+                          copy.page.search.have(ownedOf(r))
                         )}
                       </span>
                     </span>
@@ -221,7 +229,7 @@ export function WishlistSearch({
                         <span aria-hidden className="hidden font-mono text-[11px] text-[color:var(--fg-muted)] md:inline md:text-[12.5px]">{copy.details.want}</span>
                         <WantStepper
                           value={want}
-                          min={r.owned + 1} // one more than held, so a step never removes the line (as card details)
+                          min={ownedOf(r) + 1} // one more than held, so a step never removes the line (as card details)
                           onChange={(next) => void step(r, next)}
                           fewerLabel={copy.details.fewer}
                           moreLabel={copy.details.more}
