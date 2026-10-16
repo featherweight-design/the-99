@@ -1,0 +1,145 @@
+{
+  "feature": "The one-line card row on the phone (#1913): every deck card row is one 34px line at every width, with 44px coarse hits drawn past its controls",
+  "note": "Photographed at 360, 390 and 430, the phone widths the row now serves on one line. Run on a scratch branch of local-dev, whose audit account holds the same deck ids as staging (Gishath, Gods, Avatar Aang). A row that cannot find its target fails rather than photographing something else. The scratch copy holds no card priced over its limit, so the other-ways press is not photographed here; the staging walk covers it.",
+  "widths": [
+    {
+      "label": "phone-360",
+      "width": 360,
+      "height": 800
+    },
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "phone-430",
+      "width": 430,
+      "height": 932
+    }
+  ],
+  "rows": [
+    {
+      "id": "gishath-all-top",
+      "label": "Gishath All, top of the list: one 34px line per row, the 72px pip track and the ✕ fixed on the right",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "main, [role=main], h1",
+          "settle": 1500
+        },
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "gishath-all-combo",
+      "label": "Gishath All, a row with marks (the combo glyph), folding by the row's own width into +N",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=combo-glyph])",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "gishath-all-stepper",
+      "label": "Gishath All, the basic-land stepper row: 22x20 controls, still one 34px line",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has([data-testid=count-stepper-row])",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "gishath-shopping-top",
+      "label": "Gishath Shopping: one line per row, the 84px buy tag then the ✕, no pips",
+      "steps": [
+        {
+          "goto": "/decks/441286bb-f632-4d1e-af0f-aa7282bbb40f",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping \\d+",
+          "settle": 800
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "gods-all-dfc",
+      "label": "Gods All: two-faced cards print their front face and the // mark on one line",
+      "steps": [
+        {
+          "goto": "/decks/e551f37f-c554-4cfa-a011-4d49438546ff",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    },
+    {
+      "id": "aang-all-tutors",
+      "label": "Avatar Aang All: a tutor with two marks, the middle and tight tiers",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-decklist-row]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-decklist-row]:has(button[aria-label*='Enlightened Tutor'])",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/decks/decklist-row.tsx"
+    }
+  ]
+}
