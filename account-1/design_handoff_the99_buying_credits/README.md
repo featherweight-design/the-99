@@ -19,9 +19,17 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-buying-credits.md` (
 | `R1 - Blocked-and-Off.dc.html` | §5 (B1) and §6 (O1–O4). |
 | `R1 - Menu-and-Delete.dc.html` | §2's entry (A1–A3) and §7 (D1–D2). |
 | `R1b - Themes.dc.html` | The main screens in Low Sun, Witching Hour and First Frost. |
+| `R2 - Options.dc.html` | Offer art A–D and menu count M1–M3, for Hugh's two picks. |
 | `STATES-buying-credits.md` | The state matrix, with what each state must not do. |
 | `READINESS.md` | The verdict and what blocks the build. |
 | `buying-credits · copy strings.ts` | Every new string, for /copy-review. |
+
+## R2 (Hugh's answers, 2026-10-16)
+
+- **Decided:** cancel is **A** (one tap; `Keep my plan` undoes it). The menu entry is **A1**, in the identity block. The expiry warning shows **3 days** out (G9 and G10 closed).
+- **The card fan is too much.** `R2 - Options.dc.html` draws four replacements for the plan and pack art, in Neon Rain and Low Sun: **A** the crown's diamond, **B** the number alone, **C** card art in the shipped art wash, **D** one real card at card shape with a subtle tilt. C and D need art: engineering takes it from the reader's own most recent commander, falling back to a fixed card (new gap G12 if picked).
+- **A louder menu count.** Same board: **M1** a tinted accent chip, **M2** the count large on the identity row's right, **M3** the count over a thin bar split free, plan and packs.
+- Art for C and D is in `art/` by relative path; on the canvas it is uploaded as assets.
 
 ## R1b (Hugh's notes, 2026-10-16)
 

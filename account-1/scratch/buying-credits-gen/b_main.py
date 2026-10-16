@@ -54,11 +54,10 @@ GAPS = [
 
 DECIDE = (
     '<div class="note" style="max-width:1580px;border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,#111319)">'
-    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: three choices</b><ul>'
-    '<li><b>1 · Cancel: inline with undo, or a confirm sheet.</b> Board <code>§3 · The plan and cancelling it</code>, bottom section <code>Your pick: inline (A) or a confirm (B)</code>. Option A is what every other board draws.</li>'
-    '<li><b>2 · Where the menu entry sits.</b> Board <code>Menu entry and §7</code>, frames <code>A1</code> (a line under your email, the call) and <code>A3</code> (a new menu row, as the brief proposed).</li>'
-    '<li><b>3 · How early the expiry warning shows.</b> Drawn at 3 days. Board <code>§3 · The plan and cancelling it</code>, frame <code>K4</code>, and <code>§1 · The credit line</code>, frame <code>L7</code>. A number is enough.</li>'
-    '</ul><p class="cap" style="margin-top:8px">Theme check: board <code>R1b · Themes</code> shows the main screens in Low Sun, Witching Hour and First Frost.</p></div>')
+    '<b style="font:700 17px \'Chakra Petch\',sans-serif">Your input: two picks on R2 · Options</b><ul>'
+    '<li><b>1 · The plan and pack art</b> (replacing the card fan): A the crown’s diamond, B the number alone, C card art washed, D one real card tilted. Board <code>R2 · Options</code>, top half.</li>'
+    '<li><b>2 · The credit count in the account menu</b>: M1 a chip, M2 the number on the right, M3 the count over a split bar. Board <code>R2 · Options</code>, bottom half.</li>'
+    '</ul><p class="cap" style="margin-top:8px"><b>Decided (2026-10-16):</b> cancel is A (one tap, Keep my plan undoes it); the menu entry is A1, in the identity block; the expiry warning shows 3 days out.</p></div>')
 
 BOARDS = [
     ("R1 - Credit-Line", "§1 · the line in every state (L1–L8) on the CreditButton, 390 and desktop; the grammar"),
@@ -69,6 +68,7 @@ BOARDS = [
     ("R1 - Blocked-and-Off", "§5 and §6 · blocked; switched off with nothing bought; the reduced page"),
     ("R1 - Menu-and-Delete", "§2’s entry and §7 · the menu line, the row option, the Manage account interstitial"),
     ("R1b - Themes", "Round 1b · the main screens in Low Sun, Witching Hour and First Frost"),
+    ("R2 - Options", "Round 2 · offer art A to D and menu count M1 to M3, for Hugh’s picks"),
 ]
 
 

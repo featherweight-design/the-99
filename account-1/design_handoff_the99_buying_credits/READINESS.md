@@ -1,6 +1,6 @@
 # Readiness · Buying credits R1
 
-**R1, for Hugh's audit (2026-10-16). Self-assessed: Amber until Hugh answers G9 and G10; Green for the build after that, with eight items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
+**R1, for Hugh's audit (2026-10-16). Self-assessed: Amber until Hugh picks the offer art and the menu count (R2 · Options); Green for the build after that, with eight items engineering settles in the plan.** The brief's seven screens are drawn at 390 and desktop: the credit line (§1), `/credits` (§2), the plan and cancelling it (§3), Checkout's return (§4), blocked (§5), payments off (§6), and the deletion warning (§7). Every board was rendered headless and checked: no board cut off, no broken image, no em dash in any string.
 
 **Build from** `The 99 - Buying Credits (R1).dc.html` for the calls and gaps, then the seven `R1 - *` boards (README "Start here"). Option B on Plan-and-Cancel is for Hugh's pick and is not built unless he picks it.
 
@@ -20,10 +20,11 @@
 
 **R1b (2026-10-16):** card heights matched side by side on desktop; themes board added. Hugh approved everything else as drawn.
 
-**For Hugh** (also at the top of the main board, with the board and frame for each)
-1. **G10 · Cancel, A or B.** A is drawn everywhere. B adds one sheet with the same words.
-2. **G9 · Expiry lead time.** 3 days, as engineering proposed. Another number changes no drawing.
-3. **The menu entry**, A1 (the call) or A3, on Menu-and-Delete.
+**Decided (Hugh, 2026-10-16):** cancel A; menu entry A1; expiry warning 3 days.
+
+**For Hugh** (R2 · Options, also at the top of the main board)
+1. **Offer art:** A diamond, B number, C washed art, D one tilted card.
+2. **Menu count:** M1 chip, M2 number on the right, M3 split bar.
 
 **Settle in the plan** (README gaps G1–G8)
 1. `creditsCopy` additions and the `Allowance` fields they need (paid used today, the paid limit, when paid is back, the plan's expiry).

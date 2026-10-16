@@ -308,6 +308,40 @@ CCSS = r"""
 .dk .offers>div{display:flex;flex-direction:column}
 .dk .offers>div>.oc,.dk .offers>div>.offers{flex:1}
 .dk .offers>.oc>.acts:last-child,.dk .offers>div>.oc>.acts:last-child{margin-top:auto}
+
+/* R2 offer art options */
+.oc>*{position:relative;z-index:1}
+.oc>.ow{position:absolute;z-index:0;right:0;top:0;bottom:0;width:46%;overflow:hidden;pointer-events:none;-webkit-mask-image:linear-gradient(270deg,#000 0 25%,transparent 95%);mask-image:linear-gradient(270deg,#000 0 25%,transparent 95%)}
+.oc>.ow img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;opacity:.5;display:block}
+.oc>.ow.dim img{opacity:.2;filter:saturate(.3)}
+.dmk{flex:none;width:74px;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.dm{width:46px;height:46px;transform:rotate(45deg);border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));display:flex;align-items:center;justify-content:center;border-radius:4px}
+.dm b{transform:rotate(-45deg);font:700 17px var(--disp);color:var(--accent)}
+.dm3{display:flex;align-items:flex-end;gap:3px}.dm3 i{width:6px;height:6px;transform:rotate(45deg);background:var(--accent);display:block}.dm3 i.b{width:8px;height:8px}
+.dmk.dim{opacity:.45;filter:saturate(.3)}
+.nmk{flex:none;display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.nmk b{font:700 44px/1 var(--disp);color:var(--accent);letter-spacing:-.01em}
+.nmk small{font:10px 'IBM Plex Mono',monospace;color:var(--fg-faint);text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+.nmk.dim b{color:var(--fg-faint)}
+.rc{flex:none;position:relative;width:56px;height:78px;border-radius:4px;overflow:visible;transform:rotate(6deg);margin:2px 8px 0 0}
+.rc.pl{transform:rotate(-5deg)}
+.rc img{width:56px;height:78px;border-radius:4px;display:block;box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.rc .ct{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(-6deg);white-space:nowrap;padding:2px 7px;border-radius:999px;background:var(--accent);color:var(--bg);font:700 11px 'IBM Plex Mono',monospace}
+.rc.pl .ct{transform:translateX(-50%) rotate(5deg)}
+.rc.dim{opacity:.5;filter:saturate(.2)}
+/* menu count options */
+.idb .crd2{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:999px;margin-top:8px;background:color-mix(in srgb,var(--accent) 16%,transparent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);color:var(--fg);font:600 12px 'IBM Plex Sans',sans-serif;align-self:flex-start}
+.idb .crd2 i{font-style:normal;color:var(--accent);font-size:10px}
+.idb .crd2 b{font:600 12px 'IBM Plex Mono',monospace;color:var(--accent)}
+.idb .crd2 em{font-style:normal;color:var(--fg-muted);margin-left:2px}
+.idb .big{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-left:10px;border-left:1px solid var(--border);min-height:44px;justify-content:center}
+.idb .big b{font:700 26px/1 var(--disp);color:var(--accent)}
+.idb .big small{font:9.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-muted)}
+.idb .mtr{display:flex;flex-direction:column;gap:5px;margin-top:8px;width:100%}
+.idb .mtr .r{display:flex;justify-content:space-between;align-items:baseline;font:11px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.idb .mtr .r b{font:600 12.5px 'IBM Plex Mono',monospace;color:var(--accent)}
+.idb .mtr .bar{display:flex;gap:2px;height:5px}
+.idb .mtr .bar i{display:block;border-radius:2px}
 """
 
 kit.CSS = kit.CSS + CCSS
@@ -400,7 +434,34 @@ def balance(free=(3, 5), plan=None, packs=None, total=None, today=None, plan_end
             f'{order}<div class="cells">{"".join(cells)}</div>{td}</div>')
 
 
+OFFER_ART = {"v": "fan"}
+ART_FOR = {"plan": "ghalta", "pack": "lathliss"}
+
+
 def fan(n, cal=False, dim=False):
+    v = OFFER_ART["v"]
+    kind = "plan" if cal else "pack"
+    if v == "diamond":
+        crown3 = '<span class="dm3"><i></i><i class="b"></i><i></i></span>' if cal else ''
+        return (f'<span class="dmk{" dim" if dim else ""}" aria-hidden="true">{crown3}<span class="dm"><b>{n}</b></span></span>')
+    if v == "numeral":
+        unit = "a month" if cal else "credits"
+        return (f'<span class="nmk{" dim" if dim else ""}" aria-hidden="true"><b>{n}</b><small>{unit}</small></span>')
+    if v == "wash":
+        return ""  # drawn as the card's background, see offer_wash()
+    if v == "card":
+        return (f'<span class="rc{" dim" if dim else ""}{" pl" if cal else ""}" aria-hidden="true"><img src="art/{ART_FOR[kind]}.jpg" alt="">'
+                f'<span class="ct">{"+" if not cal else ""}{n}{"/mo" if cal else ""}</span></span>')
+    return _fan(n, cal, dim)
+
+
+def offer_wash(kind, dim=False):
+    if OFFER_ART["v"] != "wash":
+        return ""
+    return f'<span class="ow{" dim" if dim else ""}" aria-hidden="true"><img src="art/{ART_FOR[kind]}-art.jpg" alt=""></span>'
+
+
+def _fan(n, cal=False, dim=False):
     inner = f"{n}<small>/MO</small>" if cal else str(n)
     return f'<span class="fanc{" cal" if cal else ""}{" dim" if dim else ""}" aria-hidden="true"><span class="a"></span><span class="b"></span><span class="c">{inner}</span></span>'
 
@@ -418,11 +479,11 @@ def _plan_card(state, buy, new, pressed):
             acts = (f'<div class="acts"><span class="pbtn f">{C["plan.subscribe"]} · {C["plan.price"]}</span>'
                     f'<span class="via">{C["plan.via"]}</span></div>')
         fine = "".join(f"<li>{x}</li>" for x in C["plan.fine"])
-        return (f'<div class="oc{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
+        return (f'<div class="oc{" new" if new else ""}">{offer_wash("plan")}<div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
                 f'<span class="pr">{C["plan.price"]}</span></div>{fan(60, cal=True)}</div><ul>{fine}</ul>{acts}</div>')
     if state == "active":
         press = ' style="box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)"' if pressed else ""
-        return (f'<div class="oc on{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
+        return (f'<div class="oc on{" new" if new else ""}">{offer_wash("plan")}<div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
                 f'<span class="st">{C["plan.active"]}</span><span class="st" style="color:var(--fg)">{C["plan.activeLeft"]}</span></div>'
                 f'{fan(60, cal=True)}</div>'
                 f'<div class="acts"><span class="pbtn n"{press}>{C["plan.cancel"]}</span>'
@@ -436,10 +497,10 @@ def _plan_card(state, buy, new, pressed):
         if buy:
             keep = (f'<div class="acts"><span class="pbtn o">{C["plan.keep"]}</span></div>'
                     f'<p class="says">{C["plan.keepSays"]}</p>')
-        return (f'<div class="oc{" warn" if soon else ""}{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>{st}</div>'
+        return (f'<div class="oc{" warn" if soon else ""}{" new" if new else ""}">{offer_wash("plan", dim=True)}<div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>{st}</div>'
                 f'{fan(60, cal=True, dim=True)}</div><p class="says" style="color:{"var(--warning)" if soon else "var(--fg-body)"}">{says}</p>{keep}</div>')
     if state == "due":
-        return (f'<div class="oc warn{" new" if new else ""}"><div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
+        return (f'<div class="oc warn{" new" if new else ""}">{offer_wash("plan")}<div class="top"><div class="tt">{k}<h3>{C["plan.title"]}</h3>'
                 f'<span class="st warn">{C["plan.dueTitle"]}</span></div>{fan(60, cal=True)}</div>'
                 f'<p class="says">{C["plan.dueSays"]}</p>'
                 f'<div class="acts"><span class="pbtn f">{C["plan.updateCard"]} ↗</span>'
@@ -448,7 +509,7 @@ def _plan_card(state, buy, new, pressed):
 
 
 def pack_card(new=True, n=40, price="$5", title=None):
-    return (f'<div class="oc{" new" if new else ""}"><div class="top"><div class="tt"><span class="k">{C["pack.k"]}</span>'
+    return (f'<div class="oc{" new" if new else ""}">{offer_wash("pack")}<div class="top"><div class="tt"><span class="k">{C["pack.k"]}</span>'
             f'<h3>{title or C["pack.title"]}</h3><span class="pr">{price}</span></div>{fan(n)}</div>'
             f'<p class="says">{C["pack.fine"]}</p>'
             f'<div class="acts"><span class="pbtn f">{C["pack.buy"]} · {price}</span><span class="via">{C["plan.via"]}</span></div></div>')
@@ -496,8 +557,26 @@ def sheet(title, body, desk_=False):
     return f'<div class="scr"></div><div class="sht new"><div class="grab"><i></i></div>{head}<div class="mbody">{body}</div></div>'
 
 
+MENU_COUNT = {"v": "line"}
+
+
 def id_block(entry=None, desk_=False):
-    crd = f'<span class="crd new">◆ {entry}<i>›</i></span>' if entry else ""
+    v = MENU_COUNT["v"]
+    if entry and v == "chip":
+        n, _, rest = entry.partition(" ")
+        crd = f'<span class="crd2 new"><i>◆</i><b>{n}</b>{rest}<em>›</em></span>'
+    elif entry and v == "big":
+        n, _, rest = entry.partition(" ")
+        return (f'<div class="idb"><span class="av2">CO</span><span class="nm"><b>Colin Ortiz</b><span>colin@example.com</span></span>'
+                f'<span class="big new"><b>{n}</b><small>{"free" if "free" in rest else rest} ›</small></span></div>')
+    elif entry and v == "meter":
+        n, _, rest = entry.partition(" ")
+        segs = ('<i style="flex:3;background:color-mix(in srgb,var(--accent) 45%,transparent)"></i>'
+                '<i style="flex:74;background:var(--accent)"></i><i style="flex:40;background:color-mix(in srgb,var(--accent) 70%,var(--fg))"></i>') if "free" not in rest else \
+               '<i style="flex:3;background:var(--accent)"></i><i style="flex:2;background:var(--elevated)"></i>'
+        crd = f'<span class="mtr new"><span class="r"><span>{rest}</span><b>{n} ›</b></span><span class="bar">{segs}</span></span>'
+    else:
+        crd = f'<span class="crd new">◆ {entry}<i>›</i></span>' if entry else ""
     return (f'<div class="idb"><span class="av2">CO</span><span class="nm"><b>Colin Ortiz</b><span>colin@example.com</span>{crd}</span></div>')
 
 
