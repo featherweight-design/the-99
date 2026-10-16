@@ -1,7 +1,7 @@
 // A camera frame to a card, on the device: the frame is drawn to a canvas, the detector finds the four corners, the
 // card is warped to 320x448 and embedded. What happens to the embedding (the lab's index on the device, or the
-// server's match) is the caller's. Shared by the scan lab and the viewfinder (card-scan plan PR 3), so neither copies
-// the other's loop. The runtime and both models are fetched when a scanner starts (`models.ts`), never bundled.
+// server's match) is the caller's. The scan lab reads its frames here, and the viewfinder (card-scan plan PR 3) is to
+// read its own here too, so it never copies the lab's loop. The runtime and both models are fetched when a scanner starts (`models.ts`), never bundled.
 import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor, type Pt,
 } from "./geometry";
@@ -22,7 +22,7 @@ export type Ort = {
   InferenceSession: { create(url: string, opts?: Record<string, unknown>): Promise<OrtSession> };
 };
 
-/** The longest edge a frame is read at: enough for the warp, and a phone's 1080p frame halves the pixels touched. */
+/** The longest edge a frame is read at: enough for the warp, and a phone's 1080p frame touches 44% of its pixels. */
 export const MAX_FRAME_EDGE = 1280;
 /** The share of the frame a card's corners must enclose before it is read: smaller is a card across the room. */
 export const MIN_CARD_AREA = 0.05;
