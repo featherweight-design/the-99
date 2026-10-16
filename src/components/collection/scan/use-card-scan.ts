@@ -309,15 +309,22 @@ export function useCardScan(
   // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
   // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
   const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
+  // The answer (and mode) already taken by itself: the take lands a microtask later, and a render before it must
+  // not take the same answer twice.
+  const taken = useRef<{ answer: object | null; mode: ScanMode } | null>(null);
   useEffect(() => {
     if (!sure || added || choosing || committing.current) return;
     if (sure.again?.kind === "duplicate") return;
     if (lastAdded?.oracleId === sure.guess.oracleId && !lastAdded.emptiedSince) return;
-    if (mode === "normal") return choose(sure.guess, snapNow(), answer);
+    if (taken.current && taken.current.answer === answer && taken.current.mode === mode) return;
+    taken.current = { answer, mode };
+    const g = sure.guess;
+    const snap = snapNow();
     const from = answer;
-    void commit(sure.guess, snapNow()).then((ok) => {
+    void Promise.resolve().then(async () => {
+      if (mode === "normal") return choose(g, snap, from);
       // A card that could not be added is not tried again while it stays in view: the toast said so once.
-      if (!ok) setDismissed(from);
+      if (!(await commit(g, snap))) setDismissed(from);
     });
   });
 
