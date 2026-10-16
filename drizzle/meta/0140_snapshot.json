@@ -1,5 +1,5 @@
 {
-  "id": "4df839c8-aa9e-41de-99d1-302b54fc45e4",
+  "id": "1586e81d-8fbb-4d7c-9389-dc3b2001b9ba",
   "prevId": "eb1c9138-5757-4e64-b259-7b712d830176",
   "version": "7",
   "dialect": "postgresql",
@@ -7175,7 +7175,7 @@
         },
         "invite_reservations_qr_check": {
           "name": "invite_reservations_qr_check",
-          "value": "(\"invite_reservations\".\"kind\" = 'qr') = (\"invite_reservations\".\"qr_token_hash\" is not null and \"invite_reservations\".\"qr_expires_at\" is not null)"
+          "value": "(\"invite_reservations\".\"kind\" = 'qr' and \"invite_reservations\".\"qr_token_hash\" is not null and \"invite_reservations\".\"qr_expires_at\" is not null) or (\"invite_reservations\".\"kind\" = 'email' and \"invite_reservations\".\"qr_token_hash\" is null and \"invite_reservations\".\"qr_expires_at\" is null)"
         },
         "invite_reservations_waiting_check": {
           "name": "invite_reservations_waiting_check",

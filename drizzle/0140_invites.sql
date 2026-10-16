@@ -37,7 +37,7 @@ CREATE TABLE "invite_reservations" (
 	CONSTRAINT "invite_reservations_kind_check" CHECK ("invite_reservations"."kind" in ('email', 'qr')),
 	CONSTRAINT "invite_reservations_state_check" CHECK ("invite_reservations"."state" in ('qr_open', 'claimed', 'reserved', 'spent', 'returned', 'revoked')),
 	CONSTRAINT "invite_reservations_kind_state_check" CHECK (("invite_reservations"."kind" = 'qr' and "invite_reservations"."state" <> 'reserved') or ("invite_reservations"."kind" = 'email' and "invite_reservations"."state" not in ('qr_open', 'claimed'))),
-	CONSTRAINT "invite_reservations_qr_check" CHECK (("invite_reservations"."kind" = 'qr') = ("invite_reservations"."qr_token_hash" is not null and "invite_reservations"."qr_expires_at" is not null)),
+	CONSTRAINT "invite_reservations_qr_check" CHECK (("invite_reservations"."kind" = 'qr' and "invite_reservations"."qr_token_hash" is not null and "invite_reservations"."qr_expires_at" is not null) or ("invite_reservations"."kind" = 'email' and "invite_reservations"."qr_token_hash" is null and "invite_reservations"."qr_expires_at" is null)),
 	CONSTRAINT "invite_reservations_waiting_check" CHECK ("invite_reservations"."state" not in ('claimed', 'reserved') or ("invite_reservations"."holds_until" is not null and "invite_reservations"."email" is not null)),
 	CONSTRAINT "invite_reservations_final_check" CHECK ("invite_reservations"."state" not in ('spent', 'returned', 'revoked') or ("invite_reservations"."email" is null and "invite_reservations"."resolved_at" is not null)),
 	CONSTRAINT "invite_reservations_tries_check" CHECK ("invite_reservations"."code_tries" between 0 and 5)

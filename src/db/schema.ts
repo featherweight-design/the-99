@@ -3594,7 +3594,7 @@ export const inviteReservations = pgTable("invite_reservations", {
   // Each kind walks its own states: a QR is open, then claimed; an email is reserved at once.
   check("invite_reservations_kind_state_check", sql`(${t.kind} = 'qr' and ${t.state} <> 'reserved') or (${t.kind} = 'email' and ${t.state} not in ('qr_open', 'claimed'))`),
   // A QR carries its token's hash and its 15 minutes; an email row carries neither.
-  check("invite_reservations_qr_check", sql`(${t.kind} = 'qr') = (${t.qrTokenHash} is not null and ${t.qrExpiresAt} is not null)`),
+  check("invite_reservations_qr_check", sql`(${t.kind} = 'qr' and ${t.qrTokenHash} is not null and ${t.qrExpiresAt} is not null) or (${t.kind} = 'email' and ${t.qrTokenHash} is null and ${t.qrExpiresAt} is null)`),
   // Holding a claimed or reserved row needs its own 7-day clock and the address it went to.
   check("invite_reservations_waiting_check", sql`${t.state} not in ('claimed', 'reserved') or (${t.holdsUntil} is not null and ${t.email} is not null)`),
   // Final states keep no address, and say when they ended.
