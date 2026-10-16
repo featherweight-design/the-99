@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The invite-only page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.k.opt{color:#E0913C}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.out{width:1300px;height:820px;flex:none;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box;background:radial-gradient(1000px 520px at 50% 8%,rgba(255,77,154,.10),transparent 70%),#0E0F14;display:flex;align-items:center;justify-content:center;gap:64px;font-family:'IBM Plex Sans',sans-serif}
+.ph{width:390px;height:844px;flex:none;border:1px solid #262A35;border-radius:28px;overflow:hidden;box-sizing:border-box;background:radial-gradient(600px 360px at 50% 18%,rgba(255,77,154,.12),transparent 70%),#0E0F14;display:flex;flex-direction:column;align-items:center;padding:56px 24px 24px;font-family:'IBM Plex Sans',sans-serif;text-align:center}
+.fan{position:relative;width:360px;height:440px;flex:none}
+.back{position:absolute;left:30px;top:10px;width:300px;height:419px;border-radius:17px;box-sizing:border-box;padding:12px;background:#14151B;box-shadow:0 34px 70px rgba(0,0,0,.6),inset 0 0 0 1px #262A35}
+.back .in{width:100%;height:100%;border-radius:10px;box-sizing:border-box;border:1px solid #343843;background:radial-gradient(240px 260px at 50% 46%,rgba(255,77,154,.22),transparent 72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 6px,transparent 6px 12px),#101219;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.back .hero{display:flex;flex-direction:column;align-items:center;color:#E6E8F0;font:700 58px 'Chakra Petch',sans-serif;line-height:1}
+.back .hero i{font-style:normal;color:#FF4D9A;font-size:13px;letter-spacing:4px;margin-bottom:6px}
+.back .wd{font:10px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A}
+.back.l{transform:rotate(-9deg) translate(-26px,8px);opacity:.55}
+.back.r{transform:rotate(8deg) translate(26px,10px);opacity:.75}
+.pfan{position:relative;width:240px;height:240px;flex:none}
+.pfan .back{left:-30px;top:6px;transform-origin:top center;transform:scale(.48)}
+.pfan .back.l{transform:scale(.48) rotate(-9deg) translate(-40px,14px)}
+.pfan .back.r{transform:scale(.48) rotate(8deg) translate(40px,16px)}
+.col{width:380px;display:flex;flex-direction:column;gap:10px}
+.kick{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:#FF4D9A}
+.t{margin:0;font:700 30px/1.2 'Chakra Petch',sans-serif;color:#E6E8F0}
+.ph .t{font-size:24px;margin-top:6px}
+.bdy{margin:0;font-size:15px;line-height:1.6;color:#B1B6C7}
+.ph .bdy{font-size:14px;margin-top:8px}
+.bdy b{color:#E6E8F0;font-weight:500}
+.b1{height:44px;margin-top:10px;padding:0 26px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif;align-self:flex-start}
+.ph .b1{width:100%;height:48px;align-self:stretch;font-size:15px;margin-top:22px}
+.b2{height:44px;margin-top:10px;padding:0 20px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font:500 14px 'IBM Plex Sans',sans-serif;align-self:flex-start}
+.ph .b2{width:100%;height:48px;align-self:stretch;font-size:15px}
+.fine{margin:6px 0 0;font:11px/1.6 'IBM Plex Mono',monospace;color:#6F7486}
+.ph .fine{margin-top:16px}
+.wl{margin-top:14px;padding-top:16px;border-top:1px solid #262A35;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%}
+.wl .lab{font-size:13px;font-weight:600;color:#E6E8F0}
+.wl .row{display:flex;gap:8px}
+.fld{flex:1;height:44px;border-radius:8px;padding:0 12px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #262A35;font-size:15px;color:#6F7486}
+.ph .fld{height:48px;font-size:16px}
+.bo{height:44px;padding:0 16px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font:500 14px 'IBM Plex Sans',sans-serif;flex:none}
+.ph .bo{height:48px}
+.done{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.5;color:#B1B6C7}
+.done i{font-style:normal;color:#6FA368}
+</style>
+</helmet>
+<div style="width:2760px;min-height:2260px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · Call 06 · the page an uninvited visitor meets · lock 7 · signed out, no shell, the friend landing’s ground</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">A face-down hand that says how you get in, and nothing to fill in</h2>
+    <p class="cap" style="max-width:2600px">Where a visitor would have reached sign-up (the app’s sign-up route, and any link to it), they land here. Three card backs fanned, the front one marked BY INVITATION: the friend request’s back, so the two signed-out pages read as one family. The column says the app is invite-only and how to get in (a friend who plays invites you), with Sign in for people who already have an account and one line for anyone holding an invitation email. Recommended: no waitlist. Option W shows what one would cost, for Hugh to compare: an email field here, a list in /admin, and a uniform answer of its own.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 40px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">I1 · desktop · recommended · no waitlist</span>
+      <div class="out">
+        <div class="fan" aria-hidden="true">
+          <div class="back l"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back r"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">BY INVITATION</span></div></div>
+        </div>
+        <section class="col" aria-labelledby="t1">
+          <span class="kick">The Ninety-Nine</span>
+          <h1 class="t" id="t1">The 99 is invite-only</h1>
+          <p class="bdy">You join when someone already playing invites you. Ask a friend who plays: they’ll find <b>Invite someone new</b> under Add a friend.</p>
+          <button class="b1" type="button">Sign in</button>
+          <p class="fine">Have an invitation email? Open its link to make your account.</p>
+        </section>
+      </div>
+      <p class="cap" style="max-width:1300px">The column is LandingColumn as shipped (kicker in the accent, the heading, a body, one press, the fine line). Sign in is the only press because it is the only thing a visitor here can do; nobody is asked for anything.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k opt">W1 · desktop · Option W · a waitlist (not recommended)</span>
+      <div class="out">
+        <div class="fan" aria-hidden="true">
+          <div class="back l"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back r"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">BY INVITATION</span></div></div>
+        </div>
+        <section class="col" aria-labelledby="t2">
+          <span class="kick">The Ninety-Nine</span>
+          <h1 class="t" id="t2">The 99 is invite-only</h1>
+          <p class="bdy">You join when someone already playing invites you. Ask a friend who plays: they’ll find <b>Invite someone new</b> under Add a friend.</p>
+          <button class="b1" type="button">Sign in</button>
+          <div class="wl">
+            <label class="lab" for="w1">No one to ask? Join the waitlist</label>
+            <div class="row"><span class="fld" id="w1">Your email</span><button class="bo" type="button">Join</button></div>
+            <p class="fine">If an invitation comes free, it arrives at this address.</p>
+          </div>
+        </section>
+      </div>
+      <p class="cap" style="max-width:1300px">What it costs: a public form that takes any email (a rate bucket keyed by address and IP), a list in /admin › Invites with Approve (which sends a Clerk invitation from Hugh’s own count, or from none), a purge rule for the list, and an answer that never says whether the address is already on The 99 or already listed. Recommended against at launch: the app grows through the people in it, which is the point of the line.</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 40px;margin-top:20px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">I2 · phone · recommended</span>
+      <div class="ph">
+        <div class="pfan" aria-hidden="true">
+          <div class="back l"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back r"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">BY INVITATION</span></div></div>
+        </div>
+        <h1 class="t">The 99 is invite-only</h1>
+        <p class="bdy">You join when someone already playing invites you. Ask a friend who plays: they’ll find <b>Invite someone new</b> under Add a friend.</p>
+        <button class="b1" type="button">Sign in</button>
+        <p class="fine">Have an invitation email? Open its link to make your account.</p>
+      </div>
+      <p class="cap" style="max-width:390px">The fan at about half size above the column, centred, as the friend request’s card sits at phone. No kicker at phone, as shipped. 48px Sign in, full width.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k opt">W2 · phone · Option W · the waitlist</span>
+      <div class="ph">
+        <div class="pfan" aria-hidden="true">
+          <div class="back l"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back r"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">BY INVITATION</span></div></div>
+        </div>
+        <h1 class="t">The 99 is invite-only</h1>
+        <p class="bdy">You join when someone already playing invites you. Ask a friend who plays: they’ll find <b>Invite someone new</b> under Add a friend.</p>
+        <button class="b1" type="button">Sign in</button>
+        <div class="wl">
+          <label class="lab" for="w2">No one to ask? Join the waitlist</label>
+          <span class="fld" id="w2">Your email</span>
+          <button class="bo" type="button">Join</button>
+        </div>
+      </div>
+      <p class="cap" style="max-width:390px">Option W at phone: the field and Join stack under a rule, below Sign in, so Sign in still leads.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k opt">W3 · phone · Option W · joined, whatever happened</span>
+      <div class="ph">
+        <div class="pfan" aria-hidden="true">
+          <div class="back l"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back r"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span></div></div>
+          <div class="back"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">BY INVITATION</span></div></div>
+        </div>
+        <h1 class="t">The 99 is invite-only</h1>
+        <p class="bdy">You join when someone already playing invites you. Ask a friend who plays: they’ll find <b>Invite someone new</b> under Add a friend.</p>
+        <button class="b1" type="button">Sign in</button>
+        <div class="wl" role="status">
+          <p class="done"><i aria-hidden="true">✓</i><span>You’re on the list. If an invitation comes free, it arrives at that address.</span></p>
+        </div>
+      </div>
+      <p class="cap" style="max-width:390px">The waitlist’s own one answer: the same for a new address, one already listed, and one that already has an account.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">I3 · where it shows</span>
+      <div style="width:390px;box-sizing:border-box;border:1px solid #262A35;border-radius:12px;background:#12141B;padding:20px 22px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.55;color:#B1B6C7">
+        <b style="color:#E6E8F0;font-size:14px">Triggers, each real</b>
+        <span>· The app’s sign-up route, typed or linked: here instead of Clerk’s open form.</span>
+        <span>· “Sign up” from inside Clerk’s sign-in, on a restricted instance: Clerk’s own restricted message is replaced by a link here, if Clerk lets the URL be set (engineering to verify); else Clerk’s message stands.</span>
+        <span>· Not: the friend link’s signed-out card, which keeps its own page (Friend-Link), and an invite QR, which has its own (Newcomer).</span>
+        <span>· Signed in, the route redirects Home: nobody with an account sees it.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

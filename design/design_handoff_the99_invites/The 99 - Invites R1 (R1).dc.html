@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invites R1 overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}a:hover{color:#FF62A9}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.d{font-family:'Chakra Petch',sans-serif}
+.m{font-family:'IBM Plex Mono',monospace}
+.box{border:1px solid #262A35;border-radius:12px;background:#12141B;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.box h2{margin:0;font:700 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.call{display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 12px;padding:12px 0;border-top:1px solid #181C26}
+.call .n{font:600 12px 'IBM Plex Mono',monospace;color:#FF4D9A;padding-top:2px}
+.call b{font-size:14px;font-weight:600;color:#E6E8F0}
+.call p{grid-column:2;margin:0;font-size:13px;line-height:1.55;color:#B1B6C7}
+.call .see{grid-column:2;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.lk{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.5;color:#B1B6C7;padding:6px 0;border-top:1px solid #181C26}
+.lk .t{color:#6FA368;font:12px 'IBM Plex Mono',monospace;padding-top:1px}
+.q{border:1px solid #343843;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;background:#101219}
+.q b{font-size:14px;color:#E6E8F0}
+.q span{font-size:13px;line-height:1.55;color:#B1B6C7}
+.q .rec{font:11px 'IBM Plex Mono',monospace;color:#FF4D9A}
+.g{font-size:13px;line-height:1.55;color:#B1B6C7;padding:7px 0;border-top:1px solid #181C26}
+.g b{color:#E6E8F0;font-weight:600}
+.st{width:190px;flex:none;border-radius:10px;border:1px solid #262A35;background:#16181F;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.st b{font:600 13.5px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.st span{font-size:12px;line-height:1.45;color:#959AAD}
+.st i{font:normal 10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.st.hold{border-color:#843052}
+.st.spent{border-color:#3E5A3A}
+.ar{flex:none;width:34px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.bl{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 14px;font-size:12.5px;line-height:1.5;color:#B1B6C7;padding:5px 0;border-top:1px solid #181C26}
+.bl .f{font:11.5px 'IBM Plex Mono',monospace;color:#E6E8F0}
+</style>
+</helmet>
+<div style="width:1840px;min-height:2400px;box-sizing:border-box;padding:48px 56px 60px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1600px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="m" style="font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:.08em">INVITES · R1</span>
+      <span class="k">account 1 · 2026-10-16 · brief docs/superpowers/design-briefs/2026-10-16-invite-only-launch.md · a stateful addendum to Social R1</span>
+    </div>
+    <h1 class="d" style="margin:0;font-size:34px;font-weight:700;line-height:1.15">Two paths, chosen by the sender. One answer, whatever happened.</h1>
+    <p style="margin:0;font-size:15px;line-height:1.65;color:#B1B6C7;max-width:1500px">Add a friend opens on a choice between two cards: <b style="color:#E6E8F0">They’re on The 99</b> (today’s friend link, unchanged and free) and <b style="color:#E6E8F0">Invite someone new</b>, which carries the count as a hand of card backs and greys out at 0. Inside it, the two ways sit on one screen: an invite QR for the table, and an email field for everyone else. The QR holds one invite while it is live and gives it back when it runs out. The newcomer types their own email on their phone and proves it with a code before anything else happens. Every ending the sender can see reads “Invitation sent”. Uninvited visitors meet a face-down card that says the app is invite-only, with no waitlist. /admin gains an Invites tab with the tree, a count on each account, and a top-up on each group.</p>
+  </div>
+
+  <div style="display:flex;align-items:stretch;gap:0">
+    <div class="st"><i>QR open · ≤15 min</i><b>Held</b><span>Shown and not scanned. Holds one invite; given back at expiry.</span></div>
+    <div class="ar"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 6h19M15 1l5 5-5 5"/></svg></div>
+    <div class="st hold"><i>reservation · its own 7 days</i><b>Waiting</b><span>Emailed, or a QR claimed by a newcomer’s email. Shown to the sender as “1 waiting”.</span></div>
+    <div class="ar"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 6h19M15 1l5 5-5 5"/></svg></div>
+    <div class="st spent"><i>user.created</i><b>Spent</b><span>They made their account. The count drops by one; you’re friends.</span></div>
+    <div style="width:28px"></div>
+    <div class="st"><i>7 days pass · or revoked in /admin</i><b>Returned</b><span>Back in the count. Looks the same whether or not the email had an account.</span></div>
+    <div style="flex:1;padding-left:28px;display:flex;align-items:center"><p style="margin:0;font-size:13px;line-height:1.6;color:#959AAD;max-width:560px">The sender’s line is always <span class="m" style="color:#E6E8F0">N invites left</span>, plus <span class="m" style="color:#E6E8F0">· 1 waiting</span> or <span class="m" style="color:#E6E8F0">· 1 held by an open QR</span> when it applies. “Waiting” never turns into anything that says which way it ended, except a new friend appearing, which only a real sign-up can cause.</p></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start">
+
+    <section class="box" aria-labelledby="calls">
+      <h2 id="calls">The nine calls (brief §Open for Design)</h2>
+      <div class="call"><span class="n">01</span><b>The chooser: two cards at the top of Add a friend</b><p>One dialog (desktop, 440) and the shipped sheet (phone). Pressing a card moves the same sheet to that path’s screen, with a ‹ back in the header. The count sits on card 2 as a fanned hand of up to three card backs and a mono line; at 0 the card greys out and says Out of invites. “Add a friend” on /friends no longer makes a link on press: card 1 does.</p><span class="see">Add-Phone · Add-Desktop</span></div>
+      <div class="call"><span class="n">02</span><b>The invite QR: a countdown ring around the plate</b><p>The shipped light plate, with an accent ring that drains over 15 minutes and the time under it; under a minute it turns warning. Expired, the plate fades to grey under “Expired” and one press makes a new one. Once a newcomer claims it, the sheet turns to “Invitation sent”. One live QR per account: showing it again re-shows the same one.</p><span class="see">QR-Phone · QR-Desktop</span></div>
+      <div class="call"><span class="n">03</span><b>The newcomer’s screen: the sender’s card, one field, then a code</b><p>No shell, the landing’s own ground. The card is face up with the sender’s name and commander, typed “Invitation”. One field (Your email), Send code. The code arrives before any account exists; a right code hands over to Clerk’s sign-up with the email filled and locked. Used, expired, wrong and expired-code states each get one line.</p><span class="see">Newcomer</span></div>
+      <div class="call"><span class="n">04</span><b>The email form: inline under the QR, one answer</b><p>“Their email” and Send invitation, on the same screen as the QR. Sending takes the same time every time. The answer replaces the field: ✓ Invitation sent, with when it comes back. Nothing about the address is ever said again.</p><span class="see">Email-Phone · Email-Desktop</span></div>
+      <div class="call"><span class="n">05</span><b>The count: on card 2, and under Add a friend on /friends</b><p>Where an invite can be sent, the count is visible: the chooser card, the path’s header line, and one mono line under /friends’ Add a friend (where the 10-link hold line already sits). At 0: Out of invites, in the faint grey.</p><span class="see">Friends-Count</span></div>
+      <div class="call"><span class="n">06</span><b>The invite-only page: a face-down card, no waitlist</b><p>The signed-out landing’s ground and card back, with “BY INVITATION” on it. Says how one gets in (a friend who plays invites you) and offers Sign in. The waitlist is drawn beside it only as Option W for Hugh, not recommended.</p><span class="see">Invite-Only</span></div>
+      <div class="call"><span class="n">07</span><b>/admin: an Invites tab for the tree, a count per account, a top-up per group</b><p>A sixth tab, Invites, draws the tree (founders at the root, who each invited, what is still waiting) with Revoke on a waiting invite. An account’s page gets an Invites tile and a field that sets the stock. A group gets “Top up invites to N”, which raises members below N and lowers nobody: a stock, not a rate.</p><span class="see">Admin-Desktop · Admin-Phone</span></div>
+      <div class="call"><span class="n">08</span><b>A friend link with no account: the fine line points at an invite</b><p>The landing is unchanged except its line: “No account? The 99 is invite-only. Ask whoever sent this to invite you.”</p><span class="see">Friend-Link</span></div>
+      <div class="call"><span class="n">09</span><b>About: “Inviting someone new”, chapter 04, after Friends and pods</b><p>On the §G per-entry template, at 760 and 390. The specimen is the chooser itself. One sentence of the Friends and pods caption is edited to name the friend link as the path for people already playing.</p><span class="see">About-Entry</span></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <section class="box" aria-labelledby="locks">
+        <h2 id="locks">Locked, and where each holds</h2>
+        <div class="lk"><span class="t">✓</span><span>1 · Invite-only: Clerk restricted. A visitor who reaches sign-up lands on the invite-only page.</span></div>
+        <div class="lk"><span class="t">✓</span><span>2 · A stock Hugh sets: /admin’s account field and group top-up. Only a new account spends one.</span></div>
+        <div class="lk"><span class="t">✓</span><span>3 · The tree is recorded: /admin › Invites.</span></div>
+        <div class="lk"><span class="t">✓</span><span>4 · The sender chooses: two cards, no lookup. Path 1 is today’s friend link, byte for byte.</span></div>
+        <div class="lk"><span class="t">✓</span><span>5 · “Invitation sent”, always: the email answer, and the QR sheet once claimed, read identically.</span></div>
+        <div class="lk"><span class="t">✓</span><span>6 · The count shows in Add a friend and on /friends.</span></div>
+        <div class="lk"><span class="t">✓</span><span>7 · A small invite-only page.</span></div>
+        <div class="lk"><span class="t">✓</span><span>8 · Friends on sign-up: the newcomer lands on /friends with the shipped receipt band.</span></div>
+        <div class="lk"><span class="t">✓</span><span>Since: an open QR holds one invite, released at expiry. Drawn as “1 held by an open QR”.</span></div>
+      </section>
+
+      <section class="box" aria-labelledby="hugh">
+        <h2 id="hugh">For Hugh</h2>
+        <div class="q"><b>A · After the code, an email that already has an account</b><span>Until the code is right, every screen is the same for every email, and the sender’s sheet already said “Invitation sent” when the email was typed. Once the code proves the mailbox, telling its owner they already have an account tells nobody anything new. Option A says so and offers Sign in; Option B keeps “Invitation sent” there too, which sends them to an inbox that will receive nothing.</span><span class="rec">Recommend A · Newcomer N9 and N10</span></div>
+        <div class="q"><b>B · The newcomer’s card names the sender</b><span>The invite QR’s page reads the token anyway (to refuse a used one), and the person scanning is standing with the sender, so the card is face up: Hugh, his commander, “Invitation”. A forwarded photo of a QR names the sender for at most 15 minutes. The friend link’s signed-out card stays face down as today.</span><span class="rec">Recommend face up · Newcomer N1</span></div>
+        <div class="q"><b>C · A waitlist</b><span>None at launch. Option W is drawn so the choice is concrete: one field on the invite-only page, a list in /admin to approve.</span><span class="rec">Recommend none · Invite-Only W1 to W3</span></div>
+        <div class="q"><b>D · Where a new account lands</b><span>/friends, with “You and Hugh are friends.” in the shipped band, so the first thing they see is that it worked. Home’s first run starts from the nav as shipped.</span><span class="rec">Recommend /friends · Newcomer N8</span></div>
+      </section>
+
+      <section class="box" aria-labelledby="eng">
+        <h2 id="eng">For engineering (gaps, not Design’s to settle)</h2>
+        <div class="g"><b>Equal time.</b> “Sending…” lasts the same for every email (a floor on the server’s answer), and the QR claim turns the sender’s sheet at the same moment whatever the email.</div>
+        <div class="g"><b>One live QR per account.</b> Showing it again returns the same token while it lives; closing the sheet doesn’t release it.</div>
+        <div class="g"><b>The code.</b> 6 digits, about 10 minutes, a resend cooldown, and a cap on wrong tries per claimed QR. Whether Clerk’s own sign-up code or ours: the screens fit either.</div>
+        <div class="g"><b>A switch.</b> The chooser needs one (name it); the About entry follows it. Accounts with SOCIAL_FRIENDS_ENABLED off have no /friends and so no way to invite: decide whether invites need it.</div>
+        <div class="g"><b>The route.</b> The QR’s public page is drawn as /join/[token]; name it as you like.</div>
+      </section>
+
+      <section class="box" aria-labelledby="boards">
+        <h2 id="boards">Boards</h2>
+        <div class="bl"><span class="f">Add-Phone · Add-Desktop</span><span>The chooser, 0, path 1 as today, path 2.</span></div>
+        <div class="bl"><span class="f">Email-Phone · Email-Desktop</span><span>The remote form, sending, the one answer, the last invite, a toast.</span></div>
+        <div class="bl"><span class="f">QR-Phone · QR-Desktop</span><span>Live, the last minute, claimed, expired, a new one.</span></div>
+        <div class="bl"><span class="f">Newcomer</span><span>The newcomer’s phone, from scan to landing.</span></div>
+        <div class="bl"><span class="f">Friends-Count</span><span>/friends with invites left, waiting, and none.</span></div>
+        <div class="bl"><span class="f">Invite-Only · Friend-Link</span><span>Uninvited visitors, and Option W.</span></div>
+        <div class="bl"><span class="f">Admin-Desktop · Admin-Phone</span><span>Accounts, an account, a group, the tree.</span></div>
+        <div class="bl"><span class="f">About-Entry</span><span>The entry at 760 and 390.</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1840,"height":2400}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
