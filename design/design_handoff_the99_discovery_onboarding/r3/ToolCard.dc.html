@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · a showcase tool card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<article aria-label="{{ name }}" style="{{ frame }}">
+  <div style="position:relative;width:100%;aspect-ratio:3 / 2;background:#14110E;border-bottom:1px solid #2B241B;overflow:hidden">
+    <img src="{{ shot }}" alt="{{ alt }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+    <span aria-hidden="true" style="{{ haloBox }}"></span>
+    <sc-if value="{{ showChip }}" hint-placeholder-val="{{ false }}"><a href="#" style="position:absolute;right:10px;top:10px;display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;background:rgba(20,17,14,.88);border:1px solid #CF8745;color:#CF8745;text-decoration:none;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.45)">{{ chipLabel }}</a></sc-if>
+  </div>
+  <div style="padding:{{ pad }};display:flex;flex-direction:column;gap:8px;flex:1">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+      <h3 style="margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:600;color:#EDE6D8;line-height:1.3">{{ name }}</h3>
+      <sc-if value="{{ hasMeta }}" hint-placeholder-val="{{ true }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:2px 9px;white-space:nowrap">{{ meta }}</span></sc-if>
+    </div>
+    <p style="margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:14px;line-height:1.5;color:#C0B8A6">{{ line }}</p>
+    <sc-if value="{{ vButton }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:auto;padding-top:6px;display:flex;flex-direction:column;gap:10px">
+      <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
+        <a href="#" style="display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;padding:8px 14px;border:1px solid #CF8745;border-radius:10px;color:#CF8745;text-decoration:none;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;text-align:center;line-height:1.3">{{ tryLabel }}</a>
+      </sc-if>
+      <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px dashed #494037;border-radius:10px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:#A59C89">{{ reason }}</span>
+          <sc-if value="{{ hasDoor }}" hint-placeholder-val="{{ false }}"><a href="#" style="align-self:flex-start;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:4px 0">{{ door }}</a></sc-if>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:28px">
+        <sc-if value="{{ many }}" hint-placeholder-val="{{ false }}"><button type="button" style="background:none;border:0;padding:6px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89">{{ moreLabel }} ▾</button></sc-if>
+        <sc-if value="{{ notMany }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+        <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:6px 0">How it works ›</a>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ vSlim }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:auto;padding-top:8px;border-top:1px solid #2B241B;display:flex;flex-direction:column;gap:6px">
+      <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:10px;min-height:40px">
+          <a href="#" style="flex:none;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">{{ slimLabel }}</a>
+          <sc-if value="{{ hasDeck }}" hint-placeholder-val="{{ true }}"><button type="button" style="{{ deckBtn }}"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ deckName }}</span><span style="flex:none">{{ deckCaret }}</span></button></sc-if>
+          <a href="#" style="margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:#A59C89;padding-top:4px">{{ reason }}</span>
+        <div style="display:flex;align-items:center;gap:10px;min-height:40px">
+          <sc-if value="{{ hasDoor }}" hint-placeholder-val="{{ false }}"><a href="#" style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">{{ door }}</a></sc-if>
+          <a href="#" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ vCard }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:auto;padding-top:8px;border-top:1px solid #2B241B;display:flex;flex-direction:column;gap:6px">
+      <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
+        <a href="#" aria-label="{{ tryLabel }}" style="position:absolute;inset:0;z-index:1;border-radius:14px"></a>
+        <div style="display:flex;align-items:center;gap:10px;min-height:40px">
+          <a href="#" style="position:relative;z-index:2;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+          <span style="margin-left:auto;min-width:0;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#A59C89;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cardLabel }}</span>
+          <span aria-hidden="true" style="flex:none;width:30px;height:30px;border-radius:999px;border:1px solid #CF8745;color:#CF8745;display:flex;align-items:center;justify-content:center;font-size:15px">→</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:#A59C89;padding-top:4px">{{ reason }}</span>
+        <div style="display:flex;align-items:center;gap:10px;min-height:40px">
+          <a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+          <sc-if value="{{ hasDoor }}" hint-placeholder-val="{{ false }}"><a href="#" style="margin-left:auto;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">{{ door }}</a></sc-if>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ vChip }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:auto;padding-top:8px;border-top:1px solid #2B241B;display:flex;flex-direction:column;gap:6px">
+      <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;color:#A59C89;padding-top:4px">{{ reason }}</span></sc-if>
+      <div style="display:flex;align-items:center;gap:10px;min-height:40px">
+        <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ chipDeck }}</span></sc-if>
+        <sc-if value="{{ chipDoor }}" hint-placeholder-val="{{ false }}"><a href="#" style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#CF8745;text-decoration:none;padding:10px 0">{{ door }}</a></sc-if>
+        <a href="#" style="margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+</article>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tool":{"editor":"enum","options":["hmc","precons","topoff","cuts","suggested","mana","standins","spares","findadeck","wishlist","sync","matchups","lineup","friends"],"default":"cuts"},"fit":{"editor":"enum","options":["auto","one","many","none"],"default":"auto"},"w":{"editor":"int","default":372},"h":{"editor":"int","default":0},"cta":{"editor":"enum","options":["button","slim","card","chip"],"default":"card"},"$preview":{"width":372,"height":470}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const B = {
+      hmc: 'db79db6c9ac381a039a04be1d6465b4f', precons: 'b872cfa8bd54415b9c1554a0ccdf63c4', topoff: '1091cac14e874c8fb055651acf707c2b',
+      cuts: 'd8ab57aa9e8f20b136974f226ac5bca5', suggested: '72094a0b275aacb09dc971b73525c96b', mana: '0a30c2b0be48af0edb6f55403944ba40',
+      standins: 'ec5b6e3b4e899427df3c856c4d662434', spares: '3c94d00fa35228f5fb5892b5e06121f9', findadeck: '34c2355bfcb15c13d45901cc900bba6f',
+      wishlist: 'dda6a34400089b3d574d19c68f463b95', sync: '4245c3e28999017039edc8640e98aee0', matchups: '90713806bb1da0fbd47ed2ad3a381f9a',
+      lineup: '38a756bde97df65e4dd8233daf236442', friends: '11bfad221ef97f795596b86a8195cb54',
+    };
+    const HB = {
+      hmc: [8.46, 66.54, 83.08, 16.92], precons: [8.46, 46.54, 83.08, 16.92], topoff: [8.33, 63.65, 83.33, 16.54],
+      cuts: [34.62, 30.58, 30.77, 9.62], suggested: [4.1, 18.85, 91.79, 46.92], mana: [4.1, 42.31, 91.79, 46.92],
+      standins: [54.36, 61.92, 6.41, 10.0], spares: [51.28, 33.46, 34.87, 6.54], findadeck: [4.62, 50.77, 38.46, 8.65],
+      wishlist: [9.49, 46.54, 81.03, 16.92], sync: [4.62, 33.46, 90.77, 64.5], matchups: [4.1, 29.23, 91.79, 17.31],
+      lineup: [4.1, 46.15, 33.59, 17.69], friends: [4.1, 42.12, 91.79, 18.46],
+    };
+    const T = {
+      hmc: { name: 'Help me choose', line: 'Say what you want, and we’ll rank commanders by how well they fit it, owned or not.', fit: 'one', tryLabel: 'Open Help me choose →' },
+      precons: { name: 'Precons', line: 'Any Commander precon, with how many of its cards you already own.', fit: 'one', tryLabel: 'Browse precons →' },
+      topoff: { name: 'Top off', meta: 'free', line: 'Ranks your own cards for a deck’s open slots. Nothing is added until you say so.', fit: 'none', tryLabel: 'Try it on Sai’s Workshop →', reason: 'Needs a deck under 99. All 21 of yours are full.' },
+      cuts: { name: 'Proposed cuts', meta: 'free', line: 'Counts where a deck runs long. A deeper look names the cuts.', fit: 'many', tryLabel: 'Try it on HD - Kratos →', more: '2 more are over' },
+      suggested: { name: 'Suggested changes', meta: '1 credit per run', line: 'Up to five swaps, read from your games, your notes and the list.', fit: 'many', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', more: '16 more are full', reason: 'Needs a full deck. None of yours is at 99 yet.' },
+      mana: { name: 'Mana Balance', meta: 'free', line: 'Counts every source of each color against what your spells ask for.', fit: 'many', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', more: '16 more are full' },
+      standins: { name: 'Cheaper stand-ins', line: 'For a card over your price limit: cards that do the same job for less.', fit: 'one', tryLabel: 'Try it on HD - Gishath →' },
+      spares: { name: 'Friends’ spares', line: 'A friend’s spare copy of a card your deck still needs, before you buy one.', fit: 'none', tryLabel: 'Try it on HD - Gishath →', reason: 'Needs a friend with a spare of a card you’re missing. Colin has none right now.', door: 'Open Friends →' },
+      findadeck: { name: 'Find a deck', line: 'Reads your decks for the one a card you own fits best.', fit: 'one', tryLabel: 'Try it on a card you own →' },
+      wishlist: { name: 'Wishlist', line: 'Cards you want that no deck is asking for. A card leaves once you have enough.', fit: 'one', tryLabel: 'Open your wishlist →' },
+      sync: { name: 'Collection Sync', line: 'Merges a new file with what you changed here, card by card, and asks only where both moved.', fit: 'one', tryLabel: 'Upload a file →', reason: 'Needs a file you uploaded before. Your Collection was added by hand.', door: 'Upload a file →' },
+      matchups: { name: 'Matchups', line: 'Splits a deck’s games by the commander, colors or friend across the table.', fit: 'one', tryLabel: 'Try it on HD Tune - Scrappy Survivors →', reason: 'Needs a game logged with who you played against.' },
+      lineup: { name: 'Stats for your decks', line: 'Every deck side by side: when each last played, and how it went.', fit: 'one', tryLabel: 'See your decks on Stats →' },
+      friends: { name: 'Friends and pods', line: 'Add the people you play with, then seat them when you log a game.', fit: 'one', tryLabel: 'Open Friends →' },
+    };
+    const id = p.tool ?? 'cuts';
+    const t = T[id];
+    let fit = p.fit && p.fit !== 'auto' ? p.fit : t.fit;
+    const w = Number(p.w ?? 372), h = Number(p.h ?? 0);
+    const hb = HB[id];
+    const haloBox = `position:absolute;left:${hb[0]}%;top:${hb[1]}%;width:${hb[2]}%;height:${hb[3]}%;border-radius:9px;box-shadow:0 0 0 2px rgba(207,135,69,.75),0 0 0 6px rgba(207,135,69,.2),0 0 0 2000px rgba(20,17,14,.28);pointer-events:none`;
+    const cta = p.cta ?? 'card';
+    const m = /^Try it on (.*) →$/.exec(t.tryLabel);
+    const deck = m ? m[1] : '';
+    const many = fit === 'many';
+    const moreN = (t.more || '').split(' ')[0];
+    const deckBtn = `display:flex;gap:4px;min-width:0;background:none;border:0;padding:10px 0;cursor:${many ? 'pointer' : 'default'};font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left`;
+    return {
+      vButton: cta === 'button', vSlim: cta === 'slim', vCard: cta === 'card', vChip: cta === 'chip',
+      slimLabel: deck ? 'Try it →' : t.tryLabel, hasDeck: !!deck, deckName: deck ? 'on ' + deck : '', deckCaret: many ? ` · +${moreN} ▾` : '', deckBtn,
+      cardLabel: deck ? `Opens ${deck}${many ? ` · +${moreN}` : ''}` : t.tryLabel.replace(' →', ''),
+      showChip: cta === 'chip' && fit !== 'none', chipLabel: deck ? 'Try it →' : t.tryLabel,
+      chipDeck: deck ? `on ${deck}${many ? ` · +${moreN} ▾` : ''}` : '', chipDoor: fit === 'none' && !!t.door,
+      name: t.name, line: t.line, meta: t.meta || '', hasMeta: !!t.meta,
+      shot: '/_blob/' + B[id], alt: `${t.name}, on a real screen of the app`, haloBox,
+      fits: fit !== 'none', noFit: fit === 'none', many: fit === 'many', notMany: fit !== 'many',
+      tryLabel: t.tryLabel, moreLabel: t.more || 'Another deck', reason: t.reason || '', door: t.door || '', hasDoor: !!t.door,
+      pad: w < 330 ? '14px 14px 12px' : '16px 18px 14px',
+      frame: `position:relative;width:${w}px;${h ? `height:${h}px;` : ''}box-sizing:border-box;display:flex;flex-direction:column;background:#1E1A15;border:1px solid #2B241B;border-radius:14px;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8`,
+    };
+  }
+}
+</script>
+</body>
+</html>
