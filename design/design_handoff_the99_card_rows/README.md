@@ -187,3 +187,11 @@ ring) and keeps its template.
 6. `unresolved-row.tsx`: radius only.
 7. Shell metrics land as one exported class string (or two — flex and grid) rather than six
    hand-typed copies, so the next row cannot drift.
+
+## Addendum L1 · one line (2026-10-16)
+
+`addendum-one-line/` puts the deck page's card row back on one 34px line from `md` up, in All and
+Shopping, replacing the foil mark addendum's two-line desktop forms (#1886). Per-view lead, a fixed
+drop order folding marks into `+N`, the glint in the filled dot's place, and fixed right-hand
+columns. The phone keeps its shipped rows; All carries no other-ways press at any width. Approved
+by Hugh 2026-10-16. Start at `addendum-one-line/README.md`.
