@@ -83,7 +83,14 @@ table's decks side by side.
 8. **The table feeds the game log**: logging from it pre-fills the opponent seats and decks (`deck_game_opponents`).
 9. **The table expires after the night, about 24 hours.**
 10. **Behind a new switch that needs `SOCIAL_FRIENDS_ENABLED`.** Off, the feature is absent everywhere.
-11. **No About entry and no `ABOUT_VERSION` bump.** About entries are paused until the About redesign is done.
+11. **The table grants sight (Hugh, 2026-10-16).** Seats need not be friends with each other, since a pod's members are
+   the owner's friends. For the table's 24 hours, every seated player sees each other's chosen deck (name, commander,
+   bracket and its facts), and logging the game from the table lists every seat as an opponent. Being seated at the
+   same table is the consent, and it ends when the table expires.
+12. **The grant covers only each seat's chosen deck, never the rest of their decks or their collection.** A seated
+   player who is not the viewer's friend shows nothing beyond that deck, and nothing the table reads can be used to
+   browse further.
+13. **No About entry and no `ABOUT_VERSION` bump.** About entries are paused until the About redesign is done.
 
 ## Engineering notes for Design
 
@@ -110,15 +117,6 @@ These are facts of the build that shape the drawing. None reopens a locked item.
 - **The switch and the reading.** The bracket chip is drawn today only with `ANALYSIS_TAB_ENABLED` on. Engineering
   decides whether the new switch also requires it; either way, the table draws nothing a reader with the switch off
   could not otherwise see.
-
-### One question for Hugh before the build (not Design's)
-
-**Two seated players who are not friends with each other.** A pod's members are the owner's friends, so two members
-need not be friends with each other, and every cross-user read today joins the viewer's own friendship. As written,
-seat B could not see seat C's deck if B and C are not friends, and logging from the table could not seat C as a friend
-seat for B. Three answers, for Hugh: the table itself grants the seated players a view of each other's seated decks for
-its 24 hours; a seat a viewer is not friends with shows its bracket and facts without the deck's name; or a table seats
-only members who are friends with every other seat. Design can draw the table on the first assumption and adjust.
 
 ## Open for Design to call
 
