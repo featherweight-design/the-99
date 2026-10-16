@@ -13,6 +13,8 @@ export type PhotoListProps = {
   rows: PhotoRow[];
   mode: ScanMode;
   notice?: string | null;
+  /** An add is in flight: the add presses are held until it lands. */
+  busy?: boolean;
   onMode: (m: ScanMode) => void;
   onClose: () => void;
   onAddSure: () => void;
@@ -43,7 +45,7 @@ export function PhotoList(p: PhotoListProps) {
     // A live region: each row is decided after it is drawn, so what it became is announced as it lands.
     <ul aria-live="polite" className="m-0 flex list-none flex-col gap-[12px] p-0">
       {p.rows.map((r, i) => (
-        <PhotoItem key={r.id} row={r} index={i + 1} total={p.rows.length} phone={phone} onPick={(o) => p.onPick(r.id, o)} />
+        <PhotoItem key={r.id} row={r} index={i + 1} total={p.rows.length} phone={phone} busy={!!p.busy} onPick={(o) => p.onPick(r.id, o)} />
       ))}
     </ul>
   );
@@ -53,7 +55,7 @@ export function PhotoList(p: PhotoListProps) {
     </button>
   );
   const addSure = sure > 0 && (
-    <button type="button" onClick={p.onAddSure} className={phone ? BIG : BIG_DESK}>
+    <button type="button" disabled={p.busy} onClick={p.onAddSure} className={`${phone ? BIG : BIG_DESK} disabled:opacity-60`}>
       {copy.photos.addSure(sure)}
     </button>
   );
@@ -111,7 +113,7 @@ const TAG_OK = `${TAG} text-[color:var(--success)] bg-[color:color-mix(in_srgb,v
 const TAG_WARN = `${TAG} text-[color:var(--warning)] bg-[color:color-mix(in_srgb,var(--warning)_12%,transparent)]`;
 const SUB = "font-mono text-[10.5px] text-[color:var(--fg-faint)]";
 
-function PhotoItem({ row, index, total, phone, onPick }: { row: PhotoRow; index: number; total: number; phone: boolean; onPick: (oracleId: string) => void }) {
+function PhotoItem({ row, index, total, phone, busy, onPick }: { row: PhotoRow; index: number; total: number; phone: boolean; busy: boolean; onPick: (oracleId: string) => void }) {
   const s = row.state;
   const arrow = (
     <span aria-hidden="true" className="text-[12px] text-[color:var(--fg-faint)]">
@@ -158,7 +160,7 @@ function PhotoItem({ row, index, total, phone, onPick }: { row: PhotoRow; index:
       {s.kind === "notSure" && (
         <div className={`grid grid-cols-3 gap-[10px] ${phone ? "" : "w-[300px]"}`}>
           {s.guesses.map((g) => (
-            <button key={g.oracleId} type="button" onClick={() => onPick(g.oracleId)} className="flex min-w-0 flex-col gap-[6px] border-0 bg-transparent p-0 text-left">
+            <button key={g.oracleId} type="button" disabled={busy} onClick={() => onPick(g.oracleId)} className="flex min-w-0 flex-col gap-[6px] border-0 bg-transparent p-0 text-left disabled:opacity-60">
               <Thumb guess={g} className="aspect-[63/88] w-full rounded-[9px]" />
               <span className={`line-clamp-2 leading-[1.3] text-[color:var(--fg)] ${phone ? "text-[12px]" : "text-[11.5px]"}`}>{g.name}</span>
             </button>

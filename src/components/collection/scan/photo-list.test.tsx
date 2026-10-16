@@ -90,6 +90,13 @@ describe("PhotoList", () => {
     expect(body.contains(screen.getAllByRole("listitem")[0])).toBe(true);
   });
 
+  it("holds every add press while an add is in flight, so none is taken and dropped", () => {
+    draw({ busy: true });
+    expect((screen.getByRole("button", { name: copy.photos.addSure(1) }) as HTMLButtonElement).disabled).toBe(true);
+    for (const b of within(row(2)).getAllByRole("button")) expect((b as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: copy.photos.more }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("stops from the desktop's head, and closes from the phone's ✕ beside Fast/Normal", () => {
     const desk = draw();
     fireEvent.click(screen.getByRole("button", { name: copy.camera.stop }));

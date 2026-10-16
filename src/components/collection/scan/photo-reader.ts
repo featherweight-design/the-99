@@ -39,6 +39,8 @@ export type PhotoReader = {
   addSure: () => Promise<void>;
   /** Adds the guess pressed on a Not sure row. */
   pick: (rowId: number, oracleId: string) => Promise<void>;
+  /** An add is in flight: every add press waits for it, so none is taken and dropped. */
+  busy: boolean;
 };
 
 const decodeFile = (file: File) => createImageBitmap(file, { imageOrientation: "from-image" });
@@ -157,33 +159,42 @@ export function usePhotoReader(
   );
 
   // One add at a time, the bulk press's whole run included: a second press while one waits would add a card twice.
+  // `busy` mirrors it for the presses, which are held while it is set.
   const committing = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const hold = (on: boolean) => {
+    committing.current = on;
+    setBusy(on);
+  };
   const rowsRef = useRef(rows);
+  // The mode at each add, not at the press: a change mid-batch applies to the cards after it, as on the camera.
+  const modeRef = useRef(mode);
   useEffect(() => {
     rowsRef.current = rows;
+    modeRef.current = mode;
   });
   const commit = useCallback(
     async (id: number, guess: ScanGuess): Promise<boolean> => {
-      if (!(await onAdd(guess, mode))) {
+      if (!(await onAdd(guess, modeRef.current))) {
         onProblemRef.current("notAdded");
         return false;
       }
       settle(id, { kind: "added", guess });
       return true;
     },
-    [onAdd, mode],
+    [onAdd],
   );
 
   const addSure = useCallback(async () => {
     if (committing.current) return;
-    committing.current = true;
+    hold(true);
     try {
       for (const r of rowsRef.current) {
         if (r.state.kind !== "sure") continue;
         if (!(await commit(r.id, r.state.guess))) return;
       }
     } finally {
-      committing.current = false;
+      hold(false);
     }
   }, [commit]);
 
@@ -192,15 +203,15 @@ export function usePhotoReader(
       const row = rowsRef.current.find((r) => r.id === rowId);
       const guess = row?.state.kind === "notSure" ? row.state.guesses.find((g) => g.oracleId === oracleId) : undefined;
       if (!guess || committing.current) return;
-      committing.current = true;
+      hold(true);
       try {
         await commit(rowId, guess);
       } finally {
-        committing.current = false;
+        hold(false);
       }
     },
     [commit],
   );
 
-  return { rows, choose, addSure, pick };
+  return { rows, choose, addSure, pick, busy };
 }

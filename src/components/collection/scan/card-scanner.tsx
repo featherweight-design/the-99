@@ -104,6 +104,7 @@ export function CardScanner({
           rows={photos.rows}
           mode={mode}
           notice={notice}
+          busy={photos.busy}
           onMode={setMode}
           onClose={onClose}
           onAddSure={() => void photos.addSure()}

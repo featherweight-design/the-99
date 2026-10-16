@@ -161,4 +161,47 @@ describe("usePhotoReader", () => {
     await waitFor(() => expect(closed).toEqual(["one.jpg"]));
     expect(d.readFrame).not.toHaveBeenCalled();
   });
+
+  it("adds each card under the mode at its own add, so a change mid-batch reaches the cards after it", async () => {
+    let first: () => void = () => {};
+    const onAdd = vi.fn(async () => {
+      if (onAdd.mock.calls.length === 1) await new Promise<void>((r) => (first = r));
+      return true;
+    });
+    const { d } = deps();
+    const { result, rerender } = renderHook(({ mode }) => usePhotoReader(d, onAdd, mode, vi.fn()), { initialProps: { mode: "fast" as "fast" | "normal" } });
+    act(() => result.current.choose([file("one.jpg"), file("two.jpg")]));
+    await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]));
+    let run: Promise<void> = Promise.resolve();
+    act(() => {
+      run = result.current.addSure();
+    });
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
+    rerender({ mode: "normal" });
+    await act(async () => {
+      first();
+      await run;
+    });
+    expect(onAdd.mock.calls.map((c) => (c as unknown as [unknown, string])[1])).toEqual(["fast", "normal"]);
+  });
+
+  it("is busy while an add is in flight, and free again once it lands", async () => {
+    let land: (ok: boolean) => void = () => {};
+    const onAdd = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    const { d } = deps({ fetch: vi.fn(async () => answer([guess("a", "A"), guess("b", "B")], 0.001)) });
+    const { result } = renderHook(() => usePhotoReader(d, onAdd, "fast", vi.fn()));
+    act(() => result.current.choose([file("one.jpg")]));
+    await waitFor(() => expect(result.current.rows[0].state.kind).toBe("notSure"));
+    expect(result.current.busy).toBe(false);
+    let run: Promise<void> = Promise.resolve();
+    act(() => {
+      run = result.current.pick(result.current.rows[0].id, "a");
+    });
+    await waitFor(() => expect(result.current.busy).toBe(true));
+    await act(async () => {
+      land(true);
+      await run;
+    });
+    expect(result.current.busy).toBe(false);
+  });
 });
