@@ -1,6 +1,6 @@
 # Discovery R2 · READINESS
 
-**Verdict: 🟡 R2b, for Hugh's audit (R2 plus his notes of 2026-10-16).** Every lock in the brief for this round is held (`README-r2.md`, "Brief locks, held").
+**Verdict: 🟢 R2b approved by Hugh, 2026-10-16** ("I think I like C as well. This all LGTM"), with Try it option C. Every lock in the brief for this round is held (`README-r2.md`, "Brief locks, held").
 The calls are on `r2/Main.dc.html`. What remains: Hugh's audit, his calls on G11, G13, G18 and G19, `/copy-review` for every
 new string, and the engineering items below.
 

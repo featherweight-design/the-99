@@ -12,7 +12,7 @@
 <style>body{margin:0}</style>
 </helmet>
 <div style="{{ frame }}">
-  <dc-import name="Rail" active="none" help="shown" h="{{ railH }}" hint-size="62px,4410px"></dc-import>
+  <dc-import name="Rail" active="none" help="shown" h="{{ railH }}" hint-size="62px,3930px"></dc-import>
   <main style="flex:1;min-width:0;padding:40px 56px 64px;box-sizing:border-box">
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
       <div>
@@ -35,7 +35,7 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:22px">
           <sc-for list="{{ g.tools }}" as="t" hint-placeholder-count="3">
-            <dc-import name="ToolCard" tool="{{ t }}" w="354" h="530" hint-size="354px,530px"></dc-import>
+            <dc-import name="ToolCard" tool="{{ t }}" cta="card" w="354" h="450" hint-size="354px,450px"></dc-import>
           </sc-for>
         </div>
       </section>
@@ -58,10 +58,10 @@
   </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":4410},"$preview":{"width":1280,"height":4410}}'>
+<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":3930},"$preview":{"width":1280,"height":3930}}'>
 class Component extends DCLogic {
   renderVals() {
-    const h = Number(this.props.h ?? 4410);
+    const h = Number(this.props.h ?? 3930);
     const groups = [
       { label: 'Start a deck', sub: 'before there is a list', tools: ['hmc', 'precons'] },
       { label: 'Tune it', sub: 'once there is a list', tools: ['topoff', 'cuts', 'suggested', 'mana'] },

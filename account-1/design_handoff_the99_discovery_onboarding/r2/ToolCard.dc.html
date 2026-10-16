@@ -64,8 +64,8 @@
       <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
         <a href="#" aria-label="{{ tryLabel }}" style="position:absolute;inset:0;z-index:1;border-radius:14px"></a>
         <div style="display:flex;align-items:center;gap:10px;min-height:40px">
-          <a href="#" style="position:relative;z-index:2;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
-          <span style="margin-left:auto;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#A59C89;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cardLabel }}</span>
+          <a href="#" style="position:relative;z-index:2;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;text-decoration:none;padding:10px 0">How it works ›</a>
+          <span style="margin-left:auto;min-width:0;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#A59C89;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cardLabel }}</span>
           <span aria-hidden="true" style="flex:none;width:30px;height:30px;border-radius:999px;border:1px solid #CF8745;color:#CF8745;display:flex;align-items:center;justify-content:center;font-size:15px">→</span>
         </div>
       </sc-if>
@@ -91,7 +91,7 @@
   </div>
 </article>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"tool":{"editor":"enum","options":["hmc","precons","topoff","cuts","suggested","mana","standins","spares","findadeck","wishlist","sync","matchups","lineup","friends"],"default":"cuts"},"fit":{"editor":"enum","options":["auto","one","many","none"],"default":"auto"},"w":{"editor":"int","default":372},"h":{"editor":"int","default":0},"cta":{"editor":"enum","options":["button","slim","card","chip"],"default":"button"},"$preview":{"width":372,"height":470}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tool":{"editor":"enum","options":["hmc","precons","topoff","cuts","suggested","mana","standins","spares","findadeck","wishlist","sync","matchups","lineup","friends"],"default":"cuts"},"fit":{"editor":"enum","options":["auto","one","many","none"],"default":"auto"},"w":{"editor":"int","default":372},"h":{"editor":"int","default":0},"cta":{"editor":"enum","options":["button","slim","card","chip"],"default":"card"},"$preview":{"width":372,"height":470}}'>
 class Component extends DCLogic {
   renderVals() {
     const p = this.props;
@@ -131,7 +131,7 @@ class Component extends DCLogic {
     const w = Number(p.w ?? 372), h = Number(p.h ?? 0);
     const hb = HB[id];
     const haloBox = `position:absolute;left:${hb[0]}%;top:${hb[1]}%;width:${hb[2]}%;height:${hb[3]}%;border-radius:9px;box-shadow:0 0 0 2px rgba(207,135,69,.75),0 0 0 6px rgba(207,135,69,.2),0 0 0 2000px rgba(20,17,14,.28);pointer-events:none`;
-    const cta = p.cta ?? 'button';
+    const cta = p.cta ?? 'card';
     const m = /^Try it on (.*) →$/.exec(t.tryLabel);
     const deck = m ? m[1] : '';
     const many = fit === 'many';

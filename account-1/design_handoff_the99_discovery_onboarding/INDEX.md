@@ -44,6 +44,8 @@ in account 1 (`The 99 - Discovery R2 · Showcase and reference`).
 | **`r2/Main.dc.html`** | **The calls: About's two tabs (C1), the fourteen tools (C2), Try it (C3), the ? (C4), the Reference (C5), the links (C6).** |
 | `r2/Showcase.dc.html` | S1: Tools at 1280 and 390. |
 | `r2/Tool-Card.dc.html` | T1, anatomy; T2, Try it by how many decks fit; T3, where it lands. |
+| `r2/Try-Options.dc.html` | R2b: Try it four ways, A to D. C was chosen. |
+| `r2/Note.dc.html` | R2b: A note from the creator, opened, and where it lives. |
 | `r2/Help-Deck.dc.html`, `Help-Shopping`, `Help-Collection` | H1–H3: the ? on the deck page, Shopping and Collection, with search. |
 | `r2/Reference.dc.html`, `Reference-Search` | R1–R3: the full list, and search with results and with none. |
 | `r2/Links.dc.html` | L1–L2: where each place leads, and no dead ends. |

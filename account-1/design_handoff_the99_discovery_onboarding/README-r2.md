@@ -2,7 +2,7 @@
 
 `design_handoff_the99_discovery_onboarding/` · 2026-10-16 · account 1 · beside R1 (`README.md`)
 
-**Status: R2, for Hugh's audit.** Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
+**Status: R2b, approved by Hugh (2026-10-16), with Try it option C.** Source of truth: `docs/superpowers/design-briefs/2026-10-16-discovery-and-onboarding.md`
 (main, #1914), §2 (the showcase), §4 (About becomes a reference) and §Proposed split, R2. It follows R1's moments (#1919).
 
 The canvas is `The 99 - Discovery R2 · Showcase and reference` (Design artifact, account 1). Its files are in `r2/`:
@@ -127,7 +127,8 @@ read-only from Hugh's account on 2026-10-16. The exceptions:
   - **B.** A footer line: `Try it →` in the accent, then the deck in mono (a menu when several fit), and How it works.
   - **C.** The whole card is the press. The footer says where it opens, with an arrow in a ring; How it works stays its own press. There is no deck menu.
   - **D.** A `Try it →` chip on the picture's top-right corner.
-  - **Design's pick is C.** Making the card the press removes the second focal point, gives the phone its largest target, and still names the deck. What it gives up is choosing another deck from the card. Hugh picks.
+  - **C is chosen** (Hugh, 2026-10-16), and every board now draws it. Making the card the press removes the second focal point, gives the phone its largest target, and still names the deck. What it gives up is choosing another deck from the card: the footer's `+N` says others fit, and the tool works on any deck once opened.
+  - An opened Reference entry keeps a text press, `Try it on HD - Gishath` with the same ringed arrow, because a Reference row is not a card.
 - **The drawer stays** as drawn (H1–H3).
 - **A note from the creator** (`r2/Note.dc.html`).
   - The app names no one outside the note itself, so the letter is titled `A note from the creator`; the signature stays inside it.
@@ -172,7 +173,7 @@ with an `ABOUT_VERSION` bump is Hugh's call (G19).
 
 ## Gaps for Hugh and the plan
 
-- **G22 · Try it.** A, B, C or D (Design picks C).
+- **G22 · Try it.** Settled: C.
 - **G23 · The note in onboarding** is drawn in R3. Until R3 ships, the Reference row is its only way in.
 
 - **G11 · One theme for screenshots.** The shipped pictures are captured in the default theme (Amonkhet). A reader in another theme sees Amonkhet pictures in a frame. The alternative is capturing every tool in all six themes. Hugh's call.

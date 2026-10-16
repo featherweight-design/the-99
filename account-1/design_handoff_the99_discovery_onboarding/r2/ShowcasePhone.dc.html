@@ -30,7 +30,7 @@
         </div>
         <div style="display:flex;gap:12px;overflow:hidden;padding:0 16px">
           <sc-for list="{{ g.tools }}" as="t" hint-placeholder-count="2">
-            <div style="flex:none"><dc-import name="ToolCard" tool="{{ t }}" w="300" h="460" hint-size="300px,460px"></dc-import></div>
+            <div style="flex:none"><dc-import name="ToolCard" tool="{{ t }}" cta="card" w="300" h="400" hint-size="300px,400px"></dc-import></div>
           </sc-for>
         </div>
       </section>
@@ -54,10 +54,10 @@
   <div style="position:absolute;left:0;bottom:0"><dc-import name="TabBar" active="none" hint-size="390px,74px"></dc-import></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":3870},"$preview":{"width":390,"height":3870}}'>
+<script type="text/x-dc" data-dc-script data-props='{"h":{"editor":"int","default":3570},"$preview":{"width":390,"height":3570}}'>
 class Component extends DCLogic {
   renderVals() {
-    const h = Number(this.props.h ?? 3870);
+    const h = Number(this.props.h ?? 3570);
     const groups = [
       { label: 'Start a deck', count: '2 · swipe', tools: ['hmc', 'precons'] },
       { label: 'Tune it', count: '4 · swipe', tools: ['topoff', 'cuts', 'suggested', 'mana'] },

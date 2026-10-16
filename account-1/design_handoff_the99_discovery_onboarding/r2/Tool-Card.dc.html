@@ -26,7 +26,7 @@ body{margin:0}
 .note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
 </style>
 </helmet>
-<div style="width:1800px;min-height:2830px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+<div style="width:1800px;min-height:2720px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
   <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
     <span class="lbl">Discovery R2 · a showcase tool card, and Try it · 1280 and 390 · Amonkhet</span>
     <h2 class="disp" style="margin:0;font-size:28px">Try it opens the tool on a deck that fits, or says plainly why none does</h2>
@@ -35,7 +35,7 @@ body{margin:0}
   <section class="sec">
     <div class="h"><span class="id">T1</span><span class="t">Anatomy</span></div>
     <div class="frames">
-      <div><div class="w">1280 · Proposed cuts</div><dc-import name="ToolCard" tool="cuts" fit="auto" w="354" h="530" hint-size="354px,530px"></dc-import></div>
+      <div><div class="w">1280 · Proposed cuts</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
       <div class="note" style="width:420px"><span class="k">1 · The screenshot</span>
 <span>A real screen of the app at 390, cropped 3:2 around the control. It is shipped with the app, captured from a fixture account (E3), never the reader’s own data. The surround dims 28% so the control reads first.</span>
 <span class="k">2 · The halo</span>
@@ -45,32 +45,32 @@ body{margin:0}
 <span class="k">4 · One line</span>
 <span>What it is for, taken from the tool’s own shipped description where it has one. Placeholders for /copy-review.</span>
 <span class="k">5 · Try it</span>
-<span>One press, naming the deck. Which deck: the fitting deck the reader opened most recently (E4).</span>
-<span class="k">6 · More decks</span>
-<span>Only when more than one fits: a quiet menu of the others. Picking one is the same press on that deck.</span>
+<span>The whole card is the press (option C, Hugh 2026-10-16). Its accessible name is <span class="mono">Try it on HD - Kratos</span>. The deck is the fitting deck the reader opened most recently (E10).</span>
+<span class="k">6 · The footer</span>
+<span>Where it opens: <span class="mono">Opens HD - Kratos · +2</span> and an arrow in a ring. The count says other decks fit; there is no menu on the card.</span>
 <span class="k">7 · How it works</span>
 <span>Opens this tool’s entry in the Reference, expanded. The card and the entry link both ways.</span></div>
     </div>
 
   </section>
   <section class="sec">
-    <div class="h"><span class="id">T2</span><span class="t">Try it, by how many decks fit</span></div>
+    <div class="h"><span class="id">T2</span><span class="t">Try it, by how many decks fit · the whole card is the press</span></div>
     <div class="frames">
-      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" fit="auto" w="354" h="530" hint-size="354px,530px"></dc-import></div>
-      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" fit="auto" w="354" h="530" hint-size="354px,530px"></dc-import></div>
-      <div><div class="w">none fits, no door</div><dc-import name="ToolCard" tool="topoff" fit="auto" w="354" h="530" hint-size="354px,530px"></dc-import></div>
-      <div><div class="w">none fits, with a door</div><dc-import name="ToolCard" tool="spares" fit="auto" w="354" h="530" hint-size="354px,530px"></dc-import></div>
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">none fits, no door</div><dc-import name="ToolCard" tool="topoff" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">none fits, with a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
     </div>
 
   </section>
   <section class="sec">
     <div class="h"><span class="id">T2 · 390</span><span class="t">The same cards at 390</span></div>
     <div class="frames">
-      <div><div class="w">one</div><dc-import name="ToolCard" tool="standins" fit="auto" w="300" h="460" hint-size="300px,460px"></dc-import></div>
-      <div><div class="w">several</div><dc-import name="ToolCard" tool="cuts" fit="auto" w="300" h="460" hint-size="300px,460px"></dc-import></div>
-      <div><div class="w">none, no door</div><dc-import name="ToolCard" tool="topoff" fit="auto" w="300" h="460" hint-size="300px,460px"></dc-import></div>
-      <div><div class="w">none, a door</div><dc-import name="ToolCard" tool="spares" fit="auto" w="300" h="460" hint-size="300px,460px"></dc-import></div>
-      <div><div class="w">a credit tool: Try it opens its tile</div><dc-import name="ToolCard" tool="suggested" fit="auto" w="300" h="460" hint-size="300px,460px"></dc-import></div>
+      <div><div class="w">one</div><dc-import name="ToolCard" tool="standins" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">several</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">none, no door</div><dc-import name="ToolCard" tool="topoff" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">none, a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">a credit tool: Try it opens its tile</div><dc-import name="ToolCard" tool="suggested" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
     </div>
 
   </section>
@@ -92,7 +92,7 @@ body{margin:0}
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2830}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2720}}'>
 class Component extends DCLogic { renderVals() { return {}; } }
 </script>
 </body>

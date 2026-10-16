@@ -21,54 +21,54 @@
    "x": 0,
    "y": 1740,
    "w": 1800,
-   "h": 4760,
+   "h": 4280,
    "title": "S1 · Tools, the showcase"
   },
   "Tool-Card.dc.html": {
    "x": 0,
-   "y": 6620,
+   "y": 6140,
    "w": 1800,
-   "h": 2830,
+   "h": 2720,
    "title": "T1–T3 · a tool card and Try it"
   },
   "Help-Deck.dc.html": {
    "x": 0,
-   "y": 14430,
+   "y": 13840,
    "w": 1800,
    "h": 2070,
    "title": "H1 · the ? on the deck page"
   },
   "Help-Shopping.dc.html": {
    "x": 0,
-   "y": 16620,
+   "y": 16030,
    "w": 1800,
    "h": 2070,
    "title": "H2 · the ? on Shopping, and search"
   },
   "Help-Collection.dc.html": {
    "x": 0,
-   "y": 18810,
+   "y": 18220,
    "w": 1800,
    "h": 2070,
    "title": "H3 · the ? on Collection, and no results"
   },
   "Reference.dc.html": {
    "x": 0,
-   "y": 21000,
+   "y": 20410,
    "w": 1800,
    "h": 6020,
    "title": "R1 · the Reference, every entry by screen"
   },
   "Reference-Search.dc.html": {
    "x": 0,
-   "y": 27140,
+   "y": 26550,
    "w": 1800,
    "h": 2180,
    "title": "R2–R3 · searching the Reference"
   },
   "Links.dc.html": {
    "x": 0,
-   "y": 29440,
+   "y": 28850,
    "w": 1800,
    "h": 1200,
    "title": "L1–L2 · how the places link"
@@ -140,40 +140,40 @@
    "x": 2170,
    "y": 2856,
    "w": 1280,
-   "h": 4410,
+   "h": 3930,
    "title": "Part · About, Tools, 1280"
   },
   "ShowcasePhone.dc.html": {
    "x": 3530,
    "y": 2856,
    "w": 390,
-   "h": 3870,
+   "h": 3570,
    "title": "Part · About, Tools, 390"
   },
   "ReferenceDesk.dc.html": {
    "x": 2170,
-   "y": 7386,
+   "y": 6906,
    "w": 1280,
    "h": 5670,
    "title": "Part · About, Reference, 1280"
   },
   "ReferencePhone.dc.html": {
    "x": 3530,
-   "y": 7386,
+   "y": 6906,
    "w": 390,
    "h": 3130,
    "title": "Part · About, Reference, 390"
   },
   "Try-Options.dc.html": {
    "x": 0,
-   "y": 9570,
+   "y": 8980,
    "w": 2010,
    "h": 3240,
    "title": "R2b · Try it, four ways"
   },
   "Note.dc.html": {
    "x": 0,
-   "y": 12930,
+   "y": 12340,
    "w": 1800,
    "h": 1380,
    "title": "R2b · A note from the creator"
