@@ -49,14 +49,23 @@ function topModal(): Element | null {
   return all.length > 0 ? all[all.length - 1] : null;
 }
 
-/** Whether a moment for this control may show now: nothing over the page, or the control is inside what is on top. */
+/**
+ * Whether a moment for this control may show now: nothing open over the page, or the control is inside what is on
+ * top. Read two ways, because neither alone sees every surface: the counters (`lib/moments/hold.ts`) see what locks
+ * scroll or holds the moments, and the DOM sees every drawn dialog or menu, including the many that lock nothing.
+ */
+const OVER_PAGE = '[aria-modal="true"], [role="dialog"], [role="menu"]';
 function clearOver(el: HTMLElement): boolean {
   const { locks, holds } = overPageCount();
-  if (locks === 0 && holds === 0) return true;
   if (holds > 0) return false;
+  const open = [...document.querySelectorAll<HTMLElement>(OVER_PAGE)].filter((n) => n.getClientRects().length > 0);
+  if (locks === 0 && open.length === 0) return true;
   const top = topModal();
-  return top !== null && top.contains(el);
+  return top !== null && top.contains(el) && open.every((n) => n.contains(el) || n.contains(top));
 }
+
+/** While a control is on screen but something is open over it, how often to look again. */
+const RETRY_MS = 1000;
 
 export function MomentsProvider({
   live,
@@ -126,6 +135,8 @@ export function MomentsProvider({
     [spend],
   );
 
+  // The retry re-enters `decide` through this, since a callback cannot name itself before it is declared.
+  const decideRef = useRef<() => void>(() => {});
   const decide = useCallback(() => {
     windowTimer.current = null;
     if (showingRef.current !== null) return;
@@ -133,7 +144,11 @@ export function MomentsProvider({
       const a = anchors.current.get(id);
       return a !== undefined && clearOver(a.el);
     });
-    if (onScreen.length === 0) return;
+    if (onScreen.length === 0) {
+      // Covered, not gone: look again shortly, since a surface that locks nothing reports no close.
+      if (visible.current.size > 0) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
+      return;
+    }
     const visit = touchVisit();
     lastTouch.current = Date.now();
     const id = pickMoment({ onScreen, live: liveSet, spent: spent.current, visitTaken: visit.taken });
@@ -148,6 +163,10 @@ export function MomentsProvider({
       spend(id);
     }, SPENT_AFTER_MS);
   }, [liveSet, spend]);
+
+  useEffect(() => {
+    decideRef.current = decide;
+  }, [decide]);
 
   const arm = useCallback(() => {
     if (windowTimer.current !== null || showingRef.current !== null || visible.current.size === 0) return;
@@ -187,6 +206,9 @@ export function MomentsProvider({
       subscribeOverPage(() => {
         const s = showingRef.current;
         if (s !== null && !clearOver(s.el)) close(false);
+        // A surface closing restarts the window at once rather than waiting out a retry.
+        if (windowTimer.current !== null) window.clearTimeout(windowTimer.current);
+        windowTimer.current = null;
         arm();
       }),
     [arm, close],

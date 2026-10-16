@@ -2085,7 +2085,7 @@ export const userPrefs = pgTable(
     upcomingSeenCodes: text("upcoming_seen_codes").array().notNull().default(sql`'{}'::text[]`),
     /**
      * The moments this reader has been shown (discovery R1, `lib/moments/registry.ts`): ids only ever accumulate,
-     * since a spent moment never returns, and there are sixteen in all. Written only when an id is added
+     * since a spent moment never returns, and there are fifteen in all. Written only when an id is added
      * (`spendMomentWrite`), because of the stamp trigger above.
      */
     momentsSpent: text("moments_spent").array().notNull().default(sql`'{}'::text[]`),

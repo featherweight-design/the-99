@@ -976,8 +976,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   minutes away (`lib/moments/visit.ts`). The shell mounts `MomentsProvider`, which watches every control registered
   through `useMomentAnchor` with one IntersectionObserver, opens a 600ms tie window on the first on screen, and draws
   `MomentBubble` (a portal at z 35, under every sheet, dialog, menu and toast; inside the topmost modal for a control in
-  card details). Nothing arrives while a surface is open over the page: `dialog.ts`'s scroll-lock counter, plus
-  `useMomentHold` for one that locks nothing (the desktop account popover, every `ToastFrame`). A bubble the reader closes
+  card details). Nothing arrives while a surface is open over the page, read two ways: `dialog.ts`'s scroll-lock
+  counter and `useMomentHold` (the desktop account popover, every `ToastFrame`), and the DOM, where any drawn
+  `aria-modal`, `role="dialog"` or `role="menu"` counts, since many surfaces lock nothing; a covered control is looked
+  at again each second. A bubble the reader closes
   is spent at once, one the page tears down only after a second on screen, through `spendMomentAction`, which re-checks
   the id is live for the reader. Every moment is spoken once through the provider's one polite live region.
 

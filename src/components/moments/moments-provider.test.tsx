@@ -125,14 +125,10 @@ describe("MomentsProvider", () => {
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("data-moment-halo")).toBe(false);
   });
 
-  it("closes on Esc, and on a press of the control, which still goes on to its tool", () => {
-    const pressed = vi.fn();
+  it("closes on Esc", () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
-        <button type="button" onClick={pressed}>
-          elsewhere
-        </button>
       </MomentsProvider>,
     );
     onScreen("Stats");
@@ -140,6 +136,65 @@ describe("MomentsProvider", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+  });
+
+  it("closes on a press of the control, and the press still goes on to its tool", () => {
+    const opened = vi.fn();
+    function Pressable() {
+      const anchor = useMomentAnchor("lineup", { eligible: true, copy: { tool: "Stats", line: "opens Stats." } });
+      return (
+        <button type="button" {...anchor} onClick={opened}>
+          Stats
+        </button>
+      );
+    }
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Pressable />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    act(() => vi.advanceTimersByTime(ARRIVE_MS));
+    const control = screen.getByRole("button", { name: "Stats" });
+    fireEvent.pointerDown(control);
+    fireEvent.click(control);
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(opened).toHaveBeenCalledTimes(1);
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+  });
+
+  it("waits while a dialog that locks nothing is drawn over the page, and arrives once it is gone", () => {
+    function Popover() {
+      const [open, setOpen] = useState(true);
+      return open ? (
+        <div role="dialog" aria-label="menu">
+          <button type="button" onClick={() => setOpen(false)}>
+            done
+          </button>
+        </div>
+      ) : null;
+    }
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Popover />
+        <Control id="lineup" name="Stats" />
+      </MomentsProvider>,
+    );
+    // jsdom lays nothing out, so a drawn element is one with client rects.
+    const proto = Element.prototype.getClientRects;
+    Element.prototype.getClientRects = function () {
+      return [{}] as unknown as DOMRectList;
+    };
+    try {
+      onScreen("Stats");
+      act(() => vi.advanceTimersByTime(ARRIVE_MS * 3));
+      expect(screen.queryByRole("note")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "done" }));
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
+    } finally {
+      Element.prototype.getClientRects = proto;
+    }
   });
 
   it("is not spent when the page tears it down inside a second, and the visit stays free", () => {

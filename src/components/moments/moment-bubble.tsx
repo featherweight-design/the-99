@@ -25,9 +25,10 @@ const TABBABLE = 'a[href], button:not([disabled]), input:not([disabled]), select
 
 type Spot = { top: number; left: number; width: number; side: "below" | "above" | "right"; nib: number };
 
-function tabBarHeight(): number {
+/** The tab bar's height as the control sees it: the shell sets 88px on a wrapper while locked, not on the root. */
+function tabBarHeight(anchor: HTMLElement): number {
   if (window.innerWidth >= PHONE) return 0;
-  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h"));
+  const v = parseFloat(getComputedStyle(anchor).getPropertyValue("--tabbar-h"));
   return Number.isFinite(v) ? v : 0;
 }
 
@@ -90,7 +91,7 @@ export function MomentBubble({
       const node = ref.current;
       if (!node) return;
       const r = anchor.getBoundingClientRect();
-      const view = { width: window.innerWidth, height: window.innerHeight, bottomInset: tabBarHeight() };
+      const view = { width: window.innerWidth, height: window.innerHeight, bottomInset: tabBarHeight(anchor) };
       const s = placeBubble(r, { height: node.offsetHeight }, view, place);
       // Viewport to the container's own coordinates: the body's are the page's, a modal's are its box's.
       const parent = node.offsetParent as HTMLElement | null;
