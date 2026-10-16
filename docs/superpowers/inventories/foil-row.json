@@ -1,6 +1,6 @@
 {
   "feature": "The one-line card row (card rows addendum L1), the glint under the dot or in its place, the marks folding by the row's width, and the Shopping key",
-  "note": "The foil mark's PR 2 (plan `2026-10-15-foil-mark.md`) drew a two-line row; the card rows addendum (L1, Hugh 2026-10-16) put every card row back on one 34px line from md in All and Shopping, folding marks by the row's own width (`@container` on the row's wrapper) and fixing the right-hand columns. Below md the phone keeps its rows: the All row as shipped and Shopping's option B, with the glint under the dot. Photographed at 390, 800, 900 and 1300: 800 and 900 are the two-column grid at its narrowest, where the wide, middle and tight tiers all show, and 1300 is the wide one.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage. The deck must hold a card priced over its limit (the Shopping cell scrolls to a row carrying the stand-ins press), and a card with two or more bracket marks (the `marks` rows scroll to a folded one, light and heavy); a row that cannot find its target fails rather than photographing something else. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
+  "note": "The foil mark's PR 2 (plan `2026-10-15-foil-mark.md`) drew a two-line row; the card rows addendum (L1, Hugh 2026-10-16) put every card row back on one 34px line from md in All and Shopping, folding marks by the row's own width (`@container` on the row's wrapper) and fixing the right-hand columns. Below md the phone keeps its rows: the All row as shipped and Shopping's option B, with the glint under the dot. Photographed at 390, 800, 900 and 1300: 800 and 900 are the two-column grid at its narrowest, where the wide, middle and tight tiers all show, and 1300 is the wide one.\\n\\nPRECONDITION: the sheet account must own a foil card in the deck (`FOIL_CARD`, set to every-copy-foil on a scratch branch) or no glint is drawn and the sheet reads as coverage. The deck must hold a card priced over its limit (the Shopping cell scrolls to a row carrying the stand-ins press), and a card with a bracket mark (the `marks` rows scroll to one; a card with two or more shows the middle tier too); a row that cannot find its target fails rather than photographing something else. A scratch branch of local-dev is the right database (set the finish on the scratch copy only). The first cell of a run lands on the Welcome page (the About gate marks itself seen on that visit); the first row's two throwaway visits absorb it.",
   "widths": [
     {
       "label": "phone",
@@ -140,7 +140,7 @@
     },
     {
       "id": "all-row-marks",
-      "label": "/decks/[id] All: a row with two or more bracket marks, the marks folding into +N as the column narrows (wide at 1300, middle and tight in the two-column grid at 800 and 900)",
+      "label": "/decks/[id] All: a row with a bracket mark, the mark folding into +N in the tight tier (the two-column grid at 800 and 900 is tight; 1300 is wide, so it stays)",
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
@@ -153,7 +153,7 @@
           "settle": 1200
         },
         {
-          "scrollTo": "[data-decklist-row]:has(.md\\:\\@max-\\[479px\\]\\:sr-only)",
+          "scrollTo": "[data-decklist-row]:has(.md\\:\\@max-\\[359px\\]\\:sr-only)",
           "settle": 400
         }
       ],
