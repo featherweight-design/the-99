@@ -139,6 +139,31 @@ describe("useQuickReturn", () => {
   });
 });
 
+describe("a focused field that unmounts", () => {
+  // No `focusout` fires for it, so the attribute is read from the focus itself on the next frame.
+  it("does not leave the header held away", async () => {
+    function Editor({ show }: { show: boolean }) {
+      const ref = useRef<HTMLElement>(null);
+      const { mode } = useQuickReturn(ref);
+      return (
+        <>
+          <header ref={ref} data-mode={mode} />
+          <main>{show ? <textarea aria-label="Note" autoFocus /> : null}</main>
+        </>
+      );
+    }
+    const { rerender } = render(<Editor show />);
+    await act(async () => vi.advanceTimersByTime(400));
+    await scrollTo(400);
+    expect(document.documentElement.hasAttribute("data-field-focus")).toBe(true);
+    rerender(<Editor show={false} />);
+    await scrollTo(600);
+    expect(document.documentElement.hasAttribute("data-field-focus")).toBe(false);
+    await scrollTo(580);
+    expect(header().dataset.mode).toBe("shown");
+  });
+});
+
 describe("isPageField", () => {
   it("is a text field in the page, not a checkbox and not the shell's own", () => {
     document.body.innerHTML = `<input id="out"><main><input id="t"><input id="c" type="checkbox"><textarea id="a"></textarea><button id="b"></button></main>`;

@@ -800,9 +800,12 @@ const QUICK_RETURN: Record<QuickReturnMode, string> = {
   shown: "fixed translate-y-0 shadow-[0_10px_28px_rgba(0,0,0,0.5)]",
 };
 
-/** The slides: away in 160ms on an ease-in, back in 200ms on the sheet curve (`--motion-ease-out`). */
+/**
+ * The slides: away in 160ms on an ease-in, back in 200ms on the sheet curve (`--motion-ease-out`). `translate`, not
+ * `transform`: Tailwind 4's `translate-y-*` set the individual property.
+ */
 const QUICK_RETURN_SLIDE: Record<QuickReturnMode, string> = {
   page: "",
-  away: "transition-transform duration-[160ms] ease-[cubic-bezier(0.4,0,1,1)]",
-  shown: "transition-[transform,box-shadow] duration-[200ms] ease-[var(--motion-ease-out)]",
+  away: "transition-[translate] duration-[160ms] ease-[cubic-bezier(0.4,0,1,1)]",
+  shown: "transition-[translate,box-shadow] duration-[200ms] ease-[var(--motion-ease-out)]",
 };

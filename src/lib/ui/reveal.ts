@@ -106,6 +106,11 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
     const root = document.documentElement;
     viewSize = axis === "y" ? window.innerHeight : window.innerWidth;
     max = axis === "y" ? root.scrollHeight - viewSize : root.scrollWidth - viewSize;
+    // The page's own scroll padding, as a native scroll into view honours it: a returned phone header's room
+    // (`--header-offset`) and Collection's pinned head, so a revealed target lands below both.
+    const pad = axis === "y" ? parseFloat(getComputedStyle(root).scrollPaddingTop) || 0 : 0;
+    viewStart = pad;
+    viewSize -= pad;
   }
   const from = read(node, axis);
   const to = scrollTarget(
@@ -140,6 +145,14 @@ export function appScrolling(now: number = performance.now()): boolean {
 const settled = () => {
   appScrollUntil = performance.now() + TRAILING_MS;
 };
+
+/**
+ * Marks a scroll the app makes by hand (`window.scrollTo`, outside `reveal`) as the app's, for a beat after this call.
+ * A loop that scrolls over several frames calls it on each one.
+ */
+export function noteAppScroll(): void {
+  settled();
+}
 
 /** Keys that come on the way to a character rather than instead of one: a capital's Shift, a
  *  layout's AltGraph, a dead accent key, an IME's composition. */

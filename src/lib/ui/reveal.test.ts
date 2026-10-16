@@ -130,6 +130,24 @@ describe("reveal", () => {
     expect(appScrolling()).toBe(false);
   });
 
+  // A returned phone header publishes its room as the root's scroll padding; a reveal of the window lands below it,
+  // as a native scroll into view would.
+  it("honours the root's scroll padding when it scrolls the window", () => {
+    media(true);
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    document.documentElement.style.scrollPaddingTop = "79px";
+    Object.defineProperty(document.documentElement, "scrollHeight", { value: 5000, configurable: true });
+    el.getBoundingClientRect = () => ({ top: 1000, left: 0, width: 100, height: 100 }) as DOMRect;
+    el.getClientRects = () => [el.getBoundingClientRect()] as unknown as DOMRectList;
+    const to = vi.fn();
+    window.scrollTo = to as unknown as typeof window.scrollTo;
+    reveal(el);
+    document.documentElement.style.scrollPaddingTop = "";
+    expect(to).toHaveBeenCalled();
+    expect(JSON.stringify(to.mock.calls.at(-1))).toContain("921");
+  });
+
   it("jumps under reduced motion, with no beat", () => {
     media(true);
     const { box, el } = scene();

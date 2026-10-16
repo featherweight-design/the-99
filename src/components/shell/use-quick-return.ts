@@ -71,6 +71,10 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
     const tick = () => {
       frame.current = null;
       const root = document.documentElement;
+      // Read from the focus itself, not only kept by the focus events: a focused field that unmounts sends no
+      // `focusout`, and focus can be in a field before these listeners attach.
+      if (isPageField(document.activeElement)) root.setAttribute("data-field-focus", "");
+      else root.removeAttribute("data-field-focus");
       const next = quickReturnStep(state.current, {
         y: window.scrollY,
         height: height.current,

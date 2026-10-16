@@ -198,9 +198,9 @@ describe("AccountMenu sheet", () => {
   // Read off the attribute, not `style.background`: jsdom's CSS parser drops a
   // declaration whose value it cannot parse, and it cannot parse color-mix().
   it("dims with the canvas at the shipped alpha and locks scroll", () => {
-    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement;
+    const backdrop = document.body.querySelector(".fixed.inset-0") as HTMLElement;
     expect(backdrop.getAttribute("style")).toContain(
       "color-mix(in oklab, var(--bg) 72%, transparent)",
     );
@@ -212,7 +212,11 @@ describe("AccountMenu sheet", () => {
   it("stacks the backdrop above the tab bar and below the sheet", () => {
     const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
-    const backdrop = container.querySelector(".fixed.inset-0")!;
+    const backdrop = document.body.querySelector(".fixed.inset-0")!;
+    // Portalled to the body: inside the phone header, a returned (fixed, translated) header would be the backdrop's
+    // containing block and trap both under the tab bar (card search plan PR B, Copilot round 1).
+    expect(container.contains(backdrop)).toBe(false);
+    expect(container.contains(screen.getByRole("dialog"))).toBe(false);
     expect(backdrop.className).toContain("z-[45]");
     expect(backdrop).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("dialog").className).toContain("z-50");
@@ -228,9 +232,9 @@ describe("AccountMenu sheet", () => {
   });
 
   it("closes when the backdrop is tapped", () => {
-    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
-    fireEvent.click(container.querySelector(".fixed.inset-0")!);
+    fireEvent.click(document.body.querySelector(".fixed.inset-0")!);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

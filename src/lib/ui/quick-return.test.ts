@@ -56,6 +56,11 @@ describe("quickReturnStep", () => {
     expect(run([581], { fieldFocus: true }, back).mode).toBe("away");
   });
 
+  it("sends a returned header away when a field takes focus, even while the app is scrolling", () => {
+    const back = run([400, 600, 580]);
+    expect(run([700], { programmatic: true, fieldFocus: true }, back).mode).toBe("away");
+  });
+
   it("does not take the app's own scroll as the reader's, either way", () => {
     expect(run([400, 600, 300], { programmatic: false }).mode).toBe("shown");
     const away = run([400, 600]);

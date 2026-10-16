@@ -40,6 +40,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { UNDER_HEADER } from "../ui/under-header";
+import { noteAppScroll } from "../../lib/ui/reveal";
 
 export { useIsDesktop };
 
@@ -272,6 +273,8 @@ export function FilterBar({
     window.addEventListener("keydown", stop);
     function reassert() {
       // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
+      // The app's scroll, not the reader's: quick return must not read the jump back up as a reason to return.
+      noteAppScroll();
       if (window.scrollY !== offset) window.scrollTo(0, offset);
       frames++;
       if (frames < 30) rafId = requestAnimationFrame(reassert);
