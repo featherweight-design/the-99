@@ -128,6 +128,15 @@ describe("add lines", () => {
       expect(lines[0].quantity).toBe(3);
     });
 
+    it("keeps no scan on a line a search pick folds into, whichever came first", () => {
+      const scanFirst = scanned(1);
+      const searched = choosePrinting([{ ...openLine([], base([choice()]))[0], id: "b" }, ...scanFirst], "b", choice());
+      expect(searched.merged?.id).toBe("a");
+      expect(searched.lines).toHaveLength(1);
+      expect(searched.lines[0].quantity).toBe(2);
+      expect(searched.lines[0].scan).toBeUndefined();
+    });
+
     it("leaves a search pick, an unnamed card and an empty printing list alone", () => {
       const pick = choosePrinting(openLine([], base([choice()])), "a", choice()).lines;
       expect(swapScannedCard(pick, "a", OTHER, [choice()]).lines).toBe(pick);

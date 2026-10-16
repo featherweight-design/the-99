@@ -61,6 +61,8 @@ function fold<L extends AddLineState>(lines: L[], id: string, cap = MAX_LINE_QUA
   const twin = lines.find((l) => l.id !== id && holdingKeyOf(l) === key);
   if (!twin) return { lines, merged: null };
   const merged = { ...twin, quantity: Math.min(cap, twin.quantity + line.quantity) };
+  // A scan's fix moves every copy on its line, so a line holding a search pick keeps no scan, whichever came first.
+  if (!line.scan || !twin.scan) delete merged.scan;
   return { lines: [merged, ...lines.filter((l) => l.id !== id && l.id !== twin.id)], merged };
 }
 

@@ -160,10 +160,13 @@ function AddMode({
   const pickerFor =
     pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null)?.id ?? null) : null);
 
-  // The fix is open only while its line is on the list and nothing else is being asked: a line folded into a twin
-  // (by a swap, a printing or a finish) takes its fix with it, and a printing step asked elsewhere shows over it.
+  // The fix is open only while its line is on the list with its scan and nothing else is being asked: a line folded
+  // into a twin (by a swap, a printing or a finish) takes its fix with it, a line a search pick joined keeps no scan,
+  // and a printing step asked elsewhere shows over it.
   const fixing =
-    fixChosen !== null && phase !== "saved" && pickerFor === null && lines.some((l) => l.id === fixChosen) ? fixChosen : null;
+    fixChosen !== null && phase !== "saved" && pickerFor === null && lines.some((l) => l.id === fixChosen && l.scan)
+      ? fixChosen
+      : null;
   // However the fix closes (Escape, its own name press, a swap that folds the line into another), focus that was in
   // it has nowhere to stand and falls to the page: it goes back to the line's name, or, when the line folded away,
   // to the line it folded into, else the search. Focus already moved on (Search for it instead) is left where it is.
