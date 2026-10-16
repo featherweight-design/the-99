@@ -260,6 +260,17 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
+    it("still waits for the frame to empty when the added card's line is removed while it stays in view", async () => {
+      const { hook, onAdd, list } = setup();
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 15000 });
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 150)));
+      list.current = new Map();
+      hook.rerender();
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate", count: 0 } } });
+      await act(async () => new Promise((r) => setTimeout(r, 200)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
     it("takes a second copy only once the frame has emptied", async () => {
       let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
       const { hook, onAdd } = setup({ readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });

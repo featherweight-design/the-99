@@ -60,9 +60,11 @@ export function scanScreen(i: ScanInputs): ScanScreen {
 
 function againFor(i: ScanInputs, oracleId: string): Extract<ScanPanel, { kind: "sure" }>["again"] {
   const count = i.onList.get(oracleId) ?? 0;
-  if (count === 0) return null;
   const unbroken = i.lastAdded?.oracleId === oracleId && !i.lastAdded.emptiedSince;
-  return { kind: unbroken ? "duplicate" : "second", count };
+  // A card just added that never left the frame stays a duplicate even if its line was removed since (count 0): it is
+  // not taken again until the frame empties, and the panel says so rather than waiting on an add that never comes.
+  if (unbroken) return { kind: "duplicate", count };
+  return count === 0 ? null : { kind: "second", count };
 }
 
 export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null }): ScanGuess {

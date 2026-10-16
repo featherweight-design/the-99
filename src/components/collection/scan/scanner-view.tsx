@@ -474,7 +474,7 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <b className="text-[16px] font-semibold text-[color:var(--fg)]">{guess.name}</b>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{guess.typeLine}</span>
-          {again?.kind === "duplicate" && <span className="font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
+          {again?.kind === "duplicate" && again.count > 0 && <span className="font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
           {again?.kind === "second" && <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.again.already(again.count)}</span>}
         </div>
         {!phone && press}

@@ -151,6 +151,11 @@ describe("ScannerView", () => {
     expect(within(panel()).queryByRole("button")).toBeNull();
     expect(within(panel()).getByText(copy.again.stillOn(1))).toBeTruthy();
     expect(within(panel()).getByRole("status").textContent).toBe(copy.view.takeOut);
+    cleanup();
+    // Its line removed since: no "on the list" line, and still the take-out instruction.
+    draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 0 } } });
+    expect(within(panel()).queryByText(copy.again.stillOn(0))).toBeNull();
+    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.takeOut);
   });
 
   it("in Normal draws the card's printings in the camera, and a pick or Not this card goes back", () => {
