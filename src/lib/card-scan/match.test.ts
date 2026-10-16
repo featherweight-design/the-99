@@ -29,7 +29,8 @@ describe("decodeEmbedding", () => {
     expect(decodeEmbedding(Buffer.from(nan.buffer).toString("base64"))).toBeNull();
     expect(decodeEmbedding("%%%")).toBeNull();
     expect(decodeEmbedding(42)).toBeNull();
-    expect(decodeEmbedding("A".repeat(4000))).toBeNull();
+    // `atob` skips whitespace, so this decodes to a valid fingerprint: only the length cap refuses it.
+    expect(decodeEmbedding(encodeUnit(0) + " ".repeat(1000))).toBeNull();
   });
 
   it("names the model with the exporter's build suffix", () => {

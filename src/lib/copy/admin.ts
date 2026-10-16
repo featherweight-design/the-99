@@ -508,7 +508,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   CARD_SCAN_ENABLED: { label: "Card scanning", description: "Scan cards with the camera into Add cards." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
-  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought and Collection sync need it." },
+  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought, Collection sync, No-collection entry and Card scanning need it." },
   COLLECTION_SYNC_ENABLED: { label: "Collection sync", description: "Sync an upload: take what the file changed and keep your own edits." },
   DECK_BENCHMARKS_ENABLED: { label: "Deck benchmarks", description: "A deck measured against similar decks." },
   DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },

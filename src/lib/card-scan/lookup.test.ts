@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe("lookupGuesses", () => {
   it("reads in one repeatable-read transaction, each guess the nearest row of a card not already guessed", async () => {
-    stub.answers = [[META], [], [{ oracleId: A, scryfallId: "a1", name: "A", distance: 0.1 }], [{ oracleId: B, scryfallId: "b1", name: "B", distance: 0.3 }], []];
+    stub.answers = [[], [META], [{ oracleId: A, scryfallId: "a1", name: "A", distance: 0.1 }], [{ oracleId: B, scryfallId: "b1", name: "B", distance: 0.3 }], []];
     const r = await lookupGuesses(vec, SCAN_MODEL);
     expect(stub.opts).toEqual({ isolationLevel: "repeatable read" });
     expect(r).toEqual({
@@ -43,7 +43,8 @@ describe("lookupGuesses", () => {
       index: "all-20261014",
       answer: { guesses: [{ oracleId: A, scryfallId: "a1", name: "A", score: 0.9 }, { oracleId: B, scryfallId: "b1", name: "B", score: 0.7 }], margin: expect.closeTo(0.2) },
     });
-    expect(text(1).sql).toContain("hnsw.iterative_scan");
+    expect(text(0).sql).toContain("hnsw.iterative_scan");
+    expect(text(0).sql).toContain("'lock_timeout', '2s'");
     expect(text(2).sql).not.toContain("<> all(");
     expect(text(3).sql).toContain("where s.oracle_id <> all(");
     expect(text(3).params).toContain(`{${A}}`);
@@ -53,15 +54,15 @@ describe("lookupGuesses", () => {
   });
 
   it("refuses a model the index was not built by, and reads no rows", async () => {
-    stub.answers = [[META]];
+    stub.answers = [[], [META]];
     expect(await lookupGuesses(vec, "other")).toEqual({ kind: "model", index: { version: META.version, model: SCAN_MODEL } });
-    expect(stub.queries).toHaveLength(1);
+    expect(stub.queries).toHaveLength(2);
   });
 
   it("answers no-index with no meta row or an empty index", async () => {
-    stub.answers = [[]];
+    stub.answers = [[], []];
     expect(await lookupGuesses(vec, SCAN_MODEL)).toEqual({ kind: "no-index" });
-    stub.answers = [[{ ...META, rows: 0 }]];
+    stub.answers = [[], [{ ...META, rows: 0 }]];
     expect(await lookupGuesses(vec, SCAN_MODEL)).toEqual({ kind: "no-index" });
   });
 });

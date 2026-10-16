@@ -58,7 +58,7 @@ describe("POST /api/card-scan/match", () => {
   });
 
   it("refuses a body that is not a fingerprint before reading the index", async () => {
-    for (const body of ["not json", { model: SCAN_MODEL }, { embedding: unit() }, { model: SCAN_MODEL, embedding: "AAAA" }, "x".repeat(5000)]) {
+    for (const body of ["not json", { model: SCAN_MODEL }, { embedding: unit() }, { model: SCAN_MODEL, embedding: "AAAA" }, { model: SCAN_MODEL, embedding: unit(), pad: "x".repeat(4096) }]) {
       const res = await post(body);
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({ error: "bad-embedding" });

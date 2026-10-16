@@ -907,7 +907,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   in the observe-only `card-scan` rate bucket). `scan_index` holds one pgvector `halfvec(256)` row per printing face
   of the every-printing gallery under an HNSW cosine index, and `scan_index_meta` its version and model (a request
   naming another model is 409). Each guess is the nearest row of a card not already guessed (`lookupGuesses`, one
-  read-only repeatable-read transaction), so a card with hundreds of printings cannot crowd out the second and third
+  repeatable-read transaction), so a card with hundreds of printings cannot crowd out the second and third
   guesses. `pnpm db:seed:scan-index <dir>` publishes `export_index.py all --server`'s files in ONE transaction on a
   NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, never defaulted, checked by `neon.branch_id`),
   refusing a wrong model, a row off unit length or fewer than 100,000 rows; never through the Neon MCP. Until it
