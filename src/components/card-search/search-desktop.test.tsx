@@ -90,6 +90,14 @@ describe("the search on the desktop", () => {
     expect(document.activeElement).toBe(pageField);
   });
 
+  it("draws the offline box in its own frame, before the results' code has arrived", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    mount("Win32");
+    await act(async () => void window.dispatchEvent(new Event("offline")));
+    await press({ ctrlKey: true });
+    expect(frame()?.textContent).toContain("offline");
+  });
+
   it("closes on a press outside", async () => {
     mount("Win32");
     await press({ ctrlKey: true });

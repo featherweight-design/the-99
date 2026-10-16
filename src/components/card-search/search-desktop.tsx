@@ -13,7 +13,7 @@ import { dialogIsUp, isMacPlatform, isSearchShortcut } from "../../lib/card-sear
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
-import { SearchGlyph, SearchProgress, useCardSearch } from "./card-search";
+import { SearchGlyph, SearchOffline, SearchProgress, useCardSearch } from "./card-search";
 
 const noSubscribe = () => () => {};
 /** Whether this device takes ⌘ (read after hydration, so the server's render and the first paint agree). */
@@ -41,7 +41,7 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching } =
+  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
@@ -155,6 +155,8 @@ function DesktopFrame() {
               <SearchProgress />
             </div>
           ) : null}
+          {/* Offline is drawn by the frame, not the results' chunk, which may not have arrived (S7). */}
+          {online ? null : <SearchOffline />}
           <div ref={placeBody} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
           {showFoot ? (
             <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
