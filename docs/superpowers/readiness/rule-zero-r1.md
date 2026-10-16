@@ -50,8 +50,9 @@ frame's rule inside the desktop layout, or an absence (gap 13).
   exactly the three seat lines drawn. `chipAnswer` (`chip-answer.ts`) is the header chip's answer. The declaration is
   `decks.declared_bracket`.
 - **Readings.** `readStoredReading` (`src/lib/profile/stored.ts`) returns the stored profile with `fresh`, so a stale
-  reading is distinguishable. `deckLegality` gives `built` and `size`, which is the seat's `87 of 100` and
-  `101 cards, over 100`. `readStoredPermits` holds over an edit and checks no legality, so the table must check
+  reading is distinguishable. `deckLegality` gives `built` and `size` of the BODY only, commanders excluded (99 alone, 98 with a partner;
+  `stored.test.ts`), so the seat's whole-deck count is `built + (100 - size)` against 100: `87 of 100` and
+  `101 cards, over 100`. Using `built` directly undercounts by one card, or two with a partner. `readStoredPermits` holds over an edit and checks no legality, so the table must check
   legality itself, as the brief says. `computeAndStoreProfile` computes a reading with no model call.
 - **Bracket surfaces.** `BracketChip`, `FindingsBlock` and `ProvenancePanel` exist in `src/components/decks/`.
   `BRACKET_NAMES` are Exhibition, Core, Upgraded, Optimized and cEDH, and `How we make these decisions` is
@@ -117,7 +118,9 @@ frame's rule inside the desktop layout, or an absence (gap 13).
    end, a declaration inside it answers it, and a drifted one does not.
 10. **The drivers sentence.** `whyCombo` hard-codes `Upgraded`. It takes the bracket below from `verdictSubLine`:
     `ruledOut` gives `whyLimit` per reason, `assembled` gives `whyCombo` from `lean.decidedBy` and its receipts. A seat
-    flagged low uses `whyLow`.
+    flagged low uses `whyLow`. A high range (`[4,5]`) gets neither: `verdictSubLine` returns `intent` for any range, even
+    when five Game Changers ruled out bracket 3. Its drivers come from `slotDeck`'s bracket-3 violations, so the seat-grant
+    payload carries those reason fields (rule, have, limit) for a range seat, and `whyLimit` speaks them.
 11. **Facts carry no links.** Lock 12 holds only if nothing on another player's seat opens their deck. The counts open
     no receipts and the names link nowhere on a seat that is not the viewer's.
 12. **The invite row follows `SOCIAL_INVITES_ENABLED`**, which landed after this handoff. With it off, the dashed row
