@@ -8,7 +8,7 @@ import type { ScanGuess } from "./scan-view";
 const copy = collectionEditCopy.scan;
 const g = (oracleId: string, name: string): ScanGuess => ({ oracleId, name, typeLine: "Creature", imageUri: `https://img/${oracleId}` });
 const ROWS: PhotoRow[] = [
-  { id: 0, thumb: "blob:0", state: { kind: "sure", guess: g("a", "Killian, Decisive Mentor") } },
+  { id: 0, thumb: "blob:0", state: { kind: "sure", guess: g("a", "Killian, Decisive Mentor"), guesses: [g("a", "Killian, Decisive Mentor")] } },
   { id: 1, thumb: "blob:1", state: { kind: "added", guess: g("b", "Rootha, Mastering the Moment") } },
   { id: 2, thumb: "blob:2", state: { kind: "notSure", guesses: [g("c", "Zimone"), g("d", "Jace"), g("e", "Sai")] } },
   { id: 3, thumb: "blob:3", state: { kind: "failed" } },

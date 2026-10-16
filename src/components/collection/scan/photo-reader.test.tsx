@@ -80,7 +80,14 @@ describe("usePhotoReader", () => {
     await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]));
     await act(() => result.current.addSure());
     expect(onAdd).toHaveBeenCalledTimes(2);
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "a" }), "normal", expect.objectContaining({ photo: null }));
+    // The sure row carries the lookup's other closest cards too, so its line can be fixed in the review.
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: "a" }), "normal", {
+      photo: null,
+      guesses: [
+        { oracleId: "a", name: "Killian, Decisive Mentor", imageUri: "https://img/a" },
+        { oracleId: "b", name: "Rootha", imageUri: "https://img/b" },
+      ],
+    });
     expect(result.current.rows.map((r) => r.state.kind)).toEqual(["added", "added"]);
     // More photos append; the press then adds only the new sure one.
     act(() => result.current.choose([file("three.jpg")]));

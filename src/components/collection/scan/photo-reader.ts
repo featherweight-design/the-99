@@ -14,7 +14,8 @@ import { nextFrame, type FrameRead } from "./use-card-scan";
  */
 export type PhotoState =
   | { kind: "pending" }
-  | { kind: "sure"; guess: ScanGuess }
+  /** `guesses` holds the closest cards, the sure one first, so a wrong read can be fixed on the list. */
+  | { kind: "sure"; guess: ScanGuess; guesses: ScanGuess[] }
   | { kind: "notSure"; guesses: ScanGuess[] }
   | { kind: "added"; guess: ScanGuess }
   /** No card found, a file the browser cannot open (HEIC in Chrome), or a lookup that never answered. */
@@ -120,7 +121,7 @@ export function usePhotoReader(
     }
     const guesses = r.guesses.map((g) => ({ oracleId: g.oracleId, name: g.name, typeLine: g.typeLine, imageUri: g.imageUri }));
     if (guesses.length === 0) return { kind: "failed" };
-    if (r.sure) return { kind: "sure", guess: guesses[0] };
+    if (r.sure) return { kind: "sure", guess: guesses[0], guesses: guesses.slice(0, 3) };
     return { kind: "notSure", guesses: guesses.slice(0, 3) };
   }, []);
 
@@ -195,7 +196,7 @@ export function usePhotoReader(
     try {
       for (const r of rowsRef.current) {
         if (r.state.kind !== "sure") continue;
-        if (!(await commit(r.id, r.state.guess))) return;
+        if (!(await commit(r.id, r.state.guess, r.state.guesses))) return;
       }
     } finally {
       hold(false);
