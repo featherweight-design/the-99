@@ -9,9 +9,11 @@ sees, and /admin's counts and tree. It proposes one Design round.
 
 ## The problem
 
-Anyone with the URL can make an account today. Hugh wants the app to grow only through the people already in it, with
-each account holding a number of invites he sets. A friend link can't do that job: it is for two people who both have
-accounts, and under invitation-only sign-up a newcomer who opens one has no way in.
+Clerk's sign-up is open today, so anyone who finds a sign-up screen can make an account. The friend link's own landing
+already calls the app invite-only, and offers a signed-out visitor only Sign in, with the line "No account? The 99 is
+invite-only. Ask whoever sent this." (`src/lib/copy/social.ts`, `signedOutFine`). But nothing behind that sentence
+exists: asking the sender for another friend link gets a newcomer nowhere. Hugh wants the app to grow only through the
+people already in it, each account holding a number of invites he sets.
 
 ## What exists today, and stays
 
@@ -20,8 +22,10 @@ accounts, and under invitation-only sign-up a newcomer who opens one has no way 
   shown as a link and a QR in the Add a friend dialog (`src/components/social/add-friend-dialog.tsx`). `/friend/(.*)` is
   public in `src/proxy.ts`, because the person opening it may not be signed in yet. **It is unchanged**, and it stays
   the way two people who both have accounts become friends.
-- **Group allowances in /admin**: `flag_groups.daily_allowance` (null for the default, else 1 to 1000), set per group
-  through `src/lib/admin/group-writes.ts`. The invite count takes the same shape.
+- **Group allowances in /admin**: `flag_groups.daily_allowance` (null for the default, else 1 to 1000, `ALLOWANCE_MAX`
+  in `groups-rule.ts`), set per group through `src/lib/admin/group-writes.ts`. The invite count borrows its /admin
+  CONTROLS, not its meaning: an allowance is a daily rate that refills on its own, and an invite count is a stock that
+  only a new account spends and only Hugh refills.
 - **The Clerk webhook** (`POST /api/clerk-webhook`), which today answers `user.deleted` with the account purge
   (`purgeAccount`). Forming the friendship on sign-up needs it to answer `user.created` too.
 - **Request counting** (`src/lib/rate/`, `observeHit` behind `RATE_LIMIT_ENABLED`), observe-only today.
@@ -30,8 +34,8 @@ accounts, and under invitation-only sign-up a newcomer who opens one has no way 
 
 1. **The app is invite-only.** Hugh switches Clerk to restricted (invitation-only) sign-up mode, a dashboard setting.
    Nobody creates an account without an invitation.
-2. **Invite counts.** Each account has a count of invites, which Hugh sets and refills in /admin, in the shape of group
-   allowances. **An invite is spent ONLY when a new account is created.** Befriending someone who already has an account
+2. **Invite counts.** Each account has a count of invites, which Hugh sets and refills in /admin, with controls in the
+   shape of group allowances. It is a stock, not a daily rate: nothing refills it but Hugh. **An invite is spent ONLY when a new account is created.** Befriending someone who already has an account
    never costs one.
 3. **The tree is recorded:** who invited whom, visible in /admin.
 4. **Add a friend opens with two paths, and the SENDER chooses.** No email lookup ever tells the sender whether someone
@@ -55,13 +59,15 @@ accounts, and under invitation-only sign-up a newcomer who opens one has no way 
 
 | State | What it means | The sender's count |
 |---|---|---|
-| Reserved | sent by email, or a QR redeemed with an email; a Clerk invitation is pending | held, not yet spent |
+| Reserved | sent by email, or a QR redeemed with an email; held for about 7 days on the reservation's OWN clock | held, not yet spent |
 | Spent | the invitee created their account; the friendship is formed | down by one |
-| Returned | the invitation expired or was revoked, or the email already had an account and its expiry passed | back |
-| QR open | an invite QR shown, not yet scanned | not held (open question for Hugh, below) |
+| Returned | the reservation's 7 days passed with no account made, or the invitation was revoked | back |
+| QR open | an invite QR shown, not yet scanned | open question for Hugh, below |
 | QR expired | 15 minutes passed with no email typed | not held |
 
-The count a reader sees is what they hold minus what is reserved.
+The count a reader sees is what they hold minus what is reserved. **A reservation keeps its own clock**, never Clerk's:
+for an email that already has an account Clerk may create no invitation at all, and lock 5 still holds the invite for
+the 7 days.
 
 ## Engineering notes
 
@@ -72,8 +78,10 @@ The count a reader sees is what they hold minus what is reserved.
 - **The reservation ledger is in the account purge.** A new per-user table fails `src/lib/account/purge.test.ts` until
   the purge handles it. The tree (who invited whom) needs its own rule there: purged with either account, or kept with
   the deleted side's id removed. That is engineering's call, and the purge coverage test enforces that it is made.
-- **The rate limiter covers invite creation** (a new bucket for the email path and the QR redemption), observe-only
-  like the others until the logs say what a real reader does.
+- **The rate limiter covers invite creation**, observe-only like the others until the logs say what a real reader
+  does. The email path counts per sender, as every bucket does today (`observeHit(userId, bucket)`). The QR redemption
+  has no player to count, since the person redeeming has no account, so it needs a key of its own: the token, or the
+  sender it belongs to.
 - **The friendship is formed on sign-up**, from `user.created` and the invitation it names, in the same transaction
   that spends the invite. A sign-up whose invitation is unknown forms no friendship and spends nothing.
 - **The invite QR's page is public**, as `/friend/<token>` is: the person scanning it has no account. It refuses a
@@ -93,14 +101,17 @@ The count a reader sees is what they hold minus what is reserved.
    Design and Hugh to settle; **the recommendation is no waitlist at launch**.
 7. **/admin's invite counts and tree view:** setting and refilling a count per account and per group, and the tree of
    who invited whom.
-8. **A friend link opened by someone with no account**, now that they cannot sign up from it: what that landing says
-   (`src/components/social/friend-landing.tsx` draws it today).
+8. **A friend link opened by someone with no account.** The landing already offers only Sign in, and its fine line says
+   "Ask whoever sent this". Under the new rules that line should send them back for an INVITE, not another friend
+   link. The signed-out state is built inline in `src/app/friend/[token]/page.tsx`, using `LandingColumn` and
+   `PRIMARY_BUTTON` from `friend-landing.tsx`; `FriendLanding` itself draws the signed-in states.
 9. **The About entry**, on the per-entry template (`design/design_handoff_the99_about/`).
 
 ## Open for Hugh
 
 - **Does an open invite QR hold an invite** before anyone scans it? Holding it stops a sender showing ten QRs on one
-  invite; not holding it keeps a QR shown and never scanned from costing anything for 15 minutes.
+  invite; not holding it keeps a QR shown and never scanned from costing anything for 15 minutes. If it holds none, a QR can
+  be redeemed after the sender's count reached 0, and that redemption needs an answer of its own.
 - **A QR scanned by someone who already has an account.** Lock 5 says the new path always answers "Invitation sent",
   but here the person typing the email is in front of the sender. The recommendation is the same uniform answer, since
   the scanner could type anyone's email.
@@ -109,7 +120,8 @@ The count a reader sees is what they hold minus what is reserved.
 
 - **Add a friend, at 390 (sheet) and desktop (dialog):** the chooser; path 1 as today; path 2 with N invites, and at 0.
 - **The invite QR:** live with its countdown, expired, and a new one made.
-- **The newcomer's phone:** the email screen, the handover to sign-up, and a QR already used or expired.
+- **The newcomer's phone:** the email screen, the handover to sign-up, a QR already used or expired, and (if an open
+  QR holds no invite) a QR redeemed after the sender's count reached 0.
 - **The remote form:** empty, sending, and "Invitation sent".
 - **`/friends`:** the count beside its own controls, with invites left and with none.
 - **The invite-only page:** at both widths.
