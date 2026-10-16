@@ -981,6 +981,13 @@
       "when": 1792175360884,
       "tag": "0139_moments_spent",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1792183121829,
+      "tag": "0140_invites",
+      "breakpoints": true
     }
   ]
 }

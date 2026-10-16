@@ -8,6 +8,7 @@
  * - Social first (`purgeSocialIn`): pods are left the way a player leaves them, so a pod the account owned
  *   passes to its longest-standing member; then both directions of every friendship, every invite naming
  *   the account, and the profile.
+ * - The invite tree is kept, with this account's side of each edge set null (`unlinkInvitesIn`).
  * - Then every other table owning a row by `user_id`, in `PURGE_ORDER`. Tables reached only through a deck,
  *   a version or a run go with their parent by `on delete cascade`; the coverage test
  *   (`purge.test.ts`) fails when a new table is neither listed here nor cascaded from one that is.
@@ -30,6 +31,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
+import { unlinkInvitesIn } from "../invites/purge";
 import { ownedSupportLock } from "../discovery/owned-support-lock";
 
 /**
@@ -47,6 +49,7 @@ export const PURGE_ORDER = [
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
   "owned_support_counts", "owned_support_stamps",
   "wishlist_items", "wishlist_collected", "rate_hits",
+  "invite_reservations", "invite_balances",
   // The Stripe customer mapping before the paid lots: the webhook holds that row while it grants, so a
   // purge taking it first leaves a late payment unattributed, and one waiting on it deletes the new lot.
   "stripe_customers", "model_calls", "credit_grants",
@@ -70,7 +73,7 @@ export async function recordDeletion(userId: string): Promise<void> {
     on conflict (id_hash) do nothing`);
 }
 
-export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; stamp: number };
+export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; invitesUnlinked: number; stamp: number };
 
 export async function purgeAccount(userId: string): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
@@ -79,6 +82,8 @@ export async function purgeAccount(userId: string): Promise<PurgeReport> {
     // after this commits; a refresh that takes the lock after it finds no collection and writes none.
     await tx.execute(ownedSupportLock(userId));
     const { counts: social, friendIds } = await purgeSocialIn(tx, userId);
+    // The tree is kept with this account's side set null (`INVITES_UNLINKED`).
+    const invitesUnlinked = await unlinkInvitesIn(tx, userId);
     const rows: Record<string, number> = {};
     for (const table of PURGE_ORDER) {
       const done = await tx.execute(sql`delete from ${sql.identifier(table)} where user_id = ${userId}`);
@@ -101,6 +106,6 @@ export async function purgeAccount(userId: string): Promise<PurgeReport> {
     // stamp back at commit.
     await tx.execute(sql`set constraints all immediate`);
     const stamp = await tx.execute(sql`delete from user_data_stamps where user_id = ${userId}`);
-    return { social, rows, stamp: stamp.rowCount ?? 0 };
+    return { social, rows, invitesUnlinked, stamp: stamp.rowCount ?? 0 };
   });
 }

@@ -3546,3 +3546,78 @@ export const scanIndexMeta = pgTable("scan_index_meta", {
 }, () => [
   check("scan_index_meta_single", sql`id = 1`),
 ]);
+
+// ── Invites: the invite-only launch (plan `2026-10-16-invites.md`, brief `2026-10-16-invite-only-launch.md`).
+// Rules live in `src/lib/invites/rules.ts`; every write takes the sender's `invites:` advisory lock.
+
+/**
+ * An account's stock of invites (lock 2): what it has LEFT plus what is HOLDING (a live QR, a waiting
+ * reservation), so `held` is never below the rows holding and a spend can never take it under zero. Only an admin
+ * write raises or sets it; only a new account's sign-up lowers it, by one. No row reads as 0.
+ */
+export const inviteBalances = pgTable("invite_balances", {
+  userId: text("user_id").primaryKey(),
+  held: integer("held").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  check("invite_balances_held_check", sql`${t.held} >= 0`),
+]);
+
+/**
+ * One invite a sender put in motion: by email (`reserved` at once) or at the table (`qr_open`, then `claimed` when
+ * the newcomer types an email). `spent`, `returned` and `revoked` are final. A row HOLDS one invite while it is open
+ * and its time has not passed (`holdsInvite`); expiry is derived from time, and the sweep only writes it down. The
+ * QR token is derived from the id and a server secret, never stored: only its hash is. `user_id` is the SENDER,
+ * named so because the account purge deletes by that column. The address is erased on every final state.
+ */
+export const inviteReservations = pgTable("invite_reservations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  state: text("state").notNull(),
+  qrTokenHash: text("qr_token_hash").unique(),
+  qrExpiresAt: timestamp("qr_expires_at"),
+  holdsUntil: timestamp("holds_until"),
+  email: text("email"),
+  clerkInvitationId: text("clerk_invitation_id"),
+  claimSecretHash: text("claim_secret_hash"),
+  codeHmac: text("code_hmac"),
+  codeExpiresAt: timestamp("code_expires_at"),
+  codeSentAt: timestamp("code_sent_at"),
+  codeTries: integer("code_tries").notNull().default(0),
+  provenAt: timestamp("proven_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (t) => [
+  check("invite_reservations_kind_check", sql`${t.kind} in ('email', 'qr')`),
+  check("invite_reservations_state_check", sql`${t.state} in ('qr_open', 'claimed', 'reserved', 'spent', 'returned', 'revoked')`),
+  // Each kind walks its own states: a QR is open, then claimed; an email is reserved at once.
+  check("invite_reservations_kind_state_check", sql`(${t.kind} = 'qr' and ${t.state} <> 'reserved') or (${t.kind} = 'email' and ${t.state} not in ('qr_open', 'claimed'))`),
+  // A QR carries its token's hash and its 15 minutes; an email row carries neither.
+  check("invite_reservations_qr_check", sql`(${t.kind} = 'qr') = (${t.qrTokenHash} is not null and ${t.qrExpiresAt} is not null)`),
+  // Holding a claimed or reserved row needs its own 7-day clock and the address it went to.
+  check("invite_reservations_waiting_check", sql`${t.state} not in ('claimed', 'reserved') or (${t.holdsUntil} is not null and ${t.email} is not null)`),
+  // Final states keep no address, and say when they ended.
+  check("invite_reservations_final_check", sql`${t.state} not in ('spent', 'returned', 'revoked') or (${t.email} is null and ${t.resolvedAt} is not null)`),
+  check("invite_reservations_tries_check", sql`${t.codeTries} between 0 and 5`),
+  index("invite_reservations_user_state_idx").on(t.userId, t.state),
+]);
+
+/**
+ * The tree (lock 3): who invited whom, one row per account an invite created. A founder is an account with no row as
+ * invitee. A deleted account's side is set null (`INVITES_UNLINKED`), so the other side's record survives and /admin
+ * draws a deleted account there. `receipt_shown_at` is whether the newcomer has seen the receipt band, kept apart
+ * from the spend so the webhook and the first `/friends` draw it once in either order.
+ */
+export const inviteEdges = pgTable("invite_edges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  inviterUserId: text("inviter_user_id"),
+  inviteeUserId: text("invitee_user_id"),
+  kind: text("kind").notNull(),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  receiptShownAt: timestamp("receipt_shown_at"),
+}, (t) => [
+  check("invite_edges_kind_check", sql`${t.kind} in ('email', 'qr')`),
+  uniqueIndex("invite_edges_invitee_idx").on(t.inviteeUserId).where(sql`${t.inviteeUserId} is not null`),
+  index("invite_edges_inviter_idx").on(t.inviterUserId).where(sql`${t.inviterUserId} is not null`),
+]);

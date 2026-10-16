@@ -137,6 +137,13 @@ async function main() {
     groupIds.push(group[0].id);
     await db.execute(sql`insert into flag_group_members (user_id, group_id, added_by) values (${P}, ${group[0].id}, ${ADMIN})`);
     await db.execute(sql`insert into flag_overrides (switch, scope, user_id, value, updated_by) values ('NOTICES_ENABLED', 'user', ${P}, 'on', ${ADMIN})`);
+    // Invites: P's stock and a waiting invite, and the tree on both sides of P (F invited P, P invited G).
+    await db.execute(sql`insert into invite_balances (user_id, held) values (${P}, 3)`);
+    await db.execute(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email)
+      values (${P}, 'email', 'reserved', now() + interval '7 days', ${`probe-${run}@example.com`})`);
+    const { rows: edges } = await db.execute<{ id: string }>(sql`
+      insert into invite_edges (inviter_user_id, invitee_user_id, kind) values (${F}, ${P}, 'qr'), (${P}, ${G}, 'email') returning id`);
 
     const before = await rowsNaming(P);
     check("the fixture names the account in many tables", Object.keys(before).length >= 12, Object.keys(before).join(" "));
@@ -175,8 +182,14 @@ async function main() {
       from deck_game_opponents where game_id = ${fGame[0].id}`);
     check("F's game against P stands, unlinked, with its snapshot", seatLeft.length === 1 && seatLeft[0].f === null
       && seatLeft[0].d === null && seatLeft[0].n === "Pat" && seatLeft[0].c === CMD && seatLeft[0].w === true, JSON.stringify(seatLeft));
+    const { rows: tree } = await db.execute<{ inviter: string | null; invitee: string | null }>(sql`
+      select inviter_user_id as inviter, invitee_user_id as invitee from invite_edges
+      where id in (${edges[0].id}, ${edges[1].id}) order by kind desc`);
+    check("the invite tree stands with P's side set null", report.invitesUnlinked === 2 && tree.length === 2
+      && tree[0].inviter === F && tree[0].invitee === null && tree[1].inviter === null && tree[1].invitee === G, JSON.stringify(tree));
+    check("P's invite stock and reservation went", report.rows.invite_balances === 1 && report.rows.invite_reservations === 1, JSON.stringify(report.rows));
     const again = await purgeAccount(P);
-    check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
+    check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0 && again.invitesUnlinked === 0
       && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));
     void open;
 
@@ -343,6 +356,9 @@ async function main() {
     await db.execute(sql`delete from pod_members where user_id in ${who}`);
     await db.execute(sql`delete from friend_invites where inviter_user_id in ${who}`);
     await db.execute(sql`delete from social_profiles where user_id in ${who}`);
+    await db.execute(sql`delete from invite_edges where inviter_user_id in ${who} or invitee_user_id in ${who}`);
+    await db.execute(sql`delete from invite_reservations where user_id in ${who}`);
+    await db.execute(sql`delete from invite_balances where user_id in ${who}`);
     await db.execute(sql`delete from user_data_stamps where user_id in ${who}`);
     const hashes = sql`(${sql.join(all.map((u) => sql`${tombstoneHash(u)}`), sql`, `)})`;
     await db.execute(sql`delete from account_tombstones where id_hash in ${hashes}`);
