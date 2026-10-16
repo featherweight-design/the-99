@@ -75,6 +75,7 @@ The four fixed corners are gone. The detector already finds the card over the wh
 | read (`ok`): a sure answer, or the light on | solid `--success` | same |
 | a chosen photo | no outline (a photo has no viewfinder) | same |
 | hint with no card | `view.looking`, one line, naming no frame | same |
+| a card seen under 12% of the picture (`CLOSER_BELOW`, where a match stops holding) | the unsure panel's head reads `view.closer` in place of `view.unsure`; the dots and body stay | same |
 
 The rows below that say "guide" mean this outline in the same state; their box, corner and border figures no longer apply.
 

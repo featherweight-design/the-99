@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OUTLINE_HOLD_MS, createOutlineStore, outlineInBox, outlineOf } from "./outline";
+import { CLOSER_BELOW, OUTLINE_HOLD_MS, createOutlineStore, outlineInBox, outlineOf, outlineShare } from "./outline";
 
 const PX = [{ x: 400, y: 300 }, { x: 600, y: 300 }, { x: 600, y: 700 }, { x: 400, y: 700 }];
 
@@ -9,6 +9,15 @@ describe("outlineOf", () => {
     const o = outlineOf([PX[2], PX[0], PX[3], PX[1]], 1000, 1000, 1920, 1080);
     expect(o.corners).toEqual([{ x: 0.4, y: 0.3 }, { x: 0.6, y: 0.3 }, { x: 0.6, y: 0.7 }, { x: 0.4, y: 0.7 }]);
     expect([o.width, o.height]).toEqual([1920, 1080]);
+  });
+});
+
+describe("outlineShare", () => {
+  it("is the share of the picture the card covers, whichever way the corners run", () => {
+    const o = outlineOf(PX, 1000, 1000, 1000, 1000);
+    expect(outlineShare(o)).toBeCloseTo(0.08);
+    expect(outlineShare({ ...o, corners: [...o.corners].reverse() })).toBeCloseTo(0.08);
+    expect(outlineShare(o)).toBeLessThan(CLOSER_BELOW);
   });
 });
 

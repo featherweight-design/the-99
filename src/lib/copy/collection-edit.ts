@@ -562,6 +562,8 @@ export const collectionEditCopy = {
     view: {
       looking: "Show a card to the camera",
       unsure: "Hold it still",
+      /** A card is seen but fills too little of the picture to match: said in place of `unsure`. */
+      closer: "Move closer",
       unsureBody: "The name shows once the card stays the same for a moment.",
       add: "Add to the list",
       held: "Held",

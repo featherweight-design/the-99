@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
-import { outlineInBox, type OutlineStore } from "../../../lib/scan/outline";
+import { CLOSER_BELOW, outlineInBox, outlineShare, type OutlineStore } from "../../../lib/scan/outline";
 import { outlineLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
@@ -259,7 +259,10 @@ export const BIG = "h-[52px] w-full rounded-[12px] border-0 bg-[color:var(--acce
 export const BIG_OUTLINE = "h-[52px] w-full rounded-[12px] border border-[color:var(--border-dashed)] bg-transparent text-[15px] font-medium text-[color:var(--fg)]";
 export const BIG_DESK = "h-[40px] flex-none whitespace-nowrap rounded-[8px] border-0 bg-[color:var(--accent)] px-[18px] text-[14px] font-semibold text-[color:var(--bg)]";
 
+const NO_STORE: Pick<OutlineStore, "subscribe" | "get"> = { subscribe: () => () => {}, get: () => null };
+
 function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
+  const seen = useSyncExternalStore((p.outline ?? NO_STORE).subscribe, (p.outline ?? NO_STORE).get, () => null);
   const phone = p.layout === "phone";
   const { panel } = p;
   const H = phone ? HEAD : HEAD_DESK;
@@ -280,7 +283,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       return (
         <div data-testid="scan-panel" data-state="unsure" className={box}>
           <div className="flex items-center justify-between">
-            <p className={H}>{copy.view.unsure}</p>
+            <p className={H}>{seen && outlineShare(seen) < CLOSER_BELOW ? copy.view.closer : copy.view.unsure}</p>
             <span aria-hidden="true" className="flex gap-[6px]">
               {[0, 1, 2].map((i) => (
                 <i

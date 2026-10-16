@@ -273,6 +273,33 @@ describe("the card's outline", () => {
   });
 });
 
+describe("the hint for a card too small to match", () => {
+  const small = () => {
+    const store = createOutlineStore();
+    // 0.2 x 0.4 of the picture is 8%, under the 12% where a match holds.
+    store.show({ corners: [{ x: 0.4, y: 0.3 }, { x: 0.6, y: 0.3 }, { x: 0.6, y: 0.7 }, { x: 0.4, y: 0.7 }], width: 1000, height: 1000 });
+    return store;
+  };
+  const big = () => {
+    const store = createOutlineStore();
+    // 0.4 x 0.6 is 24%.
+    store.show({ corners: [{ x: 0.3, y: 0.2 }, { x: 0.7, y: 0.2 }, { x: 0.7, y: 0.8 }, { x: 0.3, y: 0.8 }], width: 1000, height: 1000 });
+    return store;
+  };
+  it("says Move closer for a card seen under 12% of the picture, and Hold it still for a bigger one", () => {
+    draw({ panel: { kind: "unsure", agreeing: 0 }, outline: small() });
+    expect(panel().textContent).toContain(copy.view.closer);
+    expect(panel().textContent).not.toContain(copy.view.unsure);
+  });
+  it("keeps Hold it still for a card of a good size, and for a view with no store", () => {
+    draw({ panel: { kind: "unsure", agreeing: 0 }, outline: big() });
+    expect(panel().textContent).toContain(copy.view.unsure);
+    document.body.innerHTML = "";
+    draw({ panel: { kind: "unsure", agreeing: 0 } });
+    expect(panel().textContent).toContain(copy.view.unsure);
+  });
+});
+
 describe("outlineLook", () => {
   it("is green on a sure answer, solid once answers agree, dashed while a card is only seen", () => {
     const s = (panel: ScanPanel) => outlineLook({ kind: "scanning", panel, dark: false });

@@ -23,6 +23,17 @@ export function outlineInBox(o: Outline, boxW: number, boxH: number): Pt[] | nul
   return o.corners.map((p) => ({ x: p.x * o.width * scale + dx, y: p.y * o.height * scale + dy }));
 }
 
+/** The share of the camera picture the card covers (the polygon's area over the picture's). */
+export function outlineShare(o: Outline): number {
+  const c = o.corners;
+  let twice = 0;
+  for (let i = 0; i < c.length; i++) twice += c[i].x * c[(i + 1) % c.length].y - c[(i + 1) % c.length].x * c[i].y;
+  return Math.abs(twice) / 2;
+}
+
+/** A card covering less of the picture than this is seen but too small to hold a match (measured: steady from about 12%). */
+export const CLOSER_BELOW = 0.12;
+
 /** How long an outline is kept after the detector last saw the card: one missed frame must not flicker it off. */
 export const OUTLINE_HOLD_MS = 300;
 
