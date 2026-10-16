@@ -2857,3 +2857,16 @@ sample sat on an inline wrapper's baseline, so the key's (hidden) slot grew 2.8p
 making the wrapper a flex box and holding the room for the `locked` entry in the slot. Needs `NEVER_CUT_ENABLED=true` on
 the server and a deck with no locked card (`PROBE_DECK`); it locks one card and unlocks it. Writes to `local-dev` or a
 scratch branch only, and refuses staging and production by `neon.branch_id`.
+
+- **A contact-sheet width takes a `"camera"`** (card scanning, the card's outline, 2026-10-16), for a surface that reads the camera.
+  `"camera": { "w", "h", "card"?, "share", "cx", "cy", "angle" }` on a width makes the runner start that width's own Chromium
+  with a fake camera (`scripts/lib/fake-camera.mjs`) playing one still scene, written as an MJPEG clip: an empty playmat, or the named
+  card (Scryfall's image) covering `share` of the picture, centred at (`cx`, `cy`) and turned `angle` degrees. The scanner then
+  reads a real frame through the real detector and embedder, so `docs/superpowers/inventories/card-scan-outline.json` photographs
+  the outline following a card held off-centre (phone-card, desktop-card) and the empty table with its one-line hint (phone-empty,
+  desktop-empty). It needs `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
+  models and onnxruntime-web). The first request to a cold `next dev` can pass the sign-in's 30s, so warm the server first.
+  It adds nothing: an add would write a ledger entry. The smallest card the detector reads, measured 2026-10-16 on the real
+  models over a 1280x720 frame (two cards, flat and tilted 15 degrees, off-centre): the sharpness gate holds down to a card
+  covering 4% of the frame and fails at 3%; `MIN_CARD_AREA` (5%) is the tighter of the two, and the embedding stays within 0.9 of
+  the card seen at 30% only from about 12% of the frame (about 8% reads 0.74 to 0.81, 5% reads 0.52 to 0.57).
