@@ -104,16 +104,6 @@ export function ScanLab({ indexBase, serverModel = null }: {
     else if (st.kind === "refused") setNote(copy.serverRefused[st.reason]);
     else setNote(null);
   }, []);
-  const toggleServer = useCallback((on: boolean) => {
-    server.current?.stop();
-    server.current = on && serverModel
-      ? serverScanner(serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)), now: clock }, onServerState)
-      : null;
-    setServerOn(server.current !== null);
-    setNote(null);
-  }, [serverModel, onServerState]);
-  // No index on this deployment: the lab still runs, matching on the server alone, when the reader may.
-  const serverOnly = !indexBase && serverModel !== null;
   const [torch, setTorch] = useState<Torch | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const toggleTorch = async (on: boolean) => {
@@ -135,10 +125,23 @@ export function ScanLab({ indexBase, serverModel = null }: {
     const res = await fetch("/api/scan-lab/cadence", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ indexVersion: indexVersion.current, frames: run.frames }),
+      // the index that served the run's readings (the server's, while matching there), else the page's own
+      body: JSON.stringify({ indexVersion: run.index ?? indexVersion.current, frames: run.frames }),
     }).catch(() => null);
     setNote(res?.ok ? copy.logged(run.frames.length) : copy.logFailed);
   }, []);
+  const toggleServer = useCallback((on: boolean) => {
+    // a log run reads one matcher: switching ends it, and the next run starts on the new one
+    if (cadence.current) void finishLog();
+    server.current?.stop();
+    server.current = on && serverModel
+      ? serverScanner(serverModel, { fetch: (u, i) => fetch(u, i), wait: (ms) => new Promise((r) => setTimeout(r, ms)), now: clock }, onServerState)
+      : null;
+    setServerOn(server.current !== null);
+    setNote(null);
+  }, [serverModel, onServerState, finishLog]);
+  // No index on this deployment: the lab still runs, matching on the server alone, when the reader may.
+  const serverOnly = !indexBase && serverModel !== null;
   const toggleLog = (on: boolean) => {
     if (!on) {
       void finishLog();
@@ -289,7 +292,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
               const viaServer = server.current;
               if (viaServer) {
                 // Asked once per steady card; until the answer lands the screen keeps what it shows.
-                const st = viaServer.frame({ kind: "card", embedding: q }, t2);
+                const st = viaServer.frame({ kind: "card", embedding: q }, t2, t0);
                 if (st.kind === "match") {
                   const { guesses, margin, sure, index: served } = st.result;
                   const top = guesses[0]?.oracleId ?? "";
@@ -297,14 +300,24 @@ export function ScanLab({ indexBase, serverModel = null }: {
                   // the reading carries the server's index, so a tap on it records that one, not the device's
                   publish({
                     kind: "card", crop, guesses, margin: margin ?? 1, agreed: serverRun.current.n, committed: sure, index: served,
-                    detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: Math.round(performance.now() - t0),
+                    // from the frame that asked to the answer, not this later frame's own work
+                    detMs: Math.round(t1 - t0), embMs: Math.round(t2 - t1), matchMs: st.ms, totalMs: st.totalMs,
                   });
                 } else {
                   serverRun.current = null;
-                  // no answer for this frame: the screen may only lose what it shows, on time
-                  const aged = ageSteady(steady.current, performance.now());
-                  if (aged !== steady.current) setDisplay(aged);
+                  // no answer for this frame: the screen may only lose what it shows, on time, and the log still
+                  // records the frame, as a card waiting on its answer
+                  const now = performance.now();
+                  const aged = ageSteady(steady.current, now);
+                  if (aged.changedAt !== steady.current.changedAt) setDisplay(aged);
                   steady.current = aged;
+                  const run = cadence.current;
+                  if (run) {
+                    const more = logFrame(run, "pending", heldDisplay.current ?? aged, now);
+                    cadence.current = more;
+                    if (more !== run) setLogged(more.frames.length);
+                    if (cadenceDone(more, now)) void finishLog();
+                  }
                 }
                 setTimeout(tick, 60);
                 return;

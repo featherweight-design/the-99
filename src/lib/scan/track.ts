@@ -29,12 +29,13 @@ export function startTrack<T>(now: number): Tracked<T> {
 }
 
 /**
- * The tracker at `now` when a frame was read but gave it no value (a scanner still waiting on an answer): only the
- * lose rule runs, so a settled value nothing supports falls to unsure on time, and no candidate is started. Pure.
+ * The tracker at `now` when a frame was read but gave it no value (a scanner still waiting on an answer). A run
+ * a candidate was on is broken, so the candidate goes (its dwell starts again when it is read again); the settled
+ * value keeps its own deadline and falls to unsure on time. Unchanged state is handed back as is. Pure.
  */
 export function ageTrack<T>(s: Tracked<T>, now: number): Tracked<T> {
-  if (s.value === null || now - s.seenAt < LOSE_MS) return s;
-  return { value: null, changedAt: now, before: s.value, candidate: s.candidate, seenAt: now };
+  if (s.value !== null && now - s.seenAt >= LOSE_MS) return { value: null, changedAt: now, before: s.value, candidate: null, seenAt: now };
+  return s.candidate === null ? s : { ...s, candidate: null };
 }
 
 /** The tracker after one more value is read at `now`. Pure. */

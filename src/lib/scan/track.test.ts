@@ -58,4 +58,13 @@ describe("nextTrack", () => {
     expect(aged.value).toBeNull();
     expect(aged.before).toBe(1);
   });
+  it("breaks a candidate's run on a frame that gave nothing, so its dwell starts again", async () => {
+    const { ageTrack } = await import("./track");
+    let s = nextTrack(startTrack<number>(0), 1, 0, eq);
+    s = ageTrack(s, 400);
+    s = nextTrack(s, 1, DWELL_MS + 100, eq);
+    expect(s.value).toBeNull();
+    s = nextTrack(s, 1, 2 * DWELL_MS + 100, eq);
+    expect(s.value).toBe(1);
+  });
 });

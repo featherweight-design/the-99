@@ -9,7 +9,14 @@ export type ServerState =
   | { kind: "idle" }
   | { kind: "looking" }
   | { kind: "retrying" }
-  | { kind: "match"; result: Extract<LookupResult, { kind: "match" }>; ms: number }
+  | {
+      kind: "match";
+      result: Extract<LookupResult, { kind: "match" }>;
+      /** The lookup's own round trip. */
+      ms: number;
+      /** From the start of the frame that asked to the answer: what the scanner made the player wait. */
+      totalMs: number;
+    }
   | { kind: "refused"; reason: Extract<LookupResult, { kind: "refused" }>["reason"] }
   | { kind: "failed" };
 
@@ -28,8 +35,9 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     inFlight = null;
   };
   return {
-    /** One more frame at `now`; answers what the scanner knows about the card in view. */
-    frame(f: ScanFrame, now: number): ServerState {
+    /** One more frame at `now`; answers what the scanner knows about the card in view. `origin` is when this frame's
+     * work began (the camera read), so an answer it asks for is timed from there. */
+    frame(f: ScanFrame, now: number, origin: number = now): ServerState {
       const out = nextStableScan(scan, f, now);
       scan = out.scan;
       if (out.event?.kind === "empty") {
@@ -48,7 +56,8 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
           // a later card, an empty frame or a stop replaced this lookup: its answer is for nothing on screen
           if (inFlight !== mine) return;
           inFlight = null;
-          if (r.kind === "match") set({ kind: "match", result: r, ms: Math.round(deps.now() - t0) });
+          const end = deps.now();
+          if (r.kind === "match") set({ kind: "match", result: r, ms: Math.round(end - t0), totalMs: Math.round(end - origin) });
           else if (r.kind === "refused") set({ kind: "refused", reason: r.reason });
           else set({ kind: "failed" });
         });

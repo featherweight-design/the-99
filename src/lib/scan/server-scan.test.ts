@@ -89,4 +89,18 @@ describe("serverScanner", () => {
     for (let i = 0; i < 5; i++) { last = s.frame(card(0.9), clock); clock += 150; }
     expect(last.kind).toBe("match");
   });
+  it("times a match from the start of the frame that asked, not just the round trip", async () => {
+    let clock = 1000;
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn(() => new Promise((r) => { land = r; }));
+    const states: ServerState[] = [];
+    const s = serverScanner(MODEL, { fetch: fetch as never, wait: async () => {}, now: () => clock }, (st) => states.push(st));
+    for (let i = 0; i < 6; i++) { s.frame(card(0), clock, clock - 300); clock += 150; }
+    clock += 400;
+    land(ok());
+    await flush();
+    const m = states.at(-1);
+    expect(m?.kind).toBe("match");
+    if (m?.kind === "match") expect(m.totalMs).toBe(m.ms + 300);
+  });
 });

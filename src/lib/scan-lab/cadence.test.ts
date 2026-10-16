@@ -76,4 +76,22 @@ describe("parseCadence", () => {
     const parsed = parseCadence({ indexVersion: "v", frames: [{ ...frame, frame: "AAAA" }] });
     expect(parsed?.frames[0]).not.toHaveProperty("frame");
   });
+
+  it("logs a card waiting on the server's answer as pending, distinct from no card, and keeps it through a parse", () => {
+    let run = startCadence(0);
+    run = logFrame(run, "pending", showing(null), 100);
+    run = logFrame(run, NONE, showing(null), 200);
+    expect(run.frames.map((f) => f.pending ?? false)).toEqual([true, false]);
+    expect(parseCadence({ indexVersion: "x", frames: run.frames })?.frames[0].pending).toBe(true);
+    expect(parseCadence({ indexVersion: "x", frames: [{ ...run.frames[0], pending: "yes" }] })).toBeNull();
+  });
+
+  it("records the index that served the run, from its first reading that names one", () => {
+    let run = startCadence(0);
+    run = logFrame(run, NONE, showing(null), 100);
+    expect(run.index).toBeUndefined();
+    run = logFrame(run, { ...(card(1) as Extract<Reading, { kind: "card" }>), index: "all-20261015" }, showing(null), 200);
+    run = logFrame(run, { ...(card(1) as Extract<Reading, { kind: "card" }>), index: "other" }, showing(null), 300);
+    expect(run.index).toBe("all-20261015");
+  });
 });
