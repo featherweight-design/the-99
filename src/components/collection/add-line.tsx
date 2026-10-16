@@ -3,7 +3,7 @@
 // art, a printing chip that reopens the picker, a Foil chip, a stepper and the holdings note. A line
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
@@ -54,6 +54,13 @@ export type AddLineProps = {
   title?: string;
   /** The printing region's question, when it is not the add mode's (a fixed printing asks which copy). */
   intro?: string;
+  /** A scanned line's fix (card-scan L2): its name is a press that opens the scan's photo and closest cards. */
+  fix?: {
+    open: boolean;
+    onToggle: () => void;
+    onSwap: (guess: NonNullable<AddLineState["scan"]>["guesses"][number]) => void;
+    onSearch: () => void;
+  };
 };
 
 export function AddLine(props: AddLineProps) {
@@ -76,7 +83,12 @@ export function AddLine(props: AddLineProps) {
       <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px]">
         <Thumb uri={p?.imageUri ?? line.imageUri} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{line.name}</span>
-        {p && <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{printingLabel(p)}</span>}
+        {p ? (
+          <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{printingLabel(p)}</span>
+        ) : (
+          // Normal mode's scanned lines wait their turn for the printing step (L3).
+          <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>{copy.choosePrinting}</span>
+        )}
         <span className="text-[13px] text-[color:var(--fg-muted)]">{"×"}{line.quantity}</span>
       </li>
     );
@@ -85,8 +97,9 @@ export function AddLine(props: AddLineProps) {
   return (
     <li
       className="relative flex flex-col gap-[10px] rounded-[10px] border border-solid bg-[color:var(--bg)] p-[12px]"
-      style={{ borderColor: picking ? "var(--accent)" : "var(--border)" }}
+      style={{ borderColor: picking || props.fix?.open ? "var(--accent)" : "var(--border)" }}
       aria-label={line.name}
+      data-line-id={line.id}
     >
       {pulse !== null && (
         <span key={pulse} aria-hidden className="anim-line-pulse pointer-events-none absolute inset-0 rounded-[10px]" />
@@ -94,7 +107,22 @@ export function AddLine(props: AddLineProps) {
       <div className="flex items-start gap-[12px]">
         <Thumb uri={p?.imageUri ?? line.imageUri} />
         <div className="flex min-w-0 flex-1 flex-col gap-[6px] md:gap-[4px]">
-          <span className="text-[14px] font-semibold">{choosing && props.title ? props.title : line.name}</span>
+          {props.fix && line.scan ? (
+            <button
+              type="button"
+              disabled={disabled}
+              aria-expanded={props.fix.open}
+              aria-controls={`scan-fix-${line.id}`}
+              onClick={props.fix.onToggle}
+              // 24px as drawn, with the 44px a phone press needs drawn past it.
+              className="relative inline-flex min-h-[24px] max-w-full cursor-pointer items-center gap-[6px] self-start border-0 bg-transparent p-0 text-left text-[14px] font-semibold text-[color:var(--fg)] after:absolute after:inset-x-0 after:-inset-y-[10px] after:content-[''] disabled:cursor-default md:after:hidden"
+            >
+              <span className="min-w-0">{line.name}</span>
+              <span aria-hidden className="flex-none text-[11px] text-[color:var(--fg-faint)]">{"▾"}</span>
+            </button>
+          ) : (
+            <span className="text-[14px] font-semibold">{choosing && props.title ? props.title : line.name}</span>
+          )}
           {choosing ? (
             <span
               className="inline-flex h-[32px] items-center self-start rounded-[7px] border border-dashed px-[10px] text-[11.5px] md:h-[24px] md:rounded-[6px] md:text-[11px]"
@@ -183,6 +211,8 @@ export function AddLine(props: AddLineProps) {
         </>
       )}
 
+      {props.fix?.open && line.scan && <ScanFix line={line} scan={line.scan} fix={props.fix} disabled={disabled} />}
+
       {picking && (
         <PrintingRegion
           role="choose"
@@ -198,6 +228,105 @@ export function AddLine(props: AddLineProps) {
         />
       )}
     </li>
+  );
+}
+
+const fixCopy = collectionEditCopy.scan.fix;
+
+/** L2: what the scan saw, its closest cards with the one on the line ticked first, and the way out to search. */
+function ScanFix({ line, scan, fix, disabled }: {
+  line: AddLineState;
+  scan: NonNullable<AddLineState["scan"]>;
+  fix: NonNullable<AddLineProps["fix"]>;
+  disabled: boolean;
+}) {
+  // A radio group's own keys, as the printing region has them: arrows move and choose, Home and End jump to the ends,
+  // Tab leaves (only the ticked tile is a tab stop), and nothing wraps.
+  const group = useRef<HTMLDivElement>(null);
+  function onKey(e: React.KeyboardEvent, index: number) {
+    const last = scan.guesses.length - 1;
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? Math.min(index + 1, last)
+        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? Math.max(index - 1, 0)
+          : e.key === "Home" ? 0
+            : e.key === "End" ? last
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    if (next === index || disabled) return;
+    fix.onSwap(scan.guesses[next]);
+  }
+  // A swap reorders the tiles (the card on the line leads) and holds them while it loads: focus follows the ticked
+  // tile, if it was in the group.
+  useEffect(() => {
+    const g = group.current;
+    if (!g || !g.contains(document.activeElement)) return;
+    g.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+  }, [line.oracleId, disabled]);
+  return (
+    <div
+      id={`scan-fix-${line.id}`}
+      role="group"
+      aria-label={fixCopy.regionLabel}
+      className="flex flex-col gap-[12px] border-0 border-t border-solid border-[color:var(--border)] pt-[12px]"
+    >
+      <p className="m-0 flex items-center gap-[10px] text-[13.5px] text-[color:var(--fg-muted)]">
+        <span className="relative h-[62px] w-[44px] flex-none overflow-hidden rounded-[5px] bg-[color:var(--surface-sunken)]">
+          {scan.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a data URL made on this device, never an optimisable asset
+            <img src={scan.photo} alt={fixCopy.yourScan} className="absolute inset-0 h-full w-full object-cover" />
+          ) : null}
+        </span>
+        {fixCopy.question}
+      </p>
+      {/* Clipped as drawn, with 5px of room inside the clip for the ticked tile's ring (2px at a 3px offset). */}
+      <div ref={group} role="radiogroup" aria-label={fixCopy.regionLabel} className="-m-[5px] flex gap-[10px] overflow-hidden p-[5px]">
+        {scan.guesses.map((g, i) => {
+          const on = g.oracleId === line.oracleId;
+          return (
+            <button
+              key={g.oracleId}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              // Held, not disabled, while a swap loads: a disabled button drops focus to the page.
+              aria-disabled={disabled || undefined}
+              tabIndex={on ? 0 : -1}
+              onClick={() => !on && !disabled && fix.onSwap(g)}
+              onKeyDown={(e) => onKey(e, i)}
+              className="flex w-[96px] flex-none cursor-pointer flex-col border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default"
+            >
+              <span
+                className="relative block aspect-[63/88] w-[96px] overflow-hidden rounded-[10px] shadow-[inset_0_0_0_1px_rgba(0,0,0,.35)]"
+                style={{ background: identityGradient([]), outline: on ? "2px solid var(--accent)" : undefined, outlineOffset: on ? 3 : undefined }}
+              >
+                {g.imageUri ? <ArtLayer src={g.imageUri} /> : null}
+                {on && (
+                  <span aria-hidden className="absolute right-[8px] top-[8px] flex h-[21px] w-[21px] items-center justify-center rounded-[5px] bg-[color:var(--accent)] text-[11px] text-[color:var(--bg)]">
+                    {"✓"}
+                  </span>
+                )}
+              </span>
+              <span className={`mt-[7px] text-[12px] leading-[1.3] ${on ? "font-semibold" : ""}`}>{g.name}</span>
+              {on && (
+                <span className="mt-[3px] flex items-center gap-[5px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent)]">
+                  <span aria-hidden className="h-[7px] w-[7px] rotate-45 bg-[color:var(--accent)]" />
+                  {fixCopy.onList}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={fix.onSearch}
+        className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)] disabled:cursor-default"
+      >
+        {fixCopy.search}
+      </button>
+    </div>
   );
 }
 

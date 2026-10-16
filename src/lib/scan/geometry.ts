@@ -16,8 +16,10 @@ export type Pt = { x: number; y: number };
 export const DETECTOR_SIZE = 384;
 export const EMBED_W = 320;
 export const EMBED_H = 448;
-const MEAN = [0.485, 0.456, 0.406];
-const STD = [0.229, 0.224, 0.225];
+export const IMAGENET_MEAN = [0.485, 0.456, 0.406] as const;
+export const IMAGENET_STD = [0.229, 0.224, 0.225] as const;
+const MEAN = IMAGENET_MEAN;
+const STD = IMAGENET_STD;
 
 /** Where a frame of `w` x `h` sits inside the detector's square: its scale and offsets. */
 export function letterbox(w: number, h: number, size = DETECTOR_SIZE) {

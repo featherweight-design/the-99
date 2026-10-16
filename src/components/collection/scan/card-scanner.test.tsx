@@ -108,6 +108,7 @@ describe("CardScanner", () => {
         }}
         onAdd={onAdd}
         onClose={vi.fn()}
+        onNoneOfThese={vi.fn()}
       />,
     );
     const input = screen.getByTestId<HTMLInputElement>("scan-photos-input");
@@ -122,7 +123,7 @@ describe("CardScanner", () => {
     expect(document.activeElement).toBe(bulk);
     fireEvent.click(bulk);
     await screen.findByText(collectionEditCopy.scan.fix.onList);
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast");
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId, name: "Sol Ring" }), "fast", expect.objectContaining({ photo: null }));
     // Focus moves to the list's own Stop once the press that held it is gone.
     await waitFor(() => expect(document.activeElement?.hasAttribute("data-scan-close")).toBe(true));
   });

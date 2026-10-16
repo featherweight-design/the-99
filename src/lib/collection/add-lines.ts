@@ -25,6 +25,15 @@ export type AddLineState = {
   printing: PrintingChoice | null;
   finish: Finish;
   quantity: number;
+  /** A line the scanner added (card-scan PR 4): its own frame and the closest cards it named, so the name can be
+   * pressed to put it right. A search pick has none. */
+  scan?: ScanSource;
+};
+
+/** What a scan saw: the card's photo as it was read, and the closest cards, the one on the line first. */
+export type ScanSource = {
+  photo: string | null;
+  guesses: { oracleId: string; name: string; imageUri: string | null }[];
 };
 
 /** The finish a printing is added in until the player says otherwise (plan PR 1 note 3). */
@@ -52,6 +61,8 @@ function fold<L extends AddLineState>(lines: L[], id: string, cap = MAX_LINE_QUA
   const twin = lines.find((l) => l.id !== id && holdingKeyOf(l) === key);
   if (!twin) return { lines, merged: null };
   const merged = { ...twin, quantity: Math.min(cap, twin.quantity + line.quantity) };
+  // A scan's fix moves every copy on its line, so a line holding a search pick keeps no scan, whichever came first.
+  if (!line.scan || !twin.scan) delete merged.scan;
   return { lines: [merged, ...lines.filter((l) => l.id !== id && l.id !== twin.id)], merged };
 }
 
@@ -66,6 +77,24 @@ export function choosePrinting<L extends AddLineState>(lines: L[], id: string, p
     l.id === id ? { ...l, printing, finish: defaultFinish(printing) } : l,
   );
   return fold(next, id, cap);
+}
+
+/**
+ * A scanned line put right (card-scan L2): it becomes another of the cards its scan named, at that card's first
+ * printing, keeping its count and its scan. The guesses keep the scan's order (the card first added leads, as L2
+ * draws it), so the tiles do not move under a keyboard reader's arrows: the tick moves instead.
+ * A line that becomes a holding another line names folds into it, as any printing change does.
+ */
+export function swapScannedCard(lines: AddLineState[], id: string, oracleId: string, choices: PrintingChoice[]) {
+  const line = lines.find((l) => l.id === id);
+  const guess = line?.scan?.guesses.find((g) => g.oracleId === oracleId);
+  if (!line?.scan || !guess || choices.length === 0) return { lines, merged: null };
+  const next = lines.map((l) =>
+    l.id === id
+      ? { ...l, oracleId, name: guess.name, imageUri: guess.imageUri, choices, printing: choices[0], finish: defaultFinish(choices[0]) }
+      : l,
+  );
+  return fold(next, id);
 }
 
 export function setFinish<L extends AddLineState>(lines: L[], id: string, finish: Finish, cap = MAX_LINE_QUANTITY) {

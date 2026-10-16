@@ -588,6 +588,8 @@ export const collectionEditCopy = {
     },
     fix: {
       question: "Which card was it? These are the closest to your scan.",
+      /** The fix region's and the tiles' name, for a screen reader. */
+      regionLabel: "Which card was it?",
       yourScan: "Your scan",
       onList: "On the list",
       search: "Search for it instead",

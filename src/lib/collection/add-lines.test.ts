@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PrintingChoice } from "./catalog-read";
 import {
   canSave, choosePrinting, defaultFinish, openLine, ownedNote, removeLine, setFinish, setQuantity, summarize,
-  toPayload, MAX_LINE_QUANTITY, type AddLineState,
+  swapScannedCard, toPayload, MAX_LINE_QUANTITY, type AddLineState,
 } from "./add-lines";
 
 const OID = "11111111-1111-4111-8111-111111111111";
@@ -97,5 +97,52 @@ describe("add lines", () => {
     const c = choice();
     const lines = choosePrinting(openLine([], base([c])), "a", c).lines;
     expect(canSave(removeLine(lines, "a"))).toBe(false);
+  });
+
+  describe("swapping a scanned line's card", () => {
+    const OTHER = "22222222-2222-4222-8222-222222222222";
+    const scan = {
+      photo: "data:image/png;base64,x",
+      guesses: [
+        { oracleId: OID, name: "Sol Ring", imageUri: null },
+        { oracleId: OTHER, name: "Mind Stone", imageUri: "m.jpg" },
+      ],
+    };
+    const scanned = (q = 2) => setQuantity(choosePrinting([{ ...openLine([], base([choice()]))[0], scan }], "a", choice()).lines, "a", q);
+
+    it("takes the other card at its first printing, keeping the count, the scan and the guesses' order", () => {
+      const first = choice({ setCode: "wwk", collectorNumber: "133", finishes: ["foil"] });
+      const { lines, merged } = swapScannedCard(scanned(), "a", OTHER, [first, choice({ setCode: "c13" })]);
+      expect(merged).toBeNull();
+      expect(lines[0]).toMatchObject({ oracleId: OTHER, name: "Mind Stone", imageUri: "m.jpg", printing: first, finish: "foil", quantity: 2 });
+      expect(lines[0].scan?.photo).toBe(scan.photo);
+      expect(lines[0].scan?.guesses.map((g) => g.oracleId)).toEqual([OID, OTHER]);
+    });
+
+    it("folds into a line that already holds the card it becomes", () => {
+      const c = choice({ setCode: "wwk", collectorNumber: "133" });
+      const twin: AddLineState = { id: "b", oracleId: OTHER, name: "Mind Stone", imageUri: null, choices: [c], printing: c, finish: "nonfoil", quantity: 1 };
+      const { lines, merged } = swapScannedCard([...scanned(), twin], "a", OTHER, [c]);
+      expect(merged?.id).toBe("b");
+      expect(lines).toHaveLength(1);
+      expect(lines[0].quantity).toBe(3);
+    });
+
+    it("keeps no scan on a line a search pick folds into, whichever came first", () => {
+      const scanFirst = scanned(1);
+      const searched = choosePrinting([{ ...openLine([], base([choice()]))[0], id: "b" }, ...scanFirst], "b", choice());
+      expect(searched.merged?.id).toBe("a");
+      expect(searched.lines).toHaveLength(1);
+      expect(searched.lines[0].quantity).toBe(2);
+      expect(searched.lines[0].scan).toBeUndefined();
+    });
+
+    it("leaves a search pick, an unnamed card and an empty printing list alone", () => {
+      const pick = choosePrinting(openLine([], base([choice()])), "a", choice()).lines;
+      expect(swapScannedCard(pick, "a", OTHER, [choice()]).lines).toBe(pick);
+      const s = scanned();
+      expect(swapScannedCard(s, "a", "33333333-3333-4333-8333-333333333333", [choice()]).lines).toBe(s);
+      expect(swapScannedCard(s, "a", OTHER, []).lines).toBe(s);
+    });
   });
 });

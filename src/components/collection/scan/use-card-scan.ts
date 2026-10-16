@@ -6,13 +6,18 @@ import { CAMERA_CONSTRAINTS, torchOf, type Torch } from "../../../lib/scan/camer
 import type { Source } from "../../../lib/scan/pipeline";
 import { serverScanner, type ServerState } from "../../../lib/scan/server-scan";
 import type { ScanFrame } from "../../../lib/scan/stable-card";
+import { photoOf } from "../../../lib/scan/photo";
+import type { ScanSource } from "../../../lib/collection/add-lines";
 import { readScanMode, writeScanMode } from "./mode-memory";
 import type { ScanGuess, ScanMode, ScanScreen } from "./scan-view";
-import { scanScreen } from "./screen-state";
+import { scanScreen, toScanGuess } from "./screen-state";
 
-/** One read of the camera: the detector's and embedder's answer for the frame (2c's module, injected), and whether it
- * was too dark to read. */
-export type FrameRead = { frame: ScanFrame; cardInView: boolean; dark: boolean };
+/** One read of the camera: the detector's and embedder's answer for the frame (2c's module, injected), whether it
+ * was too dark to read, and the card as the embedder saw it (its normalised crop), for the list's "Your scan". */
+export type FrameRead = { frame: ScanFrame; cardInView: boolean; dark: boolean; crop?: Float32Array };
+
+/** What an add carries with it: the card's photo as read, and the closest cards, the added one first (L2). */
+export type ScanCapture = ScanSource;
 
 /** How long the added panel and the tray's flip stay up (READINESS: "about 0.8s"). */
 export const ADDED_MS = 800;
@@ -31,6 +36,8 @@ export type CardScanDeps = {
   wait?: (ms: number) => Promise<void>;
   now?: () => number;
   storage?: Storage | null;
+  /** The crop as a picture; the canvas's own by default. */
+  photo?: (crop: Float32Array) => string | null;
 };
 
 export type CardScan = {
@@ -60,7 +67,7 @@ export function useCardScan(
   active: boolean,
   deps: CardScanDeps,
   /** Puts the card on the list; answers false when it could not (its printings would not load). */
-  onAdd: (guess: ScanGuess, mode: ScanMode) => Promise<boolean>,
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture) => Promise<boolean>,
   onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart") => void,
   /** Copies on the sheet's list, by oracle id, live: the tray and "again" read the list, which the desktop sheet can
    * still edit while the scanner is open. */
@@ -92,6 +99,10 @@ export function useCardScan(
   const [torch, setTorch] = useState<{ handle: Torch | null; on: boolean }>({ handle: null, on: false });
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const torchBusy = useRef(false);
+  // The newest frame that held a card: the card an add is pressed for is still in view, so its photo is this one.
+  const lastCrop = useRef<Float32Array | null>(null);
+  // What the scanner saw as a hold began (V4): the frozen guess's own photo and closest cards.
+  const heldSnap = useRef<{ oracleId: string; named: ScanGuess[]; crop: Float32Array | null } | null>(null);
 
   // The camera, while the scanner is open and the element exists. A refusal (or no camera) is the blocked screen.
   useEffect(() => {
@@ -173,6 +184,7 @@ export function useCardScan(
         else if (darkSince.current === null) darkSince.current = at;
         const dark = darkSince.current !== null && at - darkSince.current >= DARK_HOLD_MS;
         setRead((prev) => (prev.cardInView === r.cardInView && prev.dark === dark ? prev : { cardInView: r.cardInView, dark }));
+        if (r.crop) lastCrop.current = r.crop;
         if (r.frame.kind === "none") setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
@@ -213,23 +225,37 @@ export function useCardScan(
       // A press during an add in flight still let go of its hold: clear it before the one-at-a-time guard, or the
       // scanner would show Held, with the feed frozen, once the first add's panel goes.
       setHeld(null);
-      if (committing.current) return;
+      if (committing.current) {
+        // That press is discarded, and its snapshot with it, or a later add of the card would carry its photo.
+        heldSnap.current = null;
+        return;
+      }
       committing.current = true;
       try {
-        if (!(await onAdd(g, mode))) {
+        // A held card adds what the scanner saw when the press went down; frames read since are another moment.
+        const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : null;
+        heldSnap.current = null;
+        const named = snap ? snap.named : server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [];
+        const crop = snap ? snap.crop : lastCrop.current;
+        const capture: ScanCapture = {
+          photo: crop ? (depsRef.current.photo ?? photoOf)(crop) : null,
+          guesses: [g, ...named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
+        };
+        if (!(await onAdd(g, mode, capture))) {
           onProblem("notAdded");
           return;
         }
         // A press made while this add waited is over with it: the Added panel replaces its button, so no release
-        // would ever clear that hold.
+        // would ever clear that hold, or its snapshot.
         setHeld(null);
+        heldSnap.current = null;
         setLastAdded({ oracleId: g.oracleId, emptiedSince: false });
         setAdded({ name: g.name, imageUri: g.imageUri });
       } finally {
         committing.current = false;
       }
     },
-    [onAdd, mode, onProblem],
+    [onAdd, mode, onProblem, server],
   );
 
   // Through useCallback, so a render never reads the deps ref: only the press does.
@@ -262,8 +288,19 @@ export function useCardScan(
           torchBusy.current = false;
         });
     },
-    hold: () => current && setHeld(current),
-    cancelHold: () => setHeld(null),
+    hold: () => {
+      if (!current) return;
+      heldSnap.current = {
+        oracleId: current.oracleId,
+        named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [],
+        crop: lastCrop.current,
+      };
+      setHeld(current);
+    },
+    cancelHold: () => {
+      heldSnap.current = null;
+      setHeld(null);
+    },
     add: () => {
       const g = held ?? current;
       if (g) void commit(g);
