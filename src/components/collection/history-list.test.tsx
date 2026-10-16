@@ -8,7 +8,10 @@ const loadEntry = vi.fn();
 const loadPage = vi.fn();
 const previewRevert = vi.fn();
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 vi.mock("../../app/collection/history-actions", () => ({
   previewRevert: (...a: unknown[]) => previewRevert(...a),
   revertCollectionEntry: vi.fn(),

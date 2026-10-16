@@ -49,7 +49,10 @@ function door(read: (d: string, c: string) => Promise<ManaHelp | null>, deckId =
 }
 
 // A landed result is brought into view through `reveal`; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 const scroll = vi.mocked(reveal);
 beforeEach(() => {
   scroll.mockReset();

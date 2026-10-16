@@ -46,7 +46,10 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 
 // ── Dynamic imports (after mocks are set up) ─────────────────────────────────
 const { Decklist, LockModeLine, receiptHome } = await import("./decklist");

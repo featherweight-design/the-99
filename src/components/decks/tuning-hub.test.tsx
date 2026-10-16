@@ -26,7 +26,10 @@ const read = vi.mocked(readTuningHub);
 const readHistoryPage = vi.mocked(readTuningHistory);
 const readPast = vi.mocked(readTuningPastRun);
 // The hub brings the opened tool into view through `reveal`; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 
 const empty: HubTiles = { suggested_changes: null, proposed_cuts: null };
 const suggested = (panel: boolean = true): HubToolSpec => ({ tool: "suggested", panel: panel ? <h2 id="tuning-heading">Suggested changes</h2> : null });

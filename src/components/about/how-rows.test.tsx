@@ -5,7 +5,10 @@ import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-i
 import { HowItWorks } from "./how-it-works";
 import { reveal } from "../../lib/ui/reveal";
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 
 const head = (title: string) => screen.getByRole("button", { name: new RegExp("^" + title) });
 

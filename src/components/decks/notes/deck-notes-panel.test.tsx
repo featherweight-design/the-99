@@ -17,7 +17,10 @@ vi.mock("../../../app/decks/notes-actions", () => ({
   addNote: stub.addNote, editNote: stub.editNote, setNoteDone: stub.setNoteDone, deleteNote: stub.deleteNote, searchNoteCards: stub.searchNoteCards,
 }));
 // The scrolls are `reveal`'s; its eased motion is `reveal`'s own test.
-vi.mock("../../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../lib/ui/reveal")>()),
+  reveal: vi.fn(),
+}));
 vi.mock("../../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: stub.open }) }));
 
 const { DeckNotesPanel } = await import("./deck-notes-panel");

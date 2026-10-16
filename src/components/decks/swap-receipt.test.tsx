@@ -10,7 +10,10 @@ const { undoSwapAction } = vi.hoisted(() => ({ undoSwapAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => ({ undoSwapAction }));
 // The scroll is `reveal`'s; its eased motion is `reveal`'s own test. It hands back its cancel.
 const { reveal } = vi.hoisted(() => ({ reveal: vi.fn(() => () => {}) }));
-vi.mock("../../lib/ui/reveal", () => ({ reveal }));
+vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
+  reveal,
+}));
 
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
 const { SwapReceiptRow, landOnReceipt } = await import("./swap-receipt");
