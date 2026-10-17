@@ -68,6 +68,9 @@ export const PER_REQUEST_READS = {
   // redeemed link or one expiring moves nothing in Home's key, so these are read fresh on every request rather than keyed
   // on every friend's stamp (Social R3 addendum, Friends on Home).
   "src/lib/social/home-friends.ts": "Home's Friends section reads profiles, friends and open links fresh on every request; a friend's change moves no key Home has",
+  // The same section's Add a friend, with invites on: the reader's invite count, which a QR expiring or an invite
+  // landing moves without any write of the reader's own.
+  "src/lib/invites/read.ts": "Home's Add a friend shows the reader's invite count, read fresh per request beside the Friends section",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

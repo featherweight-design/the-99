@@ -2,7 +2,11 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock("../../app/friends/actions", () => ({ createInviteAction: vi.fn() }));
+const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
+vi.mock("../../app/friends/actions", () => actions);
+vi.mock("../social/invite-sheet", () => ({
+  InviteSheet: ({ screen }: { screen: string }) => <div role="dialog" aria-label="Invite chooser" data-screen={screen} />,
+}));
 vi.mock("../social/add-friend-dialog", () => ({
   AddFriendDialog: ({ onClose, returnFocusRef }: { onClose: () => void; returnFocusRef: { current: HTMLElement | null } }) => (
     <div role="dialog"><button type="button" onClick={() => { onClose(); returnFocusRef.current?.focus(); }}>close</button></div>
@@ -122,6 +126,24 @@ describe("FriendsSection", () => {
     fireEvent.click(show);
     fireEvent.click(screen.getByRole("button", { name: "close" }));
     expect(document.activeElement).toBe(show);
+  });
+
+  it("with invites off, Add a friend makes a link and opens the dialog, as shipped", async () => {
+    actions.createInviteAction.mockResolvedValue({ ok: true, token: "t9", url: "https://x/friend/t9", expiresAt: inDays(7) });
+    render(<FriendsSection {...props({ invites: null })} />);
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
+    expect(await screen.findByRole("button", { name: "close" })).toBeTruthy();
+    expect(actions.createInviteAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
+  });
+
+  it("with invites on, Add a friend opens /friends' chooser and makes nothing yet (addendum G4)", () => {
+    actions.createInviteAction.mockClear();
+    const invites = { left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false };
+    render(<FriendsSection {...props({ invites })} />);
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
+    expect(screen.getByRole("dialog", { name: "Invite chooser" }).getAttribute("data-screen")).toBe("choose");
+    expect(actions.createInviteAction).not.toHaveBeenCalled();
   });
 
   it("ignores a link that has already expired", () => {

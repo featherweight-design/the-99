@@ -22,7 +22,8 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { socialFriendsEnabled, socialGamesEnabled } from "../lib/social/flag";
+import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { loadInviteCount } from "../lib/invites/read";
 import { wishlistEnabled } from "../lib/wishlist/flag";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
@@ -310,6 +311,16 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       console.error("home: the friends section could not be read", error);
     }
   }
+  // With invites on, Add a friend opens /friends' chooser (addendum G4), which shows the reader's invite count. Read
+  // per request like the rest of the section; a count that cannot be read draws Add a friend as a plain link, as
+  // /friends does.
+  const invites = homeFriends && socialInvitesEnabled(env)
+    ? await loadInviteCount(userId, now).catch((error: unknown) => {
+        // not a fallback: read after the cached load and never stored.
+        console.warn("[invites] count unreadable; drawing Home's Add a friend without it", error instanceof Error ? error.message : "");
+        return null;
+      })
+    : null;
 
   const dashboard = (
     <Dashboard
@@ -324,7 +335,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       about={about}
       cartEnabled={allDecksCartEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
-      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env) }}
+      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env), invites }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

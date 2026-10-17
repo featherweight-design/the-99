@@ -22,6 +22,9 @@ import { madeWhen, underADay } from "../../lib/social/when";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { InviteOutcome } from "../../lib/social/friends";
 import { AddFriendDialog } from "../social/add-friend-dialog";
+import { InviteSheet, type InviteScreen } from "../social/invite-sheet";
+import type { InviteCount } from "../../lib/invites/rules";
+import { MAX_OPEN_INVITES } from "../../lib/social/client-rules";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -33,6 +36,8 @@ const h = socialCopy.home;
 export const SEATS = 5;
 /** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
 const CLOCK_TICK_MS = 60_000;
+/** As /friends: a live QR's expiry redraws the page just after it, so the invite count line comes back. */
+const QR_EXPIRY_REFRESH_SLACK_MS = 500;
 
 export type FriendsSectionProps = {
   you: { displayName: string; commander: ProfileCommander | null } | null;
@@ -44,6 +49,9 @@ export type FriendsSectionProps = {
   games: boolean;
   /** SOCIAL_WISHLIST_ENABLED: a friend's own page exists. Without it a face opens /friends. */
   friendPages: boolean;
+  /** SOCIAL_INVITES_ENABLED, with the reader's invite count: Add a friend opens /friends' chooser (addendum G4).
+   *  Null with invites off, or with a count that could not be read: Add a friend makes a link, as shipped. */
+  invites?: InviteCount | null;
   /** The dashboard's `order` classes for the phone placement. */
   className?: string;
 };
@@ -57,7 +65,7 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
   return { faces: friends, more: 0, empty: SEATS - friends };
 }
 
-export function FriendsSection({ you, friends, links, now, games, friendPages, className = "" }: FriendsSectionProps) {
+export function FriendsSection({ you, friends, links, now, games, friendPages, invites = null, className = "" }: FriendsSectionProps) {
   const router = useRouter();
   // The server's clock, moved on by the client's minute tick from the server's draw plus the client's elapsed time,
   // as /friends does, so a link crossing its last day turns to the warning ink without a redraw.
@@ -87,6 +95,41 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
   const say = (text: string, retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
+  // Add a friend's chooser (invites on), exactly as /friends draws it: the screen it shows, null while closed. Read
+  // by `makeLink` through a ref, since a link made from the chooser opens as its path 1 and one made from a Try
+  // again opens the dialog.
+  const [adding, setAdding] = useState<InviteScreen | null>(null);
+  const addingNow = useRef(adding);
+  useEffect(() => {
+    addingNow.current = adding;
+  }, [adding]);
+  // A toast the chooser's own screens raised leaves with the sheet: its Try again would run an unmounted screen.
+  const sheetToast = useRef<number | null>(null);
+  const sheetSay = (text: string, retry?: SocialToastState["retry"]) => {
+    const id = ++toastSeq.current;
+    sheetToast.current = id;
+    setToast({ id, text, retry });
+  };
+  const closeSheetToast = () => {
+    const id = sheetToast.current;
+    sheetToast.current = null;
+    if (id !== null) setToast((t) => (t?.id === id ? null : t));
+  };
+  const refresh = useCallback(() => router.refresh(), [router]);
+  const qrUntilMs = invites?.qrUntil ? invites.qrUntil.getTime() : null;
+  useEffect(() => {
+    if (qrUntilMs === null) return;
+    const t = setTimeout(() => router.refresh(), Math.max(0, qrUntilMs - nowMs) + QR_EXPIRY_REFRESH_SLACK_MS);
+    return () => clearTimeout(t);
+  }, [qrUntilMs, nowMs, router]);
+  // While the chooser is open the toast is drawn inside its dialog, which keeps Tab within itself.
+  const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
+  function openChooser() {
+    // Closing it returns focus to Add a friend, never to a Show pressed earlier.
+    showOpener.current = null;
+    setToast(null);
+    setAdding("choose");
+  }
   const addRef = useRef<HTMLButtonElement>(null);
   // Where focus goes when the dialog closes: the Show press that opened it while it still stands, else Add a friend.
   const showOpener = useRef<HTMLElement | null>(null);
@@ -125,15 +168,24 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
   async function makeLink() {
     if (makingNow.current) return;
     makingNow.current = true;
+    // The chooser screen the press was made on (null: none open). A reader who has moved on by the answer gets
+    // nothing drawn: the link stands, and the redraw lists it.
+    const began = addingNow.current;
     setToast(null);
     setMaking(true);
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
-    if (out?.ok) showOpener.current = null;
-    if (out?.ok) setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listed.current) });
-    else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
-    else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    if (began !== null && addingNow.current !== "choose") return;
+    if (out?.ok) {
+      showOpener.current = null;
+      setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listed.current) });
+      if (addingNow.current === "choose") setAdding("link");
+    } else {
+      const tell = began !== null ? sheetSay : say;
+      if (out && !out.ok && out.reason === "tooMany") tell(socialCopy.invites.tooMany);
+      else tell(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    }
   }
 
   function showLink(link: { token: string; createdAt: Date; expiresAt: Date }) {
@@ -249,17 +301,43 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
       <button
         ref={addRef}
         type="button"
-        onClick={() => void makeLink()}
+        onClick={invites ? openChooser : () => void makeLink()}
         aria-disabled={making || undefined}
         className="h-[44px] cursor-pointer self-stretch rounded-[10px] [border:1px_solid_var(--border-strong)] bg-transparent px-[16px] font-sans text-[14px] text-[color:var(--fg)] aria-disabled:cursor-default min-[1180px]:h-[32px] min-[1180px]:self-start min-[1180px]:rounded-[8px] min-[1180px]:px-[14px] min-[1180px]:text-[12.5px]"
       >
         {making ? socialCopy.page.invitePending : socialCopy.page.invite}
       </button>
 
-      {shown ? (
+      {invites && adding ? (
+        <InviteSheet
+          screen={adding}
+          onScreen={(next) => {
+            // Back from path 1 leaves the link made and open, under the open-link line.
+            if (adding === "link") setShown(null);
+            if (next !== adding) closeSheetToast();
+            setAdding(next);
+          }}
+          count={invites}
+          linkHeld={open.length >= MAX_OPEN_INVITES}
+          linkPending={making}
+          onFriendLink={() => void makeLink()}
+          link={adding === "link" && shown ? { url: shown.url, expiresAt: shown.expiresAt, now: nowDate, timeZone } : null}
+          onClose={() => {
+            if (adding === "link") setShown(null);
+            closeSheetToast();
+            setAdding(null);
+          }}
+          returnFocusRef={dialogReturn}
+          say={sheetSay}
+          onRefresh={refresh}
+          toast={toastEl}
+          clearToast={() => setToast(null)}
+        />
+      ) : null}
+      {shown && !(invites && adding) ? (
         <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={nowDate} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} />
       ) : null}
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      {invites && adding ? null : toastEl}
     </section>
   );
 }
