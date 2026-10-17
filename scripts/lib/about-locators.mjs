@@ -76,11 +76,13 @@ export const ABOUT_LOCATORS = {
     screen: "card-details",
     locator: "[role='dialog'] [data-testid='card-sheet'] button:has-text('All details')",
     reaches: true,
+    note: "Find a deck is in the full card details, which All details opens",
   },
   "find-a-deck-read": {
     screen: "card-details",
     locator: "[role='dialog'] [data-testid='card-sheet'] button:has-text('All details')",
     reaches: true,
+    note: "the read is drawn under Find a deck, in the full card details All details opens",
   },
 
   // ---- collection places -----------------------------------------------------
