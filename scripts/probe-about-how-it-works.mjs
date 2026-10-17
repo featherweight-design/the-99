@@ -11,15 +11,16 @@
 // ON: the method key is one column on the phone and two from 1000px, with a 100px tag column; each
 // row's head is at least 52px on the phone and 44px on desktop, its title, tags and verdict share
 // one line on desktop and the verdict takes a second line on the phone; an opened row's body is a
-// 128px label grid on desktop and stacked on the phone; nothing scrolls sideways. And a hash lands its row open and focused, 20px from
+// 128px label grid on desktop and stacked on the phone; nothing scrolls sideways. And a hash lands its row open, 20px from
 // the top or at the document's end, with its OPENED body on screen. That last needs the row opened
 // before the scroll: the browser's own jump lands on the closed layout, and the body it opens
 // afterwards would hang below the fold.
 //
 // OFF: no appendix, and nothing links to one of its rows.
 //
-// The entry link line, the contents group and the jump's wash were the retired page's (Discovery
-// R2·7 deleted `about-page.tsx`, `contents-r6.tsx` and `jump-mark.tsx`), and their checks went with it.
+// The entry link line, the contents group, the jump's wash and its focus on the row's heading were the
+// retired page's (Discovery R2·7 deleted `about-page.tsx`, `contents-r6.tsx` and `jump-mark.tsx`), and their
+// checks went with it: the Reference's rows open and scroll on a hash, and move no focus.
 //
 // It writes the account's About row through `clearAboutSheet`, captured first and put back in a
 // `finally`, the `captureAboutSeen` rule. Point it at `local-dev`, never production.
@@ -143,7 +144,6 @@ async function walkOn(page, w) {
     const land = await page.evaluate((rowId) => {
       const row = document.getElementById(rowId);
       const body = document.getElementById(`${rowId}-body`);
-      const line = row.querySelector("[data-entry-title]");
       const doc = document.scrollingElement;
       return {
         open: !!body,
@@ -151,13 +151,11 @@ async function walkOn(page, w) {
         atEnd: Math.abs(doc.scrollTop + doc.clientHeight - doc.scrollHeight) <= 2,
         bodyBottom: body ? Math.round(body.getBoundingClientRect().bottom) : null,
         viewport: window.innerHeight,
-        focused: document.activeElement === line.querySelector("h3"),
       };
     }, id);
     report(`${tag} #${id} opens its row`, land.open);
     report(`${tag} #${id} lands 20px from the top, or at the document's end`, Math.abs(land.top - 20) <= 2 || land.atEnd, `top ${land.top}px, at end ${land.atEnd}`);
     report(`${tag} #${id} lands with its body on screen`, land.top >= 0 && land.bodyBottom !== null && land.bodyBottom <= land.viewport, `body ends ${land.bodyBottom} of ${land.viewport}`);
-    report(`${tag} #${id} takes focus on its heading`, land.focused);
   }
 }
 
