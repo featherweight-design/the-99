@@ -345,7 +345,6 @@ export function AccountPageView({ page }: { page: AccountPage }) {
         <div className="flex min-w-0 flex-col gap-[3px]">
           <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{page.name}</h1>
           {page.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{page.email}</span>}
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [word-break:break-all]">{page.id}</span>
           <span className="text-pretty text-[12.5px] text-[color:var(--fg-body)]">{page.role}</span>
         </div>
       </div>

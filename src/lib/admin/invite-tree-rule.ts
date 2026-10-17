@@ -73,7 +73,8 @@ export function buildInviteTree(input: {
       kind: "account",
       id,
       name: accountName(a),
-      initials: initials(a),
+      // The owner and an account with no name are marked with the diamond, not lettered (D4).
+      initials: id === input.ownerId ? null : initials(a),
       owner: id === input.ownerId,
       joined: joined ? fmtDay(joined) : null,
       left: countFor(input.balances.get(id), open, input.now).left,

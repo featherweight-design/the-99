@@ -107,7 +107,6 @@ function MemberButton({ row, selected, groupId, onToggle }: { row: MemberRow; se
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.email}</span>
           )}
         </span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] [word-break:break-all]">{row.id}</span>
         {sub && <span className="text-[12px] text-[color:var(--fg-muted)]">{sub}</span>}
       </span>
       <span

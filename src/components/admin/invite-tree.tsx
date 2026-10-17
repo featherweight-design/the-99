@@ -49,8 +49,13 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
   return (
     <div data-node={row.id} className={ROW}>
       <Rails cells={row.cells} />
-      <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}>
-        {row.initials}
+      {/* The owner and an account with no name are marked with the diamond, not lettered (D4). */}
+      <span
+        aria-hidden
+        data-mark={row.initials === null ? "diamond" : undefined}
+        className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}
+      >
+        {row.initials ?? <i className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--fg-muted)]" />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
         <b className="font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{row.name}</b>

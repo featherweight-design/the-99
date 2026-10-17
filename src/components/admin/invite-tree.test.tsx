@@ -88,6 +88,14 @@ describe("InviteTreeView (M4)", () => {
     expect(within(colin as HTMLElement).getByRole("link", { name: "Open Colin" })).toBeTruthy();
   });
 
+  it("marks the owner with the diamond and letters every other account from its masked name (D4)", () => {
+    view();
+    const diamond = (id: string) => document.querySelector(`[data-node="${id}"] [data-mark="diamond"]`) !== null;
+    expect(diamond("u_hugh")).toBe(true);
+    expect(diamond("u_colin")).toBe(false);
+    expect(document.querySelector('[data-node="u_colin"]')).toHaveTextContent(/^CO/);
+  });
+
   it("draws a waiting leaf with how it was sent, its masked address and its return, and revokes it", async () => {
     view();
     const leaf = document.querySelector(`[data-waiting="${R1}"]`) as HTMLElement;

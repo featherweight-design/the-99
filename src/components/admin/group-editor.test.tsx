@@ -40,7 +40,7 @@ describe("GroupEditor", () => {
     expect(member("Hugh")).toHaveAttribute("aria-checked", "true");
     expect(member("Hugh")).toHaveTextContent("in testers");
     expect(member("Hugh")).toHaveTextContent("h•••@x•••.dev");
-    expect(member("Hugh")).toHaveTextContent("u_hugh");
+    expect(member("Hugh")).not.toHaveTextContent("u_hugh");
     expect(member("Theo")).toHaveAttribute("aria-checked", "false");
     expect(member("Theo")).toHaveTextContent("in friends");
     expect(screen.getByText("1 selected")).toBeInTheDocument();

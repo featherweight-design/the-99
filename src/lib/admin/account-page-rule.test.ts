@@ -53,6 +53,7 @@ describe("the list (A1)", () => {
       credits: new Map([[HUGH.id, { left: 7, limit: 10 }], [MARA.id, { left: 0, limit: 5 }], [BARE.id, { left: 5, limit: 5 }]]),
       spend: new Map([[HUGH.id, 2_100_000], [MARA.id, 1_420_000]]),
       invites: new Map([[MARA.id, { left: 2, waiting: 1, invitedBy: { kind: "account", id: HUGH.id, name: "Hugh H.", joinedAt: new Date(0) } }]]),
+      ownerId: HUGH.id,
     });
     // An account the invite read did not name holds none and was invited by no one.
     expect(rows.map((r) => r.invites.left)).toEqual([0, 2, 0]);
@@ -62,11 +63,12 @@ describe("the list (A1)", () => {
       ["Mara Q.", "friends", "0 of 5 left", "$1.420"],
       ["Account ·bare", null, "5 of 5 left", "$0"],
     ]);
-    expect(rows.slice(0, 2).map((r) => r.initials)).toEqual(["HH", "MQ"]);
+    // D4: the owner and an account with no name are marked with the diamond (null), the rest lettered.
+    expect(rows.map((r) => [r.owner, r.initials])).toEqual([[true, null], [false, "MQ"], [false, null]]);
   });
 
   it("keeps a membership whose group name did not load, naming it by its id", () => {
-    const rows = accountRows({ accounts: [MARA], groupOf: new Map([[MARA.id, "g9"]]), groupNames: new Map(), credits: new Map(), spend: new Map(), invites: new Map() });
+    const rows = accountRows({ accounts: [MARA], groupOf: new Map([[MARA.id, "g9"]]), groupNames: new Map(), credits: new Map(), spend: new Map(), invites: new Map(), ownerId: null });
     expect(rows[0].group).toEqual({ id: "g9", name: "g9" });
   });
 

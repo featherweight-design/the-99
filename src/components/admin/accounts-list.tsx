@@ -18,18 +18,19 @@ import { usePublishedHeight } from "./admin-head";
 const copy = adminCopy.accounts;
 const inv = adminCopy.invites;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
-const GRID = "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_110px_120px_minmax(0,1fr)_90px] md:items-center md:gap-[14px]";
+const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_104px_minmax(0,0.7fr)_52px] md:items-center md:gap-[14px]";
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px]";
 
-/** The avatar the rows and the account page draw: initials in mono on an accent ring. */
+/** The avatar the rows and the account page draw: initials in mono on an accent ring, or the diamond when null (D4). */
 export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" }) {
   const box = size === "sm" ? "h-[34px] w-[34px] rounded-[10px] text-[11.5px]" : "h-[48px] w-[48px] rounded-[14px] text-[15px] md:h-[44px] md:w-[44px] md:rounded-[12px] md:text-[14px]";
   return (
     <span
       aria-hidden
       className={`inline-flex flex-none items-center justify-center border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] font-mono text-[color:var(--accent)] ${box}`}
+      data-mark={text === null ? "diamond" : undefined}
     >
-      {text}
+      {text ?? <i className="block h-[8px] w-[8px] rotate-45 bg-[color:var(--accent)]" />}
     </span>
   );
 }
@@ -46,18 +47,24 @@ function Row({ row }: { row: AccountRow }) {
         <div className="flex min-w-0 items-center gap-[11px]">
           <Avatar text={row.initials} size="sm" />
           <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
-            <span className="min-w-0 text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{row.name}</span>
+            <span className="min-w-0 text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">
+              {row.name}
+              {row.owner && (
+                <span className="ml-[6px] inline-flex h-[18px] items-center rounded-full border border-solid border-[color:var(--border-strong)] px-[7px] align-[1px] font-mono text-[10px] font-normal tracking-[0.08em] text-[color:var(--fg-muted)]">
+                  {inv.tree.owner}
+                </span>
+              )}
+            </span>
             {row.email && <span className={`${MONO_META} text-[color:var(--fg-faint)]`}>{row.email}</span>}
-            <span className={`${MONO_META} text-[color:var(--fg-muted)]`}>{row.id}</span>
           </div>
-          <span data-testid="account-spend-phone" className="flex-none font-mono text-[13px] text-[color:var(--fg)] md:hidden">
-            <span className="sr-only">{copy.featureCols.spent} </span>
-            {row.spend}
-          </span>
         </div>
         <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
           {phoneHead} · <i className="not-italic text-[color:var(--accent)]">{phoneInv.figure}</i>
-          {phoneInv.after} · {phoneInv.by}
+          {phoneInv.after} · {phoneInv.by} ·{" "}
+          <span data-testid="account-spend-phone">
+            <span className="sr-only">{copy.featureCols.spent} </span>
+            {row.spend}
+          </span>
         </span>
         <span className="hidden font-mono text-[12px] text-[color:var(--fg-body)] md:inline">
           <span className="sr-only">{copy.cols.group} </span>
