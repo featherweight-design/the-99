@@ -32,7 +32,7 @@ in this repository. Read them there; the quotes below are the ones this plan rel
   written permission. The honest goal is the least-gray version of the common pattern." Observed: "no peer gates card
   content behind login."
 - `teaser-credits-and-tiers-2026-10-17.md` (welcome grant sizing). Recommended 15 credits for 30 days, about $0.85 per
-  signup at most; a migration is needed (`credit_grants.source` is checked to `plan`/`pack`); spend order free, welcome,
+  signup at most; a migration is needed (`credit_grants.source` is checked to `plan`/`pack`, and `credit_grants_pack_never_expires_check` allows `expires_at` only on `plan`); spend order free, welcome,
   plan, pack; about 24 fully used grants reach `HARD_STOP_USD`.
 - `hugh-todos.md`, sections "Terms decisions" and "Welcome credits + supporter tier", and the privacy page line.
 
@@ -68,7 +68,7 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access" | U1 (#2006) | No (copy only) | Yes | S | TBD |
 | **D. Welcome credits** | | | | | | |
 | D0 | Raise `BUDGET_USD` and `HARD_STOP_USD` in `spend-rule.ts` to the number Hugh sets (open decision 1) | Hugh's number | No | No | S | TBD |
-| D1 | Migration: `credit_grants.source = 'welcome'`, `expires_at` required on it, a partial unique index (one per user ever); the grant written on `user.created` (the webhook route exists) and on first signed-in load, idempotent; spend order free, welcome, plan, pack; the 20-a-day paid limit applies; behind a new switch; a ledger probe on a scratch branch | U2a, D0 | No | No | M | TBD |
+| D1 | Migration: `credit_grants.source = 'welcome'` in `credit_grants_source_check`, `credit_grants_pack_never_expires_check` rewritten so `expires_at` is required on `welcome` (today it allows `expires_at` only on `plan`), a partial unique index (one per user ever); the grant written on `user.created` (the webhook route exists) and on first signed-in load, idempotent; spend order free, welcome, plan, pack; the 20-a-day paid limit applies; behind a new switch; a ledger probe on a scratch branch | U2a, D0 | No | No | M | TBD |
 | D2 | Onboarding "Where credits work": the five tools, one line each, a Try it link per tool (`?tool=` landings), and a live line ("15 welcome credits, expire Nov 16. Each run uses 1."); a Moment pointing to it | D1, U2b, a Design handoff | Yes | Yes | M | TBD |
 | **E. Admin PII masking** (its own plan) | | | | | | |
 | E1 to E4 | PII masking PR 1 (masked at the source), PR 2 (surfaces), PR 3 (Show, the reveal log), PR 4 (exact-email lookup) | per that plan | Handoff #2003 | per that plan | per that plan | TBD |
