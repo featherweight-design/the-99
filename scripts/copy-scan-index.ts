@@ -17,6 +17,8 @@
 //   `scan_index` against the source's figure and of the meta row, before the commit. A mismatch rolls it all back.
 //
 // A refusal exits 2, any other failure 1. `--dry-run` runs every check and writes nothing.
+// As every catalog copy does, it needs `DATABASE_URL` set (the repository's `.env` sets it): the harness's module
+// imports `src/db`, which reads it at load. Nothing queries through it.
 import "./lib/env.mjs";
 import { Pool, neonConfig, type PoolClient } from "@neondatabase/serverless";
 import ws from "ws";
