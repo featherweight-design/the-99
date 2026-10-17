@@ -370,9 +370,10 @@ export function MomentsProvider({
   );
 
   // The landing (discovery R2, E11) spends a tool's moment through here, before it scrolls, so no bubble can show for
-  // it: into the spent set, every pending delivery cancelled (the tie window restarts without it, and a bubble already
-  // showing for it closes as the reader's own close would), and written through the shipped persistence path. Only a
-  // live moment is spent: with `MOMENTS_ENABLED` off nothing is live, and nothing is written.
+  // it. The id goes into the spent set, which every pending delivery reads (`decide` skips a spent moment, so a tie
+  // window already open passes over it); a bubble already showing for it closes as the reader's own close would; and
+  // the spend is written through the shipped persistence path. Only a live moment is spent: with `MOMENTS_ENABLED` off
+  // nothing is live, and nothing is written.
   const suppress = useCallback(
     (id: MomentId) => {
       if (!liveSet.has(id) || spent.current.has(id)) return;
@@ -383,13 +384,8 @@ export function MomentsProvider({
       spent.current.add(id);
       channel.current?.postMessage(id);
       persist(id);
-      if (windowTimer.current !== null) {
-        window.clearTimeout(windowTimer.current);
-        windowTimer.current = null;
-        arm();
-      }
     },
-    [liveSet, close, persist, arm],
+    [liveSet, close, persist],
   );
 
   const ctx = useMemo<Ctx>(
@@ -442,8 +438,9 @@ const noop = () => {};
  * moment's own control and counts only while no other anchor of that moment is registered.
  *
  * While eligible the control is also the moment's TARGET (`useTarget`, discovery R2), so the landing and Show me reach
- * it with no second registration. A fallback is never a target, and `target: false` keeps a shortcut that is not the
- * tool's own control (the spine's trim line, the land cell, the Analysis tab) out of the registry.
+ * it with no second registration. A fallback is never a target, and `target: false` is for a shortcut that is not the
+ * tool's own control, so the landing reaches the tool rather than the shortcut. No caller passes it yet: the deck
+ * tools' shortcuts take it with the landing that reads their targets (R2·2b).
  */
 export function useMomentAnchor(
   id: MomentId,

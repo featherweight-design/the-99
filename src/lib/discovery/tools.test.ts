@@ -24,7 +24,7 @@ describe("the tool registry", () => {
       "own:wishlist",
       "own:collection-sync",
       "play:matchups",
-      "play:decks-stats",
+      "play:lineup",
       "play:friends",
     ]);
   });
@@ -34,7 +34,7 @@ describe("the tool registry", () => {
       expect(isTargetId(t.target)).toBe(true);
       expect(t.target).toBe(t.id);
     }
-    expect(TOOLS.filter((t) => !isMomentId(t.id)).map((t) => t.id)).toEqual(["decks-stats", "friends"]);
+    expect(TOOLS.filter((t) => !isMomentId(t.id)).map((t) => t.id)).toEqual(["friends"]);
   });
 
   it("names only switches the switch registry has, and gives Collection Sync its own (R2 gap 8)", () => {

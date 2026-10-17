@@ -94,17 +94,35 @@ describe("TargetsProvider", () => {
     expect(api!.haloTarget("matchups")).toBe(false);
   });
 
-  it("resolves an id held by several controls to the first in the document", () => {
-    render(
+  it("resolves an id held by several controls to the first in the document, not the first registered", () => {
+    const tree = (both: boolean) => (
       <TargetsProvider>
         <Grab />
-        <Control id="stand-ins" name="first" />
+        {both ? <Control id="stand-ins" name="first" /> : null}
         <Control id="stand-ins" name="second" />
-      </TargetsProvider>,
+      </TargetsProvider>
     );
+    const { rerender } = render(tree(false));
+    // "first" mounts after "second" but sits before it.
+    rerender(tree(true));
     api!.haloTarget("stand-ins");
     expect(screen.getByRole("button", { name: "first" }).hasAttribute(HALO_ATTR)).toBe(true);
     expect(screen.getByRole("button", { name: "second" }).hasAttribute(HALO_ATTR)).toBe(false);
+  });
+
+  it("passes over a control a stylesheet hides, as the desktop copy is on a phone", () => {
+    render(
+      <TargetsProvider>
+        <Grab />
+        <Control id="proposed-cuts" name="desktop" />
+        <Control id="proposed-cuts" name="phone" />
+      </TargetsProvider>,
+    );
+    const desktop = screen.getByRole("button", { name: "desktop" });
+    Object.defineProperty(desktop, "checkVisibility", { value: () => false });
+    api!.haloTarget("proposed-cuts");
+    expect(desktop.hasAttribute(HALO_ATTR)).toBe(false);
+    expect(screen.getByRole("button", { name: "phone" }).hasAttribute(HALO_ATTR)).toBe(true);
   });
 
   it("answers nothing for a target that is not drawn, and a null id registers nothing", () => {

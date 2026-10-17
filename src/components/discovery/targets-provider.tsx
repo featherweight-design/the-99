@@ -37,12 +37,20 @@ const TargetsContext = createContext<Ctx | null>(null);
 /** While a landing waits, how often it looks again for a target that is registered but not yet shown. */
 const LOOK_AGAIN_MS = 200;
 
-/** The first of an id's controls in the document that is drawn: one under `hidden` (a panel mounted behind its
- *  loader) is passed over until it shows. */
+/** The first of an id's controls in the document that is drawn. One under `hidden` (a panel mounted behind its
+ *  loader) is passed over until it shows, and so is one a stylesheet hides: the desktop and phone copies of a control
+ *  both mount, and only one is displayed at a width. */
+function drawn(el: HTMLElement): boolean {
+  if (el.closest("[hidden]") !== null) return false;
+  // `checkVisibility` is false for `display: none` on the control or any ancestor. Absent (an older browser, jsdom), a
+  // control is drawn unless it sits under `hidden`.
+  return typeof el.checkVisibility !== "function" || el.checkVisibility();
+}
+
 function firstInDocument(els: Iterable<HTMLElement>): HTMLElement | null {
   let first: HTMLElement | null = null;
   for (const el of els) {
-    if (!el.isConnected || el.closest("[hidden]") !== null) continue;
+    if (!el.isConnected || !drawn(el)) continue;
     if (first === null || (first.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) !== 0) first = el;
   }
   return first;
