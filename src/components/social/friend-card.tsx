@@ -130,7 +130,7 @@ function CardFront({ face, hidden, compact }: { face: CardFace; hidden: boolean;
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
       data-frame={art ? "art" : "grey"}
-      className={`friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`}
+      className={`friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`}
     >
       {/* The frame is the commander's art crop, behind the face, fading in as it lands. */}
       {art && <ArtLayer src={art} />}

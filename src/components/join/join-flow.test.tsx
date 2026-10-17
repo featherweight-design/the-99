@@ -221,6 +221,7 @@ describe("JoinFlow", () => {
     // The face is drawn at twice the board's size, then halved: padding 4px, rules 7px, type line 7.5px after the scale.
     const front = screen.getByTestId("friend-card-front");
     expect(front.className).toContain("p-[8px]");
+    expect(front.className).toContain("text-left"); // the page column centres text; the card face reads left, as the table has it
     expect(screen.getByText(joinCopy.cardRules(sender.displayName), { exact: false }).className).toContain("text-[14px]");
   });
 
