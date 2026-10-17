@@ -18,6 +18,9 @@ describe("mailConfig", () => {
     expect(mailConfig({ ...FULL, RESEND_API_KEY: "  " })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: undefined })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "The 99" })).toBeNull();
+    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev" })).toBeNull();
+    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev>" })).toBeNull();
+    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "<invites@mail.the-99.dev>" })).not.toBeNull();
     expect(mailConfig({ ...FULL, INVITE_CODE_SECRET: undefined })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_CODE_SECRET: "short" })).toBeNull();
   });

@@ -73,12 +73,25 @@ describe("clerkInvites.revoke and hasAccount", () => {
     ] });
     m.revoke.mockResolvedValue({});
     expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(true);
-    expect(m.pending).toHaveBeenCalledWith({ query: "a@x.dev", status: "pending" });
+    expect(m.pending).toHaveBeenCalledWith({ query: "a@x.dev", status: "pending", limit: 100, offset: 0 });
     expect(m.revoke.mock.calls).toEqual([["inv_a"]]);
     m.revoke.mockRejectedValue({ status: 429 });
     expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(false);
     m.pending.mockRejectedValue(new Error("down"));
     expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(false);
+  });
+
+  it("reads every page, so a match on page two is revoked", async () => {
+    const other = (n: number) => ({ id: `inv_o${n}`, publicMetadata: { inviteReservation: `x${n}` } });
+    m.pending.mockReset();
+    m.pending
+      .mockResolvedValueOnce({ data: Array.from({ length: 100 }, (_, n) => other(n)) })
+      .mockResolvedValueOnce({ data: [{ id: "inv_mine", publicMetadata: { inviteReservation: "r1" } }] });
+    m.revoke.mockReset();
+    m.revoke.mockResolvedValue({});
+    expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(true);
+    expect(m.pending.mock.calls.map((c) => c[0].offset)).toEqual([0, 100]);
+    expect(m.revoke.mock.calls).toEqual([["inv_mine"]]);
   });
 
   it("looks an address up by exact email", async () => {

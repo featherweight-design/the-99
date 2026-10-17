@@ -12,6 +12,10 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { HOLD_MS } from "./rules";
 
+/** A page of Clerk's invitation search, and the most pages read before a cleanup gives up as not known. */
+const INVITATION_PAGE = 100;
+const MAX_INVITATION_PAGES = 20;
+
 /** Clerk's invitations live this long; ours holds its invite for the same 7 days, on its own clock (R2). */
 export const INVITATION_DAYS = Math.round(HOLD_MS / 86_400_000);
 
@@ -88,8 +92,16 @@ export const clerkInvites: ClerkInvites = {
   async revokeFor(emailAddress, reservationId) {
     try {
       const client = await clerkClient();
-      const list = await client.invitations.getInvitationList({ query: emailAddress, status: "pending" });
-      const ours = list.data.filter((i) => i.publicMetadata?.inviteReservation === reservationId);
+      // Every page: the query matches substrings, so other invitations can fill the first.
+      const ours: { id: string }[] = [];
+      for (let offset = 0; ; offset += INVITATION_PAGE) {
+        const page = await client.invitations.getInvitationList({
+          query: emailAddress, status: "pending", limit: INVITATION_PAGE, offset,
+        });
+        ours.push(...page.data.filter((i) => i.publicMetadata?.inviteReservation === reservationId));
+        if (page.data.length < INVITATION_PAGE) break;
+        if (offset >= INVITATION_PAGE * MAX_INVITATION_PAGES) return false;
+      }
       const done = await Promise.all(ours.map((i) => clerkInvites.revoke(i.id)));
       return done.every(Boolean);
     } catch {

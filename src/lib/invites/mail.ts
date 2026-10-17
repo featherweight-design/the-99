@@ -27,7 +27,9 @@ export function mailConfig(env: MailEnv): MailConfig | null {
   const apiKey = env.RESEND_API_KEY?.trim();
   const from = env.INVITE_EMAIL_FROM?.trim();
   if (!apiKey || !/^re_\S+$/.test(apiKey)) return null;
-  if (!from || !/^(?:[^<>@]*<)?[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>?$/.test(from)) return null;
+  // A bare address, or a display name with the address in balanced brackets.
+  const address = "[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+";
+  if (!from || !new RegExp(`^(?:${address}|[^<>@]*<${address}>)$`).test(from)) return null;
   if (!inviteSecret(env)) return null;
   return { apiKey, from };
 }
