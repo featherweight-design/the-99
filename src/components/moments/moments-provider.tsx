@@ -8,6 +8,8 @@ import { pickMoment, type MomentId } from "../../lib/moments/registry";
 import { claimVisit, peekVisit, releaseClaim, takeVisit, touchVisit, withVisitLock, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentCopy } from "../../lib/copy/moments";
 import { MomentBubble, type MomentPlace } from "./moment-bubble";
+import { useTarget } from "../discovery/targets-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 /**
  * The moments' one controller (discovery R1, plan `2026-10-16-moments.md`). Mounted once by the shell, which hands it
@@ -41,6 +43,8 @@ type Showing = Anchor & { since: number };
 
 type Ctx = {
   register: (anchor: Anchor) => () => void;
+  /** Spends a moment without showing it (the landing, discovery R2 E11). */
+  suppress: (id: MomentId) => void;
   /** The control the bubble shows beside: one moment can have several anchors (each row, the rail and the tab bar). */
   showingEl: HTMLElement | null;
   noteId: string;
@@ -227,7 +231,8 @@ export function MomentsProvider({
         return;
       }
       const anchor = clear.find((a) => a.id === id)!;
-      if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
+      // Suppressed while the claim was in flight: the landing spent it, so it never shows.
+      if (spent.current.has(anchor.id) || showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
         void withVisitLock(() => releaseClaim(TAB_ID));
         return;
       }
@@ -364,7 +369,33 @@ export function MomentsProvider({
     [liveSet, close],
   );
 
-  const ctx = useMemo<Ctx>(() => ({ register, showingEl: showing?.el ?? null, noteId }), [register, showing, noteId]);
+  // The landing (discovery R2, E11) spends a tool's moment through here, before it scrolls, so no bubble can show for
+  // it: into the spent set, every pending delivery cancelled (the tie window restarts without it, and a bubble already
+  // showing for it closes as the reader's own close would), and written through the shipped persistence path. Only a
+  // live moment is spent: with `MOMENTS_ENABLED` off nothing is live, and nothing is written.
+  const suppress = useCallback(
+    (id: MomentId) => {
+      if (!liveSet.has(id) || spent.current.has(id)) return;
+      if (showingRef.current?.id === id) {
+        close(true);
+        return;
+      }
+      spent.current.add(id);
+      channel.current?.postMessage(id);
+      persist(id);
+      if (windowTimer.current !== null) {
+        window.clearTimeout(windowTimer.current);
+        windowTimer.current = null;
+        arm();
+      }
+    },
+    [liveSet, close, persist, arm],
+  );
+
+  const ctx = useMemo<Ctx>(
+    () => ({ register, suppress, showingEl: showing?.el ?? null, noteId }),
+    [register, suppress, showing, noteId],
+  );
 
   return (
     <MomentsContext.Provider value={ctx}>
@@ -398,11 +429,21 @@ export function MomentsProvider({
   );
 }
 
+/** Spends a moment without showing it (the landing, discovery R2 E11). Outside the provider it does nothing. */
+export function useSuppressMoment(): (id: MomentId) => void {
+  return useContext(MomentsContext)?.suppress ?? noop;
+}
+const noop = () => {};
+
 /**
  * Makes a control a moment's anchor while `eligible` (its condition holds on the reader's own data). Spread the
  * result on the control: `ref` registers it, and `aria-describedby` points at the bubble while it shows. Outside the
  * provider, or for a moment that is not live or already spent, it does nothing. A `fallback` anchor stands in for the
  * moment's own control and counts only while no other anchor of that moment is registered.
+ *
+ * While eligible the control is also the moment's TARGET (`useTarget`, discovery R2), so the landing and Show me reach
+ * it with no second registration. A fallback is never a target, and `target: false` keeps a shortcut that is not the
+ * tool's own control (the spine's trim line, the land cell, the Analysis tab) out of the registry.
  */
 export function useMomentAnchor(
   id: MomentId,
@@ -411,7 +452,8 @@ export function useMomentAnchor(
     copy,
     place = "below",
     fallback = false,
-  }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace; fallback?: boolean },
+    target = true,
+  }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace; fallback?: boolean; target?: boolean },
 ): { ref: (el: HTMLElement | null) => void; "aria-describedby"?: string } {
   const ctx = useContext(MomentsContext);
   const [el, setEl] = useState<HTMLElement | null>(null);
@@ -421,6 +463,8 @@ export function useMomentAnchor(
     if (!register || !eligible || el === null) return;
     return register({ id, el, copy: { tool, line }, place, fallback });
   }, [register, eligible, el, id, tool, line, place, fallback]);
+  const targetRef = useTarget(eligible && target && !fallback ? id : null);
+  const ref = useMergedRef(setEl, targetRef);
   const shown = ctx !== null && el !== null && ctx.showingEl === el;
-  return { ref: setEl, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
+  return { ref, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
 }

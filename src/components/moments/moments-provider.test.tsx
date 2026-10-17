@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
-import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor } from "./moments-provider";
+import { useEffect, useState } from "react";
+import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor, useSuppressMoment } from "./moments-provider";
+import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { useMomentHold } from "../../lib/moments/hold";
 import { VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentId } from "../../lib/moments/registry";
@@ -57,6 +58,25 @@ function Control({
       {name}
     </button>
   );
+}
+
+/** The landing's press, standing in for `useToolLanding`. */
+function Suppress({ id }: { id: MomentId }) {
+  const suppress = useSuppressMoment();
+  return (
+    <button type="button" onClick={() => suppress(id)}>
+      land on {id}
+    </button>
+  );
+}
+
+let targets: Targets | null = null;
+function GrabTargets() {
+  const t = useTargets();
+  useEffect(() => {
+    targets = t;
+  }, [t]);
+  return null;
 }
 
 function Hold() {
@@ -494,5 +514,114 @@ describe("MomentsProvider", () => {
   it("does nothing outside the provider", async () => {
     render(<Control id="lineup" name="Stats" />);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("aria-describedby")).toBe(false);
+  });
+});
+
+describe("suppressMoment (the landing, discovery R2 E11)", () => {
+  it("spends a moment whose window is open, so its bubble never arrives, and writes it once", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS / 2);
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    await advance(ARRIVE_MS * 4);
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("data-moment-halo")).toBe(false);
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+    // The landing takes no visit: another moment may still arrive.
+    expect(window.localStorage.getItem(VISIT_KEY)).not.toContain('"taken":true');
+  });
+
+  it("lets the next moment on screen take the window it cancelled", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    onScreen("Top off");
+    onScreen("Wish");
+    fireEvent.click(screen.getByRole("button", { name: "land on top-off" }));
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Wish, a tip");
+  });
+
+  it("closes a bubble already showing for that moment, spent", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+  });
+
+  it("writes nothing for a moment that is not live (MOMENTS_ENABLED off) or already spent", async () => {
+    const { unmount } = render(
+      <MomentsProvider live={[]} spent={[]}>
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    unmount();
+    render(
+      <MomentsProvider live={LIVE} spent={["lineup"]}>
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    await advance(ARRIVE_MS);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+
+  it("does nothing outside the provider", () => {
+    render(<Suppress id="lineup" />);
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("a moment's control is its target (discovery R2)", () => {
+  function Anchor({ eligible = true, fallback = false, target }: { eligible?: boolean; fallback?: boolean; target?: boolean }) {
+    const a = useMomentAnchor("top-off", { eligible, fallback, target, copy: { tool: "Top off", line: "fills." } });
+    return (
+      <button type="button" {...a}>
+        Top off
+      </button>
+    );
+  }
+  const drawn = (el: React.ReactNode) => {
+    targets = null;
+    render(
+      <TargetsProvider>
+        <GrabTargets />
+        <MomentsProvider live={[]} spent={[]}>{el}</MomentsProvider>
+      </TargetsProvider>,
+    );
+    return targets!.haloTarget("top-off");
+  };
+
+  it("registers while eligible, whatever MOMENTS_ENABLED says", () => {
+    expect(drawn(<Anchor />)).toBe(true);
+    expect(screen.getByRole("button", { name: "Top off" }).hasAttribute("data-moment-halo")).toBe(true);
+  });
+
+  it("registers nothing while not eligible, as a fallback, or with target: false", () => {
+    expect(drawn(<Anchor eligible={false} />)).toBe(false);
+    cleanup();
+    expect(drawn(<Anchor fallback />)).toBe(false);
+    cleanup();
+    expect(drawn(<Anchor target={false} />)).toBe(false);
   });
 });

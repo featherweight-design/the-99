@@ -18,6 +18,7 @@ import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
+import { TargetsProvider } from "../discovery/targets-provider";
 import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
 
@@ -106,6 +107,8 @@ export default async function Shell({
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
+      {/* The halo targets (discovery R2), on whatever the switches say: every moment's control registers here. */}
+      <TargetsProvider>
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchShell userId={cardSearch ? userId : null}>
       <div className="flex min-h-dvh flex-1">
@@ -129,6 +132,7 @@ export default async function Shell({
       </div>
       </CardSearchShell>
       </MomentsProvider>
+      </TargetsProvider>
     </NavigationPendingProvider>
     </div>
   );
