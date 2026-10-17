@@ -128,3 +128,13 @@ export function parseCode(raw: string): string | null {
   const s = raw.replace(/\s+/g, "");
   return new RegExp(`^\\d{${CODE_LENGTH}}$`).test(s) ? s : null;
 }
+
+/** The path a newcomer opens from an invite QR (`/join/[token]`, PR 5). */
+export function joinPath(token: string): string {
+  return `/join/${token}`;
+}
+
+/** An invite QR token's shape: 256 bits as base64url, 43 characters (`qrToken`). Checked before anything is read. */
+export function isQrToken(raw: unknown): raw is string {
+  return typeof raw === "string" && /^[A-Za-z0-9_-]{43}$/.test(raw);
+}
