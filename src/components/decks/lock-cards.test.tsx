@@ -56,6 +56,7 @@ const { DeckCardTile } = await import("./deck-card-tile");
 const { PendingChangeProvider } = await import("./pending-change");
 const { LockCardsProvider, useCardLocks } = await import("./lock-cards");
 const { BuilderShell } = await import("./builder-shell");
+const { LandingKeyed } = await import("./landing-keyed");
 
 afterEach(() => {
   setCardLocked.mockReset();
@@ -767,10 +768,12 @@ describe("the Lock cards mode, through BuilderShell", () => {
   it("ends the mode when a same-deck ?tool= lands on Shopping (discovery R2 E11)", async () => {
     const deck = makeDeck([sol, signet]);
     const shell = (landingRequest: string | null) => (
-      <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
-        commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null} neverCut
-        landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
-        landingRequest={landingRequest} />
+      <LandingKeyed request={landingRequest}>
+        <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
+          commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null} neverCut
+          landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
+          landingRequest={landingRequest} />
+      </LandingKeyed>
     );
     const view = render(shell(null));
     await act(async () => lockButton()!.click());

@@ -28,6 +28,7 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { BuilderShell } = await import("./builder-shell");
+const { LandingKeyed } = await import("./landing-keyed");
 
 const DECK = {
   id: "deck-1",
@@ -83,20 +84,23 @@ async function mount(initialView: BuilderView, stats = false) {
 }
 
 describe("BuilderShell — a landing on the mounted shell (discovery R2 E11)", () => {
+  // As the page renders it: the landing's tab as the opening view, under `LandingKeyed`.
   const shell = (landingRequest: string | null) => (
-    <BuilderShell mix={TEST_MIX}
-      deck={DECK}
-      suggestions={[]}
-      degraded={false}
-      firstRun={false}
-      commanderIdentity={["B", "R", "G"]}
-      arrivedFromImport={false}
-      initialView="deck"
-      statsEnabled={false}
-      statsData={null}
-      newestAsOf={null}
-      landing={landingRequest === null ? null : { tool: "matchups", target: "matchups", moment: "matchups", lands: { kind: "deck", tab: "games" } }}
-      landingRequest={landingRequest}/>
+    <LandingKeyed request={landingRequest}>
+      <BuilderShell mix={TEST_MIX}
+        deck={DECK}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        initialView={landingRequest === null ? "deck" : "games"}
+        statsEnabled={false}
+        statsData={null}
+        newestAsOf={null}
+        landing={landingRequest === null ? null : { tool: "matchups", target: "matchups", moment: "matchups", lands: { kind: "deck", tab: "games" } }}
+        landingRequest={landingRequest}/>
+    </LandingKeyed>
   );
   const selected = () => within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true });
 
@@ -122,19 +126,21 @@ describe("BuilderShell — a Shopping landing over the Stats panel (discovery R2
   it("puts Your deck back on its list when a same-deck ?tool= lands on Shopping", async () => {
     window.localStorage.setItem("the99:deck-panel", "stats");
     const shell = (landingRequest: string | null) => (
-      <BuilderShell mix={TEST_MIX}
-        deck={DECK}
-        suggestions={[]}
-        degraded={false}
-        firstRun={false}
-        commanderIdentity={["B", "R", "G"]}
-        arrivedFromImport={false}
-        initialView="deck"
-        statsEnabled
-        statsData={{ commanders: [] }}
-        newestAsOf={null}
-        landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
-        landingRequest={landingRequest}/>
+      <LandingKeyed request={landingRequest}>
+        <BuilderShell mix={TEST_MIX}
+          deck={DECK}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport={false}
+          initialView="deck"
+          statsEnabled
+          statsData={{ commanders: [] }}
+          newestAsOf={null}
+          landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
+          landingRequest={landingRequest}/>
+      </LandingKeyed>
     );
     let view!: ReturnType<typeof render>;
     await act(async () => {

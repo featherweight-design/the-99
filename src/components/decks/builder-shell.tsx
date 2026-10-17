@@ -606,25 +606,9 @@ export function BuilderShell({
   const [hubRequest, setHubRequest] = useState<HubRequest | null>(null);
   const hubNonce = useRef(0);
   const onHubRequestAnswered = useCallback(
-    (nonce: number | string) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
+    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
     [],
   );
-  // A new landing on the mounted shell (a client navigation to this deck with `?tool=`): its tab and view open, as on
-  // first load, and whatever the reader had open over them gives way: Your deck's Stats or Notes panel, or a hub
-  // tool already open on Analysis. Adjusted during render, keyed on the request, so an ordinary refresh keeps the
-  // reader's own state.
-  const [seenRequest, setSeenRequest] = useState(landingRequest);
-  if (landingRequest !== seenRequest) {
-    setSeenRequest(landingRequest);
-    if (landing?.lands.kind === "deck" && landingRequest !== null) {
-      setView(landing.lands.tab);
-      if (landing.lands.tab === "deck") {
-        deckPanel[1]("list");
-        if (landing.lands.view === "shopping") changeFilter("shopping");
-      }
-      if (landing.lands.tab === "analysis") setHubRequest({ tool: null, nonce: landingRequest });
-    }
-  }
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.

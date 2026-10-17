@@ -45,8 +45,13 @@ export function useToolLanding(landing: Pick<ToolLanding, "tool" | "target" | "m
       return;
     }
     const abort = new AbortController();
+    const path = window.location.pathname;
     void targets.whenTarget(target, LANDING_WAIT_MS, abort.signal).then((el) => {
       if (abort.signal.aborted) return;
+      // The address moved while the target was awaited (Back or Forward to another `?tool=` on this deck, before its
+      // page commits): this landing is no longer asked for, so it neither haloes, spends nor strips the newer one.
+      const live = new URL(window.location.href);
+      if (live.pathname !== path || live.searchParams.get(TOOL_PARAM) !== asked) return;
       if (el !== null) {
         targets.scrollToTarget(target);
         const spend = () => {

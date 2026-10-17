@@ -194,6 +194,27 @@ describe("useToolLanding", () => {
     expect(screen.getByRole("button", { name: "Split" }).hasAttribute(HALO_ATTR)).toBe(true);
   });
 
+  it("does nothing when the address moves to another ?tool= while its target is awaited", async () => {
+    at("?tool=matchups");
+    let draw: (() => void) | null = null;
+    function Later() {
+      const [on, setOn] = useState(false);
+      useEffect(() => {
+        draw = () => setOn(true);
+      }, []);
+      return on ? <Control id="matchups" name="Split" /> : null;
+    }
+    mount("matchups", <Later />);
+    await flush();
+    // Back or Forward lands the address on another tool before that page commits.
+    at("?tool=top-off");
+    act(() => draw!());
+    await flush();
+    expect(screen.getByRole("button", { name: "Split" }).hasAttribute(HALO_ATTR)).toBe(false);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?tool=top-off");
+  });
+
   it("leaves the visit free when it haloes nothing", async () => {
     at("?tool=top-off");
     mount("top-off", <Control id="matchups" name="Split" />);

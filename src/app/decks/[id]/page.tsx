@@ -29,6 +29,7 @@ import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../..
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
 import { randomUUID } from "node:crypto";
+import { LandingKeyed } from "../../../components/decks/landing-keyed";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
@@ -589,7 +590,8 @@ export default async function DeckBuilderPage({
   // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
   const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
   // A token per server render that carries `?tool=`: a client navigation to the same deck with a new (or the same)
-  // `?tool=` re-renders the page and moves it, so the mounted shell lands again; a render without one is null.
+  // `?tool=` re-renders the page and moves it, and `LandingKeyed` remounts the builder for it; a render without one is
+  // null and keeps the builder as it is.
   const landingRequest = query[TOOL_PARAM] === undefined ? null : randomUUID();
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
   // deck that was never analyzed (`holdsOpening`'s `analyzed`).
@@ -649,6 +651,7 @@ export default async function DeckBuilderPage({
       }
     : undefined;
   const shell = (
+    <LandingKeyed key={id} request={landingRequest}>
     <BuilderShell
       // One builder per deck: a client navigation to another deck reuses this element, and its
       // state (the tab, the list's Stats panel) would otherwise carry across. The providers
@@ -755,6 +758,7 @@ export default async function DeckBuilderPage({
         analysisEnabled,
       )}
     />
+    </LandingKeyed>
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
