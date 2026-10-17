@@ -165,7 +165,7 @@ try {
   await visit("/admin", async () => {
     // Costs per account names each account masked, never by its Clerk id (Admin R3, C5).
     const table = onPageRole(page, "table", /Per account/).first();
-    const cells = await table.locator("tbody tr").count();
+    const cells = (await table.getByRole("row").count()) - 1;
     const text = await table.innerText();
     report("Costs per account lists accounts by masked name, no Clerk id", cells > 0 && !/\buser_[A-Za-z0-9]{6,}/.test(text), `${cells} rows`);
   });
