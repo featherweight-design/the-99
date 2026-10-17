@@ -22,7 +22,7 @@ export async function unlinkInvitesIn(tx: Tx, userId: string): Promise<number> {
   return (inviter.rowCount ?? 0) + (invitee.rowCount ?? 0);
 }
 
-/** What the account's reservations leave pending at Clerk: invitations by id, and sends whose id was never stored. */
+/** What the account's reservations leave pending at Clerk: invitations by id, and by address and reservation. */
 export type PendingInvitations = { ids: string[]; unstored: { email: string; reservationId: string }[] };
 
 /**
@@ -38,7 +38,8 @@ export async function invitationIdsIn(tx: Tx, userId: string): Promise<PendingIn
   const out: PendingInvitations = { ids: [], unstored: [] };
   for (const r of rows.rows as { id: string; email: string | null; clerk_invitation_id: string | null }[]) {
     if (r.clerk_invitation_id !== null) out.ids.push(r.clerk_invitation_id);
-    else if (r.email !== null) out.unstored.push({ email: r.email, reservationId: r.id });
+    // Also for a row WITH a stored id: a replacement made after it was revoked may not be the stored one.
+    if (r.email !== null) out.unstored.push({ email: r.email, reservationId: r.id });
   }
   return out;
 }

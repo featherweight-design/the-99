@@ -476,8 +476,9 @@ async function main() {
     check("the sweep returns the lapsed QR, the claim and the unreferenced email", (await stateOf(qOld)).state === "returned"
       && (await stateOf(cOld)).state === "returned" && (await stateOf(eNoId)).state === "returned", JSON.stringify(rep1));
     check("…each address erased, the invitation id cleared", (await stateOf(cOld)).email === null && (await stateOf(cOld)).clerk === null);
-    check("…the claim's invitation revoked by its id, the id-less one by address and reservation",
-      sw.revoked.includes("inv_claimed_old") && sw.revokedFor.some((r) => r.reservationId === eNoId && r.email === "noid@x.dev"));
+    check("…the claim's invitation revoked by its id AND by address and reservation (a replacement may not be the stored one), the id-less one by address",
+      sw.revoked.includes("inv_claimed_old") && sw.revokedFor.some((r) => r.reservationId === cOld && r.email === "old@x.dev")
+      && sw.revokedFor.some((r) => r.reservationId === eNoId && r.email === "noid@x.dev"));
     const failedRow = await stateOf(eOldFail);
     check("a revoke that fails keeps the row reserved, with its id and address, for the next run", failedRow.state === "reserved" && failedRow.clerk === "inv_fail" && failedRow.email === "fail@x.dev");
     check("an indeterminate send is reconciled: Clerk's id recorded", (await stateOf(eUnknown)).clerk === "inv_found", JSON.stringify([await stateOf(eUnknown), rep1]));
@@ -552,8 +553,8 @@ async function main() {
       revoke: async (id) => { purgeRevoked.push(id); return true; },
       revokeFor: async (email) => { purgeFor.push(email); return true; },
     });
-    check("the purge revokes the sender's pending invitation after it commits", purgeRevoked.join() === "inv_z" && rep.invitations.revoked === 2);
-    check("…and finds a send whose id was never stored by its address, which nothing else could after the purge", purgeFor.join() === "z-lost@x.dev" && rep.invitations.found === 2);
+    check("the purge revokes the sender's pending invitation after it commits", purgeRevoked.join() === "inv_z" && rep.invitations.revoked === 3);
+    check("…and finds sends by address and reservation too, with or without a stored id, which nothing else could after the purge", purgeFor.slice().sort().join() === "z-lost@x.dev,z@x.dev" && rep.invitations.found === 3);
     check("…and the reservations and balance are gone", Number((await db.execute<{ n: number }>(sql`select (select count(*) from invite_reservations where user_id = ${Z}) + (select count(*) from invite_balances where user_id = ${Z}) as n`)).rows[0].n) === 0);
     const zEdge = (await db.execute<{ inviter: string | null; invitee: string | null }>(sql`select inviter_user_id as inviter, invitee_user_id as invitee from invite_edges where invitee_user_id = ${W}`)).rows;
     check("the tree is kept with the deleted side null", zEdge.length === 1 && zEdge[0].inviter === null && zEdge[0].invitee === W);

@@ -27,9 +27,11 @@ type Row = typeof inviteReservations.$inferSelect;
 
 /** Ends a row's Clerk invitation, by its stored id or, with none stored, by what the address and reservation name. */
 async function endInvitation(clerk: ClerkInvites, row: Pick<Row, "id" | "email" | "clerkInvitationId">): Promise<boolean> {
-  if (row.clerkInvitationId !== null) return clerk.revoke(row.clerkInvitationId);
-  if (row.email !== null) return clerk.revokeFor(row.email, row.id);
-  return true;
+  // The stored id AND whatever else is pending for the address and reservation: a replacement made after the stored
+  // id was revoked (its answer lost) is not the stored one, and only this finds it.
+  const byId = row.clerkInvitationId !== null ? await clerk.revoke(row.clerkInvitationId) : true;
+  const byAddress = row.email !== null ? await clerk.revokeFor(row.email, row.id) : true;
+  return byId && byAddress;
 }
 
 export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites = clerkInvites): Promise<SweepReport> {
