@@ -1,0 +1,771 @@
+{
+  "feature": "Card scanning close-out: every scanner state at both widths",
+  "clearAbout": true,
+  "note": "Needs CARD_SCAN_ENABLED=true and COLLECTION_EDIT_ENABLED=true on the server, network (Scryfall art, the detector and embedder, onnxruntime-web), Chromium's fake camera playing Sol Ring, and SCAN_PHOTOS_DIR naming a folder holding the three photos the photos row picks. The match endpoint is answered by `mock`, so each state is staged without an index: sure (Sol Ring, many printings), sure with one printing (Greta, Sweettooth Scourge), not sure (margin 0.02), and not ready (503 no-index). Oracle and printing ids are local-dev's. Nothing is saved: every row stops before Save, so nothing is written.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844,
+      "camera": {
+        "w": 720,
+        "h": 1280,
+        "card": "Sol Ring",
+        "share": 0.22,
+        "cx": 0.5,
+        "cy": 0.42,
+        "angle": 3
+      }
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900,
+      "camera": {
+        "w": 1280,
+        "h": 720,
+        "card": "Sol Ring",
+        "share": 0.13,
+        "cx": 0.5,
+        "cy": 0.5,
+        "angle": -3
+      }
+    }
+  ],
+  "rows": [
+    {
+      "id": "auto-added",
+      "label": "Auto: a sure card goes on the list with no press",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.93,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.93
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.91
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.89
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.87
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.6,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.6
+                  }
+                ]
+              }
+            ],
+            "margin": 0.31
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Save 1 copy",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "normal-many",
+      "label": "Normal, a card with many printings: the printing step in the camera",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.93,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.93
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.91
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.89
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.87
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.6,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.6
+                  }
+                ]
+              }
+            ],
+            "margin": 0.31
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Normal$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Add this printing",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "normal-one",
+      "label": "Normal, a card with one printing: added with no step",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "00173df7-a584-410c-af1d-ada9c791056a",
+                "name": "Greta, Sweettooth Scourge",
+                "scryfallId": "2cfd365e-34d1-4224-b925-119000311934",
+                "typeLine": "Legendary Creature — Human Warrior",
+                "imageUri": "https://cards.scryfall.io/normal/front/2/c/2cfd365e-34d1-4224-b925-119000311934.jpg",
+                "score": 0.91,
+                "printings": [
+                  {
+                    "scryfallId": "2cfd365e-34d1-4224-b925-119000311934",
+                    "score": 0.91
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              }
+            ],
+            "margin": 0.29
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Normal$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Save 1 copy",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "not-sure",
+      "label": "Not sure: the guesses to pick from",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.81,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.81
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.79
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.77
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.75
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.79,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.79
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.77,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.77
+                  }
+                ]
+              }
+            ],
+            "margin": 0.02
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Not sure. Which is it?",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "not-ready",
+      "label": "Not ready: a database with no scan index",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "status": 503,
+          "json": {
+            "error": "no-index"
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Scanning isn’t ready yet. Add cards by name for now.",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "photos",
+      "label": "Photos: three chosen, each read",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.93,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.93
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.91
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.89
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.87
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.6,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.6
+                  }
+                ]
+              }
+            ],
+            "margin": 0.31
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "files": "[data-testid=scan-photos-input]",
+          "paths": [
+            "${SCAN_PHOTOS_DIR}/3b8cf12f-12b9-4d06-8a0f-cb44497b2a7b.jpg",
+            "${SCAN_PHOTOS_DIR}/dfc68c6b-ee4f-472b-9faf-b22f43c22a19.jpg",
+            "${SCAN_PHOTOS_DIR}/a56f766d-a5c5-4cbc-9e7a-01acecd97156.jpg"
+          ]
+        },
+        {
+          "wait": "[data-photos]:has(li):not(:has(li[data-state=pending]))",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "label": "Review (phone): back on the sheet's list with the scanned card",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.93,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.93
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.91
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.89
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.87
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.6,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.6
+                  }
+                ]
+              }
+            ],
+            "margin": 0.31
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Save 1 copy",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Review 1$",
+          "settle": 0
+        },
+        {
+          "wait": "[role=dialog]:not(:has([data-testid=scanner]))",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "label": "Stop (desktop): the scanner closes on the sheet's list with the scanned card",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "mock": "**/api/card-scan/match",
+          "json": {
+            "index": "closeout",
+            "guesses": [
+              {
+                "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+                "name": "Sol Ring",
+                "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/6/06be8262-4636-4a2c-a0c8-de741cf45aed.jpg",
+                "score": 0.93,
+                "printings": [
+                  {
+                    "scryfallId": "06be8262-4636-4a2c-a0c8-de741cf45aed",
+                    "score": 0.93
+                  },
+                  {
+                    "scryfallId": "9f4d9a0c-5a9a-4486-b8a0-942e73688fb4",
+                    "score": 0.91
+                  },
+                  {
+                    "scryfallId": "0d38ff41-a60c-4d70-92e4-4d3d3ab073a3",
+                    "score": 0.89
+                  },
+                  {
+                    "scryfallId": "2418af21-7be9-4dec-8be6-4d0bcf84a7ca",
+                    "score": 0.87
+                  }
+                ]
+              },
+              {
+                "oracleId": "0bc7f093-bef0-4f1a-852c-4b75ebf54838",
+                "name": "Arcane Signet",
+                "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                "typeLine": "Artifact",
+                "imageUri": "https://cards.scryfall.io/normal/front/0/4/0422cfdd-0a7c-4097-8655-b074cd8fd713.jpg",
+                "score": 0.62,
+                "printings": [
+                  {
+                    "scryfallId": "0422cfdd-0a7c-4097-8655-b074cd8fd713",
+                    "score": 0.62
+                  }
+                ]
+              },
+              {
+                "oracleId": "0895c9b7-ae7d-4bb3-af17-3b75deb50a25",
+                "name": "Command Tower",
+                "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                "typeLine": "Land",
+                "imageUri": "https://cards.scryfall.io/normal/front/8/c/8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4.jpg",
+                "score": 0.6,
+                "printings": [
+                  {
+                    "scryfallId": "8cf804e1-5bf3-4a04-bd1c-a99a9561fdc4",
+                    "score": 0.6
+                  }
+                ]
+              }
+            ],
+            "margin": 0.31
+          }
+        },
+        {
+          "goto": "/collection",
+          "wait": "main, [role=main], h1",
+          "settle": 6000
+        },
+        {
+          "clickRole": "button",
+          "name": "^(\\+\\s*)?Add( cards)?$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Scan$",
+          "wait": "[data-testid=scanner]",
+          "settle": 500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Auto$",
+          "settle": 300
+        },
+        {
+          "wait": "text=Save 1 copy",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Stop$",
+          "settle": 0
+        },
+        {
+          "wait": "[role=dialog]:not(:has([data-testid=scanner]))",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}
