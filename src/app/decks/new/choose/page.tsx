@@ -89,6 +89,11 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // read draws codes rather than taking the page down.
   const sets = await loadCommanderPrintings().then((x) => x.sets).catch(() => []);
 
+  // Try it's landing (discovery R2·3): `?tool=help-me-choose` haloes the form's first answer; anything else, and any
+  // `?tool=` on the results (which draw no target), is stripped. Read from the raw query: `toSearchParams` keeps a
+  // repeated parameter's first value.
+  const { landing, request } = pageLanding(rawQuery[TOOL_PARAM], env, "help-me-choose");
+
   if (!p.results) {
     // The press's credit standing (F7). A failed read draws the plain button: the submit re-checks.
     const now = new Date();
@@ -98,9 +103,6 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     const history = await loadChooseHistory(userId, { now }).catch(() => null);
     const allowance = await readAllowance(userId, now, "intake").catch(() => null);
     const historyView = sp.get("v") === "history";
-    // Try it's landing (discovery R2·3): `?tool=help-me-choose` haloes the form's first answer; anything else is
-    // stripped. Read from the raw query: `toSearchParams` keeps a repeated parameter's first value.
-    const { landing, request } = pageLanding(rawQuery[TOOL_PARAM], env, "help-me-choose");
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
         <ToolLandingMount landing={landing} request={request} />
@@ -162,6 +164,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (openedFromHistory && !isPast && served?.kind !== "pending") {
     return (
       <div className="flex flex-col">
+        <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
           back={{ href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back }}
           title={copy.results.title}
@@ -224,6 +227,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   return (
     <CardDetailProvider>
       <div className="flex flex-col">
+        <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
           back={isPast ? { href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back } : { href: changeHref, label: copy.results.back }}
           title={copy.results.title}

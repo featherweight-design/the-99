@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
-import { useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "./targets-provider";
 import { LANDING_WAIT_MS, useToolLanding } from "./use-tool-landing";
 import { ToolLandingMount } from "./tool-landing-mount";
@@ -415,6 +415,41 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     useToolLanding(null, "r1", { deferred: true });
     return null;
   }
+
+  it("survives StrictMode's effect replay after the strip, and haloes the next card's door", async () => {
+    at("?avail=free&tool=find-a-deck");
+    render(
+      <StrictMode>
+        <TargetsProvider>
+          <MomentsProvider live={["find-a-deck"]} spent={[]}>
+            <Deferred>
+              <Later />
+            </Deferred>
+          </MomentsProvider>
+        </TargetsProvider>
+      </StrictMode>,
+    );
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
+  });
+
+  it("haloes nothing and spends nothing once a newer ?tool= reaches the page before the card opens", async () => {
+    at("?avail=free&tool=find-a-deck");
+    mountDeferred(<Later />);
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    // Back or Forward to another Try it on this page, before its render commits.
+    at("?tool=wishlist");
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(false);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?tool=wishlist");
+  });
 
   it("keeps waiting through a same-page refresh that renders the mount with no landing and no request", async () => {
     at("?avail=free&tool=find-a-deck");

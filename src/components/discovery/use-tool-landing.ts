@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ToolLanding } from "../../lib/discovery/tools";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { takeVisit, withVisitLock } from "../../lib/moments/visit";
@@ -26,7 +26,9 @@ export const LANDING_WAIT_MS = 8000;
  *
  * `deferred` (Find a deck, R2 gap 11): the target is a control the reader opens later, in the next card details. The
  * parameter is stripped at once, and the landing waits for the target with no limit while the page stays mounted,
- * haloing it once when it first draws. Leaving the page ends the wait with nothing haloed or spent.
+ * haloing it once when it first draws. Leaving the page ends the wait with nothing haloed or spent. The wait is held by
+ * its `scope` rather than the address, so an effect replay (React's StrictMode, a dependency moving) after the strip
+ * resumes it; a newer `?tool=` on the page ends it unhaloed.
  */
 export function useToolLanding(
   landing: Pick<ToolLanding, "tool" | "target" | "moment"> | null,
@@ -39,8 +41,11 @@ export function useToolLanding(
   const tool = landing?.tool ?? null;
   const target = landing?.target ?? null;
   const moment = landing?.moment ?? null;
+  // The scope of a deferred landing whose parameter is stripped and whose halo has not landed yet.
+  const waiting = useRef<string | null>(null);
   useEffect(() => {
-    const asked = new URL(window.location.href).searchParams.get(TOOL_PARAM);
+    const inAddress = new URL(window.location.href).searchParams.get(TOOL_PARAM);
+    const asked = inAddress ?? (deferred && waiting.current === scope ? tool : null);
     if (asked === null) return;
     const strip = () => {
       const url = new URL(window.location.href);
@@ -55,14 +60,19 @@ export function useToolLanding(
     }
     const abort = new AbortController();
     const path = window.location.pathname;
-    if (deferred) strip();
+    if (deferred) {
+      waiting.current = scope;
+      strip();
+    }
     void targets.whenTarget(target, deferred ? Infinity : LANDING_WAIT_MS, abort.signal).then((el) => {
       if (abort.signal.aborted) return;
       // The address moved while the target was awaited (Back or Forward to another `?tool=` on this deck, before its
       // page commits): this landing is no longer asked for, so it neither haloes, spends nor strips the newer one. A
-      // deferred landing stripped its own parameter already, so only its page is checked.
+      // deferred landing stripped its own parameter already, so ANY `?tool=` now is a newer request.
       const live = new URL(window.location.href);
-      if (live.pathname !== path || (!deferred && live.searchParams.get(TOOL_PARAM) !== asked)) return;
+      const now = live.searchParams.get(TOOL_PARAM);
+      if (deferred) waiting.current = null;
+      if (live.pathname !== path || (deferred ? now !== null : now !== asked)) return;
       if (el !== null) {
         targets.scrollToTarget(target);
         const spend = () => {
