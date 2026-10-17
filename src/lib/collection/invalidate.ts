@@ -34,6 +34,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // answer costs one pointless revalidation of a static reference page. Making
   // it cleverer to spare that is the trade in the wrong direction.
   { path: "/about", dynamic: false },
+  // /credits draws nothing from the collection either: it reads `credit_grants` and the allowance ledger, and reaches
+  // `db/schema` (and from there `collectionItems`) by import. Listed as /about is, for one pointless revalidation.
+  { path: "/credits", dynamic: false },
   // /admin is listed for the same reason as /about: it reads `model_calls` and the admin's own
   // settings, and reaches `db/schema` (and from there `collectionItems`) by import. The cost is one
   // pointless revalidation of a page only the admin opens.

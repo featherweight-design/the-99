@@ -24,7 +24,9 @@ describe("packCheckoutParams", () => {
   });
 
   it("returns to the billing page on the configured origin", () => {
-    expect(p.success_url).toBe("https://the-99.dev/credits?checkout=done");
+    // Stripe's template, literal and unencoded: the page reads the Session by this id.
+    expect(p.success_url).toBe("https://the-99.dev/credits?checkout=done&session_id={CHECKOUT_SESSION_ID}");
+    expect(p.success_url).not.toContain("%7B");
     expect(p.cancel_url).toBe("https://the-99.dev/credits?checkout=cancelled");
   });
 

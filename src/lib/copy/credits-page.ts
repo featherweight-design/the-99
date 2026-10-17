@@ -1,0 +1,96 @@
+// The /credits page, the buying-credits line's U1 surfaces: the head, the balance, the pack offer, the purchase
+// history, the refund line, the read-failed state and the Checkout return band (R1 to R6).
+//
+// PLACEHOLDER wording, owed to /copy-review (plan E9, never to Hugh). Transcribed from the handoff's
+// `buying-credits · copy strings.ts` (US English, no em dashes). Two groups are NOT in that file and are this
+// PR's own placeholders: `buy.*` (the six Buy outcomes the page must say, a toast each) and `hist.receiptFailed`.
+// Figures are never baked in: counts, prices and dates arrive as arguments from the server's read.
+//
+// The credit line's own strings stay in `credits.ts` (`creditsCopy`); the phrase `What uses credits?` is its `link`.
+
+import { PACKS, type PackId } from "../payments/packs";
+import { creditsCopy } from "./credits";
+
+/** `$5`, `$12.50`: a whole-dollar price carries no cents, as the boards draw it. */
+export function dollars(cents: number): string {
+  const whole = cents % 100 === 0;
+  return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+/** A history date, `Oct 16`, in UTC: the server renders it, and a server has no reader clock. */
+export function shortDate(at: Date): string {
+  return at.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+/** A pack as the page draws it: the closed registry's facts, never a price typed in a component. */
+export type PackOffer = { id: PackId; units: number; price: string };
+
+export function packOffers(ids: readonly PackId[] = Object.keys(PACKS) as PackId[]): PackOffer[] {
+  return ids.map((id) => ({ id, units: PACKS[id].units, price: dollars(PACKS[id].priceCents) }));
+}
+
+export const creditsPageCopy = {
+  title: "Credits",
+  sub: "1 credit is 1 run of any tool",
+  /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
+  subLink: creditsCopy.link,
+  refunds:
+    "Refunds: email support@the-99.dev within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
+  bal: {
+    total: "credits to spend",
+    order: "Spent in this order",
+    free: "Free",
+    plan: "Plan",
+    packs: "Packs",
+    freeOf: (limit: number) => `of ${limit}`,
+    freeNext: (time: string) => `reset at ${time}`,
+    freeFull: (limit: number) => `all ${limit} ready`,
+    planSub: "roll over",
+    packsSub: "never expire",
+    added: (units: number) => `+${units}`,
+  },
+  pack: {
+    k: "Credit pack",
+    heading: "Get more credits",
+    title: (units: number) => `${units} credits`,
+    fine: "Pack credits never expire. They’re forfeited if you delete your account.",
+    buy: (units: number, price: string) => `Buy ${units} credits · ${price}`,
+    via: "Checkout on Stripe · US cards",
+  },
+  /** Why a Buy press did nothing, one line each. Placeholders: not in the handoff's strings file. */
+  buy: {
+    off: "Buying credits isn’t available right now.",
+    invalid: "That pack isn’t available.",
+    unverified: "Verify your email address to buy credits.",
+    throttled: "Too many tries. Wait a little, then try again.",
+    unconfigured: "Buying credits isn’t set up here yet.",
+    failed: "Couldn’t start checkout. Try again.",
+  },
+  hist: {
+    title: "Purchase history",
+    receipt: "Receipt",
+    /** A placeholder: not in the handoff's strings file. */
+    receiptFailed: "Couldn’t open that receipt.",
+    empty: "Nothing bought yet. Receipts show here once you do.",
+    planMonth: "Monthly plan",
+    planFirst: "Monthly plan, first month",
+    pack: "Credit pack",
+    units: (units: number) => `${units} credits`,
+  },
+  read: {
+    failed: "We couldn’t load your credits.",
+    retry: "Try again",
+  },
+  ret: {
+    procTitle: (units: number) => `Adding your ${units} credits`,
+    procSays: "Payment received. Credits usually land in a second or two.",
+    addedPack: (units: number) => `${units} pack credits added`,
+    slowTitle: "Still adding your credits",
+    slowSays:
+      "This can take a few minutes. You won’t be charged twice. If they haven’t landed in an hour, email support@the-99.dev.",
+    cancelled: "Checkout closed. Nothing was charged.",
+    dismiss: "Dismiss",
+    toast: "Couldn’t check on your purchase.",
+    toastDetail: "Trying again in a moment",
+  },
+} as const;

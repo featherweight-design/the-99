@@ -8,14 +8,17 @@ const m = vi.hoisted(() => ({
   currentUser: vi.fn(),
   stripeClient: vi.fn(),
   createPackCheckout: vi.fn(),
+  readReturn: vi.fn(),
+  receiptUrlFor: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout }));
+vi.mock("../../lib/payments/return", () => ({ readReturn: m.readReturn, receiptUrlFor: m.receiptUrlFor }));
 
-import { buyPackAction } from "./actions";
+import { buyPackAction, readReturnAction, receiptAction } from "./actions";
 
 const ACTION = "11111111-1111-4111-8111-111111111111";
 const verified = { primaryEmailAddress: { emailAddress: "a@x.dev", verification: { status: "verified" } } };
@@ -69,6 +72,54 @@ describe("buyPackAction", () => {
     m.createPackCheckout.mockRejectedValue(Object.assign(new Error("No such customer: cus_secret"), { type: "StripeInvalidRequestError" }));
     expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "failed" });
     expect(log).toHaveBeenCalledWith("[checkout] failed (StripeInvalidRequestError)");
+    log.mockRestore();
+  });
+});
+
+describe("readReturnAction", () => {
+  it("reads the Session for THIS reader and returns the closed result", async () => {
+    m.readReturn.mockResolvedValue({ kind: "added", units: 40 });
+    expect(await readReturnAction("cs_1")).toEqual({ ok: true, read: { kind: "added", units: 40 } });
+    expect(m.readReturn).toHaveBeenCalledWith({}, { sessionId: "cs_1", viewerId: "user_a" });
+  });
+
+  it("still reads with the switch off or killed: stopping sales does not cancel an open Checkout", async () => {
+    m.readReturn.mockResolvedValue({ kind: "added", units: 40 });
+    for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
+      m.requestSwitchEnv.mockResolvedValue(env);
+      expect(await readReturnAction("cs_1")).toEqual({ ok: true, read: { kind: "added", units: 40 } });
+    }
+    expect(m.readReturn).toHaveBeenCalledTimes(2);
+  });
+
+  it("answers failed, with a fixed log line, when Stripe or the database throws", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    m.readReturn.mockRejectedValue(Object.assign(new Error("No such session cs_secret"), { type: "StripeConnectionError" }));
+    expect(await readReturnAction("cs_1")).toEqual({ ok: false, reason: "failed" });
+    expect(log).toHaveBeenCalledWith("[checkout] return read failed (StripeConnectionError)");
+    log.mockRestore();
+  });
+
+  it("answers failed without a Stripe key", async () => {
+    m.stripeClient.mockReturnValue(null);
+    expect(await readReturnAction("cs_1")).toEqual({ ok: false, reason: "failed" });
+  });
+});
+
+describe("receiptAction", () => {
+  it("returns the receipt URL for the reader's own Session, and works with the switch off (money already taken)", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.receiptUrlFor.mockResolvedValue("https://pay.stripe.com/receipts/x");
+    expect(await receiptAction("cs_1")).toEqual({ ok: true, url: "https://pay.stripe.com/receipts/x" });
+    expect(m.receiptUrlFor).toHaveBeenCalledWith({}, { sessionId: "cs_1", viewerId: "user_a" });
+  });
+
+  it("answers none for a Session that is not the reader's, and failed when Stripe throws", async () => {
+    m.receiptUrlFor.mockResolvedValueOnce(null);
+    expect(await receiptAction("cs_other")).toEqual({ ok: false, reason: "none" });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    m.receiptUrlFor.mockRejectedValueOnce(new Error("boom"));
+    expect(await receiptAction("cs_1")).toEqual({ ok: false, reason: "failed" });
     log.mockRestore();
   });
 });

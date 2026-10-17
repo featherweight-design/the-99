@@ -1,0 +1,15 @@
+{
+  "feature": "Buying credits: /credits (U1)",
+  "note": "Plan `2026-10-17-buying-credits-ui.md`, PR U1; grown per UI PR. PRECONDITION: the signed-in account has `PAYMENTS_ENABLED` on for it (a flag override or the variable), so the page is not a 404 and the pack offer draws. With it off and nothing held or bought, every row times out on its `wait`, which is the good failure: the cell is not counted as reached. The page READS only (no row presses Buy, which starts a real Stripe Session); the return band needs a Session of the account's own and is proved by `pnpm probe:credits-return` and the component tests. The Low Sun pass (plan, Themes) is a second run of the same rows with the probe account's theme set to Low Sun (Amonkhet) in its preferences; the sheet has no theme option of its own. `/credits` renders inside the shell's loading screen first, so each `wait` names a thing only the finished page draws.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "credits-page",
+      "label": "/credits: balance total over the cells, the pack offer, history and the refund line",
+      "view": "src/components/credits/credits-view.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 1500 }
+      ]
+    }
+  ]
+}

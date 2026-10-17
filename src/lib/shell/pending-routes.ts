@@ -14,7 +14,7 @@ export type LoadingKey = keyof typeof shellCopy.loading;
  */
 export type PendingRoute =
   | { kind: "overlay"; key: LoadingKey }
-  | { kind: "kept"; screen: LoadingKey | "choose" | "precons" };
+  | { kind: "kept"; screen: LoadingKey | "choose" | "precons" | "credits" };
 
 /** The path a link or push goes to, without its query or hash. */
 export function pathOf(href: string): string {
@@ -36,6 +36,8 @@ export function pendingRouteFor(href: string): PendingRoute {
       return { kind: "overlay", key: "collection" };
     case "commanders":
       return { kind: "overlay", key: "commanders" };
+    case "credits":
+      return { kind: "kept", screen: "credits" };
     case "discover":
       return { kind: "overlay", key: "discover" };
     case "decks":

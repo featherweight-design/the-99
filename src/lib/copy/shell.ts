@@ -106,6 +106,11 @@ export const shellCopy = {
   },
 } as const;
 
+/** `/credits`'s loading skeleton says nothing visible beyond the real title: one line for a screen reader. */
+export const creditsLoadingCopy = {
+  status: "Loading credits",
+} as const;
+
 /** The precon list's loading skeleton says nothing visible: one line for a screen reader, a placeholder for
  *  `/copy-review` (small-polish handoff §4). */
 export const preconsLoadingCopy = {
