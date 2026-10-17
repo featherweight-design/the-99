@@ -154,6 +154,20 @@ describe("Add a friend, invites on, answers that land after the reader moved on"
     expect(inv.showInviteQrAction).toHaveBeenCalledTimes(1);
   });
 
+  it("puts an email failure's Try again away on ‹ back, so it cannot send from a form no longer drawn", async () => {
+    inv.sendEmailInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    const field = screen.getByLabelText(inviteCopy.path.emailLabel) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "jo@example.com" } });
+    await act(async () => fireEvent.submit(field.closest("form")!));
+    expect(screen.getByRole("button", { name: inviteCopy.path.retry })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: inviteCopy.chooser.back }));
+    expect(screen.queryByRole("button", { name: inviteCopy.path.retry })).toBeNull();
+    expect(inv.sendEmailInviteAction).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ["‹ back", () => fireEvent.click(screen.getByRole("button", { name: inviteCopy.chooser.back }))],
     ["Close", () => fireEvent.click(screen.getByRole("button", { name: socialCopy.dialog.close }))],

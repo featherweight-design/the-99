@@ -412,6 +412,8 @@ export function FriendsView({
           onScreen={(next) => {
             // Back from path 1 leaves the link made and open: it is in the open links, and Show opens it again.
             if (adding === "link") setShown(null);
+            // A toast belongs to the screen that raised it: its Try again would run that screen's action unseen.
+            if (next !== adding) closeSheetToast();
             setAdding(next);
           }}
           count={invites}
