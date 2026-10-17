@@ -124,4 +124,21 @@ describe("JoinFlow", () => {
     expect(screen.queryByText(joinCopy.failed)).toBeNull();
     expect(m.confirm).toHaveBeenCalledTimes(2);
   });
+  it("editing a field retires a Try again that captured the old value", async () => {
+    m.claim.mockRejectedValue(new Error("network"));
+    start({ kind: "email", sender });
+    const field = screen.getByLabelText(joinCopy.emailLabel);
+    fireEvent.change(field, { target: { value: "a@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByText(joinCopy.failed);
+    fireEvent.change(field, { target: { value: "b@x.dev" } });
+    expect(screen.queryByText(joinCopy.failed)).toBeNull();
+  });
+
+  it("keeps the focus mark on the active code box while an error shows", async () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: true });
+    const boxes = document.querySelectorAll("[aria-hidden] > span");
+    expect(boxes[0].className).toContain("group-focus-within:shadow");
+    expect(boxes[0].className).toContain("--danger");
+  });
 });

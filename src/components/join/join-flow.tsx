@@ -172,7 +172,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
                 value={email} placeholder={copy.emailPlaceholder} className={FIELD} readOnly={busy}
                 aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
-                onChange={(e) => { setEmail(e.target.value); setLine(null); }}
+                onChange={(e) => { setEmail(e.target.value); setLine(null); setToast(null); }}
               />
             </label>
             {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
@@ -196,7 +196,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 {Array.from({ length: CODE_LENGTH }, (_, i) => (
                   <span
                     key={i}
-                    className={`flex h-[52px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] text-[color:var(--fg)] ${line ? "[border:1px_solid_var(--danger)]" : i === Math.min(digits.length, CODE_LENGTH - 1) ? "[border:1px_solid_var(--border-strong)] group-focus-within:[border-color:var(--accent)]" : "[border:1px_solid_var(--border-strong)]"}`}
+                    className={`flex h-[52px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] text-[color:var(--fg)] ${line ? "[border:1px_solid_var(--danger)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
                   >
                     {digits[i] ?? ""}
                   </span>
@@ -206,7 +206,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 ref={codeRef} value={digits} inputMode="numeric" autoComplete="one-time-code" maxLength={CODE_LENGTH}
                 aria-label={copy.codeAria} aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
                 className="absolute inset-0 h-full w-full cursor-text border-0 bg-transparent text-transparent caret-transparent opacity-0 outline-none"
-                onChange={(e) => { setCode(e.target.value); setLine(null); }}
+                onChange={(e) => { setCode(e.target.value); setLine(null); setToast(null); }}
               />
             </div>
             {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
@@ -215,7 +215,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
               <button type="button" className={LINK} disabled={busy || waiting} onClick={() => sendCode()}>
                 {waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.resend}
               </button>
-              <button type="button" className={LINK} disabled={busy} onClick={() => { setLine(null); setStep("email"); }}>{copy.otherEmail}</button>
+              <button type="button" className={LINK} disabled={busy} onClick={() => { setLine(null); setToast(null); setStep("email"); }}>{copy.otherEmail}</button>
             </div>
           </form>
         }
