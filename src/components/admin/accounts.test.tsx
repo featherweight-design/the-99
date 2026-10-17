@@ -23,15 +23,15 @@ const { AdminHead } = await import("./admin-head");
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
-  { id: "user_2hugh", name: "Hugh Hartigan", clerkName: "Hugh Hartigan", email: "hugh@example.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
-  { id: "user_9mara", name: "Mara Quinn", clerkName: "Mara Quinn", email: "mara@example.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh Hartigan", joinedAt: new Date(0) } } },
+  { id: "user_2hugh", name: "Hugh H.", clerkName: "Hugh H.", email: "h•••@e•••.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
+  { id: "user_9mara", name: "Mara Q.", clerkName: "Mara Q.", email: "m•••@e•••.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh H.", joinedAt: new Date(0) } } },
   { id: "user_4theo", name: "Theo", clerkName: "Theo", email: null, initials: "T", group: null, credits: "5 of 5 left", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
 ];
 
 const PAGE: AccountPage = {
   id: "user_9mara",
-  name: "Mara Quinn",
-  email: "mara@example.com",
+  name: "Mara Q.",
+  email: "m•••@e•••.com",
   initials: "MQ",
   role: "5 credits a day.",
   tiles: [
@@ -74,7 +74,7 @@ describe("AccountsList (A1 to A3)", () => {
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("href", "/admin/accounts/user_9mara");
-    expect(rows[1]).toHaveTextContent("mara@example.com");
+    expect(rows[1]).toHaveTextContent("m•••@e•••.com");
     expect(rows[1]).toHaveTextContent("user_9mara");
     expect(rows[1]).toHaveTextContent("friends");
     expect(rows[1]).toHaveTextContent("3 of 5 left");
@@ -95,31 +95,40 @@ describe("AccountsList (A1 to A3)", () => {
     expect(within(hugh).getByTestId("account-invited-by").className).toContain("--fg-faint");
     expect(within(mara).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 2 · 1 waiting$/);
     expect(within(mara).getByTestId("account-invites-cell").className).not.toContain("--fg-faint");
-    expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh Hartigan$/);
+    expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh H.$/);
     expect(within(theo).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by deleted account$/);
     expect(hugh).toHaveTextContent("No group · 7 of 10 left · 0 invites · founder");
-    expect(mara).toHaveTextContent("friends · 3 of 5 left · 2 · 1 waiting · by Hugh Hartigan");
+    expect(mara).toHaveTextContent("friends · 3 of 5 left · 2 · 1 waiting · by Hugh H.");
     expect(theo).toHaveTextContent("No group · 5 of 5 left · 3 invites · by deleted account");
     expect(screen.getAllByText("Invited by", { selector: "[aria-hidden] span" })).toHaveLength(1);
   });
 
-  it("searches by name, email or id prefix through the shared search field, and says when nothing matches", () => {
+  it("searches the masked name through the shared search field, and says when nothing matches", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
-    fireEvent.change(search, { target: { value: "user_9" } });
+    fireEvent.change(search, { target: { value: "ara q" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
-    fireEvent.change(search, { target: { value: "9mara" } });
+    fireEvent.change(search, { target: { value: "zed" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
-    expect(screen.getByText("No account matches 9mara.")).toBeInTheDocument();
+    expect(screen.getByText("No account matches zed.")).toBeInTheDocument();
   });
 
-  it("matches an account with no Clerk name by its id's start only, not the id it draws in the name's place", () => {
-    const bare: AccountRow = { id: "user_7bare", name: "user_7bare", clerkName: null, email: null, initials: "U", group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
+  it("never matches an email or a Clerk id, which the client does not hold whole", () => {
+    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
+    const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
+    for (const q of ["mara@", "example.com", "user_9", "9mara"]) {
+      fireEvent.change(search, { target: { value: q } });
+      expect(screen.queryByTestId("account-rows")).toBeNull();
+    }
+  });
+
+  it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
+    const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", clerkName: null, email: null, initials: "", group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
-    fireEvent.change(search, { target: { value: "7bare" } });
-    expect(screen.queryByTestId("account-rows")).toBeNull();
     fireEvent.change(search, { target: { value: "user_7" } });
+    expect(screen.queryByTestId("account-rows")).toBeNull();
+    fireEvent.change(search, { target: { value: "·bare" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
   });
 
@@ -152,9 +161,9 @@ describe("AdminHead on the Accounts pages", () => {
 describe("AccountPageView (A4 to A7)", () => {
   it("draws the head block, the tiles and the group", () => {
     render(<AccountPageView page={PAGE} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Mara Quinn" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Mara Q." })).toBeInTheDocument();
     const head = screen.getByTestId("account-head");
-    expect(head).toHaveTextContent("mara@example.com");
+    expect(head).toHaveTextContent("m•••@e•••.com");
     expect(head).toHaveTextContent("user_9mara");
     expect(head).toHaveTextContent("5 credits a day.");
     const credits = screen.getByTestId("account-tiles").querySelector('[data-tile="credits"]')!;
@@ -252,7 +261,7 @@ describe("AccountPageView (A4 to A7)", () => {
   });
 
   it("opens the confirm on a rise and re-sends the confirmed count, and says when the move failed", async () => {
-    const preview = { names: ["Mara Quinn"], count: 1, costs: [{ key: "intake" as const, reserveMicroUsd: 40_000, meanMicroUsd: null }], credits: [5], whatsNew: 0 };
+    const preview = { names: ["Mara Q."], count: 1, costs: [{ key: "intake" as const, reserveMicroUsd: 40_000, meanMicroUsd: null }], credits: [5], whatsNew: 0 };
     move.mockResolvedValueOnce({ ok: false, error: "confirm", preview }).mockResolvedValueOnce({ ok: false, error: "failed" });
     render(<AccountPageView page={PAGE} />);
     fireEvent.click(screen.getByRole("button", { name: "Change group" }));

@@ -21,10 +21,10 @@ import {
 const T = "11111111-1111-4111-8111-111111111111"; // testers
 const F = "22222222-2222-4222-8222-222222222222"; // friends
 const accounts = [
-  { id: "u_hugh", name: "Hugh", email: "hugh@x.dev" },
-  { id: "u_mara", name: "Mara", email: null },
-  { id: "u_theo", name: "Theo", email: null },
-  { id: "u_jun", name: "Jun", email: null },
+  { id: "u_hugh", name: "Hugh", email: "h•••@x•••.dev", named: true },
+  { id: "u_mara", name: "Mara", email: null, named: true },
+  { id: "u_theo", name: "Theo", email: null, named: true },
+  { id: "u_jun", name: "Jun", email: null, named: true },
 ];
 
 describe("validateGroup", () => {
@@ -240,18 +240,18 @@ describe("groupsList and memberRows", () => {
     expect(list.count).toBe("2 groups");
     expect(list.meta).toBe("4 accounts · 2 in no group");
     expect(list.cards.map((c) => [c.name, c.count, c.members])).toEqual([
-      ["friends", "1 member", "u_gone"],
+      ["friends", "1 member", "Account ·gone"],
       ["testers", "2 members", "Hugh, Mara"],
     ]);
     expect(list.cards[1].overrides.map((o) => `${o.label}: ${o.value}`)).toEqual(["Overview v2: on", "Swap tools: on"]);
   });
 
-  it("lists every account, then a member the universe misses, with its saved group", () => {
+  it("lists every account, then a member the universe misses as Account ·<tail>, with its saved group", () => {
     const rows = memberRows({ accounts: accounts.slice(0, 2), snapshot, groupId: F, groupNames: new Map([[T, "testers"], [F, "friends"]]), effects: new Map() });
     expect(rows.map((r) => [r.id, r.name, r.saved?.name ?? null])).toEqual([
       ["u_hugh", "Hugh", "testers"],
       ["u_mara", "Mara", "testers"],
-      ["u_gone", "u_gone", "friends"],
+      ["u_gone", "Account ·gone", "friends"],
     ]);
   });
 });
@@ -298,7 +298,7 @@ describe("groupHistory", () => {
       "You set daily credits: default → 8",
       "You set daily credits: 8 → default",
       "You added Theo",
-      "You removed u_x",
+      "You removed Account ·u_x",
       "You set Swap tools: not set → on",
       "You cleared Swap tools (was on)",
     ]);

@@ -10,9 +10,9 @@ type Env = Partial<Record<SwitchName, string>>;
 const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
 const AT = new Date("2026-10-11T14:02:00Z");
 const ACCOUNTS: Account[] = [
-  { id: "u1", name: "Hugh", email: "h@x" },
-  { id: "u2", name: "Mara", email: "m@x" },
-  { id: "u3", name: null, email: null },
+  { id: "u1", name: "Hugh", email: "h•••@x•••.dev", named: true },
+  { id: "u2", name: "Mara", email: "m•••@x•••.dev", named: true },
+  { id: "u3", name: "Account ·u3", email: null, named: false },
 ];
 const GROUPS = [{ id: "g1", name: "friends", members: 2 }];
 const ov = (o: Partial<OverrideDetail> & { name?: SwitchName }): OverrideDetail & { name: SwitchName } => ({
@@ -84,7 +84,7 @@ describe("switchPage", () => {
     expect(p.banner).toBeNull();
   });
 
-  it("names the account and its source for Check an account, falling back to the id", () => {
+  it("names the account and its source for Check an account, an account with no name as Account ·<tail>", () => {
     const p = page("DECK_NOTES_ENABLED", { DECK_NOTES_ENABLED: "true" }, [
       ov({ name: "DECK_NOTES_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       ov({ name: "DECK_NOTES_ENABLED", scope: "user", userId: "u3", value: "off" }),
@@ -92,10 +92,10 @@ describe("switchPage", () => {
     expect(p.explanations).toEqual([
       { id: "u1", label: "Hugh", on: true, source: "from the env var", kill: false },
       { id: "u2", label: "Mara", on: false, source: "group friends", kill: false },
-      { id: "u3", label: "u3", on: false, source: "account override", kill: false },
+      { id: "u3", label: "Account ·u3", on: false, source: "account override", kill: false },
     ]);
     expect(p.groups).toEqual([expect.objectContaining({ key: "g1", title: "friends", sub: "2 members", value: "off" })]);
-    expect(p.accounts).toEqual([expect.objectContaining({ key: "u3", title: "u3", sub: "u3" })]);
+    expect(p.accounts).toEqual([expect.objectContaining({ key: "u3", title: "Account ·u3", sub: "" })]);
   });
 
   it("refuses every override under a kill, and says so on the rungs, the rows and the banner (F5)", () => {
