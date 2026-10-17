@@ -3,8 +3,10 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { matchesAccount, type AccountRow } from "../../lib/admin/account-page-rule";
+import { invitedByName, phoneInviteMeta } from "../../lib/admin/invites-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
 import { adminCopy } from "../../lib/copy/admin";
+import { inviteCopy } from "../../lib/copy/invites";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SearchField } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
@@ -14,8 +16,9 @@ import { usePublishedHeight } from "./admin-head";
 // desktop column head under both, at the height the pinned bar publishes (`--admin-pin-h`).
 
 const copy = adminCopy.accounts;
+const inv = adminCopy.invites;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
-const GRID = "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_110px_90px] md:items-center md:gap-[14px]";
+const GRID = "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_110px_120px_minmax(0,1fr)_90px] md:items-center md:gap-[14px]";
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px]";
 
 /** The avatar the rows and the account page draw: initials in mono on an accent ring. */
@@ -34,7 +37,8 @@ export function Avatar({ text, size }: { text: string; size: "sm" | "lg" }) {
 function Row({ row }: { row: AccountRow }) {
   const href = `/admin/accounts/${encodeURIComponent(row.id)}`;
   // The group as the desktop column draws it, `No group` included.
-  const phoneMeta = [row.group?.name ?? copy.noGroup, row.credits].filter(Boolean).join(" · ");
+  const phoneMeta = [row.group?.name ?? copy.noGroup, row.credits, ...phoneInviteMeta(row.invites)].filter(Boolean).join(" · ");
+  const { left, waiting, invitedBy } = row.invites;
   return (
     <li data-account={row.id} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0]">
       <Link href={href} className={`flex min-h-[64px] flex-col gap-[4px] px-[14px] py-[11px] text-inherit no-underline md:px-[16px] md:py-[10px] ${GRID}`}>
@@ -50,7 +54,7 @@ function Row({ row }: { row: AccountRow }) {
             {row.spend}
           </span>
         </div>
-        {phoneMeta && <span className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">{phoneMeta}</span>}
+        {phoneMeta && <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">{phoneMeta}</span>}
         <span className="hidden font-mono text-[12px] text-[color:var(--fg-body)] md:inline">
           <span className="sr-only">{copy.cols.group} </span>
           {row.group?.name ?? copy.noGroup}
@@ -58,6 +62,18 @@ function Row({ row }: { row: AccountRow }) {
         <span className="hidden font-mono text-[12px] text-[color:var(--fg-body)] md:inline">
           <span className="sr-only">{copy.cols.credits} </span>
           {row.credits}
+        </span>
+        <span data-testid="account-invites" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}`}>
+          <span className="sr-only">{inv.colInvites} </span>
+          {left}
+          {waiting > 0 && <span className="text-[color:var(--fg-muted)]">{inviteCopy.count.waiting(waiting)}</span>}
+        </span>
+        <span
+          data-testid="account-invited-by"
+          className={`hidden min-w-0 font-mono text-[12px] [overflow-wrap:anywhere] md:inline ${invitedBy.kind === "account" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}
+        >
+          <span className="sr-only">{inv.colInvitedBy} </span>
+          {invitedByName(invitedBy)}
         </span>
         <span className="hidden text-right font-mono text-[13px] text-[color:var(--fg)] md:inline">
           <span className="sr-only">{copy.featureCols.spent} </span>
@@ -118,6 +134,8 @@ export function AccountsList({
             <span>{copy.cols.account}</span>
             <span>{copy.cols.group}</span>
             <span>{copy.cols.credits}</span>
+            <span>{inv.colInvites}</span>
+            <span>{inv.colInvitedBy}</span>
             <span className="text-right">{month}</span>
           </div>
           {shown.length === 0 ? (

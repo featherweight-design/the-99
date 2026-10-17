@@ -111,6 +111,7 @@ describe("every admin action is gated first", () => {
     expect(found).toContain(join("switches", "actions.ts"));
     expect(found).toContain(join("groups", "actions.ts"));
     expect(found).toContain(join("accounts", "actions.ts"));
+    expect(found).toContain(join("invites", "actions.ts"));
   });
 
   it.each(modules.map((m) => [m.slice(HERE.length + 1), m]))("%s: requireAdmin() is the first statement of every export", (_name, path) => {

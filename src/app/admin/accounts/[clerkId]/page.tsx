@@ -15,9 +15,9 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
  * about is the app's 404.
  */
 export default async function AdminAccountPage({ params }: Props) {
-  await requireAdmin();
+  const { userId } = await requireAdmin();
   const { clerkId } = await params;
-  const page = await loadAccountPage(clerkId);
+  const page = await loadAccountPage(clerkId, userId);
   if (!page) notFound();
   return <AccountPageView page={page} />;
 }

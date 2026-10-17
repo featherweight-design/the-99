@@ -4,6 +4,7 @@ import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SectionHead } from "./costs-detail";
 import { GroupEditor } from "./group-editor";
+import { GroupTopUp } from "./invites-section";
 import { HistoryList } from "./switch-page";
 import { ResolvedDot } from "./switches-list";
 
@@ -25,6 +26,8 @@ export function GroupPageView({ page }: { page: GroupPage }) {
 
       {saved && (
         <>
+          {/* Keyed on the members' saved counts, so a top-up's refresh starts the section from what landed. */}
+          <GroupTopUp key={JSON.stringify(page.topUp)} groupId={saved.id} members={page.topUp} />
           <SectionHead title={copy.carries} meta={page.overrides.length ? String(page.overrides.length) : adminCopy.switch.sectionNone} />
           {page.overrides.length ? (
             <ul data-testid="group-overrides" className="m-0 list-none overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-0">

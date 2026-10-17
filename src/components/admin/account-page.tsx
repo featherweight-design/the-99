@@ -14,6 +14,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Avatar } from "./accounts-list";
 import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
+import { AccountInvitesSection } from "./invites-section";
 import { AllFeaturesControl } from "./override-controls";
 import { Pill, ResolvedDot } from "./switches-list";
 
@@ -44,7 +45,7 @@ function moveError(error: Exclude<MoveResult, { ok: true }>["error"]): string {
 
 function Tiles({ page }: { page: AccountPage }) {
   return (
-    <div data-testid="account-tiles" className="grid grid-cols-2 gap-[8px] md:grid-cols-4 md:gap-[12px]">
+    <div data-testid="account-tiles" className="grid grid-cols-2 gap-[8px] md:grid-cols-4 md:gap-[12px] xl:grid-cols-5">
       {page.tiles.map((t) => (
         <div
           key={t.key}
@@ -349,6 +350,8 @@ export function AccountPageView({ page }: { page: AccountPage }) {
         </div>
       </div>
       <Tiles page={page} />
+      {/* Keyed on the saved left, so a refresh after a save starts the field from what was saved. */}
+      <AccountInvitesSection key={page.invites.left} accountId={page.id} name={page.name} invites={page.invites} />
       {/* Keyed on the saved group, so a refresh after a move starts the picker from where the account now is. */}
       <GroupSection key={page.group?.id ?? ""} page={page} />
       <Switches page={page} />

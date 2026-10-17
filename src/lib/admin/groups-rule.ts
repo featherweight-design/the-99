@@ -327,8 +327,11 @@ export function pendingSummary(input: {
 
 export type GroupEvent = SwitchEvent & { switchName: string | null };
 
-/** The group's history, newest first: its own changes, its members coming and going, its overrides. */
-export function groupHistory(events: readonly GroupEvent[], accounts: readonly Account[], viewerId: string): HistoryItem[] {
+/**
+ * The group's history, newest first: its own changes, its members coming and going, its overrides, and its invite
+ * top-ups (`groupName` names the group in that line; the event's note is the raised count, never a note to draw).
+ */
+export function groupHistory(events: readonly GroupEvent[], accounts: readonly Account[], viewerId: string, groupName: string): HistoryItem[] {
   const { userName, actor } = accountNames(accounts, viewerId);
   const h = copy.history;
   const off = adminCopy.switch.history.notSet;
@@ -362,6 +365,8 @@ export function groupHistory(events: readonly GroupEvent[], accounts: readonly A
       case "override_cleared":
         what = h.overrideCleared(who, label, e.oldValue ?? off);
         break;
+      case "invites_topped_up":
+        return [{ when: fmtWhen(e.at), what: adminCopy.invites.history.topUp(who, groupName, e.newValue ?? "", e.note ?? "0"), note: null }];
       default:
         return [];
     }

@@ -4,6 +4,7 @@ import type { AccountSwitches } from "../switches/explain";
 import { SWITCHES, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
 import { capMicro, usd } from "./costs-rule";
+import type { RowInvites } from "./invites-rule";
 import { accountName } from "./names";
 import { sourceText } from "./switch-page-rule";
 
@@ -68,6 +69,8 @@ export type AccountRow = {
   group: { id: string; name: string } | null;
   credits: string;
   spend: string;
+  /** M1: what the account has left and waiting, and who invited it. */
+  invites: RowInvites;
 };
 
 /** A1: one row per account, in the universe's order (owner first, then A to Z). */
@@ -77,6 +80,7 @@ export function accountRows(input: {
   groupNames: ReadonlyMap<string, string>;
   credits: ReadonlyMap<string, { left: number; limit: number }>;
   spend: ReadonlyMap<string, number>;
+  invites: ReadonlyMap<string, RowInvites>;
 }): AccountRow[] {
   return input.accounts.map((a) => {
     const groupId = input.groupOf.get(a.id);
@@ -92,6 +96,7 @@ export function accountRows(input: {
       group: groupId ? { id: groupId, name: groupName ?? groupId } : null,
       credits: c ? copy.creditsLeft(c.left, c.limit) : "",
       spend: usd(input.spend.get(a.id) ?? 0),
+      invites: input.invites.get(a.id) ?? { left: 0, waiting: 0, invitedBy: { kind: "founder" } },
     };
   });
 }
@@ -101,7 +106,7 @@ export function roleLine(owner: boolean, limit: number, shareMicro: number): str
   return owner ? copy.role.owner(limit, capMicro(shareMicro)) : copy.role.other(limit);
 }
 
-export type Tile = { key: "credits" | "spent" | "presses" | "hub"; label: string; figure: string; sub: string | null };
+export type Tile = { key: "credits" | "spent" | "presses" | "hub" | "invites"; label: string; figure: string; sub: string | null };
 
 /** A4, A6, A7: Credits now, Spent in ‹Month›, Presses and Tuning hub. */
 export function accountTiles(input: {
