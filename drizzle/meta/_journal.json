@@ -1030,6 +1030,13 @@
       "when": 1792223306770,
       "tag": "0146_rule_zero_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 147,
+      "version": "7",
+      "when": 1792254656673,
+      "tag": "0147_rule_zero_tables",
+      "breakpoints": true
     }
   ]
 }
