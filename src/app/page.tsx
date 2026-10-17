@@ -306,6 +306,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     try {
       homeFriends = await loadHomeFriends(userId, now);
     } catch (error) {
+      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
       console.error("home: the friends section could not be read", error);
     }
   }

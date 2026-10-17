@@ -62,7 +62,13 @@ function importsOf(source) {
  * The claim is checked, not trusted (`perRequestProblems`): the page may call the module only OUTSIDE `cachePageForUser`'s
  * load, and no loader on the cached path may import it. An entry is a deliberate, reviewed diff, like any exemption.
  */
-export const PER_REQUEST_READS = {};
+/** @type {Record<string, string>} */
+export const PER_REQUEST_READS = {
+  // Home's Friends section: the viewer's own profile, their friends and their open links. A friend's rename or face, a
+  // redeemed link or one expiring moves nothing in Home's key, so these are read fresh on every request rather than keyed
+  // on every friend's stamp (Social R3 addendum, Friends on Home).
+  "src/lib/social/home-friends.ts": "Home's Friends section reads profiles, friends and open links fresh on every request; a friend's change moves no key Home has",
+};
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */
 export function loaderFiles(pages = CACHED_PAGES, perRequest = PER_REQUEST_READS) {

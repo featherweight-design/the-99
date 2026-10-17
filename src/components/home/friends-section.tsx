@@ -21,6 +21,7 @@ import { invitePath } from "../../lib/social/client-rules";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { InviteOutcome } from "../../lib/social/friends";
 import { AddFriendDialog } from "../social/add-friend-dialog";
+import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { useInviteWatch } from "../social/use-invite-watch";
@@ -125,6 +126,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
           >
             {h.all}
             <span aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)]">›</span>
+            <PendingReporter href="/friends" />
           </Link>
         )}
       </div>
@@ -143,6 +145,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
               aria-label={socialCopy.friends.openAria(f.displayName)}
               className="flex min-h-[64px] w-full flex-col items-center gap-[6px] no-underline sm:min-h-0"
             >
+              <PendingReporter href={faceHref(f.publicId)} />
               <Face name={f.displayName} commander={f.commander} size={40} />
               <span aria-hidden className="max-w-[50px] overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] text-[color:var(--fg-body)] sm:max-w-[46px]">
                 {f.displayName}
@@ -202,6 +205,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
             <Link href="/friends" className="flex items-center gap-[4px] font-sans text-[12.5px] text-[color:var(--fg)]">
               {h.seeAll}
               <span aria-hidden className="text-[color:var(--fg-faint)]">›</span>
+              <PendingReporter href="/friends" />
             </Link>
           )}
         </p>
