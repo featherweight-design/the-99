@@ -1,6 +1,6 @@
 // An About entry's caption, drawn as short paragraphs and lists rather than one block.
 //
-// The caption stays ONE string in `about.ts`, so the content hash and `check:copy-drift` keep
+// The caption stays ONE string in `about-entries.ts`, so the content hash and `check:copy-drift` keep
 // reading it as they always have. Two marks shape it: a blank line
 // (`\n\n`) starts a paragraph, and a block whose every line begins `- ` is a list. Nothing
 // else is markup, so a hyphen inside a sentence stays a hyphen.

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { aboutEntries } from "../../lib/copy/about";
+import { aboutEntries } from "../../lib/copy/about-entries";
 import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-it-works";
 import { HowItWorks } from "./how-it-works";
 import { reveal } from "../../lib/ui/reveal";

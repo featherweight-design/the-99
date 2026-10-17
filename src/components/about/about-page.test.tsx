@@ -3,7 +3,8 @@ import { ENV_VIEW } from "@/test/env-view";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
-import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
+import { ABOUT_VERSION, aboutCopy } from "../../lib/copy/about";
+import { aboutEntries } from "../../lib/copy/about-entries";
 import { FIGURES } from "./figures";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -165,13 +166,10 @@ describe("the reader who is behind", () => {
   // test recomputed the predicate against that copy and asserted the empty
   // array it was always going to get — green whatever `isNew` did, including
   // returning false unconditionally. This renders a version-2 page instead.
-  const twoVersions = {
-    ABOUT_VERSION: 2,
-    aboutEntries: [
-      { ...aboutEntries[0], id: "old", chapter: "01" as const, title: "Older entry", since: 1 },
-      { ...aboutEntries[0], id: "new", chapter: "01" as const, title: "Newer entry", since: 2 },
-    ],
-  };
+  const twoEntries = [
+    { ...aboutEntries[0], id: "old", chapter: "01" as const, title: "Older entry", since: 1 },
+    { ...aboutEntries[0], id: "new", chapter: "01" as const, title: "Newer entry", since: 2 },
+  ];
 
   it("marks the entry added since, and only that one", async () => {
     vi.resetModules();
@@ -179,8 +177,9 @@ describe("the reader who is behind", () => {
       const real = await vi.importActual<typeof import("../../lib/copy/about")>(
         "../../lib/copy/about",
       );
-      return { ...real, ...twoVersions };
+      return { ...real, ABOUT_VERSION: 2 };
     });
+    vi.doMock("../../lib/copy/about-entries", () => ({ aboutEntries: twoEntries }));
     const { AboutPage: Page } = await import("./about-page");
 
     render(<Page env={ENV_VIEW} seen={1} />);
@@ -189,6 +188,7 @@ describe("the reader who is behind", () => {
     expect(badges[0].closest("li")?.textContent).toContain("Newer entry");
     expect(screen.getByText(aboutCopy.newSinceEyebrow(1))).toBeTruthy();
     vi.doUnmock("../../lib/copy/about");
+    vi.doUnmock("../../lib/copy/about-entries");
     vi.resetModules();
   });
 });

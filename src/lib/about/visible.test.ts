@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
+import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import { sheetCookieValue, sheetDecision } from "./gate";
 import { aboutNotice } from "./notice";
 import { readSheetState } from "./sheet-state";

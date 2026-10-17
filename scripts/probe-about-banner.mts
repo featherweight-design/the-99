@@ -33,7 +33,8 @@ import { chromium, type Browser, type BrowserContext, type Locator, type Page } 
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { catalogIds } from "./lib/about-clear.mjs";
-import { ABOUT_VERSION, aboutEntries } from "../src/lib/copy/about";
+import { ABOUT_VERSION } from "../src/lib/copy/about";
+import { aboutEntries } from "../src/lib/copy/about-entries";
 import { arrivalsCopy } from "../src/lib/copy/arrivals";
 import { HOW_IT_WORKS_ID } from "../src/lib/copy/how-it-works-links";
 

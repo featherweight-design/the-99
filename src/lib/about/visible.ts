@@ -27,7 +27,8 @@ import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
-import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
+import { type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 
 /**
  * Each switch read through its feature's OWN flag function, never restated here: an About

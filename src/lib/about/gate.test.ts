@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutEntries } from "../copy/about";
+import { ABOUT_VERSION } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import {
   ABOUT_COOKIE,
   cookieIsCurrent,
