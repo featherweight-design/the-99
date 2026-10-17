@@ -60,11 +60,6 @@ export function scanRowsRefusal(r: ScanRows & { dim: number; rows: number }, min
   return null;
 }
 
-/**
- * Replaces the index and its meta row in ONE transaction on `client`. The HNSW index is dropped first and built
- * after the rows, which is far quicker than maintaining it row by row; lookups wait on the table until it commits
- * (the drop holds an exclusive lock), and a failure anywhere rolls every step back, the old index included.
- */
 /** One parameterised statement against the target: a `PoolClient`'s `query`, shaped down to what the publish uses. */
 export type ScanQuery = (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }>;
 
@@ -108,7 +103,12 @@ export async function publishScanIndexIn(
   await beforeCommit();
 }
 
-/** `publishScanIndexIn` in a transaction of its own on `client`. */
+/**
+ * `publishScanIndexIn` in a transaction of its own on `client`: the index and its meta row are replaced in ONE
+ * transaction. The HNSW index is dropped first and built
+ * after the rows, which is far quicker than maintaining it row by row; lookups wait on the table until it commits
+ * (the drop holds an exclusive lock), and a failure anywhere rolls every step back, the old index included.
+ */
 export async function publishScanIndex(client: PoolClient, r: ScanRows, log: (s: string) => void = () => {}): Promise<void> {
   await client.query("begin");
   try {
