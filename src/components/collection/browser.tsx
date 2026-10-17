@@ -41,7 +41,7 @@ import {
 } from "./filter-bar";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { useMinWidth, useMinWidthHinted } from "../ui/use-min-width";
-import { COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE } from "../ui/view-cookie";
+import { COLLECTION_SORT_COOKIE, COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE, writeViewCookie } from "../ui/view-cookie";
 import { collectionChips } from "../../lib/collection/chips";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -53,6 +53,7 @@ import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { serializeSortCookie, withStoredSort, type StoredSort } from "../../lib/collection/sort-options";
 import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
 import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
@@ -227,7 +228,7 @@ export function availabilityChangeAnnouncement(
   );
 }
 
-export type ViewHint = { stored: ViewMode | null; wide: boolean | null };
+export type ViewHint = { stored: ViewMode | null; wide: boolean | null; sort?: StoredSort | null };
 const NO_VIEW_HINT: ViewHint = { stored: null, wide: null };
 
 export function CollectionBrowser({
@@ -288,7 +289,7 @@ export function CollectionBrowser({
   // The URL's state, parsed by the same function the page runs to cut its first window, so the
   // rows drawn first are the rows the page shipped whole. Shared URLs can carry unknown values;
   // each falls back to its default there.
-  const [initial] = useState(() => parseBrowseParams((key) => search.get(key), availabilityOk));
+  const [initial] = useState(() => parseBrowseParams(withStoredSort((key) => search.get(key), viewHint.sort), availabilityOk));
   const [filters, setFilters] = useState<BrowseFilters>(initial.filters);
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [sortDirection, setSortDirection] = useState<SortDirection>(initial.direction);
@@ -473,6 +474,8 @@ export function CollectionBrowser({
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
     setSortDirection(direction);
+    // The choice is remembered for the next visit, the default order included: pressing Name is a choice too.
+    writeViewCookie(COLLECTION_SORT_COOKIE, serializeSortCookie({ sort: s, direction }));
     setShown(PAGE_SIZE);
     setRevealFrom(null);
   }, []);

@@ -8,6 +8,7 @@
 import { cookies } from "next/headers";
 import { requireUserId } from "../../../lib/auth";
 import {
+  COLLECTION_SORT_COOKIE,
   COLLECTION_VIEW_COOKIE,
   COLLECTION_WIDE_COOKIE,
   parseViewCookie,
@@ -20,6 +21,7 @@ import { CollectionClient } from "../../../components/collection/collection-clie
 import { cutCollectionWindow, encodeCollection } from "../../../lib/collection/list-wire";
 import { loadCollectionList } from "../../../lib/collection/payload";
 import { pageWindowIds } from "../../../lib/collection/window";
+import { parseSortCookie, withStoredSort } from "../../../lib/collection/sort-options";
 import { searchParamsToQuery } from "../../../lib/commanders/search-params";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import {
@@ -52,6 +54,8 @@ export default async function CollectionPage({
   const viewHint = {
     stored: parseViewCookie(jar.get(COLLECTION_VIEW_COOKIE)?.value),
     wide: parseWideCookie(jar.get(COLLECTION_WIDE_COOKIE)?.value),
+    // The sort the reader last chose: the first window is cut by it unless the URL names its own.
+    sort: parseSortCookie(jar.get(COLLECTION_SORT_COOKIE)?.value),
   };
   const [stats, { cards, pricesFailed }, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
@@ -113,7 +117,7 @@ export default async function CollectionPage({
     }
   }
   const strip = receipt ? <PreconPickReceipt receipt={receipt} /> : null;
-  const keep = pageWindowIds(cards, availability, (key) => query.get(key));
+  const keep = pageWindowIds(cards, availability, withStoredSort((key) => query.get(key), viewHint.sort));
   const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
 
   // Empty collection — the shell's state, kept intact, under the group's place head (shared

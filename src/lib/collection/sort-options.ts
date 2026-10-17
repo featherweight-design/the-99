@@ -86,6 +86,28 @@ export function nextSortState(
   return { sort: picked, direction: current.direction === "asc" ? "desc" : "asc" };
 }
 
+/** A sort a reader chose on an earlier visit (`collection_sort`). */
+export type StoredSort = { sort: SortKey; direction: SortDirection };
+
+/** `price.desc` → its sort and direction. A hint, never trusted: anything that is not a known key and direction reads as none. */
+export function parseSortCookie(raw: string | null | undefined): StoredSort | null {
+  const [key, dir, ...rest] = (raw ?? "").split(".");
+  if (rest.length > 0 || !(SORT_KEYS as readonly string[]).includes(key) || (dir !== "asc" && dir !== "desc")) return null;
+  return { sort: key as SortKey, direction: dir };
+}
+
+export const serializeSortCookie = (s: StoredSort): string => `${s.sort}.${s.direction}`;
+
+/**
+ * The URL's query with the stored sort as its default: a URL naming `sort` or `dir` is the reader's explicit ask and
+ * wins whole; one naming neither reads as the stored sort, so the server cuts its first window by the order the reader
+ * will see and the browser's first render draws it, with no reorder after hydration. Used by the page and the browser alike.
+ */
+export function withStoredSort(get: (key: string) => string | null, stored: StoredSort | null | undefined): (key: string) => string | null {
+  if (!stored || get("sort") !== null || get("dir") !== null) return get;
+  return (key) => (key === "sort" ? stored.sort : key === "dir" ? stored.direction : get(key));
+}
+
 /** `?dir=desc` → `"desc"`. Anything else, including absent, is the key's default. */
 export function parseSortDirection(param: string | null, sort: SortKey): SortDirection {
   if (param === "asc" || param === "desc") return param;

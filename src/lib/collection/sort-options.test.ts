@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildSortOptions,
   nextSortState,
+  parseSortCookie,
   parseSortDirection,
+  serializeSortCookie,
+  withStoredSort,
   sortOrderLabel,
 } from "./sort-options";
 
@@ -72,5 +75,22 @@ describe("the Date added sort", () => {
     expect(nextSortState({ sort: "name", direction: "asc" }, "added")).toEqual({ sort: "added", direction: "desc" });
     expect(sortOrderLabel("added", "desc")).toBe("Date added · Newest");
     expect(sortOrderLabel("added", "asc")).toBe("Date added · Oldest");
+  });
+});
+
+describe("the stored sort", () => {
+  it("round-trips through the cookie, and reads anything else as none", () => {
+    expect(parseSortCookie(serializeSortCookie({ sort: "price", direction: "desc" }))).toEqual({ sort: "price", direction: "desc" });
+    for (const bad of [undefined, null, "", "price", "price.up", "bogus.asc", "price.desc.x", ".asc"]) expect(parseSortCookie(bad)).toBeNull();
+  });
+
+  it("is the URL's default: a URL naming sort or dir wins whole, one naming neither reads as the stored sort", () => {
+    const stored = { sort: "price", direction: "desc" } as const;
+    const url = (q: string) => withStoredSort((k) => new URLSearchParams(q).get(k), stored);
+    expect([url("")("sort"), url("")("dir")]).toEqual(["price", "desc"]);
+    expect(url("q=bolt")("q")).toBe("bolt");
+    expect([url("sort=name")("sort"), url("sort=name")("dir")]).toEqual(["name", null]);
+    expect([url("dir=asc")("sort"), url("dir=asc")("dir")]).toEqual([null, "asc"]);
+    expect(withStoredSort((k) => new URLSearchParams("").get(k), null)("sort")).toBeNull();
   });
 });

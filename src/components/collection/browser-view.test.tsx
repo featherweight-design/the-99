@@ -213,6 +213,30 @@ describe("CollectionBrowser — what the server draws", () => {
     expect(narrow).not.toMatch(GRID);
   });
 
+  // The sort the reader last chose draws on the server's first render too, so nothing reorders after hydration.
+  describe("the stored sort", () => {
+    const abe = card({ oracleId: "oa", name: "Abe", quantity: 1 });
+    const zed = card({ oracleId: "oz", name: "Zed", quantity: 9 });
+    const order = (viewHint?: ViewHint) => {
+      const out = renderToString(
+        <CardDetailProvider fetchCard={async () => null}>
+          <CollectionBrowser cards={[zed, abe]} ownedSets={[]} availabilityOk viewHint={viewHint} />
+        </CardDetailProvider>,
+      );
+      return out.indexOf("Abe") < out.indexOf("Zed") ? "abe-first" : "zed-first";
+    };
+
+    it("draws the stored order when the URL names none, and the default without one", () => {
+      expect(order({ stored: "rows", wide: false })).toBe("abe-first");
+      expect(order({ stored: "rows", wide: false, sort: { sort: "quantity", direction: "desc" } })).toBe("zed-first");
+    });
+
+    it("lets the URL's own ?sort= beat it", () => {
+      window.history.replaceState(null, "", "/collection?sort=name");
+      expect(order({ stored: "rows", wide: false, sort: { sort: "quantity", direction: "desc" } })).toBe("abe-first");
+    });
+  });
+
   it("still lets a link's ?view= beat every hint", () => {
     window.history.replaceState(null, "", "/collection?view=rows");
     const out = html({ stored: "grid", wide: true });

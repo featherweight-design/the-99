@@ -64,3 +64,5 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   draws `HydratedImg` with the first `GRID_EAGER_TILES` (4) eager; the server cannot know the
   width, so that is a fixed count rather than columns times rows. 4 is measured: it hydrates as
   fast as the bare page at both widths, where 12 cost ~4.7s at 1300.
+
+**`/collection` remembers the reader's sort** (`collection_sort` cookie, `<key>.<direction>`). The first window of 200 is cut by sort, so a client-only store would draw the default order and then re-sort; the cookie is read by the page and the browser alike through `withStoredSort` (`lib/collection/sort-options.ts`), which makes the stored sort the URL's default: a URL naming `sort` or `dir` wins whole. Every press of the Sort control writes it, the default included (Name is a choice too). The page cuts per request (not inside the cached list), so no cache key carries it. Proof: `pnpm probe:collection-sort-memory`.
