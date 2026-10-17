@@ -4,7 +4,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 const mirrorUrl = vi.fn();
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl }));
 
-const { AboutTabs, aboutTabOf } = await import("./about-tabs");
+const { AboutTabs } = await import("./about-tabs");
+const { aboutTabOf } = await import("../../../lib/about/tab");
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -58,6 +59,27 @@ describe("AboutTabs (C1, R2 gap 12)", () => {
     // A second link to the Reference is followed too.
     act(() => window.history.pushState(null, "", "/about?tab=reference#proposed-cuts"));
     expect(selected()).toBe("Reference 71");
+  });
+
+  it("mounts a once-shown child only when its tab is first drawn, and keeps it after (R2 gap 10)", () => {
+    const mounts = vi.fn();
+    function Visit() {
+      mounts();
+      return <i>visit</i>;
+    }
+    const tabs = (initial: "tools" | "reference") => (
+      <AboutTabs initial={initial} counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} onceShown={{ reference: <Visit /> }} />
+    );
+    render(tabs("tools"));
+    expect(screen.queryByText("visit")).toBeNull();
+    expect(mounts).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("tab", { name: "Reference 71" }));
+    expect(screen.getByText("visit").closest("[role=tabpanel]")?.id).toBe("about-panel-reference");
+    fireEvent.click(screen.getByRole("tab", { name: "Tools 14" }));
+    expect(screen.getByText("visit")).toBeTruthy();
+    cleanup();
+    render(tabs("reference"));
+    expect(screen.getByText("visit")).toBeTruthy();
   });
 
   it("reads anything but reference as Tools", () => {

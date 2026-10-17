@@ -118,7 +118,7 @@ describe("FitsView (Find a deck read, R2)", () => {
     await draw(panel({ allowance: { ...allowance, used: 5 } as FitsReadPanel["allowance"] }));
     expect(screen.getByRole("button", { name: r.pressAriaSpent })).toBeDisabled();
     expect(screen.getByText(creditLine(creditsCopy.spent(5, null)))).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: creditsCopy.link })).toHaveAttribute("href", "/about#credits");
+    expect(screen.getByRole("link", { name: creditsCopy.link })).toHaveAttribute("href", "/about?tab=reference#credits");
   });
 
   it("runs with breathing skeleton rows and the list live, then draws the read's rows and folds the list (P2, P3)", async () => {

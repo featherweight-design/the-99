@@ -118,18 +118,39 @@ export function hasFullKeys(items: readonly PendingItem[]): boolean {
 
 const asDate = (v: Date | string) => (v instanceof Date ? v : new Date(v));
 
+type AnchorHead = { id: string; confirmed_at: Date | string; items: PendingItem[]; tokens: TokenHolding[] | null };
+
+/** The newest anchor when it can serve as a base, else why not: the one rule `readSyncBase` and `hasSyncAnchor` share. */
+async function readAnchor(
+  userId: string,
+  q: Runner,
+  excludeUploadId?: string,
+): Promise<AnchorHead | { unavailable: "neverUploaded" | "noRecord" }> {
+  const { rows: [head] } = await q.execute<{
+    uploaded: boolean; id: string | null; confirmed_at: Date | string | null; items: PendingItem[] | null; tokens: TokenHolding[] | null;
+  }>(anchorQuery(userId, excludeUploadId));
+  if (!head?.uploaded) return { unavailable: "neverUploaded" };
+  if (!head.id || !head.confirmed_at || !Array.isArray(head.items) || !hasFullKeys(head.items)) {
+    return { unavailable: "noRecord" };
+  }
+  return { id: head.id, confirmed_at: head.confirmed_at, items: head.items, tokens: head.tokens };
+}
+
+/**
+ * Whether the reader has a base to Sync against, for a page that only needs to know (About's Sync card, the
+ * replace page's offer): the anchor's checks alone, without reading the earlier uploads or building quantity maps.
+ */
+export async function hasSyncAnchor(userId: string, q: Runner = db): Promise<boolean> {
+  return !("unavailable" in (await readAnchor(userId, q)));
+}
+
 export async function readSyncBase(
   userId: string,
   q: Runner = db,
   opts: { excludeUploadId?: string } = {},
 ): Promise<SyncBase> {
-  const { rows: [head] } = await q.execute<{
-    uploaded: boolean; id: string | null; confirmed_at: Date | string | null; items: PendingItem[] | null; tokens: TokenHolding[] | null;
-  }>(anchorQuery(userId, opts.excludeUploadId));
-  if (!head?.uploaded) return { unavailable: "neverUploaded" };
-  if (!head.id || !head.confirmed_at || !Array.isArray(head.items) || !hasFullKeys(head.items)) {
-    return { unavailable: "noRecord" };
-  }
+  const head = await readAnchor(userId, q, opts.excludeUploadId);
+  if ("unavailable" in head) return head;
   const { rows } = await q.execute<{ id: string; confirmed_at: Date | string; items: PendingItem[] | null }>(
     earlierQuery(userId, head.id),
   );

@@ -103,7 +103,7 @@ describe("a reader who is behind", () => {
     const res = await proxy(auth, request("/decks?sort=name"));
     expect(res?.status).toBe(307);
     expect(res?.headers.get("location")).toBe(
-      `https://the99.test/about?next=${encodeURIComponent("/decks?sort=name")}`,
+      `https://the99.test/about?tab=reference&next=${encodeURIComponent("/decks?sort=name")}`,
     );
   });
 

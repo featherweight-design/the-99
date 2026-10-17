@@ -7,7 +7,7 @@ import { getCollectionStats } from "../../../lib/home/summary";
 import { collectionEditEnabled, collectionSyncEnabled } from "../../../lib/collection/edit-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { ReplaceFlow } from "../../../components/collection/replace-flow";
-import { readSyncBase } from "../../../lib/collection/sync-base";
+import { hasSyncAnchor } from "../../../lib/collection/sync-base";
 import { pageLanding } from "../../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../../components/discovery/tool-landing-mount";
@@ -24,7 +24,7 @@ export default async function ReplacePage({ searchParams }: { searchParams: Prom
   const sync = collectionSyncEnabled(env);
   // Whether Sync has an anchor to merge against. An empty collection skips the choice as a first import only
   // when it has none (`isFirstImport`): a player who emptied it by hand can still Sync. Read only with Sync on.
-  const syncAnchored = sync && "anchor" in (await readSyncBase(userId));
+  const syncAnchored = sync && (await hasSyncAnchor(userId));
   // Try it's landing (discovery R2·3, G14): `?tool=collection-sync` haloes the drop zone; anything else is stripped.
   const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "collection-sync");
   return (

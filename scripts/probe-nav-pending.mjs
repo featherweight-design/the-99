@@ -327,7 +327,7 @@ async function run(browser, state, width, userId) {
     await sql`update user_prefs set about_version_seen = ${version - 1}, about_seen_ids = ${[]}::text[] where user_id = ${userId}`;
     try {
       const { page, throttle } = await slowPage(context);
-      await page.goto(`${BASE}/about?next=${encodeURIComponent("/commanders")}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+      await page.goto(`${BASE}/about?tab=reference&next=${encodeURIComponent("/commanders")}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
       const dismiss = page.getByRole("button", { name: /^Got it/ }).filter({ visible: true }).first();
       const offered = await dismiss.waitFor({ state: "visible", timeout: 60_000 }).then(() => true, () => false);
       if (!offered) {

@@ -2,22 +2,14 @@
 
 // About's two tabs (discovery R2·5; README-r2 C1, property table "About's tabs"). Tools is the default and the
 // absence of `?tab`; Reference is `?tab=reference`, mirrored through `mirrorUrl` when the tab changes (R2 gap 12), so
-// no navigation runs. Unmounted until R2·6b swaps `/about`, which hands it both panels and the tab the URL asked for.
+// no navigation runs. `/about` (R2·6b) hands it both panels and the tab the URL asked for.
 
 import { useState, type ReactNode } from "react";
 import { aboutShapeCopy } from "../../../lib/copy/discovery";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { mirrorUrl } from "../../../lib/url/mirror";
+import { ABOUT_TABS, aboutTabOf, TAB_PARAM, type AboutTab } from "../../../lib/about/tab";
 import { onSegmentKeys } from "../../ui/segment-keys";
-
-export const ABOUT_TABS = ["tools", "reference"] as const;
-export type AboutTab = (typeof ABOUT_TABS)[number];
-export const TAB_PARAM = "tab";
-
-/** `?tab=` as the page reads it: anything but `reference` is Tools. */
-export function aboutTabOf(value: unknown): AboutTab {
-  return value === "reference" ? "reference" : "tools";
-}
 
 const tabId = (t: AboutTab) => `about-tab-${t}`;
 const panelId = (t: AboutTab) => `about-panel-${t}`;
@@ -28,10 +20,20 @@ export type AboutTabsProps = {
   panels: Record<AboutTab, ReactNode>;
   /** The ? is drawn (`HELP_PANEL_ENABLED`): from `md`, a hint beside the tabs points at it. */
   helpHint: boolean;
+  /**
+   * Mounted from the first time its tab is drawn, and kept after. Both panels are in the document from the start (the
+   * one not chosen is `hidden`), so anything that must happen only when a tab is SEEN goes here: About's visit is
+   * recorded when the Reference is drawn, never on a load that stays on Tools (R2 gap 10).
+   */
+  onceShown?: Partial<Record<AboutTab, ReactNode>>;
 };
 
-export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps) {
+export function AboutTabs({ initial, counts, panels, helpHint, onceShown }: AboutTabsProps) {
   const [tab, setTab] = useState<AboutTab>(initial);
+  // The tabs drawn so far, adjusted during render as `tab` moves, so a once-shown child mounts in the same commit as
+  // its tab.
+  const [shown, setShown] = useState<ReadonlySet<AboutTab>>(() => new Set([initial]));
+  if (!shown.has(tab)) setShown(new Set(shown).add(tab));
   // A link on the page to `?tab=reference` (How it works, Open the Reference) is a soft navigation to this same route.
   // It keeps this state, and after the reader's own flip back to Tools it arrives with the same `initial` the page was
   // first rendered with, so the prop cannot tell it. The live URL can: `useLiveQuery` reports every move, the tab
@@ -61,7 +63,10 @@ export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps)
           {tab === "tools" ? aboutShapeCopy.toolsSub : aboutShapeCopy.referenceSub}
         </p>
       </div>
-      <div className="mt-[10px] flex items-center justify-between border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0">
+      {/* 390: 10px under the Tools sub (ShowcasePhone), 14px under the Reference sub (ReferencePhone); 26px on both Desk boards. */}
+      <div
+        className={`${tab === "tools" ? "mt-[10px]" : "mt-[14px]"} flex items-center justify-between border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0`}
+      >
         <div
           role="tablist"
           aria-label={aboutShapeCopy.tabs.label}
@@ -112,6 +117,7 @@ export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps)
       {ABOUT_TABS.map((t) => (
         <div key={t} role="tabpanel" id={panelId(t)} aria-labelledby={tabId(t)} hidden={t !== tab}>
           {panels[t]}
+          {shown.has(t) && onceShown?.[t]}
         </div>
       ))}
     </div>
