@@ -32,7 +32,7 @@ export async function lookupGuesses(embedding: Float32Array, model: string): Pro
   return db.transaction(
     async (tx) => {
       // `lock_timeout` first: an ingest holds `scan_index` exclusively for minutes while it republishes, and a lookup
-      // waiting on it would hang to the platform's limit instead of answering 503 `no-index` through the route's catch.
+      // waiting on it would hang to the platform's limit instead of answering 503 `unavailable` (retried) through the route's catch.
       await tx.execute(sql`select set_config('lock_timeout', '2s', true), set_config('hnsw.ef_search', ${String(EF_SEARCH)}, true), set_config('hnsw.iterative_scan', 'strict_order', true)`);
       const meta = (await tx.execute(sql`select version, model, rows from scan_index_meta where id = 1`)).rows[0] as
         | { version: string; model: string; rows: number }

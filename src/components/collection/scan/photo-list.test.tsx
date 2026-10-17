@@ -62,6 +62,12 @@ describe("PhotoList", () => {
     expect(p.onPick).toHaveBeenCalledWith(2, "d");
   });
 
+  it("says scanning isn't ready on a photo the server could not check, not that it held no card", () => {
+    draw({ rows: ROWS.map((r, i) => (i === 3 ? { ...r, state: { kind: "failed", notReady: true } } : r)) });
+    expect(within(row(3)).getByText(copy.notReady)).toBeTruthy();
+    expect(within(row(3)).queryByText(copy.photos.noCard)).toBeNull();
+  });
+
   it("says no card was read, and marks a photo still being read busy with its place in the list", () => {
     draw();
     expect(within(row(3)).getByText(copy.photos.noCard)).toBeTruthy();

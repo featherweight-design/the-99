@@ -56,6 +56,13 @@ describe("useCardScan", () => {
     await waitFor(() => expect(hook.result.current.screen).toEqual({ kind: "blocked" }));
   });
 
+  it("says not ready when the server has no scan index yet", async () => {
+    const fetch = vi.fn(() => json({ error: "no-index" }, 503));
+    const { onProblem } = setup({ fetch: fetch as unknown as typeof globalThis.fetch });
+    await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notReady"), { timeout: 4000 });
+    expect(onProblem).not.toHaveBeenCalledWith("refused");
+  });
+
   it("says a refused lookup once and goes back to looking", async () => {
     const fetch = vi.fn(() => json(null, 404));
     const { hook, onProblem } = setup({ fetch: fetch as unknown as typeof globalThis.fetch });

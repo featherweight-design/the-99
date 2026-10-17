@@ -119,7 +119,7 @@ export function useCardScan(
   /** Puts the card on the list (at `picked`'s printing when Normal chose one); answers false when it could not. */
   onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => AddOutcome | Promise<AddOutcome>,
   /** `removed` names the card an optimistic add took back off the list. */
-  onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart" | "removed", name?: string) => void,
+  onProblem: (kind: "failed" | "refused" | "notReady" | "notAdded" | "noStart" | "removed", name?: string) => void,
   /** Copies on the sheet's list, by oracle id, live: the tray and "again" read the list, which the desktop sheet can
    * still edit while the scanner is open. */
   listed: ReadonlyMap<string, number> = NO_LIST,
@@ -293,7 +293,9 @@ export function useCardScan(
   // A refusal or failure is said once, as it arrives; the screen goes back to looking.
   const lastProblem = useRef<ServerState["kind"] | null>(null);
   useEffect(() => {
-    if ((server.kind === "failed" || server.kind === "refused") && lastProblem.current !== server.kind) onProblem(server.kind);
+    if ((server.kind === "failed" || server.kind === "refused") && lastProblem.current !== server.kind) {
+      onProblem(server.kind === "refused" && server.reason === "notReady" ? "notReady" : server.kind);
+    }
     lastProblem.current = server.kind;
   }, [server, onProblem]);
 
