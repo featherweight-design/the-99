@@ -13,7 +13,7 @@ without written permission from Wizards, and nothing is left out by omission.
 This plan sequences work. It does not restate the two plans it depends on:
 
 - **Buying credits UI** (U1 to U5): `docs/superpowers/plans/2026-10-17-buying-credits-ui.md`, on branch
-  `docs/buying-credits-ui-plan` (not yet on `main`); U1 is open as #2006.
+  `docs/buying-credits-ui-plan` (not yet on `main`); U1 merged as #2006.
 - **Admin PII masking** (PR 1 to PR 4): `docs/superpowers/plans/2026-10-17-admin-pii-masking.md`, on branch
   `admin-pii-masking` (not yet on `main`); brief #2001 and handoff #2003 are merged.
 
@@ -65,7 +65,7 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | **B. Privacy and terms** | | | | | | |
 | B1 | Public `/privacy` and `/terms` (added to `isPublic` in `src/proxy.ts`): receipts and refunds via support@the-99.dev, the admin PII line, the FCP notice, data deletion (`purgeAccount`), the AI vendor named. Linked from the footer, `/credits` and `/sign-up` | A0, A1; E3 for the "views are logged" sentence | Built from A0 | Yes, and `prose-pass` for the long text | M | TBD |
 | **C. Pricing copy** | | | | | | |
-| C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access" | U1 (#2006) | No (copy only) | Yes | S | TBD |
+| C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access" | U1 (#2006, merged) | No (copy only) | Yes | S | TBD |
 | **D. Welcome credits** | | | | | | |
 | D0 | Raise `BUDGET_USD` and `HARD_STOP_USD` in `spend-rule.ts` to the number Hugh sets (open decision 1) | Hugh's number | No | No | S | TBD |
 | D1 | Migration: `credit_grants.source = 'welcome'` in `credit_grants_source_check`, `credit_grants_pack_never_expires_check` rewritten so `expires_at` is required on `welcome` (today it allows `expires_at` only on `plan`), a partial unique index (one per user ever); the grant written on `user.created` (the webhook route exists) and on first signed-in load, idempotent; spend order free, welcome, plan, pack; the 20-a-day paid limit applies; behind a new switch; a ledger probe on a scratch branch | U2a, D0 | No | No | M | TBD |
