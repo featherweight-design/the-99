@@ -19,21 +19,23 @@ import {
   utcClock,
 } from "./account-page-rule";
 
-const HUGH = { id: "user_2hugh", name: "Hugh Hartigan", email: "hugh@example.com" };
-const MARA = { id: "user_9mara", name: "Mara Quinn", email: "mara@example.com" };
-const BARE = { id: "user_7bare", name: null, email: null };
+const HUGH = { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", named: true };
+const MARA = { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", named: true };
+const BARE = { id: "user_7bare", name: "Account ·bare", email: null, named: false };
 
 describe("matchesAccount (A2)", () => {
-  it("matches a name or an email anywhere, ignoring case", () => {
-    expect(matchesAccount(HUGH, "hART")).toBe(true);
-    expect(matchesAccount(MARA, "example.com")).toBe(true);
+  it("matches the masked name anywhere, ignoring case", () => {
+    expect(matchesAccount(HUGH, "gh h")).toBe(true);
+    expect(matchesAccount(MARA, "  mARA ")).toBe(true);
     expect(matchesAccount(MARA, "hugh")).toBe(false);
+    expect(matchesAccount(BARE, "·BARE")).toBe(true);
   });
 
-  it("matches a Clerk id by its prefix only", () => {
-    expect(matchesAccount(BARE, "user_7")).toBe(true);
-    expect(matchesAccount(BARE, "  USER_7B ")).toBe(true);
-    expect(matchesAccount(BARE, "7bare")).toBe(false);
+  it("never matches an email or a Clerk id, which do not reach the client", () => {
+    expect(matchesAccount(MARA, "example.com")).toBe(false);
+    expect(matchesAccount(MARA, "mara@")).toBe(false);
+    expect(matchesAccount(BARE, "user_7")).toBe(false);
+    expect(matchesAccount(BARE, "user_7bare")).toBe(false);
   });
 
   it("keeps every account for an empty query", () => {
@@ -50,16 +52,17 @@ describe("the list (A1)", () => {
       groupNames: new Map([["g1", "friends"]]),
       credits: new Map([[HUGH.id, { left: 7, limit: 10 }], [MARA.id, { left: 0, limit: 5 }], [BARE.id, { left: 5, limit: 5 }]]),
       spend: new Map([[HUGH.id, 2_100_000], [MARA.id, 1_420_000]]),
-      invites: new Map([[MARA.id, { left: 2, waiting: 1, invitedBy: { kind: "account", id: HUGH.id, name: "Hugh Hartigan", joinedAt: new Date(0) } }]]),
+      invites: new Map([[MARA.id, { left: 2, waiting: 1, invitedBy: { kind: "account", id: HUGH.id, name: "Hugh H.", joinedAt: new Date(0) } }]]),
     });
     // An account the invite read did not name holds none and was invited by no one.
     expect(rows.map((r) => r.invites.left)).toEqual([0, 2, 0]);
     expect(rows[0].invites.invitedBy).toEqual({ kind: "founder" });
-    expect(rows.map((r) => [r.name, r.initials, r.group?.name ?? null, r.credits, r.spend])).toEqual([
-      ["Hugh Hartigan", "HH", null, "7 of 10 left", "$2.10"],
-      ["Mara Quinn", "MQ", "friends", "0 of 5 left", "$1.420"],
-      ["user_7bare", "7", null, "5 of 5 left", "$0"],
+    expect(rows.map((r) => [r.name, r.group?.name ?? null, r.credits, r.spend])).toEqual([
+      ["Hugh H.", null, "7 of 10 left", "$2.10"],
+      ["Mara Q.", "friends", "0 of 5 left", "$1.420"],
+      ["Account ·bare", null, "5 of 5 left", "$0"],
     ]);
+    expect(rows.slice(0, 2).map((r) => r.initials)).toEqual(["HH", "MQ"]);
   });
 
   it("keeps a membership whose group name did not load, naming it by its id", () => {
@@ -84,10 +87,10 @@ describe("the list (A1)", () => {
     expect(credits.get(MARA.id)).toEqual({ left: 0, limit: 1 });
   });
 
-  it("takes initials from a name, else the email, else the id", () => {
-    expect(initials({ ...MARA, name: "  mara  " })).toBe("M");
-    expect(initials({ ...MARA, name: null })).toBe("M");
-    expect(initials(BARE)).toBe("7");
+  it("takes initials from the masked name (D4), and none for an account with no name", () => {
+    expect(initials(MARA)).toBe("MQ");
+    expect(initials({ ...MARA, name: "  mara  " })).toBe("MA");
+    expect(initials({ ...MARA, name: "Account ·9xQe", named: false })).toBeNull();
   });
 });
 

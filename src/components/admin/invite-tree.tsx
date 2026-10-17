@@ -4,7 +4,6 @@ import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { revokeInvite } from "../../app/admin/invites/actions";
-import type { Account } from "../../lib/admin/accounts";
 import { childRails, filterTree, nodeMeta, treeDepth, type RailCell, type TreeNode, type TreeRow } from "../../lib/admin/invite-tree-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -166,22 +165,19 @@ export function InviteTreeView({
   accounts,
   invited,
   waiting,
-  searchable,
   clerk,
 }: {
   roots: TreeNode[];
   accounts: number;
   invited: number;
   waiting: number;
-  searchable: Account[];
   clerk: "ok" | "down";
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [revoking, setRevoking] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  const byId = useMemo(() => new Map(searchable.map((a) => [a.id, a])), [searchable]);
-  const shown = useMemo(() => filterTree(roots, query, byId), [roots, query, byId]);
+  const shown = useMemo(() => filterTree(roots, query), [roots, query]);
 
   async function revoke(id: string) {
     setFailure(null);

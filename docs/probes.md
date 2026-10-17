@@ -2600,6 +2600,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   new, over one membership row; and a move to where the account already is records nothing. It WRITES, so it fails
   closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are
   refused by id. It writes as made-up accounts and removes every row in a `finally`.
+- `pnpm probe:admin-pii` proves admin PII masking (Admin R3, rulings 1 and 4; plan
+  `docs/superpowers/plans/2026-10-17-admin-pii-masking.md`): no admin page sends a whole name or email before a Show.
+  Signed in as `E2E_AUDIT_USER_EMAIL` against a `next start` whose `ADMIN_USER_IDS` names that account (and with
+  `ADMIN_ENV_LABEL` set), it loads every admin route, EVERY account page, a saved group and a new one, and the switch
+  carrying an account override with Add an account override opened and Check an account picked, and keeps every
+  same-origin response, each route's RSC flight fetched as a client navigation would, and the drawn DOM. It fails when
+  any of them holds a Clerk user's whole email or last name (three letters or more), or a waiting invite's address;
+  the shell's own `Account: <email>` menu label names the reader to themself and is the one exemption. It also fails
+  when a route answers non-2xx or a picker does not open. Read-only: it presses nothing that writes and never presses
+  Show. Seed the rows it reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
+  seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
+  `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example`, replacing its own rows on
+  a re-run. On origin/main before the masking it fails 8 checks; the inventory is
+  `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
   with `MODEL_DAILY_ALLOWANCE` unset, a player in no group keeps five and the owner keeps ten, and a group with no
   allowance changes nothing; a member takes their group's allowance, through the same read a reservation makes and

@@ -10,5 +10,5 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 export default async function AdminInvitesPage() {
   await requireAdmin();
   const tree = await loadInviteTree();
-  return <InviteTreeView roots={tree.roots} accounts={tree.accounts} invited={tree.invited} waiting={tree.waiting} searchable={tree.searchable} clerk={tree.clerk} />;
+  return <InviteTreeView roots={tree.roots} accounts={tree.accounts} invited={tree.invited} waiting={tree.waiting} clerk={tree.clerk} />;
 }

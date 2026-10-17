@@ -7,6 +7,7 @@ import { explainForAccounts, hubForAccount } from "../switches/explain";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { hasAllFeatures } from "../switches/resolve";
 import { listAccounts, orderAccounts, type Account } from "./accounts";
+import { unlistedAccount } from "./mask";
 import {
   accountRows,
   accountTiles,
@@ -113,7 +114,7 @@ export type AccountPage = {
   id: string;
   name: string;
   email: string | null;
-  initials: string;
+  initials: string | null;
   role: string;
   tiles: Tile[];
   group: { id: string; name: string } | null;
@@ -177,7 +178,7 @@ export async function loadAccountPage(userId: string, viewerId: string, now: Dat
     ? snapshot.groupOf.has(userId) || snapshot.overrides.some((o) => o.userId === userId)
     : !listed && called.length === 0 && (await namedByRows(userId));
   if (!listed && !named && called.length === 0) return null;
-  const account: Account = listed ?? { id: userId, name: null, email: null };
+  const account: Account = listed ?? unlistedAccount(userId);
 
   const groupNames = new Map(heads.map((g) => [g.id, g.name]));
   const groupId = (snapshot?.groupOf ?? (await readMemberships())).get(userId);

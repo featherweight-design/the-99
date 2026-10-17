@@ -120,6 +120,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   // A group deleted since an event names it reads as its id's first 8 characters.
   const groupName = (id: string) => groupById.get(id)?.name ?? id.slice(0, 8);
   const { userName, actor } = accountNames(accounts, viewerId);
+  const maskedEmail = new Map(accounts.map((a) => [a.id, a.email ?? ""]));
 
   const [row] = switchRows({
     env,
@@ -204,7 +205,8 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     groups: groupRows
       .map((o) => item(o, o.groupId!, groupName(o.groupId!), copy.members(groupById.get(o.groupId!)?.members ?? 0)))
       .sort(byTitle),
-    accounts: userRows.map((o) => item(o, o.userId!, userName(o.userId!), o.userId!)).sort(byTitle),
+    // The second line is the masked email, never the Clerk id (Admin R3, D3).
+    accounts: userRows.map((o) => item(o, o.userId!, userName(o.userId!), maskedEmail.get(o.userId!) ?? "")).sort(byTitle),
     history: events.map((e) => {
       const scope =
         e.scope === "group" ? copy.history.scope.group(e.groupId ? groupName(e.groupId) : "") : e.scope === "user" ? copy.history.scope.user(e.userId ? userName(e.userId) : "") : copy.history.scope.app;

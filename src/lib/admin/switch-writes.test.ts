@@ -52,7 +52,7 @@ const afterCommit = vi.fn(() => order.push("afterCommit"));
 type Env = Partial<Record<SwitchName, string>>;
 let env: Env = {};
 const deps = () => ({
-  accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null }, { id: "u2", name: "Mara", email: null }] }),
+  accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }, { id: "u2", name: "Mara", email: null, named: true }] }),
   env: () => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>,
   rise: (before: SwitchSnapshot, after: SwitchSnapshot, ids: readonly string[]) => riseBetween(env as NodeJS.ProcessEnv, before, after, ids),
   transaction: transaction as never,
@@ -137,7 +137,7 @@ describe("writeOverride", () => {
     env = { HELP_ME_CHOOSE_ENABLED: "true" };
     overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
-    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null }], clerk: "down" as const }) };
+    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
     expect(await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
     expect(kinds()).not.toContain("delete");
     // An account's own override touches only that listed account, so it is counted and confirmed as usual.
@@ -146,13 +146,13 @@ describe("writeOverride", () => {
     expect(await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", targetUserId: "u1", value: "on", confirmed: 1 }, down)).toEqual({ ok: true });
   });
 
-  it("counts a group member the fallback list misses while Clerk is down", async () => {
+  it("counts a group member the fallback list misses while Clerk is down, naming it Account ·<tail>", async () => {
     env = { HELP_ME_CHOOSE_ENABLED: "true" };
     members = [{ userId: "u9", groupId: G }];
     overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
-    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null }], clerk: "down" as const }) };
+    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
     const r = await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: G, value: "on" }, down);
-    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["u9"] } });
+    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Account ·u9"] } });
   });
 
   it("says nothing changed when the transaction throws, and clears no memo", async () => {

@@ -18,9 +18,9 @@ import {
 const now = new Date("2026-10-20T12:00:00Z");
 const day = (d: number, h = 12) => new Date(Date.UTC(2026, 9, d, h));
 const accounts = [
-  { id: "u_hugh", name: "Hugh", email: null },
-  { id: "u_colin", name: "Colin", email: null },
-  { id: "u_peter", name: "Peter", email: null },
+  { id: "u_hugh", name: "Hugh", email: null, named: true },
+  { id: "u_colin", name: "Colin", email: null, named: true },
+  { id: "u_peter", name: "Peter", email: null, named: true },
 ];
 const name = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
 const reservation = (over: Partial<ReservationRow>): ReservationRow => ({
@@ -80,7 +80,7 @@ describe("an account's Invites section (M2)", () => {
     now,
   };
 
-  it("draws left, waiting (the QR aside), spent, the inviter, whom it invited newest first, and each waiting invite", () => {
+  it("draws left, waiting (the QR aside), spent, the inviter, whom it invited newest first, and each waiting invite by its masked address", () => {
     const s = accountInvites(base);
     // 5 held, 3 holding: 2 left; the live QR holds but does not wait.
     expect([s.left, s.waiting, s.spent]).toEqual([2, 2, 2]);
@@ -90,8 +90,8 @@ describe("an account's Invites section (M2)", () => {
       { id: null, name: "deleted account", joined: "Oct 17" },
     ]);
     expect(s.waitingLines).toEqual([
-      { id: "r1", how: "by email", email: "m.chen@example.com", sent: "Oct 20", returns: "Oct 27" },
-      { id: "r2", how: "in person", email: "j.ruiz@example.com", sent: "Oct 21", returns: "Oct 28" },
+      { id: "r1", how: "by email", email: "m•••@e•••.com", sent: "Oct 20", returns: "Oct 27" },
+      { id: "r2", how: "in person", email: "j•••@e•••.com", sent: "Oct 21", returns: "Oct 28" },
     ]);
   });
 
@@ -101,7 +101,7 @@ describe("an account's Invites section (M2)", () => {
       ["20 Oct · 12:00", "Colin sent an invitation: 1 waiting", null],
       ["19 Oct · 09:00", "Peter joined on Colin’s invite", null],
       ["17 Oct · 12:00", "deleted account joined on Colin’s invite", null],
-      ["16 Oct · 12:00", "u_admin2 revoked a waiting invite of Colin’s", null],
+      ["16 Oct · 12:00", "Account ·min2 revoked a waiting invite of Colin’s", null],
       ["14 Oct · 10:00", "You set Colin’s invites: 1 → 4", null],
     ]);
     expect(s.historyCut).toBe(false);

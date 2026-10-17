@@ -55,6 +55,8 @@
     "probe:owned-support": "tsx scripts/probe-owned-support.mts",
     "probe:game-opponents": "tsx scripts/probe-game-opponents.mts",
     "probe:rule-zero": "tsx scripts/probe-rule-zero.mts",
+    "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
+    "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:invites": "tsx scripts/probe-invites.mts",

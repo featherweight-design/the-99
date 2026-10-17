@@ -19,9 +19,9 @@ const F = "22222222-2222-4222-8222-222222222222";
 const SAVED: SavedGroup = { id: T, name: "testers", description: "Hugh plus one", dailyAllowance: null };
 const none = { gains: [], losses: [] };
 const ROWS: MemberRow[] = [
-  { id: "u_hugh", name: "Hugh", email: "hugh@x.dev", saved: { id: T, name: "testers" }, toThis: none, toNone: { gains: [], losses: ["Overview v2"] } },
+  { id: "u_hugh", name: "Hugh", email: "h•••@x•••.dev", saved: { id: T, name: "testers" }, toThis: none, toNone: { gains: [], losses: ["Overview v2"] } },
   { id: "u_theo", name: "Theo", email: null, saved: { id: F, name: "friends" }, toThis: { gains: ["Overview v2", "Swap tools"], losses: [] }, toNone: none },
-  { id: "u_jun", name: "Jun", email: "jun@x.dev", saved: null, toThis: none, toNone: none },
+  { id: "u_jun", name: "Jun", email: "j•••@x•••.dev", saved: null, toThis: none, toNone: none },
 ];
 
 const member = (name: string) => screen.getByRole("checkbox", { name: new RegExp(`^${name}`) });
@@ -39,7 +39,7 @@ describe("GroupEditor", () => {
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
     expect(member("Hugh")).toHaveAttribute("aria-checked", "true");
     expect(member("Hugh")).toHaveTextContent("in testers");
-    expect(member("Hugh")).toHaveTextContent("hugh@x.dev");
+    expect(member("Hugh")).toHaveTextContent("h•••@x•••.dev");
     expect(member("Hugh")).toHaveTextContent("u_hugh");
     expect(member("Theo")).toHaveAttribute("aria-checked", "false");
     expect(member("Theo")).toHaveTextContent("in friends");
@@ -69,13 +69,15 @@ describe("GroupEditor", () => {
     expect(screen.getByText("0 selected, 1 not saved")).toBeInTheDocument();
   });
 
-  it("filters the list by name, email or id", () => {
+  it("filters the list by the masked name only, never an email or an id", () => {
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
-    const search = screen.getByRole("searchbox", { name: "Find an account by name, email or id" });
-    fireEvent.change(search, { target: { value: "JUN@" } });
+    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
+    fireEvent.change(search, { target: { value: "JU" } });
     expect(screen.getAllByRole("checkbox").map((c) => c.getAttribute("data-member"))).toEqual(["u_jun"]);
-    fireEvent.change(search, { target: { value: "u_th" } });
-    expect(screen.getAllByRole("checkbox").map((c) => c.getAttribute("data-member"))).toEqual(["u_theo"]);
+    for (const q of ["j•••@", "x.dev", "u_th"]) {
+      fireEvent.change(search, { target: { value: q } });
+      expect(screen.queryAllByRole("checkbox")).toEqual([]);
+    }
     fireEvent.change(search, { target: { value: "nobody" } });
     expect(screen.getByText("No account matches.")).toBeInTheDocument();
   });

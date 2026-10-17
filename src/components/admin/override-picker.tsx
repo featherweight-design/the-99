@@ -49,7 +49,7 @@ export function OverridePicker({
     }
   }, [picked]);
   const q = query.trim().toLocaleLowerCase("en-US");
-  const found = choices.filter((c) => q === "" || c.search.includes(q) || c.id.toLocaleLowerCase("en-US").startsWith(q)).slice(0, MAX_RESULTS);
+  const found = choices.filter((c) => q === "" || c.search.includes(q)).slice(0, MAX_RESULTS);
   const context: Omit<ConfirmContext, "op"> = { switchLabel: label, scope: kind, groupName: kind === "group" ? (picked?.label ?? null) : null };
 
   if (picked) {

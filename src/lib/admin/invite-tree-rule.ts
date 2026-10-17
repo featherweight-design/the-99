@@ -1,6 +1,7 @@
 import { adminCopy } from "../copy/admin";
 import { holdsInvite } from "../invites/rules";
 import type { Account } from "./accounts";
+import { maskEmail, unlistedAccount } from "./mask";
 import { initials, matchesAccount } from "./account-page-rule";
 import { countFor, fmtDay, type Edge, type ReservationRow } from "./invites-rule";
 import { accountName } from "./names";
@@ -18,7 +19,7 @@ const copy = adminCopy.invites.tree;
 /** One rail cell left of a row, per level: `v` an ancestor's line runs on, `blank` it ended, `tv` a tee, `t` an elbow. */
 export type RailCell = "v" | "blank" | "tv" | "t";
 
-type AccountNode = { kind: "account"; id: string; name: string; initials: string; owner: boolean; joined: string | null; left: number; invited: number; children: TreeNode[] };
+type AccountNode = { kind: "account"; id: string; name: string; initials: string | null; owner: boolean; joined: string | null; left: number; invited: number; children: TreeNode[] };
 type DeletedNode = { kind: "deleted"; key: string; joined: string | null; children: TreeNode[] };
 type WaitingNode = { kind: "waiting"; id: string; how: string; email: string; returns: string };
 export type TreeNode = AccountNode | DeletedNode | WaitingNode;
@@ -61,7 +62,7 @@ export function buildInviteTree(input: {
 
   function account(id: string): AccountNode {
     seen.add(id);
-    const a = byId.get(id) ?? { id, name: null, email: null };
+    const a = byId.get(id) ?? unlistedAccount(id);
     const open = openOf.get(id) ?? [];
     const waiting = open
       .filter((r) => r.state !== "qr_open" && holdsInvite(r, input.now))
@@ -83,7 +84,8 @@ export function buildInviteTree(input: {
           kind: "waiting",
           id: r.id,
           how: r.kind === "email" ? adminCopy.invites.byEmail : adminCopy.invites.inPerson,
-          email: r.email ?? "",
+          // Masked always: the recipient has no account to Show or log against (D9).
+          email: r.email ? maskEmail(r.email) : "",
           returns: fmtDay(r.holdsUntil!),
         })),
       ],
@@ -101,12 +103,13 @@ export function buildInviteTree(input: {
 }
 
 /** The tree cut to the accounts a search names, with the line to each from its root kept. An empty query keeps all. */
-export function filterTree(roots: readonly TreeNode[], query: string, accounts: ReadonlyMap<string, Account>): TreeNode[] {
+export function filterTree(roots: readonly TreeNode[], query: string): TreeNode[] {
   if (!query.trim()) return [...roots];
   const keep = (n: TreeNode): TreeNode | null => {
     if (n.kind === "waiting") return null;
     const children = n.children.map(keep).filter((c): c is TreeNode => c !== null);
-    const hit = n.kind === "account" && matchesAccount(accounts.get(n.id) ?? { id: n.id, name: n.name, email: null }, query);
+    // The node's own masked name: the tree carries nothing else to search (D14).
+    const hit = n.kind === "account" && matchesAccount(n, query);
     // A match keeps everything under it, so its waiting invites stay in view.
     if (hit) return n;
     return children.length > 0 ? { ...n, children } : null;

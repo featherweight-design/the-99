@@ -48,8 +48,8 @@ vi.mock("../model/allowance", () => ({
 const { loadAccountPage, loadAccountsList } = await import("./account-page");
 
 const G = "11111111-1111-4111-8111-111111111111";
-const HUGH = { id: "user_hugh", name: "Hugh", email: "hugh@example.com" };
-const ADAM = { id: "user_adam", name: "Adam", email: null };
+const HUGH = { id: "user_hugh", name: "Hugh", email: "h•••@e•••.com", named: true };
+const ADAM = { id: "user_adam", name: "Adam", email: null, named: true };
 const empty: SwitchSnapshot = { overrides: [], groupOf: new Map() };
 
 beforeEach(() => {
@@ -96,7 +96,7 @@ describe("loadAccountsList", () => {
   it("puts the allowance owner first, then A to Z, even when another admin sorts earlier", async () => {
     owner = HUGH.id;
     // `listAccounts` puts every admin first; Adam (an admin, not the owner) arrives ahead of Hugh.
-    listAccounts.mockResolvedValue({ accounts: [ADAM, HUGH, { id: "user_bea", name: "Bea", email: null }], clerk: "ok" });
+    listAccounts.mockResolvedValue({ accounts: [ADAM, HUGH, { id: "user_bea", name: "Bea", email: null, named: true }], clerk: "ok" });
     const list = await loadAccountsList(new Date("2026-10-13T12:00:00Z"));
     expect(list.rows.map((r) => r.id)).toEqual(["user_hugh", "user_adam", "user_bea"]);
   });
@@ -123,12 +123,12 @@ describe("loadAccountPage", () => {
 
   it("draws a listed account by its Clerk name", async () => {
     const page = await loadAccountPage(HUGH.id, "user_viewer");
-    expect(page).toMatchObject({ id: HUGH.id, name: "Hugh", email: "hugh@example.com", overridesRead: true, group: null });
+    expect(page).toMatchObject({ id: HUGH.id, name: "Hugh", email: "h•••@e•••.com", overridesRead: true, group: null });
   });
 
   it("draws an account known only by a membership, with its group", async () => {
     readSwitchSnapshot.mockResolvedValue({ overrides: [], groupOf: new Map([["user_ghost", G]]) });
-    expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ name: "user_ghost", group: { id: G, name: "friends" } });
+    expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ name: "Account ·host", group: { id: G, name: "friends" } });
   });
 
   it("draws an account known only by an account override", async () => {

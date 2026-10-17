@@ -15,9 +15,9 @@ const { InviteTreeView } = await import("./invite-tree");
 const R1 = "33333333-3333-4333-8333-333333333333";
 const now = new Date("2026-10-20T12:00:00Z");
 const accounts: Account[] = [
-  { id: "u_hugh", name: "Hugh", email: null },
-  { id: "u_colin", name: "Colin", email: null },
-  { id: "u_peter", name: "Peter", email: null },
+  { id: "u_hugh", name: "Hugh", email: null, named: true },
+  { id: "u_colin", name: "Colin", email: null, named: true },
+  { id: "u_peter", name: "Peter", email: null, named: true },
 ];
 const tree = buildInviteTree({
   accounts,
@@ -31,7 +31,7 @@ const tree = buildInviteTree({
   now,
 });
 const view = (over: Partial<Parameters<typeof InviteTreeView>[0]> = {}) =>
-  render(<InviteTreeView roots={tree.roots} accounts={tree.accounts} invited={tree.invited} waiting={tree.waiting} searchable={accounts} clerk="ok" {...over} />);
+  render(<InviteTreeView roots={tree.roots} accounts={tree.accounts} invited={tree.invited} waiting={tree.waiting} clerk="ok" {...over} />);
 
 beforeEach(() => {
   revoke.mockReset().mockResolvedValue({ ok: true, changed: true });
@@ -88,10 +88,10 @@ describe("InviteTreeView (M4)", () => {
     expect(within(colin as HTMLElement).getByRole("link", { name: "Open Colin" })).toBeTruthy();
   });
 
-  it("draws a waiting leaf with how it was sent, its address and its return, and revokes it", async () => {
+  it("draws a waiting leaf with how it was sent, its masked address and its return, and revokes it", async () => {
     view();
     const leaf = document.querySelector(`[data-waiting="${R1}"]`) as HTMLElement;
-    expect(leaf).toHaveTextContent("Waiting · by email · m.chen@example.com");
+    expect(leaf).toHaveTextContent("Waiting · by email · m•••@e•••.com");
     expect(leaf).toHaveTextContent("returns Oct 27");
     expect(within(leaf).queryByRole("link")).toBeNull();
     await act(async () => fireEvent.click(within(leaf).getByRole("button", { name: "Revoke" })));
@@ -102,9 +102,9 @@ describe("InviteTreeView (M4)", () => {
   it("counts accounts, invited and waiting, and cuts the tree to a search", () => {
     view();
     expect(screen.getByTestId("invite-tree-counts")).toHaveTextContent("3 accounts2 invited1 waiting");
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "col" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "col" } });
     expect(rowsIn(screen.getByTestId("invite-tree")).map((i) => i.getAttribute("data-node") ?? "waiting")).toEqual(["u_hugh", "u_colin", "u_peter", "waiting"]);
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "zzz" } });
     expect(screen.queryByTestId("invite-tree")).toBeNull();
     expect(screen.getByText("No account matches “zzz”.")).toBeTruthy();
     // The field is desktop only, so the cut tree carries its own way back at every width.
@@ -115,7 +115,7 @@ describe("InviteTreeView (M4)", () => {
 
   it("says on the phone that a search carried down from desktop is cutting the tree, and clears it", () => {
     view();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "pet" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "pet" } });
     const line = screen.getByTestId("invite-tree-filtered");
     expect(line.className).toContain("md:hidden");
     expect(line).toHaveTextContent("Showing accounts matching “pet”.");

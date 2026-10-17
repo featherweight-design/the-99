@@ -9,6 +9,7 @@
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:admin-switches
 import "./lib/env.mjs";
+import type { WriteDeps } from "../src/lib/admin/switch-writes";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const run = Date.now().toString(36);
@@ -37,8 +38,9 @@ async function main() {
   const { SWITCH_NAMES } = await import("../src/lib/switches/registry");
   let cleared = 0;
   // The probe's own universe, so Clerk is never asked; the rest is the shipped path.
-  const deps = {
-    accounts: async () => ({ accounts: [U1, U2].map((id) => ({ id, name: id, email: null })) }),
+  // Typed, so a shape drift is reported against WriteDeps rather than by printing Drizzle's transaction type, which overflows tsc's stack.
+  const deps: WriteDeps = {
+    accounts: async () => ({ accounts: [U1, U2].map((id) => ({ id, name: id, email: null, named: true })) }),
     env: switchEnvValues,
     rise: riseForAccounts,
     transaction: <T,>(fn: Parameters<typeof db.transaction<T>>[0]) => db.transaction(fn),

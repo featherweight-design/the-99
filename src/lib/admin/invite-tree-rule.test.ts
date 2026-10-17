@@ -10,11 +10,11 @@ import type { Edge, ReservationRow } from "./invites-rule";
 const now = new Date("2026-10-20T12:00:00Z");
 const day = (d: number, h = 12) => new Date(Date.UTC(2026, 9, d, h));
 const accounts: Account[] = [
-  { id: "u_hugh", name: "Hugh", email: "hugh@example.com" },
-  { id: "u_chris", name: "Chris", email: null },
-  { id: "u_colin", name: "Colin", email: null },
-  { id: "u_max", name: "Max", email: null },
-  { id: "u_peter", name: "Peter", email: null },
+  { id: "u_hugh", name: "Hugh", email: "h•••@e•••.com", named: true },
+  { id: "u_chris", name: "Chris", email: null, named: true },
+  { id: "u_colin", name: "Colin", email: null, named: true },
+  { id: "u_max", name: "Max", email: null, named: true },
+  { id: "u_peter", name: "Peter", email: null, named: true },
 ];
 const edges: Edge[] = [
   { inviter: "u_hugh", invitee: "u_max", kind: "qr", joinedAt: day(20, 9) },
@@ -43,9 +43,9 @@ describe("the invite tree", () => {
       "- Hugh",
       "tv Colin",
       "v,tv Peter",
-      "v,t waiting m.chen@example.com",
+      "v,t waiting m•••@e•••.com",
       "t Max",
-      "blank,t waiting j.ruiz@example.com",
+      "blank,t waiting j•••@e•••.com",
       "- Chris",
     ]);
   });
@@ -54,7 +54,7 @@ describe("the invite tree", () => {
     const rows = flattenTree(build().roots).filter((r) => r.kind === "account");
     const by = Object.fromEntries(rows.map((r) => [r.name, r]));
     // Hugh holds 6 with one QR on screen: 5 left.
-    expect(by.Hugh).toMatchObject({ owner: true, joined: null, left: 5, invited: 2, initials: "H" });
+    expect(by.Hugh).toMatchObject({ owner: true, joined: null, left: 5, invited: 2, initials: "HU" });
     expect(by.Colin).toMatchObject({ owner: false, joined: "Oct 18", left: 2, invited: 1 });
     expect(by.Peter).toMatchObject({ joined: "Oct 19", left: 0, invited: 0 });
     const waiting = flattenTree(build().roots).find((r) => r.kind === "waiting" && r.id === "r2");
@@ -80,9 +80,9 @@ describe("the invite tree", () => {
     expect(t.invited).toBe(2);
   });
 
-  it("still draws an account Clerk did not list, by its id", () => {
+  it("still draws an account Clerk did not list, as Account ·<tail>", () => {
     const t = build({ accounts: accounts.filter((a) => a.id !== "u_peter") });
-    expect(shape(flattenTree(t.roots))).toContain("v,tv u_peter");
+    expect(shape(flattenTree(t.roots))).toContain("v,tv Account ·eter");
   });
 
   it("with Clerk down, still draws a sender known only by a stock or an open reservation, with its waiting invite", () => {
@@ -92,7 +92,7 @@ describe("the invite tree", () => {
       balances: new Map([["u_quiet", 2]]),
       open: [reservation({ id: "r9", userId: "u_lone", email: "x@example.com" })],
     });
-    expect(shape(flattenTree(t.roots))).toEqual(["- u_quiet", "- u_lone", "t waiting x@example.com"]);
+    expect(shape(flattenTree(t.roots))).toEqual(["- Account ·uiet", "- Account ·lone", "t waiting x•••@e•••.com"]);
     expect(t.waiting).toBe(1);
   });
 
@@ -102,17 +102,18 @@ describe("the invite tree", () => {
   });
 
   it("cuts to the accounts a search names, keeping the line from the root and what waits under a match", () => {
-    const byId = new Map(accounts.map((a) => [a.id, a]));
-    expect(shape(flattenTree(filterTree(build().roots, "pet", byId)))).toEqual(["- Hugh", "t Colin", "blank,t Peter"]);
-    expect(shape(flattenTree(filterTree(build().roots, "colin", byId)))).toEqual([
+    expect(shape(flattenTree(filterTree(build().roots, "pet")))).toEqual(["- Hugh", "t Colin", "blank,t Peter"]);
+    expect(shape(flattenTree(filterTree(build().roots, "colin")))).toEqual([
       "- Hugh",
       "t Colin",
       "blank,tv Peter",
-      "blank,t waiting m.chen@example.com",
+      "blank,t waiting m•••@e•••.com",
     ]);
-    // An address an account holds matches too; a waiting invite's address does not.
-    expect(shape(flattenTree(filterTree(build().roots, "hugh@", byId)))[0]).toBe("- Hugh");
-    expect(flattenTree(filterTree(build().roots, "m.chen", byId))).toEqual([]);
-    expect(filterTree(build().roots, "  ", byId)).toEqual(build().roots);
+    // Only the masked name matches: an account's address, its id and a waiting invite's address never do.
+    expect(flattenTree(filterTree(build().roots, "hugh@"))).toEqual([]);
+    expect(flattenTree(filterTree(build().roots, "u_colin"))).toEqual([]);
+    expect(flattenTree(filterTree(build().roots, "m.chen"))).toEqual([]);
+    expect(flattenTree(filterTree(build().roots, "m•••"))).toEqual([]);
+    expect(filterTree(build().roots, "  ")).toEqual(build().roots);
   });
 });

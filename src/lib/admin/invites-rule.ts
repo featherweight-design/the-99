@@ -1,4 +1,5 @@
 import { adminCopy } from "../copy/admin";
+import { maskEmail } from "./mask";
 import { inviteCopy } from "../copy/invites";
 import { HOLD_MS, holdsInvite, inviteCount, parseInvitesLeft, type HoldingRow, type InviteKind } from "../invites/rules";
 import type { Account } from "./accounts";
@@ -140,7 +141,8 @@ export function accountInvites(input: {
     waitingLines: waiting.map((r) => ({
       id: r.id,
       how: r.kind === "email" ? copy.byEmail : copy.inPerson,
-      email: r.email ?? "",
+      // A waiting recipient has no account to Show or log against, so the address is masked always (D9).
+      email: r.email ? maskEmail(r.email) : "",
       sent: fmtDay(new Date(r.holdsUntil!.getTime() - HOLD_MS)),
       returns: fmtDay(r.holdsUntil!),
     })),
