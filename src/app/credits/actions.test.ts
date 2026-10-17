@@ -83,12 +83,13 @@ describe("readReturnAction", () => {
     expect(m.readReturn).toHaveBeenCalledWith({}, { sessionId: "cs_1", viewerId: "user_a" });
   });
 
-  it("is off, and reads nothing, when the reader's switch is off or killed", async () => {
+  it("still reads with the switch off or killed: stopping sales does not cancel an open Checkout", async () => {
+    m.readReturn.mockResolvedValue({ kind: "added", units: 40 });
     for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
-      m.requestSwitchEnv.mockResolvedValueOnce(env);
-      expect(await readReturnAction("cs_1")).toEqual({ ok: false, reason: "off" });
+      m.requestSwitchEnv.mockResolvedValue(env);
+      expect(await readReturnAction("cs_1")).toEqual({ ok: true, read: { kind: "added", units: 40 } });
     }
-    expect(m.readReturn).not.toHaveBeenCalled();
+    expect(m.readReturn).toHaveBeenCalledTimes(2);
   });
 
   it("answers failed, with a fixed log line, when Stripe or the database throws", async () => {

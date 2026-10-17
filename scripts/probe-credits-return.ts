@@ -14,6 +14,8 @@
 //      unpaid status reads `none`
 //   d  a Session Stripe does not know (code `resource_missing`) reads `none`; any other error throws
 //   e  `listCreditHistory(A)` returns A's two pack lots newest first and none of B's
+//   f  the history's amount is what the payment record says was PAID (531 cents, tax included), not the registry's
+//      price; a grant with no payment record carries no amount; B's history holds only B's own lots, with B's own amounts
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run, restored by
 // copying back), and each fails it:
@@ -185,6 +187,23 @@ async function run() {
     check("e · A's history is its two lots, newest first", ha.map((r) => [r.source, r.externalId]), [["pack", sa2.id], ["pack", sa.id]]);
     check("e · and holds none of B's", ha.some((r) => r.externalId === sb.id), false);
     check("e · B's history is B's one lot", (await listCreditHistory(B.userId)).map((r) => r.externalId), [sb.id]);
+  }
+
+  // f · the amount paid, through the grant's Session id.
+  {
+    const paid = (await listCreditHistory(A.userId)).map((r) => [r.amountCents, r.currency]);
+    check("f · A's two paid lots carry the 531 cents the record says were paid", paid, [[531, "usd"], [531, "usd"]]);
+    const bare = id("cs");
+    sessions.push(bare);
+    await fixture.execute(sql`insert into credit_grants (user_id, source, units, external_id) values (${A.userId}, 'pack', 40, ${bare})`);
+    const withBare = await listCreditHistory(A.userId);
+    check("f · a grant with no payment record carries no amount", withBare.filter((r) => r.externalId === bare).map((r) => [r.amountCents, r.currency]), [[null, null]]);
+    const sb2 = session(B.customerId, B.userId, { amount_total: 700, total_details: { amount_tax: 200, amount_discount: 0, amount_shipping: 0 } } as Partial<Stripe.Checkout.Session>);
+    check("f · B's 700-cent pack grants", await grant(sb2), "grant");
+    const hb = await listCreditHistory(B.userId);
+    check("f · B's history shows B's own amounts", hb.map((r) => r.amountCents).sort(), [531, 700]);
+    check("f · and none of A's lots", hb.some((r) => withBare.some((a) => a.id === r.id)), false);
+    check("f · A's history never shows B's 700", (await listCreditHistory(A.userId)).some((r) => r.amountCents === 700), false);
   }
 }
 

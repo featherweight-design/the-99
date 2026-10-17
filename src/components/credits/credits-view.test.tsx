@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push
 import { CreditsView } from "./credits-view";
 
 const allowance = (over: Partial<AllowanceFacts> = {}): AllowanceFacts => ({ used: 2, limit: 5, nextAt: null, ...over });
-const row: CreditHistoryRow = { id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1" };
+const row: CreditHistoryRow = { id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1", amountCents: 531, currency: "usd" };
 
 function model(over: { switchOn?: boolean; allowance?: AllowanceFacts; history?: CreditHistoryRow[]; offers?: ReturnType<typeof packOffers> } = {}) {
   const r = buildCreditsModel({ switchOn: true, allowance: allowance(), history: [], offers: packOffers(), ...over });
@@ -40,7 +40,7 @@ describe("the page", () => {
     expect(screen.getByText(/Spent in this order/i)).toBeTruthy();
     expect(screen.getByTestId("credits-total").textContent).toBe("43");
     expect(screen.getByText("Oct 2")).toBeTruthy();
-    expect(screen.getByText("$5.00")).toBeTruthy();
+    expect(screen.getByText("$5.31")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Receipt/ })).toBeTruthy();
   });
 

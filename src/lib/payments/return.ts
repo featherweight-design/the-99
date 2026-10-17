@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "../../db";
-import { creditGrants } from "../../db/schema";
+import { creditGrants, paymentRecords } from "../../db/schema";
 import { decideReturn, isSessionId, type ReturnRead } from "./return-rule";
 import { isOurSession } from "./packs";
 
@@ -54,7 +54,8 @@ export async function receiptUrlFor(stripe: Stripe, input: { sessionId: unknown;
  * The reader's purchases, newest first, for the history list (plan E8). One row per `credit_grants` lot: a pack
  * now, a plan month once the subscription PR writes them (the shape is ready: `source`, `units`, `revokedUnits`,
  * `externalId`). `externalId` is the Checkout Session id a Receipt link is fetched by; it is never a Stripe
- * URL, and no receipt URL is stored.
+ * URL, and no receipt URL is stored. `amountCents` and `currency` are what the kept payment record says was PAID
+ * (tax included), never the registry's price today; a lot with no record carries null and draws no amount.
  */
 export type CreditHistoryRow = {
   id: string;
@@ -63,6 +64,9 @@ export type CreditHistoryRow = {
   revokedUnits: number;
   createdAt: Date;
   externalId: string | null;
+  /** What was paid, in the currency's minor unit, from the kept payment record; null when no record backs the lot. */
+  amountCents: number | null;
+  currency: string | null;
 };
 
 export const HISTORY_LIMIT = 100;
@@ -75,7 +79,12 @@ export function creditHistoryQuery(userId: string) {
     revokedUnits: creditGrants.revokedUnits,
     createdAt: creditGrants.createdAt,
     externalId: creditGrants.externalId,
-  }).from(creditGrants).where(eq(creditGrants.userId, userId)).orderBy(desc(creditGrants.createdAt)).limit(HISTORY_LIMIT);
+    amountCents: paymentRecords.amountCents,
+    currency: paymentRecords.currency,
+  }).from(creditGrants)
+    // The record has no account id (kept through the purge), so it is reached THROUGH the viewer's own grant.
+    .leftJoin(paymentRecords, eq(creditGrants.externalId, paymentRecords.checkoutSessionId))
+    .where(eq(creditGrants.userId, userId)).orderBy(desc(creditGrants.createdAt)).limit(HISTORY_LIMIT);
 }
 
 export async function listCreditHistory(userId: string): Promise<CreditHistoryRow[]> {

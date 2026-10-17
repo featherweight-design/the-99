@@ -66,8 +66,6 @@ export function ReturnBand({ sessionId, initial, timing = BAND_TIMING, read = re
           return;
         }
         if (out.read.kind === "none") return;
-      } else if (out.reason === "off") {
-        return;
       } else {
         live.current.onReadFailed();
       }

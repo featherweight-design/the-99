@@ -11,8 +11,16 @@ describe("creditHistoryQuery", () => {
     expect(q.params[0]).toBe("user_a");
   });
 
-  it("selects the columns a row draws and a receipt is fetched by", () => {
-    for (const c of ["id", "source", "units", "revoked_units", "created_at", "external_id"]) expect(q.sql).toContain(`"${c}"`);
+  it("selects the columns a row draws and a receipt is fetched by, each qualified by its table", () => {
+    for (const c of ["id", "source", "units", "revoked_units", "created_at", "external_id"]) expect(q.sql).toContain(`"credit_grants"."${c}"`);
+    for (const c of ["amount_cents", "currency"]) expect(q.sql).toContain(`"payment_records"."${c}"`);
+  });
+
+  // payment_records carries no account id, so a payment is reached only THROUGH the viewer's own grant: a left join
+  // on the Session id, with the viewer's filter on the grant side.
+  it("joins the payment record through the grant's Session id, and keeps a grant that has no record", () => {
+    expect(q.sql).toMatch(/left join "payment_records" on "credit_grants"\."external_id" = "payment_records"\."checkout_session_id"/);
+    expect(q.sql).not.toMatch(/"payment_records"\."[a-z_]+" = \$1/);
   });
 
   it("is newest first and bounded", () => {

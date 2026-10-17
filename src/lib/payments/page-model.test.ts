@@ -5,7 +5,7 @@ import type { CreditHistoryRow } from "./return";
 
 const allowance = (over: Partial<AllowanceFacts> = {}): AllowanceFacts => ({ used: 2, limit: 5, nextAt: new Date("2026-10-17T09:01:00Z"), ...over });
 const row = (over: Partial<CreditHistoryRow> = {}): CreditHistoryRow => ({
-  id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1", ...over,
+  id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1", amountCents: 531, currency: "usd", ...over,
 });
 const offers = packOffers();
 const model = (input: Parameters<typeof buildCreditsModel>[0]) => {
@@ -24,6 +24,11 @@ describe("buildCreditsModel: who sees the page", () => {
     expect(buildCreditsModel({ switchOn: true, allowance: allowance(), history: [], offers }).sees).toBe(true);
     expect(buildCreditsModel({ switchOn: false, allowance: allowance({ pack: 3 }), history: [], offers }).sees).toBe(true);
     expect(buildCreditsModel({ switchOn: false, allowance: allowance(), history: [row()], offers }).sees).toBe(true);
+  });
+
+  it("is seen, without offers, by a first-time buyer whose switch turned off mid-purchase (returning)", () => {
+    const r = buildCreditsModel({ switchOn: false, allowance: allowance(), history: [], offers, returning: true });
+    expect(r.sees && r.model.offers).toBeNull();
   });
 });
 
@@ -66,11 +71,18 @@ describe("buildCreditsModel: cells", () => {
 describe("buildCreditsModel: history", () => {
   it("labels a pack, prices it from the registry, and keys its receipt by the Checkout Session", () => {
     const [h] = model({ switchOn: true, allowance: allowance(), history: [row()], offers }).history;
-    expect(h).toMatchObject({ date: "Oct 2", label: "Credit pack", units: 40, amount: "$5.00", sessionId: "cs_test_1" });
+    expect(h).toMatchObject({ date: "Oct 2", label: "Credit pack", units: 40, amount: "$5.31", sessionId: "cs_test_1" });
   });
 
-  it("gives a lot with no Session id, or of an unsold size, no receipt and no price", () => {
-    const [h] = model({ switchOn: true, allowance: allowance(), history: [row({ units: 77, externalId: null })], offers }).history;
+  it("draws what was PAID, never the registry's price: a lot with no payment record draws no amount", () => {
+    const [h] = model({ switchOn: true, allowance: allowance(), history: [row({ amountCents: null, currency: null })], offers }).history;
+    expect(h).toMatchObject({ amount: null, sessionId: "cs_test_1" });
+    const [paid] = model({ switchOn: true, allowance: allowance(), history: [row({ amountCents: 1250 })], offers }).history;
+    expect(paid.amount).toBe("$12.50");
+  });
+
+  it("draws no amount for a currency it does not format, and no receipt for a lot with no Session id", () => {
+    const [h] = model({ switchOn: true, allowance: allowance(), history: [row({ currency: "eur", externalId: null })], offers }).history;
     expect(h).toMatchObject({ amount: null, sessionId: null });
   });
 });

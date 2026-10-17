@@ -87,13 +87,51 @@ describe("the return", () => {
     expect((await render({ checkout: "done", session_id: SESSION })).props.ret).toBeNull();
   });
 
-  it("reads nothing for a malformed id, a missing id, or a switch that is off", async () => {
+  it("reads nothing for a malformed id or a missing id", async () => {
     expect((await render({ checkout: "done", session_id: "../x" })).props.ret).toBeNull();
     expect((await render({ checkout: "done" })).props.ret).toBeNull();
+    expect(m.readReturn).not.toHaveBeenCalled();
+  });
+
+  it("reads the return, and draws the band, with the switch off: stopping sales does not cancel an open Checkout", async () => {
     m.requestSwitchEnv.mockResolvedValue({});
     m.listCreditHistory.mockResolvedValue([grant]);
-    expect((await render({ checkout: "done", session_id: SESSION })).props.ret).toBeNull();
-    expect(m.readReturn).not.toHaveBeenCalled();
+    m.readReturn.mockResolvedValue({ kind: "processing", units: 40 });
+    const el = await render({ checkout: "done", session_id: SESSION });
+    expect(el.props.ret).toEqual({ kind: "done", sessionId: SESSION, initial: { kind: "processing", units: 40 } });
+    expect((el.props.model as { offers: unknown }).offers).toBeNull();
+  });
+
+  it("keeps the page, reduced, for a first-time buyer whose switch turned off mid-purchase (not a 404)", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.readReturn.mockResolvedValue({ kind: "processing", units: 40 });
+    const el = await render({ checkout: "done", session_id: SESSION });
+    expect(el.type).toBe(CreditsView);
+    expect((el.props.model as { offers: unknown }).offers).toBeNull();
+  });
+
+  it("is still not found for a switch-off reader whose session_id is not their own", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.readReturn.mockResolvedValue({ kind: "none" });
+    await expect(render({ checkout: "done", session_id: SESSION })).rejects.toBeInstanceOf(NotFound);
+  });
+
+  it("is not found for a switch-off reader when Stripe could not be asked (nothing was validated)", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.readReturn.mockRejectedValue(new Error("network"));
+    await expect(render({ checkout: "done", session_id: SESSION })).rejects.toBeInstanceOf(NotFound);
+  });
+
+  // The webhook can commit between the two reads. Read the return first and the grant it observes is always in the
+  // balances and the history that are read after it.
+  it("reads the return BEFORE the balances and the history", async () => {
+    const order: string[] = [];
+    m.readReturn.mockImplementation(async () => { order.push("return"); return { kind: "added", units: 40 }; });
+    m.readAllowance.mockImplementation(async () => { order.push("allowance"); return { used: 2, limit: 5, reopensAt: null, nextAt: null, pack: 40 }; });
+    m.listCreditHistory.mockImplementation(async () => { order.push("history"); return [grant]; });
+    await render({ checkout: "done", session_id: SESSION });
+    expect(order[0]).toBe("return");
+    expect(order.slice(1).sort()).toEqual(["allowance", "history"]);
   });
 
   it("starts the band empty, to ask again at once, when Stripe could not be asked", async () => {

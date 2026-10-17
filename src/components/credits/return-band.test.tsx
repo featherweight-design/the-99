@@ -113,7 +113,7 @@ describe("ReturnBand cadence", () => {
     expect(onReadFailed).toHaveBeenCalledTimes(1);
   });
 
-  it("stops on a none, on an off, and on unmount", async () => {
+  it("stops on a none and on unmount", async () => {
     const none = vi.fn().mockResolvedValue({ ok: true, read: { kind: "none" } } satisfies ReturnOutcome);
     const a = band(none);
     await tick(2000);
@@ -121,12 +121,6 @@ describe("ReturnBand cadence", () => {
     expect(none).toHaveBeenCalledTimes(1);
     expect(a.container.textContent).toBe("");
     a.unmount();
-
-    const off = vi.fn().mockResolvedValue({ ok: false, reason: "off" } satisfies ReturnOutcome);
-    band(off);
-    await tick(2000);
-    await tick(30_000);
-    expect(off).toHaveBeenCalledTimes(1);
 
     const live = vi.fn().mockResolvedValue(processing);
     const c = band(live);

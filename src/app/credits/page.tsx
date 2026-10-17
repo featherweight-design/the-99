@@ -31,23 +31,29 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const switchOn = paymentsEnabled(await requestSwitchEnv(userId));
   const params = await searchParams;
 
+  // The return is read FIRST, so a grant it observes was committed before the balances and history below are read and
+  // is always in them: read the other way round, a webhook landing between the two reads would draw `added` over
+  // the old totals. It is read whatever the switch says (stopping sales does not cancel an open Checkout), and a
+  // valid return of this reader's own keeps the page, reduced, for a first-time buyer (`returning`).
+  const ret = await returnFrom(params, userId, switchOn);
+  const returning = ret?.kind === "done" && ret.initial !== null;
+
   let built: ReturnType<typeof buildCreditsModel>;
   try {
     const [allowance, history] = await Promise.all([readAllowance(userId), listCreditHistory(userId)]);
-    built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers() });
+    built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers(), returning });
   } catch (error) {
     console.error(`[credits] read failed${error instanceof Error ? ` (${error.name})` : ""}`);
     return <CreditsReadFailed />;
   }
   if (!built.sees) notFound();
 
-  return <CreditsView model={built.model} ret={await returnFrom(params, userId, switchOn)} />;
+  return <CreditsView model={built.model} ret={ret} />;
 }
 
-/** The return band's start: nothing without the switch, a quiet line on a cancel, the Session's read on a finish. */
+/** The return band's start: a quiet line on a cancel (only while sales are on), the Session's read on a finish (always). */
 async function returnFrom(params: Params, userId: string, switchOn: boolean): Promise<ReturnProp | null> {
-  if (!switchOn) return null;
-  if (params.checkout === "cancelled") return { kind: "cancelled" };
+  if (params.checkout === "cancelled") return switchOn ? { kind: "cancelled" } : null;
   const sessionId = params.session_id;
   if (params.checkout !== "done" || !isSessionId(sessionId)) return null;
   const stripe = stripeClient();

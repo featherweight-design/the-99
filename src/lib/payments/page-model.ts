@@ -1,5 +1,4 @@
 import { freeCount } from "../model/allowance-rule";
-import { PACKS } from "./packs";
 import type { CreditHistoryRow } from "./return";
 import { readerSeesCredits, readerSeesOffers } from "./visible-rule";
 import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/credits-page";
@@ -23,7 +22,7 @@ export type HistoryItem = {
   date: string;
   label: string;
   units: number;
-  /** `$5.00` from the pack registry, or null when no pack of that size is sold (an old lot). */
+  /** `$5.31`, what the payment record says was PAID (tax included), or null when no record backs the lot. */
   amount: string | null;
   /** The Checkout Session id a Receipt is fetched by, or null (a lot with no Session has no receipt link). */
   sessionId: string | null;
@@ -48,12 +47,14 @@ export function buildCreditsModel(input: {
   history: readonly CreditHistoryRow[];
   /** The packs on sale. The page passes the registry's (`packOffers()`); a test passes a second to prove the layout. */
   offers: readonly PackOffer[];
+  /** A valid return from a Checkout of this reader's own (`ReturnProp` of kind `done` with a read), switch state aside. */
+  returning?: boolean;
 }): { sees: false } | { sees: true; model: CreditsModel } {
   const { allowance: a, history } = input;
   const plan = a.plan ?? 0;
   const pack = a.pack ?? 0;
   const held = plan + pack > 0;
-  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0 })) return { sees: false };
+  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false })) return { sees: false };
   const freeLeft = freeCount(a);
   const oncePlan = history.some((r) => r.source === "plan");
   const oncePack = history.some((r) => r.source === "pack");
@@ -77,13 +78,12 @@ export function buildCreditsModel(input: {
 const usd = (cents: number) => dollars(cents).includes(".") ? dollars(cents) : `${dollars(cents)}.00`;
 
 export function historyItem(r: CreditHistoryRow): HistoryItem {
-  const sold = Object.values(PACKS).find((p) => p.units === r.units);
   return {
     id: r.id,
     date: shortDate(r.createdAt),
     label: r.source === "plan" ? creditsPageCopy.hist.planMonth : creditsPageCopy.hist.pack,
     units: r.units,
-    amount: r.source === "pack" && sold ? usd(sold.priceCents) : null,
+    amount: r.amountCents !== null && r.currency === "usd" ? usd(r.amountCents) : null,
     sessionId: r.externalId?.startsWith("cs_") ? r.externalId : null,
   };
 }

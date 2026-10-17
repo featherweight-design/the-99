@@ -52,17 +52,16 @@ export async function buyPackAction(packId: unknown, actionId: unknown): Promise
   }
 }
 
-/** The return band's re-read. `off`: payments are off for this reader, so there is no purchase to follow. `failed`: could not check (transient). */
-export type ReturnOutcome = { ok: true; read: ReturnRead } | { ok: false; reason: "off" | "failed" };
+/** The return band's re-read. `failed`: could not check (transient). */
+export type ReturnOutcome = { ok: true; read: ReturnRead } | { ok: false; reason: "failed" };
 
 /**
  * Where a purchase stands, read again by the return band every few seconds. The id is the URL's, so it proves
- * nothing: `readReturn` refuses a Session that is not this reader's own, as `none`. Gated on the switch, since
- * a return is the tail of a purchase and the page draws no offer to come back from while it is off.
+ * nothing: `readReturn` refuses a Session that is not this reader's own, as `none`.
+ * NOT gated on the switch: stopping sales does not cancel a Checkout already open, and a status read grants nothing.
  */
 export async function readReturnAction(sessionId: unknown): Promise<ReturnOutcome> {
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "failed" };
   try {
