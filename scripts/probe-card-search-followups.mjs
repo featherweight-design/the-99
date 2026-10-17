@@ -101,6 +101,21 @@ async function emptyOnLeave(page, wide, tag) {
   }
 }
 
+// Opens a card from the search by name and takes it off the wishlist. Only ever called for the card this run added.
+async function removeAdded(page, wide, name) {
+  await open(page, wide);
+  await sheet(page).getByRole("combobox").fill(name);
+  await sheet(page).getByRole("option").first().waitFor({ timeout: 15_000 });
+  await sheet(page).getByRole("option").first().click();
+  await card(page).first().waitFor({ timeout: 15_000 });
+  await unfold(page);
+  await card(page).first().getByRole("button", { name: /^Remove$/ }).first().click();
+  await card(page).first().getByRole("button", { name: /Add to wishlist/ }).first().waitFor({ timeout: 10_000 });
+  await backToSearch(page);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+}
+
 // 2. A wishlist add made in a card the search opened shows in the list behind.
 async function wishlistBehind(page, wide, tag) {
   await go(page, "/collection/wishlist");
@@ -111,43 +126,39 @@ async function wishlistBehind(page, wide, tag) {
   const options = sheet(page).getByRole("option");
   await options.first().waitFor({ timeout: 15_000 });
   const count = await options.count();
+  // A result already on the list is somebody's wish, not a fixture: it is never touched.
   let chosen = null;
   for (let i = 0; i < count && chosen === null; i += 1) {
-    const option = sheet(page).getByRole("option").nth(i);
-    const name = await option.getAttribute("aria-label");
-    if (name && /not owned/.test(name)) chosen = { i, name };
+    const name = await sheet(page).getByRole("option").nth(i).getAttribute("aria-label");
+    if (name && !/on your wishlist/.test(name)) chosen = { i, name, short: name.split(",")[0] };
   }
   if (!report(`${tag} a result not on the list yet`, chosen !== null)) return;
   await sheet(page).getByRole("option").nth(chosen.i).click();
   await card(page).first().waitFor({ timeout: 15_000 });
   await unfold(page);
-  const add = card(page).first().getByRole("button", { name: /Add to wishlist/ }).first();
-  // A line left by an earlier run is taken off first, so the add below is the one under test.
-  const stale = card(page).first().getByRole("button", { name: /^Remove$/ }).first();
-  if (await stale.isVisible()) await stale.click();
-  await add.waitFor({ timeout: 10_000 });
-  await add.click();
-  await card(page).first().getByRole("button", { name: /Remove/ }).first().waitFor({ timeout: 10_000 });
-  await backToSearch(page);
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
-  const grew = await page.waitForFunction((n) => document.querySelectorAll('[data-testid="wishlist-tile"]').length === n + 1, before, { timeout: 10_000 }).then(() => true, () => false);
-  report(`${tag} the added card is in the list behind`, grew, `${chosen.name}: ${before} tiles before, ${await tiles.count()} after`);
-
-  // Clean up through the same door: open the card from the search and Remove it.
-  await open(page, wide);
-  await sheet(page).getByRole("combobox").fill(chosen.name.split(",")[0]);
-  await sheet(page).getByRole("option").first().waitFor({ timeout: 15_000 });
-  await sheet(page).getByRole("option").first().click();
-  await card(page).first().waitFor({ timeout: 15_000 });
-  await unfold(page);
-  await card(page).first().getByRole("button", { name: /Remove/ }).first().click();
-  await card(page).first().getByRole("button", { name: /Add to wishlist/ }).first().waitFor({ timeout: 10_000 });
-  await backToSearch(page);
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Escape");
-  const gone = await page.waitForFunction((n) => document.querySelectorAll('[data-testid="wishlist-tile"]').length === n, before, { timeout: 10_000 }).then(() => true, () => false);
-  report(`${tag} …and gone again after Remove`, gone, `${await tiles.count()} tiles`);
+  let added = false;
+  try {
+    const add = card(page).first().getByRole("button", { name: /Add to wishlist/ }).first();
+    await add.waitFor({ timeout: 10_000 });
+    await add.click();
+    added = true;
+    await card(page).first().getByRole("button", { name: /^Remove$/ }).first().waitFor({ timeout: 10_000 });
+    await backToSearch(page);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    const grew = await page.waitForFunction((n) => document.querySelectorAll('[data-testid="wishlist-tile"]').length === n + 1, before, { timeout: 10_000 }).then(() => true, () => false);
+    report(`${tag} the added card is in the list behind`, grew, `${chosen.name}: ${before} tiles before, ${await tiles.count()} after`);
+    await removeAdded(page, wide, chosen.short);
+    added = false;
+    const gone = await page.waitForFunction((n) => document.querySelectorAll('[data-testid="wishlist-tile"]').length === n, before, { timeout: 10_000 }).then(() => true, () => false);
+    report(`${tag} …and gone again after Remove`, gone, `${await tiles.count()} tiles`);
+  } finally {
+    // A check that threw after the add still takes the line it wrote off again.
+    if (added) {
+      await go(page, "/collection/wishlist").catch(() => {});
+      await removeAdded(page, wide, chosen.short).catch((e) => console.error(`COULD NOT REMOVE the wish this run added (${chosen.short}):`, e.message));
+    }
+  }
 }
 
 // 3. No frame between the search and the card shows the page.

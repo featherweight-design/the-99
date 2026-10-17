@@ -102,11 +102,12 @@ function Bridge({
   useEffect(() => {
     const a = asked.current;
     if (!a) return;
-    if (openOracleId === a.id) {
+    // The card's data arrives before its dialog does (the modal's code may still be loading, and the provider keeps the
+    // card pending until it is drawn), so the veil lifts only once nothing is pending for it.
+    if (openOracleId === a.id && pendingOracleId === null) {
       asked.current = null;
       onCardShown();
-    }
-    else if (pendingOracleId === a.id) a.pending = true;
+    } else if (pendingOracleId === a.id) a.pending = true;
     else if (a.pending && pendingOracleId === null) {
       asked.current = null;
       onCardFailed();
