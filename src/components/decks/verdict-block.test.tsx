@@ -158,6 +158,33 @@ describe("the sub-line", () => {
     ).toBeTruthy();
   });
 
+  // `slotDeck` counts COMBOS that loop turns for the extra-turn rule at Core and Upgraded, and cards only at
+  // Exhibition, so the noun follows the bracket the rule ruled out. "1 extra-turn card" at Core was wrong.
+  it("counts extra turns as combos that loop turns at Core, and as cards at Exhibition", () => {
+    const base = drawn("2");
+    // The sub-line reads the bracket below the deck's own: permits [n + 1] and the violations reported at n.
+    const read = (below: 1 | 2 | 3, have: number) =>
+      render(
+        <VerdictBlock
+          analyzedAt={new Date().toISOString()}
+          profile={base.profile}
+          verdict={{
+            ...base.verdict,
+            permits: [(below + 1) as 2 | 3 | 4],
+            violations: [{ ...base.verdict.violations[0], rule: "extraTurns", bracket: below, have, limit: 0 }],
+          }}
+        />,
+      );
+    let view = read(2, 1);
+    expect(screen.getByText("One combo that loops turns, and Core allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+    view.unmount();
+    view = read(3, 2);
+    expect(screen.getByText("Two combos that loop turns, and Upgraded allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+    view.unmount();
+    read(1, 1);
+    expect(screen.getByText("One extra-turn card, and Exhibition allows none at all. Nothing else in the 99 reaches further.")).toBeTruthy();
+  });
+
   // THE INVARIANT, not a figure nothing can produce. `ruledOutAllowance`'s `allows only N`
   // reading is unreachable from this component: `below` is 1, 2 or 3; every rule caps at zero at
   // 1 and 2, and `below === 3` needs `[4]`, which arrives with `violatesB3` false and therefore

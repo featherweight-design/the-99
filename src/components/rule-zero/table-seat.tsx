@@ -11,7 +11,7 @@
 import type { CSSProperties } from "react";
 
 import { FINDING_ORDER, type FindingId } from "../../lib/bracket/findings";
-import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy, ruleNounFor } from "../../lib/copy/deck-analysis";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { socialCopy } from "../../lib/copy/social";
@@ -308,12 +308,10 @@ export function driversSentence(draw: SeatDraw): string | null {
     return copy.whyLow(BRACKET_NAMES[d.bracket]);
   }
   if (d.kind === "ruledOut") {
-    const nouns = deckAnalysisCopy.verdict.ruleNouns;
     return d.reasons
       .map((r) => {
-        // At Core and Upgraded the extra-turn rule counts combos that loop turns, not extra-turn cards (`slotDeck`'s
-        // loop clause); only Exhibition counts the cards themselves.
-        const noun = r.rule === "extraTurns" && d.below > 1 ? copy.loopNouns : nouns[r.rule];
+        // Core and Upgraded count combos that loop turns, Exhibition the cards: `ruleNounFor` decides.
+        const noun = ruleNounFor(r.rule, d.below);
         return copy.whyLimit(r.have, noun[r.have === 1 ? 0 : 1], BRACKET_NAMES[d.below], r.limit);
       })
       .join(" ");

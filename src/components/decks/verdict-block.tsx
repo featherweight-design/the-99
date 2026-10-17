@@ -11,7 +11,7 @@ import {
 } from "../../lib/bracket/verdict-head";
 import type { Bracket, BracketVerdict } from "../../lib/bracket/types";
 import type { DeckProfile } from "../../lib/profile/types";
-import { deckAnalysisCopy, BRACKET_NAMES, nameList } from "../../lib/copy/deck-analysis";
+import { deckAnalysisCopy, BRACKET_NAMES, nameList, ruleNounFor } from "../../lib/copy/deck-analysis";
 import { formatShortDeckDate } from "../../lib/decks/format";
 import { declarationAsk } from "../../lib/bracket/declaration-ask";
 import { versionComparison } from "../../lib/bracket/version-reading";
@@ -226,7 +226,7 @@ function SubLine({ reading }: { reading: ReturnType<typeof verdictSubLine> }) {
 function ruledOutClause(below: Bracket, reasons: RuledOutReason[]): string {
   const copy = deckAnalysisCopy.verdict;
   const facts = reasons.map((r) => {
-    const [one, many] = copy.ruleNouns[r.rule];
+    const [one, many] = ruleNounFor(r.rule, below);
     return copy.ruledOutFact(r.have, r.have === 1 ? one : many);
   });
   const limit = Math.min(...reasons.map((r) => r.limit));
