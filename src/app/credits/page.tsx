@@ -63,7 +63,8 @@ async function returnFrom(params: Params, userId: string, switchOn: boolean): Pr
   const sessionId = params.session_id;
   if (params.checkout !== "done" || !isSessionId(sessionId)) return null;
   const stripe = stripeClient();
-  if (!stripe) return null;
+  // No client is a read that could not be made, not a refusal: unresolved, so a first-time buyer sees the retryable state.
+  if (!stripe) return { kind: "done", sessionId, initial: null };
   try {
     const initial = await readReturn(stripe, { sessionId, viewerId: userId });
     // A Session that is not this reader's, or not ours, draws no band at all.

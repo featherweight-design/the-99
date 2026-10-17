@@ -122,6 +122,12 @@ describe("the return", () => {
     expect((await render({ checkout: "done", session_id: SESSION })).type).toBe(CreditsReadFailed);
   });
 
+  it("draws the retryable read-failed state, not a 404, when there is no Stripe client to ask", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.stripeClient.mockReturnValueOnce(null);
+    expect((await render({ checkout: "done", session_id: SESSION })).type).toBe(CreditsReadFailed);
+  });
+
   // The webhook can commit between the two reads. Read the return first and the grant it observes is always in the
   // balances and the history that are read after it.
   it("reads the return BEFORE the balances and the history", async () => {
