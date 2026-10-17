@@ -5,7 +5,7 @@
 // The camera is Chromium's fake one playing a clip that puts a card down and takes it away again, over and over
 // (`lib/fake-camera.mjs`). The server's match is answered here after `MEASURE_MATCH_MS` (default 100, about the lab's
 // 97ms median) with a fixed answer for the card shown, so the figure measures the device's half and a local database
-// needs no scan index. Fast mode adds each card to the sheet's list, which is never saved: the script writes nothing.
+// needs no scan index. Auto mode adds each card to the sheet's list, which is never saved: the script writes nothing.
 //
 //   PROBE_BASE=http://localhost:3417 pnpm measure:scan
 //
@@ -108,7 +108,7 @@ try {
     await page.locator("[data-testid=scanner]").waitFor();
     await page.waitForTimeout(SECONDS * 1000);
     // Two mode presses, then Review: each times itself in the row.
-    for (const name of [/^Normal$/, /^Fast$/]) {
+    for (const name of [/^Normal$/, /^Auto$/]) {
       await page.locator("[data-testid=scanner]").getByRole("button", { name }).first().click();
       await page.waitForTimeout(4000);
     }

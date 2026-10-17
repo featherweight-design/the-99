@@ -62,6 +62,7 @@
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
     "probe:card-search-followups": "node scripts/probe-card-search-followups.mjs",
     "probe:card-scan-match": "tsx scripts/probe-card-scan-match.mts",
+    "probe:scan-auto": "node scripts/probe-scan-auto.mjs",
     "probe:upcoming-precons": "tsx scripts/probe-upcoming-precons.mts",
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",
     "probe:admin-groups": "tsx scripts/probe-admin-groups.mts",

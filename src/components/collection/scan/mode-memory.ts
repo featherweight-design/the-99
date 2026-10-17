@@ -1,6 +1,6 @@
 import type { ScanMode } from "./scan-view";
 
-/** Fast or Normal, remembered per device (handoff: "remembered per device"). Fast when nothing is kept, or the
+/** Auto or Normal, remembered per device (handoff: "remembered per device"). Auto when nothing is kept, or the
  * storage cannot be read (a private window, blocked site data). */
 export const MODE_KEY = "the99.scan.mode";
 
@@ -16,6 +16,6 @@ export function writeScanMode(store: Pick<Storage, "setItem"> | null, mode: Scan
   try {
     store?.setItem(MODE_KEY, mode);
   } catch {
-    // A device that keeps nothing starts at Fast next time; the scan itself is unaffected.
+    // A device that keeps nothing starts at Auto next time; the scan itself is unaffected.
   }
 }

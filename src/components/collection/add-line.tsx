@@ -78,14 +78,16 @@ export function AddLine(props: AddLineProps) {
   const specials = p === null ? [] : SPECIAL_FINISHES.filter((f) => p.finishes.includes(f));
   const hasNonfoil = p?.finishes.includes("nonfoil") ?? true;
 
-  if (collapsed && !picking) {
+  // A pending line (Auto's scan, its printings still being read) is drawn as a collapsed row with no printing yet: it
+  // asks nothing, and gets its printing or leaves the list on its own.
+  if ((collapsed && !picking) || line.pending) {
     return (
       <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px]">
         <Thumb uri={p?.imageUri ?? line.imageUri} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{line.name}</span>
         {p ? (
           <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{printingLabel(p)}</span>
-        ) : (
+        ) : line.pending ? null : (
           // Normal mode's scanned lines wait their turn for the printing step (L3).
           <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>{copy.choosePrinting}</span>
         )}

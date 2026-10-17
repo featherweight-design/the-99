@@ -6,7 +6,7 @@ desktop sheet overrides `.dsh …`). The handoff's own `design-tables/card-scan.
 drawn CSS; the drawn CSS wins and the row says so. Plan: `docs/superpowers/plans/2026-10-16-card-scan.md` PR 4.
 
 Scope: the review list (L1), the name press and the fix region (L2), Normal's printing step (L3), the receipt (L4), and
-list folding (R3 Fast ×2, R4 Normal "already on the list"). V6 **None of these** and L2 **Search for it instead** both
+list folding (R3 Auto ×2, R4 Normal "already on the list"). V6 **None of these** and L2 **Search for it instead** both
 open search by name (plan, audit resolution). Out: everything in the viewfinder (D6, D7, V1–V9, R1, R2, the tray),
 W4/W6 (PR 5).
 
@@ -294,7 +294,7 @@ Drawn on L2 and L3 (phone) and W3 (desktop, while a not-sure pick is open).
 | L2 Search instead | `Search for it instead` | search by name (none of the three match) | `scan.fix.search` |
 | V6 None of these | viewfinder not-sure panel, `None of these` | search by name | `scan.view.noneOfThese` (PR 3 drew the press; PR 4 wires it) |
 | L3 Printing step, Normal | Normal mode, lines without a printing | first line open with the shipped printing tiles, rest folded "printing to choose", Save held | `add.choosePrinting`, `add.afterPrinting`, `add.choose.introPhone`, `add.choose.regionLabel`, `add.needsPrinting(card)`, Save `aria-disabled` |
-| R3 Copies, Fast | the same card added twice in Fast | one line ×2 with the holdings note | `add.owned(have, after)` |
+| R3 Copies, Auto | the same card added twice in Auto | one line ×2 with the holdings note | `add.owned(have, after)` |
 | R4 Copies, Normal | same printing chosen for two lines | the lines fold into one, combined notice above the list | `add.combined(card, q)` |
 | R4 different printing | a different printing chosen | stays its own line | — |
 | L4 Saved | Save | shipped receipt; one History entry for the batch; Revert takes it all back | `add.savedTitle`, `add.savedBody`, `add.countsAfter`, `add.seeInHistory`, `add.addMore`, `add.done` |

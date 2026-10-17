@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
 import { scanTimer } from "../../../lib/scan/timing";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
-import { ADDED_MS, DARK_HOLD_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
+import { ADDED_MS, DARK_HOLD_MS, useCardScan, type AddOutcome, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
 const unit = () => {
@@ -39,13 +39,13 @@ function setup(
   };
   // The sheet's list, as the sheet would keep it: an add puts the card on it.
   const list = { current: listed };
-  const onAdd = vi.fn(async (g: { oracleId: string }) => {
+  const onAdd = vi.fn(async (g: { oracleId: string }): Promise<AddOutcome> => {
     list.current = new Map(list.current).set(g.oracleId, (list.current.get(g.oracleId) ?? 0) + 1);
     return true;
   });
   const onProblem = vi.fn();
   // A fresh callback every render, as an inline caller passes: the problem must still be said once.
-  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k), list.current));
+  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k, name) => (name === undefined ? onProblem(k) : onProblem(k, name)), list.current));
   act(() => hook.result.current.attachVideo(document.createElement("video")));
   return { hook, onAdd, onProblem, fetch, list };
 }
@@ -298,6 +298,40 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(hook.result.current.count).toBe(0);
       expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    });
+
+    // Auto is optimistic (Hugh, 2026-10-16): the sheet lists the card at once and settles the add later.
+    it("shows a card added before its add settles, and keeps the camera reading meanwhile", async () => {
+      let frames = 0;
+      const frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      const { hook, onAdd, onProblem } = setup({ readFrame: async () => { frames++; await new Promise((r) => setTimeout(r, 5)); return frame; } });
+      let settle!: (kept: boolean) => void;
+      onAdd.mockImplementation(async () => ({ settled: new Promise<boolean>((r) => { settle = r; }) }));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } }), { timeout: 4000 });
+      const at = frames;
+      await act(async () => new Promise((r) => setTimeout(r, 300)));
+      expect(frames).toBeGreaterThan(at + 3);
+      await act(async () => settle(true));
+      expect(onProblem).not.toHaveBeenCalledWith("removed", expect.anything());
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes back a card whose add did not hold: says so, and does not take it again while it stays in view", async () => {
+      const { hook, onAdd, onProblem, list } = setup();
+      let settle!: (kept: boolean) => void;
+      onAdd.mockImplementation(async (g: { oracleId: string }) => {
+        list.current = new Map(list.current).set(g.oracleId, 1);
+        return { settled: new Promise<boolean>((r) => { settle = r; }) };
+      });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
+      list.current = new Map();
+      await act(async () => settle(false));
+      hook.rerender();
+      expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring");
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+      expect(hook.result.current.count).toBe(0);
+      await act(async () => new Promise((r) => setTimeout(r, 300)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
     it("counts a card the sheet already lists as a second copy, and a line removed while scanning as none", async () => {

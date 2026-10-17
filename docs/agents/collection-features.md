@@ -53,12 +53,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   second embedding run. `pnpm probe:card-scan-match` proves it on a scratch branch. Where the camera is blocked or
   absent, the scanner offers Choose photos (PR 5): each photo is read ONCE, in order, through the camera's own
   detector and embedder and one lookup (`usePhotoReader`), and nothing is added until the player presses. A photo
-  row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Fast
+  row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Auto
   takes the first, Normal asks), drawn on the list line.
-  In the camera (Hugh, 2026-10-16), Fast adds a sure card with no press, at its first printing, and Normal opens that
+  In the camera (Hugh, 2026-10-16), Auto adds a sure card with no press, at its first printing, and Normal opens that
   card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked; a card added and never out of
   the frame is not taken again (R1), and a second copy needs the frame to empty first (R2). Below the gate the panel
   still asks Not sure, and nothing reaches the collection before the review's Save.
+  **Auto's add is OPTIMISTIC** (Hugh, 2026-10-16; Fast was renamed Auto in every string a player reads): the sheet's
+  `addScanned` lists the card at once as a `pending` line and returns `{ settled }` (`AddOutcome` in `use-card-scan.ts`);
+  the panel reads Added from the answer's own frame (never an adding line), the hook releases the read loop at once,
+  and `loadPrintingChoices` runs behind the camera. Its printings landing give the line the first; none (or a throw)
+  take the line back off, and the scanner undoes the Added panel, the duplicate rule and the tray count and says
+  `view.removed`, dismissing that answer while it stays in view. `scanPending` holds the save, the search and the
+  printing step while a line is pending. Normal's pick and the photos path stay as they were (photos await `settled`).
   **The read loop reads no frame while the scanner waits on the server** (speed lane, 2026-10-16): a lookup in flight,
   an add waiting for the list, or Normal's printings loading, and each read starts only after the previous frame is
   painted (`afterPaint`). A read is one long run of the models, and every step of a response (its headers, its body,

@@ -2452,6 +2452,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read by nobody else, a lapsed QR returning its invite, an unconfigured QR writing nothing, an admin Set, a group
   top-up that lowers nobody, a revoke and the history lines. It WRITES its own per-run ids only, and fails closed:
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+- `pnpm probe:scan-auto` proves Auto's optimistic add in Chromium at 390 and 1300, with the fake camera and a stubbed
+  match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
+  printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card
+  back off the list with the `view.removed` toast and is not taken again while it stays in view. Mutation-checked:
+  drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server with
+  `CARD_SCAN_ENABLED`, `COLLECTION_EDIT_ENABLED` and `ABOUT_SHEET_ENABLED`, at `PROBE_BASE`.
 - `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one

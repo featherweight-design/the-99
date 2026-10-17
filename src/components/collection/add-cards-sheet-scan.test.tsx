@@ -18,10 +18,12 @@ vi.mock("../../app/collection/edit-actions", () => ({
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: vi.fn() }) }));
 // The scanner is its own surface, tested on its own: here it only has to hand the sheet a card, and close.
+const outcomes: unknown[] = [];
 vi.mock("./scan/card-scanner", () => ({
-  CardScanner: ({ layout, onAdd, onClose }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => Promise<boolean>; onClose: () => void }) => (
+  CardScanner: ({ layout, onAdd, onClose, listed }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => Promise<unknown>; onClose: () => void; listed: ReadonlyMap<string, number> }) => (
     <div data-testid="fake-scanner" data-layout={layout}>
-      <button type="button" onClick={() => onAdd(SOL, "fast")}>fast add</button>
+      <span data-testid="tray">{listed.get(SOL.oracleId) ?? 0}</span>
+      <button type="button" onClick={() => void onAdd(SOL, "fast").then((o) => outcomes.push(o))}>fast add</button>
       <button type="button" onClick={() => onAdd(SOL, "normal")}>normal add</button>
       <button type="button" onClick={onClose}>close scanner</button>
     </div>
@@ -35,6 +37,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
 const TWO = [printing(), printing({ scryfallId: "s2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" })];
 
 beforeEach(() => {
+  outcomes.length = 0;
   choices.mockReset().mockResolvedValue(TWO);
   search.mockReset().mockResolvedValue([]);
 });
@@ -48,7 +51,7 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     expect(screen.queryByRole("button", { name: scan.press })).toBeNull();
   });
 
-  it("opens the scanner, and a Fast add lands on the list at its first printing", async () => {
+  it("opens the scanner, and an Auto add lands on the list at its first printing", async () => {
     render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
     fireEvent.click(screen.getByRole("button", { name: scan.press }));
     expect(screen.getByTestId("fake-scanner")).toBeTruthy();
@@ -58,6 +61,39 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
     // Two adds of one card at one printing fold into one line of two copies, and nothing asks for a printing.
     await waitFor(() => expect(screen.getByText(copy.summary(1, 2))).toBeTruthy());
+  });
+
+  // Auto is optimistic (Hugh, 2026-10-16): on the list before its printings are read, then kept or taken back.
+  it("lists an Auto add at once, before its printings land, and keeps it at the first printing", async () => {
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(screen.getByTestId("tray").textContent).toBe("1"));
+    await waitFor(() => expect(outcomes).toHaveLength(1));
+    const out = outcomes[0] as { settled: Promise<boolean> };
+    expect(out.settled).toBeInstanceOf(Promise);
+    land(TWO);
+    expect(await out.settled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    await waitFor(() => expect(screen.getByText(copy.summary(1, 1))).toBeTruthy());
+    expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
+  });
+
+  it("takes an Auto add back off the list when its printings cannot be read", async () => {
+    let land: (v: PrintingChoice[]) => void = () => {};
+    choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add" }));
+    await waitFor(() => expect(screen.getByTestId("tray").textContent).toBe("1"));
+    await waitFor(() => expect(outcomes).toHaveLength(1));
+    land([]);
+    expect(await (outcomes[0] as { settled: Promise<boolean> }).settled).toBe(false);
+    await waitFor(() => expect(screen.getByTestId("tray").textContent).toBe("0"));
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    expect(screen.getByText(copy.nothingYet)).toBeTruthy();
   });
 
   it("leaves a Normal add's printing to the sheet's own step once the scanner closes", async () => {
