@@ -6,6 +6,6 @@ export function isReadStatement(text: string): boolean {
   if (/^(begin|start transaction|commit|rollback|show)\b/.test(t)) return !/\bread write\b/.test(t);
   if (/^set\s+(transaction|session characteristics as transaction)\b/.test(t)) return !/\bread write\b/.test(t);
   if (!/^(select|with|\()/.test(t)) return false;
-  return !/\b(insert|update|delete|merge|truncate|create|drop|alter|grant|revoke|copy|lock|nextval|setval|pg_advisory_lock|pg_advisory_xact_lock)\b/.test(t);
+  return !/\b(insert|update|delete|merge|truncate|create|drop|alter|grant|revoke|copy|lock|nextval|setval|pg_\w*advisory\w*|for\s+(?:key\s+)?share)\b/.test(t);
 }
 

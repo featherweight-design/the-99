@@ -65,6 +65,7 @@ import PreconsPage from "./page";
 import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
 import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
+import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
 // The list draws the landing's mount beside its view (discovery R2·3): the view is the fragment's last child.
 const visit = async (query: Record<string, string> = {}) => {
@@ -188,6 +189,22 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
     const el = await visit({ pick: "own", from: "collection" });
     expect(el.props.hasCollection).toBe(true);
     expect(el.props.added).toEqual({ TRC_A: "2026-06-30T12:00:00.000Z" });
+  });
+
+  it("strips a `?tool=` on every branch that draws no list search: the pick and the list down", async () => {
+    h.env = { ...LINE, HELP_ME_CHOOSE_ENABLED: "true" };
+    const mountOf = async (query: Record<string, string>) => {
+      const el = (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
+      expect(el.type).toBe(Fragment);
+      const [mount] = el.props.children as ReactElement<Record<string, unknown>>[];
+      expect(mount.type).toBe(ToolLandingMount);
+      return mount.props;
+    };
+    expect(await mountOf({ pick: "own", tool: "precons" })).toMatchObject({ landing: null });
+    h.listFails = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await mountOf({ pick: "own", tool: "precons" })).toMatchObject({ landing: null });
+    expect(await mountOf({ tool: "precons" })).toMatchObject({ landing: null });
   });
 
   it("draws the shipped down state when the pick cannot be read", async () => {
