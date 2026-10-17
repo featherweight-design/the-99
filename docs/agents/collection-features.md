@@ -93,6 +93,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   measure:scan-recall` (read-only; `MEASURE_URL`, a NAMED `MEASURE_BRANCH` checked by `neon.branch_id`) compares a
   database's own build against an exact scan per `ef_search`. A build that still misses at 1000 needs a rebuild with
   larger `m` / `ef_construction`, which is Hugh's to run on production.
+  **Normal's printing step uses the server's scored printings** (`Guess.printings`, `orderPrintings`): a card with one
+  printing is added at it with no step; otherwise the step leads with the scored printings, best first and selected,
+  behind `Show all printings`, and Add this printing takes the selection. A guess without scores (an older server)
+  draws every printing and a tap takes it, as before. The printings are read once per card in a scanner session,
+  begun the moment the server answers for it (`choicesFor`), and the short list's Scryfall small pictures are
+  fetched as they land; the tiles draw the same small pictures (`scanThumb`).
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
