@@ -109,6 +109,43 @@ describe("usePhotoReader", () => {
     expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]);
   });
 
+  // Auto's optimistic outcome (`{ settled }`): a photo row is added only once the add is kept, one row at a time.
+  it("waits for an optimistic add to settle before calling a row added or adding the next", async () => {
+    const settles: ((kept: boolean) => void)[] = [];
+    const onAdd = vi.fn(async () => ({ settled: new Promise<boolean>((r) => settles.push(r)) }));
+    const { d } = deps();
+    const { result } = renderHook(() => usePhotoReader(d, onAdd, "fast", vi.fn()));
+    act(() => result.current.choose([file("one.jpg"), file("two.jpg")]));
+    await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]));
+    let pressed!: Promise<void>;
+    act(() => { pressed = result.current.addSure(); });
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
+    expect(result.current.busy).toBe(true);
+    expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]);
+    await act(async () => settles[0](true));
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2));
+    expect(result.current.rows[0].state.kind).toBe("added");
+    await act(async () => { settles[1](true); await pressed; });
+    expect(result.current.rows.map((r) => r.state.kind)).toEqual(["added", "added"]);
+  });
+
+  it("stops the bulk add at an optimistic add taken back, and says so", async () => {
+    const onProblem = vi.fn();
+    let settle!: (kept: boolean) => void;
+    const onAdd = vi.fn(async () => ({ settled: new Promise<boolean>((r) => (settle = r)) }));
+    const { d } = deps();
+    const { result } = renderHook(() => usePhotoReader(d, onAdd, "fast", onProblem));
+    act(() => result.current.choose([file("one.jpg"), file("two.jpg")]));
+    await waitFor(() => expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]));
+    let pressed!: Promise<void>;
+    act(() => { pressed = result.current.addSure(); });
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
+    await act(async () => { settle(false); await pressed; });
+    expect(onProblem).toHaveBeenCalledWith("notAdded");
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(result.current.rows.map((r) => r.state.kind)).toEqual(["sure", "sure"]);
+  });
+
   it("adds the guess pressed on a Not sure row, and only that one", async () => {
     const onAdd = vi.fn(async () => true);
     const { d } = deps({ fetch: vi.fn(async () => answer([guess("a", "A"), guess("b", "B")], 0.001)) });

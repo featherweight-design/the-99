@@ -31,6 +31,20 @@ export type ScanPicked = { choices: PrintingChoice[]; printing: PrintingChoice }
  */
 export type AddOutcome = boolean | { settled: Promise<boolean> };
 
+/**
+ * The duplicate rule's mark after an optimistic add is taken back: when the mark is still this add's, the one it
+ * replaced comes back, unless that one was taken back too; any other mark (a newer add's) is left alone.
+ */
+export function markAfterTakeBack<M extends object>(current: M | null, mark: M, before: M | null, takenBack: WeakSet<object>): M | null {
+  if (current !== mark) return current;
+  return before && !takenBack.has(before) ? before : null;
+}
+
+/** The answer turned down after a take-back: its own, only while it is still the answer on screen. */
+export function dismissedAfterTakeBack(current: object | null, from: object | null, live: object | null): object | null {
+  return from !== null && from === live ? from : current;
+}
+
 /** Whether an add is kept, waiting for an optimistic one to settle. */
 export async function addKept(out: AddOutcome): Promise<boolean> {
   return typeof out === "boolean" ? out : out.settled;
@@ -291,6 +305,13 @@ export function useCardScan(
   const reading = scanScreen(inputs);
   const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
   const answer = server.kind === "match" ? server.result : null;
+  // The answer on screen now, for a rollback that lands later: only the answer still showing is turned down.
+  const liveAnswer = useRef<object | null>(null);
+  useEffect(() => {
+    liveAnswer.current = answer;
+  });
+  // Marks of optimistic adds that were taken back: a later rollback never restores one of them.
+  const takenBack = useRef(new WeakSet<object>());
   // The answer is drawn: the timing row's frame-to-guess ends at the commit that puts it on the panel (a sure card or
   // Not sure), which the next paint shows. A panel over it (a printing step, Added, a hold) is not the answer drawn.
   const answerShown = answer !== null && screen.kind === "scanning" && ((screen.panel.kind === "sure" && !screen.panel.held) || screen.panel.kind === "notSure");
@@ -358,9 +379,13 @@ export function useCardScan(
           if (kept) return;
           // Taken back: the panel, the flip and the duplicate rule let go of it, and the answer it came from is not
           // taken again while it stays in view (a failed take never was). The tray's count follows the list.
+          takenBack.current.add(mark);
           setAdded((a) => (a === shown ? null : a));
-          setLastAdded((l) => (l === mark ? before : l));
-          if (from) setDismissed(from);
+          // Two adds in flight can fail in either order: the mark this one replaced is put back only while it still
+          // stands for a card on the list, and a newer card's mark is never touched.
+          setLastAdded((l) => markAfterTakeBack(l, mark, before, takenBack.current));
+          // Only the answer still on screen is turned down, so an older take-back never replaces a newer one's.
+          setDismissed((d) => dismissedAfterTakeBack(d, from, liveAnswer.current));
           onProblemRef.current("removed", g.name);
         });
       }
