@@ -84,6 +84,28 @@ describe("ReferenceTab, the list", () => {
     const { container } = draw();
     expect(openEntry(container)).toBeNull();
   });
+
+  it("ignores a malformed hash, and still follows the next one", () => {
+    window.location.hash = "#%E0";
+    const { container } = draw();
+    expect(openEntry(container)).toBeNull();
+    const target = screens[1].entries[0];
+    act(() => {
+      window.location.hash = `#${target.id}`;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(openEntry(container)).toBe(target.id);
+  });
+
+  it("links an opened entry to its How it works row only while How it works draws", () => {
+    const e = screens.flatMap((x) => x.entries).find((x) => x.row)!;
+    const rowLink = (c: HTMLElement) => c.querySelector(`[data-entry-open="${e.id}"] a[href="#${e.row}"]`);
+    window.location.hash = `#${e.id}`;
+    const { container, rerender } = draw();
+    expect(rowLink(container)).toBeNull();
+    rerender(<ReferenceTab screens={screens} whatsNew={[]} how={<section id="how" />} howCount={9} />);
+    expect(rowLink(container)).not.toBeNull();
+  });
 });
 
 describe("ReferenceTab, what's new", () => {
@@ -181,6 +203,43 @@ describe("ReferenceTab, the screens index", () => {
     const withHow = within(screen.getByRole("navigation", { name: referenceCopy.screensLabel })).getAllByRole("link");
     expect(withHow).toHaveLength(screens.length + 1);
     expect(withHow.at(-1)!.textContent).toBe(`${referenceCopy.howIndex}9`);
+  });
+
+  it("is not drawn while a search holds the column", () => {
+    draw();
+    type(first.title);
+    expect(screen.queryByRole("navigation", { name: referenceCopy.screensLabel })).toBeNull();
+  });
+
+  it("marks the first screen in the band, in page order, across the observer's partial reports", () => {
+    let report: (entries: { target: Element; isIntersecting: boolean }[]) => void = () => {};
+    const Real = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class {
+      constructor(cb: typeof report) {
+        report = cb;
+      }
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver;
+    try {
+      const { container } = draw();
+      const el = (i: number) => container.querySelector(`[data-reference-screen="${screens[i].key}"]`)!;
+      const current = () =>
+        within(screen.getByRole("navigation", { name: referenceCopy.screensLabel }))
+          .getAllByRole("link")
+          .find((a) => a.getAttribute("aria-current") === "location")
+          ?.getAttribute("href");
+      act(() => report([{ target: el(1), isIntersecting: true }]));
+      act(() => report([{ target: el(2), isIntersecting: true }]));
+      expect(current()).toBe(`#screen-${screens[1].key}`);
+      // The reader scrolls back: only screen 2 leaving is reported, and screen 1 is still in the band.
+      act(() => report([{ target: el(2), isIntersecting: false }]));
+      expect(current()).toBe(`#screen-${screens[1].key}`);
+      act(() => report([{ target: el(0), isIntersecting: true }]));
+      expect(current()).toBe(`#screen-${screens[0].key}`);
+    } finally {
+      globalThis.IntersectionObserver = Real;
+    }
   });
 });
 

@@ -155,7 +155,12 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
   // A link to `#<entry id>`: what's new, a result, How it works' `explained in` lines, or one from another page.
   useEffect(() => {
     const follow = () => {
-      const id = decodeURIComponent(window.location.hash.slice(1));
+      let id: string;
+      try {
+        id = decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        return; // a malformed fragment (`#%E0`) names no entry
+      }
       if (!id || !reveal(id)) return;
       requestAnimationFrame(() => {
         noteAppScroll();
@@ -290,7 +295,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
                 </div>
                 <div className={`${open ? "" : "hidden"} md:block`}>
                   {s.entries.map((e) => (
-                    <EntryRow key={e.id} entry={e} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
+                    <EntryRow key={e.id} entry={how ? e : { ...e, row: null }} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
                   ))}
                 </div>
               </section>
@@ -301,7 +306,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
         </div>
       </div>
 
-      <ScreensIndex screens={screens} howCount={how ? howCount : 0} />
+      {/* While a search holds the column the screens are hidden, so an index of them would lead nowhere. */}
+      {!q && <ScreensIndex screens={screens} howCount={how ? howCount : 0} />}
     </div>
   );
 }
@@ -321,15 +327,22 @@ function ScreensIndex({ screens, howCount }: { screens: readonly ReferenceScreen
   const [current, setCurrent] = useState<string | null>(screens[0]?.key ?? null);
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
+    // Each callback reports only the screens whose state CHANGED, so the screens inside the band are kept across
+    // callbacks, and the one marked is the first of them in page order.
+    const els = [...document.querySelectorAll("[data-reference-screen]")];
+    const inBand = new Set<Element>();
     const io = new IntersectionObserver(
       (seen) => {
-        const top = seen.filter((s) => s.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        const key = top?.target.getAttribute("data-reference-screen");
+        for (const s of seen) {
+          if (s.isIntersecting) inBand.add(s.target);
+          else inBand.delete(s.target);
+        }
+        const key = els.find((el) => inBand.has(el))?.getAttribute("data-reference-screen");
         if (key) setCurrent(key);
       },
       { rootMargin: "0px 0px -70% 0px" },
     );
-    for (const el of document.querySelectorAll("[data-reference-screen]")) io.observe(el);
+    for (const el of els) io.observe(el);
     return () => io.disconnect();
   }, [screens]);
   return (
