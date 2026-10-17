@@ -307,3 +307,20 @@ describe("AddFriendDialog", () => {
     delete (navigator as { share?: unknown }).share;
   });
 });
+
+describe("SocialModal shell against the invites handoff (Dialog / sheet shell)", () => {
+  it("draws the header gap 4, centred, the handle's 4px margin below and the phone body's 24px", () => {
+    render(
+      <SocialModal title="T" closeLabel="Close" onClose={() => {}} onBack={() => {}} backLabel="Back">
+        <p>body</p>
+      </SocialModal>,
+    );
+    const head = screen.getByRole("heading", { name: "T" }).parentElement!;
+    expect(head.className).toContain("items-center");
+    expect(head.className).toContain("gap-[4px]");
+    expect(head.className).not.toMatch(/(^|\s)pt-\[/);
+    expect(screen.getByRole("heading", { name: "T" }).className).not.toMatch(/pt-\[/);
+    expect(screen.getByRole("dialog").querySelector("span.rounded-full")!.className).toContain("mb-[4px]");
+    expect(document.querySelector("[data-social-modal-body]")!.className).toContain("pb-[24px]");
+  });
+});

@@ -58,7 +58,7 @@ export function FriendsList({
     if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
   }, [friends.length]);
   return (
-    <section aria-labelledby="friends-head" className="mt-[24px] md:mt-[34px]">
+    <section aria-labelledby="friends-head" className="mt-[26px] md:mt-[34px]">
       <h2 id="friends-head" ref={head} tabIndex={-1} className={`${SECTION_HEAD} outline-none`}>{f.head(friends.length)}</h2>
       {friends.length === 0 ? (
         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
