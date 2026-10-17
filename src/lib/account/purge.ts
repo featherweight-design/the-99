@@ -94,6 +94,9 @@ export async function purgeAccount(
     // Waits out a refresh of the reader's owned-support store, which would otherwise write rows back
     // after this commits; a refresh that takes the lock after it finds no collection and writes none.
     await tx.execute(ownedSupportLock(userId));
+    // The invite lock every spend takes for the sender and the newcomer (`lockSenderIn`, `invites:<id>`): a spend and
+    // this purge of either account take turns, so a spend never commits rows for an account while it is being purged.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`invites:${userId}`}))`);
     const { counts: social, friendIds } = await purgeSocialIn(tx, userId);
     // The tree is kept with this account's side set null (`INVITES_UNLINKED`).
     const invitesUnlinked = await unlinkInvitesIn(tx, userId);

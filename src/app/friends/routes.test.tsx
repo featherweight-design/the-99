@@ -148,6 +148,14 @@ describe("/friends", () => {
       expect(m.takeReceipt).not.toHaveBeenCalled();
     });
 
+    it("draws no band when another render consumed the receipt first (takeReceipt answers null)", async () => {
+      m.pendingReceipt.mockResolvedValue("user_inviter");
+      m.takeReceipt.mockResolvedValue(null);
+      m.friendPublicId.mockResolvedValue(DAVE.publicId);
+      render(await FriendsPage({ searchParams: query() }));
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
     it("does not consume the receipt when the inviter lookup itself throws, so the retry still draws it", async () => {
       m.pendingReceipt.mockResolvedValue("user_inviter");
       m.friendPublicId.mockRejectedValue(new Error("db down"));

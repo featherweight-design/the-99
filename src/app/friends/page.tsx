@@ -46,7 +46,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
   const pendingInviter = await pendingReceipt(userId);
   const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
-  if (pendingInviter !== null) await takeReceipt(userId);
+  // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
+  const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
   return (
     <FriendsView
       profile={profile}
@@ -55,7 +56,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       links={links}
       accepted={
         (typeof accepted === "string" ? friends.find((f) => f.publicId === accepted) : undefined) ??
-        (inviterPublicId !== null ? friends.find((f) => f.publicId === inviterPublicId) : undefined) ??
+        (consumed && inviterPublicId !== null ? friends.find((f) => f.publicId === inviterPublicId) : undefined) ??
         null
       }
       origin={originFrom(await headers())}
