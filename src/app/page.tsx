@@ -22,6 +22,8 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
+import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
+import { readTourSeen, tourDue } from "../lib/discovery/tour";
 import { loadArrivalsBanner } from "../lib/precons/banner";
 import { upcomingPreconsEnabled } from "../lib/precons/upcoming-flag";
 import { cookies } from "next/headers";
@@ -43,7 +45,7 @@ import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
  * from; `user_prefs` carries the stamp trigger, so a write to it retires the entry.
  */
 type HomePayload =
-  | { firstRun: true; aboutSeen: SeenState | null }
+  | { firstRun: true; aboutSeen: SeenState | null; tourDue: boolean }
   | ({ firstRun: false; aboutSeen: SeenState | null } & Omit<ComponentProps<typeof Dashboard>, "now" | "about">);
 
 /** The reader's About seen state for the banner line, or null. A failed read draws no line and is not stored. */
@@ -54,6 +56,21 @@ async function readAboutSeen(userId: string, env: NodeJS.ProcessEnv): Promise<Se
   } catch {
     recordSoftFailure();
     return null;
+  }
+}
+
+/**
+ * When the reader's tour was spent, or undefined when no read was made: with `FIRST_RUN_TOUR_ENABLED` off the tour is
+ * never due, so its stamp is never read. A failed read is treated as spent, so no tour opens, and that render is
+ * not stored.
+ */
+async function readTourSeenFor(userId: string, env: NodeJS.ProcessEnv): Promise<Date | null | undefined> {
+  if (!firstRunTourEnabled(env)) return undefined;
+  try {
+    return await readTourSeen(userId);
+  } catch {
+    recordSoftFailure();
+    return undefined;
   }
 }
 
@@ -150,7 +167,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
   const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (env): Promise<PageLoad<HomePayload>> => {
-    const [stats, decks, seen] = await Promise.all([
+    const [stats, decks, seen, tourSeen] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
       // the order it asks for: the resume block re-sorts by `byTouched` and
@@ -181,9 +198,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.
       perf.timed("aboutSeen", () => readAboutSeen(userId, env)),
+      // The tour's stamp (R3·1a): one primary-key lookup, read only with its switch on. Beside the reads that decide
+      // first run rather than after them, so first run's render waits on no extra round trip.
+      perf.timed("tourSeen", () => readTourSeenFor(userId, env)),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
-      return { value: { firstRun: true, aboutSeen: seen }, store: true };
+      // `tourDue` waits for R3·1b, the tour itself, which is its one reader.
+      const due = tourSeen !== undefined && tourDue(env, true, tourSeen);
+      return { value: { firstRun: true, aboutSeen: seen, tourDue: due }, store: true };
     }
 
     const [lastUpdated, ranked, shopping, unplayed, arrivals] = await Promise.all([
