@@ -50,6 +50,8 @@ const TABLE_IDS = {
   S4: "7a0e0000-0000-4000-8000-000000000013",
   /** PR 4: Colin swapped a minute ago, after the viewer last looked (S5, W5). */
   S5: "7a0e0000-0000-4000-8000-000000000014",
+  /** S5 again for the desktop sheet (W5): a draw records its look, so each width needs its own table. */
+  W5: "7a0e0000-0000-4000-8000-000000000015",
 } as const;
 const PREFIX = "rz-fixture-";
 const VIEWER_DECK_NAME = "Rule 0 fixture: Blood Rites";
@@ -179,6 +181,7 @@ const tables: [keyof typeof TABLE_IDS, setBy: string, open: boolean, Seat[]][] =
   ["expired", ID.colin, false, [[viewer, you3], [ID.colin, colin4], [ID.peter, peter3]]],
   ["S4", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
   ["S5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
+  ["W5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
 ];
 // Inserted directly, not through `setTable`: a setup deletes its pod's expired tables, and these share one pod.
 for (const [state, setBy, open, seats] of tables) {
@@ -193,7 +196,7 @@ for (const [state, setBy, open, seats] of tables) {
 // PR 4's two looks at one swap. Every seat sat down when its table was set; Colin swapped a minute ago. S4's viewer
 // has drawn the table since (no dot); S5's last drew it five minutes ago (Colin's seat carries the dot, and the read
 // says `Since you looked`). The page records each draw (`markTableSeen`), so reseed before rerunning S5.
-for (const state of ["S4", "S5"] as const) {
+for (const state of ["S4", "S5", "W5"] as const) {
   const id = TABLE_IDS[state];
   await db.execute(sql`update rule_zero_seats set changed_at = now() - interval '4 hours' where table_id = ${id}`);
   await db.execute(sql`update rule_zero_seats set changed_at = now() - interval '1 minute' where table_id = ${id} and user_id = ${ID.colin}`);

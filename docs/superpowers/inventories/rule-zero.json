@@ -88,9 +88,17 @@
     },
     {
       "id": "s5",
-      "label": "S5/W5 another seat after a swap, on the next look: the changed dot on Colin's seat and Since you looked",
+      "label": "S5 another seat after a swap, on the next look: the changed dot on Colin's seat and Since you looked (its own table: a draw records its look)",
       "view": "src/components/rule-zero/table-live.tsx",
+      "widths": ["phone"],
       "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000014", "wait": "[data-testid=since]", "settle": 1200 }]
+    },
+    {
+      "id": "w5",
+      "label": "W5 the same on desktop, from its own table",
+      "view": "src/components/rule-zero/table-live.tsx",
+      "widths": ["desktop"],
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000015", "wait": "[data-testid=since]", "settle": 1200 }]
     }
   ]
 }
