@@ -5,6 +5,7 @@
 // sideways row of 300-wide cards with the next one peeking, and its head counts the cards instead of naming the group.
 
 import Link from "next/link";
+import { PendingReporter } from "../../shell/pending-reporter";
 import { aboutShapeCopy, showcaseCopy, writtenForYouCopy } from "../../../lib/copy/discovery";
 import { shotFor, toolShotId } from "../../../lib/about/shots";
 import type { ShowcaseGroup, WrittenRow } from "../../../lib/discovery/showcase";
@@ -73,6 +74,7 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
             className="py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] hover:underline"
           >
             {writtenForYouCopy.how}
+            <PendingReporter href={entryHref("credits")} />
           </Link>
         </div>
       </div>
@@ -104,6 +106,7 @@ export function ToolsTab({ groups, written, allowance, theme }: ToolsTabProps) {
           className="py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline"
         >
           {aboutShapeCopy.toReferencePress}
+          <PendingReporter href="/about?tab=reference" />
         </Link>
       </div>
     </div>

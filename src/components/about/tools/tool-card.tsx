@@ -7,6 +7,7 @@
 // Widths are the grid's and the row's; no height is fixed (R2 gap 13): cards in a row stretch to the tallest.
 
 import Link from "next/link";
+import { PendingReporter } from "../../shell/pending-reporter";
 import { showcaseCopy } from "../../../lib/copy/discovery";
 import type { Shot } from "../../../lib/about/shots";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
@@ -83,6 +84,7 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
           <div className="flex min-h-[40px] items-center gap-[10px]">
             <Link href={entryHref(card.entry)} className={HOW}>
               {showcaseCopy.howItWorks}
+              <PendingReporter href={entryHref(card.entry)} />
             </Link>
             {footerLabel && (
               <>
@@ -106,6 +108,7 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
                 className="relative z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline"
               >
                 {state.door.label}
+                <PendingReporter href={state.door.href} />
               </Link>
             )}
           </div>
@@ -116,7 +119,9 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
           href={state.href}
           aria-label={state.kind === "deck" ? showcaseCopy.tryOn(state.deck) : state.label}
           className="absolute inset-0 z-[1] rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--accent)]"
-        />
+        >
+          <PendingReporter href={state.href} />
+        </Link>
       )}
     </article>
   );
