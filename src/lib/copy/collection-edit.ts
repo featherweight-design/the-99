@@ -577,6 +577,8 @@ export const collectionEditCopy = {
       noneOfThese: "None of these",
       /** (new, for /copy-review) Normal's printing step: the card read is not the one in hand. */
       notThis: "Not this card",
+      /** (new, for /copy-review) Normal's printing step: takes the printing selected (the best scored one, at first). */
+      addPrinting: "Add this printing",
       /** (new, for /copy-review) Normal's printing step while the card's printings load. */
       loadingPrintings: "Loading its printings…",
       /** (new, for /copy-review) Auto: a card just added that never left the frame; a second copy needs it out first. */

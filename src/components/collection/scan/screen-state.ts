@@ -1,3 +1,4 @@
+import type { ScoredPrinting } from "../../../lib/card-scan/match";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import type { ServerState } from "../../../lib/scan/server-scan";
 import type { ScanGuess, ScanPanel, ScanScreen } from "./scan-view";
@@ -67,6 +68,6 @@ function againFor(i: ScanInputs, oracleId: string): Extract<ScanPanel, { kind: "
   return count === 0 ? null : { kind: "second", count };
 }
 
-export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null }): ScanGuess {
-  return { oracleId: g.oracleId, name: g.name, typeLine: g.typeLine ?? "", imageUri: g.imageUri ?? null };
+export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null; printings?: readonly ScoredPrinting[] }): ScanGuess {
+  return { oracleId: g.oracleId, name: g.name, typeLine: g.typeLine ?? "", imageUri: g.imageUri ?? null, ...(g.printings?.length ? { printings: g.printings } : {}) };
 }
