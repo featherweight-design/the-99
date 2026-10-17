@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { freeRoom, hasCredit } from "./allowance-rule";
+import { freeRoom, hasCredit, paidRoom, PAID_DAILY_LIMIT } from "./allowance-rule";
 
 /**
  * "Out of credits" is decided in ONE place (payments plan, PR L2): `freeRoom` and `hasCredit` in
@@ -24,6 +24,11 @@ const COMPARISON = new RegExp(
   String.raw`\bused\b\s*${OPS}\s*[\w.?!]*\blimit\b|\blimit\b\s*${OPS}\s*[\w.?!]*\bused\b`,
   "g",
 );
+// The paid limit's own pair, decided by `paidRoom` alone.
+const PAID_COMPARISON = new RegExp(
+  String.raw`\bpaidUsed(?:Today)?\b\s*${OPS}\s*[\w.?!]*\bpaidLimit\b|\bpaidLimit\b\s*${OPS}\s*[\w.?!]*\bpaidUsed(?:Today)?\b`,
+  "g",
+);
 const BY_HAND = /\blimit\b\s*-\s*[\w.?!]*\bused\b/g;
 const ON_THE_COUNT = new RegExp(
   String.raw`freeCount\([^)]*\)\s*${OPS}|${OPS}\s*freeCount\(|\bleft\b\s*${OPS}\s*\d|\d\s*${OPS}\s*\bleft\b`,
@@ -31,7 +36,7 @@ const ON_THE_COUNT = new RegExp(
 );
 
 function comparisons(text: string): string[] {
-  const patterns = text.includes("freeCount(") ? [COMPARISON, BY_HAND, ON_THE_COUNT] : [COMPARISON, BY_HAND];
+  const patterns = text.includes("freeCount(") ? [COMPARISON, BY_HAND, PAID_COMPARISON, ON_THE_COUNT] : [COMPARISON, BY_HAND, PAID_COMPARISON];
   return patterns.flatMap((re) => [...text.matchAll(re)].map((m) => m[0].replace(/\s+/g, " ")));
 }
 
@@ -63,6 +68,8 @@ describe("out of credits is decided by allowance-rule.ts alone", () => {
       "const left = freeCount(allowance);\nif (left > 0) return {",
       "const spent = !freeLeft && (left === 0 || !!allowance.paused);\nconst left = freeCount(a);",
       "if (freeCount(a) > 0) return",
+      "if (a.paidUsedToday >= a.paidLimit) return",
+      "return paidLimit > paidUsed;",
       // Split by a formatter across two lines.
       "if (\n  state.allowance.used >=\n  state.allowance.limit\n) {",
       "const left = Math.max(0, allowance.limit -\n  allowance.used);",
@@ -92,5 +99,29 @@ describe("freeRoom and hasCredit", () => {
     expect(hasCredit({ used: 5, limit: 5, plan: 1 })).toBe(true);
     expect(hasCredit({ used: 7, limit: 5, pack: 3 })).toBe(true);
     expect(hasCredit({ used: 0, limit: 5 })).toBe(true);
+  });
+});
+
+describe("the paid limit", () => {
+  it("paidRoom is open below the limit and shut at it", () => {
+    expect(paidRoom({ paidUsed: PAID_DAILY_LIMIT - 1, paidLimit: PAID_DAILY_LIMIT })).toBe(true);
+    expect(paidRoom({ paidUsed: PAID_DAILY_LIMIT, paidLimit: PAID_DAILY_LIMIT })).toBe(false);
+  });
+
+  it("is twenty a day", () => {
+    expect(PAID_DAILY_LIMIT).toBe(20);
+  });
+
+  it("never refuses a run the free allowance can fund", () => {
+    expect(hasCredit({ used: 4, limit: 5, plan: 0, pack: 0, paidUsedToday: 20, paidLimit: 20 })).toBe(true);
+  });
+
+  it("shuts paid credits at the limit once the free allowance is spent", () => {
+    expect(hasCredit({ used: 5, limit: 5, pack: 9, paidUsedToday: 20, paidLimit: 20 })).toBe(false);
+    expect(hasCredit({ used: 5, limit: 5, pack: 9, paidUsedToday: 19, paidLimit: 20 })).toBe(true);
+  });
+
+  it("applies no limit to an Allowance that never read the counter", () => {
+    expect(hasCredit({ used: 5, limit: 5, pack: 9 })).toBe(true);
   });
 });

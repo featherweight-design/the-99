@@ -9,7 +9,7 @@ import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "./allowance-rule";
+import { ALLOWANCE_WINDOW_MS, MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "./allowance-rule";
 
 describe("ownerShareMicro", () => {
   const before = process.env.MODEL_OWNER_MONTHLY_USD;
@@ -241,6 +241,39 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("pack-1");
+  });
+
+  describe("the 20-a-day paid limit", () => {
+    const lots = [{ id: "pack-1", source: "pack", units: 100, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
+    const paidRows = (n: number, status = "spent", ageMs = 60_000) =>
+      Array.from({ length: n }, () => ({ status, createdAt: new Date(now.getTime() - ageMs) }));
+    const reserve = (answers: unknown[][]) => {
+      const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers]);
+      return { f, got: reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now) };
+    };
+
+    it("counts paid rows only, in the window", async () => {
+      const { f, got } = reserve([paidRows(19)]);
+      expect(await got).toEqual({ id: "call-1" });
+      expect(f.inserted()?.creditGrantId).toBe("pack-1");
+      expect(new PgDialect().sqlToQuery(f.wheres[5] as never).sql).toContain('"model_calls"."credit_grant_id" is not null');
+    });
+
+    it("refuses the twenty-first paid run with credits left, spent or in flight", async () => {
+      expect(await reserve([paidRows(20)]).got).toEqual({ refused: "allowance" });
+      expect(await reserve([[...paidRows(19), ...paidRows(1, "reserved", 1000)]]).got).toEqual({ refused: "allowance" });
+    });
+
+    it("lets a refunded or stranded or out-of-window paid row go", async () => {
+      const rows = [...paidRows(18), ...paidRows(1, "reserved", RESERVATION_TTL_MS + 1), ...paidRows(1, "spent", ALLOWANCE_WINDOW_MS + 1)];
+      expect(await reserve([rows]).got).toEqual({ id: "call-1" });
+    });
+
+    it("never refuses a run the free allowance can fund", async () => {
+      const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)]);
+      expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
+      expect(f.inserted()?.creditGrantId).toBeNull();
+    });
   });
 });
 
