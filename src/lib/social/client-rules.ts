@@ -15,6 +15,10 @@ export const POD_NAME_MAX = 40;
 /** The most friends one Add batch may name: a pod is a table, not a mailing list. `addMembers` refuses more. */
 export const ADD_MEMBERS_MAX = 32;
 
+/** A Rule 0 table holds 2 to 8 seats (the seat check in the schema is the same range). */
+export const SEATS_MIN = 2;
+export const SEATS_MAX = 8;
+
 /** Code points, which is what `cleanName` and the columns' `char_length` checks count. */
 export function codePointLength(s: string): number {
   return [...s].length;
