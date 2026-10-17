@@ -14,7 +14,7 @@
 // their seat went) refreshes the route, whose page then answers not found.
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
 import { markTableSeen } from "../../app/friends/table/actions";
 import { reviveTableView } from "../../lib/rule-zero/live";
@@ -45,7 +45,7 @@ export function TableLive({
   const [updated, setUpdated] = useState<string | undefined>(undefined);
   const [now, setNow] = useState(serverNow);
   // The visit's own `seenAt`, never moved by this visit's writes.
-  const lookedAt = useRef(initial.seenAt);
+  const [lookedAt] = useState(initial.seenAt);
   const tableId = initial.tableId;
 
   useEffect(() => {
@@ -97,5 +97,5 @@ export function TableLive({
   }, [tableId, revision, closed]);
 
   if (closed) return <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />;
-  return <TableBody view={{ ...view, seenAt: lookedAt.current }} gamesEnabled={gamesEnabled} now={now} updated={updated} />;
+  return <TableBody view={{ ...view, seenAt: lookedAt }} gamesEnabled={gamesEnabled} now={now} updated={updated} />;
 }
