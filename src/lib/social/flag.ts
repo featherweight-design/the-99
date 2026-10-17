@@ -18,6 +18,15 @@ export function socialGamesEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
+ * `RULE_ZERO_ENABLED`: the Rule 0 table check (plan `2026-10-16-rule-zero.md`). `'true'` on staging from the PR
+ * that lets a reader set a table, unset on production until Hugh turns it on. It requires `SOCIAL_FRIENDS_ENABLED`,
+ * checked here so an override of this one never raises its parent: seats are pod members. Dark until its UI PRs.
+ */
+export function ruleZeroEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.RULE_ZERO_ENABLED === "true" && socialFriendsEnabled(env);
+}
+
+/**
  * `SOCIAL_INVITES_ENABLED`: inviting someone new and invite counts (plan `2026-10-16-invites.md`). `'true'` on
  * staging, unset on production until the invite-only launch. It requires `SOCIAL_FRIENDS_ENABLED`, checked here so
  * an override of this one never raises its parent: an account with friends off has no /friends to invite from. Off,
