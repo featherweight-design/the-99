@@ -108,16 +108,17 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
     setShown({ token: link.token, url: linkUrl(link.token), expiresAt: link.expiresAt, friendsBefore: new Set(listed.current) });
   }
 
-  const head = friends.length > 0 ? h.headCount(friends.length) : h.head;
   const faceHref = (publicId: string) => (friendPages ? `/friends/${publicId}` : "/friends");
-  const soonest = open[0];
+  // Every link has one lifetime today, so the oldest expires first; sorted anyway, so that stays true if one changes.
+  const soonest = [...open].sort((a, b) => a.expiresAt.getTime() - b.expiresAt.getTime())[0];
   const msLeft = soonest ? soonest.expiresAt.getTime() - nowDate.getTime() : 0;
 
   return (
-    <section aria-labelledby="home-friends-head" className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
+    <section aria-labelledby="home-friends-head" className={`flex flex-col gap-[12px] text-[color:var(--fg-body)] min-[1180px]:gap-[11px] ${className}`}>
       <div className="flex min-h-[24px] items-center justify-between gap-[12px] min-[1180px]:min-h-[14px]">
         <h2 id="home-friends-head" className="m-0 font-mono text-[10px] font-normal uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
-          {head}
+          {h.head}
+          {friends.length > 0 && <> <span className="tracking-[.08em]">{h.headCount(friends.length)}</span></>}
         </h2>
         {friends.length > 0 && (
           <Link
@@ -133,28 +134,28 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
 
       <ul className="m-0 flex list-none items-start justify-between p-0">
         {friends.length === 0 && (
-          <li className="flex w-[56px] flex-none flex-col items-center gap-[6px] sm:w-[52px]">
+          <li className="flex w-[56px] flex-none flex-col items-center gap-[6px] min-[1180px]:w-[52px]">
             <Face name={you?.displayName ?? h.you} commander={you?.commander ?? null} size={40} />
             <span className="text-[11.5px] text-[color:var(--fg-faint)]">{h.you}</span>
           </li>
         )}
         {friends.slice(0, plan.faces).map((f) => (
-          <li key={f.publicId} className="flex w-[56px] flex-none flex-col items-center sm:w-[52px]">
+          <li key={f.publicId} className="flex w-[56px] flex-none flex-col items-center min-[1180px]:w-[52px]">
             <Link
               href={faceHref(f.publicId)}
               aria-label={socialCopy.friends.openAria(f.displayName)}
-              className="flex min-h-[64px] w-full flex-col items-center gap-[6px] no-underline sm:min-h-0"
+              className="flex min-h-[64px] w-full flex-col items-center gap-[6px] no-underline min-[1180px]:min-h-0"
             >
               <PendingReporter href={faceHref(f.publicId)} />
               <Face name={f.displayName} commander={f.commander} size={40} />
-              <span aria-hidden className="max-w-[50px] overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] text-[color:var(--fg-body)] sm:max-w-[46px]">
+              <span aria-hidden className="max-w-[50px] overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] text-[color:var(--fg-body)] min-[1180px]:max-w-[46px]">
                 {f.displayName}
               </span>
             </Link>
           </li>
         ))}
         {plan.more > 0 && (
-          <li aria-hidden className="flex w-[56px] flex-none flex-col items-center gap-[6px] sm:w-[52px]">
+          <li aria-hidden className="flex w-[56px] flex-none flex-col items-center gap-[6px] min-[1180px]:w-[52px]">
             <span className="flex h-[40px] w-[40px] items-center justify-center font-mono text-[12.5px] text-[color:var(--fg-muted)]">{h.more(plan.more)}</span>
             <span className="text-[11.5px] text-[color:var(--fg-faint)]">{h.moreSub}</span>
           </li>
@@ -163,7 +164,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
           // While a link is open, the first empty seat is spoken for.
           const diamond = open.length > 0 && i === 0;
           return (
-            <li key={`seat-${i}`} aria-hidden className="flex w-[56px] flex-none flex-col items-center sm:w-[52px]">
+            <li key={`seat-${i}`} aria-hidden className="flex w-[56px] flex-none flex-col items-center min-[1180px]:w-[52px]">
               <span
                 data-seat={diamond ? "held" : "empty"}
                 className={`box-border flex h-[40px] w-[40px] items-center justify-center rounded-[10px] ${
@@ -216,7 +217,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
         type="button"
         onClick={() => void makeLink()}
         aria-disabled={making || undefined}
-        className="h-[44px] cursor-pointer self-stretch rounded-[10px] [border:1px_solid_var(--border-strong)] bg-transparent px-[16px] font-sans text-[14px] text-[color:var(--fg)] aria-disabled:cursor-default sm:h-[32px] sm:self-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+        className="h-[44px] cursor-pointer self-stretch rounded-[10px] [border:1px_solid_var(--border-strong)] bg-transparent px-[16px] font-sans text-[14px] text-[color:var(--fg)] aria-disabled:cursor-default min-[1180px]:h-[32px] min-[1180px]:self-start min-[1180px]:rounded-[8px] min-[1180px]:px-[14px] min-[1180px]:text-[12.5px]"
       >
         {making ? socialCopy.page.invitePending : socialCopy.page.invite}
       </button>

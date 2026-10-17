@@ -244,7 +244,7 @@ export function Dashboard(props: DashboardProps) {
               <FriendsSection
                 {...props.friends}
                 now={props.now}
-                className="order-1 min-[1180px]:order-none min-[1180px]:mt-[4px]"
+                className={`order-1 mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
               />
             )}
           </div>

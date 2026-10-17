@@ -261,6 +261,14 @@ describe("Friends on Home", () => {
     render(<Dashboard {...BASE} commitments={null} friends={FRIENDS} />);
     expect(screen.queryByText("Commitments")).toBeNull();
     expect(section().parentElement!.className).toContain("min-[1180px]:w-[316px]");
+    // Alone in the column, it sits at the column's top; under Commitments, 4px below the column's gap.
+    expect(section().className).toMatch(/min-\[1180px\]:mt-0( |$)/);
+  });
+
+  it("puts 6px above the section on the phone, and 4px under Commitments from 1180", () => {
+    render(<Dashboard {...BASE} friends={FRIENDS} />);
+    expect(section().className).toMatch(/(^| )mt-\[6px\]( |$)/);
+    expect(section().className).toMatch(/min-\[1180px\]:mt-\[4px\]( |$)/);
   });
 });
 

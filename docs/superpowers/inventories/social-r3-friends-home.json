@@ -1,0 +1,31 @@
+{
+  "feature": "Friends on Home (Social R3 addendum, design/design_handoff_the99_social_r3/addendum-friends-home)",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true on the server (SOCIAL_GAMES_ENABLED and SOCIAL_WISHLIST_ENABLED too, for the G5 line and the faces' own pages). Home is photographed whole at both widths, so the section's PLACEMENT is visible as well as the section: on the phone it is drawn ONCE, above the resume block, and moved by CSS order (readiness gap 3); from 1180px it sits in the right column under Commitments. The friend count, the seats and the open-link line show whatever the signed-in account holds. Every count and link state (no friends, one, seven, a link open, two open, under a day, an expired link) is pinned in friends-section.test.tsx. The last rows press Add a friend, which WRITES one invite link for the account (single-use, expiring in 7 days), and photograph the shipped dialog it opens.",
+  "out": "contact-sheets/social-r3-friends-home",
+  "rows": [
+    {
+      "id": "home-friends-desktop",
+      "label": "/ — Friends in the right column under Commitments, 1300",
+      "view": "src/components/home/dashboard.tsx",
+      "widths": ["desktop"],
+      "steps": [{ "goto": "/", "wait": "#home-friends-head", "settle": 4000 }]
+    },
+    {
+      "id": "home-friends-phone",
+      "label": "/ — Friends above the resume block, 390",
+      "view": "src/components/home/dashboard.tsx",
+      "widths": ["phone"],
+      "steps": [{ "goto": "/", "wait": "#home-friends-head", "settle": 4000 }]
+    },
+    {
+      "id": "home-friends-add",
+      "label": "Add a friend: the shipped invite dialog, opened from Home",
+      "view": "src/components/home/friends-section.tsx",
+      "steps": [
+        { "goto": "/", "wait": "#home-friends-head", "settle": 3000 },
+        { "clickRole": "button", "name": "^Add a friend$", "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    }
+  ]
+}

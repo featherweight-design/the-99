@@ -15,7 +15,8 @@ export const socialCopy = {
   home: {
     /** The mono label, drawn uppercase by CSS. */
     head: "Friends",
-    headCount: (n: number) => `Friends · ${n}`,
+    /** After `head`, in its own tracking: how many friends. */
+    headCount: (n: number) => `· ${n}`,
     all: "All friends", // the › is drawn
     you: "You", // under your own face, in the no-friends state only
     invite: "Add the people you play with.",
