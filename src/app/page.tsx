@@ -23,7 +23,8 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { loadInviteCount } from "../lib/invites/read";
 import { wishlistEnabled } from "../lib/wishlist/flag";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
@@ -288,6 +289,17 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       console.error("home: the friends section could not be read", error);
     }
   }
+  // Rule 0's `Tonight's table` (plan decision 1): read per request after the cached load, never stored, so a reseat,
+  // a rename and an expiry show on the next request. A failed read draws no card.
+  let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
+  if (ruleZeroEnabled(env)) {
+    try {
+      homeTables = await loadHomeTables(userId);
+    } catch (error) {
+      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+      console.error("home: tonight's table could not be read", error);
+    }
+  }
   // With invites on, Add a friend opens /friends' chooser (addendum G4), which shows the reader's invite count. Read
   // per request like the rest of the section; a count that cannot be read draws Add a friend as a plain link, as
   // /friends does.
@@ -339,6 +351,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
+      tables={homeTables}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env), invites }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.

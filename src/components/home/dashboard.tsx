@@ -24,6 +24,8 @@ import { ReadyToBuild } from "./ready-to-build";
 import { Lock } from "../ui/lock";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 import { FriendsSection, type FriendsSectionProps } from "./friends-section";
+import { HomeTableCard } from "../rule-zero/home-table-card";
+import type { OpenTable } from "../../lib/social/rule-zero";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
@@ -36,7 +38,9 @@ export type DashboardProps = {
   /** Null when the availability read failed. The card renders nothing, not a zero. */
   commitments: Commitments | null;
   /** Friends on Home, read per request outside the cached payload. Null with SOCIAL_FRIENDS_ENABLED off or a failed read. */
-  friends?: (Omit<FriendsSectionProps, "className" | "now">) | null;
+  friends?: (Omit<FriendsSectionProps, "className" | "now" | "head">) | null;
+  /** Rule 0's open tables the reader sits at, read per request (plan decision 1); empty with the switch off. */
+  tables?: OpenTable[];
   shopping: ShoppingRollup;
   /**
    * The arrivals banner (upcoming precons), or null: switch off, nothing to show, or the read failed. Part of the
@@ -91,6 +95,13 @@ export function Dashboard(props: DashboardProps) {
   // Both arrive at the copy module pre-formatted: it formats no numbers by
   // contract, and the greeting's freshness figure is a word, not a date.
   const noDecks = props.decks.length === 0;
+  const tableCards = props.tables && props.tables.length > 0 ? (
+    <>
+      {props.tables.map((t) => (
+        <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
+      ))}
+    </>
+  ) : null;
   const when = formatWhen(props.lastUpdated, new Date(props.now));
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
   const noCards = props.noCards === true;
@@ -230,7 +241,7 @@ export function Dashboard(props: DashboardProps) {
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
         {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
-        {(props.commitments !== null || props.friends) && (
+        {(props.commitments !== null || props.friends || tableCards) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
             {props.commitments !== null && (
               <div className="order-3 flex flex-col min-[1180px]:order-none">
@@ -242,13 +253,19 @@ export function Dashboard(props: DashboardProps) {
                 />
               </div>
             )}
-            {props.friends && (
+            {props.friends ? (
               <FriendsSection
                 {...props.friends}
                 now={props.now}
+                head={tableCards}
                 className={`order-1 mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
               />
-            )}
+            ) : tableCards ? (
+              // A failed friends read still draws the card, alone at the section's place, with no heading.
+              <div className={`order-1 mt-[6px] flex flex-col gap-[12px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}>
+                {tableCards}
+              </div>
+            ) : null}
           </div>
         )}
       </div>

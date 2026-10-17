@@ -8,6 +8,8 @@
 // so in the shared toast (E15). A write that answers "already done" is done (E12). Every redraw from the server
 // retires what was held, since it carries the truth.
 
+import type { OpenTable } from "../../lib/social/rule-zero";
+import { PodRuleZeroRow } from "../rule-zero/pod-row";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
@@ -31,7 +33,18 @@ const copy = socialCopy.pods;
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "en-US", { sensitivity: "base" });
 
 
-export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds: string[]; friends: Friend[] }) {
+export function PodsPane({
+  pods,
+  sharedIds,
+  friends,
+  ruleZero = null,
+}: {
+  pods: Pod[];
+  sharedIds: string[];
+  friends: Friend[];
+  /** Rule 0 on for the reader: each pod's open table the reader sits at (or none), and the server's clock. */
+  ruleZero?: { tables: OpenTable[]; now: Date } | null;
+}) {
   const router = useRouter();
   // Seats removed and boxes flipped, held until the server's redraw carries them (or a failure puts them back).
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
@@ -299,6 +312,11 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
           key={p.id}
           pod={p}
           shared={shared(p.id)}
+          ruleZero={
+            ruleZero ? (
+              <PodRuleZeroRow podId={p.id} table={ruleZero.tables.find((t) => t.podId === p.id) ?? null} now={ruleZero.now} />
+            ) : undefined
+          }
           sharePending={sharePending.has(p.id)}
           onRemove={(m) => void remove(p, m)}
           onShare={(on) => void share(p.id, on)}

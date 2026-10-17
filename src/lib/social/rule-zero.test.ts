@@ -3,7 +3,7 @@
 // answers, including a table expiring between two reads.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
-import { markSeen, openTablesQuery, podSetup, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
+import { markSeen, openTablesQuery, podSetup, tableFacesQuery, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
 
 const VIEWER = "user_viewer";
 const POD = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -21,6 +21,20 @@ describe("openTablesQuery", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "mine" on ("mine"."table_id" = "rule_zero_tables"."id" and "mine"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
     expect(q.params).toEqual([VIEWER, VIEWER]);
+  });
+});
+
+describe("the pod row's and Home's read (PR 6)", () => {
+  it("names the setter and the viewer's own seated deck, from the viewer's own seat", () => {
+    const q = openTablesQuery(VIEWER).toSQL();
+    expect(q.sql).toContain(`left join "social_profiles" "setter" on "setter"."user_id" = "rule_zero_tables"."set_by"`);
+    expect(q.sql).toContain(`left join "decks" "mine_deck" on "mine_deck"."id" = "mine"."deck_id"`);
+  });
+
+  it("joins the viewer's own friendship to each seat, so a non-friend draws as initials (D2)", () => {
+    const q = tableFacesQuery(VIEWER, [POD]).toSQL();
+    expect(q.sql).toContain(`left join "friend_links" "viewer_friend" on ("viewer_friend"."user_id" = $1 and "viewer_friend"."friend_user_id" = "rule_zero_seats"."user_id")`);
+    expect(q.params[0]).toBe(VIEWER);
   });
 });
 

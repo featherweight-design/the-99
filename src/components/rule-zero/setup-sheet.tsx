@@ -27,7 +27,7 @@ export type SetupData = PodSetup & { tableId?: string; seated?: SeatedNow[] };
 
 type Screen = { kind: "who" } | { kind: "decks" } | { kind: "friend"; publicId: string };
 
-const BUTTON =
+export const ACCENT_BUTTON =
   "inline-flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] whitespace-nowrap rounded-[10px] border-0 bg-[color:var(--accent)] px-[18px] font-sans text-[14.5px] font-semibold text-[color:var(--bg)] aria-disabled:cursor-default aria-disabled:opacity-40";
 const ROW_ART = "relative flex h-[46px] w-[64px] flex-none items-center justify-center overflow-hidden rounded-[7px]";
 const INITIALS =
@@ -164,7 +164,7 @@ export function SetupSheet({
               <span aria-hidden>‹</span>
               {copy.back}
             </button>
-            <button type="button" className={BUTTON} aria-disabled={busy || undefined} aria-busy={busy || undefined} onClick={() => void save()}>
+            <button type="button" className={ACCENT_BUTTON} aria-disabled={busy || undefined} aria-busy={busy || undefined} onClick={() => void save()}>
               {copy.set}
             </button>
           </>
@@ -196,7 +196,7 @@ export function SetupSheet({
       footer={
         <>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.count(seated.length)}</span>
-          <button type="button" className={BUTTON} aria-disabled={tooFew || undefined} onClick={() => (tooFew ? undefined : setScreen({ kind: "decks" }))}>
+          <button type="button" className={ACCENT_BUTTON} aria-disabled={tooFew || undefined} onClick={() => (tooFew ? undefined : setScreen({ kind: "decks" }))}>
             {copy.next}
           </button>
         </>

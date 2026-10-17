@@ -147,6 +147,7 @@ export function PodCard({
   onDelete,
   leaveHeld = false,
   addRef,
+  ruleZero,
 }: {
   pod: Pod;
   shared: boolean;
@@ -163,6 +164,8 @@ export function PodCard({
   leaveHeld?: boolean;
   /** The Add seat, for the Add friends dialog to hand focus back to. */
   addRef?: (el: HTMLButtonElement | null) => void;
+  /** The card's last row, Rule 0's (`PodRuleZeroRow`); absent with the switch off, and no space kept (E4). */
+  ruleZero?: React.ReactNode;
 }) {
   const n = pod.members.length;
   const owner = pod.members.find((m) => m.isOwner);
@@ -224,6 +227,7 @@ export function PodCard({
         <Checkbox checked={shared} busy={sharePending} onChange={onShare} />
         <span>{copy.share}</span>
       </label>
+      {ruleZero}
     </div>
   );
 }

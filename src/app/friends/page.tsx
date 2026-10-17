@@ -10,7 +10,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
 import { loadInviteCount } from "../../lib/invites/read";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -26,6 +26,7 @@ import { FriendsView } from "../../components/social/friends-view";
 import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
+import { openTablesFor } from "../../lib/social/rule-zero";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
@@ -54,11 +55,14 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       })
     : Promise.resolve(null);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
-  const [profile, { friends, links }, pods, shared] = await Promise.all([
+  // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
+  const ruleZero = ruleZeroEnabled(env);
+  const [profile, { friends, links }, pods, shared, tables] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
     perf.timed("sharedPods", () => listSharedPods(userId)),
+    ruleZero ? perf.timed("openTables", () => openTablesFor(userId)) : Promise.resolve(null),
   ]);
   // The inviter is resolved first and the receipt marked shown LAST, once every read the page needs has succeeded: a
   // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
@@ -72,7 +76,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
-      pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} />}
+      pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}
       links={links}
       openInviteNew={query[INVITE_PARAM] === "new"}

@@ -21,6 +21,9 @@ export const ruleZeroCopy = {
     homeBody: (setter: string, deck: string, n: number, closes: string) =>
       `${setter} seated you with ${deck}. ${seated(n)}, open until ${closes}.`,
     homeBodyOwn: (deck: string, n: number, closes: string) => `You’re seated with ${deck}. ${seated(n)}, open until ${closes}.`,
+    // Not drawn: your seat waits for a deck. `setter` is null when you set it.
+    homeBodyWaiting: (setter: string | null, n: number, closes: string) =>
+      `${setter === null ? "You set the table" : `${setter} seated you`}. Pick your deck there. ${seated(n)}, open until ${closes}.`,
     homeOpen: "Open the table",
   },
 
