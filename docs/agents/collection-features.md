@@ -72,7 +72,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `vercel logs -p the-99-staging -q "scan-timing"`.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
   frame on a phone), and that answer is shown only at margin `CONFIDENT_MARGIN` (0.10) or more; under it the card is
-  asked again once it has held the full `DWELL_MS` (700ms), and that answer is shown under the usual 0.02 gate. An
+  asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown under the usual 0.02 gate. An
   empty frame still needs the full dwell, so a missed frame never reads as the card having left. On staging's lab
   frames (8 runs, 264 card frames, truth the run's most common card) 78 frames read at 0.10 or more and none was wrong;
   26 of the 80 between 0.02 and 0.10 were. `measure:scan` read frame to guess 1852ms before and 1486ms after.

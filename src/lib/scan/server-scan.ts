@@ -1,5 +1,5 @@
 // A scanner that matches on the server, frame by frame: every frame goes through the stable-card tracker
-// (`stable-card.ts`), a card that settles is looked up ONCE (`lookup.ts`, with its own retries), and an empty frame
+// (`stable-card.ts`), a card that settles is looked up once (`lookup.ts`, with its own retries), or twice when its early answer is not confident (below), and an empty frame
 // that settles forgets the answer, so the next card is a new scan. The answer for the card in view is held and handed
 // back on every frame until another card settles. Pure apart from the lookup it starts; the caller owns the clock.
 //
@@ -52,7 +52,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     inFlight = null;
     confirmAt = null;
   };
-  const ask = (embedding: Float32Array, origin: number, early: boolean, settledAt: number) => {
+  const ask = (embedding: Float32Array, origin: number, early: boolean, runStart: number) => {
     const mine = new AbortController();
     inFlight = mine;
     const t0 = deps.now();
@@ -66,8 +66,10 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       inFlight = null;
       const end = deps.now();
       if (r.kind === "match" && early && r.margin !== null && r.margin < CONFIDENT_MARGIN) {
-        // Not sure enough yet: the screen keeps looking, and the card is asked about again at the full dwell.
-        confirmAt = settledAt + DWELL_MS - EARLY_DWELL_MS;
+        // Not sure enough yet: the screen keeps looking, and the card is asked about again once it has held the full
+        // dwell from the start of its run.
+        confirmAt = runStart + DWELL_MS;
+        set({ kind: "looking" });
         return;
       }
       if (r.kind === "match") set({ kind: "match", result: r, ms: Math.round(end - t0), totalMs: Math.round(end - origin) });
@@ -79,6 +81,8 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     /** One more frame at `now`; answers what the scanner knows about the card in view. `origin` is when this frame's
      * work began (the camera read), so an answer it asks for is timed from there. */
     frame(f: ScanFrame, now: number, origin: number = now): ServerState {
+      // When the run that settles on this frame began: its candidate's start, before the tracker forgets it.
+      const runStart = scan.candidate?.since ?? now;
       const out = nextStableScan(scan, f, now, EARLY_DWELL_MS);
       scan = out.scan;
       if (out.event?.kind === "empty") {
@@ -86,7 +90,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
         set({ kind: "idle" });
       } else if (out.event?.kind === "lookup") {
         forget();
-        ask(out.event.embedding, origin, true, now);
+        ask(out.event.embedding, origin, true, runStart);
       } else if (confirmAt !== null && now >= confirmAt && f.kind === "card" && scan.value && sameCard(scan.value, f)) {
         // The card has held the full dwell: this frame's own reading is asked about, and its answer is shown.
         confirmAt = null;

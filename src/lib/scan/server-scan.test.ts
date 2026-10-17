@@ -1,4 +1,5 @@
 // The lab's recorded behavior, on the server path: the dwell before a card is asked about, one lookup per stable card
+// (two when the early answer is not confident)
 // however long it stays, a new lookup for a second copy after the frame empties, and the retry with its own state.
 import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
@@ -122,8 +123,31 @@ describe("serverScanner's early lookup", () => {
     const fetch2 = vi.fn().mockResolvedValueOnce(answer(CONFIDENT_MARGIN - 0.01)).mockResolvedValue(answer(0.05));
     const { states, last } = await play(hold(card(0), 20), fetch2);
     expect(fetch2).toHaveBeenCalledTimes(2);
-    expect(states).toEqual(["looking", "looking", "match"]);
+    expect(states).toEqual(["looking", "looking", "looking", "match"]);
     expect(last.kind === "match" && last.result.margin).toBe(0.05);
+  });
+  it("does not ask again after the scanner is stopped", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    for (let i = 0; i < 4; i++) { s.frame(card(0), clock); await flush(); clock += 150; }
+    expect(fetch).toHaveBeenCalledTimes(1);
+    s.stop();
+    for (let i = 0; i < 10; i++) { s.frame(card(0), clock); await flush(); clock += 150; }
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("asks again at the full dwell from the run's start, at any cadence", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    // frames every 250ms: settles at 500, and the 750 frame has held 750ms
+    for (let i = 0; i < 4; i++) { s.frame(card(0), clock); await flush(); clock += 250; }
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("says it is looking, not retrying, while it waits to ask again", async () => {
+    const fetch = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(answer(0.01)).mockReturnValue(new Promise(() => {}));
+    const { states } = await play(hold(card(0), 4), fetch);
+    expect(states).toEqual(["looking", "retrying", "looking"]);
   });
   it("does not ask again once the card is gone", async () => {
     const fetch = vi.fn(async () => answer(0.01));
