@@ -142,6 +142,14 @@ async function run(page, steps) {
         step.throttle === "slow" ? SLOW_4G : { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 },
       );
     }
+    // `mock` answers every request matching a URL glob with a fixed reply, from this step on: a state that only a
+    // server's answer reaches (the scanner's Not sure, its not-ready notice) is staged without the data behind it.
+    // `status` defaults to 200, `json` to null. Before `goto` in the same step, so the first request is answered too.
+    if (step.mock !== undefined) {
+      const reply = { status: step.status ?? 200, contentType: "application/json", body: JSON.stringify(step.json ?? null) };
+      await page.unroute(step.mock);
+      await page.route(step.mock, (route) => route.fulfill(reply));
+    }
     if (step.goto !== undefined) {
       const url = expand(step.goto, step.goto);
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
@@ -161,6 +169,13 @@ async function run(page, steps) {
     // not happen, and a step that does nothing photographs the route in the
     // previous state while the cell is counted as reached. Playwright rejects
     // `""` loudly, which is the outcome to want.
+    // `store` writes the page's localStorage, key by key: a preference a surface reads as it mounts (the scanner's
+    // remembered mode) is set before the press that mounts it, so no row races the previous row's leftover.
+    if (step.store !== undefined) {
+      await page.evaluate((items) => {
+        for (const [k, v] of Object.entries(items)) window.localStorage.setItem(k, v);
+      }, step.store);
+    }
     if (step.click !== undefined) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }
@@ -236,6 +251,12 @@ async function run(page, steps) {
     if (step.searchScroll !== undefined) {
       await searchSheet.getByRole("combobox").blur();
       await searchSheet.getByRole("listbox").evaluate((list, y) => { list.parentElement.scrollTop = y; }, step.searchScroll);
+    }
+    // `files` chooses files on a file input (it may be hidden), as a picker would: `paths` are resolved from the
+    // working directory, each `${VAR}` expanded first.
+    if (step.files !== undefined) {
+      if (!Array.isArray(step.paths) || step.paths.length === 0) throw new Error("files takes a non-empty paths list");
+      await onPage(page, step.files).first().setInputFiles(step.paths.map((p) => path.resolve(expand(p, `files ${step.files}`))));
     }
     if (step.back) await page.goBack();
     // The browser's own offline switch, for the surfaces that change with the connection.
