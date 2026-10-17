@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
+import type { MutableRefObject, ReactNode } from "react";
+import type { OpenCard } from "./search-layer";
 
 // The veil over the page lifts when the card the search opened is DRAWN. The provider names the card open as soon as
 // its data arrives, but keeps it pending until the modal's code has loaded and the dialog is up: lifting on the first
@@ -17,7 +18,7 @@ const { SearchLayer } = await import("./search-layer");
 
 const shown = vi.fn();
 const failed = vi.fn();
-const openCardRef = { current: null as null | ((id: string, s: never[], art: string | null, opener: HTMLElement | null) => void) };
+const openCardRef: MutableRefObject<OpenCard | null> = { current: null };
 const props = () => ({
   bodyEl: null,
   query: "",
