@@ -129,3 +129,47 @@ export const writtenForYouCopy = {
   freeBracket: 'Finding a deck’s bracket is free.',
   how: 'How credits work ›',
 } as const;
+
+// ---- R2·6a · the Reference tab (README-r2 C5, R2b's note). /copy-review 2026-10-17: the search's none and note lines
+// replace the shipped title-only ones (G17); `reachesThis` names the shipped How it works row an entry points at.
+
+/** Where each screen lives, printed beside its head (`/collection`, `a deck`). */
+export const SCREEN_WHERE: Record<AboutScreen, string> = {
+  home: '/',
+  collection: '/collection',
+  'card-details': 'any card',
+  sets: '/collection/sets',
+  proxies: '/collection/proxies',
+  history: '/collection/history',
+  wishlist: '/collection/wishlist',
+  upload: '/collection/replace',
+  commanders: '/commanders',
+  discover: '/discover',
+  'new-deck': '/decks/new',
+  decks: '/decks',
+  deck: 'a deck',
+  friends: '/friends',
+  account: 'everywhere',
+};
+
+export const referenceCopy = {
+  search: 'Find an entry',
+  clear: 'Clear search',
+  inTools: 'in Tools',
+  count: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
+  hits: (n: number, q: string) => (n === 1 ? `1 entry mentions “${q}”` : `${n} entries mention “${q}”`),
+  none: (q: string) => `Nothing in About mentions “${q}”.`,
+  noneNote: 'Search reads every entry’s title and text, on every screen.',
+  noneOut: 'See every entry →',
+  screensLabel: 'Screens',
+  howIndex: 'How it works',
+  reachesThis: 'How the app reaches this ›',
+  /** An opened entry's own name for its frame. */
+  frameAlt: (title: string, screen: string) => `${title}, on ${screen}`,
+} as const;
+
+export const creatorNoteCopy = {
+  title: 'A note from the creator',
+  row: 'Why The 99 exists, and who it’s for.',
+  close: 'Close',
+} as const;

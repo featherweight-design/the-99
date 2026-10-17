@@ -37,25 +37,55 @@ export type HaloBox = { x: number; y: number; w: number; h: number };
 
 export type Shot = { src: string; width: number; height: number; halo: HaloBox | null };
 
-export type ShotEntry = { width: number; height: number; bytes: number; quality: number; halo?: readonly [number, number, number, number] };
+type Box = readonly [number, number, number, number];
+/**
+ * `halo`: a tool crop's control. `entries`: on a screen's frame, each About entry's control on it, by entry id (R2·6a,
+ * measured through the locator map `scripts/lib/about-locators.mjs`).
+ */
+export type ShotEntry = { width: number; height: number; bytes: number; quality: number; halo?: Box; entries?: Record<string, Box> };
 export type ShotSet = Record<string, Record<string, ShotEntry>>;
 const SET = SHOTS as unknown as ShotSet;
 
 /** A captured entry, read as an own property only: `toString` or `constructor` is never a shot. */
-function entry(set: ShotSet, theme: string, id: string): ShotEntry | undefined {
+function entry_(set: ShotSet, theme: string, id: string): ShotEntry | undefined {
   const shots = Object.hasOwn(set, theme) ? set[theme] : undefined;
   return shots !== undefined && Object.hasOwn(shots, id) ? shots[id] : undefined;
 }
+
+/** The theme a read lands on and its entry: the reader's own capture, else the default theme's. */
+function resolve(theme: string | undefined, id: string, set: ShotSet): { key: string; e: ShotEntry } | null {
+  const own = isThemeKey(theme) ? entry_(set, theme, id) : undefined;
+  if (own) return { key: theme as string, e: own };
+  const fallback = entry_(set, DEFAULT_THEME, id);
+  return fallback ? { key: DEFAULT_THEME, e: fallback } : null;
+}
+
+const box = (b: Box): HaloBox => ({ x: b[0], y: b[1], w: b[2], h: b[3] });
 
 /**
  * The image for `id` in the reader's `theme` (the theme cookie's value, as the shell reads it). A theme with no capture
  * of it, an unknown theme included, reads the default theme's; an id the default has not captured is null.
  */
 export function shotFor(theme: string | undefined, id: string, set: ShotSet = SET): Shot | null {
-  const own = isThemeKey(theme) ? entry(set, theme, id) : undefined;
-  const key = own ? (theme as string) : DEFAULT_THEME;
-  const e = own ?? entry(set, DEFAULT_THEME, id);
-  if (!e) return null;
-  const halo = e.halo ? { x: e.halo[0], y: e.halo[1], w: e.halo[2], h: e.halo[3] } : null;
-  return { src: `/about/shots/${key}/${id}.webp`, width: e.width, height: e.height, halo };
+  const r = resolve(theme, id, set);
+  if (!r) return null;
+  return { src: `/about/shots/${r.key}/${id}.webp`, width: r.e.width, height: r.e.height, halo: r.e.halo ? box(r.e.halo) : null };
+}
+
+/**
+ * An About entry's picture (R2·6a, R2 gap 9): its screen's frame in the reader's theme, else the default's, with the
+ * entry's control as `halo`, as fractions of the frame, read from that same frame so the two always agree. Null for an
+ * entry whose screen has no frame; `halo` is null for an entry the locator map does not place.
+ */
+export function entryShotFor(
+  theme: string | undefined,
+  entry: { id: string; screen: AboutScreen; view?: DeckView },
+  set: ShotSet = SET,
+): Shot | null {
+  if (entry.screen === "deck" && !entry.view) return null;
+  const id = entry.screen === "deck" ? screenShotId("deck", entry.view!) : screenShotId(entry.screen);
+  const r = resolve(theme, id, set);
+  if (!r) return null;
+  const b = r.e.entries && Object.hasOwn(r.e.entries, entry.id) ? r.e.entries[entry.id] : undefined;
+  return { src: `/about/shots/${r.key}/${id}.webp`, width: r.e.width, height: r.e.height, halo: b ? box(b) : null };
 }
