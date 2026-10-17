@@ -164,14 +164,16 @@ describe("Receipt", () => {
     vi.unstubAllGlobals();
   });
 
-  it("leaves this tab for the receipt when both windows are blocked", async () => {
+  it("leaves this tab for the receipt when the first window is blocked, without a second open", async () => {
     const assign = vi.fn();
-    vi.stubGlobal("open", vi.fn(() => null));
+    const open = vi.fn(() => null);
+    vi.stubGlobal("open", open);
     vi.stubGlobal("location", { ...window.location, assign });
     m.receipt.mockResolvedValueOnce({ ok: true, url: "https://pay.stripe.com/receipts/x" });
     render(<CreditsView model={model({ allowance: allowance({ pack: 40 }), history: [row] })} ret={null} />);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Receipt/ })); });
     expect(assign).toHaveBeenCalledWith("https://pay.stripe.com/receipts/x");
+    expect(open).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });
 });

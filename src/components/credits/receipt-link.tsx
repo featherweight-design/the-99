@@ -23,8 +23,10 @@ export function ReceiptLink({ sessionId, onFailed, className, children }: {
         if (win) {
           win.opener = null;
           win.location.href = out.url;
-        } else if (!window.open(out.url, "_blank", "noopener")) {
-          // Both windows blocked: leave this tab for the receipt rather than do nothing (the URL is a validated https one).
+        } else {
+          // The first window was blocked. A second `window.open` would be blocked too, after an await, and with
+          // `noopener` it returns null even on success, so it proves nothing: leave this tab for the receipt (the URL
+          // is a validated https one).
           window.location.assign(out.url);
         }
       } else {
