@@ -105,6 +105,7 @@ async function landing(page, act, ready) {
 }
 
 const failures = [];
+let checked = 0;
 const browserTypes = { chromium, webkit };
 for (const name of ENGINES) {
   if (SLOW && name !== "chromium") continue;
@@ -148,11 +149,17 @@ for (const name of ENGINES) {
       const ok = DECK.test(end.path) && end.y === 0;
       const steps = trace.filter((r, i) => i === 0 || r[1] !== trace[i - 1][1] || r[2] !== trace[i - 1][2]).map((r) => `${r[0]}ms y=${r[1]}`).join(", ");
       console.log(`${ok ? "ok  " : "FAIL"} ${name} ${start} · ${label}: from y=${from}, landed y=${end.y} of ${end.h} on ${end.path} (${steps})`);
+      checked++;
       if (!ok) failures.push(`${name} ${start} · ${label}`);
     }
     await ctx.close();
   }
   await browser.close();
+}
+// A run that checked nothing (PROBE_SLOW=1 with no Chromium among the engines, say) has verified nothing.
+if (checked === 0) {
+  console.error("no landing was checked: PROBE_SLOW runs Chromium only, so include it in PROBE_ENGINES");
+  process.exit(1);
 }
 if (failures.length) {
   console.error(`\n${failures.length} landing(s) not at the top:\n  ${failures.join("\n  ")}`);
