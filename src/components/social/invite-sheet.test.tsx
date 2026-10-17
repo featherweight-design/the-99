@@ -178,6 +178,20 @@ describe("path 2, by email", () => {
     },
   );
 
+  it("sends once from an old Try again while a new send is in flight, and puts that toast away", async () => {
+    const clearToast = vi.fn();
+    a.sendEmailInviteAction.mockResolvedValueOnce({ ok: false, reason: "failed" });
+    render(<Harness start="new" clearToast={clearToast} />);
+    fireEvent.change(field(), { target: { value: "jo@example.com" } });
+    await act(async () => fireEvent.submit(field().closest("form")!));
+    const oldRetry = say.mock.calls[0][1].run as () => void;
+    a.sendEmailInviteAction.mockReturnValue(new Promise(() => {}));
+    await act(async () => fireEvent.submit(field().closest("form")!));
+    expect(clearToast).toHaveBeenCalled();
+    await act(async () => oldRetry());
+    expect(a.sendEmailInviteAction).toHaveBeenCalledTimes(2);
+  });
+
   it("redraws the page on an out race", async () => {
     a.sendEmailInviteAction.mockResolvedValue({ ok: false, reason: "out" });
     render(<Harness start="new" />);
@@ -267,6 +281,29 @@ describe("the invite QR", () => {
     await openQr(3);
     await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
     expect(screen.getByRole("img", { name: q.expiredAria })).toBeTruthy();
+  });
+
+  it("takes the server's claim when the client's clock reaches zero, never expired", async () => {
+    await openQr(3);
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ state: "claimed" }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    await flush();
+    expect(screen.getByRole("status").textContent).toContain(t.sent);
+    expect(screen.queryByRole("img", { name: q.expiredAria })).toBeNull();
+  });
+
+  it("stays on path 2 when ‹ back is pressed before Make a new QR answers", async () => {
+    await openQr();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ state: "expired" }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(WATCH_MS); });
+    let answer: (v: unknown) => void = () => {};
+    a.showInviteQrAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    fireEvent.click(screen.getByRole("button", { name: q.makeNew }));
+    fireEvent.click(screen.getByRole("button", { name: ch.back }));
+    const next = "C".repeat(43);
+    await act(async () => answer({ ...live(), token: next, url: `https://the-99.dev/join/${next}` }));
+    expect(screen.getByRole("button", { name: t.showQr })).toBeTruthy();
+    expect(screen.queryByRole("img", { name: q.aria })).toBeNull();
   });
 
   it("re-shows the live QR it already holds with no second call", async () => {

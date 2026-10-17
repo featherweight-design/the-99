@@ -14,7 +14,7 @@
 // Out of invites with a live QR (R4), the email half is held and Show an invite QR stays live: it shows that QR
 // again. Out with no live QR, the QR press is held too, with the count line as its reason.
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
 import { isEmailShape } from "../../lib/invites/rules";
 import { inviteCopy } from "../../lib/copy/invites";
@@ -50,6 +50,7 @@ export function InviteNew({
   qrPending,
   say,
   onRefresh,
+  clearToast,
 }: {
   count: InviteCount;
   /** Show an invite QR: the action and the QR screen are the sheet's. */
@@ -59,6 +60,8 @@ export function InviteNew({
   say: (text: string, retry?: SocialToastState["retry"]) => void;
   /** Redraw the page, so the count moves. */
   onRefresh: () => void;
+  /** Put away a Try again toast from an earlier send when a new one starts. */
+  clearToast?: () => void;
 }) {
   const id = useId();
   const [email, setEmail] = useState("");
@@ -69,15 +72,23 @@ export function InviteNew({
   const qrHeld = (count.out && !count.liveQr) || sending;
   const shaped = isEmailShape(email);
 
+  // One send at a time, guarded by a ref: a Try again toast holds a callback from the render that raised it, whose
+  // `sending` was false, and every send reserves an invite for seven days. The toast's press runs the CURRENT send
+  // (through `latest`), so it reads the address and the count as they are now.
+  const inFlight = useRef(false);
+  const latest = useRef<() => Promise<void>>(async () => {});
   async function send() {
-    if (sending || emailHeld) return;
+    if (inFlight.current || sending || emailHeld) return;
     if (!shaped) {
       setBad(true);
       return;
     }
+    inFlight.current = true;
+    clearToast?.();
     const last = count.left <= 1;
     setStage({ kind: "sending" });
     const out = await sendEmailInviteAction(email).catch(() => null);
+    inFlight.current = false;
     if (out?.ok) {
       setStage({ kind: "sent", last });
       setEmail("");
@@ -87,8 +98,11 @@ export function InviteNew({
     setStage({ kind: "form" });
     if (out && !out.ok && out.reason === "invalid") setBad(true);
     else if (out && !out.ok && out.reason === "out") onRefresh();
-    else say(t.sendFailed, { label: t.retry, run: () => void send() });
+    else say(t.sendFailed, { label: t.retry, run: () => void latest.current() });
   }
+  useEffect(() => {
+    latest.current = send;
+  });
 
   return (
     <>

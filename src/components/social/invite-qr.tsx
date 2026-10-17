@@ -3,17 +3,17 @@
 // modal with a ‹ back to path 2. Live (Q1), the QR sits on the friend link's light plate inside a ring that drains over
 // its 15 minutes, with the time left as m:ss ticking each second from `expiresAt` on the client; under a minute (Q2)
 // the ring and the time turn --warning. Claimed (Q3), the plate becomes a card back and `Invitation sent`. Expired (Q4,
-// the watch says so or the clock passes `expiresAt`), the plate greys under an EXPIRED chip, the ring empties, and
-// `Make a new QR` (Q5) runs the action again. The watch (`useInviteQrWatch`) polls only while the QR is live; an end
-// redraws the page, so the count moves.
+// the watch says so, or the clock passes `expiresAt` and the server, asked once more, has no claim), the plate greys
+// under an EXPIRED chip, the ring empties, and `Make a new QR` (Q5) runs the action again. The watch
+// (`useInviteQrWatch`) polls only while the QR is live; an end redraws the page, so the count moves.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { inviteCopy } from "../../lib/copy/invites";
 import { QR_TTL_MS, type InviteCount } from "../../lib/invites/rules";
 import { qrPath } from "../../lib/social/client-rules";
 import { InviteCountLine } from "./invite-count-line";
 import { FILLED_PRESS } from "./invite-new";
-import { useInviteQrWatch } from "./use-invite-qr-watch";
+import { readQrEnd, useInviteQrWatch } from "./use-invite-qr-watch";
 
 const q = inviteCopy.qr;
 const TICK_MS = 1000;
@@ -60,9 +60,21 @@ export function InviteQr({
     return () => clearInterval(t);
   }, [live, qr.token]);
   const secondsLeft = Math.max(0, Math.ceil((qr.expiresAt.getTime() - now) / 1000));
+  // The client's clock reaching zero is provisional: a claim made just before expiry is the server's to report, so
+  // the screen asks once more and takes its answer (claimed wins); anything else, a failed ask included, is expired.
+  const onEndedNow = useRef(onEnded);
   useEffect(() => {
-    if (live && secondsLeft === 0) onEnded("expired");
-  }, [live, secondsLeft, onEnded]);
+    onEndedNow.current = onEnded;
+  }, [onEnded]);
+  const atZero = live && secondsLeft === 0;
+  useEffect(() => {
+    if (!atZero) return;
+    const ask = new AbortController();
+    void readQrEnd(qr.token, ask.signal).then((end) => {
+      if (!ask.signal.aborted) onEndedNow.current(end === "claimed" ? "claimed" : "expired");
+    });
+    return () => ask.abort();
+  }, [atZero, qr.token]);
   useInviteQrWatch(live ? qr.token : null, onEnded);
 
   const warn = live && secondsLeft < WARN_SECONDS;

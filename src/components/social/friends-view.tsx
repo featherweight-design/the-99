@@ -261,6 +261,9 @@ export function FriendsView({
     const t = setTimeout(() => router.refresh(), Math.max(0, qrUntilMs - nowMs) + QR_EXPIRY_REFRESH_SLACK_MS);
     return () => clearTimeout(t);
   }, [qrUntilMs, nowMs, router]);
+  // While the chooser is open the toast is drawn inside its dialog, since the dialog keeps Tab within itself and a
+  // Try again outside it could not be reached from the keyboard.
+  const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
   function openChooser() {
     // Closing it returns focus to Add a friend, never to a Show pressed earlier.
     showOpener.current = null;
@@ -295,11 +298,16 @@ export function FriendsView({
   async function makeLink() {
     if (makingNow.current) return;
     makingNow.current = true;
+    // The chooser screen the press was made on (null: no chooser open). Card 2 stays live while card 1's link is
+    // made, so a reader who has moved on (to path 2, or closed the sheet) by the answer gets nothing drawn: the
+    // link stands, and the redraw the write revalidates lists it under Open links.
+    const began = addingNow.current;
     setToast(null);
     setMaking(true);
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
+    if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
@@ -404,11 +412,13 @@ export function FriendsView({
           returnFocusRef={dialogReturn}
           say={say}
           onRefresh={refresh}
+          toast={toastEl}
+          clearToast={() => setToast(null)}
         />
       ) : null}
       {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      {invites && adding ? null : toastEl}
     </FriendInviteContext.Provider>
   );
 }

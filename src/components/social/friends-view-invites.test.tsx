@@ -99,6 +99,48 @@ describe("Add a friend, invites on", () => {
   });
 });
 
+describe("Add a friend, invites on, answers that land after the reader moved on", () => {
+  const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
+  const close = () => fireEvent.click(screen.getByRole("button", { name: socialCopy.dialog.close }));
+
+  it("draws nothing for card 1's link when the reader went to path 2 first: closing opens no friend-link dialog", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.createInviteAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    await act(async () => answer({ ok: true, token: TOKEN, url: `https://the-99.dev/friend/${TOKEN}`, expiresAt: new Date("2026-10-22T21:41:00Z") }));
+    expect(screen.getByRole("button", { name: inviteCopy.path.showQr })).toBeTruthy();
+    close();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("draws a failure's Try again inside the open sheet, where Tab can reach it", async () => {
+    a.createInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
+    draw({ invites });
+    fireEvent.click(press());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) })));
+    const retry = screen.getByRole("button", { name: socialCopy.invites.retry });
+    expect(screen.getByRole("dialog").contains(retry)).toBe(true);
+    expect(screen.getByRole("dialog").contains(screen.getByRole("alert"))).toBe(true);
+    retry.focus();
+    expect(document.activeElement).toBe(retry);
+  });
+
+  it("keeps the sheet closed when Close is pressed before Show an invite QR answers", async () => {
+    let answer: (v: unknown) => void = () => {};
+    inv.showInviteQrAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    fireEvent.click(screen.getByRole("button", { name: inviteCopy.path.showQr }));
+    close();
+    await act(async () => answer({ ok: true, token: TOKEN, url: `https://the-99.dev/join/${TOKEN}`, expiresAt: new Date(Date.now() + 900_000) }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("a live QR's expiry with the sheet closed (state C4)", () => {
   afterEach(() => {
     vi.useRealTimers();

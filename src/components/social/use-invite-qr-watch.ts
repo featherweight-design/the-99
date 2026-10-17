@@ -10,6 +10,19 @@ import { WATCH_MS } from "./use-invite-watch";
 
 export type QrWatchAnswer = { state: "live"; secondsLeft: number } | { state: "claimed" } | { state: "expired" };
 
+/** One ask of `/api/invite-qr` for a QR's state: `claimed` or `expired`, or null for live or a failed ask. */
+export async function readQrEnd(token: string, signal?: AbortSignal): Promise<"claimed" | "expired" | null> {
+  try {
+    const res = await fetch(`/api/invite-qr?t=${encodeURIComponent(token)}`, { signal, cache: "no-store" });
+    if (!res.ok) return null;
+    const answer = (await res.json()) as QrWatchAnswer;
+    return answer.state === "claimed" || answer.state === "expired" ? answer.state : null;
+  } catch {
+    // A failed poll (offline, aborted) changes nothing; the next one asks again.
+    return null;
+  }
+}
+
 export function useInviteQrWatch(token: string | null, onEnded: (state: "claimed" | "expired") => void) {
   const latest = useRef(onEnded);
   useEffect(() => {
@@ -31,16 +44,7 @@ export function useInviteQrWatch(token: string | null, onEnded: (state: "claimed
       timer = null;
       if (stopped || inFlight) return;
       inFlight = new AbortController();
-      let ended: "claimed" | "expired" | null = null;
-      try {
-        const res = await fetch(`/api/invite-qr?t=${encodeURIComponent(token as string)}`, { signal: inFlight.signal, cache: "no-store" });
-        if (res.ok) {
-          const answer = (await res.json()) as QrWatchAnswer;
-          if (answer.state === "claimed" || answer.state === "expired") ended = answer.state;
-        }
-      } catch {
-        // A failed poll (offline, aborted) changes nothing; the next one asks again.
-      }
+      const ended = await readQrEnd(token as string, inFlight.signal);
       inFlight = null;
       if (stopped) return;
       if (ended) {

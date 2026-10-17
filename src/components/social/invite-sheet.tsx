@@ -10,7 +10,7 @@
 // The screens share one modal (`SocialModal`'s `screen` and `onBack`). The QR screen's token lives here, so ‹ back
 // from it to path 2 and Show an invite QR again re-shows the same live QR (the server answers the same token anyway).
 
-import { useCallback, useId, useState, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
 import { inviteCardOpen } from "../../lib/invites/rules";
 import { inviteCopy } from "../../lib/copy/invites";
@@ -41,6 +41,8 @@ export function InviteSheet({
   returnFocusRef,
   say,
   onRefresh,
+  clearToast,
+  toast,
 }: {
   screen: InviteScreen;
   onScreen: (next: InviteScreen) => void;
@@ -56,10 +58,29 @@ export function InviteSheet({
   returnFocusRef?: RefObject<HTMLElement | null>;
   say: (text: string, retry?: SocialToastState["retry"]) => void;
   onRefresh: () => void;
+  /** Put away the toast showing, if any (a new send starts). */
+  clearToast?: () => void;
+  /** The page's toast, drawn inside the dialog so its Try again is in the Tab trap. */
+  toast?: ReactNode;
 }) {
   const [qr, setQr] = useState<ShownQr | null>(null);
   const [ended, setEnded] = useState<QrEnd | null>(null);
   const [qrPending, setQrPending] = useState(false);
+  // A QR request's answer is drawn only on the screen it was asked from, and only while this sheet stands: one that
+  // answers after a Close or a Back draws nothing (the server keeps the QR, and Show re-shows it). The newest
+  // request wins, and the screen is read at the answer, so a ref, not the render's value.
+  const screenNow = useRef(screen);
+  useEffect(() => {
+    screenNow.current = screen;
+  }, [screen]);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const asked = useRef(0);
 
   const showQr = useCallback(async function show(fresh: boolean) {
     // Back from the QR screen to path 2 keeps the live QR here, so showing it again needs no call. Once the sheet
@@ -68,13 +89,20 @@ export function InviteSheet({
       onScreen("qr");
       return;
     }
+    const seq = ++asked.current;
+    const began = screenNow.current;
     setQrPending(true);
     const out = await showInviteQrAction().catch(() => null);
+    if (!mounted.current || seq !== asked.current) return;
     setQrPending(false);
     if (out?.ok) {
       setQr({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt) });
       setEnded(null);
-      onScreen("qr");
+      if (screenNow.current === began) onScreen("qr");
+      return;
+    }
+    if (screenNow.current !== began) {
+      if (out && !out.ok && out.reason === "out") onRefresh();
       return;
     }
     if (out && !out.ok && out.reason === "out") {
@@ -104,6 +132,7 @@ export function InviteSheet({
       onBack={back}
       backLabel={ch.back}
       screen={screen}
+      overlay={toast}
     >
       {screen === "link" && link ? (
         <AddFriendBody {...link} />
@@ -112,7 +141,7 @@ export function InviteSheet({
       ) : screen === "choose" || screen === "link" ? (
         <Chooser count={count} linkHeld={linkHeld} linkPending={linkPending} onFriendLink={onFriendLink} onNew={() => onScreen("new")} />
       ) : (
-        <InviteNew count={count} onShowQr={() => void showQr(false)} qrPending={qrPending} say={say} onRefresh={onRefresh} />
+        <InviteNew count={count} onShowQr={() => void showQr(false)} qrPending={qrPending} say={say} onRefresh={onRefresh} clearToast={clearToast} />
       )}
     </SocialModal>
   );

@@ -58,6 +58,7 @@ export function SocialModal({
   onBack,
   backLabel,
   screen,
+  overlay,
   children,
 }: {
   title: string;
@@ -74,6 +75,8 @@ export function SocialModal({
   backLabel?: string;
   /** The screen shown, in a modal that has more than one: its change moves focus (above). */
   screen?: string;
+  /** Drawn inside the dialog after its body (a toast raised while it is open), so its controls stay in the Tab trap. */
+  overlay?: ReactNode;
   children: ReactNode;
 }) {
   const host = useSheetHost(true);
@@ -141,6 +144,7 @@ export function SocialModal({
           <p className="mx-[18px] mb-[14px] mt-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)] md:mx-[20px]">{sub}</p>
         ) : null}
         <div data-social-modal-body="" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] pb-[22px] md:px-[20px] md:pb-[18px]">{children}</div>
+        {overlay}
       </div>
     </div>
   );
