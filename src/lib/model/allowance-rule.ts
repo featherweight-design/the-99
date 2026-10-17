@@ -69,6 +69,14 @@ export function dailyLimit(input: { groupAllowances: readonly number[]; owner: b
   return input.owner ? ownerDailyAllowanceFrom(input.ownerRaw) : defaultDailyAllowanceFrom(input.defaultRaw);
 }
 
+/**
+ * Paid runs per player per rolling 24 hours (Hugh, payments scope board 2026-10-13; plan ruling E2).
+ * It bounds what a bought credit can spend in a day, whatever the lot holds, and counts exactly as the
+ * free allowance does: the same window, a `reserved` row until its TTL, a `spent` row, never a refund.
+ * A group's own number comes with the admin PR; `paidRoom` takes the limit it is handed.
+ */
+export const PAID_DAILY_LIMIT = 20;
+
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -124,6 +132,13 @@ export type Allowance = {
    *  first, then pack credits. OPTIONAL like `paused`, and absent while the player holds no lot. */
   plan?: number;
   pack?: number;
+  /** Paid runs counted in the window (`PAID_DAILY_LIMIT`'s counter), present with `plan`/`pack`. */
+  paidUsedToday?: number;
+  paidLimit?: number;
+  /** When the paid limit has room again: the oldest counted paid run leaving the window. Null while it has room. */
+  paidBackAt?: Date | null;
+  /** When a cancelled plan's remaining credits lapse. Unset until the Subscription PR fills it. */
+  planExpiresAt?: Date | null;
 };
 
 /**
@@ -145,8 +160,23 @@ export function freeCount(a: { used: number; limit: number }): number {
   return Math.max(0, a.limit - a.used);
 }
 
-export function hasCredit(a: { used: number; limit: number; plan?: number | null; pack?: number | null }): boolean {
-  return freeRoom(a) || (a.plan ?? 0) + (a.pack ?? 0) > 0;
+/**
+ * THE PAID LIMIT, decided here alone: a paid run may start while fewer than `paidLimit` paid runs count.
+ * It gates paid runs only, and `hasCredit` applies it after the free allowance, so it can never refuse a
+ * run the free allowance can fund. `credit-gates.test.ts` fails on any other comparison of the two.
+ */
+export function paidRoom(a: { paidUsed: number; paidLimit: number }): boolean {
+  return a.paidUsed < a.paidLimit;
+}
+
+export function hasCredit(a: {
+  used: number; limit: number; plan?: number | null; pack?: number | null;
+  paidUsedToday?: number | null; paidLimit?: number | null;
+}): boolean {
+  if (freeRoom(a)) return true;
+  if ((a.plan ?? 0) + (a.pack ?? 0) <= 0) return false;
+  // An Allowance without the paid counter (a fixture, a caller that did not read it) has no limit to apply.
+  return a.paidUsedToday == null || a.paidLimit == null || paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */

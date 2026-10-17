@@ -242,6 +242,36 @@ async function run() {
     check("k · and its last credit in flight closes every gate", await gates(), { hasCredit: false, intake: "spent", synopsis: false });
   }
 
+  // l · The 20-a-day paid limit, through the real `reserveModelCall` and `readAllowance`.
+  {
+    const u = newUser();
+    await spendAllowance(u);
+    const pack = await grant(u, "pack", 100);
+    const seedPaid = (status: string, ageMs: number, n: number) => fixture.execute(sql`
+      insert into model_calls (user_id, feature, status, model, credit_grant_id, created_at)
+      select ${u}, 'tuning', ${status}, ${TUNING_MODEL}, ${pack}::uuid, now() at time zone 'utc' - make_interval(secs => ${ageMs / 1000})
+      from generate_series(1, ${n})`);
+    await seedPaid("spent", 60_000, 18);
+    await seedPaid("refunded", 60_000, 5);
+    check("l · refunded paid rows do not count", (await readAllowance(u)).paidUsedToday, 18);
+    check("l · the nineteenth and twentieth are funded", [await fundedBy(await reserve(u)), await fundedBy(await reserve(u))], [pack, pack]);
+    const full = await readAllowance(u);
+    check("l · twenty counted, the limit named, a time back", [full.paidUsedToday, full.paidLimit, full.paidBackAt instanceof Date], [20, 20, true]);
+    check("l · the twenty-first is refused with credits left", kindOf(await reserve(u)), "allowance");
+    check("l · hasCredit is shut at the limit", hasCredit(full), false);
+    const v = newUser();
+    await spendAllowance(v);
+    const old = await grant(v, "pack", 100);
+    await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, credit_grant_id, created_at)
+      select ${v}, 'tuning', 'spent', ${TUNING_MODEL}, ${old}::uuid, now() at time zone 'utc' - interval '25 hours' from generate_series(1, 20)`);
+    check("l · twenty paid runs older than the window leave room", await fundedBy(await reserve(v)), old);
+    const w = newUser();
+    await grant(w, "pack", 100);
+    await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, credit_grant_id)
+      select ${w}, 'tuning', 'spent', ${TUNING_MODEL}, credit_grant_id from (select id as credit_grant_id from credit_grants where user_id = ${w}) g, generate_series(1, 20)`);
+    check("l · twenty paid runs never refuse a free-funded press", await fundedBy(await reserve(w)), null);
+  }
+
   // i · The purge takes the lots and the runs that named them.
   {
     const u = newUser();

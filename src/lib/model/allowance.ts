@@ -4,10 +4,12 @@ import { db } from "../../db";
 import { creditGrants, modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
+  PAID_DAILY_LIMIT,
   RESERVATION_TTL_MS,
   allowanceFrom,
   dailyLimit,
   freeRoom,
+  paidRoom,
   type Allowance,
   type LedgerRow,
   type ModelFeature,
@@ -161,8 +163,11 @@ export function callMicroFor(feature?: ModelFeature): number {
   return Math.min(...(Object.keys(FEATURE_CALLS) as ModelFeature[]).map((f) => featureWorstCaseMicroUsd(f)));
 }
 
-/** The window's reserved and spent rows. `allowanceFrom` applies `counts` — one rule. */
-async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise<LedgerRow[]> {
+/**
+ * The window's reserved and spent rows, the free allowance's own (`paid` false) or the runs a paid lot
+ * funded (`paid` true, the paid limit's). `allowanceFrom` applies `counts` to either: one rule.
+ */
+async function ledgerRows(q: Tx | typeof db, userId: string, now: Date, paid = false): Promise<LedgerRow[]> {
   const since = new Date(now.getTime() - ALLOWANCE_WINDOW_MS);
   const rows = await q
     .select({ status: modelCalls.status, createdAt: modelCalls.createdAt })
@@ -174,8 +179,8 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
       eq(modelCalls.origin, "player"),
       gt(modelCalls.createdAt, since),
       inArray(modelCalls.status, ["reserved", "spent"]),
-      // Only the free allowance's own runs: a run a paid lot funded spends that lot, never the window.
-      isNull(modelCalls.creditGrantId),
+      // A run a paid lot funded spends that lot, never the free window; the paid limit counts those alone.
+      paid ? isNotNull(modelCalls.creditGrantId) : isNull(modelCalls.creditGrantId),
     ));
   return rows as LedgerRow[];
 }
@@ -232,9 +237,11 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
   const [rows, spend, balances, limit] = await Promise.all([
     ledgerRows(db, userId, now), monthSpend(db, userId, now), grantBalances(db, userId, now), dailyLimitFor(db, userId),
   ]);
+  // The paid counter is read only for a player who holds a lot, so everyone else costs no extra query.
+  const paid = balances.length > 0 ? allowanceFrom(await ledgerRows(db, userId, now, true), now, PAID_DAILY_LIMIT) : null;
   const allowance: Allowance = {
     ...allowanceFrom(rows, now, limit),
-    ...(balances.length > 0 ? creditTotals(balances) : {}),
+    ...(paid ? { ...creditTotals(balances), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt } : {}),
   };
   const refusal = spendRefusal({
     appMonthMicro: spend.app,
@@ -306,6 +313,10 @@ export async function reserveModelCall(
   if (!freeRoom(allowance)) {
     const grant = pickGrant(await grantBalances(tx, userId, now));
     if (!grant) return { refused: "allowance" };
+    // The paid limit, counted under the lock above like the free window. Only here, so it never
+    // refuses a run the free allowance could fund.
+    const paid = allowanceFrom(await ledgerRows(tx, userId, now, true), now, PAID_DAILY_LIMIT);
+    if (!paidRoom({ paidUsed: paid.used, paidLimit: PAID_DAILY_LIMIT })) return { refused: "allowance" };
     creditGrantId = grant.id;
   }
   const [row] = await tx
