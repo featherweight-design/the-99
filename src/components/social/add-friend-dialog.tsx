@@ -5,6 +5,9 @@
 // wants dark on light), then the link in a read-only field with `Copy link` (`✓ Copied` for two seconds, read
 // out by the status line). On a phone `Share link` leads, through the phone's own share sheet, and is absent
 // where there is none. The meta line states the two rules: it works once, and when it stops.
+//
+// The content is `AddFriendBody`, so Add a friend's chooser (invites PR 4) draws the same link as its first path,
+// inside its own modal with a ‹ back; the dialog here is that body in its own frame, as shipped.
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { socialCopy } from "../../lib/copy/social";
@@ -15,22 +18,26 @@ import { SocialModal } from "./social-modal";
 const d = socialCopy.dialog;
 const COPIED_MS = 2000;
 
+type LinkProps = { url: string; expiresAt: Date; now: Date; timeZone: string | undefined };
+
 export function AddFriendDialog({
-  url,
-  expiresAt,
-  now,
-  timeZone,
   onClose,
   returnFocusRef,
-}: {
-  url: string;
-  expiresAt: Date;
-  now: Date;
-  timeZone: string | undefined;
+  ...link
+}: LinkProps & {
   onClose: () => void;
   /** Where focus goes on close when the opener may be gone (a link made from a toast's Try again). */
   returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
+  return (
+    <SocialModal title={d.title} sub={d.sub} closeLabel={d.close} onClose={onClose} returnFocusRef={returnFocusRef}>
+      <AddFriendBody {...link} />
+    </SocialModal>
+  );
+}
+
+/** The link, its QR code, Share and Copy, and the meta line: everything inside the dialog's frame. */
+export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const field = useRef<HTMLInputElement>(null);
@@ -85,7 +92,7 @@ export function AddFriendDialog({
   );
 
   return (
-    <SocialModal title={d.title} sub={d.sub} closeLabel={d.close} onClose={onClose} returnFocusRef={returnFocusRef}>
+    <>
       <figure className="m-0 mt-[2px] flex flex-col items-center gap-[8px] md:mt-[4px]">
         {/* The plate is #F4F5F8 in every theme (a camera wants dark on light): 235px at phone, 206 at desktop. */}
         <div className="rounded-[10px] bg-[#F4F5F8] p-[16px]">
@@ -128,6 +135,6 @@ export function AddFriendDialog({
         {soon ? <span className="text-[color:var(--warning)]">{` · ${d.soon}`}</span> : null}
       </p>
       <p role="status" className="sr-only">{copied ? d.copied : ""}</p>
-    </SocialModal>
+    </>
   );
 }

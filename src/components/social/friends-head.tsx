@@ -10,7 +10,7 @@
 // save: both buttons keep focus in the field on mousedown, as `rename-form.tsx` does. Empty or unchanged reverts.
 // At desktop the field sits in the title column under the h1; at phone it runs the page's width under the row. The cap is counted in code points (`capName`, E14), never `maxLength`.
 
-import { useId, useRef, useState, type RefObject } from "react";
+import { useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, DISPLAY_NAME_MAX } from "../../lib/social/client-rules";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -34,6 +34,7 @@ export function FriendsHead({
   held,
   onInvite,
   inviteRef,
+  inviteCount,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -50,6 +51,11 @@ export function FriendsHead({
   onInvite: () => void;
   /** The Add a friend press, where focus returns when a link it made is closed. */
   inviteRef?: RefObject<HTMLButtonElement | null>;
+  /**
+   * Invites on (PR 4): the count line, drawn under the press. The press then opens Add a friend's chooser and is
+   * never held (R13): at ten links the hold sentence stays under it, and chooser card 1 is what is held.
+   */
+  inviteCount?: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
@@ -110,6 +116,11 @@ export function FriendsHead({
   );
 
   const line = p.nameLine(name);
+  const pressHeld = held && inviteCount === undefined;
+  const pressPending = invitePending && inviteCount === undefined;
+  const heldLine = held ? (
+    <p id={`${id}-held`} className="m-0 max-w-[340px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:text-right">{p.held}</p>
+  ) : null;
   const keepFocus = (e: React.MouseEvent) => e.preventDefault();
   return (
     <header className="flex flex-col gap-[16px] md:flex-row md:items-start md:justify-between md:gap-[24px]">
@@ -201,18 +212,21 @@ export function FriendsHead({
         <button
           type="button"
           onClick={() => {
-            if (!invitePending && !held) onInvite();
+            if (!pressPending && !pressHeld) onInvite();
           }}
           ref={inviteRef}
-          aria-disabled={invitePending || held || undefined}
-          aria-describedby={held ? `${id}-held` : undefined}
-          className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : invitePending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
+          aria-disabled={pressPending || pressHeld || undefined}
+          aria-describedby={pressHeld ? `${id}-held` : undefined}
+          className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${pressHeld ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : pressPending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
         >
-          {invitePending ? p.invitePending : p.invite}
+          {pressPending ? p.invitePending : p.invite}
         </button>
-        {held ? (
-          <p id={`${id}-held`} className="m-0 max-w-[340px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:text-right">{p.held}</p>
-        ) : null}
+        {inviteCount === undefined ? heldLine : (
+          <div className="flex flex-col gap-[6px] md:items-end">
+            {heldLine}
+            {inviteCount}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -7,6 +7,10 @@
 // The name and the face follow the server: when a redraw brings a profile that differs from the last one drawn,
 // they take it, during render (never in an effect, or the old value paints once first). A press's optimistic value
 // stands only until that redraw lands, or its own write answers.
+//
+// With invites on (`invites` given, PR 4), Add a friend opens a chooser (`InviteSheet`) instead of making a link on
+// the press: card 1 makes the link and shows it as the chooser's path 1, card 2 invites someone new. Off (`invites`
+// null), everything here draws exactly as shipped. The pod sheet's Add a friend still makes a link straight away.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -29,6 +33,9 @@ import { CommanderPicker } from "./commander-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
 import { useInviteWatch } from "./use-invite-watch";
+import { InviteSheet, type InviteScreen } from "./invite-sheet";
+import { InviteCountLine } from "./invite-count-line";
+import type { InviteCount } from "../../lib/invites/rules";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
@@ -77,6 +84,7 @@ export function FriendsView({
   nowMs,
   maxLinks,
   friendPages = false,
+  invites = null,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -92,6 +100,8 @@ export function FriendsView({
   /** Each friend row links to the friend's page (R2 P1): the wishlist is on for this reader. */
   friendPages?: boolean;
   maxLinks: number;
+  /** The reader's invite count, with `SOCIAL_INVITES_ENABLED` on for them; null when it is off. */
+  invites?: InviteCount | null;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -164,6 +174,13 @@ export function FriendsView({
   // The guard reads a ref: a Try again toast from an earlier failure holds a callback from that render.
   const makingNow = useRef(false);
   const [shown, setShown] = useState<Shown | null>(null);
+  // Add a friend's chooser (invites on): the screen it shows, null while closed. Read by `makeLink` through a ref,
+  // since a link made from the chooser opens as its path 1 and one made anywhere else opens the dialog.
+  const [adding, setAdding] = useState<InviteScreen | null>(null);
+  const addingNow = useRef(adding);
+  useEffect(() => {
+    addingNow.current = adding;
+  }, [adding]);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   // A counter, not the clock: two toasts in one millisecond are still two toasts.
   const toastSeq = useRef(0);
@@ -216,6 +233,8 @@ export function FriendsView({
     setReceipt(friend);
     setWatchReceiptListed(listedIds.current.has(friend.publicId));
     setShown(null);
+    // The chooser's path 1 was that link: it turns into the receipt as the dialog does.
+    setAdding((a) => (a === "link" ? null : a));
   }, [router]);
   useInviteWatch(watched, onEnded);
   // Coming back to the window redraws the page, so anything that moved while it was away (a friend who accepted
@@ -230,6 +249,13 @@ export function FriendsView({
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [router]);
+  const refresh = useCallback(() => router.refresh(), [router]);
+  function openChooser() {
+    // Closing it returns focus to Add a friend, never to a Show pressed earlier.
+    showOpener.current = null;
+    setToast(null);
+    setAdding("choose");
+  }
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
 
   async function rename(next: string) {
@@ -266,6 +292,7 @@ export function FriendsView({
     if (out?.ok) {
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
+      if (addingNow.current === "choose") setAdding("link");
     }
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
@@ -320,8 +347,9 @@ export function FriendsView({
           picking={picking}
           invitePending={making}
           held={held}
-          onInvite={makeLink}
+          onInvite={invites ? openChooser : makeLink}
           inviteRef={invite}
+          inviteCount={invites ? <InviteCountLine count={invites} /> : undefined}
         />
         <FriendsList
           friends={listed}
@@ -345,7 +373,29 @@ export function FriendsView({
         />
       </div>
 
-      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
+      {invites && adding ? (
+        <InviteSheet
+          screen={adding}
+          onScreen={(next) => {
+            // Back from path 1 leaves the link made and open: it is in the open links, and Show opens it again.
+            if (adding === "link") setShown(null);
+            setAdding(next);
+          }}
+          count={invites}
+          linkHeld={held}
+          linkPending={making}
+          onFriendLink={() => void makeLink()}
+          link={adding === "link" && shown ? { url: shown.url, expiresAt: shown.expiresAt, now, timeZone } : null}
+          onClose={() => {
+            if (adding === "link") setShown(null);
+            setAdding(null);
+          }}
+          returnFocusRef={dialogReturn}
+          say={say}
+          onRefresh={refresh}
+        />
+      ) : null}
+      {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </FriendInviteContext.Provider>

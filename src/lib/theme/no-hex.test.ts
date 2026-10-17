@@ -19,6 +19,8 @@ const ALLOWED = new Set([
   // A friend link's QR code is dark ink on a light plate in every theme, so a phone camera can read it; the ink
   // is not chrome and must not follow a theme.
   "components/social/add-friend-dialog.tsx",
+  // The invite QR (invites PR 4) is drawn on the same light plate with the same ink, for the same camera.
+  "components/social/invite-qr.tsx",
   // The theme library's own tests are about hex values, so they contain them.
   "lib/theme/color.test.ts",
   "lib/theme/parse-css.test.ts",
