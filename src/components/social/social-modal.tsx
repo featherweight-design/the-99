@@ -8,8 +8,13 @@
 // focus, Escape and the scroll lock are `useDialogA11y`'s. The ✕ is in the header, and takes focus on open
 // unless the caller names another control (the picker opens on its search). Closing returns focus to the opener,
 // or to `returnFocusRef` when the opener may be gone by then (a pick removes `Choose your commander`).
+//
+// A modal with more than one screen (Add a friend's chooser and its two paths, invites PR 4) names the one it shows
+// as `screen` and passes `onBack` on every screen but the first: a ‹ sits left of the title, and the title (and so
+// the dialog's name) follows the screen. A screen change moves focus to the ‹, or to the ✕ when there is none, since
+// the press that changed it is gone with the screen it was on. Escape and ✕ close from any screen.
 
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useSheetHost } from "../ui/sheet-host";
@@ -50,6 +55,10 @@ export function SocialModal({
   returnFocusRef,
   tall = false,
   width = 440,
+  onBack,
+  backLabel,
+  screen,
+  overlay,
   children,
 }: {
   title: string;
@@ -61,12 +70,26 @@ export function SocialModal({
   tall?: boolean;
   /** The desktop dialog's width: 420 for a pod's Add friends, 440 for Add a friend, 520 for the picker. */
   width?: 420 | 440 | 520;
+  /** A ‹ before the title, returning to the previous screen. */
+  onBack?: () => void;
+  backLabel?: string;
+  /** The screen shown, in a modal that has more than one: its change moves focus (above). */
+  screen?: string;
+  /** Drawn inside the dialog after its body (a toast raised while it is open), so its controls stay in the Tab trap. */
+  overlay?: ReactNode;
   children: ReactNode;
 }) {
   const host = useSheetHost(true);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const back = useRef<HTMLButtonElement>(null);
   const id = useId();
+  const shownScreen = useRef(screen);
+  useEffect(() => {
+    if (shownScreen.current === screen) return;
+    shownScreen.current = screen;
+    (back.current ?? close.current)?.focus();
+  }, [screen]);
   useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
   const visible = useVisualViewportFrame();
 
@@ -93,6 +116,17 @@ export function SocialModal({
           <span className="h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
         </div>
         <div className="flex items-start gap-[12px] px-[18px] pt-[8px] md:px-[20px] md:pt-[12px]">
+          {onBack ? (
+            <button
+              ref={back}
+              type="button"
+              aria-label={backLabel}
+              onClick={onBack}
+              className="-ml-[12px] -mr-[8px] flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 pb-[3px] text-[22px] leading-none text-[color:var(--fg)] md:-ml-[10px] md:w-[36px]"
+            >
+              {"‹"}
+            </button>
+          ) : null}
           <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 pt-[10px] font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
             {title}
           </h2>
@@ -110,6 +144,7 @@ export function SocialModal({
           <p className="mx-[18px] mb-[14px] mt-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)] md:mx-[20px]">{sub}</p>
         ) : null}
         <div data-social-modal-body="" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] pb-[22px] md:px-[20px] md:pb-[18px]">{children}</div>
+        {overlay}
       </div>
     </div>
   );

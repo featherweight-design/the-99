@@ -1,0 +1,54 @@
+{
+  "feature": "Invites — Add a friend's chooser, path 2, the invite QR and the count line",
+  "note": "Plan `2026-10-16-invites.md`, PR 4; grown per UI PR. PRECONDITION: the signed-in account has `SOCIAL_FRIENDS_ENABLED` and `SOCIAL_INVITES_ENABLED` on, and at least one invite left (so card 2 opens and the QR row can make a QR). With invites off the head draws no count line and every row here times out on its `wait`, which is the good failure: the cell is not counted as reached.\n\nEach `wait` names something only the finished surface draws (`data-invite-count`, `data-invite-card`, the email field's label, `data-qr-ring`), never `h1`: `/friends` renders inside the shell's `LoadingScreen` first.\n\nThe QR row WRITES: Show an invite QR holds one of the account's invites for 15 minutes (or re-shows the live one, which holds nothing new). Run it on a probe account, never a reader's.\n\nThe chooser, path 2 and the QR screen share one modal, portalled into `<main>`, so every step reaches it through `onPage` like the page itself.",
+  "shares": {
+    "module": "src/components/social/invite-count-line.tsx",
+    "binding": "InviteCountLine",
+    "note": "The ONE count line. `/friends`' head draws it through FriendsView (it passes the line to `FriendsHead` as a prop), so that row's `view` is `friends-view.tsx`; card 2 draws it in `invite-sheet.tsx`, path 2 in `invite-new.tsx` and the QR screen in `invite-qr.tsx`."
+  },
+  "rows": [
+    {
+      "id": "friends-head",
+      "label": "/friends — the head, with the count line under Add a friend",
+      "view": "src/components/social/friends-view.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-invite-count]", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "chooser",
+      "label": "/friends — Add a friend's chooser, both cards",
+      "view": "src/components/social/invite-sheet.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-invite-count]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 300 },
+        { "wait": "[data-invite-card=\"new\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "path-2",
+      "label": "/friends — Invite someone new: the invite QR press and the email form",
+      "view": "src/components/social/invite-new.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-invite-count]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 300 },
+        { "wait": "[data-invite-card=\"new\"]", "settle": 500 },
+        { "click": "[data-invite-card=\"new\"]", "settle": 300 },
+        { "wait": "input[type=\"email\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "qr-live",
+      "label": "/friends — the invite QR, live, with its ring and timer",
+      "view": "src/components/social/invite-qr.tsx",
+      "steps": [
+        { "goto": "/friends", "wait": "[data-invite-count]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Add a friend$", "settle": 300 },
+        { "wait": "[data-invite-card=\"new\"]", "settle": 500 },
+        { "click": "[data-invite-card=\"new\"]", "settle": 300 },
+        { "clickRole": "button", "name": "^Show an invite QR$", "settle": 300 },
+        { "wait": "[data-qr-ring]", "settle": 1200 }
+      ]
+    }
+  ]
+}

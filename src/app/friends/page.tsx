@@ -10,7 +10,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { loadInviteCount } from "../../lib/invites/read";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks } from "../../lib/social/friends";
@@ -35,6 +36,15 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // receipt is then drawn once from the edge, whichever of the two ran first.
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
+  // The invite count (invites PR 4), read beside the rest; null with invites off, so the head draws as shipped.
+  // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
+  // never an error: the count is an extra, and Add a friend's link path works without it.
+  const invitesRead = socialInvitesEnabled(env)
+    ? loadInviteCount(userId, now).catch((error: unknown) => {
+        console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
+        return null;
+      })
+    : Promise.resolve(null);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   const [profile, { friends, links }, pods, shared] = await Promise.all([
     ensureProfile(userId, user?.firstName),
@@ -48,6 +58,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
   // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
   const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
+  const invites = await invitesRead;
   return (
     <FriendsView
       profile={profile}
@@ -63,6 +74,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       nowMs={now.getTime()}
       maxLinks={MAX_OPEN_INVITES}
       friendPages={wishlistEnabled(env)}
+      invites={invites}
     />
   );
 }

@@ -7,6 +7,10 @@
 // The name and the face follow the server: when a redraw brings a profile that differs from the last one drawn,
 // they take it, during render (never in an effect, or the old value paints once first). A press's optimistic value
 // stands only until that redraw lands, or its own write answers.
+//
+// With invites on (`invites` given, PR 4), Add a friend opens a chooser (`InviteSheet`) instead of making a link on
+// the press: card 1 makes the link and shows it as the chooser's path 1, card 2 invites someone new. Off (`invites`
+// null), everything here draws exactly as shipped. The pod sheet's Add a friend still makes a link straight away.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -29,11 +33,16 @@ import { CommanderPicker } from "./commander-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
 import { useInviteWatch } from "./use-invite-watch";
+import { InviteSheet, type InviteScreen } from "./invite-sheet";
+import { InviteCountLine } from "./invite-count-line";
+import type { InviteCount } from "../../lib/invites/rules";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
 /** Coming back to the window redraws the page, at most this often. */
 const FOCUS_REFRESH_MS = 10_000;
+/** How long after a live QR's expiry the page redraws, so the server reads it as expired. */
+const QR_EXPIRY_REFRESH_SLACK_MS = 500;
 
 /** What a redraw is compared by: the fields the head draws. */
 function drawnKey(p: OwnProfile): string {
@@ -77,6 +86,7 @@ export function FriendsView({
   nowMs,
   maxLinks,
   friendPages = false,
+  invites = null,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -92,6 +102,8 @@ export function FriendsView({
   /** Each friend row links to the friend's page (R2 P1): the wishlist is on for this reader. */
   friendPages?: boolean;
   maxLinks: number;
+  /** The reader's invite count, with `SOCIAL_INVITES_ENABLED` on for them; null when it is off. */
+  invites?: InviteCount | null;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -164,10 +176,31 @@ export function FriendsView({
   // The guard reads a ref: a Try again toast from an earlier failure holds a callback from that render.
   const makingNow = useRef(false);
   const [shown, setShown] = useState<Shown | null>(null);
+  // Add a friend's chooser (invites on): the screen it shows, null while closed. Read by `makeLink` through a ref,
+  // since a link made from the chooser opens as its path 1 and one made anywhere else opens the dialog.
+  const [adding, setAdding] = useState<InviteScreen | null>(null);
+  const addingNow = useRef(adding);
+  useEffect(() => {
+    addingNow.current = adding;
+  }, [adding]);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   // A counter, not the clock: two toasts in one millisecond are still two toasts.
   const toastSeq = useRef(0);
   const say = (text: string, retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
+  // A toast the chooser's own screens raised (a QR or an email that could not be made): its Try again runs that
+  // screen's handler, so it leaves with the sheet. One left standing would call an unmounted screen, which would run
+  // its action (reserving an invite) and draw nothing.
+  const sheetToast = useRef<number | null>(null);
+  const sheetSay = (text: string, retry?: SocialToastState["retry"]) => {
+    const id = ++toastSeq.current;
+    sheetToast.current = id;
+    setToast({ id, text, retry });
+  };
+  const closeSheetToast = () => {
+    const id = sheetToast.current;
+    sheetToast.current = null;
+    if (id !== null) setToast((t) => (t?.id === id ? null : t));
+  };
   const writeName = useFieldWrite(profile.displayName, setName);
   const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
 
@@ -216,6 +249,8 @@ export function FriendsView({
     setReceipt(friend);
     setWatchReceiptListed(listedIds.current.has(friend.publicId));
     setShown(null);
+    // The chooser's path 1 was that link: it turns into the receipt as the dialog does.
+    setAdding((a) => (a === "link" ? null : a));
   }, [router]);
   useInviteWatch(watched, onEnded);
   // Coming back to the window redraws the page, so anything that moved while it was away (a friend who accepted
@@ -230,6 +265,25 @@ export function FriendsView({
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [router]);
+  const refresh = useCallback(() => router.refresh(), [router]);
+  // A live QR holds one invite until it expires (state C4). With its sheet closed nothing else watches that
+  // moment, so the page redraws just after it and the count line returns to `N invites left`. The delay is read
+  // against the server's clock at the draw (`nowMs`), and each redraw schedules afresh.
+  const qrUntilMs = invites?.qrUntil ? invites.qrUntil.getTime() : null;
+  useEffect(() => {
+    if (qrUntilMs === null) return;
+    const t = setTimeout(() => router.refresh(), Math.max(0, qrUntilMs - nowMs) + QR_EXPIRY_REFRESH_SLACK_MS);
+    return () => clearTimeout(t);
+  }, [qrUntilMs, nowMs, router]);
+  // While the chooser is open the toast is drawn inside its dialog, since the dialog keeps Tab within itself and a
+  // Try again outside it could not be reached from the keyboard.
+  const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
+  function openChooser() {
+    // Closing it returns focus to Add a friend, never to a Show pressed earlier.
+    showOpener.current = null;
+    setToast(null);
+    setAdding("choose");
+  }
   const linkUrl = (token: string) => `${origin ?? window.location.origin}${invitePath(token)}`;
 
   async function rename(next: string) {
@@ -258,17 +312,27 @@ export function FriendsView({
   async function makeLink() {
     if (makingNow.current) return;
     makingNow.current = true;
+    // The chooser screen the press was made on (null: no chooser open). Card 2 stays live while card 1's link is
+    // made, so a reader who has moved on (to path 2, or closed the sheet) by the answer gets nothing drawn: the
+    // link stands, and the redraw the write revalidates lists it under Open links.
+    const began = addingNow.current;
     setToast(null);
     setMaking(true);
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
+    if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
+      if (addingNow.current === "choose") setAdding("link");
     }
-    else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
-    else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    // A press made in the chooser raises the sheet's own toast, so leaving that screen puts it away like the others.
+    else {
+      const tell = began !== null ? sheetSay : say;
+      if (out && !out.ok && out.reason === "tooMany") tell(socialCopy.invites.tooMany);
+      else tell(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    }
   }
 
   async function revoke(link: OpenInvite) {
@@ -320,8 +384,9 @@ export function FriendsView({
           picking={picking}
           invitePending={making}
           held={held}
-          onInvite={makeLink}
+          onInvite={invites ? openChooser : makeLink}
           inviteRef={invite}
+          inviteCount={invites ? <InviteCountLine count={invites} /> : undefined}
         />
         <FriendsList
           friends={listed}
@@ -345,9 +410,36 @@ export function FriendsView({
         />
       </div>
 
-      {shown ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
+      {invites && adding ? (
+        <InviteSheet
+          screen={adding}
+          onScreen={(next) => {
+            // Back from path 1 leaves the link made and open: it is in the open links, and Show opens it again.
+            if (adding === "link") setShown(null);
+            // A toast belongs to the screen that raised it: its Try again would run that screen's action unseen.
+            if (next !== adding) closeSheetToast();
+            setAdding(next);
+          }}
+          count={invites}
+          linkHeld={held}
+          linkPending={making}
+          onFriendLink={() => void makeLink()}
+          link={adding === "link" && shown ? { url: shown.url, expiresAt: shown.expiresAt, now, timeZone } : null}
+          onClose={() => {
+            if (adding === "link") setShown(null);
+            closeSheetToast();
+            setAdding(null);
+          }}
+          returnFocusRef={dialogReturn}
+          say={sheetSay}
+          onRefresh={refresh}
+          toast={toastEl}
+          clearToast={() => setToast(null)}
+        />
+      ) : null}
+      {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
       {picking ? <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} /> : null}
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      {invites && adding ? null : toastEl}
     </FriendInviteContext.Provider>
   );
 }
