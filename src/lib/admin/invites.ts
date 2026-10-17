@@ -19,22 +19,30 @@ type RawEdge = { inviter: string | null; invitee: string | null; kind: InviteKin
 const toOpen = (r: RawOpen): OpenRow => ({ ...r, qrExpiresAt: utc(r.qrExpiresAt), holdsUntil: utc(r.holdsUntil) });
 const toEdge = (e: RawEdge): Edge => ({ ...e, joinedAt: utc(e.joinedAt)! });
 
-export type EveryInvite = { balances: Map<string, number>; open: OpenRow[]; edges: Edge[] };
+export type EveryInvite = { balances: Map<string, number>; open: ReservationRow[]; edges: Edge[] };
 
-/** M1: every account's stock, open rows and the edges naming an invitee, in one statement. */
+/**
+ * M1 and M4: every account's stock, open rows (with the address, which only the admin sees) and every edge, a
+ * deleted side included (the tree draws it), in one statement.
+ */
 export async function readEveryInvite(): Promise<EveryInvite> {
-  const { rows } = await db.execute<{ balances: { userId: string; held: number }[]; open: RawOpen[]; edges: RawEdge[] }>(sql`select
+  const { rows } = await db.execute<{
+    balances: { userId: string; held: number }[];
+    open: (RawOpen & { id: string; email: string | null })[];
+    edges: RawEdge[];
+  }>(sql`select
     coalesce((select json_agg(json_build_object('userId', b.user_id, 'held', b.held)) from invite_balances b), '[]'::json) as balances,
     coalesce((select json_agg(json_build_object(
-      'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until
+      'id', r.id, 'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at,
+      'holdsUntil', r.holds_until, 'email', r.email
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
     coalesce((select json_agg(json_build_object(
       'inviter', e.inviter_user_id, 'invitee', e.invitee_user_id, 'kind', e.kind, 'joinedAt', e.joined_at
-    )) from invite_edges e where e.invitee_user_id is not null), '[]'::json) as edges`);
+    )) from invite_edges e), '[]'::json) as edges`);
   const [row] = rows;
   return {
     balances: new Map(row.balances.map((b) => [b.userId, b.held])),
-    open: row.open.map(toOpen),
+    open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
     edges: row.edges.map(toEdge),
   };
 }
