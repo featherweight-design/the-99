@@ -1,6 +1,6 @@
 {
-  "feature": "Tokens for my deck (PR 6): the card-details line and the About entry",
-  "note": "Run against a scratch branch holding a pull:staging copy under the audit account, DECK_TOKENS_ENABLED=true on the dev server. TOKENS_AANG is a deck id of that account (Aang makes Food and Soldier; Food and Soldier are joined on it). The first row is a card that makes tokens, the second one that makes none, the third the About figure.",
+  "feature": "Tokens for my deck (PR 6): the card-details line",
+  "note": "Run against a scratch branch holding a pull:staging copy under the audit account, DECK_TOKENS_ENABLED=true on the dev server. TOKENS_AANG is a deck id of that account (Aang makes Food and Soldier; Food and Soldier are joined on it). Each width has a card that makes tokens and one that makes none. The About figure's row went with the old About page (discovery R2·7).",
   "out": "contact-sheets/tokens-closeout",
   "clearAbout": true,
   "widths": [

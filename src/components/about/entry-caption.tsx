@@ -5,8 +5,8 @@
 // (`\n\n`) starts a paragraph, and a block whose every line begins `- ` is a list. Nothing
 // else is markup, so a hyphen inside a sentence stays a hyphen.
 //
-// Both widths render through this one component (the inset and full-width layouts in
-// `about-page.tsx` both call it), so the phone and the desktop cannot drift apart.
+// Both widths render through this one component (the Reference's entries, `reference/reference-tab.tsx`),
+// so the phone and the desktop cannot drift apart.
 
 export type CaptionBlock = { kind: "p"; text: string } | { kind: "ul"; items: string[] };
 
