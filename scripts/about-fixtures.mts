@@ -15,13 +15,16 @@
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
 //
-// A rerun starts clean: the decks named `About · …` and the `about-fixture-%` friends (purged with all they hold) go
-// first. It prints the three decks' ids.
+// A rerun starts clean: the account's decks named `About · …` and ITS fixture friends (purged with all they hold) go
+// first. A fixture friend's id is namespaced by the account it was made for (`scripts/lib/about-fixture-ids.mjs`), so a
+// run for one account never purges another's; an older run's friend, whose id names no account, is left and reported.
+// It prints the three decks' ids.
 //
 //   pnpm tsx scripts/about-fixtures.mts            (the account is E2E_AUDIT_USER_EMAIL, read through Clerk)
 //   ABOUT_FIXTURE_USER=user_... pnpm tsx scripts/about-fixtures.mts
 import { requireEnv } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { FIXTURE_PREFIX, fixtureFriendId, ownedFixturePattern, sortFixtures } from "./lib/about-fixture-ids.mjs";
 
 const { DATABASE_URL, CLERK_SECRET_KEY } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
 void DATABASE_URL;
@@ -52,8 +55,19 @@ if (uploads === 0) throw new Error("the account holds no earlier upload: pull a 
 
 // Clean slate.
 const { purgeAccount } = await import("../src/lib/account/purge");
-const old = (await sql`select user_id from social_profiles where user_id like 'about-fixture-%'`) as { user_id: string }[];
-for (const o of old) await purgeAccount(o.user_id);
+// Only this account's own namespace is selected, and the rule re-checks every id before it is purged.
+const owned = (await sql`select user_id from social_profiles where user_id like ${ownedFixturePattern(viewer)}`) as {
+  user_id: string;
+}[];
+for (const id of sortFixtures(viewer, owned.map((o) => o.user_id)).purge) await purgeAccount(id);
+// Read only, to report: fixtures an older run made, whose owner the id does not name, are never purged.
+const seen = (await sql`select user_id from social_profiles where starts_with(user_id, ${FIXTURE_PREFIX})`) as {
+  user_id: string;
+}[];
+const { unowned } = sortFixtures(viewer, seen.map((o) => o.user_id));
+if (unowned.length) {
+  console.log(`left ${unowned.length} older fixture friend${unowned.length > 1 ? "s" : ""} whose account cannot be established (not purged; it may still show on Friends)`);
+}
 await sql`delete from pods where owner_user_id = ${viewer} and name = 'About pod'`;
 await sql`delete from decks where user_id = ${viewer} and name like 'About · %'`;
 
@@ -205,7 +219,7 @@ if (!(await friends.setDisplayName(viewer, "Sam"))) throw new Error("setDisplayN
 await setCommander(viewer, forPlayed.oracle_id);
 await sql`insert into invite_balances (user_id, held, updated_at) values (${viewer}, 3, now())
   on conflict (user_id) do update set held = greatest(invite_balances.held, 3), updated_at = now()`;
-const colinId = `about-fixture-colin-${Date.now()}`;
+const colinId = fixtureFriendId(viewer, Date.now());
 const colin = await friends.ensureProfile(colinId, "Alex");
 const invite = await friends.createInvite(viewer);
 if (!invite.ok) throw new Error("createInvite refused: the account holds too many open invites");

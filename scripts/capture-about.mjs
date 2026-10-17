@@ -13,9 +13,11 @@
 // landing haloes (`data-target-halo`), measured, then photographed once the halo is down. A tool with a page of its own
 // is found by its control on that page (`ROUTE_TOOLS`), which is the control its moment anchors.
 //
-// THE IDENTITY: every frame shows `Sam` and `sam@example.com`, never the account's own address. The page's text, labels and
-// initials chip are rewritten just before each photograph (`disguise`), and a frame that still carries the address
-// fails rather than ships. Clerk's user is not touched.
+// THE IDENTITY: every frame shows `Sam`, `sam@example.com` and an `S` chip, never the account's own name, address or
+// initials (read from Clerk's user and derived as the account control derives them, `scripts/lib/about-identity.mjs`).
+// The page's text, labels and initials chip are rewritten just before each photograph (`disguise`), and a frame that
+// still carries any of them, or whose account control names another identity, fails rather than ships. Clerk's user is
+// not touched.
 //
 // IT WRITES to the database only what `clearAboutSheet` writes (every About entry marked seen), and puts the row back.
 // The theme is the cookie the picker writes (`the99_theme`), never a preference row.
@@ -30,6 +32,7 @@ import sharp from "sharp";
 import { requireEnv } from "./lib/env.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -262,54 +265,68 @@ function routeTools(f) {
 // ── the identity on the page ───────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * The name and email every shot shows in place of the account's: the shots ship publicly, and the fixture account's
- * own identity is a test address. Clerk's user is left alone (other probes sign in as it); the page's copy of it is
- * rewritten just before each photograph, and the reader's social name is the fixture's (`about-fixtures.mts`, Sam).
+ * The identity every shot shows in place of the account's (`STAND_IN`: Sam, sam@example.com, S): the shots ship
+ * publicly. Clerk's user is left alone (other probes sign in as it); the page's copy of it is rewritten just before each
+ * photograph, and the reader's social name is the fixture's (`about-fixtures.mts`, Sam). The REAL identity is read once
+ * from the signed-in Clerk user and derived as the account control derives it (`identityOf`, held equal to
+ * `accountIdentity` by its test), so a full name, its label and its initials chip are replaced as well as the email.
  */
-const STAND_IN = { name: "Sam", email: "sam@example.com" };
-/** Strings no shot may carry once the page is rewritten: the account's address, its local part and the old social name. */
-const FORBIDDEN = [EMAIL, EMAIL.split("@")[0], "clerk_test", "Hugh"];
+/** Strings no shot may carry beyond the identity itself: the test address's marker and the old social name. */
+const EXTRA_FORBIDDEN = ["clerk_test", "Hugh"];
+let PLAN = null;
 
 async function disguise(page) {
-  const left = await page.evaluate(
-    ([email, standIn, forbidden]) => {
-      const local = email.split("@")[0];
-      const initial = (local.match(/[\p{L}\p{N}]/u)?.[0] ?? "").toUpperCase();
-      // The account's name is the element a menu or dialog is labelled by (`AccountMenu`'s nameId).
-      const labels = new Set(
-        [...document.querySelectorAll("[aria-labelledby]")].flatMap((e) => e.getAttribute("aria-labelledby").split(/\s+/)),
-      );
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-        if (!n.nodeValue.includes(email)) continue;
-        const host = n.parentElement;
-        const isName = host?.id && labels.has(host.id) && n.nodeValue.trim() === email;
-        n.nodeValue = isName ? standIn.name : n.nodeValue.split(email).join(standIn.email);
-      }
-      for (const el of document.querySelectorAll("[aria-label], [title]")) {
-        for (const a of ["aria-label", "title"]) {
-          const v = el.getAttribute(a);
-          if (v?.includes(email)) el.setAttribute(a, v.split(email).join(standIn.name));
+  if (!PLAN) throw new Error("the account's identity was never read");
+  const seen = await page.evaluate((plan) => {
+    const swap = (value, pairs) => pairs.reduce((v, [from, to]) => (from ? v.split(from).join(to) : v), value);
+    // What the account control says before the rewrite: the identity it was derived from must be the one read.
+    const triggers = [...document.querySelectorAll("button[aria-label^='Account:']")].map((b) => b.getAttribute("aria-label"));
+    // The account's name is the element a menu or dialog is labelled by (`AccountMenu`'s nameId).
+    const labels = new Set(
+      [...document.querySelectorAll("[aria-labelledby]")].flatMap((e) => e.getAttribute("aria-labelledby").split(/\s+/)),
+    );
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const host = n.parentElement;
+      const isName = plan.nameNode && host?.id && labels.has(host.id) && n.nodeValue.trim() === plan.nameNode[0];
+      const next = isName ? plan.nameNode[1] : swap(n.nodeValue, plan.text);
+      if (next !== n.nodeValue) n.nodeValue = next;
+    }
+    for (const el of document.querySelectorAll("[aria-label], [title]")) {
+      for (const a of ["aria-label", "title"]) {
+        const v = el.getAttribute(a);
+        if (v) {
+          const next = swap(v, plan.label);
+          if (next !== v) el.setAttribute(a, next);
         }
       }
-      // The initials chip: in the account trigger, and in the account's own panel (the one labelled by its name).
-      const panels = [...document.querySelectorAll("[aria-labelledby]")].filter((p) =>
-        p.getAttribute("aria-labelledby").split(/\s+/).some((id) => document.getElementById(id)?.textContent.trim() === standIn.name),
-      );
-      const chips = [
-        ...document.querySelectorAll("button[aria-label^='Account:'] span[aria-hidden]"),
-        ...panels.flatMap((p) => [...p.querySelectorAll("span[aria-hidden]")]),
-      ];
-      for (const chip of chips) if (initial && chip.textContent.trim() === initial) chip.textContent = standIn.name[0];
-      const text = document.body.innerText;
-      const attrs = [...document.querySelectorAll("[aria-label], [title], [alt]")]
+    }
+    // The initials chip: in the account trigger, and in the account's own panel (the one labelled by its name).
+    const standInName = plan.nameNode ? plan.nameNode[1] : null;
+    const panels = [...document.querySelectorAll("[aria-labelledby]")].filter((p) =>
+      p.getAttribute("aria-labelledby").split(/\s+/).some((id) => document.getElementById(id)?.textContent.trim() === standInName),
+    );
+    const chips = [
+      ...document.querySelectorAll("button[aria-label^='Account:'] span[aria-hidden]"),
+      ...panels.flatMap((p) => [...p.querySelectorAll("span[aria-hidden]")]),
+    ];
+    if (plan.chip) for (const chip of chips) if (chip.textContent.trim() === plan.chip[0]) chip.textContent = plan.chip[1];
+    return {
+      triggers,
+      text: document.body.innerText,
+      attrs: [...document.querySelectorAll("[aria-label], [title], [alt]")]
         .map((e) => `${e.getAttribute("aria-label") ?? ""} ${e.getAttribute("title") ?? ""} ${e.getAttribute("alt") ?? ""}`)
-        .join(" ");
-      return forbidden.filter((f) => text.includes(f) || attrs.includes(f));
-    },
-    [EMAIL, STAND_IN, FORBIDDEN],
-  );
-  if (left.length) throw new Error(`the page still shows the account's identity (${left.length} string${left.length > 1 ? "s" : ""})`);
+        .join(" "),
+      chips: chips.map((c) => c.textContent),
+    };
+  }, PLAN);
+  // A trigger an earlier frame of this page already rewrote reads as the stand-in's.
+  const rewritten = applyPairs(PLAN.trigger, PLAN.label);
+  if (seen.triggers.some((t) => t !== PLAN.trigger && t !== rewritten)) {
+    throw new Error("the account control shows an identity other than the one read from Clerk: refusing the frame");
+  }
+  const left = identityLeftovers(PLAN, seen);
+  if (left.length) throw new Error(`the page still shows the account's identity (${left.join(", ")})`);
 }
 
 /** The frame, with the identity rewritten first. */
@@ -472,6 +489,12 @@ let about = null;
 try {
   const signInPage = await browser.newPage();
   const userId = await signIn(signInPage, EMAIL, PASSWORD);
+  // The account's own identity, read once from Clerk's user (never printed), as the account control derives it.
+  const source = await signInPage.evaluate(() => {
+    const u = window.Clerk.user;
+    return { firstName: u.firstName, lastName: u.lastName, fullName: u.fullName, email: u.primaryEmailAddress?.emailAddress ?? null };
+  });
+  PLAN = identityPlan(identityOf(source), [EMAIL, EMAIL.split("@")[0], ...EXTRA_FORBIDDEN]);
   const storage = await signInPage.context().storageState();
   await signInPage.close();
   about = await captureAboutSeen(userId, sql);
