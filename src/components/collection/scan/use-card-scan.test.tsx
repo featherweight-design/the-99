@@ -383,6 +383,16 @@ describe("useCardScan", () => {
       expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
     });
 
+    it("leaves no step behind when a lone printing's add does not land", async () => {
+      const only = [choice("1")];
+      const { hook, onAdd, onProblem } = setup({ storage: normal, loadChoices: vi.fn(async () => only) });
+      onAdd.mockImplementation(async () => false);
+      await waitFor(() => expect(onAdd).toHaveBeenCalled(), { timeout: 4000 });
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notAdded"));
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
+
     it("reads the printings once as the card is answered, and fetches the scored ones' small pictures ahead", async () => {
       const pics = CHOICES.map((c, i) => ({ ...c, imageUri: `https://cards.scryfall.io/normal/front/0/0/${i}.jpg?1` }));
       const loadChoices = vi.fn(async () => pics);

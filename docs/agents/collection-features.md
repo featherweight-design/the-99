@@ -97,8 +97,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   printing is added at it with no step; otherwise the step leads with the scored printings, best first and selected,
   behind `Show all printings`, and Add this printing takes the selection. A guess without scores (an older server)
   draws every printing and a tap takes it, as before. The printings are read once per card in a scanner session,
-  begun the moment the server answers for it (`choicesFor`), and the short list's Scryfall small pictures are
-  fetched as they land; the tiles draw the same small pictures (`scanThumb`).
+  begun for every card the server names the moment it answers (`choicesFor`), and each scan's own short list's Scryfall
+  small pictures are fetched as they land; the tiles draw the same small pictures (`scanThumb`).
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted

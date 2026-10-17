@@ -405,20 +405,28 @@ export function useCardScan(
   // Normal's printings, read once per card in a scanner session and begun as soon as the card is answered, so the
   // step opens on printings already loading; the short list's pictures are fetched as they land, ahead of their tiles.
   const choicesCache = useRef(new Map<string, Promise<PrintingChoice[]>>());
+  const preloaded = useRef(new Set<string>());
   const choicesFor = useCallback((g: ScanGuess): Promise<PrintingChoice[]> => {
-    const cached = choicesCache.current.get(g.oracleId);
-    if (cached) return cached;
-    const load = depsRef.current.loadChoices;
-    const p = Promise.resolve()
-      .then(() => (load ? load(g.oracleId) : []))
-      .catch(() => [] as PrintingChoice[])
-      .then((choices) => {
-        const preload = depsRef.current.preload ?? preloadImage;
-        for (const c of orderPrintings(choices, g.printings ?? []).short) if (c.imageUri) preload(scanThumb(c.imageUri));
-        return choices;
-      });
-    choicesCache.current.set(g.oracleId, p);
-    return p;
+    let read = choicesCache.current.get(g.oracleId);
+    if (!read) {
+      const load = depsRef.current.loadChoices;
+      read = Promise.resolve()
+        .then(() => (load ? load(g.oracleId) : []))
+        .catch(() => [] as PrintingChoice[]);
+      choicesCache.current.set(g.oracleId, read);
+    }
+    // Each scan's own short list is fetched ahead, a second copy scanned from another printing included.
+    return read.then((choices) => {
+      const preload = depsRef.current.preload ?? preloadImage;
+      for (const c of orderPrintings(choices, g.printings ?? []).short) {
+        const src = c.imageUri && scanThumb(c.imageUri);
+        if (src && !preloaded.current.has(src)) {
+          preloaded.current.add(src);
+          preload(src);
+        }
+      }
+      return choices;
+    });
   }, []);
   const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null) => {
     const seq = ++chooseSeq.current;
@@ -430,7 +438,13 @@ export function useCardScan(
         if (seq !== chooseSeq.current) return;
         // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing.
         if (choices.length > 0 && orderPrintings(choices, g.printings ?? []).autoPick) {
-          void commit(g, snap, { choices, printing: choices[0] });
+          setChoosing((c) => (c ? { ...c, choices } : c));
+          void commit(g, snap, { choices, printing: choices[0] }).then((ok) => {
+            // An add that did not land leaves no step behind: the answer is turned down, as a take that failed is.
+            if (ok || seq !== chooseSeq.current) return;
+            setChoosing(null);
+            setDismissed(from);
+          });
           return;
         }
         if (choices.length > 0) return setChoosing((c) => (c ? { ...c, choices } : c));
@@ -441,16 +455,15 @@ export function useCardScan(
         onProblemRef.current("notAdded");
       });
   }, [choicesFor, commit]);
-  // In Normal, a card's printings start loading the moment the server answers for it, sure or not, so the step that
-  // follows (by itself, or a pick) opens on printings already on their way.
+  // In Normal, the printings of every card the server names start loading the moment it answers, sure or not, so the
+  // step that follows (by itself, or a pick from Not sure) opens on printings already on their way.
   // Once per answer: the same answer handed back again (after a frame that was not its card) starts nothing new. A
   // layout effect declared before the take below, so it runs first and the take's step finds the read already begun.
   const prefetched = useRef<object | null>(null);
   useLayoutEffect(() => {
     if (mode !== "normal" || !answer || prefetched.current === answer) return;
     prefetched.current = answer;
-    const top = answer.guesses[0];
-    if (top) void choicesFor(toScanGuess(top));
+    for (const g of answer.guesses.slice(0, 3)) void choicesFor(toScanGuess(g));
   }, [mode, answer, choicesFor]);
   const stopChoosing = useCallback(() => {
     chooseSeq.current++;
