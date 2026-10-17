@@ -291,7 +291,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const paidRows = (n: number, status = "spent", ageMs = 60_000) =>
       Array.from({ length: n }, () => ({ status, createdAt: new Date(now.getTime() - ageMs) }));
     const reserve = (answers: unknown[][]) => {
-      const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers]);
+      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers]);
       return { f, got: reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now) };
     };
 
@@ -299,7 +299,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       const { f, got } = reserve([paidRows(19)]);
       expect(await got).toEqual({ id: "call-1" });
       expect(f.inserted()?.creditGrantId).toBe("pack-1");
-      expect(new PgDialect().sqlToQuery(f.wheres[5] as never).sql).toContain('"model_calls"."credit_grant_id" is not null');
+      expect(new PgDialect().sqlToQuery(f.wheres[3] as never).sql).toContain('"model_calls"."credit_grant_id" is not null');
     });
 
     it("refuses the twenty-first paid run with credits left, spent or in flight", async () => {
@@ -313,7 +313,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     });
 
     it("never refuses a run the free allowance can fund", async () => {
-      const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)]);
+      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)]);
       expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
       expect(f.inserted()?.creditGrantId).toBeNull();
     });
