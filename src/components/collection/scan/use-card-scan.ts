@@ -412,7 +412,12 @@ export function useCardScan(
       const load = depsRef.current.loadChoices;
       read = Promise.resolve()
         .then(() => (load ? load(g.oracleId) : []))
-        .catch(() => [] as PrintingChoice[]);
+        .catch(() => [] as PrintingChoice[])
+        .then((choices) => {
+          // A read that failed (or found none) is not kept, so the next time the card is chosen it is read again.
+          if (choices.length === 0 && choicesCache.current.get(g.oracleId) === read) choicesCache.current.delete(g.oracleId);
+          return choices;
+        });
       choicesCache.current.set(g.oracleId, read);
     }
     // Each scan's own short list is fetched ahead, a second copy scanned from another printing included.
@@ -448,8 +453,6 @@ export function useCardScan(
           return;
         }
         if (choices.length > 0) return setChoosing((c) => (c ? { ...c, choices } : c));
-        // A read that failed is forgotten once it has been said, so the next time the card is chosen it is read again.
-        choicesCache.current.delete(g.oracleId);
         setChoosing(null);
         setDismissed(from);
         onProblemRef.current("notAdded");
@@ -465,6 +468,10 @@ export function useCardScan(
     prefetched.current = answer;
     for (const g of answer.guesses.slice(0, 3)) void choicesFor(toScanGuess(g));
   }, [mode, answer, choicesFor]);
+  // A scanner that closes takes any printing step still loading with it: a lone printing landing afterwards adds nothing.
+  useEffect(() => () => {
+    chooseSeq.current++;
+  }, []);
   const stopChoosing = useCallback(() => {
     chooseSeq.current++;
     loadingChoices.current = false;
