@@ -18,6 +18,8 @@ const ADMIN = `probe_inv_admin_${run}`;
 const S = `probe_inv_s_${run}`; // the sender
 const T = `probe_inv_t_${run}`; // a second member of the group
 const O = `probe_inv_o_${run}`; // another account
+const K = `probe_inv_k_${run}`; // a sender whose QR outlives a key change
+const L = `probe_inv_l_${run}`; // a sender whose QR lapses while a write waits for the lock
 const SECRET = "c0ffee".repeat(11).slice(0, 64);
 
 let failed = 0;
@@ -202,6 +204,35 @@ async function main() {
     check("the revoked row is not rewritten with the late id", mid[0].state === "revoked" && mid[0].clerk === null);
     await invariant(S, "a mid-send revoke");
 
+    // A key change while a QR is live: the old QR cannot be opened by any token derivable now, so a re-show returns
+    // it and makes a new one the sender's own watch can read.
+    check("Set K 1 left", (await setInvites(ADMIN, K, 1)).ok);
+    const oldKey = await showInviteQr(K, SECRET);
+    const newKey = await showInviteQr(K, "beef".repeat(16));
+    check("after a key change a new QR is made", oldKey.ok && newKey.ok && newKey.token !== oldKey.token);
+    if (newKey.ok) check("the new QR reads live to its sender", (await readSenderQr(K, newKey.token))?.state === "live");
+    const { rows: kRows } = await db.execute<{ state: string; n: number }>(sql`
+      select state, count(*)::int as n from invite_reservations where user_id = ${K} group by state order by state`);
+    check("the old QR is returned, the new one open", JSON.stringify(kRows) === JSON.stringify([{ state: "qr_open", n: 1 }, { state: "returned", n: 1 }]),
+      JSON.stringify(kRows));
+    check("K is out: one QR holds its one invite", (await left(K)) === 0);
+    await invariant(K, "a key change");
+
+    // A QR that lapses while a Set waits for the lock is counted as lapsed: the time is read once the lock is held.
+    check("Set L 1 left", (await setInvites(ADMIN, L, 1)).ok);
+    check("L shows a QR", (await showInviteQr(L, SECRET)).ok);
+    await db.execute(sql`update invite_reservations set qr_expires_at = now() + interval '1 second' where user_id = ${L}`);
+    const lockHolder = db.transaction(async (tx) => {
+      await lockSenderIn(tx, L);
+      await tx.execute(sql`select pg_sleep(2)`);
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    check("Set L 0 while the lock is held", (await setInvites(ADMIN, L, 0)).ok);
+    await lockHolder;
+    const { rows: lHeld } = await db.execute<{ held: number }>(sql`select held from invite_balances where user_id = ${L}`);
+    check("the lapsed QR is not counted as holding: held is 0", lHeld[0]?.held === 0, `held ${lHeld[0]?.held}`);
+    check("L has 0 left", (await left(L)) === 0);
+
     // A group top-up: raises who is below, lowers nobody.
     const { rows: g } = await db.execute<{ id: string }>(sql`
       insert into flag_groups (name, created_by) values (${`probe-inv-${run}`}, ${ADMIN}) returning id`);
@@ -225,15 +256,15 @@ async function main() {
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
-      byKind.invites_set === 6 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 3, JSON.stringify(byKind));
+      byKind.invites_set === 9 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 3, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
-    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O})`);
-    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O})`);
+    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L})`);
+    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L})`);
     if (groupId) await db.execute(sql`delete from flag_groups where id = ${groupId}`);
     const { rows: left } = await db.execute<{ n: number }>(sql`
-      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}))
-        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}))
+      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}))
+        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}))
         + (select count(*) from admin_events where actor_id = ${ADMIN}) as n`);
     check("cleanup left nothing", Number(left[0].n) === 0);
   }

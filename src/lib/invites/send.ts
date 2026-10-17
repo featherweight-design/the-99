@@ -15,9 +15,14 @@ import { readCountIn, type Tx } from "./read";
 import { HOLD_MS, isEmailShape, normalizeEmail, QR_TTL_MS } from "./rules";
 import { qrToken, secretHash } from "./tokens";
 
-/** The sender's lock: every write that spends, holds or sets one sender's invites takes it first. */
-export async function lockSenderIn(tx: Tx, senderId: string): Promise<void> {
+/**
+ * The sender's lock: every write that spends, holds or sets one sender's invites takes it first. It answers the time
+ * to count by, read AFTER the lock is held (or the one a test gave), so a row that lapsed while the write waited for
+ * the lock is counted as lapsed.
+ */
+export async function lockSenderIn(tx: Tx, senderId: string, given?: Date): Promise<Date> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`invites:${senderId}`}))`);
+  return given ?? new Date();
 }
 
 export type SendResult = { ok: true } | { ok: false; reason: "invalid" | "out" };
@@ -35,11 +40,10 @@ export async function sendEmailInvite(
 ): Promise<SendResult> {
   if (!isEmailShape(rawEmail)) return { ok: false, reason: "invalid" };
   const email = normalizeEmail(rawEmail);
-  const now = deps.now ?? new Date();
   const clerk = deps.clerk ?? clerkInvites;
 
   const reservationId = await db.transaction(async (tx) => {
-    await lockSenderIn(tx, senderId);
+    const now = await lockSenderIn(tx, senderId, deps.now);
     const { count } = await readCountIn(tx, senderId, now);
     if (count.out) return null;
     const [row] = await tx.insert(inviteReservations).values({
@@ -89,12 +93,14 @@ export type QrResult =
 export async function showInviteQr(
   senderId: string,
   secret: string | null,
-  now: Date = new Date(),
+  given?: Date,
 ): Promise<QrResult> {
   if (!secret) return { ok: false, reason: "unconfigured" };
   return db.transaction(async (tx) => {
-    await lockSenderIn(tx, senderId);
-    const [live] = await tx.select({ id: inviteReservations.id, expiresAt: inviteReservations.qrExpiresAt })
+    const now = await lockSenderIn(tx, senderId, given);
+    const [live] = await tx.select({
+      id: inviteReservations.id, expiresAt: inviteReservations.qrExpiresAt, hash: inviteReservations.qrTokenHash,
+    })
       .from(inviteReservations)
       .where(and(
         eq(inviteReservations.userId, senderId),
@@ -103,7 +109,14 @@ export async function showInviteQr(
       ))
       .orderBy(desc(inviteReservations.qrExpiresAt))
       .limit(1);
-    if (live?.expiresAt) return { ok: true as const, token: qrToken(secret, live.id), expiresAt: live.expiresAt };
+    if (live?.expiresAt) {
+      const token = qrToken(secret, live.id);
+      if (secretHash(token) === live.hash) return { ok: true as const, token, expiresAt: live.expiresAt };
+      // The code secret changed since this QR was made: no token derivable now opens it, so it is returned (its
+      // invite back) and a new one is made below.
+      await tx.update(inviteReservations).set({ state: "returned", resolvedAt: now })
+        .where(eq(inviteReservations.id, live.id));
+    }
 
     const { count } = await readCountIn(tx, senderId, now);
     if (count.out) return { ok: false as const, reason: "out" as const };

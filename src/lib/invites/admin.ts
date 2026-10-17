@@ -24,12 +24,12 @@ export async function setInvites(
   actorId: string,
   userId: string,
   rawLeft: unknown,
-  now: Date = new Date(),
+  given?: Date,
 ): Promise<SetInvitesResult> {
   const left = parseInvitesLeft(rawLeft);
   if (left === null) return { ok: false, reason: "invalid" };
   await db.transaction(async (tx) => {
-    await lockSenderIn(tx, userId);
+    const now = await lockSenderIn(tx, userId, given);
     const { holding, count } = await readCountIn(tx, userId, now);
     await storeHeldIn(tx, userId, heldForSet(left, holding), now);
     await tx.insert(adminEvents).values({
@@ -49,7 +49,7 @@ export async function topUpGroupInvites(
   actorId: string,
   groupId: string,
   rawTo: unknown,
-  now: Date = new Date(),
+  given?: Date,
 ): Promise<TopUpResult> {
   const to = parseInvitesLeft(rawTo);
   if (to === null) return { ok: false, reason: "invalid" };
@@ -60,7 +60,8 @@ export async function topUpGroupInvites(
       .where(eq(flagGroupMembers.groupId, groupId)).orderBy(asc(flagGroupMembers.userId));
     let raised = 0;
     for (const { userId } of members) {
-      await lockSenderIn(tx, userId);
+      // Each member's time is read once its lock is held.
+      const now = await lockSenderIn(tx, userId, given);
       const { holding, count } = await readCountIn(tx, userId, now);
       const held = heldForTopUp(count, holding, to);
       if (held === null) continue;
@@ -68,7 +69,7 @@ export async function topUpGroupInvites(
       raised++;
     }
     await tx.insert(adminEvents).values({
-      actorId, kind: "invites_topped_up", groupId, newValue: String(to), note: String(raised), at: now,
+      actorId, kind: "invites_topped_up", groupId, newValue: String(to), note: String(raised), at: given ?? new Date(),
     });
     return { ok: true as const, raised };
   });
@@ -86,14 +87,13 @@ export async function revokeReservation(
   reservationId: string,
   deps: { clerk?: ClerkInvites; now?: Date } = {},
 ): Promise<RevokeResult> {
-  const now = deps.now ?? new Date();
   const clerk = deps.clerk ?? clerkInvites;
   const [found] = await db.select({ userId: inviteReservations.userId }).from(inviteReservations)
     .where(eq(inviteReservations.id, reservationId));
   if (!found) return { ok: true, changed: false };
 
   const revoked = await db.transaction(async (tx) => {
-    await lockSenderIn(tx, found.userId);
+    const now = await lockSenderIn(tx, found.userId, deps.now);
     const waiting = and(eq(inviteReservations.id, reservationId), inArray(inviteReservations.state, ["claimed", "reserved"]));
     // The address is read before it is erased: with no invitation id stored, it is how Clerk's invitation is found.
     const [row] = await tx.select({ email: inviteReservations.email, clerkInvitationId: inviteReservations.clerkInvitationId })
