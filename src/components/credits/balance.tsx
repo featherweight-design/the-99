@@ -23,8 +23,9 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
   cells: readonly BalanceCell[];
   freeLimit: number;
   nextAtMs: number | null;
-  /** Credits the return just added to the Packs cell, drawn as `+40` in `--success` (R2) once the cell held
-   *  some before: on a first purchase the delta is the whole balance, and the band already says it (Hugh, 2026-10-17). */
+  /** Credits the return just added to the Packs cell, drawn as `+40` in `--success` (R2) only while
+   *  the cell holds more than that: when the delta is the whole balance (a first purchase) the band already says it
+   *  (Hugh, 2026-10-17). */
   added?: number | null;
 }) {
   const hydrated = useHydrated();

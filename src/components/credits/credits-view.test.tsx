@@ -29,7 +29,7 @@ describe("the page", () => {
     render(<CreditsView model={model()} ret={null} />);
     expect(screen.getAllByRole("listitem").map((li) => li.getAttribute("data-cell"))).toEqual(["free"]);
     expect(screen.queryByText(/Spent in this order/i)).toBeNull();
-    expect(screen.getByRole("button", { name: "Buy 40 credits · $5" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Buy pack: 40 credits · $5" })).toBeTruthy();
     expect(screen.getByText("Nothing bought yet. Receipts show here once you do.")).toBeTruthy();
     expect(screen.getByTestId("credits-total").textContent).toBe("3");
   });
@@ -58,7 +58,7 @@ describe("the page", () => {
     const { container } = render(<CreditsView model={model({ offers })} ret={null} />);
     expect(screen.getAllByText("Get more credits")).toHaveLength(1);
     const buys = screen.getAllByRole("button", { name: /^Buy / });
-    expect(buys.map((b) => b.getAttribute("aria-label"))).toEqual(["Buy 40 credits · $5", "Buy 100 credits · $10"]);
+    expect(buys.map((b) => b.getAttribute("aria-label"))).toEqual(["Buy pack: 40 credits · $5", "Buy pack: 100 credits · $10"]);
     // The card says the count and the price; the button does not say them again.
     expect(buys.map((b) => b.textContent)).toEqual(["Buy pack", "Buy pack"]);
     expect(buys[0].closest("section")).toBe(buys[1].closest("section"));
@@ -72,7 +72,7 @@ describe("the page", () => {
     expect(screen.queryByText(/Checkout closed/)).toBeNull();
   });
 
-  it("R2: an added return marks the Packs cell +40 when it held credits before", () => {
+  it("R2: an added return marks the Packs cell +40 when the cell holds more than the purchase", () => {
     render(<CreditsView model={model({ allowance: allowance({ pack: 80 }), history: [row] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 40 } }} />);
     expect(screen.getByText("+40")).toBeTruthy();
     expect(screen.getByText("40 pack credits added")).toBeTruthy();
@@ -86,7 +86,7 @@ describe("the page", () => {
 });
 
 describe("the Buy press", () => {
-  const press = () => fireEvent.click(screen.getByRole("button", { name: "Buy 40 credits · $5" }));
+  const press = () => fireEvent.click(screen.getByRole("button", { name: "Buy pack: 40 credits · $5" }));
 
   it("mints a uuid per press and sends the reader to Checkout's URL", async () => {
     const assign = vi.fn();
@@ -104,7 +104,7 @@ describe("the Buy press", () => {
     render(<CreditsView model={model()} ret={null} />);
     press();
     await waitFor(() => expect(m.buy).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect((screen.getByRole("button", { name: "Buy 40 credits · $5" }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect((screen.getByRole("button", { name: "Buy pack: 40 credits · $5" }) as HTMLButtonElement).disabled).toBe(false));
     press();
     await waitFor(() => expect(m.buy).toHaveBeenCalledTimes(2));
     expect(m.buy.mock.calls[0][1]).not.toBe(m.buy.mock.calls[1][1]);
@@ -121,7 +121,7 @@ describe("the Buy press", () => {
     render(<CreditsView model={model()} ret={null} />);
     press();
     expect((await screen.findByRole("alert")).textContent).toBe(text);
-    expect((screen.getByRole("button", { name: "Buy 40 credits · $5" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Buy pack: 40 credits · $5" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("gives the press back when the page is restored from the back/forward cache after a successful Buy", async () => {
@@ -129,7 +129,7 @@ describe("the Buy press", () => {
     m.buy.mockResolvedValue({ ok: true, url: "https://checkout.stripe.com/c/1" });
     render(<CreditsView model={model()} ret={null} />);
     press();
-    const buy = () => screen.getByRole("button", { name: "Buy 40 credits · $5" }) as HTMLButtonElement;
+    const buy = () => screen.getByRole("button", { name: "Buy pack: 40 credits · $5" }) as HTMLButtonElement;
     await waitFor(() => expect(buy().disabled).toBe(true));
     act(() => { window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: false })); });
     expect(buy().disabled).toBe(true);
