@@ -54,7 +54,7 @@ describe("the invite tree", () => {
     const rows = flattenTree(build().roots).filter((r) => r.kind === "account");
     const by = Object.fromEntries(rows.map((r) => [r.name, r]));
     // Hugh holds 6 with one QR on screen: 5 left.
-    expect(by.Hugh).toMatchObject({ owner: true, joined: null, left: 5, invited: 2, initials: "H" });
+    expect(by.Hugh).toMatchObject({ owner: true, joined: null, left: 5, invited: 2, initials: "HU" });
     expect(by.Colin).toMatchObject({ owner: false, joined: "Oct 18", left: 2, invited: 1 });
     expect(by.Peter).toMatchObject({ joined: "Oct 19", left: 0, invited: 0 });
     const waiting = flattenTree(build().roots).find((r) => r.kind === "waiting" && r.id === "r2");

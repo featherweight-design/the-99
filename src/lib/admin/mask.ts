@@ -1,5 +1,5 @@
 // How /admin names a person (Admin R3, D1, D2, D4): masked on the server, so a page payload never carries a whole
-// name or address. The one place raw values leave the server is a logged reveal (`revealAccount`).
+// name or address. Raw values are read only in `accounts.ts`, for a logged reveal.
 
 import { adminMaskCopy } from "../copy/admin";
 import type { Account } from "./accounts";

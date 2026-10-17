@@ -87,9 +87,10 @@ describe("the list (A1)", () => {
     expect(credits.get(MARA.id)).toEqual({ left: 0, limit: 1 });
   });
 
-  it("takes initials from the masked name's first two words", () => {
+  it("takes initials from the masked name (D4), and none for an account with no name", () => {
     expect(initials(MARA)).toBe("MQ");
-    expect(initials({ ...MARA, name: "  mara  " })).toBe("M");
+    expect(initials({ ...MARA, name: "  mara  " })).toBe("MA");
+    expect(initials({ ...MARA, name: "Account ·9xQe", named: false })).toBeNull();
   });
 });
 

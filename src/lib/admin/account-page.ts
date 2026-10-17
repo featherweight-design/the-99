@@ -114,7 +114,7 @@ export type AccountPage = {
   id: string;
   name: string;
   email: string | null;
-  initials: string;
+  initials: string | null;
   role: string;
   tiles: Tile[];
   group: { id: string; name: string } | null;

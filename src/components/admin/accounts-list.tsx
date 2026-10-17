@@ -22,7 +22,7 @@ const GRID = "md:grid md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_110px_120px_mi
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px]";
 
 /** The avatar the rows and the account page draw: initials in mono on an accent ring. */
-export function Avatar({ text, size }: { text: string; size: "sm" | "lg" }) {
+export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" }) {
   const box = size === "sm" ? "h-[34px] w-[34px] rounded-[10px] text-[11.5px]" : "h-[48px] w-[48px] rounded-[14px] text-[15px] md:h-[44px] md:w-[44px] md:rounded-[12px] md:text-[14px]";
   return (
     <span

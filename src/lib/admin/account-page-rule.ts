@@ -4,6 +4,7 @@ import type { AccountSwitches } from "../switches/explain";
 import { SWITCHES, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
 import { capMicro, usd } from "./costs-rule";
+import { maskInitials } from "./mask";
 import type { RowInvites } from "./invites-rule";
 import { accountName } from "./names";
 import { sourceText } from "./switch-page-rule";
@@ -17,22 +18,16 @@ const lower = (s: string) => s.toLocaleLowerCase("en-US");
 
 /**
  * A7 (Admin R3, D10, D14): a masked name holding the query, case-insensitively. Nothing else reaches the client to
- * match on: no email, no id. An empty query keeps every account. A whole email is looked up on the server instead.
+ * match on: no email, no id. An empty query keeps every account.
  */
 export function matchesAccount(a: Pick<Account, "name">, query: string): boolean {
   const q = lower(query.trim());
   return !q || lower(a.name).includes(q);
 }
 
-/** The avatar's letters: the name's first two words, else the email's or the id's first letter. */
-export function initials(a: Account): string {
-  if (a.name) {
-    const words = a.name.trim().split(/\s+/).filter(Boolean);
-    const letters = words.slice(0, 2).map((w) => w[0]).join("");
-    if (letters) return letters.toLocaleUpperCase("en-US");
-  }
-  if (a.email) return a.email[0].toLocaleUpperCase("en-US");
-  return (a.id.replace(/^user_/, "")[0] ?? "?").toLocaleUpperCase("en-US");
+/** The avatar's letters, from the masked name (D4); null for an account with no name, which is marked, not lettered. */
+export function initials(a: Pick<Account, "name" | "named">): string | null {
+  return maskInitials(a.name, a.named);
 }
 
 /** A time of day in UTC, 12-hour (`2:20 PM`): the admin's times are UTC (`Times are UTC.`). */
@@ -62,12 +57,10 @@ export function creditsNow(
 
 export type AccountRow = {
   id: string;
-  /** What the row draws: the Clerk name, else the email, else the id. */
+  /** The masked name, which is also what the search matches (D14). */
   name: string;
-  /** The Clerk name alone, for the search: a drawn fallback must not widen the id's prefix match. */
-  clerkName: string | null;
   email: string | null;
-  initials: string;
+  initials: string | null;
   group: { id: string; name: string } | null;
   credits: string;
   spend: string;
@@ -91,7 +84,6 @@ export function accountRows(input: {
     return {
       id: a.id,
       name: accountName(a),
-      clerkName: a.name,
       email: a.email,
       initials: initials(a),
       // A membership whose group's name did not load (a failed or racing read) keeps the id as its name.

@@ -19,7 +19,7 @@ const copy = adminCopy.invites.tree;
 /** One rail cell left of a row, per level: `v` an ancestor's line runs on, `blank` it ended, `tv` a tee, `t` an elbow. */
 export type RailCell = "v" | "blank" | "tv" | "t";
 
-type AccountNode = { kind: "account"; id: string; name: string; initials: string; owner: boolean; joined: string | null; left: number; invited: number; children: TreeNode[] };
+type AccountNode = { kind: "account"; id: string; name: string; initials: string | null; owner: boolean; joined: string | null; left: number; invited: number; children: TreeNode[] };
 type DeletedNode = { kind: "deleted"; key: string; joined: string | null; children: TreeNode[] };
 type WaitingNode = { kind: "waiting"; id: string; how: string; email: string; returns: string };
 export type TreeNode = AccountNode | DeletedNode | WaitingNode;

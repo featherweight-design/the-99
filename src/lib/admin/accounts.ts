@@ -16,9 +16,9 @@ import { maskEmail, maskName, unlistedAccount } from "./mask";
  *
  * MASKED AT THE SOURCE (Admin R3, rulings 1 and 4): `name` and `email` are the masked forms (`Colin R.`,
  * `c•••@g•••.com`), so nothing built on this list can put a whole name or address in a page payload. Raw
- * values leave this module only through `readIdentity`, which a logged reveal calls, and no other module
+ * values leave this module only through `readIdentity` and `findAccountIdByEmail`, and no other admin module
  * reads a Clerk user's name or email fields (`clerk-pii.test.ts`). `named` is false for an account Clerk
- * holds no name for (`Account ·9xQe`), which draws the diamond instead of initials (D4).
+ * holds no name for (`Account ·9xQe`), whose initials are null: D4 marks it with the diamond, not letters.
  */
 export type Account = { id: string; name: string; email: string | null; named: boolean };
 export type AccountList = { accounts: Account[]; clerk: "ok" | "down" };
@@ -128,7 +128,7 @@ export async function listAccounts(
   }
 }
 
-/** One account's whole name and email, for a logged reveal only (`revealAccount`); null when Clerk has no such user. */
+/** One account's whole name and email, for a logged reveal only; null when Clerk has no such user. */
 export type Identity = { id: string; fullName: string | null; email: string | null };
 
 type GetUser = (id: string) => Promise<ClerkUser | null>;
