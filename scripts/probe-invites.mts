@@ -35,7 +35,8 @@ const Z = `probe_inv_z_${run}`; // PR 3: a sender whose account is purged
 const W = `probe_inv_w_${run}`; // PR 3: Z's invitee
 const Q = `probe_inv_q_${run}`; // PR 3: a sender with a backlog for the sweep
 const N5 = `probe_inv_n5_${run}`; // PR 3: a newcomer whose account was deleted
-const PR3 = [P, N1, N2, N3, N4, Z, W, Q, N5];
+const N6 = `probe_inv_n6_${run}`;
+const PR3 = [P, N1, N2, N3, N4, Z, W, Q, N5, N6];
 const SECRET = "c0ffee".repeat(11).slice(0, 64);
 
 let failed = 0;
@@ -374,7 +375,7 @@ async function main() {
     const r5 = await idOfToken(q5.token);
     const c5 = await claimInvite(q5.token, "tries@x.dev", null, { env, mail });
     if (!c5.ok) throw new Error("claim 5 failed");
-    await db.execute(sql`update invite_reservations set code_tries = 4, clerk_invitation_id = 'inv_tries' where id = ${r5}`);
+    await db.execute(sql`update invite_reservations set code_tries = 4, clerk_invitation_id = 'inv_tries', proven_at = now() where id = ${r5}`);
     const downClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
     downClerk.clerk.revokeFor = async () => false;
     const fifthDown = await confirmCode(q5.token, lastCode() === "000000" ? "111111" : "000000", c5.claimSecret, { env, clerk: downClerk.clerk });
@@ -382,6 +383,10 @@ async function main() {
     check("a fifth try whose Clerk cleanup fails keeps the address and id for the sweep, and every step reads it as ended",
       !fifthDown.ok && fifthDown.reason === "ended" && kept5.state === "claimed" && kept5.email === "tries@x.dev" && kept5.clerk === "inv_tries"
       && (await handOver(q5.token, c5.claimSecret, { clerk: downClerk.clerk })).ok === false);
+    // The exhausted claim was PROVEN and its ticket exists: it can neither hand over again nor spend.
+    const exhaustedSpend = await spendInviteOnSignUp(`probe_inv_n6_${run}`, r5, "Fay");
+    check("an exhausted claim (proven, ticket made) cannot spend while its cleanup is pending", exhaustedSpend.spent === false
+      && Number((await db.execute<{ n: number }>(sql`select count(*) as n from invite_edges where invitee_user_id = ${`probe_inv_n6_${run}`}`)).rows[0].n) === 0);
     const finishClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
     await sweepInvites(new Date(), finishClerk.clerk, { senderIds: [P] });
     const done5 = await stateOf(r5);

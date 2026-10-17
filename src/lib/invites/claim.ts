@@ -7,7 +7,7 @@
  * Each step's decision is a PURE function over the row (`decideClaim`, `decideConfirm`, `decideHandOver`), tested
  * alone; the functions below read the row under the sender's lock, apply the decision and write.
  */
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
@@ -247,6 +247,8 @@ export type HandOverDecision = { kind: "go"; email: string; staleInvitationId: s
 export function decideHandOver(row: Row | undefined, presentedSecret: string | null, now: Date): HandOverDecision {
   if (!row || row.kind !== "qr" || !claimLive(row, now) || !cookieMatches(row, presentedSecret)) return END;
   if (row.provenAt === null || row.email === null) return END;
+  // A claim whose tries ran out is over, even while its Clerk cleanup is still pending.
+  if (row.codeTries >= CODE_MAX_TRIES) return END;
   return { kind: "go", email: row.email, staleInvitationId: row.clerkInvitationId };
 }
 
@@ -315,6 +317,8 @@ export async function handOver(
       eq(inviteReservations.state, "claimed"),
       // Its 7 days may have run out while Clerk was asked: such a claim takes the revoke path below.
       gt(inviteReservations.holdsUntil, new Date()),
+      // …nor one whose tries ran out while Clerk was asked.
+      lt(inviteReservations.codeTries, CODE_MAX_TRIES),
       eq(inviteReservations.email, decision.email),
       sql`${inviteReservations.clerkInvitationId} is not distinct from ${decision.staleInvitationId}`,
     ))
