@@ -113,8 +113,8 @@ function DesktopFrame() {
         tabIndex={-1}
         data-card-search-sheet=""
         data-card-search-frame="desktop"
-        // Its top is the slot's (73px under the mark: 14 + 39 + 20; the touch rail's are 69 and 61), 12px out from the rail.
-        className="fixed top-[73px] left-[calc(var(--rail-w)+12px)] z-40 flex w-[540px] flex-col gap-2 touch:top-[69px] touch-short:top-[61px]"
+        // Its top is the slot's (73px under the mark: 14 + 39 + 20 on a pointer rail, and 14 + 39 + 16 + the nav's 4px on the touch rail; 65 on a short touch screen), 12px out from the rail.
+        className="fixed top-[73px] left-[calc(var(--rail-w)+12px)] z-40 flex w-[540px] flex-col gap-2 touch-short:top-[65px]"
       >
         <h2 id="card-search-heading-desktop" className="sr-only">
           {cardSearchCopy.label}
@@ -138,7 +138,8 @@ function DesktopFrame() {
               query === "" ? (
                 <kbd
                   aria-hidden
-                  className="flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] px-[6px] py-[2px] font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
+                  // The field reserves its hidden 24px clear button and a 12px gap after this: take both back, so the chip sits 10px in.
+                  className="-mr-[36px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] px-[6px] py-[2px] font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
                 >
                   {shortcut.label}
                 </kbd>
