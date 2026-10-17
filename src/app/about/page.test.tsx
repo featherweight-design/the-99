@@ -150,8 +150,10 @@ describe("/about, the visit (R2 gap 10)", () => {
     const once = props.onceShown as Record<string, El>;
     expect(Object.keys(once)).toEqual(["reference"]);
     expect(once.reference.type).toBe(RecordVisit);
-    expect(find(props.panels as ReactNode, RecordVisit)).toBeNull();
-    expect(find((props.panels as Record<string, El>).tools, RecordVisit)).toBeNull();
+    // Each panel as the page builds it, not the `{tools, reference}` record, which is no element and would always miss.
+    const panels = Object.values(props.panels as Record<string, El>);
+    expect(panels).toHaveLength(2);
+    for (const panel of panels) expect(find(panel, RecordVisit)).toBeNull();
   });
 
   it("acknowledges a behind reader's visit, and lists what's new for the Reference", async () => {

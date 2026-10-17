@@ -4,7 +4,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 const mirrorUrl = vi.fn();
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl }));
 
-const { AboutTabs, aboutTabOf } = await import("./about-tabs");
+const { AboutTabs } = await import("./about-tabs");
+const { aboutTabOf } = await import("../../../lib/about/tab");
 
 afterEach(cleanup);
 beforeEach(() => {

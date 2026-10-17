@@ -8,16 +8,8 @@ import { useState, type ReactNode } from "react";
 import { aboutShapeCopy } from "../../../lib/copy/discovery";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { mirrorUrl } from "../../../lib/url/mirror";
+import { ABOUT_TABS, aboutTabOf, TAB_PARAM, type AboutTab } from "../../../lib/about/tab";
 import { onSegmentKeys } from "../../ui/segment-keys";
-
-export const ABOUT_TABS = ["tools", "reference"] as const;
-export type AboutTab = (typeof ABOUT_TABS)[number];
-export const TAB_PARAM = "tab";
-
-/** `?tab=` as the page reads it: anything but `reference` is Tools. */
-export function aboutTabOf(value: unknown): AboutTab {
-  return value === "reference" ? "reference" : "tools";
-}
 
 const tabId = (t: AboutTab) => `about-tab-${t}`;
 const panelId = (t: AboutTab) => `about-panel-${t}`;
