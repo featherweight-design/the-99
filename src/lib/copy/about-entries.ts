@@ -1455,7 +1455,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'How credits work',
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
-    // 'inset': the figure is three lines of the credit line, narrow enough to sit beside its text.
+    // 'inset': the figure is two lines of the credit line, narrow enough to sit beside its text.
     width: 'inset',
     // Hugh, 2026-10-05: credits get ONE entry of their own, and every other entry says only that
     // an action "uses a credit". Every spender is a `ModelFeature` (`allowance-rule.ts`): the

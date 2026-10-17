@@ -74,7 +74,7 @@ export const synopsisCopy = {
     /** Line C, 1e: both free tries are used; the paid press takes over. */
     triesUsed: "We couldn’t write the new overview with the free tries. You can still write one with a credit.",
     /**
-     * Line C while no credit can be spent (the allowance is paused, the owner's share or every
+     * Line C while no credit can be spent (the owner's share or every
      * credit is used): "you can still write one with a credit" is not true this month, and the
      * paid press beside it says why. Reviewed 2026-10-11: kept.
      */

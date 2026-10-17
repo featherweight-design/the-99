@@ -30,10 +30,10 @@ const Standing = ({ line }: { line: string }) => (
   <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={line} /></p>
 );
 
-/** P1, P1a, P1c, P8: the offer. Spent or paused, the press is off and its segment goes. */
+/** P1, P1a, P1c, P8: the offer. Spent or the owner's share used, the press is off and its segment goes. */
 export function OfferBand({ lead, cardName, blocked, spent, closed = false, standing, onPress }: {
   lead: string; cardName: string; blocked: boolean; spent: boolean;
-  /** Paused or the owner's share used: the press is off and its segment goes, as when spent. */
+  /** The owner's share used: the press is off and its segment goes, as when spent. */
   closed?: boolean;
   standing: string; onPress: () => void;
 }) {
@@ -104,7 +104,7 @@ export function FailedBand({ blocked, spent, closed = false, standing, onRetry }
           blocked={blocked}
           spent={spent || closed}
           onPress={onRetry}
-          // Paused, no credit is out: the press is named alone, never as `No credits left`.
+          // The owner's share used, no credit is out: the press is named alone, never as `No credits left`.
           ariaLabel={closed && !spent ? copy.retry : undefined}
         />
       </div>

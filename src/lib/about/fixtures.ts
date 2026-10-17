@@ -1215,21 +1215,18 @@ export const SUGGESTED_CHANGES = {
 };
 
 /**
- * `credits`: three of the lines the app draws beside a button that spends a credit: with credits
- * left, with every credit out, and while the app-wide monthly limit holds. The owner's fourth
- * (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). The
+ * `credits`: two of the lines the app draws beside a button that spends a credit: with credits
+ * left, and with every credit out. The owner's third (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). The
  * limit is not a fixture: the page hands the figure the app-wide default (`MODEL_DAILY_ALLOWANCE`), and
  * `left` is drawn as at most that limit.
  *
  * `nextAt` is a fixed instant. `clockTime` formats it in the reader's own clock, so the server's
  * render and the browser's can differ by time zone; the figure draws the time only after
- * hydration, so the server's markup carries none. `pausedUntil` is the 1st of a UTC month, which
- * `monthName` reads in UTC and so renders the same everywhere.
+ * hydration, so the server's markup carries none.
  */
 export const CREDITS = {
   left: 2,
   nextAt: new Date(Date.UTC(2026, 9, 5, 21, 20)),
-  pausedUntil: new Date(Date.UTC(2026, 10, 1)),
 };
 
 /**

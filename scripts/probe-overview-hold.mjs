@@ -192,7 +192,7 @@ async function reset(id, before) {
 // empty state about 0.7 to 2s after it (#1465), and until its frame was reserved it pushed the hub down
 // once, 56px at 1300 and 35px at 390. The empty state now holds two of the note's lines from its first
 // frame, so a note of up to two lines (the credit, free and check notes) must move nothing; a longer one
-// (used up, paused, owner share) may move it by its extra lines and no more, and is named in the line. A
+// (used up, owner share) may move it by its extra lines and no more, and is named in the line. A
 // note the probe does not recognise fails (`scripts/lib/note-variant.mjs`).
 function hubStaysPut(at, hub, pressAt, released, landings, shape) {
   report(at("the Tuning hub is drawn from the tab's first frame"),

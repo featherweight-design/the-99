@@ -122,7 +122,7 @@ export const helpMeChooseCopy = {
   /**
    * The read's panel on the results (the read addendum R1, `the read · copy strings.ts`; STATES 7d
    * to 7n). It never offers: the read starts at the submit, and the panel reports on it. Retired with
-   * F10: `readIt`, `costSpent` and `costPaused` (no press on the results). `cost` and `pressAria` are
+   * F10: `readIt` and `costSpent` (no press on the results). `cost` and `pressAria` are
    * the form's press too: one key for the pill wherever it is drawn.
    */
   read: {
@@ -158,7 +158,7 @@ export const helpMeChooseCopy = {
     emptyWiden: "to let it look wider, for instance with more colors.", // after a "Change answers" link
     emptyLine: (standing: string) => `No credit used · ${standing}`,
     unreadTitle: "What you wrote wasn’t read",
-    // Claims no cause: the line under it gives one (no credit left, paused, the owner's share).
+    // Claims no cause: the line under it gives one (no credit left, the owner's share).
     unreadLead: "These results use your answers alone. Your words are kept for another try.",
     // copy-reviewed: Recovery; names the cause, which the standing line under it cannot.
     busyLead: "Another run of yours was still running, so this one didn’t start. These results use your answers alone.",
