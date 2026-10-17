@@ -233,7 +233,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
             >
               <span className="md:hidden">
                 {inv.waitingPhone}
-                {w.email}
+                {strong(w.email)}
               </span>
               <span className="hidden md:inline">
                 {inv.waiting(w.how, "")}

@@ -19,7 +19,7 @@ const copy = adminCopy.accounts;
 const inv = adminCopy.invites;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
 const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_104px_minmax(0,0.7fr)_52px] md:items-center md:gap-[14px]";
-const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px]";
+const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5]";
 
 /** The avatar the rows and the account page draw: initials in mono on an accent ring, or the diamond when null (D4). */
 export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" }) {
@@ -43,7 +43,7 @@ function Row({ row }: { row: AccountRow }) {
   const { left, waiting, invitedBy } = row.invites;
   return (
     <li data-account={row.id} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0]">
-      <Link href={href} className={`flex min-h-[64px] flex-col gap-[4px] px-[14px] py-[11px] text-inherit no-underline md:px-[16px] md:py-[10px] ${GRID}`}>
+      <Link href={href} className={`flex min-h-[64px] flex-col gap-[5px] px-[14px] py-[11px] text-inherit no-underline md:px-[16px] md:py-[10px] ${GRID}`}>
         <div className="flex min-w-0 items-center gap-[11px]">
           <Avatar text={row.initials} size="sm" />
           <div className="flex min-w-0 flex-1 flex-col gap-[2px]">

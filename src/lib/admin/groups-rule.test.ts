@@ -156,7 +156,8 @@ describe("memberState", () => {
   it("draws a saved member, a move, an add and an unselected account", () => {
     expect(memberState(mara, true, T)).toEqual({ sub: "in testers", state: "selected", unsaved: false });
     expect(memberState(theo, true, T)).toEqual({ sub: "moves from friends", state: "selected, not saved", unsaved: true });
-    expect(memberState(jun, true, T)).toEqual({ sub: null, state: "selected, not saved", unsaved: true });
+    // An account in no group says so (R3 boards, C2).
+    expect(memberState(jun, true, T)).toEqual({ sub: "no group", state: "selected, not saved", unsaved: true });
     expect(memberState(theo, false, T)).toEqual({ sub: "in friends", state: "unselected", unsaved: false });
     // A saved member being removed reads unselected, and is still a change.
     expect(memberState(mara, false, T)).toEqual({ sub: "in testers", state: "unselected", unsaved: true });

@@ -187,6 +187,8 @@ export const adminCopy = {
     newTitle: "New group",
     movesFrom: (g: string) => `moves from ${g}`,
     inGroup: (g: string) => `in ${g}`,
+    /** A member row for an account in no group (Admin R3 boards, C2). */
+    inNoGroup: "no group",
     newGroup: "New group",
     edit: "Edit",
     create: "Create",

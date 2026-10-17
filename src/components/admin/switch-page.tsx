@@ -89,7 +89,7 @@ function Override({ item, section }: { item: OverrideItem; section: Section }) {
     <li data-override={item.key} className={ROW}>
       <div className="flex min-w-0 flex-col gap-[2px] md:flex-1">
         <span className="pr-[48px] text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere] md:pr-0">{item.title}</span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{item.sub}</span>
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{item.sub}</span>
       </div>
       <RowControls
         target={{ switchName: page.name, scope: kind, ...(kind === "group" ? { groupId: item.key } : { targetUserId: item.key }) }}

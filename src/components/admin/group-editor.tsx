@@ -104,10 +104,10 @@ function MemberButton({ row, selected, groupId, onToggle }: { row: MemberRow; se
         <span className="flex flex-wrap items-baseline gap-x-[8px]">
           <span className="text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{row.name}</span>
           {row.email && row.email !== row.name && (
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.email}</span>
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{row.email}</span>
           )}
         </span>
-        {sub && <span className="text-[12px] text-[color:var(--fg-muted)]">{sub}</span>}
+        <span className="text-[12px] text-[color:var(--fg-muted)]">{sub}</span>
       </span>
       <span
         className={`hidden flex-none whitespace-nowrap font-mono text-[10.5px] md:inline ${
