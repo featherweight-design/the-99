@@ -3,12 +3,14 @@ import { db } from "../../db";
 import { MAX_GUESSES, MAX_PRINTINGS, poolGuesses, vectorLiteral, type MatchAnswer, type NearRow, type PrintingRow } from "./match";
 
 /**
- * HNSW's candidate list per read. Measured by `probe:card-scan-match` on the real index: at 100, an ambiguous
- * fingerprint (a blend of two cards) named the wrong first card in 3 of 40 and overstated a margin near the scanner's gate (0.02 when measured; `SURE_MARGIN` is 0.10 now)
- * by 0.33; at 400 every first card and every near-gate margin matched an exact scan (within 0.00006), for about the
- * same lookup time. 1,000 bought nothing more.
+ * HNSW's candidate list per read, at pgvector's ceiling (1,000). `pnpm measure:scan-recall` measured both databases'
+ * own builds against an exact scan (read-only, 2026-10-17), asked as this function asks, on 400 blends of two cards'
+ * rows and rows nudged toward a third: at 400, 3 answers on staging and 1 on production landed on the other side of
+ * the 0.10 sure gate (the guesses read past the first card, under the exclusion, are where HNSW misses), and a scratch
+ * build failed the probe outright (a first-card score 0.23 off); at 1,000 neither database put an answer across the
+ * gate or named a different first card. It costs about 9ms a read (37 to 46ms median on staging).
  */
-const EF_SEARCH = 400;
+const EF_SEARCH = 1000;
 
 export type IndexMeta = { version: string; model: string };
 
