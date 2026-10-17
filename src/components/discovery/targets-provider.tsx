@@ -28,7 +28,8 @@ export type Targets = {
   scrollToTarget: (id: TargetId) => boolean;
   /** Haloes the target for `ms`. False when it is not drawn. */
   haloTarget: (id: TargetId, ms?: number) => boolean;
-  /** The target's element once it registers, or null when `timeoutMs` passes first or `signal` aborts. */
+  /** The target's element once it registers, or null when `timeoutMs` passes first (never, for `Infinity`) or `signal`
+   *  aborts. */
   whenTarget: (id: TargetId, timeoutMs: number, signal?: AbortSignal) => Promise<HTMLElement | null>;
 };
 
@@ -151,7 +152,8 @@ export function TargetsProvider({ children }: { children: ReactNode }) {
         const abort = () => finish(null);
         waiters.current.add(check);
         signal?.addEventListener("abort", abort);
-        timer = window.setTimeout(() => finish(null), timeoutMs);
+        // An unbounded wait (`Infinity`) ends only on its target or the signal: a timer that long would fire at once.
+        if (Number.isFinite(timeoutMs)) timer = window.setTimeout(() => finish(null), timeoutMs);
       }),
     [resolve],
   );

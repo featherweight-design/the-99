@@ -10,6 +10,8 @@ import type { DecksView } from "../../ui/view-cookie";
 import { SegmentedSwitch } from "../../ui/segmented-switch";
 import { momentsCopy } from "../../../lib/copy/moments";
 import { useMomentAnchor } from "../../moments/moments-provider";
+import { useTarget } from "../../discovery/targets-provider";
+import { useMergedRef } from "../../ui/use-merged-ref";
 
 const copy = decksStatsCopy.view;
 
@@ -27,13 +29,16 @@ export function StatsViewSwitch({ view, onView, busy = false, moment = false }: 
 }) {
   // On the switch as a group, as Matchups' is: one tab stop whichever segment holds it, so Tab from it reaches the
   // bubble's Dismiss and Esc hands focus back to that stop.
-  const lineupMoment = useMomentAnchor("lineup", { eligible: moment && view === "tiles" && !busy, copy: momentsCopy.lineup });
+  const lineupMoment = useMomentAnchor("lineup", { eligible: moment && view === "tiles" && !busy, copy: momentsCopy.lineup, target: false });
+  // The switch is Stats for your decks' target whenever it draws, on Stats too: Try it lands on `/decks?view=stats`.
+  const lineupTarget = useTarget("lineup");
+  const ref = useMergedRef(lineupMoment.ref, lineupTarget);
   // A press shows in the frame it lands: the segment takes the chosen fill under the finger (`pressFill`) and keeps it
   // while Stats is read (`drawn`; Tiles gives it up in the same frame), with the shell's pending mark beside the label
   // (the 4px diamond a nav press draws, after its 120ms beat). `aria-selected` still follows the view alone, and a
   // read that fails clears `busy`, so both fall back together.
   return (
-    <span {...lineupMoment} className="inline-flex rounded-[9px]">
+    <span {...lineupMoment} ref={ref} className="inline-flex rounded-[9px]">
     <SegmentedSwitch
       kind="tabs"
       size="compact"

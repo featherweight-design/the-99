@@ -23,8 +23,11 @@ vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined })
 const { default: DecksPage } = await import("./page");
 const { DecksView } = await import("../../components/decks/decks-view");
 
-const visit = async () =>
-  (await DecksPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ helpMeChoose?: boolean }>;
+// The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
+const visit = async () => {
+  const children = ((await DecksPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ children: ReactElement[] }>).props.children;
+  return children[children.length - 1] as ReactElement<{ helpMeChoose?: boolean }>;
+};
 
 beforeEach(() => {
   stub.env = {};

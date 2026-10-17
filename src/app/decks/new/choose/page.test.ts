@@ -32,6 +32,7 @@ const { IntakeForm } = await import("../../../../components/intake/intake-form")
 const { ChooseHistory } = await import("../../../../components/intake/choose-history");
 const { PastRunMeta, PastWontOpen } = await import("../../../../components/intake/past-run");
 const { ChooseHeader } = await import("../../../../components/intake/choose-header");
+const { ToolLandingMount } = await import("../../../../components/discovery/tool-landing-mount");
 
 /** The first element of `type` anywhere in a rendered tree, props included (the look is a prop). */
 function find(node: unknown, type: unknown): { props: Record<string, unknown> } | null {
@@ -190,6 +191,18 @@ describe("the choose page", () => {
       const digest = String((e as { digest?: string }).digest);
       expect(digest).toContain("/decks/new/choose?");
       expect(digest).not.toContain("v=results");
+    }
+  });
+
+  it("strips any ?tool= on the results, which draw no landing target, on both of their branches", async () => {
+    stub.themes.mockResolvedValue([]);
+    for (const tool of ["nope", "help-me-choose"]) {
+      const live = find(await ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", tool }) }), ToolLandingMount)!;
+      expect(live.props).toMatchObject({ landing: null, request: expect.any(String) });
+      stub.past.mockResolvedValue(null);
+      const gone = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: "0000bbbb-0000-4000-8000-000000000009", h: "1", tool }) });
+      expect(find(gone, PastWontOpen)).toBeTruthy();
+      expect(find(gone, ToolLandingMount)!.props).toMatchObject({ landing: null, request: expect.any(String) });
     }
   });
 

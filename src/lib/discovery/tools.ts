@@ -61,8 +61,7 @@ export const TOOLS = [
 
 export type ToolId = (typeof TOOLS)[number]["id"];
 
-/** The one-time parameter a Try it writes, read and stripped by the page it lands on. */
-export const TOOL_PARAM = "tool";
+export { TOOL_PARAM } from "./tool-param";
 
 const BY_ID = new Map<string, Tool>(TOOLS.map((t) => [t.id, t]));
 
@@ -98,4 +97,18 @@ export function deckToolLanding(
   if (landing === null || landing.lands.kind !== "deck") return null;
   if (landing.lands.tab === "analysis" && !analysisEnabled) return null;
   return landing as ToolLanding & { lands: Extract<ToolLands, { kind: "deck" }> };
+}
+
+/**
+ * A tool page's reading of `?tool=` (R2·3): a landing only when the address names THIS page's own tool and its switch
+ * is on for the reader. Any other id, a deck tool's included, is null, and the page strips it with no halo.
+ */
+export function pageToolLanding(
+  value: unknown,
+  isOn: (name: SwitchName) => boolean,
+  page: ToolId,
+): (ToolLanding & { lands: Extract<ToolLands, { kind: "route" }> }) | null {
+  const landing = toolLanding(value, isOn);
+  if (landing === null || landing.tool !== page || landing.lands.kind !== "route") return null;
+  return landing as ToolLanding & { lands: Extract<ToolLands, { kind: "route" }> };
 }

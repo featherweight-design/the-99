@@ -24,12 +24,15 @@ import { lineupEnabled } from "../../lib/decks/lineup-flag";
 import { readLineupCached } from "../../lib/lineup/cached";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
+import { pageLanding } from "../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 
 
 export default async function DecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ commander?: string; select?: string | string[]; view?: string | string[] }>;
+  searchParams: Promise<{ commander?: string; select?: string | string[]; view?: string | string[]; tool?: string | string[] }>;
 }) {
   // Ahead of auth, as it has always been: the redirect is a URL rewrite and
   // needs no user.
@@ -57,6 +60,9 @@ export default async function DecksPage({
   const jar = statsOn ? await cookies() : null;
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
   const view = statsOn && askedView === "stats" ? "stats" : "tiles";
+  // Try it's landing for Stats for your decks (discovery R2·3): `?tool=lineup` haloes the Tiles · Stats switch;
+  // anything else is stripped.
+  const { landing, request } = pageLanding(params[TOOL_PARAM], env, "lineup");
   const lineupData = view === "stats"
     ? readLineupCached(userId, env)
     : null;
@@ -129,6 +135,8 @@ export default async function DecksPage({
   }, env);
 
   return (
+    <>
+    <ToolLandingMount landing={landing} request={request} />
     <DecksView
       decks={data.decks}
       folders={data.folders}
@@ -147,5 +155,6 @@ export default async function DecksPage({
         foldServer: jar?.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
       } : null}
     />
+    </>
   );
 }

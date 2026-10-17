@@ -32,6 +32,15 @@
 // `SOCIAL_GAMES_ENABLED`, `ANALYSIS_TAB_ENABLED`), then again with them off; run the probe with the SAME
 // `MOMENTS_ENABLED` the server has, since that is how it knows whether a spend is owed.
 //
+// THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own
+// control (Help me choose's first answer, the Precons and Wishlist searches, Collection Sync's drop zone, the Tiles ·
+// Stats switch, Add a friend), the parameter stripped, the moment spent. Find a deck's landing is DEFERRED: the
+// parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
+// open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
+// With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`,
+// `PRECONS_ENABLED`, `SOCIAL_WISHLIST_ENABLED`, `COLLECTION_SYNC_ENABLED`, `LINEUP_ENABLED`), every page landing
+// must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
+//
 //   PROBE_BASE=http://localhost:3311 MOMENTS_ENABLED=true pnpm probe:tool-landing
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -53,6 +62,10 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const MOMENTS_ON = process.env.MOMENTS_ENABLED === "true";
+const SWITCHES_OFF = process.env.PROBE_SWITCHES === "off";
+/** `decks` or `pages` runs only that half (each is a few minutes a width); unset runs both. */
+const PHASE = process.env.PROBE_PHASE ?? "all";
+if (!["all", "decks", "pages"].includes(PHASE)) throw new Error(`PROBE_PHASE must be decks or pages, not ${PHASE}`);
 const DECK_LIMIT = Number(process.env.PROBE_DECKS ?? 12);
 const sql = neon(DATABASE_URL);
 
@@ -81,6 +94,19 @@ const TOOLS = [
   { id: "stand-ins", name: "Cheaper stand-ins", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='standin-glyph'])"]] },
   { id: "friend-spares", name: "A friend has a spare", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='spare-glyph'])"]] },
   { id: "matchups", name: "Matchups", tab: "games", targets: [["section[aria-labelledby='game-matchups-heading'] [role='radiogroup']"]] },
+];
+// Each tool with a page of its own (R2·3): where Try it lands, and the tool's own control there, found in the page (an
+// expression returning the element or null). `card`: Find a deck's deferred landing, whose control draws in the card
+// details the probe opens after the landing.
+const drawnFirst = (sel) => `[...document.querySelectorAll(${JSON.stringify(`${PAGE} ${sel}`)})].find((e) => e.getClientRects().length > 0) ?? null`;
+const PAGE_TOOLS = [
+  { id: "help-me-choose", name: "Help me choose", path: "/decks/new/choose", find: drawnFirst(`form div[class="rounded-[9px]"]`) },
+  { id: "precons", name: "Precons", path: "/decks/precons", find: `(${drawnFirst("input[type='search']")})?.closest("div.min-w-0") ?? null` },
+  { id: "wishlist", name: "Wishlist", path: "/collection/wishlist", find: `(${drawnFirst("input[type='search']")})?.closest("div.relative") ?? null` },
+  { id: "collection-sync", name: "Collection Sync", path: "/collection/replace", find: drawnFirst("label:has(input[aria-label='Upload collection CSV'])") },
+  { id: "lineup", name: "Stats for your decks", path: "/decks?view=stats", find: `(${drawnFirst("[role='tablist']:has([data-decks-view])")})?.closest("span.inline-flex") ?? null` },
+  { id: "friends", name: null, path: "/friends", find: `[...document.querySelectorAll(${JSON.stringify(`${PAGE} button`)})].find((e) => e.textContent.trim() === "Add a friend" && e.getClientRects().length > 0) ?? null` },
+  { id: "find-a-deck", name: "Find a deck", path: "/collection?avail=free", card: true, find: `[...document.querySelectorAll("[role='dialog'] [data-testid='fits-door']")].find((e) => e.getClientRects().length > 0) ?? null` },
 ];
 /** How long after the landing the probe looks again for the landed tool's bubble: inside the 2.4s halo, past the
  *  moments' own arrival delay. */
@@ -206,7 +232,7 @@ async function land(page, path, targets, noteName) {
  * and Shopping by its filter press. An undrawn landing on a deck where this is true is a missed landing, never a SKIP.
  */
 async function drawsWithoutLanding(page, deck, tool) {
-  await page.goto(`${BASE}/decks/${deck}?tab=${tool.tab}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/decks/${deck}?tab=${tool.tab}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   if (tool.shopping) {
     const shopping = page.locator(PAGE).getByRole("tab", { name: /^Shopping/ }).first();
     await shopping.click({ timeout: 10_000 }).catch(() => {});
@@ -218,6 +244,130 @@ async function drawsWithoutLanding(page, deck, tool) {
   );
 }
 
+/** Reads a tool page as its landing left it: the haloed elements, the tool's control, bubbles, the address. */
+function readPage(page, find, noteName) {
+  return page.evaluate(([find, noteName, visitKey]) => {
+    const expected = (0, eval)(find);
+    const haloed = [...document.querySelectorAll("[data-target-halo]")];
+    const bubbles = [...document.querySelectorAll("[role='note'][data-moment-bubble]")].map((b) => b.getAttribute("aria-label") ?? "");
+    let visitTaken = false;
+    try {
+      visitTaken = JSON.parse(localStorage.getItem(visitKey) ?? "null")?.taken === true;
+    } catch {}
+    return {
+      search: location.search,
+      notFound: /There’s no page here\./.test(document.body.innerText),
+      drawn: expected !== null,
+      haloed: haloed.length,
+      onTarget: expected !== null && haloed.length === 1 && haloed[0] === expected,
+      bubbles,
+      ownBubble: noteName !== null && bubbles.includes(noteName),
+      expanded: expected?.getAttribute("aria-expanded") === "true",
+      visitTaken,
+    };
+  }, [find, noteName, VISIT_KEY]);
+}
+
+/** Opens the first card on the page (Collection's grid tile, or its row) and waits for its details; false when none opens. */
+async function openCard(page) {
+  // The grid's tile (from md) or the phone's row: both mount, CSS shows one, and both are `aria-busy` card presses.
+  const trigger = page.locator(`${PAGE} button.art-lift-host:visible, ${PAGE} button[aria-busy]:visible`).first();
+  await trigger.waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+  if ((await trigger.count()) === 0) return false;
+  await trigger.click();
+  if (!(await page.waitForSelector("[role='dialog']", { timeout: 15_000 }).then(() => true, () => false))) return false;
+  // The details arrive after the press. On the phone the door sits under the sheet's All details, which the reader
+  // opens, as capture:about does; the landing waits for the door however long that takes (deferred). The read follows
+  // at once, inside the 2.4s halo.
+  const door = "[role='dialog'] [data-testid='fits-door']";
+  const more = "[role='dialog'] button[aria-label='Show all details']";
+  const shown = (sel) => `[...document.querySelectorAll(${JSON.stringify(sel)})].some((e) => e.getClientRects().length > 0)`;
+  await page.waitForFunction(`${shown(door)} || ${shown(more)}`, null, { timeout: 15_000 }).catch(() => {});
+  if (!(await page.evaluate(shown(door)))) {
+    const press = page.locator(`${more}:visible`).first();
+    if ((await press.count()) > 0) await press.click().catch(() => {});
+    await page.waitForFunction(shown(door), null, { timeout: 5_000 }).catch(() => {});
+  }
+  await new Promise((done) => setTimeout(done, 400));
+  return true;
+}
+
+/** Whether the tool's control draws on its page with no `?tool=` at all: the preflight a SKIP must pass. */
+async function pageDrawsWithoutLanding(page, tool) {
+  await page.goto(`${BASE}${tool.path}`, { waitUntil: "domcontentloaded" });
+  await new Promise((done) => setTimeout(done, 2500));
+  if (tool.card && !(await openCard(page))) return false;
+  return (await readPage(page, tool.find, null)).drawn;
+}
+
+async function walkPages(page, w, userId) {
+  for (const tool of PAGE_TOOLS) {
+    await unspend(userId, tool.id);
+    const label = `${w.name} page ${tool.id}`;
+    const noteName = tool.name === null ? null : `${tool.name}, a tip`;
+    const url = new URL(`${BASE}${tool.path}`);
+    url.searchParams.set("tool", tool.id);
+    url.searchParams.set("probe", "1");
+    await page.evaluate((k) => localStorage.removeItem(k), VISIT_KEY).catch(() => {});
+    await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => !new URL(location.href).searchParams.has("tool") || /There’s no page here\./.test(document.body.innerText), null, { timeout: 15_000 }).catch(() => {});
+    let r = await readPage(page, tool.find, noteName);
+    const stripped = !new URLSearchParams(r.search).has("tool") && new URLSearchParams(r.search).get("probe") === "1";
+    if (r.notFound) {
+      // The route is gone for this reader: only right with its switch off.
+      check(SWITCHES_OFF, `${label}: the route is gone (its switch off)`, `notFound, switches ${SWITCHES_OFF ? "off" : "on"}`);
+      check(r.haloed === 0, `${label}: no halo on a gone route`, `${r.haloed} haloed`);
+      check(!(await spentSoon(userId, tool.id, false)), `${label}: nothing written on a gone route`, "moments_spent");
+      continue;
+    }
+    check(stripped, `${label}: the parameter is stripped, the rest kept`, r.search);
+    if (tool.card) {
+      // Deferred: nothing haloes before a card is opened; the next card's door does.
+      check(r.haloed === 0, `${label}: nothing haloes before a card is opened`, `${r.haloed} haloed`);
+      if (!(await openCard(page))) {
+        skip(label, "the account's free cards draw no row to open");
+        continue;
+      }
+      r = await readPage(page, tool.find, noteName);
+    }
+    const spent = await spentSoon(userId, tool.id, r.drawn && MOMENTS_ON && noteName !== null && !SWITCHES_OFF);
+    if (SWITCHES_OFF) {
+      check(r.haloed === 0, `${label}: switch off, no halo`, `${r.haloed} haloed`);
+      check(!spent, `${label}: switch off, nothing written`, `${spent}`);
+      continue;
+    }
+    if (!r.drawn) {
+      check(r.haloed === 0, `${label}: an undrawn control draws no halo`, `${r.haloed} haloed`);
+      check(!spent, `${label}: an undrawn control spends nothing`, `${spent}`);
+      const own = await pageDrawsWithoutLanding(page, tool);
+      if (own) check(false, `${label}: the page draws the control without the landing, so the landing missed it`, "drawn without ?tool=");
+      else skip(label, "the account's page draws no such control, with or without ?tool=");
+      continue;
+    }
+    check(r.onTarget, `${label}: the halo is on the tool's own control, and only there`, `${r.haloed} haloed`);
+    check(!r.expanded, `${label}: nothing is pressed`, `expanded ${r.expanded}`);
+    if (noteName !== null) check(spent === MOMENTS_ON, `${label}: the moment is ${MOMENTS_ON ? "spent" : "not written (moments off)"}`, `${spent}`);
+    else check(!spent, `${label}: a tool with no moment writes nothing`, `${spent}`);
+    const later = await new Promise((done) => setTimeout(done, SECOND_LOOK_MS)).then(() => readPage(page, tool.find, noteName));
+    check(r.bubbles.length === 0 && later.bubbles.length === 0, `${label}: no bubble at all on a haloed landing`, `bubbles ${JSON.stringify([...new Set([...r.bubbles, ...later.bubbles])])}`);
+    check(later.visitTaken, `${label}: the haloed landing takes the visit`, `taken ${later.visitTaken}`);
+  }
+  // Stale ids on a page: unknown, another page's tool, a deck tool. Stripped with no halo, nothing written.
+  const spentBefore = JSON.stringify(await readSpent(userId));
+  for (const [path, id] of [["/collection/replace", "nope"], ["/collection/replace", "friends"], ["/decks", "top-off"], ["/collection?avail=free", "wishlist"]]) {
+    const url = new URL(`${BASE}${path}`);
+    url.searchParams.set("tool", id);
+    url.searchParams.set("probe", "1");
+    await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => !new URL(location.href).searchParams.has("tool"), null, { timeout: 15_000 }).catch(() => {});
+    await new Promise((done) => setTimeout(done, 1000));
+    const r = await readPage(page, "null", null);
+    const ok = !new URLSearchParams(r.search).has("tool") && r.haloed === 0;
+    check(ok, `${w.name} page ${path} stale ?tool=${id}: stripped, no halo`, `${r.search}, ${r.haloed} haloed`);
+  }
+  check(JSON.stringify(await readSpent(userId)) === spentBefore, `${w.name} page stale ids write nothing`, "moments_spent unchanged");
+}
+
 async function walk(browser, w, userId, decks, spentAtStart) {
   console.log(`\n── ${w.name}`);
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
@@ -226,7 +376,7 @@ async function walk(browser, w, userId, decks, spentAtStart) {
     await signIn(page, EMAIL, PASSWORD);
     await clearAboutSheet(page, userId);
 
-    for (const tool of TOOLS) {
+    if (PHASE !== "pages") for (const tool of TOOLS) {
       let landed = false;
       for (const deck of decks) {
         await unspend(userId, tool.id);
@@ -246,8 +396,12 @@ async function walk(browser, w, userId, decks, spentAtStart) {
           check(!r.visitTaken || r.bubbles.length > 0, `${label}: an unhaloed landing leaves the visit untouched`, `taken ${r.visitTaken}, bubbles ${JSON.stringify(r.bubbles)}`);
           // Independent of the landing: the deck's own controls do not draw it either, so this deck is truly not a
           // fixture for the tool. Were they to draw it, the landing missed a target it should have reached.
-          const own = await drawsWithoutLanding(page, deck, tool);
-          check(!own, `${label}: the deck's own controls do not draw it either (else the landing missed it)`, `${own}`);
+          // With the switches off there is no tool to miss: a panel's generic empty state can still match its
+          // selectors, so the cross-check is for the on run only.
+          if (!SWITCHES_OFF) {
+            const own = await drawsWithoutLanding(page, deck, tool);
+            check(!own, `${label}: the deck's own controls do not draw it either (else the landing missed it)`, `${own}`);
+          }
           continue;
         }
         check(r.onTarget, `${label}: the halo is on the tool's target, and only there`, `${r.haloed} haloed`);
@@ -266,6 +420,9 @@ async function walk(browser, w, userId, decks, spentAtStart) {
       }
       if (!landed) skip(`${w.name} ${tool.id}`, `none of the ${decks.length} decks draws its target`);
     }
+
+    if (PHASE !== "decks") await walkPages(page, w, userId);
+    if (PHASE === "pages") return;
 
     // Stale ids: unknown, a tool that does not land on a deck, and a deck id that does not exist.
     const spentBefore = JSON.stringify(await readSpent(userId));

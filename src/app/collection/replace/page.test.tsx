@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
+// The landing reads every switch (`SWITCH_FLAGS`); its own rule is tested in `page-landing.test.ts`.
+vi.mock("../../../lib/discovery/page-landing", () => ({ pageLanding: () => ({ landing: null, request: null }) }));
+vi.mock("../../../components/discovery/tool-landing-mount", () => ({ ToolLandingMount: () => null }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
@@ -25,7 +28,7 @@ import ReplacePage from "./page";
 // `main`'s foot. A plain block here left each step at its own height and a hole under the bar.
 describe("/collection/replace", () => {
   it("wraps the flow in a flex column that grows into main", async () => {
-    render(await ReplacePage());
+    render(await ReplacePage({ searchParams: Promise.resolve({}) }));
     const section = screen.getByTestId("flow").parentElement!;
     expect(section.tagName).toBe("SECTION");
     expect(section.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex", "flex-1", "flex-col"]));
@@ -33,17 +36,17 @@ describe("/collection/replace", () => {
 
   it("hands the flow the reader's Sync switch (collection sync PR 2)", async () => {
     syncOn.value = false;
-    const { unmount } = render(await ReplacePage());
+    const { unmount } = render(await ReplacePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("false");
     unmount();
     syncOn.value = true;
-    render(await ReplacePage());
+    render(await ReplacePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("true");
   });
 
   it("tells the flow whether Sync has an anchor, so an emptied collection still gets the choice", async () => {
     const anchored = async () => {
-      const { unmount } = render(await ReplacePage());
+      const { unmount } = render(await ReplacePage({ searchParams: Promise.resolve({}) }));
       const v = screen.getByTestId("flow").getAttribute("data-anchored");
       unmount();
       return v;

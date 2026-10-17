@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
 
 const copy = swapToolsCopy.fits;
@@ -43,8 +44,11 @@ export function FitsDoor({
   moment?: boolean;
 }) {
   const button = useRef<HTMLButtonElement>(null);
-  const findMoment = useMomentAnchor("find-a-deck", { eligible: moment, copy: momentsCopy.findADeck });
-  const buttonRef = useMergedRef(button, findMoment.ref);
+  const findMoment = useMomentAnchor("find-a-deck", { eligible: moment, copy: momentsCopy.findADeck, target: false });
+  // The door is Find a deck's target wherever it draws, wider than M8's rule: Try it's landing (R2 gap 11) haloes it on
+  // the next card opened from `/collection?avail=free`, moments on or off.
+  const findTarget = useTarget("find-a-deck");
+  const buttonRef = useMergedRef(button, findMoment.ref, findTarget);
 
   // Back from the picker, focus lands on the door. The picker's own focus return cannot do it: at its
   // unmount this card is still inert under it, so the door waits out the `inert` a frame at a time,

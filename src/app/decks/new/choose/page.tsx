@@ -45,6 +45,9 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
 import { loadReadDecks } from "../../../../lib/intake/the-read-load";
 import { shortName, type ReadPicks } from "../../../../lib/intake/the-read";
 import { readAllowance } from "../../../../lib/model/allowance";
+import { pageLanding } from "../../../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
 // A row's figures come from a real fill run in a Server Action posted from this page.
 export const maxDuration = 120;
@@ -70,7 +73,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // share one `loadCardRow` (its `cache` key holds the env by identity).
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) notFound();
-  const sp = toSearchParams(await searchParams);
+  const rawQuery = await searchParams;
+  const sp = toSearchParams(rawQuery);
   const p = parseLiveParams(sp);
 
   // Outside any try: `redirect` throws, and a catch would swallow it.
@@ -85,6 +89,11 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // read draws codes rather than taking the page down.
   const sets = await loadCommanderPrintings().then((x) => x.sets).catch(() => []);
 
+  // Try it's landing (discovery R2·3): `?tool=help-me-choose` haloes the form's first answer; anything else, and any
+  // `?tool=` on the results (which draw no target), is stripped. Read from the raw query: `toSearchParams` keeps a
+  // repeated parameter's first value.
+  const { landing, request } = pageLanding(rawQuery[TOOL_PARAM], env, "help-me-choose");
+
   if (!p.results) {
     // The press's credit standing (F7). A failed read draws the plain button: the submit re-checks.
     const now = new Date();
@@ -96,6 +105,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     const historyView = sp.get("v") === "history";
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
+        <ToolLandingMount landing={landing} request={request} />
         <div className="md:mx-auto md:w-full md:max-w-[1100px] lg:flex lg:items-start lg:justify-center lg:gap-[40px]">
           <div className={`min-w-0 md:w-[680px] md:max-w-full md:shrink ${historyView ? "hidden lg:block" : ""}`}>
             <ChooseHeader
@@ -154,6 +164,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (openedFromHistory && !isPast && served?.kind !== "pending") {
     return (
       <div className="flex flex-col">
+        <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
           back={{ href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back }}
           title={copy.results.title}
@@ -216,6 +227,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   return (
     <CardDetailProvider>
       <div className="flex flex-col">
+        <ToolLandingMount landing={null} request={request} />
         <ChooseHeader
           back={isPast ? { href: `${CHOOSE_PATH}?v=history`, label: historyCopy.past.back } : { href: changeHref, label: copy.results.back }}
           title={copy.results.title}

@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
-import { useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "./targets-provider";
 import { LANDING_WAIT_MS, useToolLanding } from "./use-tool-landing";
+import { ToolLandingMount } from "./tool-landing-mount";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor } from "../moments/moments-provider";
 import { toolLanding } from "../../lib/discovery/tools";
 import type { MomentId } from "../../lib/moments/registry";
@@ -345,5 +346,131 @@ describe("useToolLanding", () => {
     await flush();
     expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
     expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
+  function Deferred({ children }: { children?: React.ReactNode }) {
+    useToolLanding(toolLanding("find-a-deck", () => true), "r1", { deferred: true });
+    return <>{children}</>;
+  }
+  function Later() {
+    const [on, setOn] = useState(false);
+    return on ? <Anchor id="find-a-deck" name="Find a deck for it" /> : <button type="button" onClick={() => setOn(true)}>open a card</button>;
+  }
+  const mountDeferred = (children: React.ReactNode) =>
+    render(
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <Deferred>{children}</Deferred>
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+
+  it("strips the parameter at once, then haloes the next card's door once, however long the reader takes", async () => {
+    at("?avail=free&tool=find-a-deck");
+    mountDeferred(<Later />);
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS * 10));
+    await flush();
+    expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    const door = screen.getByRole("button", { name: "Find a deck for it" });
+    expect(door.hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
+    expect(window.location.search).toBe("?avail=free");
+  });
+
+  it("haloes nothing and spends nothing when the reader leaves the page before opening a card", async () => {
+    at("?tool=find-a-deck");
+    const { unmount } = mountDeferred(<Later />);
+    await flush();
+    unmount();
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS * 2));
+    await flush();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("");
+  });
+
+  it("strips a stale id at once and waits for nothing", async () => {
+    at("?tool=nope");
+    render(
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <StaleDeferred />
+          <Anchor id="find-a-deck" name="Find a deck for it" />
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+    await flush();
+    expect(window.location.search).toBe("");
+    expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+  function StaleDeferred() {
+    useToolLanding(null, "r1", { deferred: true });
+    return null;
+  }
+
+  it("survives StrictMode's effect replay after the strip, and haloes the next card's door", async () => {
+    at("?avail=free&tool=find-a-deck");
+    render(
+      <StrictMode>
+        <TargetsProvider>
+          <MomentsProvider live={["find-a-deck"]} spent={[]}>
+            <Deferred>
+              <Later />
+            </Deferred>
+          </MomentsProvider>
+        </TargetsProvider>
+      </StrictMode>,
+    );
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
+  });
+
+  it("haloes nothing and spends nothing once a newer ?tool= reaches the page before the card opens", async () => {
+    at("?avail=free&tool=find-a-deck");
+    mountDeferred(<Later />);
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    // Back or Forward to another Try it on this page, before its render commits.
+    at("?tool=wishlist");
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(false);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?tool=wishlist");
+  });
+
+  it("keeps waiting through a same-page refresh that renders the mount with no landing and no request", async () => {
+    at("?avail=free&tool=find-a-deck");
+    const landing = toolLanding("find-a-deck", () => true);
+    const tree = (props: { landing: typeof landing; request: string | null }) => (
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <ToolLandingMount {...props} deferred />
+          <Later />
+        </MomentsProvider>
+      </TargetsProvider>
+    );
+    const { rerender } = render(tree({ landing, request: "r1" }));
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    // `router.refresh()` after the parameter was stripped: the server decides no landing and no request.
+    rerender(tree({ landing: null, request: null }));
+    await flush();
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
   });
 });

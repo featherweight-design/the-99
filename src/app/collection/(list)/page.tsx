@@ -39,6 +39,9 @@ import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../../../components/home/precon-pick-receipt";
+import { pageLanding } from "../../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../../components/discovery/tool-landing-mount";
 
 export default async function CollectionPage({
   searchParams,
@@ -102,6 +105,10 @@ export default async function CollectionPage({
   // whole; the rest arrive in the background from `/api/collection-fields`.
   const params = await searchParams;
   const query = searchParamsToQuery(params);
+  // Try it's landing for Find a deck (discovery R2·3, R2 gap 11): `?tool=find-a-deck` is stripped at once, and the next
+  // card details opened halo `Find a deck for it` once (deferred). Anything else is stripped.
+  const { landing, request } = pageLanding(params[TOOL_PARAM], env, "find-a-deck");
+  const toolLanding = <ToolLandingMount landing={landing} request={request} deferred />;
 
   // A precon pick opened from Collection lands here (no-collection entry S19) with the receipt under the tabs: Home's
   // own strip and dismiss key, read per request from the ledger and only when the address claims one. With the line's
@@ -132,6 +139,7 @@ export default async function CollectionPage({
     const ways = noCollectionEntryEnabled(env) ? { precons: preconsEnabled(env) } : null;
     return (
       <section className="flex flex-col">
+        {toolLanding}
         {strip}
         <EmptyState className="md:p-[48px]">
           <CardFan variant="mobile" className="mb-[22px] md:hidden" />
@@ -165,6 +173,7 @@ export default async function CollectionPage({
 
   return (
     <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h)-var(--collection-head-h))] md:min-h-[calc(100vh-var(--collection-head-h))]">
+      {toolLanding}
       {strip}
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
