@@ -14,6 +14,7 @@
 // and retired by the catalog generation instead. Static, no server, no database.
 import { readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import ts from "typescript";
 
 export const CACHED_PAGES = [
   "src/app/page.tsx", "src/app/decks/page.tsx", "src/app/decks/shopping/page.tsx", "src/app/decks/precons/(list)/page.tsx",
@@ -55,18 +56,30 @@ function importsOf(source) {
   return [...source.matchAll(/^(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
 }
 
-/** Every file the pages reach through the loaders, the pages included. */
-export function loaderFiles(pages = CACHED_PAGES) {
+/**
+ * Modules a cached page reads PER REQUEST, outside its cached payload, each with its reason. A page's own import of one is
+ * not followed, so its tables are not counted as the payload's: they are read fresh on every request and cannot go stale.
+ * The claim is checked, not trusted (`perRequestProblems`): the page may call the module only OUTSIDE `cachePageForUser`'s
+ * load, and no loader on the cached path may import it. An entry is a deliberate, reviewed diff, like any exemption.
+ */
+export const PER_REQUEST_READS = {};
+
+/** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */
+export function loaderFiles(pages = CACHED_PAGES, perRequest = PER_REQUEST_READS) {
   const lib = resolve("src/lib");
+  const pageFiles = new Set(pages.map((p) => resolve(p)));
+  const skipped = new Set(Object.keys(perRequest).map((p) => resolve(p)));
   const seen = new Set();
-  const stack = pages.map((p) => resolve(p));
+  const stack = [...pageFiles];
   while (stack.length) {
     const file = stack.pop();
     if (seen.has(file)) continue;
     seen.add(file);
     for (const spec of importsOf(readFileSync(file, "utf8"))) {
       const next = resolveImport(file, spec);
-      if (next && next.startsWith(lib) && !seen.has(next)) stack.push(next);
+      if (!next || !next.startsWith(lib) || seen.has(next)) continue;
+      if (pageFiles.has(file) && skipped.has(next)) continue;
+      stack.push(next);
     }
   }
   return [...seen].map((f) => relative(process.cwd(), f)).sort();
@@ -271,10 +284,14 @@ function topLevel(text) {
  * (an unused call, or inside the loader).
  */
 export function cacheKeysOf(text) {
-  const src = codeOnly(text);
-  const keys = [];
+  return cacheCalls(codeOnly(text)).filter(({ args }) => args.length >= 3).map(({ args }) => ({ reader: args[0].trim(), key: args[2] }));
+}
+
+/** Every `cachePageForUser(...)` call in `src` (already `codeOnly`): its top-level arguments, and where it starts and ends. */
+function cacheCalls(src) {
+  const calls = [];
   const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
-  for (let m; (m = call.exec(src)); ) {
+  for (let m; (m = call.exec(src)) !== null; ) {
     const args = [];
     let depth = 0, start = call.lastIndex, i = start;
     for (; i < src.length; i++) {
@@ -289,9 +306,178 @@ export function cacheKeysOf(text) {
       }
     }
     args.push(src.slice(start, i));
-    if (args.length >= 3) keys.push({ reader: args[0].trim(), key: args[2] });
+    calls.push({ args, start: m.index, end: i });
   }
-  return keys;
+  return calls;
+}
+
+/** The local names a page value-imports from `mod`, or null in the list for a default or namespace import (refused). */
+function namesImportedFrom(file, fromFile, mod) {
+  const names = [];
+  const target = resolve(mod);
+  for (const st of file.statements) {
+    if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier)) continue;
+    if (resolveImport(resolve(fromFile), st.moduleSpecifier.text) !== target) continue;
+    const clause = st.importClause;
+    if (!clause || clause.isTypeOnly) continue;
+    if (clause.name) names.push(null);
+    const bindings = clause.namedBindings;
+    if (bindings && ts.isNamespaceImport(bindings)) names.push(null);
+    else if (bindings) for (const el of bindings.elements) if (!el.isTypeOnly) names.push(el.name.text);
+  }
+  return names;
+}
+
+const isFunctionLike = (n) =>
+  ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n) || ts.isMethodDeclaration(n) ||
+  ts.isConstructorDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n) || ts.isClassStaticBlockDeclaration(n);
+
+/** The nearest function around `node`, or the source file itself at module scope. */
+function scopeOf(node) {
+  for (let n = node.parent; n; n = n.parent) if (isFunctionLike(n) || ts.isSourceFile(n)) return { fn: n };
+  return { fn: undefined };
+}
+
+/** Every reference to `name` in `file` that is a value use: not the import itself, a property name or a type. */
+function usesOf(file, name) {
+  const out = [];
+  const visit = (n) => {
+    if (ts.isImportDeclaration(n) || ts.isTypeNode(n)) return;
+    if (ts.isIdentifier(n) && n.text === name) {
+      const p = n.parent;
+      const named = (ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n) ||
+        ts.isQualifiedName(p) || (ts.isMethodDeclaration(p) && p.name === n) || (ts.isPropertyDeclaration(p) && p.name === n);
+      if (!named) out.push(n);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(file);
+  return out;
+}
+
+/** Every `cachePageForUser(...)` call expression in `file`. */
+function cacheCallNodes(file, fromFile) {
+  const calls = [];
+  const pageCache = resolve("src/lib/cache/page-cache.ts");
+  let indirect = false;
+  const unwrap = (n) => (ts.isParenthesizedExpression(n) ? unwrap(n.expression) : n);
+  const named = (n) => (ts.isIdentifier(n) && n.text === "cachePageForUser") ||
+    (ts.isPropertyAccessExpression(n) && n.name.text === "cachePageForUser");
+  const visit = (n) => {
+    if (ts.isImportDeclaration(n)) {
+      // Imported under another name or as a namespace, its calls go by a name this cannot see.
+      const b = n.importClause?.namedBindings;
+      if (b && ts.isNamedImports(b) && b.elements.some((e) => e.propertyName?.text === "cachePageForUser")) indirect = true;
+      const spec = ts.isStringLiteral(n.moduleSpecifier) ? n.moduleSpecifier.text : "";
+      if (b && ts.isNamespaceImport(b) && !n.importClause.isTypeOnly && resolveImport(resolve(fromFile), spec) === pageCache) indirect = true;
+      return;
+    }
+    // A computed member (`cache["cachePageForUser"]`) is a call this cannot follow.
+    if (ts.isElementAccessExpression(n) && ts.isStringLiteralLike(n.argumentExpression) && n.argumentExpression.text === "cachePageForUser") indirect = true;
+    if (ts.isCallExpression(n) && named(unwrap(n.expression))) calls.push(n);
+    else if (named(n)) {
+      // Any other reference (a binding, an argument, a saved member) can call it where this cannot see.
+      let p = n.parent;
+      while (p && ts.isParenthesizedExpression(p)) p = p.parent;
+      if (!(p && ts.isCallExpression(p) && unwrap(p.expression) === n)) indirect = true;
+      if (ts.isPropertyAccessExpression(n)) {
+        ts.forEachChild(n.expression, visit);
+        return;
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(file);
+  return { calls, indirect };
+}
+
+/**
+ * Every way a page's per-request read could be cached after all (`PER_REQUEST_READS`). Read from the page's syntax tree,
+ * never its text. Four rules:
+ * - the listed module exists, and some cached page imports it (a stale entry exempts nothing, so it is reported);
+ * - the page imports it by name, so its uses can be found (a default or namespace import is refused);
+ * - every use sits directly in the page's `export default function`, which holds all its `cachePageForUser` calls, each a
+ *   plain awaited statement of its body, and in a statement after the last of them. The load runs during that call, so nothing written after it in the same function, once, can reach
+ *   the payload. A use in any other function (a nested arrow, a helper, a module-scope `const load = ...`) or at module
+ *   scope could be called by the load, so it fails without tracing whether it is: the rule is strict so it can be exact;
+ * - no loader on the cached path imports it, because then the module IS the payload's.
+ */
+export function perRequestProblems(
+  pages = CACHED_PAGES,
+  perRequest = PER_REQUEST_READS,
+  filesOf = (page) => loaderFiles([page], perRequest),
+  source = (file) => readFileSync(file, "utf8"),
+  exists = (file) => { try { return statSync(file).isFile(); } catch { return false; } },
+) {
+  const out = [];
+  for (const [mod, reason] of Object.entries(perRequest)) {
+    if (!reason || !String(reason).trim()) out.push(`PER-REQUEST ${mod} is listed with no reason`);
+    if (!exists(mod)) {
+      out.push(`PER-REQUEST ${mod} is listed but does not exist`);
+      continue;
+    }
+    let imported = false;
+    for (const page of pages) {
+      const file = ts.createSourceFile(page, source(page), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      const names = namesImportedFrom(file, page, mod);
+      if (names.length === 0) continue;
+      imported = true;
+      if (names.includes(null)) {
+        out.push(`PER-REQUEST ${page} imports ${mod} without naming what it uses, so its uses cannot be checked`);
+        continue;
+      }
+      const { calls, indirect } = cacheCallNodes(file, page);
+      const homes = new Set(calls.map((c) => scopeOf(c).fn));
+      // The page's own function, `export default function`: a module-scope read runs once when the module loads, never per
+      // request, and a helper holding the calls can be called twice, its second load taking the first call's read.
+      const only = homes.size === 1 ? [...homes][0] : undefined;
+      const exported = (f) => ts.isFunctionDeclaration(f) &&
+        (ts.getCombinedModifierFlags(f) & ts.ModifierFlags.ExportDefault) === ts.ModifierFlags.ExportDefault;
+      const home = only && !indirect && exported(only) ? only : undefined;
+      // Order is read from the page body's STATEMENTS, which run one after another, never from source positions: a
+      // destructuring default, a pending promise or a loop runs code out of the order it is written in. So each call must
+      // be a plain statement of the body, `await cachePageForUser(...)` or `const x = await cachePageForUser(...)`, and a
+      // use counts as after the load only when its statement comes later in the body.
+      const body = home?.body?.statements ?? [];
+      const topOf = (n) => {
+        for (let x = n; x; x = x.parent) if (x.parent === home?.body) return body.indexOf(x);
+        return -1;
+      };
+      const plainAt = (c) => {
+        let p = c.parent;
+        while (p && ts.isParenthesizedExpression(p)) p = p.parent;
+        if (!p || !ts.isAwaitExpression(p)) return -1;
+        let q = p.parent;
+        while (q && ts.isParenthesizedExpression(q)) q = q.parent;
+        const stmt = ts.isExpressionStatement(q) ? q
+          : ts.isVariableDeclaration(q) && ts.isIdentifier(q.name) && q.initializer && q.parent.declarations.length === 1 ? q.parent.parent
+          : undefined;
+        return stmt && stmt.parent === home?.body ? body.indexOf(stmt) : -1;
+      };
+      const callAt = calls.map(plainAt);
+      const plain = callAt.every((i) => i >= 0);
+      const lastCall = Math.max(...callAt);
+      for (const name of names) {
+        for (const use of usesOf(file, name)) {
+          const at = use.getStart(file);
+          const { fn } = scopeOf(use);
+          const inCall = calls.some((c) => c.pos <= at && at < c.end);
+          let why = null;
+          if (inCall) why = "inside cachePageForUser's load, so it would be cached";
+          else if (!home) why = "in a page whose cachePageForUser calls are not all made directly in its exported page function, so it cannot be checked";
+          else if (!plain) why = "in a page whose cachePageForUser calls are not each a plain awaited statement of its page function, so their order cannot be read";
+          else if (fn !== home) why = "outside the page's own function, where the load could call it";
+          else if (topOf(use) <= lastCall) why = "before cachePageForUser's load, where its result could reach the cached payload";
+          if (why) out.push(`PER-REQUEST ${page} uses ${name} (from ${mod}) ${why}`);
+        }
+      }
+      if (filesOf(page).map((f) => f.split("\\").join("/")).includes(mod)) {
+        out.push(`PER-REQUEST ${mod} is imported by a loader on ${page}'s cached path, so it is not read per request`);
+      }
+    }
+    if (!imported) out.push(`PER-REQUEST ${mod} is listed but no cached page imports it`);
+  }
+  return [...new Set(out)];
 }
 
 /**
