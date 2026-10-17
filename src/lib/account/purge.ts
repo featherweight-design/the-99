@@ -31,7 +31,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
-import { unlinkInvitesIn } from "../invites/purge";
+import { invitationIdsIn, revokeAfterPurge, unlinkInvitesIn } from "../invites/purge";
 import { ownedSupportLock } from "../discovery/owned-support-lock";
 
 /**
@@ -73,17 +73,35 @@ export async function recordDeletion(userId: string): Promise<void> {
     on conflict (id_hash) do nothing`);
 }
 
-export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; invitesUnlinked: number; stamp: number };
+export type PurgeReport = {
+  social: SocialPurge;
+  rows: Record<string, number>;
+  invitesUnlinked: number;
+  /** Clerk invitations the account's reservations held, and how many were revoked once the purge committed. */
+  invitations: { found: number; revoked: number };
+  stamp: number;
+};
 
-export async function purgeAccount(userId: string): Promise<PurgeReport> {
+export async function purgeAccount(
+  userId: string,
+  deps: {
+    revoke?: (invitationId: string) => Promise<boolean>;
+    revokeFor?: (email: string, reservationId: string) => Promise<boolean>;
+  } = {},
+): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
-  return db.transaction(async (tx) => {
+  const { report, invitationIds } = await db.transaction(async (tx) => {
     // Waits out a refresh of the reader's owned-support store, which would otherwise write rows back
     // after this commits; a refresh that takes the lock after it finds no collection and writes none.
     await tx.execute(ownedSupportLock(userId));
+    // The invite lock every spend takes for the sender and the newcomer (`lockSenderIn`, `invites:<id>`): a spend and
+    // this purge of either account take turns, so a spend never commits rows for an account while it is being purged.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`invites:${userId}`}))`);
     const { counts: social, friendIds } = await purgeSocialIn(tx, userId);
     // The tree is kept with this account's side set null (`INVITES_UNLINKED`).
     const invitesUnlinked = await unlinkInvitesIn(tx, userId);
+    // Read before the reservations are deleted below; revoked after this commits.
+    const invitationIds = await invitationIdsIn(tx, userId);
     const rows: Record<string, number> = {};
     for (const table of PURGE_ORDER) {
       const done = await tx.execute(sql`delete from ${sql.identifier(table)} where user_id = ${userId}`);
@@ -106,6 +124,7 @@ export async function purgeAccount(userId: string): Promise<PurgeReport> {
     // stamp back at commit.
     await tx.execute(sql`set constraints all immediate`);
     const stamp = await tx.execute(sql`delete from user_data_stamps where user_id = ${userId}`);
-    return { social, rows, invitesUnlinked, stamp: stamp.rowCount ?? 0 };
+    return { report: { social, rows, invitesUnlinked, stamp: stamp.rowCount ?? 0 }, invitationIds };
   });
+  return { ...report, invitations: await revokeAfterPurge(invitationIds, deps) };
 }

@@ -4,8 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const verify = vi.hoisted(() => vi.fn());
 const purge = vi.hoisted(() => vi.fn());
 const record = vi.hoisted(() => vi.fn());
+const spend = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
+vi.mock("../../../lib/invites/spend", async (orig) => ({
+  ...(await orig<typeof import("../../../lib/invites/spend")>()),
+  spendInviteOnSignUp: spend,
+}));
 
 import { POST } from "./route";
 
@@ -18,6 +23,7 @@ beforeEach(() => {
   purge.mockReset();
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
+  spend.mockReset().mockResolvedValue({ spent: true });
 });
 
 describe("POST /api/clerk-webhook", () => {
@@ -82,5 +88,51 @@ describe("POST /api/clerk-webhook", () => {
     } finally {
       logged.mockRestore();
     }
+  });
+
+  describe("user.created (an invited sign-up, invites plan R8)", () => {
+    const RES = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
+    const created = (public_metadata: unknown, extra: object = {}) =>
+      ({ type: "user.created", data: { id: "user_new", first_name: "Ana", public_metadata, ...extra } });
+
+    it("spends the reservation the invitation named, for the new account and its first name", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      expect((await POST(req())).status).toBe(200);
+      expect(spend).toHaveBeenCalledWith("user_new", RES, "Ana");
+      expect(purge).not.toHaveBeenCalled();
+    });
+
+    it("spends nothing for an account with no reservation, or a malformed one, and still answers 200", async () => {
+      for (const meta of [{}, null, { inviteReservation: "not-a-uuid" }, { inviteReservation: 7 }]) {
+        verify.mockResolvedValue(created(meta));
+        expect((await POST(req())).status).toBe(200);
+      }
+      expect(spend).not.toHaveBeenCalled();
+    });
+
+    it("answers 500 when the spend fails, so Clerk retries, and logs nothing that could hold an id", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      spend.mockRejectedValue(new Error(`Failed query: user_new ${RES}`));
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        expect((await POST(req())).status).toBe(500);
+        const text = logged.mock.calls.flat().map(String).join(" ");
+        expect(text).not.toContain("user_new");
+        expect(text).not.toContain(RES);
+      } finally {
+        logged.mockRestore();
+      }
+    });
+
+    it("reads no feature switch: an invitation already accepted is honored", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      process.env.SOCIAL_INVITES_ENABLED = "off";
+      try {
+        expect((await POST(req())).status).toBe(200);
+        expect(spend).toHaveBeenCalledTimes(1);
+      } finally {
+        delete process.env.SOCIAL_INVITES_ENABLED;
+      }
+    });
   });
 });

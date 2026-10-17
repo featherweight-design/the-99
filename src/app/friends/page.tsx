@@ -13,7 +13,8 @@ import { requireUserId } from "../../lib/auth";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { ensureProfile, loadFriendsAndLinks } from "../../lib/social/friends";
+import { ensureProfile, friendPublicId, loadFriendsAndLinks } from "../../lib/social/friends";
+import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
 import { PodsPane } from "../../components/social/pods-pane";
@@ -29,6 +30,11 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
   const user = await currentUser();
+  // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
+  // not yet; the spend is idempotent, so this runs it when the account's own invitation names a reservation, and the
+  // receipt is then drawn once from the edge, whichever of the two ran first.
+  const reservationId = reservationIdFrom(user?.publicMetadata);
+  if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   const [profile, { friends, links }, pods, shared] = await Promise.all([
     ensureProfile(userId, user?.firstName),
@@ -36,13 +42,23 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     listPods(userId),
     listSharedPods(userId),
   ]);
+  // The inviter is resolved first and the receipt marked shown LAST, once every read the page needs has succeeded: a
+  // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
+  const pendingInviter = await pendingReceipt(userId);
+  const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
+  // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
+  const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
   return (
     <FriendsView
       profile={profile}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} />}
       friends={friends}
       links={links}
-      accepted={typeof accepted === "string" ? (friends.find((f) => f.publicId === accepted) ?? null) : null}
+      accepted={
+        (typeof accepted === "string" ? friends.find((f) => f.publicId === accepted) : undefined) ??
+        (consumed && inviterPublicId !== null ? friends.find((f) => f.publicId === inviterPublicId) : undefined) ??
+        null
+      }
       origin={originFrom(await headers())}
       nowMs={now.getTime()}
       maxLinks={MAX_OPEN_INVITES}

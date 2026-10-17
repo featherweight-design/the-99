@@ -2,6 +2,11 @@
 // (presses at once, one invite), every count, the invariant (`held` ≥ the rows holding) after every write, a Clerk
 // refusal answered as a success and kept holding, an indeterminate send kept holding, a live QR re-shown from a
 // fresh request with the same token (and to nobody else), an expired QR, an admin Set, a group top-up and a revoke.
+// PR 3 (the newcomer's backend) adds: a claim and its mail (Resend stubbed), the resend cooldown, five wrong tries to
+// the end, a proven claim handed over with and without an account (and again after a reopen), the spend run twice
+// and in both orders with the webhook and the first `/friends` (one edge, one friendship, `held` down once, one
+// receipt), a lapsed or revoked reservation spending nothing, the sweep (returns, a failed revoke kept and retried,
+// a reconcile) and the purge's Clerk half.
 // Clerk is STUBBED: no real invitation is ever made.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
@@ -20,6 +25,17 @@ const T = `probe_inv_t_${run}`; // a second member of the group
 const O = `probe_inv_o_${run}`; // another account
 const K = `probe_inv_k_${run}`; // a sender whose QR outlives a key change
 const L = `probe_inv_l_${run}`; // a sender whose QR lapses while a write waits for the lock
+const P = `probe_inv_p_${run}`; // PR 3: the sender whose invites are claimed and spent
+const ADMIN3 = `probe_inv_admin3_${run}`;
+const N1 = `probe_inv_n1_${run}`; // PR 3: newcomers
+const N2 = `probe_inv_n2_${run}`;
+const N3 = `probe_inv_n3_${run}`;
+const N4 = `probe_inv_n4_${run}`;
+const Z = `probe_inv_z_${run}`; // PR 3: a sender whose account is purged
+const W = `probe_inv_w_${run}`; // PR 3: Z's invitee
+const Q = `probe_inv_q_${run}`; // PR 3: a sender with a backlog for the sweep
+const N5 = `probe_inv_n5_${run}`; // PR 3: a newcomer whose account was deleted
+const PR3 = [P, N1, N2, N3, N4, Z, W, Q, N5];
 const SECRET = "c0ffee".repeat(11).slice(0, 64);
 
 let failed = 0;
@@ -37,6 +53,7 @@ function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<C
     async create(input) { created.push(input); return answer(input); },
     async revoke(id) { revoked.push(id); return true; },
     async revokeFor(email, reservationId) { revokedFor.push({ email, reservationId }); return true; },
+    async findFor() { return { ok: true as const, id: null }; },
     async hasAccount() { return false; },
   };
   return { clerk, created, revoked, revokedFor };
@@ -269,20 +286,316 @@ async function main() {
     check("a value out of range is invalid", (await setInvites(ADMIN, S, 1001)).ok === false
       && (await setInvites(ADMIN, S, -1)).ok === false && (await topUpGroupInvites(ADMIN, groupId, "x")).ok === false);
 
+
+    // ------------------------------------------------------------------------------------------------------ PR 3
+    const { claimInvite, confirmCode, handOver } = await import("../src/lib/invites/claim");
+    const { spendInviteOnSignUp, takeReceipt } = await import("../src/lib/invites/spend");
+    const { sweepInvites } = await import("../src/lib/invites/sweep");
+    const { purgeAccount } = await import("../src/lib/account/purge");
+    const env = { RESEND_API_KEY: "re_probe", INVITE_EMAIL_FROM: "The 99 <invites@probe.dev>", INVITE_CODE_SECRET: SECRET };
+    const mailed: { to: string; text: string }[] = [];
+    const mail = async (_c: unknown, m: { to: string; subject: string; text: string; html: string }) => { mailed.push(m); return { ok: true as const }; };
+    const lastCode = () => mailed[mailed.length - 1].text.match(/is (\d{6})/)![1];
+    const stateOf = async (id: string) => (await db.execute<{ state: string; email: string | null; clerk: string | null; holds: string | null }>(sql`
+      select state, email, clerk_invitation_id as clerk, holds_until::text as holds from invite_reservations where id = ${id}`)).rows[0];
+    const idOfToken = async (tok: string) => {
+      const { secretHash } = await import("../src/lib/invites/tokens");
+      return (await db.execute<{ id: string }>(sql`select id from invite_reservations where qr_token_hash = ${secretHash(tok)}`)).rows[0].id;
+    };
+    const heldOf = async (who: string) => (await db.execute<{ held: number }>(sql`select coalesce((select held from invite_balances where user_id = ${who}), 0)::int as held`)).rows[0].held;
+    const clerk3 = stubClerk((i) => ({ ok: true, id: `tk_${i.reservationId.slice(0, 8)}_${i.notify ? "m" : "h"}`, url: `https://accounts.probe/sign-up?ticket=${i.reservationId.slice(0, 8)}` }));
+
+    check("Set 6 left for P", (await setInvites(ADMIN3, P, 6)).ok);
+    await db.execute(sql`insert into social_profiles (user_id, display_name) values (${P}, 'Sender P')`);
+
+    // Send code: refused as unconfigured BEFORE anything is claimed, then claimed with the code mailed.
+    const q1 = await showInviteQr(P, SECRET);
+    if (!q1.ok) throw new Error("no QR for P");
+    const r1 = await idOfToken(q1.token);
+    const unconf = await claimInvite(q1.token, "n1@x.dev", null, { env: { INVITE_CODE_SECRET: SECRET }, mail });
+    check("unconfigured mail refuses the claim", !unconf.ok && unconf.reason === "unconfigured");
+    check("…and claims nothing: the QR is still open and the 6 stand", (await stateOf(r1)).state === "qr_open" && (await left(P)) === 5);
+    check("a malformed address is invalid before anything is claimed", (await claimInvite(q1.token, "nope", null, { env, mail })).ok === false
+      && (await stateOf(r1)).state === "qr_open");
+    const c1 = await claimInvite(q1.token, " N1@X.dev ", null, { env, mail });
+    check("Send code claims it and mails the code", c1.ok && c1.mailed && mailed.length === 1 && mailed[0].to === "n1@x.dev" && /^\d{6}$/.test(lastCode()));
+    const sc1 = await stateOf(r1);
+    const days = Number((await db.execute<{ d: string }>(sql`select (extract(epoch from (holds_until - now())) / 86400)::text as d from invite_reservations where id = ${r1}`)).rows[0].d);
+    check("the claim holds 7 days, with the address", sc1.state === "claimed" && sc1.email === "n1@x.dev" && days > 6.99 && days <= 7, `${days.toFixed(3)} days`);
+    check("a claim holds the SAME invite the QR held: 5 left, 1 waiting", (await left(P)) === 5 && (await loadInviteCount(P)).waiting === 1);
+    await invariant(P, "a claim");
+    check("the watch reads it claimed", (await readSenderQr(P, q1.token))?.state === "claimed");
+    if (!c1.ok) throw new Error("claim failed");
+    const cookie1 = c1.claimSecret;
+
+    // The resend cooldown, another browser, and a changed address.
+    const wait = await claimInvite(q1.token, "n1@x.dev", cookie1, { env, mail });
+    check("a resend inside 60 seconds waits", !wait.ok && wait.reason === "wait" && (wait.waitMs ?? 0) > 0);
+    const later = new Date(Date.now() + 61_000);
+    check("another browser cannot resend or confirm", (await claimInvite(q1.token, "n1@x.dev", "other", { env, mail, now: later, clerk: ok.clerk })).ok === false
+      && (await confirmCode(q1.token, lastCode(), "other", { now: later, env })).ok === false);
+    const resent = await claimInvite(q1.token, "n1b@x.dev", cookie1, { env, mail, now: later, clerk: ok.clerk });
+    check("the same browser resends to a different address, the 7 days not restarted",
+      resent.ok && mailed.length === 2 && mailed[1].to === "n1b@x.dev" && (await stateOf(r1)).holds === sc1.holds);
+
+    // A resend to another address ends the old address's pending invitation first (a lost hand-over answer stores none).
+    const addr = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    await db.execute(sql`update invite_reservations set clerk_invitation_id = 'inv_prev' where id = ${r1}`);
+    const moved = await claimInvite(q1.token, "n1c@x.dev", cookie1, { env, mail, now: new Date(Date.now() + 130_000), clerk: addr.clerk });
+    check("a changed address first ends the old one's pending invitations, by id and by address", moved.ok
+      && addr.revoked.includes("inv_prev") && addr.revokedFor.some((r) => r.reservationId === r1 && r.email === "n1b@x.dev")
+      && (await stateOf(r1)).clerk === null && (await stateOf(r1)).email === "n1c@x.dev");
+    const failing = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    failing.clerk.revokeFor = async () => false;
+    const refused = await claimInvite(q1.token, "n1d@x.dev", cookie1, { env, mail, now: new Date(Date.now() + 260_000), clerk: failing.clerk });
+    check("…and an address change is refused while the old one's invitation cannot be ended", !refused.ok && refused.reason === "failed" && (await stateOf(r1)).email === "n1c@x.dev");
+
+    // Wrong tries to the end: four count, the fifth ends the row and its invite goes back.
+    const wrong = [] as string[];
+    for (let i = 0; i < 4; i += 1) {
+      const w = await confirmCode(q1.token, "000000" === lastCode() ? "111111" : "000000", cookie1, { env, now: later });
+      wrong.push(w.ok ? "ok" : w.reason === "wrong" ? `wrong:${w.triesLeft}` : w.reason);
+    }
+    check("four wrong codes count down the tries", wrong.join(",") === "wrong:4,wrong:3,wrong:2,wrong:1", wrong.join(","));
+    const fifth = await confirmCode(q1.token, "000000" === lastCode() ? "111111" : "000000", cookie1, { env, now: later });
+    check("the fifth ends the row (N12)", !fifth.ok && fifth.reason === "ended");
+    const ended1 = await stateOf(r1);
+    check("…revoked, the address erased, the invite back", ended1.state === "revoked" && ended1.email === null && (await left(P)) === 6);
+    check("a right code afterwards proves nothing", (await confirmCode(q1.token, lastCode(), cookie1, { env, now: later })).ok === false);
+    await invariant(P, "five wrong tries");
+
+    // A proven claim, handed over: the ticket is made quietly, ignoring an existing one, with the reservation id.
+    const q2 = await showInviteQr(P, SECRET);
+    if (!q2.ok) throw new Error("no QR 2");
+    const r2 = await idOfToken(q2.token);
+    const c2 = await claimInvite(q2.token, "n2@x.dev", null, { env, mail });
+    if (!c2.ok) throw new Error("claim 2 failed");
+    check("handing over before the code is proven ends", (await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk })).ok === false && clerk3.created.length === 0);
+    const wrong2 = await confirmCode(q2.token, lastCode() === "123456" ? "654321" : "123456", c2.claimSecret, { env });
+    check("a wrong code proves nothing and counts a try", !wrong2.ok && wrong2.reason === "wrong" && wrong2.triesLeft === 4);
+    check("the right code proves the mailbox", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok);
+    check("the same code is no good a second time", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok === false);
+    const h1 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
+    check("Continue hands over the invitation's url", h1.ok && h1.url.includes("ticket="));
+    const mk1 = clerk3.created[clerk3.created.length - 1];
+    check("…made with notify false, ignoreExisting and this reservation", mk1.notify === false && mk1.ignoreExisting === true && mk1.reservationId === r2 && mk1.emailAddress === "n2@x.dev");
+    const id1 = (await stateOf(r2)).clerk;
+    check("…its id stored, and no url", Boolean(id1) && id1?.endsWith("_h") === true);
+    const h2 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
+    check("a hand-over also ends whatever is still pending for the reservation before making one", clerk3.revokedFor.some((r) => r.reservationId === r2 && r.email === "n2@x.dev"));
+    check("continuing again revokes the stored invitation and makes a fresh one", h2.ok && clerk3.revoked.includes(id1!) && clerk3.created.length === 2);
+
+    // An address with an account draws N9 and the reservation keeps holding.
+    const q3 = await showInviteQr(P, SECRET);
+    if (!q3.ok) throw new Error("no QR 3");
+    const r3 = await idOfToken(q3.token);
+    const c3 = await claimInvite(q3.token, "has@x.dev", null, { env, mail });
+    if (!c3.ok) throw new Error("claim 3 failed");
+    await confirmCode(q3.token, lastCode(), c3.claimSecret, { env });
+    const withAccount = stubClerk(() => ({ ok: true, id: "never", url: "https://never" }));
+    withAccount.clerk.hasAccount = async () => true;
+    const h3 = await handOver(q3.token, c3.claimSecret, { clerk: withAccount.clerk });
+    check("an address with an account is N9, and creates nothing", !h3.ok && h3.reason === "account" && withAccount.created.length === 0);
+    check("…and its reservation keeps holding", (await stateOf(r3)).state === "claimed" && (await loadInviteCount(P)).waiting === 2);
+    await invariant(P, "a hand over");
+
+    // The spend: one transaction, idempotent, in either order with the first /friends.
+    const heldBefore = await heldOf(P);
+    const s1 = await spendInviteOnSignUp(N1, r2, "Ana");
+    check("the spend runs", s1.spent === true);
+    const spent = await stateOf(r2);
+    check("…the reservation spent, its address erased", spent.state === "spent" && spent.email === null);
+    check("…held down by exactly one", (await heldOf(P)) === heldBefore - 1, `${heldBefore} to ${await heldOf(P)}`);
+    const edge = (await db.execute<{ inviter: string; kind: string }>(sql`select inviter_user_id as inviter, kind from invite_edges where invitee_user_id = ${N1}`)).rows;
+    check("…one tree edge, inviter P, kind qr", edge.length === 1 && edge[0].inviter === P && edge[0].kind === "qr");
+    const links = (await db.execute<{ n: number }>(sql`select count(*)::int as n from friend_links where (user_id = ${P} and friend_user_id = ${N1}) or (user_id = ${N1} and friend_user_id = ${P})`)).rows[0].n;
+    check("…the friendship, both directions", links === 2);
+    const prof = (await db.execute<{ name: string }>(sql`select display_name as name from social_profiles where user_id = ${N1}`)).rows[0];
+    check("…the newcomer's profile, from the first name", prof?.name === "Ana");
+    const s1b = await spendInviteOnSignUp(N1, r2, "Ana");
+    check("run twice: already, nothing more written", s1b.spent === false && (await heldOf(P)) === heldBefore - 1
+      && (await db.execute<{ n: number }>(sql`select count(*)::int as n from invite_edges where invitee_user_id = ${N1}`)).rows[0].n === 1);
+    check("the receipt is drawn once", (await takeReceipt(N1)) === P && (await takeReceipt(N1)) === null);
+    await invariant(P, "a spend");
+
+    // Both orders: the webhook first, then the page; and the page first, then the webhook.
+    const e1 = await sendEmailInvite(P, "n3@x.dev", { clerk: ok.clerk });
+    const e2 = await sendEmailInvite(P, "n4@x.dev", { clerk: ok.clerk });
+    check("two more email invites reserved", e1.ok && e2.ok);
+    const rs = (await db.execute<{ id: string; email: string }>(sql`select id, email from invite_reservations where user_id = ${P} and state = 'reserved' order by email`)).rows;
+    const rN3 = rs.find((r) => r.email === "n3@x.dev")!.id;
+    const rN4 = rs.find((r) => r.email === "n4@x.dev")!.id;
+    const orderA = [] as (string | null)[];
+    await spendInviteOnSignUp(N3, rN3, "Cy");
+    orderA.push(await takeReceipt(N3));
+    await spendInviteOnSignUp(N3, rN3, "Cy");
+    orderA.push(await takeReceipt(N3));
+    check("webhook first, then the page: one band", orderA.join(",") === `${P},`, orderA.join(","));
+    const orderB = [] as (string | null)[];
+    orderB.push(await takeReceipt(N4));
+    await spendInviteOnSignUp(N4, rN4, "Di");
+    orderB.push(await takeReceipt(N4));
+    orderB.push(await takeReceipt(N4));
+    check("the page first, then the webhook: one band", orderB.join(",") === `,${P},`, orderB.join(","));
+    check("an email invite's edge is kind email", (await db.execute<{ kind: string }>(sql`select kind from invite_edges where invitee_user_id = ${N3}`)).rows[0]?.kind === "email");
+
+    // Nothing is spent on a reservation that is not waiting, is lapsed, or is not one of ours.
+    const stranger = `probe_inv_x_${run}`;
+    check("a revoked reservation spends nothing", (await spendInviteOnSignUp(stranger, r1, "X")).spent === false);
+    check("a spent reservation spends nothing for another account", (await spendInviteOnSignUp(stranger, r2, "X")).spent === false);
+    check("an unknown id spends nothing", (await spendInviteOnSignUp(stranger, "00000000-0000-4000-8000-000000000000", "X")).spent === false
+      && (await spendInviteOnSignUp(stranger, "not-an-id", "X")).spent === false);
+    const heldLapsed = await heldOf(P);
+    const lapsedId = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, email, holds_until, created_at)
+      values (${P}, 'email', 'reserved', 'late@x.dev', now() - interval '1 minute', now() - interval '8 days') returning id`)).rows[0].id;
+    const sl = await spendInviteOnSignUp(stranger, lapsedId, "X");
+    check("a lapsed reservation spends nothing and forms nothing", sl.spent === false && (await heldOf(P)) === heldLapsed
+      && (await db.execute<{ n: number }>(sql`select count(*)::int as n from invite_edges where invitee_user_id = ${stranger}`)).rows[0].n === 0
+      && (await db.execute<{ n: number }>(sql`select count(*)::int as n from friend_links where user_id = ${stranger} or friend_user_id = ${stranger}`)).rows[0].n === 0
+      && (await db.execute<{ n: number }>(sql`select count(*)::int as n from social_profiles where user_id = ${stranger}`)).rows[0].n === 0);
+    await invariant(P, "the spends");
+
+    // The sweep: lapsed rows are returned after their invitations are ended; a failed revoke keeps the row, and the
+    // id, for the next run; an indeterminate send is reconciled.
+    const sw = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    const failIds = new Set<string>();
+    sw.clerk.revoke = async (id) => { sw.revoked.push(id); return !failIds.has(id); };
+    const found = new Map<string, string>();
+    sw.clerk.findFor = async (_e, rid) => ({ ok: true, id: found.get(rid) ?? null });
+    const qOld = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, qr_token_hash, qr_expires_at, created_at)
+      values (${P}, 'qr', 'qr_open', ${`probe_h_${run}_a`}, now() - interval '1 minute', now() - interval '20 minutes') returning id`)).rows[0].id;
+    const cOld = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, qr_token_hash, qr_expires_at, holds_until, email, clerk_invitation_id, created_at)
+      values (${P}, 'qr', 'claimed', ${`probe_h_${run}_b`}, now() - interval '8 days', now() - interval '1 hour', 'old@x.dev', 'inv_claimed_old', now() - interval '8 days') returning id`)).rows[0].id;
+    const eOldFail = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, clerk_invitation_id, created_at)
+      values (${P}, 'email', 'reserved', now() - interval '1 hour', 'fail@x.dev', 'inv_fail', now() - interval '8 days') returning id`)).rows[0].id;
+    const eNoId = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, created_at)
+      values (${P}, 'email', 'reserved', now() - interval '1 hour', 'noid@x.dev', now() - interval '8 days') returning id`)).rows[0].id;
+    const eUnknown = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, created_at)
+      values (${P}, 'email', 'reserved', now() + interval '6 days', 'unk@x.dev', now() - interval '10 minutes') returning id`)).rows[0].id;
+    const eFresh = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, created_at)
+      values (${P}, 'email', 'reserved', now() + interval '6 days', 'fresh@x.dev', now()) returning id`)).rows[0].id;
+    found.set(eUnknown, "inv_found");
+    found.set(eFresh, "inv_should_not_be_looked_up");
+    failIds.add("inv_fail");
+    const rep1 = await sweepInvites(new Date(), sw.clerk);
+    check("the sweep returns the lapsed QR, the claim and the unreferenced email", (await stateOf(qOld)).state === "returned"
+      && (await stateOf(cOld)).state === "returned" && (await stateOf(eNoId)).state === "returned", JSON.stringify(rep1));
+    check("…each address erased, the invitation id cleared", (await stateOf(cOld)).email === null && (await stateOf(cOld)).clerk === null);
+    check("…the claim's invitation revoked by its id AND by address and reservation (a replacement may not be the stored one), the id-less one by address",
+      sw.revoked.includes("inv_claimed_old") && sw.revokedFor.some((r) => r.reservationId === cOld && r.email === "old@x.dev")
+      && sw.revokedFor.some((r) => r.reservationId === eNoId && r.email === "noid@x.dev"));
+    const failedRow = await stateOf(eOldFail);
+    check("a revoke that fails keeps the row reserved, with its id and address, for the next run", failedRow.state === "reserved" && failedRow.clerk === "inv_fail" && failedRow.email === "fail@x.dev");
+    check("an indeterminate send is reconciled: Clerk's id recorded", (await stateOf(eUnknown)).clerk === "inv_found", JSON.stringify([await stateOf(eUnknown), rep1]));
+    check("a send younger than two minutes is not looked up", (await stateOf(eFresh)).clerk === null);
+    failIds.clear();
+    const rep2 = await sweepInvites(new Date(), sw.clerk);
+    check("the next run returns the one whose revoke failed", (await stateOf(eOldFail)).state === "returned" && (await stateOf(eOldFail)).clerk === null, JSON.stringify(rep2));
+    check("a holding reservation is never returned", (await stateOf(eUnknown)).state === "reserved" && (await stateOf(eFresh)).state === "reserved");
+    const rep3 = await sweepInvites(new Date(), sw.clerk);
+    check("a run with nothing to do returns nothing", rep3.returned === 0 && rep3.revoked === 0, JSON.stringify(rep3));
+    await invariant(P, "the sweep");
+
+    // A delayed user.created for an account that was deleted spends nothing, even with its raw id long retired.
+    check("Set 20 left for P again", (await setInvites(ADMIN3, P, 20)).ok);
+    check("a send for the deleted account's invitation", (await sendEmailInvite(P, "tomb@x.dev", { clerk: ok.clerk })).ok);
+    const tombRes = (await db.execute<{ id: string }>(sql`select id from invite_reservations where user_id = ${P} and email = 'tomb@x.dev'`)).rows[0].id;
+    const { tombstoneHash } = await import("../src/lib/account/purge");
+    await db.execute(sql`insert into account_tombstones (id_hash, clerk_id) values (${tombstoneHash(N5)}, null)`);
+    const deleted = await spendInviteOnSignUp(N5, tombRes, "Eve");
+    check("a deleted account's late sign-up event spends nothing and recreates nothing", deleted.spent === false && (deleted as { reason?: string }).reason === "deleted"
+      && (await stateOf(tombRes)).state === "reserved"
+      && Number((await db.execute<{ n: number }>(sql`select (select count(*) from social_profiles where user_id = ${N5}) + (select count(*) from friend_links where user_id = ${N5} or friend_user_id = ${N5}) + (select count(*) from invite_edges where invitee_user_id = ${N5}) as n`)).rows[0].n) === 0);
+    await invariant(P, "a refused late spend");
+
+    // Two hand-overs overlap: the second finished (another address proven) while Clerk was asked for the first, so the
+    // first loses, revokes what it made and stores nothing.
+    const q4 = await showInviteQr(P, SECRET);
+    if (!q4.ok) throw new Error("no QR 4");
+    const r4 = await idOfToken(q4.token);
+    const c4 = await claimInvite(q4.token, "race-a@x.dev", null, { env, mail });
+    if (!c4.ok) throw new Error("claim 4 failed");
+    await confirmCode(q4.token, lastCode(), c4.claimSecret, { env });
+    const raceClerk = stubClerk(() => ({ ok: true, id: "inv_loser", url: "https://accounts.probe/loser" }));
+    raceClerk.clerk.create = async (i) => {
+      raceClerk.created.push(i);
+      // The other hand-over wins while this create is in flight.
+      await db.execute(sql`update invite_reservations set email = 'race-b@x.dev', clerk_invitation_id = 'inv_winner' where id = ${r4}`);
+      return { ok: true, id: "inv_loser", url: "https://accounts.probe/loser" };
+    };
+    const overlapped = await handOver(q4.token, c4.claimSecret, { clerk: raceClerk.clerk });
+    check("an overlapped hand-over loses: ended, its own invitation revoked, the winner's id kept",
+      !overlapped.ok && raceClerk.revoked.includes("inv_loser") && (await stateOf(r4)).clerk === "inv_winner");
+
+    // A backlog of refused sends cannot starve a reconcile: each run draws its batch at random.
+    const bulk = Array.from({ length: 60 }, (_, i) => `('${Q}', 'email', 'reserved', 'bulk${i}@x.dev', now() + interval '6 days', now() - interval '10 minutes')`).join(", ");
+    await db.execute(sql.raw(`insert into invite_reservations (user_id, kind, state, email, holds_until, created_at) values ${bulk}`));
+    await db.execute(sql`insert into invite_balances (user_id, held) values (${Q}, 100)`);
+    const target = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, email, holds_until, created_at)
+      values (${Q}, 'email', 'reserved', 'target@x.dev', now() + interval '6 days', now() - interval '10 minutes') returning id`)).rows[0].id;
+    const bl = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    bl.clerk.findFor = async (_e, rid) => ({ ok: true, id: rid === target ? "inv_target" : null });
+    let reconciledAt = -1;
+    for (let run = 0; run < 25 && reconciledAt < 0; run += 1) {
+      await sweepInvites(new Date(), bl.clerk);
+      if ((await stateOf(target)).clerk === "inv_target") reconciledAt = run + 1;
+    }
+    check("a backlog over the batch still reaches an indeterminate send", reconciledAt > 0, `after ${reconciledAt} runs`);
+
+    // The purge's Clerk half: the sender's invitations are revoked after it commits, the tree kept with a null side.
+    await db.execute(sql`insert into invite_balances (user_id, held) values (${Z}, 3)`);
+    await db.execute(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, clerk_invitation_id, created_at)
+      values (${Z}, 'email', 'reserved', now() + interval '3 days', 'z@x.dev', 'inv_z', now())`);
+    await db.execute(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, created_at)
+      values (${Z}, 'email', 'reserved', now() + interval '3 days', 'z-lost@x.dev', now())`);
+    await db.execute(sql`insert into invite_edges (inviter_user_id, invitee_user_id, kind) values (${Z}, ${W}, 'email')`);
+    const purgeRevoked: string[] = [];
+    const purgeFor: string[] = [];
+    const rep = await purgeAccount(Z, {
+      revoke: async (id) => { purgeRevoked.push(id); return true; },
+      revokeFor: async (email) => { purgeFor.push(email); return true; },
+    });
+    check("the purge revokes the sender's pending invitation after it commits", purgeRevoked.join() === "inv_z" && rep.invitations.revoked === 3);
+    check("…and finds sends by address and reservation too, with or without a stored id, which nothing else could after the purge", purgeFor.slice().sort().join() === "z-lost@x.dev,z@x.dev" && rep.invitations.found === 3);
+    check("…and the reservations and balance are gone", Number((await db.execute<{ n: number }>(sql`select (select count(*) from invite_reservations where user_id = ${Z}) + (select count(*) from invite_balances where user_id = ${Z}) as n`)).rows[0].n) === 0);
+    const zEdge = (await db.execute<{ inviter: string | null; invitee: string | null }>(sql`select inviter_user_id as inviter, invitee_user_id as invitee from invite_edges where invitee_user_id = ${W}`)).rows;
+    check("the tree is kept with the deleted side null", zEdge.length === 1 && zEdge[0].inviter === null && zEdge[0].invitee === W);
+    const rep2b = await purgeAccount(Z, { revoke: async () => { throw new Error("must not be asked"); } });
+    check("a re-run of the purge asks Clerk for nothing", rep2b.invitations.found === 0);
+
     const { rows: events } = await db.execute<{ kind: string; n: number }>(sql`
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
       byKind.invites_set === 10 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
   } finally {
-    await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
-    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L})`);
-    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L})`);
+    await db.execute(sql`delete from admin_events where actor_id in (${ADMIN}, ${ADMIN3})`);
+    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);
+    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);
+    const pr3 = PR3.map((id) => `'${id}'`).join(", ");
+    await db.execute(sql.raw(`delete from invite_edges where inviter_user_id in (${pr3}) or invitee_user_id in (${pr3})`));
+    await db.execute(sql.raw(`delete from friend_links where user_id in (${pr3}) or friend_user_id in (${pr3})`));
+    await db.execute(sql.raw(`delete from social_profiles where user_id in (${pr3})`));
+    await db.execute(sql.raw(`delete from user_data_stamps where user_id in (${pr3})`));
+    const { tombstoneHash: th } = await import("../src/lib/account/purge");
+    await db.execute(sql`delete from account_tombstones where id_hash = ${th(N5)}`);
     if (groupId) await db.execute(sql`delete from flag_groups where id = ${groupId}`);
     const { rows: left } = await db.execute<{ n: number }>(sql`
-      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}))
-        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}))
-        + (select count(*) from admin_events where actor_id = ${ADMIN}) as n`);
+      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q}))
+        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q}))
+        + (select count(*) from invite_edges where inviter_user_id = any(${sql.param(PR3)}::text[]) or invitee_user_id = any(${sql.param(PR3)}::text[]))
+        + (select count(*) from social_profiles where user_id = any(${sql.param(PR3)}::text[]))
+        + (select count(*) from admin_events where actor_id in (${ADMIN}, ${ADMIN3})) as n`);
     check("cleanup left nothing", Number(left[0].n) === 0);
   }
   console.log(failed === 0 ? "\nprobe:invites passed" : `\nprobe:invites FAILED ${failed}`);

@@ -42,6 +42,11 @@ export type ClerkInvites = {
    * a reservation whose invitation id was never stored (an indeterminate send). True when none is left pending.
    */
   revokeFor(emailAddress: string, reservationId: string): Promise<boolean>;
+  /**
+   * The id of the PENDING invitation to this address whose public metadata names this reservation: the sweep's
+   * reconcile for a send whose answer was lost. `id: null` is none (Clerk made nothing); `ok: false` is not known.
+   */
+  findFor(emailAddress: string, reservationId: string): Promise<{ ok: true; id: string | null } | { ok: false }>;
   /** Whether an account holds this address (R6's N9). */
   hasAccount(emailAddress: string): Promise<boolean>;
 };
@@ -64,6 +69,21 @@ export function classifyClerkError(error: unknown): CreateResult & { ok: false }
 export function revokeSettled(error: unknown): boolean {
   const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
   return status === 400 || status === 404 || status === 410 || status === 422;
+}
+
+/** Every pending invitation to the address that names this reservation, across pages; null when not all were read. */
+async function pendingFor(emailAddress: string, reservationId: string): Promise<{ id: string }[] | null> {
+  const client = await clerkClient();
+  // Every page: the query matches substrings, so other invitations can fill the first.
+  const ours: { id: string }[] = [];
+  for (let offset = 0; ; offset += INVITATION_PAGE) {
+    const page = await client.invitations.getInvitationList({
+      query: emailAddress, status: "pending", limit: INVITATION_PAGE, offset,
+    });
+    ours.push(...page.data.filter((i) => i.publicMetadata?.inviteReservation === reservationId));
+    if (page.data.length < INVITATION_PAGE) return ours;
+    if (offset >= INVITATION_PAGE * MAX_INVITATION_PAGES) return null;
+  }
 }
 
 export const clerkInvites: ClerkInvites = {
@@ -91,21 +111,20 @@ export const clerkInvites: ClerkInvites = {
   },
   async revokeFor(emailAddress, reservationId) {
     try {
-      const client = await clerkClient();
-      // Every page: the query matches substrings, so other invitations can fill the first.
-      const ours: { id: string }[] = [];
-      for (let offset = 0; ; offset += INVITATION_PAGE) {
-        const page = await client.invitations.getInvitationList({
-          query: emailAddress, status: "pending", limit: INVITATION_PAGE, offset,
-        });
-        ours.push(...page.data.filter((i) => i.publicMetadata?.inviteReservation === reservationId));
-        if (page.data.length < INVITATION_PAGE) break;
-        if (offset >= INVITATION_PAGE * MAX_INVITATION_PAGES) return false;
-      }
+      const ours = await pendingFor(emailAddress, reservationId);
+      if (ours === null) return false;
       const done = await Promise.all(ours.map((i) => clerkInvites.revoke(i.id)));
       return done.every(Boolean);
     } catch {
       return false;
+    }
+  },
+  async findFor(emailAddress, reservationId) {
+    try {
+      const ours = await pendingFor(emailAddress, reservationId);
+      return ours === null ? { ok: false } : { ok: true, id: ours[0]?.id ?? null };
+    } catch {
+      return { ok: false };
     }
   },
   async hasAccount(emailAddress) {
