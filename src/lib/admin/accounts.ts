@@ -135,30 +135,17 @@ type GetUser = (id: string) => Promise<ClerkUser | null>;
 type FindByEmail = (email: string) => Promise<{ id: string; emailAddresses: { emailAddress: string }[] }[]>;
 export type IdentityDeps = { getUser: GetUser; findByEmail: FindByEmail; deadlineMs?: number };
 
-// Each answer is copied into the narrow shape here: handing Clerk's whole `User` type to a structural check against
-// these shapes is deep enough to overflow the type checker's stack.
 const identityDeps: IdentityDeps = {
   getUser: async (id) => {
     try {
-      const u = await (await clerkClient()).users.getUser(id);
-      return {
-        id: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        fullName: u.fullName,
-        username: u.username,
-        primaryEmailAddress: u.primaryEmailAddress ? { emailAddress: u.primaryEmailAddress.emailAddress } : null,
-      };
+      return await (await clerkClient()).users.getUser(id);
     } catch (error) {
       // Clerk answers a missing user with a 404; anything else is a failure the caller reports.
       if ((error as { status?: number }).status === 404) return null;
       throw error;
     }
   },
-  findByEmail: async (email) => {
-    const { data } = await (await clerkClient()).users.getUserList({ emailAddress: [email], limit: 2 });
-    return data.map((u) => ({ id: u.id, emailAddresses: u.emailAddresses.map((e) => ({ emailAddress: e.emailAddress })) }));
-  },
+  findByEmail: async (email) => (await (await clerkClient()).users.getUserList({ emailAddress: [email], limit: 2 })).data,
 };
 
 /** The raw identity behind one account. Throws when Clerk fails or is late, so the reveal shows and logs nothing. */
