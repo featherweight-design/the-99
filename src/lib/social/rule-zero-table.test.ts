@@ -27,6 +27,16 @@ describe("tableGrantQuery", () => {
   });
 });
 
+describe("tableGrantQuery, closed", () => {
+  const q = tableGrantQuery(VIEWER, TABLE, db, true).toSQL();
+
+  it("asks the same grant of a table whose night has ended, on the database's clock", () => {
+    expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
+    expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
+    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and "rule_zero_tables"\."expires_at" <= now\(\)\)$/);
+  });
+});
+
 describe("seatTargetQuery", () => {
   const q = seatTargetQuery(VIEWER, TABLE, 2).toSQL();
 

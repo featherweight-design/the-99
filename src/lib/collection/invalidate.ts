@@ -102,6 +102,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // A friend's page (Social R2 P2) reads the FRIEND's collection, to leave out a line it already reaches; this
   // reader's replace moves nothing there, and the page is dynamic. Listed for the import, as /about is.
   { path: "/friends/[publicId]", dynamic: true },
+  // A Rule 0 table (plan PR 3) reads each seated deck's list and reading, never this reader's collection; its
+  // loader imports the schema through `db`, so it is listed as /about is.
+  { path: "/friends/table/[id]", dynamic: true },
   // The card-scan lab (staging only) never reads the collection: its "What card was it?" step searches
   // `cards` and labels a `scan_lab_results` row, through `db` and so the whole schema. Listed as /about is.
   { path: "/lab/scan", dynamic: false },

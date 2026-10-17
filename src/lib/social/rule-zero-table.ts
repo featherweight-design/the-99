@@ -93,8 +93,11 @@ export type TableView = {
 const viewerSeat = alias(ruleZeroSeats, "viewer_seat");
 const viewerIn = alias(podMembers, "viewer_in");
 
-/** The table, only through the viewer's grant: seated, open, still in the pod. Apart so a test can render its SQL. */
-export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db) {
+/**
+ * The table, only through the viewer's grant: seated, open, still in the pod. Apart so a test can render its SQL.
+ * `closed` asks the same grant of a table whose night has ended, for the expired page (L4, H3).
+ */
+export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db, closed = false) {
   return q
     .select({ podName: pods.name, podOwner: pods.ownerUserId, closesAt: ruleZeroTables.expiresAt, setBy: ruleZeroTables.setBy, setByName: socialProfiles.displayName })
     .from(ruleZeroTables)
@@ -102,7 +105,7 @@ export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeo
     .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
-    .where(and(eq(ruleZeroTables.id, tableId), sql`${ruleZeroTables.expiresAt} > now()`));
+    .where(and(eq(ruleZeroTables.id, tableId), closed ? sql`${ruleZeroTables.expiresAt} <= now()` : sql`${ruleZeroTables.expiresAt} > now()`));
 }
 
 const viewerFriend = alias(friendLinks, "viewer_friend");
@@ -315,4 +318,26 @@ function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDep
     }
     return (await readStoredReading(target.deckId, target.userId, deps)) ? "read" : "skipped";
   });
+}
+
+/** What the expired page (L4, H3) draws: the pod, who set the table (null when the viewer did), and the seated faces. */
+export type ClosedTable = { podName: string; setBy: string | null; faces: { name: string; artCropUri: string | null }[] };
+
+/**
+ * The viewer's own table after its night ended, or null: not found, still open, not seated, or no longer in the pod.
+ * The same grant as `loadTable` on the other side of the clock, and the same seats; nothing but names and art leaves.
+ * A pod's expired tables are deleted at its next setup, so this answers only until then.
+ */
+export async function loadClosedTable(viewerId: string, tableId: unknown): Promise<ClosedTable | null> {
+  if (!isUuid(tableId)) return null;
+  return db.transaction(async (tx) => {
+    const [table] = await tableGrantQuery(viewerId, tableId, tx, true);
+    if (!table) return null;
+    const rows = await seatsQuery(viewerId, tableId, tx);
+    return {
+      podName: table.podName,
+      setBy: table.setBy === viewerId ? null : table.setByName,
+      faces: rows.map((r) => ({ name: r.displayName, artCropUri: r.commanderArt })),
+    };
+  }, { isolationLevel: "repeatable read" });
 }

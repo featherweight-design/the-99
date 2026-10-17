@@ -4,6 +4,7 @@
  * has hydrated and the reader's own after (`undefined`), so the two first renders agree and a clock time is
  * never a stranger's.
  */
+import { ruleZeroCopy } from "../copy/rule-zero";
 import { socialCopy } from "../copy/social";
 
 const DAY_MS = 86_400_000;
@@ -51,4 +52,17 @@ export function expiresWhen(expires: Date, now: Date, timeZone?: string): string
     ? { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }
     : { weekday: "short", month: "short", day: "numeric" };
   return fmt(opts, timeZone).format(expires);
+}
+
+/**
+ * `9:40 pm`, `9:40 pm tomorrow`, or `12:30 am Mon`: when a Rule 0 table closes, by calendar day in the zone. A table
+ * lasts 24 hours, which is usually today or tomorrow, but the night the clocks spring forward it can end two calendar
+ * days on, and the weekday then names it.
+ */
+export function closesWhen(closes: Date, now: Date, timeZone?: string): string {
+  const time = fmt({ hour: "numeric", minute: "2-digit" }, timeZone).format(closes).replace(/\s?([AP])M$/, (_, m: string) => ` ${m.toLowerCase()}m`);
+  const days = dayNumber(closes, timeZone) - dayNumber(now, timeZone);
+  if (days <= 0) return time;
+  if (days === 1) return ruleZeroCopy.page.closesTomorrow(time);
+  return ruleZeroCopy.page.closesOn(time, fmt({ weekday: "short" }, timeZone).format(closes));
 }

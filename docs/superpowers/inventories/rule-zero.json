@@ -1,0 +1,84 @@
+{
+  "feature": "Rule 0 PR 3: the read-only table page at /friends/table/[id] (plan 2026-10-16-rule-zero.md, PR 3; the read boards T1 to T10, the needsAnalysis seat and the expired page L4/H3)",
+  "note": "Needs RULE_ZERO_ENABLED=true and its parent SOCIAL_FRIENDS_ENABLED=true for the reader (registry: RULE_ZERO_ENABLED needs SOCIAL_FRIENDS_ENABLED), and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_USER set to the account the sheet signs in as (E2E_AUDIT_USER_EMAIL, the audit account user_3Hdjdoc...) on a SCRATCH BRANCH off local-dev only: the seed refuses production, staging and local-dev (assertScratchBranch) and must equal RZ_FIXTURE_BRANCH. It seeds Colin's pod Thursday night (you, Colin the owner, Peter, and Max, Colin's friend and not yours) with fixed table ids, every reading a real analysis of a cloned list. The open tables close 20 hours after the seed runs, so reseed before a rerun the next day. The sheet itself writes nothing: the page neither marks seen nor reads on the spot in PR 3.",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 2300 },
+    { "label": "desktop", "width": 1300, "height": 1350 }
+  ],
+  "out": "contact-sheets/rule-zero",
+  "rows": [
+    {
+      "id": "t1",
+      "label": "T1 balanced: four seats at bracket 3, no flag",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000001", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t2",
+      "label": "T2 one high: Colin at 4, an assembled two-card combo",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000002", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t3",
+      "label": "T3 one low: Peter at 2",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000003", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t4",
+      "label": "T4 one high, one low: Colin at 4, Peter at 2",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000004", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t5",
+      "label": "T5 two-seat split: you at 3, Colin at 4, set by you",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000005", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t6",
+      "label": "T6 ranges: Colin 4-5 declared 4, Peter 1-2 undeclared",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000006", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t7",
+      "label": "T7 drifted: Colin 4-5 with a declared 1 outside it",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000007", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t8",
+      "label": "T8 stale and illegal: Colin edited since read, Peter 87 cards, Max 101",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000008", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t9",
+      "label": "T9 unread: Peter's legal deck has no reading",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000009", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "t10",
+      "label": "T10 not enough: only you read, Peter 87 cards, Max waiting for a deck",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000010", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "needs-analysis",
+      "label": "needsAnalysis: Peter's row is one this deployment cannot read",
+      "view": "src/components/rule-zero/table-body.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000011", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "expired",
+      "label": "Expired (L4/H3): the night is over, faces down",
+      "view": "src/components/rule-zero/table-closed.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000012", "wait": "[data-testid=table-closed]", "settle": 1200 }]
+    }
+  ]
+}
