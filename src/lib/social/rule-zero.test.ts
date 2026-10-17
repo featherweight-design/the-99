@@ -1,8 +1,9 @@
 // A table is seen only from the viewer's own seat, while it is open on the DATABASE's clock, and while the viewer is
 // still in its pod. Only the emitted SQL shows that (the `built.test.ts` precedent); `probe:rule-zero` proves the
 // answers, including a table expiring between two reads.
+import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
-import { markSeen, openTablesQuery, podSetupMembers, reseatTable, setSeatDeck, setTable } from "./rule-zero";
+import { markSeen, openTablesQuery, podSetup, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
 
 const VIEWER = "user_viewer";
 const POD = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -41,5 +42,37 @@ describe("the writes refuse a malformed ask before reading anything", () => {
     expect(await markSeen(VIEWER, POD, "2026-10-17")).toBe(false);
     expect(await markSeen(VIEWER, POD, new Date("nope"))).toBe(false);
     expect(await podSetupMembers(VIEWER, "x")).toEqual([]);
+  });
+});
+
+describe("setup's decks (G2, G3, G8)", () => {
+  const q = new PgDialect().sqlToQuery(setupDecksQuery(VIEWER, POD));
+
+  it("lists a member's decks only for the viewer and the viewer's friends, and only in a pod the viewer is in", () => {
+    expect(q.sql).toContain("exists (select 1 from \"pod_members\" vi where vi.pod_id = pm.pod_id and vi.user_id = $");
+    expect(q.sql).toContain("pm.user_id = $");
+    expect(q.sql).toContain("exists (select 1 from \"friend_links\" fl where fl.user_id = $");
+    expect(q.sql).toContain("fl.friend_user_id = pm.user_id");
+  });
+
+  it("reads a deck's last game from that deck's own games, aliased", () => {
+    expect(q.sql).toContain("(select max(g.played_at) from \"deck_games\" g where g.deck_id = d.id)");
+  });
+
+  it("lists newest first, as the game log's picker does", () => {
+    expect(q.sql).toContain("order by sp.public_id, d.created_at desc, d.id");
+  });
+
+  it("starts a seat on the most recently played deck, else the most recently edited", () => {
+    const deck = (deckId: string, lastPlayed: string | null, lastEdited: string) => ({ deckId, lastPlayed, lastEdited });
+    expect(startDeck([])).toBeNull();
+    expect(startDeck([deck("a", null, "2026-10-10"), deck("b", "2026-10-01", "2026-09-01"), deck("c", null, "2026-10-12")])).toBe("b");
+    expect(startDeck([deck("a", null, "2026-10-10"), deck("c", null, "2026-10-12")])).toBe("c");
+    expect(startDeck([deck("a", "2026-10-01", "2026-10-01"), deck("b", "2026-10-01", "2026-10-05")])).toBe("b");
+  });
+
+  it("takes only ids", async () => {
+    expect(await podSetup(VIEWER, "x")).toBeNull();
+    expect(await tableSetup(VIEWER, "x")).toBeNull();
   });
 });

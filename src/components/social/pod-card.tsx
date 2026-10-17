@@ -12,9 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Pod, PodMember } from "../../lib/social/access";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, POD_NAME_MAX } from "../../lib/social/client-rules";
-import { FadingImg } from "../ui/hydrated-art";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
-import { faceInitials } from "./face";
+import { SeatArt } from "./seat-art";
 import { PodMenu } from "./pod-menu";
 import { Checkbox } from "../ui/checkbox";
 
@@ -44,25 +43,7 @@ function Seat({ member, podName, onRemove }: { member: PodMember; podName: strin
   const tag = member.isYou ? null : member.isOwner ? copy.ownerTag : !member.isFriend ? copy.notFriendTag : null;
   return (
     <li className="relative flex min-w-0 flex-col gap-[6px]" data-testid="pod-seat" data-you={member.isYou ? "" : undefined}>
-      <span
-        aria-hidden
-        className={`relative block h-[74px] overflow-hidden rounded-[10px] md:h-[84px] ${
-          member.isYou
-            ? "[border:1px_solid_var(--accent)] shadow-[0_0_0_1px_var(--accent),0_10px_24px_rgba(0,0,0,.45)]"
-            : "[border:1px_solid_rgba(255,255,255,.08)] shadow-[0_10px_24px_rgba(0,0,0,.45)]"
-        }`}
-      >
-        {art ? (
-          <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
-        ) : (
-          <span
-            data-testid="pod-seat-initials"
-            className="flex h-full w-full items-center justify-center bg-[radial-gradient(120px_80px_at_50%_40%,color-mix(in_oklab,var(--elevated)_50%,var(--border-dashed)),var(--surface))] font-display text-[26px] font-bold text-[color:var(--fg-muted)]"
-          >
-            {faceInitials(member.displayName)}
-          </span>
-        )}
-      </span>
+      <SeatArt art={art} name={member.displayName} ring={member.isYou} />
       <span className="flex min-w-0 items-baseline gap-[6px] font-sans text-[13px] font-medium text-[color:var(--fg)]">
         <span className="min-w-0 truncate" data-testid="pod-seat-name">{member.isYou ? copy.you : member.displayName}</span>
         {tag ? <small className="flex-none font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small> : null}

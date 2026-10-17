@@ -30,6 +30,7 @@ export const ruleZeroCopy = {
     whoSub: (pod: string) => `${pod} · pick tonight’s players. A game seats 2 to 8.`,
     noDecks: "no decks yet",
     picksOwn: "picks their own", // tile sub for a member who isn't your friend
+    decks: (n: number) => (n === 1 ? "1 deck" : `${n} decks`), // tile sub for you and a friend with decks ("5 decks")
     count: seated,
     next: "Next: decks",
     tooFew: "Seat one more player.",
@@ -46,9 +47,20 @@ export const ruleZeroCopy = {
     notFriendRow: (name: string) => `${name} picks their own`,
     notFriendSub: "not your friend, so their decks aren’t listed",
     friendDecksTitle: (name: string) => `${name}’s deck`,
+    yourDecksTitle: "Your deck", // the same screen for your own seat
+    // Not drawn: your own seat with no deck (you have none, or Seats reopens a seat you cleared). Its pick is made on
+    // the table, from your own seat.
+    yourSeatWaits: "Pick yours on the table",
+    friendDecksList: (name: string) => `${name}’s decks`, // the list's name
+    backToSeats: "Back to the seats", // the ‹ on a player's decks
+    whoGroup: "Who is playing", // the tiles' group name
+    close: "Close",
     friendDecksFoot: "Name and commander only. Brackets appear once the table is set.",
     back: "Players", // "‹ Players"
     set: "Set the table",
+    // Not drawn by the boards: a Set the table or Seats the server refused (the table closed, a member left), in the
+    // warning slot, role alert. The sheet stays open with the seats kept.
+    failed: "We couldn’t set the table. Try again.",
   },
 
   // The page and the read (T1 to T10)

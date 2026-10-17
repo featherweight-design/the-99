@@ -21,7 +21,7 @@ import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
 import { PodsPane } from "../../components/social/pods-pane";
 import { MAX_OPEN_INVITES } from "../../lib/social/rules";
-import { ACCEPTED_PARAM, originFrom } from "../../lib/social/client-rules";
+import { ACCEPTED_PARAM, INVITE_PARAM, originFrom } from "../../lib/social/client-rules";
 import { FriendsView } from "../../components/social/friends-view";
 import { pageLanding } from "../../lib/discovery/page-landing";
 import { TOOL_PARAM } from "../../lib/discovery/tool-param";
@@ -75,6 +75,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} />}
       friends={friends}
       links={links}
+      openInviteNew={query[INVITE_PARAM] === "new"}
       accepted={
         (typeof accepted === "string" ? friends.find((f) => f.publicId === accepted) : undefined) ??
         (consumed && inviterPublicId !== null ? friends.find((f) => f.publicId === inviterPublicId) : undefined) ??

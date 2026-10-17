@@ -16,6 +16,7 @@ const OTHER: Record<string, string> = {
   "src/components/decks/quick-add-bar.tsx": "the Owned only toggle: a 30px switch track, not a box",
   "src/components/admin/group-editor.tsx": "an admin member row, `role=\"checkbox\"` on a custom row",
   "src/components/decks/notes/note-row.tsx": "a note's done mark, `role=\"checkbox\"` on a custom row",
+  "src/components/rule-zero/setup-sheet.tsx": "a member's art seat in Rule 0's setup: the whole tile is the checkbox, its 24px check in the art's corner",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

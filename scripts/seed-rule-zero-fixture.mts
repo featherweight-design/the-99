@@ -52,6 +52,8 @@ const TABLE_IDS = {
   S5: "7a0e0000-0000-4000-8000-000000000014",
   /** S5 again for the desktop sheet (W5): a draw records its look, so each width needs its own table. */
   W5: "7a0e0000-0000-4000-8000-000000000015",
+  /** PR 5: a table the viewer set, You and Colin seated, for `Seats` (U1 to U4, V1 to V3). */
+  U: "7a0e0000-0000-4000-8000-000000000016",
 } as const;
 const PREFIX = "rz-fixture-";
 const VIEWER_DECK_NAME = "Rule 0 fixture: Blood Rites";
@@ -79,11 +81,11 @@ const env = process.env;
 // The uncached builds (`unstable_cache` raises outside a request), as `probe:rule-zero` passes them.
 const deps = { generation: readCatalogGeneration, compute: (d: string, u: string) => loadDeckProfile(d, u, env), env };
 
-const ID = { colin: `${PREFIX}colin`, peter: `${PREFIX}peter`, max: `${PREFIX}max` };
+const ID = { colin: `${PREFIX}colin`, peter: `${PREFIX}peter`, max: `${PREFIX}max`, chris: `${PREFIX}chris` };
 const pub: Record<string, string> = {};
 pub[viewer] = (await friends.ensureProfile(viewer, "Hugh")).publicId;
 await friends.setDisplayName(viewer, "Hugh");
-for (const [k, name] of [["colin", "Colin"], ["peter", "Peter"], ["max", "Max"]] as const) {
+for (const [k, name] of [["colin", "Colin"], ["peter", "Peter"], ["max", "Max"], ["chris", "Chris"]] as const) {
   pub[ID[k]] = (await friends.ensureProfile(ID[k], name)).publicId;
 }
 const befriend = async (a: string, b: string) => {
@@ -97,9 +99,12 @@ await befriend(viewer, ID.colin);
 await befriend(viewer, ID.peter);
 await befriend(ID.colin, ID.peter);
 await befriend(ID.colin, ID.max);
+// Chris (setup's U1): your friend and Colin's, in the pod, with no decks yet.
+await befriend(viewer, ID.chris);
+await befriend(ID.colin, ID.chris);
 const pod = await pods.createPod(ID.colin, "Thursday night");
 if (!pod) throw new Error("createPod refused");
-for (const m of [viewer, ID.peter, ID.max]) {
+for (const m of [viewer, ID.peter, ID.max, ID.chris]) {
   if (!(await pods.addMember(ID.colin, pod.id, pub[m]))) throw new Error(`addMember refused ${m}`);
 }
 
@@ -182,6 +187,7 @@ const tables: [keyof typeof TABLE_IDS, setBy: string, open: boolean, Seat[]][] =
   ["S4", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
   ["S5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
   ["W5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
+  ["U", viewer, true, [[viewer, you3], [ID.colin, colin3]]],
 ];
 // Inserted directly, not through `setTable`: a setup deletes its pod's expired tables, and these share one pod.
 for (const [state, setBy, open, seats] of tables) {

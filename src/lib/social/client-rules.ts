@@ -15,6 +15,10 @@ export const POD_NAME_MAX = 40;
 /** The most friends one Add batch may name: a pod is a table, not a mailing list. `addMembers` refuses more. */
 export const ADD_MEMBERS_MAX = 32;
 
+/** A Rule 0 table holds 2 to 8 seats (the seat check in the schema is the same range). */
+export const SEATS_MIN = 2;
+export const SEATS_MAX = 8;
+
 /** Code points, which is what `cleanName` and the columns' `char_length` checks count. */
 export function codePointLength(s: string): number {
   return [...s].length;
@@ -96,6 +100,9 @@ export function qrPath(text: string, border = 2): QrPath {
 // receipt at all.
 
 export const ACCEPTED_PARAM = "accepted";
+
+/** `/friends?invite=new` opens Add a friend on Invite someone new (Rule 0 setup's dashed row, from another page). */
+export const INVITE_PARAM = "invite";
 
 /** Where an accepted request lands: `/friends`, with the new friend's receipt resolved by `publicId` (E10). */
 export function friendsReceiptPath(publicId: string): string {

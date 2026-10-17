@@ -1,8 +1,12 @@
 // The table page's body, rendered from the boards' fixtures (plan PR 3): every seat state of T1 to T10 (and D1 to
 // D10, the same tree at 1300), the flag tags in words, no link on another player's seat (readiness gap 11), no
 // other player's deck id anywhere (decision 5), and `Log this game` absent with games off (L3).
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => nav }));
+vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
 import { TABLES, VIEWER_DECK_ID } from "../../lib/rule-zero/table-fixtures";
@@ -20,7 +24,17 @@ const seatOf = (name: string) => screen.getByRole("article", { name: name === "Y
 const meta = () => screen.getByRole("heading", { level: 1 }).nextElementSibling as HTMLElement;
 const headline = () => within(screen.getByTestId("read-card")).getByRole("heading", { level: 2 });
 
+const NOW_FOR_SEATS = new Date("2026-10-16T20:00:00Z");
+
 describe("TableBody", () => {
+  it("draws Seats for the setter alone (README §3)", () => {
+    render(<TableBody view={TABLES.T5} gamesEnabled now={NOW_FOR_SEATS} />);
+    expect(screen.getByRole("button", { name: copy.page.seats })).toBeTruthy();
+    cleanup();
+    render(<TableBody view={{ ...TABLES.T5, setByYou: false }} gamesEnabled now={NOW_FOR_SEATS} />);
+    expect(screen.queryByRole("button", { name: copy.page.seats })).toBeNull();
+  });
+
   it("T1: balanced, every seat in the read, no flag, the rail's band at the middle", () => {
     draw(TABLES.T1);
     expect(headline()).toHaveTextContent("Balanced: every deck reads Upgraded.");

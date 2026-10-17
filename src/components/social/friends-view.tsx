@@ -19,7 +19,7 @@ import type { Friend } from "../../lib/social/access";
 import type { InviteOutcome, OpenInvite, OwnProfile } from "../../lib/social/friends";
 import type { CommanderTile } from "../../lib/decks/commander-picker";
 import { socialCopy } from "../../lib/copy/social";
-import { ACCEPTED_PARAM, invitePath } from "../../lib/social/client-rules";
+import { ACCEPTED_PARAM, INVITE_PARAM, invitePath } from "../../lib/social/client-rules";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { useHydrated } from "../ui/hydrated-art";
 import {
@@ -87,6 +87,7 @@ export function FriendsView({
   maxLinks,
   friendPages = false,
   invites = null,
+  openInviteNew = false,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -104,6 +105,8 @@ export function FriendsView({
   maxLinks: number;
   /** The reader's invite count, with `SOCIAL_INVITES_ENABLED` on for them; null when it is off. */
   invites?: InviteCount | null;
+  /** Arrived as `?invite=new`: Add a friend opens on Invite someone new (with invites on). */
+  openInviteNew?: boolean;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -178,7 +181,15 @@ export function FriendsView({
   const [shown, setShown] = useState<Shown | null>(null);
   // Add a friend's chooser (invites on): the screen it shows, null while closed. Read by `makeLink` through a ref,
   // since a link made from the chooser opens as its path 1 and one made anywhere else opens the dialog.
-  const [adding, setAdding] = useState<InviteScreen | null>(null);
+  const [adding, setAdding] = useState<InviteScreen | null>(invites && openInviteNew ? "new" : null);
+  // `?invite=new` is one-time: the address drops it once the screen it asked for is open.
+  useEffect(() => {
+    if (!openInviteNew) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(INVITE_PARAM)) return;
+    url.searchParams.delete(INVITE_PARAM);
+    mirrorUrl(url);
+  }, [openInviteNew]);
   const addingNow = useRef(adding);
   useEffect(() => {
     addingNow.current = adding;
