@@ -13,7 +13,11 @@ describe("closesWhen", () => {
   });
 
   it("decides the day in the reader's zone, not the server's", () => {
-    // 03:40 UTC on the 17th is 9:40 pm on the 16th in Denver: the same evening as `now` there.
-    expect(closesWhen(new Date("2026-10-17T03:40:00Z"), new Date("2026-10-17T01:00:00Z"), "America/Denver")).toBe("9:40 pm");
+    // 03:40 UTC on the 17th is 9:40 pm on the 16th in Denver, the same day as 23:00 UTC on the 16th there; in UTC
+    // the two straddle midnight, so a day decided in UTC would say tomorrow.
+    const now = new Date("2026-10-16T23:00:00Z");
+    const closes = new Date("2026-10-17T03:40:00Z");
+    expect(closesWhen(closes, now, "America/Denver")).toBe("9:40 pm");
+    expect(closesWhen(closes, now, "UTC")).toBe("3:40 am tomorrow");
   });
 });

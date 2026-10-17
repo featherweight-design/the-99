@@ -19,6 +19,8 @@ import { FLAG_INK, flagKind, type FlagKind } from "./flag-tag";
 
 const copy = ruleZeroCopy;
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
+/** The rail's five columns span its box less its 4px side padding; the band and spans are placed on them, not the box. */
+const COLS = "(100% - 8px)";
 
 export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just now`'s when, once the poll lands (PR 4). */ updated?: string }) {
   const { title, ink, body } = speak(draw);
@@ -202,7 +204,7 @@ function Rail({ draw }: { draw: TableDraw }) {
         <span
           data-testid="read-band"
           className="absolute bottom-[4px] top-[4px] z-0 rounded-[8px] border border-dashed border-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_7%,transparent)]"
-          style={{ left: `calc(${(middle - 1) * 20}% + 6px)`, width: "calc(20% - 4px)" }}
+          style={{ left: `calc(${COLS} * ${(middle - 1) / 5} + 6px)`, width: `calc(${COLS} / 5 - 4px)` }}
         >
           <span className="absolute inset-x-0 top-[5px] text-center font-mono text-[8.5px] font-medium tracking-[0.14em] text-[color:var(--accent)]">
             {copy.read.band}
@@ -217,7 +219,7 @@ function Rail({ draw }: { draw: TableDraw }) {
             key={s.key}
             data-testid="read-span"
             className="absolute bottom-[34px] z-0 h-[30px] rounded-[15px] border border-dashed border-[color:var(--fg-faint)]"
-            style={{ left: `calc(${(lo - 1) * 20 + 4}% + 4px)`, width: `${(hi - lo) * 20 + 12}%` }}
+            style={{ left: `calc(${COLS} * ${(lo - 1 + 0.2) / 5} + 4px)`, width: `calc(${COLS} * ${(hi - lo + 0.6) / 5})` }}
           />
         );
       })}
