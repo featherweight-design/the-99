@@ -55,18 +55,30 @@ function importsOf(source) {
   return [...source.matchAll(/^(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
 }
 
-/** Every file the pages reach through the loaders, the pages included. */
-export function loaderFiles(pages = CACHED_PAGES) {
+/**
+ * Modules a cached page reads PER REQUEST, outside its cached payload, each with its reason. A page's own import of one is
+ * not followed, so its tables are not counted as the payload's: they are read fresh on every request and cannot go stale.
+ * The claim is checked, not trusted (`perRequestProblems`): the page may call the module only OUTSIDE `cachePageForUser`'s
+ * load, and no loader on the cached path may import it. An entry is a deliberate, reviewed diff, like any exemption.
+ */
+export const PER_REQUEST_READS = {};
+
+/** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */
+export function loaderFiles(pages = CACHED_PAGES, perRequest = PER_REQUEST_READS) {
   const lib = resolve("src/lib");
+  const pageFiles = new Set(pages.map((p) => resolve(p)));
+  const skipped = new Set(Object.keys(perRequest).map((p) => resolve(p)));
   const seen = new Set();
-  const stack = pages.map((p) => resolve(p));
+  const stack = [...pageFiles];
   while (stack.length) {
     const file = stack.pop();
     if (seen.has(file)) continue;
     seen.add(file);
     for (const spec of importsOf(readFileSync(file, "utf8"))) {
       const next = resolveImport(file, spec);
-      if (next && next.startsWith(lib) && !seen.has(next)) stack.push(next);
+      if (!next || !next.startsWith(lib) || seen.has(next)) continue;
+      if (pageFiles.has(file) && skipped.has(next)) continue;
+      stack.push(next);
     }
   }
   return [...seen].map((f) => relative(process.cwd(), f)).sort();
@@ -271,10 +283,15 @@ function topLevel(text) {
  * (an unused call, or inside the loader).
  */
 export function cacheKeysOf(text) {
+  return cacheCalls(text).filter((args) => args.length >= 3).map((args) => ({ reader: args[0].trim(), key: args[2] }));
+}
+
+/** Every `cachePageForUser(...)` call's top-level arguments, as text, from `codeOnly`. */
+function cacheCalls(text) {
   const src = codeOnly(text);
-  const keys = [];
+  const calls = [];
   const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
-  for (let m; (m = call.exec(src)); ) {
+  while (call.exec(src) !== null) {
     const args = [];
     let depth = 0, start = call.lastIndex, i = start;
     for (; i < src.length; i++) {
@@ -289,9 +306,73 @@ export function cacheKeysOf(text) {
       }
     }
     args.push(src.slice(start, i));
-    if (args.length >= 3) keys.push({ reader: args[0].trim(), key: args[2] });
+    calls.push(args);
   }
-  return keys;
+  return calls;
+}
+
+/** The local names a source value-imports from `module` (named imports only; a default or namespace import is refused). */
+function namesImportedFrom(text, fromFile, mod) {
+  const names = [];
+  const target = resolve(mod);
+  // The raw source, not `codeOnly`, which blanks the specifier string; `^import` already skips a commented-out line.
+  for (const m of text.matchAll(/^import\s+(?!type\s)([^;]*?)\s+from\s+["']([^"']+)["']/gms)) {
+    if (resolveImport(resolve(fromFile), m[2]) !== target) continue;
+    const braces = /\{([^}]*)\}/.exec(m[1]);
+    if (!braces || /^\s*[\w$]+\s*,|\*/.test(m[1].replace(/\{[^}]*\}/, ""))) names.push(null);
+    for (const part of braces ? braces[1].split(",") : []) {
+      const t = part.trim();
+      if (!t || t.startsWith("type ")) continue;
+      names.push(t.split(/\s+as\s+/).pop().trim());
+    }
+  }
+  return names;
+}
+
+/**
+ * Every way a page's per-request read could be cached after all (`PER_REQUEST_READS`). Four rules:
+ * - the listed module exists, and some cached page imports it (a stale entry exempts nothing, so it is reported);
+ * - the page imports it by name, so its calls can be found (a default or namespace import is refused);
+ * - no imported name appears in `cachePageForUser`'s load (any argument after the key), where it would be stored;
+ * - no loader on the cached path imports it, because then the module IS the payload's.
+ */
+export function perRequestProblems(
+  pages = CACHED_PAGES,
+  perRequest = PER_REQUEST_READS,
+  filesOf = (page) => loaderFiles([page], perRequest),
+  source = (file) => readFileSync(file, "utf8"),
+  exists = (file) => { try { return statSync(file).isFile(); } catch { return false; } },
+) {
+  const out = [];
+  for (const [mod, reason] of Object.entries(perRequest)) {
+    if (!reason || !String(reason).trim()) out.push(`PER-REQUEST ${mod} is listed with no reason`);
+    if (!exists(mod)) {
+      out.push(`PER-REQUEST ${mod} is listed but does not exist`);
+      continue;
+    }
+    let imported = false;
+    for (const page of pages) {
+      const text = source(page);
+      const names = namesImportedFrom(text, page, mod);
+      if (names.length === 0) continue;
+      imported = true;
+      if (names.includes(null)) {
+        out.push(`PER-REQUEST ${page} imports ${mod} without naming what it uses, so its calls cannot be checked`);
+        continue;
+      }
+      const loads = cacheCalls(text).flatMap((args) => args.slice(3)).join("\n");
+      for (const name of names) {
+        if (new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\b`).test(loads)) {
+          out.push(`PER-REQUEST ${page} calls ${name} (from ${mod}) inside cachePageForUser's load, so it would be cached`);
+        }
+      }
+      if (filesOf(page).map((f) => f.split("\\").join("/")).includes(mod)) {
+        out.push(`PER-REQUEST ${mod} is imported by a loader on ${page}'s cached path, so it is not read per request`);
+      }
+    }
+    if (!imported) out.push(`PER-REQUEST ${mod} is listed but no cached page imports it`);
+  }
+  return out;
 }
 
 /**

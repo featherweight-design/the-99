@@ -197,3 +197,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   that is not `DEFERRABLE INITIALLY DEFERRED` does not count. Its failure paths are pinned in
   `scripts/lib/list-cache-tables.test.mts`, which also runs the whole check against the shipped
   tree, so CI runs it inside `pnpm test`. Static, no server, no database.
+
+  **A read a cached page makes PER REQUEST** (outside its cached payload) is listed in `PER_REQUEST_READS`
+  (`scripts/lib/list-cache-tables.mjs`), each module with its reason. The page's own import of a listed module is not
+  followed, because its tables are read fresh on every request and cannot go stale. The claim is checked, not
+  trusted (`perRequestProblems`): the page imports it by name and never calls it inside `cachePageForUser`'s load, no
+  loader on the cached path imports it, and a listed module that is missing, unimported or reasonless is reported. This
+  is how a surface whose facts move nothing in the key (a friend's rename, a link's expiry, another player's seat) sits
+  on Home, rather than a key element plus a trigger.
