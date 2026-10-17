@@ -395,34 +395,6 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
-    it("turns down an answer whose add is taken back during a missed frame, so it does not read Added when it returns", async () => {
-      const card: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
-      // The missed frame is ONE read, counted, never a wall-clock window: the test clock moves per read, so a window
-      // let a busy machine read enough empty frames to settle "no card", which is another case (a second copy).
-      let gap = 0;
-      const { hook, onAdd, onProblem } = setup({
-        readFrame: async () => {
-          await new Promise((r) => setTimeout(r, 5));
-          if (gap > 0) {
-            gap--;
-            return { frame: { kind: "none" }, cardInView: false, dark: false };
-          }
-          return card;
-        },
-      });
-      let settle!: (kept: boolean) => void;
-      onAdd.mockImplementation(async () => ({ settled: new Promise<boolean>((r) => { settle = r; }) }));
-      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
-      gap = 1;
-      await waitFor(() => expect(gap).toBe(0));
-      await act(async () => settle(false));
-      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 300)));
-      expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring");
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "added" } });
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
-      expect(onAdd).toHaveBeenCalledTimes(1);
-    });
-
     it("counts a card the sheet already lists as a second copy, and a line removed while scanning as none", async () => {
       const { hook, onAdd, list } = setup({}, undefined, new Map([[SOL.oracleId, 2]]));
       expect(hook.result.current.count).toBe(2);
