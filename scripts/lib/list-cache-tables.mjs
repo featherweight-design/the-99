@@ -283,15 +283,14 @@ function topLevel(text) {
  * (an unused call, or inside the loader).
  */
 export function cacheKeysOf(text) {
-  return cacheCalls(text).filter((args) => args.length >= 3).map((args) => ({ reader: args[0].trim(), key: args[2] }));
+  return cacheCalls(codeOnly(text)).filter(({ args }) => args.length >= 3).map(({ args }) => ({ reader: args[0].trim(), key: args[2] }));
 }
 
-/** Every `cachePageForUser(...)` call's top-level arguments, as text, from `codeOnly`. */
-function cacheCalls(text) {
-  const src = codeOnly(text);
+/** Every `cachePageForUser(...)` call in `src` (already `codeOnly`): its top-level arguments, and where it starts and ends. */
+function cacheCalls(src) {
   const calls = [];
   const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
-  while (call.exec(src) !== null) {
+  for (let m; (m = call.exec(src)) !== null; ) {
     const args = [];
     let depth = 0, start = call.lastIndex, i = start;
     for (; i < src.length; i++) {
@@ -306,37 +305,19 @@ function cacheCalls(text) {
       }
     }
     args.push(src.slice(start, i));
-    calls.push(args);
+    calls.push({ args, start: m.index, end: i });
   }
   return calls;
 }
 
-const mentions = (text, name) => new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\b`).test(text);
-
-/**
- * Every name in a page that reaches one of `names`: the names themselves, and every function the page defines (a
- * `function` declaration or a `const` holding an arrow or function expression) whose body mentions a reaching name,
- * to a fixpoint. Mapped to the imported name it reaches, so a load that calls a helper, or IS a named helper, is caught.
- */
-function reaching(src, names) {
-  const out = new Map(names.map((n) => [n, n]));
-  const defs = [];
-  for (const m of src.matchAll(/\bfunction\s+([\w$]+)\s*\(|\bconst\s+([\w$]+)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>)/g)) {
-    const open = src.indexOf("{", m.index + m[0].length - 1);
-    const arrowExpr = open < 0 || /=>\s*[^{\s]/.test(src.slice(m.index, open));
-    const body = arrowExpr ? src.slice(m.index, src.indexOf("\n", m.index + m[0].length) + 1 || undefined) : balanced(src, open, "{", "}");
-    defs.push({ name: m[1] ?? m[2], body });
-  }
-  for (let grew = true; grew; ) {
-    grew = false;
-    for (const { name, body } of defs) {
-      if (out.has(name)) continue;
-      const hit = [...out.keys()].find((n) => mentions(body, n));
-      if (hit) {
-        out.set(name, out.get(hit));
-        grew = true;
-      }
-    }
+/** Where every `function` declaration's body sits in `src`: hoisted, so a load can call one written anywhere in the page. */
+function functionBodies(src) {
+  const out = [];
+  for (const m of src.matchAll(/\bfunction\s*\*?\s*([\w$]+)\s*\(/g)) {
+    const params = balanced(src, m.index + m[0].length - 1, "(", ")");
+    const open = src.indexOf("{", m.index + m[0].length - 1 + params.length);
+    if (open < 0) continue;
+    out.push({ name: m[1], start: open, end: open + balanced(src, open, "{", "}").length });
   }
   return out;
 }
@@ -363,8 +344,9 @@ function namesImportedFrom(text, fromFile, mod) {
  * Every way a page's per-request read could be cached after all (`PER_REQUEST_READS`). Four rules:
  * - the listed module exists, and some cached page imports it (a stale entry exempts nothing, so it is reported);
  * - the page imports it by name, so its calls can be found (a default or namespace import is refused);
- * - no imported name, and no function the page defines that reaches one, appears in `cachePageForUser`'s load (any
- *   argument after the key, a named load included), where it would be stored;
+ * - every use of an imported name is written after the page's last `cachePageForUser` call, and none sits in a hoisted
+ *   `function` (other than the page's own) that a load could call: the load runs during that call, so nothing after it
+ *   can reach the payload, whether through a helper, a named load or a captured result;
  * - no loader on the cached path imports it, because then the module IS the payload's.
  */
 export function perRequestProblems(
@@ -391,11 +373,26 @@ export function perRequestProblems(
         out.push(`PER-REQUEST ${page} imports ${mod} without naming what it uses, so its calls cannot be checked`);
         continue;
       }
-      const loads = cacheCalls(text).flatMap((args) => args.slice(3)).join("\n");
-      for (const [name, via] of reaching(codeOnly(text), names)) {
-        if (mentions(loads, name)) {
-          const through = via === name ? "" : ` through ${name}`;
-          out.push(`PER-REQUEST ${page} calls ${via} (from ${mod}) inside cachePageForUser's load${through}, so it would be cached`);
+      // Positional, not traced: the load runs DURING the cachePageForUser call, so a use written after the page's last
+      // such call cannot reach the payload, whatever the helpers or bindings in between, unless it sits in a hoisted
+      // function the load could call. The page's own function (the one holding the call) is the exception that is not.
+      const src = codeOnly(text);
+      const calls = cacheCalls(src);
+      const firstStart = Math.min(...calls.map((c) => c.start));
+      const lastEnd = Math.max(...calls.map((c) => c.end));
+      const hoisted = functionBodies(src).filter((f) => !calls.every((c) => f.start < c.start && c.end < f.end));
+      for (const name of names) {
+        const uses = [...src.matchAll(new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\b`, "gm"))]
+          .map((m) => m.index + m[1].length)
+          .filter((at) => !/^\s*import\b/.test(src.slice(src.lastIndexOf("\n", at) + 1, at + 1)));
+        if (calls.length > 0 && uses.some((at) => at < lastEnd)) {
+          const inside = uses.some((at) => calls.some((c) => c.start <= at && at <= c.end));
+          out.push(inside || uses.every((at) => at >= firstStart)
+            ? `PER-REQUEST ${page} calls ${name} (from ${mod}) inside cachePageForUser's load, so it would be cached`
+            : `PER-REQUEST ${page} uses ${name} (from ${mod}) before cachePageForUser's load, where its result could reach the cached payload`);
+        } else {
+          const fn = hoisted.find((f) => uses.some((at) => f.start <= at && at <= f.end));
+          if (fn) out.push(`PER-REQUEST ${page} uses ${name} (from ${mod}) in function ${fn.name}, which the load could call, so it could be cached`);
         }
       }
       if (filesOf(page).map((f) => f.split("\\").join("/")).includes(mod)) {

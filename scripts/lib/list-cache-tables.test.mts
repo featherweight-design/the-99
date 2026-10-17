@@ -296,11 +296,33 @@ describe("perRequestProblems", () => {
     expect(check(src)).toEqual([`PER-REQUEST ${page} imports ${listedModule} without naming what it uses, so its calls cannot be checked`]);
   });
 
-  it("fails a named load, or an inline load calling a page helper, that reaches the export", () => {
+  const before = (name: string) =>
+    `PER-REQUEST ${page} uses ${name} (from ${listedModule}) before cachePageForUser's load, where its result could reach the cached payload`;
+
+  it("fails a use written before the load, however it would reach it: a named load, a helper or a captured result", () => {
     const named = page_(`async function load(u) { return { fresh: await readFresh(u) }; }\nconst d = await cachePageForUser(u, "home", [], load);`);
-    expect(check(named)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listedModule}) inside cachePageForUser's load through load, so it would be cached`]);
     const helper = page_(`const pick = async (u) => readFresh(u);\nconst d = await cachePageForUser(u, "home", [], async () => ({ x: await pick(u) }));`);
-    expect(check(helper)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listedModule}) inside cachePageForUser's load through pick, so it would be cached`]);
+    const captured = page_(`const receipt = await readFresh(u);\nconst d = await cachePageForUser(u, "home", [], async () => ({ value: { receipt }, store: true }));`);
+    for (const src of [named, helper, captured]) expect(check(src)).toEqual([before("readFresh")]);
+  });
+
+  it("fails the forms a body parser would miss: a multiline arrow, destructured params, an object return type", () => {
+    const forms = [
+      `const load = async () => ({\n  x: await readFresh(u),\n});`,
+      `async function load({ u }) { return readFresh(u); }`,
+      `async function load(u): Promise<{ value: unknown; store: boolean }> { return { value: await readFresh(u), store: true }; }`,
+    ];
+    for (const f of forms) expect(check(page_(`${f}\nconst d = await cachePageForUser(u, "home", [], load);`))).toEqual([before("readFresh")]);
+  });
+
+  it("fails a hoisted function written after the call that uses the export, since the load can call it", () => {
+    const src = page_(`const d = await cachePageForUser(u, "home", [], load);\nasync function load(u) { return readFresh(u); }`);
+    expect(check(src)).toEqual([`PER-REQUEST ${page} uses readFresh (from ${listedModule}) in function load, which the load could call, so it could be cached`]);
+  });
+
+  it("passes a use after the call inside the page's own function", () => {
+    const src = page_(`export default async function Page() {\n  const d = await cachePageForUser(u, "home", [], async () => load(u));\n  const fresh = await readFresh(u);\n}`);
+    expect(check(src)).toEqual([]);
   });
 
   it("fails a default import, alone or beside named ones", () => {
