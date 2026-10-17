@@ -280,12 +280,14 @@ function Reserved({ d }: { d: CostDetail }) {
   );
 }
 
-function PerAccount({ d }: { d: CostDetail }) {
+function PerAccount({ d, names, viewerId }: { d: CostDetail; names: Readonly<Record<string, string>>; viewerId?: string }) {
   const h = copy.accountHead;
+  // Masked, never the Clerk id (Admin R3, C5); `You` for the viewer.
+  const nameOf = (id: string) => (id === viewerId ? adminCopy.switch.history.you : (names[id] ?? id));
   const total = d.accounts.reduce((n, a) => ({ presses: n.presses + a.presses, credits: n.credits + a.credits, micro: n.micro + a.micro }), { presses: 0, credits: 0, micro: 0 });
   const rows: Row[] = d.accounts.map((a) => ({
-    cells: [<span key="id" className="font-mono text-[12.5px]">{a.userId}</span>, a.presses, a.credits, usd(a.micro)],
-    title: <span className="break-all font-mono text-[13px]">{a.userId}</span>,
+    cells: [<span key="name" className="[overflow-wrap:anywhere]">{nameOf(a.userId)}</span>, a.presses, a.credits, usd(a.micro)],
+    title: <span className="[overflow-wrap:anywhere]">{nameOf(a.userId)}</span>,
     fig: usd(a.micro),
     meta: copy.accountMeta(a.presses, a.credits),
   }));
@@ -331,7 +333,21 @@ function EvalLedgers({ d, month }: { d: CostDetail; month: MonthKey }) {
   return <Table label={copy.evals} head={[h.ledger, h.requests, h.settled, h.limit, h.window]} right={[1, 2]} grid="minmax(0,1.4fr) 76px 76px minmax(0,1fr) 92px" rows={rows} />;
 }
 
-export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetail; month: MonthKey; env: AdminEnv | null }) {
+export function CostsDetail({
+  s,
+  d,
+  names,
+  viewerId,
+  month,
+  env,
+}: {
+  s: CostSummary;
+  d: CostDetail;
+  names: Readonly<Record<string, string>>;
+  viewerId?: string;
+  month: MonthKey;
+  env: AdminEnv | null;
+}) {
   const monthName = monthLabel(month, "long").split(" ")[0];
   // A month with no runs keeps the eval ledgers alone (STATES C3): they are committed, not monthly rows.
   const empty = s.calls.runs === 0 && d.labelRuns.length === 0;
@@ -365,7 +381,7 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
           <Reserved d={d} />
 
           <SectionHead title={copy.perAccount} meta={d.accounts.length > 0 ? copy.perAccountMeta(d.accounts.length) : undefined} />
-          {d.accounts.length > 0 ? <PerAccount d={d} /> : <p className={BODY}>{copy.noPresses(monthName)}</p>}
+          {d.accounts.length > 0 ? <PerAccount d={d} names={names} viewerId={viewerId} /> : <p className={BODY}>{copy.noPresses(monthName)}</p>}
 
           <SectionHead title={copy.labels} meta={copy.labelsMeta} />
           {d.labelRuns.length > 0 ? (

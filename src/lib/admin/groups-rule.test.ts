@@ -190,6 +190,12 @@ describe("pendingSummary", () => {
     expect(p.body).toBe("Saving adds Jun to testers. Nothing changes for Jun.");
   });
 
+  it("ends a sentence on a masked name with the name's own period, never a second", () => {
+    const masked = rows.map((r) => (r.id === "u_jun" ? { ...r, name: "Jun K." } : r));
+    const p = pendingSummary({ saved, draft, rows: masked, selected: new Set(["u_mara", "u_jun"]) })!;
+    expect(p.body).toBe("Saving adds Jun K. to testers. Nothing changes for Jun K.");
+  });
+
   it("counts field changes and members together", () => {
     const p = pendingSummary({ saved, draft: { name: "beta", description: "x", credits: "8" }, rows, selected: new Set(["u_mara", "u_jun"]) })!;
     expect(p.count).toBe(4);

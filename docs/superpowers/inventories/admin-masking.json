@@ -6,50 +6,113 @@
       "id": "masking-accounts-list",
       "label": "/admin/accounts: A1, the masked list (masked names and emails, sub says they are masked)",
       "view": "src/components/admin/accounts-list.tsx",
-      "steps": [{ "goto": "/admin/accounts", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "masking-account-head",
       "label": "/admin/accounts/[clerkId]: B1, the masked head, Invites (the waiting email masked) and History",
       "view": "src/components/admin/account-page.tsx",
-      "steps": [{ "goto": "/admin/accounts/${ADMIN_PII_ACCOUNT}", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/admin/accounts/${ADMIN_PII_ACCOUNT}",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "masking-invite-tree",
       "label": "/admin/invites: C1, the tree's nodes masked",
       "view": "src/components/admin/invite-tree.tsx",
-      "steps": [{ "goto": "/admin/invites", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/admin/invites",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "masking-groups-list",
       "label": "/admin/groups: Y1, the card's member line masked",
       "view": "src/components/admin/groups-list.tsx",
-      "steps": [{ "goto": "/admin/groups", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/admin/groups",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "masking-group-editor",
       "label": "/admin/groups/[id]: C2, members masked, search finds by name, history masked",
       "view": "src/components/admin/group-editor.tsx",
       "steps": [
-        { "goto": "/admin/groups", "wait": "h1", "settle": 1000 },
-        { "clickRole": "link", "name": "Edit pii-probe" },
-        { "wait": "[data-testid='group-members']", "settle": 1500 }
+        {
+          "goto": "/admin/groups",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "clickRole": "link",
+          "name": "Edit pii-probe"
+        },
+        {
+          "wait": "[data-testid='group-members']",
+          "settle": 1500
+        }
       ]
     },
     {
       "id": "masking-switch-overrides",
       "label": "/admin/switches/[name]: C3, the account override row and history masked, Check an account's choices masked",
       "view": "src/components/admin/switch-page.tsx",
-      "steps": [{ "goto": "/admin/switches/HELP_PANEL_ENABLED", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/admin/switches/HELP_PANEL_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "masking-override-picker",
       "label": "/admin/switches/[name]: C3, Add an account override opened (the picker's choices masked, found by name)",
       "view": "src/components/admin/override-picker.tsx",
       "steps": [
-        { "goto": "/admin/switches/HELP_PANEL_ENABLED", "wait": "h1", "settle": 1000 },
-        { "clickRole": "button", "name": "Add an account override" },
-        { "wait": "input[type=search]", "settle": 800 }
+        {
+          "goto": "/admin/switches/HELP_PANEL_ENABLED",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "Add an account override"
+        },
+        {
+          "wait": "input[type=search]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "masking-costs-per-account",
+      "label": "/admin: C5, Costs per account by masked name (You for the viewer), and who entered elsewhere",
+      "view": "src/components/admin/costs-detail.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Per account\")"
+        }
       ]
     }
   ]

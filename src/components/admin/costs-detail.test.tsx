@@ -23,7 +23,7 @@ const labelRun: LabelRunRow = {
 };
 const settledLedger = { file: "ledger.jsonl", entries: [{ at: "2026-09-24T06:03:01Z", usd: 0.229259, requests: 12 }] };
 
-function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "production"; month?: typeof OCT } = {}) {
+function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "production"; month?: typeof OCT; viewerId?: string } = {}) {
   const month = opts.month ?? OCT;
   const d = costDetail({ calls: [], parts: [], labelRuns: [], ledgers: [settledLedger], ...detailRows }, month);
   // The core's day rows from the same calls, as `loadCosts` reads them.
@@ -32,7 +32,7 @@ function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "produc
     days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {},
     outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete, evalsUnreadable: d.ledgersUnreadable.length > 0 },
   };
-  return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} env={opts.env} month={month} current={OCT} />);
+  return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} names={{ user_hugh: "Hugh H." }} viewerId={opts.viewerId} env={opts.env} month={month} current={OCT} />);
 }
 
 const headings = () => screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
@@ -100,10 +100,11 @@ describe("CostsDetail, a month with runs", () => {
     expect(screen.getByText("$59.65 so far · not set")).toBeInTheDocument();
   });
 
-  it("lists accounts by id and the label runs by run", () => {
+  it("lists accounts by masked name, never the Clerk id (Admin R3, C5), and the label runs by run", () => {
     draw({ calls, labelRuns: [labelRun] });
     const accounts = screen.getByRole("table", { name: "Per account" });
-    expect(within(accounts).getByText("user_hugh")).toBeInTheDocument();
+    expect(within(accounts).getByText("Hugh H.")).toBeInTheDocument();
+    expect(within(accounts).queryByText("user_hugh")).toBeNull();
     expect(within(accounts).queryByText("system")).toBeNull();
     const labels = screen.getByRole("table", { name: "Card label runs" });
     expect(within(labels).getByText("Oct 3 · backfill-2026-10-03")).toBeInTheDocument();
@@ -132,6 +133,11 @@ describe("CostsDetail, a month with runs", () => {
     const row = container.querySelector('[data-model="claude-haiku-5-5"]') as HTMLElement;
     expect(row).toHaveTextContent("not priced");
     expect(row).not.toHaveTextContent("$0.00");
+  });
+
+  it("names the viewer's own row You", () => {
+    draw({ calls, labelRuns: [labelRun] }, { viewerId: "user_hugh" });
+    expect(within(screen.getByRole("table", { name: "Per account" })).getByText("You")).toBeInTheDocument();
   });
 
   it("counts credits in the singular and the plural", () => {

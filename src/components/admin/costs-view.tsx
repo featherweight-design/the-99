@@ -165,7 +165,24 @@ function Trend({ s, month }: { s: CostSummary; month: MonthKey }) {
   );
 }
 
-export function CostsView({ s, month, current, detail, env, viewerId }: { s: CostSummary; month: MonthKey; current: MonthKey; detail?: CostDetail; env?: AdminEnv; viewerId?: string }) {
+export function CostsView({
+  s,
+  month,
+  current,
+  detail,
+  names,
+  env,
+  viewerId,
+}: {
+  s: CostSummary;
+  month: MonthKey;
+  current: MonthKey;
+  detail?: CostDetail;
+  /** The masked name of each account id the page draws (`namesFor`). */
+  names: Readonly<Record<string, string>>;
+  env?: AdminEnv;
+  viewerId?: string;
+}) {
   const prev = shiftMonth(month, -1);
   const prevHref = hrefFor(prev, current);
   const nextHref = hrefFor(shiftMonth(month, 1), current);
@@ -261,7 +278,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
             label={copy.capRows.account}
             here
             figure={cap ? copy.of(sysUsd(accountTotal), capMicro(cap.micro)) : copy.notSet(sysUsd(accountTotal))}
-            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : elsewhere.by) + note(elsewhere.note) : copy.capSub.noElsewhere)}
+            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : (names[elsewhere.by] ?? elsewhere.by)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
             actions={s.current && <>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
               <SettingAction kind="cap" label={copy.changeCap} />
@@ -283,7 +300,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
         <SectionHead title={copy.trendPlayer} />
         <Trend s={s} month={month} />
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.trendNote}</p>
-        {detail && <CostsDetail s={s} d={detail} month={month} env={env ?? null} />}
+        {detail && <CostsDetail s={s} d={detail} names={names} viewerId={viewerId} month={month} env={env ?? null} />}
       </div>
     </>
   );
