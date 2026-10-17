@@ -506,6 +506,8 @@ function AddMode({
   const failed = showResults && searched === trimmed && searchFailed;
   const noResults = showResults && searched === trimmed && results.length === 0 && !searchFailed;
   const frozen = saving ? "pointer-events-none opacity-60" : "";
+  // The phone's scanner covers the sheet: what it covers takes no focus and no press.
+  const covered = (scanning && phone) || undefined;
 
   const dialog = (
     <div
@@ -515,8 +517,8 @@ function AddMode({
       aria-labelledby={titleId}
       className={SHEET_PANEL_CLASS}
     >
-      <div inert={discarding || (scanning && phone) || undefined} className="flex min-h-0 flex-1 flex-col">
-        <div className="flex items-center gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">
+      <div inert={discarding || undefined} className="flex min-h-0 flex-1 flex-col">
+        <div inert={covered} className="flex items-center gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">
           <h2 id={titleId} className="m-0 flex-1 font-display text-[19px] font-bold md:text-[21px]">
             {copy.title}
           </h2>
@@ -531,11 +533,14 @@ function AddMode({
           </button>
         </div>
 
-        {phase !== "saved" && scanning && !phone && (
-          <CardScanner layout="desk" listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
+        {/* One place in the tree at every width, so turning a phone across 768px redraws the scanner rather than
+            starting it again: its session, its mode and its photos stay. On a phone it covers the sheet, whose own
+            controls sit inert beneath it. */}
+        {phase !== "saved" && scanning && (
+          <CardScanner layout={phone ? "phone" : "desk"} listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
         )}
         {phase !== "saved" && !(scanning && !phone) && (
-          <div className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
+          <div inert={covered} className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
             <SearchField
               ref={searchRef}
               role="combobox"
@@ -572,7 +577,7 @@ function AddMode({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-[18px] py-[12px] md:px-[22px]">
+        <div inert={covered} className="min-h-0 flex-1 overflow-y-auto px-[18px] py-[12px] md:px-[22px]">
           {notice && (
             <p
               role={notice.kind === "error" ? "alert" : "status"}
@@ -724,7 +729,7 @@ function AddMode({
         </div>
 
         {phase !== "saved" && (
-          <div className="flex items-center gap-[12px] border-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[18px] pb-[14px] pt-[12px] md:px-[22px] md:pb-[18px] md:pt-[14px]">
+          <div inert={covered} className="flex items-center gap-[12px] border-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[18px] pb-[14px] pt-[12px] md:px-[22px] md:pb-[18px] md:pt-[14px]">
             <span className="flex-1 text-[12px] text-[color:var(--fg-muted)]">
               {choosing ? copy.needsPrinting(choosing.name) : lines.length > 0 ? copy.summary(stats.lines, stats.copies) : copy.nothingYet}
             </span>
@@ -769,9 +774,6 @@ function AddMode({
       )}
 
       <p role="status" aria-live="polite" className="sr-only">{announce}</p>
-      {scanning && phone && (
-        <CardScanner layout="phone" listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
-      )}
     </div>
   );
 

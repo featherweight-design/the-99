@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { AddCardsSheet } from "./add-cards-sheet";
@@ -19,15 +20,20 @@ vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../shell/pending-push", () => ({ usePendingPush: () => ({ go: vi.fn() }) }));
 // The scanner is its own surface, tested on its own: here it only has to hand the sheet a card, and close.
 const outcomes: unknown[] = [];
+// Each mount of the scanner takes the next number, so a test can tell a redraw from a fresh start.
+const mounts = { n: 0 };
 vi.mock("./scan/card-scanner", () => ({
-  CardScanner: ({ layout, onAdd, onClose, listed }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => Promise<unknown>; onClose: () => void; listed: ReadonlyMap<string, number> }) => (
-    <div data-testid="fake-scanner" data-layout={layout}>
+  CardScanner: function FakeScanner({ layout, onAdd, onClose, listed }: { layout: string; onAdd: (g: typeof SOL, m: "fast" | "normal") => Promise<unknown>; onClose: () => void; listed: ReadonlyMap<string, number> }) {
+    const [mount] = useState(() => ++mounts.n);
+    return (
+    <div data-testid="fake-scanner" data-layout={layout} data-mount={mount}>
       <span data-testid="tray">{listed.get(SOL.oracleId) ?? 0}</span>
       <button type="button" onClick={() => void onAdd(SOL, "fast").then((o) => outcomes.push(o))}>fast add</button>
       <button type="button" onClick={() => onAdd(SOL, "normal")}>normal add</button>
       <button type="button" onClick={onClose}>close scanner</button>
     </div>
-  ),
+    );
+  },
 }));
 
 const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
@@ -236,5 +242,54 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     expect(await screen.findByRole("alertdialog")).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("AddCardsSheet: the scanner across the 768px line", () => {
+  let wide = false;
+  const listeners = new Set<() => void>();
+  const original = window.matchMedia;
+  beforeEach(() => {
+    wide = false;
+    listeners.clear();
+    window.matchMedia = ((query: string) => ({
+      get matches() {
+        return wide;
+      },
+      media: query, onchange: null, dispatchEvent: () => false, addListener: () => {}, removeListener: () => {},
+      addEventListener: (_: string, l: () => void) => listeners.add(l),
+      removeEventListener: (_: string, l: () => void) => listeners.delete(l),
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = original;
+  });
+  const turn = (to: boolean) =>
+    act(() => {
+      wide = to;
+      listeners.forEach((l) => l());
+    });
+
+  it("keeps the one scanner it opened when a phone turns wide and back", () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    const first = screen.getByTestId("fake-scanner").dataset.mount;
+    expect(screen.getByTestId("fake-scanner").dataset.layout).toBe("phone");
+    turn(true);
+    expect(screen.getByTestId("fake-scanner").dataset.layout).toBe("desk");
+    turn(false);
+    expect(screen.getByTestId("fake-scanner").dataset.layout).toBe("phone");
+    expect(screen.getByTestId("fake-scanner").dataset.mount).toBe(first);
+  });
+
+  it("holds the sheet inert under the phone's scanner, and not beside the desktop's", () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    const scanner = screen.getByTestId("fake-scanner");
+    expect(scanner.closest("[inert]")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.closeAria }).closest("[inert]")).not.toBeNull();
+    turn(true);
+    expect(scanner.closest("[inert]")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.closeAria }).closest("[inert]")).toBeNull();
   });
 });
