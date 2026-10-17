@@ -80,6 +80,8 @@ export const showcaseCopy = {
   /** The 390 group count: the cards run sideways. */
   swipe: (n: number) => `${n} · swipe`,
   howItWorks: 'How it works ›',
+  /** A tool card's picture. */
+  pictureAlt: (name: string) => `${name}, on a real screen of the app`,
   /** Every tool that reads the reader's decks, when they have none. */
   needsADeck: NEEDS_A_DECK,
   /** Collection Sync with no earlier upload to merge against (G14): the card still offers the upload. */

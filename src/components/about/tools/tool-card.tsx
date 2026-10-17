@@ -16,7 +16,7 @@ export function entryHref(entry: string): string {
   return `/about?tab=reference#${entry}`;
 }
 
-function Picture({ shot }: { shot: Shot | null }) {
+function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   return (
     <div className="relative aspect-[3/2] overflow-hidden border-b border-b-[color:var(--border)] bg-[color:var(--bg)]">
       {shot && (
@@ -25,7 +25,7 @@ function Picture({ shot }: { shot: Shot | null }) {
           src={shot.src}
           width={shot.width}
           height={shot.height}
-          alt=""
+          alt={showcaseCopy.pictureAlt(name)}
           loading="lazy"
           decoding="async"
           className="absolute inset-0 block h-full w-full object-cover"
@@ -61,11 +61,12 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
     state.kind === "deck" ? showcaseCopy.opens(state.deck, state.more) : state.kind === "page" ? state.label : null;
   return (
     <article
+      aria-label={copy.name}
       data-tool-card={card.id}
       data-state={state.kind}
       className="relative flex h-full flex-col overflow-hidden rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface)] focus-within:border-[color:var(--border-strong)]"
     >
-      <Picture shot={shot} />
+      <Picture shot={shot} name={copy.name} />
       <div className="flex flex-1 flex-col gap-[8px] px-[14px] pb-[12px] pt-[14px] md:px-[18px] md:pb-[14px] md:pt-[16px]">
         <div className="flex items-baseline justify-between gap-[10px]">
           <h3 className="m-0 text-[16px] font-semibold leading-[1.3] text-[color:var(--fg)]">{copy.name}</h3>

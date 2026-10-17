@@ -66,6 +66,8 @@ describe("ToolCard, its five states (STATES 'A tool card')", () => {
   it("draws the capture with its control haloed, and nothing when there is no capture", () => {
     const { container, rerender } = render(<ToolCard card={model("top-off")} shot={shot} />);
     expect(container.querySelector("img")!.getAttribute("src")).toBe(shot.src);
+    expect(container.querySelector("img")!.getAttribute("alt")).toBe("Top off, on a real screen of the app");
+    expect(screen.getByRole("article", { name: "Top off" })).toBeTruthy();
     const halo = container.querySelector<HTMLElement>("[data-tool-card-halo]")!;
     expect(halo.style.left).toBe("10%");
     expect(halo.style.width).toBe("30%");

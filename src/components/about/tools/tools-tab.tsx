@@ -54,7 +54,7 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
             <li
               key={r.id}
               data-written-row={r.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[10px] gap-y-[4px] border-t border-t-[color:var(--border)] py-[12px] [grid-template-areas:'name_chip'_'what_what'_'where_where'] md:min-h-[52px] md:grid-cols-[300px_minmax(0,1fr)_170px] md:items-center md:gap-x-[18px] md:gap-y-[2px] md:py-[8px] md:[grid-template-areas:'name_what_chip'_'where_what_chip']"
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[10px] gap-y-[4px] border-t border-t-[color:var(--border)] py-[12px] [grid-template-areas:'name_chip'_'what_what'_'where_where'] md:min-h-[52px] md:grid-cols-[300px_minmax(0,1fr)_170px] md:items-center md:gap-x-[18px] md:gap-y-[2px] md:py-0 md:[grid-template-areas:'name_what_chip'_'where_what_chip']"
             >
               <span className="text-[14.5px] font-semibold text-[color:var(--fg)] [grid-area:name] md:self-end md:text-[15px]">{r.name}</span>
               <span className="font-mono text-[11px] text-[color:var(--fg-faint)] [grid-area:where] md:self-start">{r.where}</span>
@@ -97,7 +97,7 @@ export function ToolsTab({ groups, written, allowance, theme }: ToolsTabProps) {
         <Group key={g.group} group={g} theme={theme} />
       ))}
       {written && <WrittenForYou rows={written.rows} free={written.free} allowance={allowance} />}
-      <div className="mx-[16px] mt-[40px] flex flex-wrap items-center justify-between gap-x-[20px] gap-y-[4px] border-t border-t-[color:var(--border)] pt-[18px] md:mx-0 md:mt-[48px] md:pt-[22px]">
+      <div className="mx-[16px] mt-[34px] flex flex-col items-start gap-[4px] border-t border-t-[color:var(--border)] pt-[18px] md:mx-0 md:mt-[48px] md:flex-row md:items-center md:justify-between md:gap-[20px] md:pt-[22px]">
         <span className="text-[14px] text-[color:var(--fg-muted)]">{aboutShapeCopy.toReference}</span>
         <Link
           href="/about?tab=reference"

@@ -45,6 +45,17 @@ describe("AboutTabs (C1, R2 gap 12)", () => {
     expect(container.textContent).toContain("for its own entries");
   });
 
+  it("follows a navigation that asks for another tab, as a link to ?tab=reference does", () => {
+    const { rerender } = render(<AboutTabs initial="tools" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
+    rerender(<AboutTabs initial="reference" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
+    expect(screen.getByRole("tab", { name: "Reference 71" }).getAttribute("aria-selected")).toBe("true");
+    expect((screen.getByText("reference panel").closest("[role=tabpanel]") as HTMLElement).hidden).toBe(false);
+    // A re-render with the same ask leaves the reader's own choice alone.
+    fireEvent.click(screen.getByRole("tab", { name: "Tools 14" }));
+    rerender(<AboutTabs initial="reference" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
+    expect(screen.getByRole("tab", { name: "Tools 14" }).getAttribute("aria-selected")).toBe("true");
+  });
+
   it("reads anything but reference as Tools", () => {
     expect(aboutTabOf("reference")).toBe("reference");
     expect(aboutTabOf("tools")).toBe("tools");

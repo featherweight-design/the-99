@@ -31,6 +31,14 @@ export type AboutTabsProps = {
 
 export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps) {
   const [tab, setTab] = useState<AboutTab>(initial);
+  // A link on the page to `?tab=reference` (How it works, Open the Reference) is a soft navigation to this same route,
+  // which re-renders it with a new `initial` and keeps this state. Follow it during render, not in an effect, so the
+  // Reference panel is drawn before the router scrolls to the link's `#entry`.
+  const [asked, setAsked] = useState<AboutTab>(initial);
+  if (initial !== asked) {
+    setAsked(initial);
+    setTab(initial);
+  }
   const select = (next: AboutTab) => {
     if (next === tab) return;
     setTab(next);
@@ -42,10 +50,10 @@ export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps)
   return (
     <div data-about-tabs={tab}>
       <div className="px-[16px] md:px-0">
-        <h1 className="m-0 font-display text-[27px] font-semibold tracking-[0.01em] text-[color:var(--fg)] md:text-[34px]">
+        <h1 className="m-0 font-display text-[27px] font-semibold text-[color:var(--fg)] md:text-[34px] md:tracking-[0.01em]">
           {aboutShapeCopy.title}
         </h1>
-        <p className="m-0 mt-[6px] text-[14.5px] leading-[1.5] text-[color:var(--fg-body)] md:mt-[8px] md:text-[15px]">
+        <p className="m-0 mt-[6px] text-[14.5px] leading-[1.5] text-[color:var(--fg-body)] md:mt-[8px] md:text-[15px] md:leading-normal">
           {tab === "tools" ? aboutShapeCopy.toolsSub : aboutShapeCopy.referenceSub}
         </p>
       </div>
