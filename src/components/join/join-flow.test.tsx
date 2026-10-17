@@ -90,4 +90,38 @@ describe("JoinFlow", () => {
     start({ kind: "ended" });
     expect(screen.getByRole("heading", { name: joinCopy.endedTitle })).toBeTruthy();
   });
+  it("a claim whose mail did not go is the toast, on the email step, with the cooldown running", async () => {
+    m.claim.mockResolvedValue({ ok: true, mailed: false });
+    start({ kind: "email", sender });
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByText(joinCopy.failed);
+    expect(screen.queryByText(joinCopy.codeBody("new@x.dev"))).toBeNull();
+    expect((screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement).value).toBe("new@x.dev");
+    expect((screen.getByRole("button", { name: /Send a new code in/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("a replacement address refused for the cooldown keeps the email step and its draft", async () => {
+    m.claim.mockResolvedValue({ ok: false, reason: "wait", waitMs: 30_000 });
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.otherEmail }));
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "b@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByRole("button", { name: /Send a new code in 0:30/ });
+    expect(screen.queryByText(joinCopy.codeBody("b@x.dev"))).toBeNull();
+    expect((screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement).value).toBe("b@x.dev");
+  });
+
+  it("a manual Confirm retires the old Try again, so it cannot resubmit a spent code", async () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    m.confirm.mockRejectedValueOnce(new Error("network"));
+    fireEvent.change(screen.getByLabelText(joinCopy.codeAria), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await screen.findByText(joinCopy.failed);
+    m.confirm.mockResolvedValueOnce({ ok: true });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await screen.findByText(joinCopy.okTitle);
+    expect(screen.queryByText(joinCopy.failed)).toBeNull();
+    expect(m.confirm).toHaveBeenCalledTimes(2);
+  });
 });

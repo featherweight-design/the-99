@@ -79,6 +79,8 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     if (busy) return;
     setBusy(true);
     setLine(null);
+    // A new request retires the last one's Try again: its callback holds the old state and could resubmit a spent code.
+    setToast(null);
     try {
       then(await act());
     } catch {
@@ -95,7 +97,12 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
       return;
     }
     void run(() => claimInviteAction(token, email), (r) => {
-      if (r.ok) {
+      if (r.ok && !r.mailed) {
+        // The claim committed but the mail did not go: the resend cooldown is running, the address stays editable.
+        setWaitUntil(Date.now() + 60_000);
+        setNow(Date.now());
+        say(() => sendCode());
+      } else if (r.ok) {
         setCode("");
         setStep("code");
         setWaitUntil(Date.now() + 60_000);
@@ -103,9 +110,9 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         requestAnimationFrame(() => codeRef.current?.focus());
       } else if (r.reason === "invalid") setLine(copy.notAnEmail);
       else if (r.reason === "wait") {
+        // Refused, so the stored address is unchanged: stay where the reader is (the email step names the cooldown).
         setWaitUntil(Date.now() + (r.waitMs ?? 60_000));
         setNow(Date.now());
-        setStep("code");
       } else if (r.reason === "ended") end();
       else say(() => sendCode());
     }, () => sendCode());
@@ -163,13 +170,13 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
               {copy.emailLabel}
               <input
                 type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
-                value={email} placeholder={copy.emailPlaceholder} className={FIELD}
+                value={email} placeholder={copy.emailPlaceholder} className={FIELD} readOnly={busy}
                 aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
                 onChange={(e) => { setEmail(e.target.value); setLine(null); }}
               />
             </label>
             {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
-            <button type="submit" disabled={busy} className={PRIMARY_BUTTON}>{busy ? copy.sendingCode : copy.sendCode}</button>
+            <button type="submit" disabled={busy || waiting} className={PRIMARY_BUTTON}>{busy ? copy.sendingCode : waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.sendCode}</button>
           </form>
         }
       />
@@ -208,7 +215,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
               <button type="button" className={LINK} disabled={busy || waiting} onClick={() => sendCode()}>
                 {waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.resend}
               </button>
-              <button type="button" className={LINK} onClick={() => { setLine(null); setStep("email"); }}>{copy.otherEmail}</button>
+              <button type="button" className={LINK} disabled={busy} onClick={() => { setLine(null); setStep("email"); }}>{copy.otherEmail}</button>
             </div>
           </form>
         }
