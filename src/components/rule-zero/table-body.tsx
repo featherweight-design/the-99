@@ -59,7 +59,7 @@ export function TableBody({
           <div className="md:col-start-2 md:row-start-1">
             <ReadCard draw={draw} updated={updated} />
           </div>
-          <div className="flex flex-col gap-[10px] md:col-start-1 md:row-span-2 md:row-start-1" data-testid="table-seats">
+          <div className="flex flex-col gap-[10px] md:col-start-1 md:row-start-1 md:row-end-3" data-testid="table-seats">
             {draw.seats.map((s) => (
               <TableSeat key={s.key} draw={s} />
             ))}

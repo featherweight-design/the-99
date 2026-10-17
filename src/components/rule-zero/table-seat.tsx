@@ -67,7 +67,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
       <div
         className={
           // Phone rows are spaced by margins (R1's `.ln` rows: 10px under the art, 8px to a sub line, 12px to the
-          // counts); desktop's three columns by the grid's gap.
+          // counts); desktop's three columns by the grid's gap. Placement uses start and end lines only: a `span`
+          // shorthand at one width resets the other width's start line, and the cell is then auto-placed.
           "relative grid grid-cols-[84px_minmax(0,1fr)_auto] gap-x-[12px] gap-y-0 p-[12px] "
           + "md:grid-cols-[132px_minmax(0,1fr)_auto] md:items-center md:gap-x-[18px] md:gap-y-[4px] md:pl-[12px] md:pr-[16px] "
           + (kind ? "md:pt-[16px] md:pb-[14px]" : "")
@@ -76,7 +77,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         <span
           aria-hidden
           className={
-            "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] md:row-span-2 md:h-[92px] md:w-[132px] md:rounded-[10px] md:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
+            "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] md:row-end-3 md:h-[92px] md:w-[132px] md:rounded-[10px] md:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
             + (art ? "" : "bg-[radial-gradient(120px_80px_at_50%_40%,#262A35,var(--surface))]")
           }
         >
@@ -91,8 +92,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
 
         <span
           className={
-            "col-span-2 col-start-2 row-start-1 flex min-w-0 flex-col gap-[3px] md:col-span-1 md:gap-[4px] "
-            + (chip ? "md:self-end" : "md:row-span-2 md:self-center")
+            "col-start-2 col-end-4 row-start-1 flex min-w-0 flex-col gap-[3px] md:col-end-3 md:gap-[4px] "
+            + (chip ? "md:self-end" : "md:row-end-3 md:self-center")
           }
         >
           <span className="flex min-w-0 items-baseline gap-[7px] text-[15px] font-semibold text-[color:var(--fg)] md:gap-[8px] md:text-[16px]">
@@ -120,11 +121,11 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
             dissolves (`contents`) so the chip takes its own row and the sub line the row under it. */}
         {chip ? (
           <span className="max-md:contents md:col-start-2 md:row-start-2 md:mt-[4px] md:flex md:min-w-0 md:flex-wrap md:items-center md:gap-x-[10px] md:gap-y-[4px] md:self-start">
-            <span className="max-md:col-span-2 max-md:col-start-1 max-md:row-start-2 max-md:mt-[10px] max-md:self-center">
+            <span className="max-md:col-start-1 max-md:col-end-3 max-md:row-start-2 max-md:mt-[10px] max-md:self-center">
               <BracketChip permits={chip.permits} answered={chip.answered} />
             </span>
             {state.kind === "stale" || draw.rangeLine ? (
-              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-md:col-span-3 max-md:col-start-1 max-md:row-start-3 max-md:mt-[8px] md:contents">
+              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-md:col-start-1 max-md:col-end-4 max-md:row-start-3 max-md:mt-[8px] md:contents">
                 {state.kind === "stale" ? (
                   <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
                     <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
@@ -150,8 +151,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         {chip && draw.counts ? (
           <span
             className={
-              "col-span-3 col-start-1 row-start-4 mt-[12px] md:col-span-1 md:col-start-3 md:mt-0 md:justify-self-end "
-              + (kind ? "md:row-start-2 md:mt-[4px] md:self-start" : "md:row-span-2 md:row-start-1 md:self-center")
+              "col-start-1 col-end-4 row-start-4 mt-[12px] md:col-start-3 md:col-end-4 md:mt-0 md:justify-self-end "
+              + (kind ? "md:row-start-2 md:mt-[4px] md:self-start" : "md:row-start-1 md:row-end-3 md:self-center")
             }
           >
             <SeatFacts counts={draw.counts} driving={draw.driving} />
