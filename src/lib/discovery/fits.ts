@@ -16,6 +16,8 @@ import { deckGameOpponents, deckGames, decks as decksTable } from "../../db/sche
 import { loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { priceFor } from "../decks/price-query";
+import { liveLockedIdsByDeck } from "../decks/locks";
+import { neverCutEnabled } from "../decks/never-cut-flag";
 import { listDecksWithStats } from "../decks/read";
 import { readBuyRowPrices } from "../decks/shopping-rollup";
 import { byTouched } from "../decks/touched";
@@ -34,18 +36,21 @@ export type DeckFacts = {
   name: string;
   /** The body's cards, commanders excluded. */
   built: number;
+  /** Cards on import lines still unresolved: Top off fills the slots these leave, never the slots they will take. */
+  unresolved: number;
   /** 99, or 98 with a partner. */
   size: number;
-  /** A Shopping row (never a commander's) priced over the deck's own limit. */
+  /** A Shopping row (never a commander's, never a locked card's while Never cut is on) priced over the deck's own limit. */
   overLimit: boolean;
-  /** A card the deck still needs that a friend shares a spare of. */
+  /** A card the deck's body still needs (never its commander or partner) that a friend shares a spare of. */
   friendSpare: boolean;
   /** A logged game that recorded at least one opponent. */
   gameWithOpponents: boolean;
 };
 
 export const FITS: Record<DeckToolId, (d: DeckFacts) => boolean> = {
-  "top-off": (d) => d.built < d.size,
+  // Top off offers `size - (built + unresolved)` slots, as the deck page's strip does (`deckCounts`' `total`).
+  "top-off": (d) => d.built + d.unresolved < d.size,
   "proposed-cuts": (d) => d.built > d.size,
   "suggested-changes": (d) => d.built === d.size,
   "mana-balance": (d) => d.built === d.size,
@@ -73,19 +78,28 @@ export async function loadToolFits(
 ): Promise<Partial<Record<DeckToolId, ToolFit>>> {
   if (tools.length === 0) return {};
   const asked = new Set(tools);
-  const [list, rows, played] = await Promise.all([
+  const shops = asked.has("stand-ins") || asked.has("friend-spares");
+  const [list, rows, decks, played] = await Promise.all([
     listDecksWithStats(userId, "name", { env }),
-    asked.has("stand-ins") || asked.has("friend-spares") ? loadDeckBuyRows(userId, undefined, undefined, env) : [],
+    shops ? loadDeckBuyRows(userId, undefined, undefined, env) : [],
+    shops ? deckLimits(userId) : [],
     asked.has("matchups") ? decksWithOpponents(userId) : new Set<string>(),
   ]);
+  // The Shopping list's own rows: a commander or partner draws in a group of its own, with no ⇄ and no spare glyph.
+  const byDeck = new Map(decks.map((d) => [d.id, d]));
+  const body = rows.filter((r) => {
+    const deck = byDeck.get(r.deckId);
+    return deck !== undefined && r.oracleId !== deck.commander && r.oracleId !== deck.partner;
+  });
   const [overLimit, spared] = await Promise.all([
-    asked.has("stand-ins") ? decksOverLimit(userId, rows, env) : new Set<string>(),
-    asked.has("friend-spares") ? decksWithSpares(userId, rows) : new Set<string>(),
+    asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck, env) : new Set<string>(),
+    asked.has("friend-spares") ? decksWithSpares(userId, body) : new Set<string>(),
   ]);
   const facts = [...list].sort(byTouched).map((d): DeckFacts => ({
     id: d.id,
     name: d.name,
     built: d.built,
+    unresolved: d.unresolvedCount,
     size: deckBodySize(d.partnerName !== null),
     overLimit: overLimit.has(d.id),
     friendSpare: spared.has(d.id),
@@ -94,32 +108,45 @@ export async function loadToolFits(
   return fitsOf(facts, tools);
 }
 
-/** Decks with a non-commander buy row priced over their own limit, as the Shopping list marks them. */
-async function decksOverLimit(userId: string, rows: DeckBuyRow[], env: NodeJS.ProcessEnv): Promise<Set<string>> {
+type DeckLimit = { id: string; limit: number | null; commander: string; partner: string | null };
+
+function deckLimits(userId: string): Promise<DeckLimit[]> {
+  return db.select({
+    id: decksTable.id,
+    limit: decksTable.shoppingLimitCents,
+    commander: decksTable.commanderOracleId,
+    partner: decksTable.partnerOracleId,
+  }).from(decksTable).where(eq(decksTable.userId, userId));
+}
+
+/**
+ * Decks with a body buy row priced over their own limit, as the Shopping list marks them. With Never cut on, a locked
+ * row has no ⇄ (the stand-ins sheet exists to cut the card), so it fits nothing.
+ */
+async function decksOverLimit(
+  userId: string,
+  rows: DeckBuyRow[],
+  byDeck: ReadonlyMap<string, DeckLimit>,
+  env: NodeJS.ProcessEnv,
+): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
-  const [read, limits] = await Promise.all([
+  const [read, locked] = await Promise.all([
     readBuyRowPrices(userId, rows, env),
-    db.select({
-      id: decksTable.id,
-      limit: decksTable.shoppingLimitCents,
-      commander: decksTable.commanderOracleId,
-      partner: decksTable.partnerOracleId,
-    }).from(decksTable).where(eq(decksTable.userId, userId)),
+    neverCutEnabled(env) ? liveLockedIdsByDeck(db, [...new Set(rows.map((r) => r.deckId))]) : new Map<string, ReadonlySet<string>>(),
   ]);
-  const byDeck = new Map(limits.map((d) => [d.id, d]));
   const out = new Set<string>();
   for (const row of rows) {
-    const deck = byDeck.get(row.deckId);
-    if (!deck || row.oracleId === deck.commander || row.oracleId === deck.partner) continue;
-    if (isOverLimit(priceFor(read, row.deckId, row.oracleId), read.newestAsOf, effectiveLimit(deck.limit))) out.add(row.deckId);
+    if (locked.get(row.deckId)?.has(row.oracleId)) continue;
+    const limit = effectiveLimit(byDeck.get(row.deckId)?.limit ?? null);
+    if (isOverLimit(priceFor(read, row.deckId, row.oracleId), read.newestAsOf, limit)) out.add(row.deckId);
   }
   return out;
 }
 
 /**
- * Decks missing a card a friend shares a spare of, read once over the union of every deck's missing cards with no cap
- * (R2 gap 3): `MAX_SPARES_BATCH` limits one HTTP request, not this server read, and a cap would drop a deck whose only
- * spare is past it.
+ * Decks missing a body card a friend shares a spare of, read once over the union of every deck's missing cards with
+ * no cap (R2 gap 3): `MAX_SPARES_BATCH` limits one HTTP request, not this server read, and a cap would drop a deck
+ * whose only spare is past it.
  */
 async function decksWithSpares(userId: string, rows: DeckBuyRow[]): Promise<Set<string>> {
   if (rows.length === 0) return new Set();

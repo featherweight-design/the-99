@@ -14,6 +14,11 @@ describe("isReadStatement", () => {
       "rollback",
       "show transaction_read_only",
       'select "updated_at", "created_at", "locked" from decks',
+      // The claim model's own comments (`availability-query.ts`), which name copies, updates and deletes in prose.
+      "with all_claims as (\n  -- list update, a swap, an import resolve, not only Put back) cancels its own release here,\n  -- draft: its commit and its discard both delete it.\n  select 1\n) select * from all_claims",
+      "select /* a copy, an update */ 1",
+      "select 'delete me' as note",
+      'select "copy" from t',
     ]) expect(isReadStatement(q), q).toBe(true);
   });
 
@@ -37,6 +42,9 @@ describe("isReadStatement", () => {
       "set session characteristics as transaction read write",
       "set search_path = public",
       "vacuum",
+      "select 1; -- a note\ndelete from decks",
+      "select 'it''s' as x; delete from decks",
+      "select /* note */ * from decks for update",
     ]) expect(isReadStatement(q), q).toBe(false);
   });
 });

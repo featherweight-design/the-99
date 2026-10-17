@@ -7,6 +7,7 @@ const stub = vi.hoisted(() => ({
   prices: new Map<string, unknown>(),
   spares: [] as { oracleId: string; spare: number }[],
   played: [] as { deckId: string }[],
+  locked: new Map<string, ReadonlySet<string>>(),
   calls: [] as string[],
 }));
 
@@ -26,6 +27,9 @@ vi.mock("../decks/shopping-rollup", () => ({
 vi.mock("../decks/price-query", () => ({
   priceFor: (read: { prices: Map<string, unknown> }, deckId: string, oracleId: string) => read.prices.get(`${deckId}:${oracleId}`) ?? null,
 }));
+vi.mock("../decks/locks", () => ({
+  liveLockedIdsByDeck: async () => { stub.calls.push("locks"); return stub.locked; },
+}));
 vi.mock("../social/spares", () => ({
   loadFriendSpares: async (_: string, ids: string[]) => { stub.calls.push(`spares:${ids.length}`); return stub.spares; },
 }));
@@ -33,7 +37,7 @@ vi.mock("../social/spares", () => ({
 import { fitsOf, loadToolFits, type DeckFacts } from "./fits";
 
 const facts = (id: string, over: Partial<DeckFacts> = {}): DeckFacts => ({
-  id, name: id, built: 99, size: 99, overLimit: false, friendSpare: false, gameWithOpponents: false, ...over,
+  id, name: id, built: 99, unresolved: 0, size: 99, overLimit: false, friendSpare: false, gameWithOpponents: false, ...over,
 });
 const ids = (fit: { decks: { id: string }[] } | undefined) => fit?.decks.map((d) => d.id);
 
@@ -56,7 +60,7 @@ describe("fitsOf", () => {
 });
 
 const listed = (id: string, touched: string, over: Record<string, unknown> = {}) => ({
-  id, name: id, built: 99, partnerName: null,
+  id, name: id, built: 99, unresolvedCount: 0, partnerName: null,
   lastEditedAt: new Date(touched), lastCommittedAt: null, lastPlayedAt: null, ...over,
 });
 
@@ -67,6 +71,7 @@ beforeEach(() => {
   stub.prices = new Map();
   stub.spares = [];
   stub.played = [];
+  stub.locked = new Map();
   stub.calls = [];
 });
 
@@ -116,6 +121,10 @@ describe("loadToolFits", () => {
       { deckId: "b", oracleId: "shared", quantity: 1 },
       { deckId: "a", oracleId: "shared", quantity: 1 },
     ];
+    stub.limits = [
+      { id: "a", limit: null, commander: "ca", partner: null },
+      { id: "b", limit: null, commander: "cb", partner: null },
+    ];
     stub.spares = [{ oracleId: "a249", spare: 1 }];
     const fit = await loadToolFits("u", env, ["friend-spares"]);
     expect(stub.calls).toContain("spares:251");
@@ -150,6 +159,41 @@ describe("loadToolFits", () => {
     expect(ids(fit["stand-ins"])).toEqual([]);
     expect(ids(fit["friend-spares"])).toEqual([]);
     expect(ids(fit.matchups)).toEqual([]);
+  });
+
+  it("leaves Top off out where unresolved import lines fill the body, as the deck page's strip does", async () => {
+    stub.decks = [
+      listed("filled", "2026-10-02", { built: 98, unresolvedCount: 1 }),
+      listed("short", "2026-10-01", { built: 97, unresolvedCount: 1 }),
+    ];
+    expect(ids((await loadToolFits("u", env, ["top-off"]))["top-off"])).toEqual(["short"]);
+  });
+
+  it("never fits Cheaper stand-ins on a locked card while Never cut is on, and does with it off", async () => {
+    stub.decks = [listed("lockd", "2026-10-02")];
+    stub.rows = [{ deckId: "lockd", oracleId: "dear", quantity: 1 }];
+    stub.limits = [{ id: "lockd", limit: null, commander: "x", partner: null }];
+    stub.prices = new Map([["lockd:dear", { cents: 9900, foilCents: null, etchedCents: null, asOf: new Date("2026-10-16") }]]);
+    stub.locked = new Map([["lockd", new Set(["dear"])]]);
+    const on = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    expect(ids((await loadToolFits("u", on, ["stand-ins"]))["stand-ins"])).toEqual([]);
+    stub.calls = [];
+    expect(ids((await loadToolFits("u", env, ["stand-ins"]))["stand-ins"])).toEqual(["lockd"]);
+    expect(stub.calls).not.toContain("locks");
+  });
+
+  it("never fits Friends' spares on a missing commander or partner: the Shopping list's body rows alone", async () => {
+    stub.decks = [listed("solo", "2026-10-02"), listed("pair", "2026-10-03", { built: 98, partnerName: "Tymna" })];
+    stub.rows = [
+      { deckId: "solo", oracleId: "boss", quantity: 1 },
+      { deckId: "pair", oracleId: "tymna", quantity: 1 },
+    ];
+    stub.limits = [
+      { id: "solo", limit: null, commander: "boss", partner: null },
+      { id: "pair", limit: null, commander: "kraum", partner: "tymna" },
+    ];
+    stub.spares = [{ oracleId: "boss", spare: 1 }, { oracleId: "tymna", spare: 1 }];
+    expect(ids((await loadToolFits("u", env, ["friend-spares"]))["friend-spares"])).toEqual([]);
   });
 
   it("asks nothing with no tools", async () => {
