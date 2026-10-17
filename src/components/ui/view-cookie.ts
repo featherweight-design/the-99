@@ -15,6 +15,10 @@ export const COLLECTION_VIEW_COOKIE = "collection_view";
 /** Whether the reader's window was at least 768px wide on their last visit. "1" or "0". */
 export const COLLECTION_WIDE_COOKIE = "collection_wide";
 
+/** The sort the reader last chose on `/collection`, as `<key>.<direction>`. The server cuts the first window of 200 by
+ *  sort, so a client-only store would draw the default order and then re-sort; this one the server can read. */
+export const COLLECTION_SORT_COOKIE = "collection_sort";
+
 export type CollectionView = "grid" | "rows";
 
 export function parseViewCookie(raw: string | undefined | null): CollectionView | null {

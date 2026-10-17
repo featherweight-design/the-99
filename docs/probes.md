@@ -2490,6 +2490,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `contact-sheets/invites-join/`. Needs a server on the SAME database with `SOCIAL_FRIENDS_ENABLED` and
   `SOCIAL_INVITES_ENABLED` true and no `INVITE_CODE_SECRET`; it WRITES, so `PROBE_DB_BRANCH` must name the branch
   `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+- `pnpm probe:collection-sort-memory` proves `/collection` remembers the reader's sort in a browser at 390 and 1300 (cookie
+  `collection_sort`, `<key>.<direction>`, written by the Sort control's press and read by the page): pick Quantity, leave,
+  and a bare visit restores it, with the address mirroring `?sort=` through `mirrorUrl`, the server's own HTML already in
+  that order and the first window of 200 arriving whole with no busy list (so nothing reorders after hydration), and an
+  explicit `?sort=` still winning. Mutation-checked: cut the page's window by the URL alone and the restored-order and
+  whole-window checks fail at both widths. It writes no database row (the About gate is marked seen and restored, as the card-search probe does); put the reader's own order back at the end. Needs a server at `PROBE_BASE`.
 - `pnpm probe:scan-auto` proves Auto's optimistic add in Chromium at 390 and 1300, with the fake camera and a stubbed
   match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card

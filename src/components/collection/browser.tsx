@@ -41,7 +41,7 @@ import {
 } from "./filter-bar";
 import { CHASSIS_WIDE_MIN_PX } from "../ui/filter-chassis";
 import { useMinWidth, useMinWidthHinted } from "../ui/use-min-width";
-import { COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE } from "../ui/view-cookie";
+import { COLLECTION_SORT_COOKIE, COLLECTION_VIEW_COOKIE, COLLECTION_WIDE_COOKIE, writeViewCookie } from "../ui/view-cookie";
 import { collectionChips } from "../../lib/collection/chips";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -53,6 +53,7 @@ import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { serializeSortCookie, withStoredSort, type StoredSort } from "../../lib/collection/sort-options";
 import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
 import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
@@ -74,6 +75,7 @@ function serializeParams(
   view: ViewMode | null,
   card: string | null,
   existing: string,
+  remembered: StoredSort | null,
 ): string {
   const p = new URLSearchParams(existing);
   for (const key of OWNED_PARAMS) p.delete(key);
@@ -91,7 +93,11 @@ function serializeParams(
   if (filters.availability && filters.availability.length > 0) {
     p.set("avail", serializeAvailability(filters.availability));
   }
-  if (sort !== "name") p.set("sort", sort);
+  // An absence reads as the remembered sort (`withStoredSort`), so it is only faithful when that IS this order. A list
+  // sorted another way than the one remembered says so, Name included: `?sort=name` over a remembered Quantity would
+  // otherwise lose its override at the next reload.
+  const baseline = remembered ?? { sort: "name" as SortKey, direction: DEFAULT_SORT_DIRECTION.name };
+  if (sort !== "name" || sort !== baseline.sort || direction !== baseline.direction) p.set("sort", sort);
   // Only when it is NOT the key's natural direction, so the common case keeps a
   // clean URL and a pre-#119 link still lands on the order it always did.
   if (direction !== DEFAULT_SORT_DIRECTION[sort]) p.set("dir", direction);
@@ -227,7 +233,7 @@ export function availabilityChangeAnnouncement(
   );
 }
 
-export type ViewHint = { stored: ViewMode | null; wide: boolean | null };
+export type ViewHint = { stored: ViewMode | null; wide: boolean | null; sort?: StoredSort | null };
 const NO_VIEW_HINT: ViewHint = { stored: null, wide: null };
 
 export function CollectionBrowser({
@@ -288,8 +294,10 @@ export function CollectionBrowser({
   // The URL's state, parsed by the same function the page runs to cut its first window, so the
   // rows drawn first are the rows the page shipped whole. Shared URLs can carry unknown values;
   // each falls back to its default there.
-  const [initial] = useState(() => parseBrowseParams((key) => search.get(key), availabilityOk));
+  const [initial] = useState(() => parseBrowseParams(withStoredSort((key) => search.get(key), viewHint.sort), availabilityOk));
   const [filters, setFilters] = useState<BrowseFilters>(initial.filters);
+  // The sort the cookie holds now: what a URL with no `sort` reads as. Starts as the page's hint and follows every press.
+  const remembered = useRef<StoredSort | null>(viewHint.sort ?? null);
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [sortDirection, setSortDirection] = useState<SortDirection>(initial.direction);
   // null = "auto" (no explicit user choice); resolves to rows on mobile, grid on desktop.
@@ -473,6 +481,9 @@ export function CollectionBrowser({
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
     setSortDirection(direction);
+    remembered.current = { sort: s, direction };
+    // The choice is remembered for the next visit, the default order included: pressing Name is a choice too.
+    writeViewCookie(COLLECTION_SORT_COOKIE, serializeSortCookie(remembered.current));
     setShown(PAGE_SIZE);
     setRevealFrom(null);
   }, []);
@@ -636,6 +647,7 @@ export function CollectionBrowser({
       // The live URL, not the mount-time one: a param this component does not
       // own can arrive after mount and must survive the next filter change.
       window.location.search,
+      remembered.current,
     );
     mirrorUrl(`/collection${qs}`);
   }, [filters, sort, sortDirection, view, openOracleId, openInList]);
