@@ -3389,6 +3389,54 @@ export const podSpareShares = pgTable("pod_spare_shares", {
 ]);
 
 /**
+ * Rule 0 table check (plan `docs/superpowers/plans/2026-10-16-rule-zero.md`): one player sets a table for a pod's
+ * night and every seated member sees the others' chosen decks for its 24 hours. Keyed by its own id, never by pod
+ * (G7): "one open table per pod" is one check in `setTable`, under the pod row's lock, because "open" is
+ * `expires_at > now()` and no index predicate can read the clock. Expired rows are not swept by a job: every read
+ * filters `expires_at > now()`, the pod's next setup deletes its expired tables, and the account purge takes the rest.
+ * No owner column and no `user_data_touch` trigger: Home reads its card per request (`PER_REQUEST_READS`).
+ */
+export const ruleZeroTables = pgTable("rule_zero_tables", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  podId: uuid("pod_id").notNull().references(() => pods.id, { onDelete: "cascade" }),
+  setBy: text("set_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [
+  index("rule_zero_tables_pod_idx").on(t.podId, t.expiresAt),
+  index("rule_zero_tables_set_by_idx").on(t.setBy),
+]);
+
+/**
+ * A seat at a table, addressed by its own (table, user) key: no other player's deck id reaches a client. A deck
+ * deleted while seated leaves the seat waiting (`set null`, decision 2) rather than removing its player.
+ */
+export const ruleZeroSeats = pgTable("rule_zero_seats", {
+  tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  seat: smallint("seat").notNull(),
+  deckId: uuid("deck_id").references(() => decks.id, { onDelete: "set null" }),
+  changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.tableId, t.userId] }),
+  unique("rule_zero_seats_seat_unique").on(t.tableId, t.seat),
+  check("rule_zero_seats_seat_check", sql`${t.seat} between 1 and 8`),
+  index("rule_zero_seats_user_idx").on(t.userId),
+  // For the `set null` a deck delete runs, which would otherwise scan every seat.
+  index("rule_zero_seats_deck_idx").on(t.deckId).where(sql`${t.deckId} is not null`),
+]);
+
+/** A seated player's own last draw of a table: a seat changed after it carries a dot. Home never reads it. */
+export const ruleZeroSeen = pgTable("rule_zero_seen", {
+  tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  seenAt: timestamp("seen_at", { withTimezone: true }).notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.tableId, t.userId] }),
+  index("rule_zero_seen_user_idx").on(t.userId),
+]);
+
+/**
  * A player's wishlist (scope §2, Hugh's ruling Q7, 2026-10-12): cards wanted outside any deck, at CARD level
  * (any printing will do). `quantity` is how many copies the player wants to own in all. Once the collection
  * holds that many the card is COLLECTED and leaves the list (Social R2 G5, Hugh, 2026-10-15, reversing Q9's

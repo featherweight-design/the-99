@@ -2585,6 +2585,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   in the limit a panel reads; with the default at 1, a player in no group takes 1 while the owner keeps their own,
   until placed in a group; and the column refuses 0. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+- `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
+  real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
+  setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
+  setup the viewer does not sit in, a non-friend's deck, another player's deck on the viewer's seat, a friend's deck on
+  the wrong seat) writes nothing; one open table per pod, answered `open` to a seated player and `occupied` to anyone
+  else, and under three concurrent setups; what a seated non-friend, an unseated member, a player reseated off and a
+  member who left the pod read, with no account or deck id in the payload; a seat's own deck (`unchanged` writes
+  nothing); `markSeen` keeping a swap that landed after its snapshot, never moving back; `on delete set null`; the
+  setter's reseat keeping a staying seat's deck and change time; Home's read listing a table expiring in 2 seconds and
+  dropping it after, with no write between; the next setup deleting the pod's expired table; and the account purge
+  removing all three tables' rows, deleting a table it set and closing a table it leaves with one seat. It refuses
+  staging, production and local-dev (`assertScratchBranch`): run it on a scratch branch made from local-dev. Mutation-
+  checked: dropping the pod row's `FOR UPDATE` writes three tables under the concurrent setups, and dropping `greatest`
+  lets an older acknowledgement move `seen_at` back.
 - `pnpm probe:game-opponents` proves opponents in the game log (social Feature C) against a real database. It builds a
   player, a friend with two decks and a pod, and a stranger to the player who is the friend's friend (so a read that lost
   its viewer predicate would find the stranger through the friend). It proves that a friend's decks are offered by

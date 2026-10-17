@@ -1,0 +1,374 @@
+/**
+ * Rule 0 table check, the data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2): setting a table for a
+ * pod's night, seating it, a seat's own deck, what a seated player has seen, and the reads the pod row and Home's
+ * card draw. Every read and write lives here because the tables are social (`check:social-reads`).
+ *
+ * **The grant is the seat.** A table is seen only by a player seated at it, while it is open (`expires_at > now()`),
+ * and while they are still a member of its pod (decision 3): every read and write below joins all three on the
+ * session's viewer in the same statement. Seats whose player has left the pod are omitted from what others see.
+ *
+ * **One open table per pod** (G7) is the check in `setTable`, under the pod row's `FOR UPDATE`; nothing else may
+ * enforce it, so dropping it is how several tables per pod arrive later. Expired tables are never swept by a job:
+ * every read filters `expires_at > now()` on the database's clock, and a pod's next setup deletes its expired rows.
+ *
+ * Nothing returned carries a Clerk id or another player's deck id (decision 5): a player is a display name (and a
+ * `publicId` only where the two are friends), a seat is addressed by its table and its player's place.
+ */
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { db } from "../../db";
+import { decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles } from "../../db/schema";
+import type { Reader } from "./access";
+import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
+import { friendDeckCountsQuery, friendDecksIn } from "./games";
+import { isUuid } from "./rules";
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** A table holds 2 to 8 seats (the seat check in the schema is the same range). */
+export const SEATS_MIN = 2;
+export const SEATS_MAX = 8;
+/** How long a table stays open after it is set. */
+export const TABLE_HOURS = 24;
+
+/** A seat as setup asks for it: a pod member by `publicId`, and the deck the setter picked for them, if any. */
+export type SeatAsk = { member: string; deck: string | null };
+
+export type SeatRefusal = "invalid" | "notInPod" | "notSeated" | "notMember" | "deck";
+
+export type SetTableResult =
+  | { kind: "set"; tableId: string }
+  /** The pod already has an open table and the viewer sits at it: open that one. */
+  | { kind: "open"; tableId: string }
+  /** The pod already has an open table the viewer is not seated at: nothing written. */
+  | { kind: "occupied"; setBy: string | null; closesAt: Date }
+  | { kind: "refused"; reason: SeatRefusal };
+
+/** The asks are a list of 2 to 8 distinct members, each a uuid, each deck a uuid or null. */
+function validAsks(raw: unknown): raw is SeatAsk[] {
+  if (!Array.isArray(raw) || raw.length < SEATS_MIN || raw.length > SEATS_MAX) return false;
+  const ok = raw.every((a) => typeof a === "object" && a !== null && isUuid((a as SeatAsk).member) && ((a as SeatAsk).deck === null || isUuid((a as SeatAsk).deck)));
+  return ok && new Set(raw.map((a: SeatAsk) => a.member)).size === raw.length;
+}
+
+/** Whether the viewer is a member of the pod. Called with the pod row already locked. */
+async function isMemberIn(tx: Tx, podId: string, userId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ userId: podMembers.userId })
+    .from(podMembers)
+    .where(and(eq(podMembers.podId, podId), eq(podMembers.userId, userId)));
+  return row !== undefined;
+}
+
+type ResolvedSeat = { userId: string; deckId: string | null };
+
+/**
+ * Turn the asks into seats, in order, or refuse them all. Under the pod row's lock: every seat must be a member of
+ * the pod now, the viewer must be one of them, and a picked deck must be the seat's own player's: the viewer's own
+ * deck for the viewer's seat, a friend's deck (`friendDecksIn`, through the viewer's own link) for a friend's seat.
+ * A seat whose player is not the viewer's friend takes no deck (G3): its player picks their own.
+ * The viewer's friendship rows to the seated friends are held FOR SHARE and the picked decks FOR KEY SHARE, the
+ * order (pod, friendship, deck) every social write takes them, so an unfriend or a deck delete waits for this.
+ */
+async function resolveSeatsIn(tx: Tx, viewerId: string, podId: string, asks: readonly SeatAsk[]): Promise<ResolvedSeat[] | SeatRefusal> {
+  const members = await tx
+    .select({ userId: podMembers.userId, publicId: socialProfiles.publicId })
+    .from(podMembers)
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, podMembers.userId))
+    .where(and(eq(podMembers.podId, podId), inArray(socialProfiles.publicId, asks.map((a) => a.member))));
+  const byPublic = new Map(members.map((m) => [m.publicId, m.userId]));
+  const userIds = asks.map((a) => byPublic.get(a.member));
+  if (userIds.some((u) => u === undefined)) return "notMember";
+  const seated = userIds as string[];
+  if (!seated.includes(viewerId)) return "notSeated";
+  const others = seated.filter((u) => u !== viewerId);
+  const friends = others.length === 0 ? [] : await tx
+    .select({ userId: friendLinks.friendUserId })
+    .from(friendLinks)
+    .where(and(eq(friendLinks.userId, viewerId), inArray(friendLinks.friendUserId, others)))
+    .orderBy(asc(friendLinks.userId), asc(friendLinks.friendUserId))
+    .for("share");
+  const isFriend = new Set(friends.map((f) => f.userId));
+  const own = asks.flatMap((a, i) => (a.deck !== null && seated[i] === viewerId ? [a.deck] : []));
+  const theirs = asks.flatMap((a, i) => (a.deck !== null && seated[i] !== viewerId ? [a.deck] : []));
+  const ownRows = own.length === 0 ? [] : await tx
+    .select({ id: decks.id, userId: decks.userId })
+    .from(decks)
+    .where(and(inArray(decks.id, own), eq(decks.userId, viewerId)))
+    .for("key share");
+  const friendRows = theirs.length === 0 ? [] : await friendDecksIn(tx, viewerId, theirs);
+  const deckOwner = new Map([...ownRows, ...friendRows].map((d) => [d.id, d.userId]));
+  const out: ResolvedSeat[] = [];
+  for (const [i, ask] of asks.entries()) {
+    const userId = seated[i];
+    if (ask.deck !== null) {
+      if (userId !== viewerId && !isFriend.has(userId)) return "deck";
+      if (deckOwner.get(ask.deck) !== userId) return "deck";
+    }
+    out.push({ userId, deckId: ask.deck });
+  }
+  return out;
+}
+
+/**
+ * Set a table for the pod's night: 2 to 8 of its members, the viewer among them, seated in the order given. Under
+ * the pod row's lock it first deletes the pod's expired tables, then applies the one rule (G7): an open table
+ * already there is answered `open` to a player seated at it and `occupied` to anyone else, with nothing written.
+ * Two setups at once queue on the pod row, so the second always finds the first's table.
+ */
+export async function setTable(viewerId: string, podId: unknown, rawSeats: unknown): Promise<SetTableResult> {
+  if (!isUuid(podId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
+  const asks = rawSeats;
+  return db.transaction(async (tx) => {
+    const [pod] = await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, podId)).for("update");
+    if (!pod || !(await isMemberIn(tx, podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
+    await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
+    const [open] = await tx
+      .select({ id: ruleZeroTables.id, closesAt: ruleZeroTables.expiresAt, setBy: socialProfiles.displayName, seated: ruleZeroSeats.userId })
+      .from(ruleZeroTables)
+      .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
+      .leftJoin(ruleZeroSeats, and(eq(ruleZeroSeats.tableId, ruleZeroTables.id), eq(ruleZeroSeats.userId, viewerId)))
+      .where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} > now()`))
+      .limit(1);
+    if (open) {
+      return open.seated !== null
+        ? ({ kind: "open", tableId: open.id } as const)
+        : ({ kind: "occupied", setBy: open.setBy, closesAt: open.closesAt } as const);
+    }
+    const seats = await resolveSeatsIn(tx, viewerId, podId, asks);
+    if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
+    const [table] = await tx
+      .insert(ruleZeroTables)
+      .values({ podId, setBy: viewerId, expiresAt: sql`now() + make_interval(hours => ${TABLE_HOURS})` })
+      .returning({ id: ruleZeroTables.id });
+    await tx.insert(ruleZeroSeats).values(seats.map((s, i) => ({ tableId: table.id, userId: s.userId, seat: i + 1, deckId: s.deckId })));
+    return { kind: "set", tableId: table.id } as const;
+  });
+}
+
+export type ReseatResult = { kind: "reseated" } | { kind: "refused"; reason: SeatRefusal | "notFound" };
+
+/**
+ * The setter's `Seats`: the same checks as `setTable`, over an open table the viewer set. A player who stays keeps
+ * their deck and `changed_at`, whatever the asks say (each player changes their own deck through `setSeatDeck`), so
+ * a reseat alone never marks anyone's seat as changed. A player who leaves the table loses their seen row with it.
+ */
+export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: unknown): Promise<ReseatResult> {
+  if (!isUuid(tableId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
+  const asks = rawSeats;
+  return db.transaction(async (tx) => {
+    const [found] = await tx.select({ podId: ruleZeroTables.podId }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId));
+    if (!found) return { kind: "refused", reason: "notFound" } as const;
+    // The pod row first, as `setTable` takes it, then the table, re-read under the lock.
+    await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, found.podId)).for("update");
+    const [table] = await tx
+      .select({ id: ruleZeroTables.id })
+      .from(ruleZeroTables)
+      .where(and(eq(ruleZeroTables.id, tableId), eq(ruleZeroTables.setBy, viewerId), sql`${ruleZeroTables.expiresAt} > now()`))
+      .for("update");
+    if (!table) return { kind: "refused", reason: "notFound" } as const;
+    if (!(await isMemberIn(tx, found.podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
+    const before = await tx
+      .select({ userId: ruleZeroSeats.userId, deckId: ruleZeroSeats.deckId, changedAt: ruleZeroSeats.changedAt })
+      .from(ruleZeroSeats)
+      .where(eq(ruleZeroSeats.tableId, tableId));
+    const kept = new Map(before.map((s) => [s.userId, s]));
+    // A staying player's deck is theirs to change, so only a NEW seat's pick is checked (and used).
+    const members = await tx
+      .select({ userId: socialProfiles.userId, publicId: socialProfiles.publicId })
+      .from(socialProfiles)
+      .where(inArray(socialProfiles.publicId, asks.map((a) => a.member)));
+    const userOf = new Map(members.map((m) => [m.publicId, m.userId]));
+    const checked = asks.map((a) => (kept.has(userOf.get(a.member) ?? "") ? { ...a, deck: null } : a));
+    const seats = await resolveSeatsIn(tx, viewerId, found.podId, checked);
+    if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
+    await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
+    await tx.insert(ruleZeroSeats).values(seats.map((s, i) => {
+      const stay = kept.get(s.userId);
+      return stay
+        ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt }
+        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId };
+    }));
+    const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
+    if (gone.length > 0) await tx.delete(ruleZeroSeen).where(and(eq(ruleZeroSeen.tableId, tableId), inArray(ruleZeroSeen.userId, gone)));
+    return { kind: "reseated" } as const;
+  });
+}
+
+/**
+ * The SQL that holds the viewer's grant over a table: seated at it, open, and still a member of its pod.
+ * Raw and aliased throughout, so no column can resolve against the wrong table.
+ */
+const seatedAt = (viewerId: string, tableId: string) => sql`exists (
+  select 1 from ${ruleZeroSeats} gs
+  join ${ruleZeroTables} gt on gt.id = gs.table_id
+  join ${podMembers} gm on gm.pod_id = gt.pod_id and gm.user_id = gs.user_id
+  where gs.table_id = ${tableId} and gs.user_id = ${viewerId} and gt.expires_at > now()
+)`;
+
+export type SetSeatDeckResult = "set" | "unchanged" | "refused";
+
+/**
+ * The viewer's own seat, the viewer's own deck (or none). Moves `changed_at` only when the deck changes, so the
+ * other seats' dots mean a real swap. `Undo` is this call with the previous deck.
+ */
+export async function setSeatDeck(viewerId: string, tableId: unknown, deckId: unknown): Promise<SetSeatDeckResult> {
+  if (!isUuid(tableId) || (deckId !== null && !isUuid(deckId))) return "refused";
+  return db.transaction(async (tx) => {
+    if (deckId !== null) {
+      const [own] = await tx.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, viewerId))).for("key share");
+      if (!own) return "refused";
+    }
+    const written = await tx
+      .update(ruleZeroSeats)
+      .set({ deckId, changedAt: sql`now()` })
+      .where(and(
+        eq(ruleZeroSeats.tableId, tableId),
+        eq(ruleZeroSeats.userId, viewerId),
+        sql`${ruleZeroSeats.deckId} is distinct from ${deckId}::uuid`,
+        seatedAt(viewerId, tableId),
+      ))
+      .returning({ tableId: ruleZeroSeats.tableId });
+    if (written.length > 0) return "set";
+    const held = await tx.execute(sql`select ${seatedAt(viewerId, tableId)} as ok`);
+    return (held.rows[0] as { ok: boolean } | undefined)?.ok ? "unchanged" : "refused";
+  });
+}
+
+/**
+ * The viewer has drawn the table through `seenThrough`: the snapshot's `revision` (its latest `changed_at`), never
+ * the time of the acknowledgement, so a swap that landed after the drawn snapshot keeps its dot. Never moves back.
+ */
+export async function markSeen(viewerId: string, tableId: unknown, seenThrough: unknown): Promise<boolean> {
+  if (!isUuid(tableId) || !(seenThrough instanceof Date) || Number.isNaN(seenThrough.getTime())) return false;
+  const written = await db.execute(sql`
+    insert into ${ruleZeroSeen} (table_id, user_id, seen_at)
+    select ${tableId}, ${viewerId}, ${seenThrough.toISOString()}::timestamptz
+    where ${seatedAt(viewerId, tableId)}
+    on conflict (table_id, user_id) do update set seen_at = greatest(${ruleZeroSeen}.seen_at, excluded.seen_at)
+    returning table_id`);
+  return written.rows.length > 0;
+}
+
+/** A seated player as the pod row and Home's card draw them: a face and a name, in seat order. */
+export type TableFace = { displayName: string; you: boolean; commander: ProfileCommander | null };
+
+export type OpenTable = { tableId: string; podId: string; podName: string; closesAt: Date; setByYou: boolean; seats: TableFace[] };
+
+const mine = alias(ruleZeroSeats, "mine");
+const viewerIn = alias(podMembers, "viewer_in");
+
+/**
+ * The open tables the viewer sits at, of pods they are still in. Apart so a test can render its SQL: the clock is
+ * the database's (`expires_at > now()`), never one passed in, so an expired table leaves on the next read.
+ */
+export function openTablesQuery(viewerId: string, q: Reader = db) {
+  return q
+    .select({
+      tableId: ruleZeroTables.id,
+      podId: ruleZeroTables.podId,
+      podName: pods.name,
+      closesAt: ruleZeroTables.expiresAt,
+      setBy: ruleZeroTables.setBy,
+    })
+    .from(ruleZeroTables)
+    .innerJoin(mine, and(eq(mine.tableId, ruleZeroTables.id), eq(mine.userId, viewerId)))
+    .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
+    .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
+    .where(sql`${ruleZeroTables.expiresAt} > now()`)
+    .orderBy(asc(ruleZeroTables.expiresAt), asc(ruleZeroTables.id));
+}
+
+/** The seats of the given tables whose players are still members of the table's pod, with their faces. */
+function tableFacesQuery(tableIds: readonly string[], q: Reader = db) {
+  return q
+    .select({ tableId: ruleZeroSeats.tableId, userId: ruleZeroSeats.userId, displayName: socialProfiles.displayName, ...commanderColumns })
+    .from(ruleZeroSeats)
+    .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
+    .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .where(inArray(ruleZeroSeats.tableId, [...tableIds]))
+    .orderBy(asc(ruleZeroSeats.tableId), asc(ruleZeroSeats.seat));
+}
+
+/** The viewer's open tables with their seated faces, from ONE snapshot (the pod row on `/friends`, Home's card). */
+export async function openTablesFor(viewerId: string): Promise<OpenTable[]> {
+  return db.transaction(async (tx) => {
+    const tables = await openTablesQuery(viewerId, tx);
+    if (tables.length === 0) return [];
+    const faces = await tableFacesQuery(tables.map((t) => t.tableId), tx);
+    return tables.map((t) => ({
+      tableId: t.tableId,
+      podId: t.podId,
+      podName: t.podName,
+      closesAt: t.closesAt,
+      setByYou: t.setBy === viewerId,
+      seats: faces
+        .filter((f) => f.tableId === t.tableId)
+        .map((f) => ({ displayName: f.displayName, you: f.userId === viewerId, commander: toCommander(f) })),
+    }));
+  // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
+  }, { isolationLevel: "repeatable read" });
+}
+
+/**
+ * A pod member as setup offers them. `you` is the viewer; a friend reads as `hasDecks` or `noDecks` from the
+ * viewer's own link rows (`friendDeckCountsQuery`, G2); a member who is not the viewer's friend is `picksOwn`,
+ * since the viewer may not see their decks.
+ */
+export type SetupMember = { publicId: string; displayName: string; commander: ProfileCommander | null; kind: "you" | "hasDecks" | "noDecks" | "picksOwn" };
+
+const viewerFriend = alias(friendLinks, "viewer_friend");
+
+/** The pod's members, in join order, for a viewer who is one of them; empty otherwise. */
+export async function podSetupMembers(viewerId: string, podId: unknown): Promise<SetupMember[]> {
+  if (!isUuid(podId)) return [];
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({
+        userId: podMembers.userId,
+        publicId: socialProfiles.publicId,
+        displayName: socialProfiles.displayName,
+        friend: viewerFriend.friendUserId,
+        ...commanderColumns,
+      })
+      .from(podMembers)
+      .innerJoin(viewerIn, and(eq(viewerIn.podId, podMembers.podId), eq(viewerIn.userId, viewerId)))
+      .innerJoin(socialProfiles, eq(socialProfiles.userId, podMembers.userId))
+      .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, podMembers.userId)))
+      .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+      .where(eq(podMembers.podId, podId))
+      .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
+    if (rows.length === 0) return [];
+    const counts = new Map((await friendDeckCountsQuery(viewerId, tx)).map((c) => [c.publicId, c.count]));
+    return rows.map((r) => ({
+      publicId: r.publicId,
+      displayName: r.displayName,
+      commander: toCommander(r),
+      kind: r.userId === viewerId ? "you" : r.friend === null ? "picksOwn" : (counts.get(r.publicId) ?? 0) > 0 ? "hasDecks" : "noDecks",
+    }));
+  }, { isolationLevel: "repeatable read" });
+}
+
+export type RuleZeroPurge = { seats: number; tables: number };
+
+/**
+ * The account purge's Rule 0 part, inside `purgeSocialIn`'s transaction and before the pod hand-on, since a table
+ * belongs to the pod's night and not to its next owner: the account's seats and seen rows go, every table it set
+ * goes (its seats and seen rows cascade), and so does any table it leaves with fewer than two seats (decision 7).
+ */
+export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroPurge> {
+  const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
+  await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
+  const set = await tx.delete(ruleZeroTables).where(eq(ruleZeroTables.setBy, userId)).returning({ id: ruleZeroTables.id });
+  const touched = [...new Set(left.map((s) => s.tableId))];
+  const short = touched.length === 0 ? [] : await tx
+    .delete(ruleZeroTables)
+    .where(and(
+      inArray(ruleZeroTables.id, touched),
+      sql`(select count(*) from ${ruleZeroSeats} rs where rs.table_id = ${ruleZeroTables}.id) < ${SEATS_MIN}`,
+    ))
+    .returning({ id: ruleZeroTables.id });
+  return { seats: left.length, tables: set.length + short.length };
+}

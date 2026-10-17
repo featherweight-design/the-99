@@ -29,6 +29,13 @@ describe("socialReadsIn", () => {
     expect(socialReadsIn("sql`delete from pod_spare_shares where user_id = ${id}`").map((f) => f.why)).toEqual(["names pod_spare_shares in SQL"]);
   });
 
+  it("covers the Rule 0 tables, by binding and by name", () => {
+    for (const [binding, name] of [["ruleZeroTables", "rule_zero_tables"], ["ruleZeroSeats", "rule_zero_seats"], ["ruleZeroSeen", "rule_zero_seen"]]) {
+      expect(socialReadsIn(`import { ${binding} } from "../../db/schema";`)).toEqual([{ line: 1, why: `imports ${binding}` }]);
+      expect(socialReadsIn(`sql\`select 1 from ${name} where user_id = \${id}\``).map((f) => f.why)).toEqual([`names ${name} in SQL`]);
+    }
+  });
+
   it("does not read the word pods in copy, or a type-only import", () => {
     expect(socialReadsIn(`const line = "Your pods are where game nights start.";`)).toEqual([]);
     expect(socialReadsIn(`import type { pods } from "../db/schema";`)).toEqual([]);

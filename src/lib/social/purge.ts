@@ -12,6 +12,7 @@ import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { deckGameOpponents, friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { leavePodIn } from "./pods";
+import { purgeRuleZeroIn } from "./rule-zero";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -23,6 +24,9 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   pod_spare_shares: ["user_id"],
   friend_links: ["user_id", "friend_user_id"],
   social_profiles: ["user_id"],
+  rule_zero_tables: ["set_by"],
+  rule_zero_seats: ["user_id"],
+  rule_zero_seen: ["user_id"],
 };
 
 /**
@@ -34,13 +38,13 @@ export const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = {
   deck_game_opponents: ["friend_user_id"],
 };
 
-export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted: number; friendLinks: number };
+export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted: number; friendLinks: number; ruleZeroSeats: number; ruleZeroTables: number };
 
 /** What the social half did, and the friends whose data stamps the purge moves (sorted). */
 export type SocialPurged = { counts: SocialPurge; friendIds: string[] };
 
 export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurged> {
-  const out: SocialPurge = { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 0 };
+  const out: SocialPurge = { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 0, ruleZeroSeats: 0, ruleZeroTables: 0 };
   // Locks in the hierarchy every social write takes them. The account's invites first, in token order:
   // `redeemInvite` locks its invite before it writes a friendship, so a redemption racing this either lands
   // first (and its new links are read and deleted below) or waits and finds the invite gone. Then (as
@@ -79,6 +83,11 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
     .update(deckGameOpponents)
     .set({ friendUserId: null, friendDeckId: null })
     .where(eq(deckGameOpponents.friendUserId, userId));
+  // Rule 0 tables before the pod hand-on: a table belongs to the pod's night, not to the pod's next owner. The
+  // account's decks are already locked above, so the seats naming them go without reversing that order.
+  const ruleZero = await purgeRuleZeroIn(tx, userId);
+  out.ruleZeroSeats = ruleZero.seats;
+  out.ruleZeroTables = ruleZero.tables;
   const memberOf = await tx
     .select({ podId: podMembers.podId })
     .from(podMembers)
