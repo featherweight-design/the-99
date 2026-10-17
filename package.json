@@ -217,6 +217,7 @@
     "measure:profile-cost": "tsx scripts/measure-profile-cost.mts",
     "measure:load": "node scripts/measure-load.mjs",
     "measure:scan": "node scripts/measure-scan.mjs",
+    "measure:scan-recall": "tsx scripts/measure-scan-recall.mts",
     "check:constraints": "node scripts/check-constraints.mjs",
     "db:build:labels": "tsx scripts/build-card-labels.ts",
     "db:copy:labels": "tsx scripts/copy-card-labels.ts",

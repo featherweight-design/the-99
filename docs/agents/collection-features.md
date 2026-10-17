@@ -80,6 +80,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the scanner never adds by itself (Fast) and shows the guesses to pick from (Not sure), in camera and photos alike. On
   the lab's 360 real phone photos with a known card, 0.02 made 94% sure with 2.4% of those wrong, and 0.10 made 83%
   sure with none wrong (`~/the-99-research/card-scan/lab-rescore/rescore-full.json`, the shipped fp32 embedder).
+  **Each read runs HNSW at `hnsw.ef_search` 1000** (pgvector's ceiling, transaction-local in `lookupGuesses`), because
+  an index's recall depends on its build: at 400 a scratch build failed `probe:card-scan-match` and staging's own build
+  put 3 of 400 hard answers across the sure gate; at 1000 neither staging nor production put one across. `pnpm
+  measure:scan-recall` (read-only; `MEASURE_URL`, a NAMED `MEASURE_BRANCH` checked by `neon.branch_id`) compares a
+  database's own build against an exact scan per `ef_search`. A build that still misses at 1000 needs a rebuild with
+  larger `m` / `ef_construction`, which is Hugh's to run on production.
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
