@@ -29,7 +29,7 @@ describe("the writes refuse a malformed ask before reading anything", () => {
   it("setTable takes 2 to 8 distinct members", async () => {
     expect(await setTable(VIEWER, POD, [seat(MEMBER)])).toEqual({ kind: "refused", reason: "invalid" });
     expect(await setTable(VIEWER, POD, [seat(MEMBER), seat(MEMBER)])).toEqual({ kind: "refused", reason: "invalid" });
-    expect(await setTable(VIEWER, POD, Array.from({ length: 9 }, () => seat(MEMBER)))).toEqual({ kind: "refused", reason: "invalid" });
+    expect(await setTable(VIEWER, POD, Array.from({ length: 9 }, (_, i) => seat(`${i}a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b`)))).toEqual({ kind: "refused", reason: "invalid" });
     expect(await setTable(VIEWER, "not-a-pod", [seat(MEMBER), seat(POD)])).toEqual({ kind: "refused", reason: "invalid" });
     expect(await setTable(VIEWER, POD, [seat(MEMBER, "deck"), seat(POD)])).toEqual({ kind: "refused", reason: "invalid" });
   });

@@ -1,5 +1,5 @@
 // Proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a real database:
-// setup's one open table per pod, under two concurrent setups too; its refusals; what a seated player, an unseated
+// setup's one open table per pod, under three concurrent setups too; its refusals; what a seated player, an unseated
 // member and a member who left the pod read; a seat's own deck and `on delete set null`; `markSeen` keeping a swap
 // that landed after its snapshot; the setter's reseat; Home's read dropping a table the moment it expires, with no
 // write between the two reads; and the account purge removing all three tables' rows and closing a table it leaves

@@ -11,8 +11,8 @@
  * enforce it, so dropping it is how several tables per pod arrive later. Expired tables are never swept by a job:
  * every read filters `expires_at > now()` on the database's clock, and a pod's next setup deletes its expired rows.
  *
- * Nothing returned carries a Clerk id or another player's deck id (decision 5): a player is a display name (and a
- * `publicId` only where the two are friends), a seat is addressed by its table and its player's place.
+ * Nothing returned carries a Clerk id or another player's deck id (decision 5). Setup addresses every pod member by
+ * `publicId`, the client-safe id, because it seats them; a player's face here is a display name and a commander.
  */
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -168,6 +168,12 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
       .for("update");
     if (!table) return { kind: "refused", reason: "notFound" } as const;
     if (!(await isMemberIn(tx, found.podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
+    // The seated decks FOR KEY SHARE before the seats are read, the order a deck delete takes them (deck, then its
+    // `set null` on the seat): a delete in flight is waited out here and its `set null` is then in the read below,
+    // so a staying seat is never re-written naming a deck that is gone.
+    await tx.execute(sql`
+      select d.id from ${decks} d join ${ruleZeroSeats} s on s.deck_id = d.id
+      where s.table_id = ${tableId} order by d.id for key share of d`);
     const before = await tx
       .select({ userId: ruleZeroSeats.userId, deckId: ruleZeroSeats.deckId, changedAt: ruleZeroSeats.changedAt })
       .from(ruleZeroSeats)
