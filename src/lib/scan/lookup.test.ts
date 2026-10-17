@@ -25,7 +25,7 @@ describe("encodeEmbedding", () => {
 });
 
 describe("marginClears", () => {
-  it("takes the top guess only when it clears the runner-up by the lab's margin", () => {
+  it("takes the top guess only when it clears the runner-up by the sure margin", () => {
     expect(marginClears(SURE_MARGIN)).toBe(true);
     expect(marginClears(SURE_MARGIN - 0.001)).toBe(false);
     expect(marginClears(0.05)).toBe(false);
