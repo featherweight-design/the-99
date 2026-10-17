@@ -444,7 +444,7 @@ export const PRINTING_ROWS: { set: string; collector: string; state: "picked" | 
  * One contested arrival: two committed decks, one copy between them.
  *
  * This is the part of the replace summary the About figure was missing
- * entirely. §3 predates the surface — `about.ts` already carries Design's own
+ * entirely. §3 predates the surface — `about-entries.ts` already carries Design's own
  * ⚠ note that #639/#643 landed after their last read of `main` — so the
  * drawing has deck rows where the shipped summary has three money sections
  * plus THIS, the one control on the page a reader can act on.
@@ -1633,7 +1633,7 @@ export const SHELF_COUNTS: ShelfCounts = {
 };
 
 // `CONTESTED_RESERVATION` (the `reservations` entry's fixture, `fromImport: false`, drawn as a
-// deck review page's own row) was retired with the entry it fed — see about.ts. The review
+// deck review page's own row) was retired with the entry it fed — see about-entries.ts. The review
 // page no longer draws a per-row chooser, so this fixture has nowhere left to be true.
 
 /**

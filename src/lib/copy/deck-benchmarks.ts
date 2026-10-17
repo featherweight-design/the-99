@@ -152,8 +152,8 @@ export const deckBenchmarksCopy = {
 } as const;
 
 // About entry · chapter 03, after 'deck-analysis'. `since` is the bump at the evidence line’s
-// close (batched with the Overview claim tap-through): ABOUT_VERSION 13. A literal, because
-// `about.ts` imports this entry and importing the version back would make the two modules a cycle.
+// close (batched with the Overview claim tap-through): ABOUT_VERSION 13. A literal, as every
+// entry's `since` is: it records the version the entry first appeared in, which ABOUT_VERSION moves past.
 export const benchmarksAboutEntry = {
   id: 'deck-benchmarks',
   chapter: '03',

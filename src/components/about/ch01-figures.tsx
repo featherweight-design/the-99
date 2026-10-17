@@ -1526,7 +1526,7 @@ export function FoldersFigureBody() {
 }
 
 // `ReservationsFigureBody` (the `reservations` entry) was retired with the entry — see
-// about.ts. `ContestedCardRow` is still a live component (the import summary still mounts it);
+// about-entries.ts. `ContestedCardRow` is still a live component (the import summary still mounts it);
 // only this entry's own demonstration of it, from a deck's review page, is gone.
 
 /**
@@ -1688,7 +1688,7 @@ export function ProxiesFigureBody() {
  * which is a real state and the wrong one to teach here.
  *
  * `onRestore` is null: a column of adds has nothing to put back. `Column` no longer takes a
- * `contested` prop at all — the per-row chooser it fed was retired (see `about.ts`'s note where
+ * `contested` prop at all — the per-row chooser it fed was retired (see `about-entries.ts`'s note where
  * `reservations` used to be), and the figure never needed the aggregate `chipShort` count that
  * data still feeds elsewhere, so there is nothing left here for a removed prop to be empty.
  */

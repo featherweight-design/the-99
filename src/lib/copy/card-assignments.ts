@@ -335,8 +335,8 @@ export const cardAssignmentsCopy = {
 
     // `seamCaption` ("no list changes") was retired 2026-10-04 with its only caller — the
     // per-row panel's caption on /decks/[id]/changes, removed from review-changes.tsx (Hugh, no
-    // Design round, a removal). See about.ts's note where the `reservations` About entry used
-    // to be for the fuller context.
+    // Design round, a removal). See about-entries.ts's note where the `reservations` About entry
+    // used to be for the fuller context.
 
     /**
      * Refusals. Every sentence does four things in order: names the deck and card, gives the

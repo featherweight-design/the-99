@@ -1,5 +1,9 @@
 // src/lib/copy/about.ts — the /about reference page.
 //
+// The entries themselves live in `about-entries.ts` (discovery plan R2·1a, 2026-10-16); this file
+// keeps the page's other copy, ABOUT_VERSION, the entry type and the rules below, which govern
+// writing an entry there. The history notes that count entries describe the list as it stood then.
+//
 // Regenerated for R3 against the R3 canvas. This file previously held R1's 26
 // entries under titles the canvas no longer used, with neither `caption` nor
 // `keys`; the audit flagged that as the one finding that blocked build rather
@@ -45,7 +49,7 @@
 //   1. `caption` and `keys` are THIS page’s prose and may be written here.
 //   2. Every string drawn INSIDE a specimen comes from that surface’s own copy
 //      file at render time — never retyped into this file. A rename in
-//      refresh.ts or lanes.ts must reach the figure without touching about.ts.
+//      refresh.ts or lanes.ts must reach the figure without touching about-entries.ts.
 //   3. `keys` is 0–4 entries. Zero is a finished answer, not a gap.
 //   4. A figure may only draw what the app draws. Explanatory sentences the
 //      product does not ship live in `keys`, never in the specimen.
