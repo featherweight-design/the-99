@@ -117,7 +117,9 @@ export function FriendsHead({
 
   const line = p.nameLine(name);
   const pressHeld = held && inviteCount === undefined;
-  const pressPending = invitePending && inviteCount === undefined;
+  // One invite action at a time: a link still being made (from the chooser or a pod) holds the press, so the chooser
+  // never opens over an answer still on its way.
+  const pressPending = invitePending;
   const heldLine = held ? (
     <p id={`${id}-held`} className="m-0 max-w-[340px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:text-right">{p.held}</p>
   ) : null;

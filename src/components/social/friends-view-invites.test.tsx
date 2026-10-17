@@ -154,6 +154,37 @@ describe("Add a friend, invites on, answers that land after the reader moved on"
     expect(inv.showInviteQrAction).toHaveBeenCalledTimes(1);
   });
 
+  // One invite action at a time (the round-6 scope ruling): an answer still on its way holds every press that would
+  // start another, so no answer can land on a screen the reader reached after it.
+  it("holds Add a friend while a link is still being made, so the chooser cannot open over its answer", async () => {
+    let answer: (v: unknown) => void = () => {};
+    a.createInviteAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) }));
+    close();
+    const pending = screen.getByRole("button", { name: socialCopy.page.invitePending });
+    expect(pending.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(pending);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => answer({ ok: false, reason: "failed" }));
+    expect(press().getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("sends no email while an invite QR is still being made", async () => {
+    let answer: (v: unknown) => void = () => {};
+    inv.showInviteQrAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    fireEvent.click(screen.getByRole("button", { name: inviteCopy.path.showQr }));
+    const field = screen.getByLabelText(inviteCopy.path.emailLabel) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "jo@example.com" } });
+    fireEvent.submit(field.closest("form")!);
+    expect(inv.sendEmailInviteAction).not.toHaveBeenCalled();
+    await act(async () => answer({ ok: false, reason: "unconfigured" }));
+  });
+
   it("puts card 1's failed Try again away when the reader goes on to path 2", async () => {
     a.createInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
     draw({ invites });

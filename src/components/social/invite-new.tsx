@@ -87,7 +87,8 @@ export function InviteNew({
     };
   }, []);
   async function send() {
-    if (inFlight.current || sending || emailHeld) return;
+    // One invite action at a time: a QR still being made holds the email half too.
+    if (inFlight.current || sending || emailHeld || qrPending) return;
     if (!shaped) {
       setBad(true);
       return;
@@ -183,7 +184,7 @@ export function InviteNew({
               spellCheck={false}
               placeholder={t.emailPlaceholder}
               value={email}
-              readOnly={sending}
+              readOnly={sending || qrPending}
               disabled={emailHeld}
               aria-invalid={bad || undefined}
               aria-describedby={bad ? `${id}-err` : `${id}-hint`}
@@ -195,7 +196,7 @@ export function InviteNew({
             />
             <button
               type="submit"
-              aria-disabled={sending || emailHeld || undefined}
+              aria-disabled={sending || emailHeld || qrPending || undefined}
               className={`order-2 h-[48px] w-full flex-none cursor-pointer rounded-[8px] px-[16px] font-sans text-[15px] md:order-1 md:mt-0 md:h-[40px] md:w-auto md:rounded-[6px] md:text-[13px] ${
                 emailHeld ? `mt-[8px] font-medium ${HELD_PRESS} border-0`
                   : sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
