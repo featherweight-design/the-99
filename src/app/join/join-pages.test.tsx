@@ -69,23 +69,27 @@ describe("/sign-up", () => {
     expect(screen.getByText(inviteOnlyCopy.fine)).toBeTruthy();
   });
 
-  it("draws the compact card back with its word, and emphasizes Invite someone new", async () => {
+  it("draws the three-back fan, the front back carrying the word, aria-hidden", async () => {
     m.auth.mockResolvedValue({ userId: null });
     render(await SignUpPage());
-    expect(screen.getByTestId("friend-card").dataset.variant).toBe("compact");
+    const fan = screen.getByTestId("invite-fan");
+    expect(fan.getAttribute("aria-hidden")).toBe("true");
+    expect([...fan.querySelectorAll("[data-fan]")].map((e) => e.getAttribute("data-fan"))).toEqual(["left", "right", "front"]);
+    expect(screen.getAllByTestId("friend-card-word").length).toBe(1);
     expect(screen.getByTestId("friend-card-word").textContent).toBe(inviteOnlyCopy.backWord);
     const b = screen.getByText("Invite someone new");
     expect(b.tagName).toBe("B");
     expect(b.className).toContain("font-medium");
   });
 
-  it("is one centred column at every width, on the shared frame", async () => {
+  it("is a column on a phone and the fan beside the column from md, on the invite frame", async () => {
     m.auth.mockResolvedValue({ userId: null });
     const { container } = render(await SignUpPage());
     const main = container.querySelector("main")!;
     expect(main.className).toContain("flex-col");
-    expect(main.className).not.toContain("md:flex-row");
-    expect(main.className).toContain("pt-[44px]");
+    expect(main.className).toContain("md:flex-row");
+    expect(main.className).toContain("md:gap-[64px]");
+    expect(main.className).toContain("pt-[56px]");
     expect(main.className).toContain("at_50%_18%");
   });
 });

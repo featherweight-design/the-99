@@ -94,7 +94,28 @@ export function FriendCard({
   );
 }
 
-function CardBack({ dim, word, compact }: { dim: boolean; word: string; compact: boolean }) {
+// The invite-only page's fan (`/sign-up`, boards I1 and I2): three backs, the front one carrying the word. A 360×440 fan at
+// `md` and up; below it the same 300×419 backs scaled to .48 inside a 240×240 box. Decorative.
+const FAN_BACK = "absolute h-[419px] w-[300px] origin-top max-md:left-[-30px] max-md:top-[6px] md:left-[30px] md:top-[10px] md:origin-center";
+const FAN_PLACE = {
+  left: "opacity-[.55] [transform:scale(.48)_rotate(-9deg)_translate(-40px,14px)] md:[transform:rotate(-9deg)_translate(-26px,8px)]",
+  right: "opacity-[.75] [transform:scale(.48)_rotate(8deg)_translate(40px,16px)] md:[transform:rotate(8deg)_translate(26px,10px)]",
+  front: "[transform:scale(.48)] md:[transform:none]",
+} as const;
+
+export function InviteFan({ word }: { word: string }) {
+  return (
+    <div aria-hidden data-testid="invite-fan" className="relative h-[240px] w-[240px] flex-none md:h-[440px] md:w-[360px]">
+      {(["left", "right", "front"] as const).map((place) => (
+        <div key={place} data-fan={place} className={`${FAN_BACK} ${FAN_PLACE[place]}`}>
+          <CardBack dim={false} word={place === "front" ? word : null} compact={false} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; compact: boolean }) {
   return (
     <div
       aria-hidden
@@ -106,12 +127,14 @@ function CardBack({ dim, word, compact }: { dim: boolean; word: string; compact:
           <span className="mb-[6px] text-[13px] tracking-[4px] text-[color:var(--accent)]">◆ ◆ ◆</span>
           <span className="font-display text-[58px] font-bold leading-none text-[color:var(--fg)]">99</span>
         </div>
-        <span
-          data-testid="friend-card-word"
-          className={`font-mono uppercase text-[color:var(--accent)] ${compact ? "text-[15px] tracking-[.35em]" : "text-[10px] tracking-[.4em]"}`}
-        >
-          {word}
-        </span>
+        {word !== null && (
+          <span
+            data-testid="friend-card-word"
+            className={`font-mono uppercase text-[color:var(--accent)] ${compact ? "text-[15px] tracking-[.35em]" : "text-[10px] tracking-[.4em]"}`}
+          >
+            {word}
+          </span>
+        )}
       </div>
     </div>
   );

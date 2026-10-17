@@ -11,6 +11,9 @@ import { Emphasis } from "./emphasis";
 export const NEWCOMER_MAIN =
   "flex min-h-screen flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
 
+/** The invite-only page's frame (I1, I2): 56px under the top on a phone, the fan beside the column from `md`. */
+export const INVITE_MAIN = NEWCOMER_MAIN.replace("pt-[44px]", "pt-[56px]") + " md:flex-row md:justify-center md:gap-[64px]";
+
 /** The form wrapper (`.form`): full width, left-aligned, 22px under the body. */
 export const FORM = "mt-[22px] flex w-full flex-col text-left";
 
@@ -20,11 +23,11 @@ const H1 = {
 } as const;
 const BODY = {
   join: "mt-[8px] text-[14px] leading-[1.55]",
-  invite: "mt-[8px] text-[14px] leading-[1.6] md:text-[15px]",
+  invite: "mt-[8px] text-[14px] leading-[1.6] md:mt-[10px] md:text-[15px]",
 } as const;
 const FINE = {
   join: "mt-[14px] text-[11px] leading-[1.55]",
-  invite: "mt-[16px] text-[11px] leading-[1.6] md:mt-[6px]",
+  invite: "mt-[16px] text-[11px] leading-[1.6] md:mt-[16px]",
 } as const;
 
 export function NewcomerColumn({
@@ -50,10 +53,10 @@ export function NewcomerColumn({
   return (
     <section
       aria-labelledby="friend-landing-title"
-      className={`flex w-full min-w-0 max-w-[380px] flex-col items-center text-center [overflow-wrap:anywhere] ${variant === "invite" ? "mt-[16px]" : ""}`}
+      className={`flex w-full min-w-0 max-w-[380px] flex-col items-center text-center [overflow-wrap:anywhere]`}
     >
       {kicker && (
-        <p className="m-0 mb-[10px] font-mono text-[11px] font-medium uppercase tracking-[.2em] text-[color:var(--accent)] max-md:hidden">{kicker}</p>
+        <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent)] max-md:hidden">{kicker}</p>
       )}
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land}`}>
         {title}

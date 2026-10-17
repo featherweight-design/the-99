@@ -10,22 +10,22 @@ import { SignInButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
 import { PRIMARY_BUTTON } from "../../components/social/friend-landing";
-import { NEWCOMER_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
-import { FriendCard } from "../../components/social/friend-card";
+import { INVITE_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
+import { InviteFan } from "../../components/social/friend-card";
 
 export default async function SignUpPage() {
   const { userId } = await auth();
   if (userId) redirect("/");
   return (
-    <main className={NEWCOMER_MAIN}>
-      <FriendCard face={null} up={false} compact word={copy.backWord} />
+    <main className={INVITE_MAIN}>
+      <InviteFan word={copy.backWord} />
       <NewcomerColumn
         variant="invite"
         kicker={copy.kicker}
         title={copy.title}
         body={copy.body}
         actions={
-          <div className="mt-[22px] flex w-full flex-col md:mt-[10px] md:items-center">
+          <div className="mt-[22px] flex w-full flex-col md:mt-[20px] md:items-start">
             <SignInButton mode="redirect">
               <button type="button" className={PRIMARY_BUTTON}>{copy.signIn}</button>
             </SignInButton>
