@@ -35,14 +35,38 @@ beforeEach(() => {
 
 describe("lookupGuesses", () => {
   it("reads in one repeatable-read transaction, each guess the nearest row of a card not already guessed", async () => {
-    stub.answers = [[], [META], [{ oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", distance: 0.1 }], [{ oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, distance: 0.3 }], []];
+    stub.answers = [
+      [], [META],
+      [{ oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", distance: 0.1 }],
+      [{ oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, distance: 0.3 }],
+      [],
+      // The printings read: A's rows (a2's two faces, a1 again) and B's own.
+      [
+        { oracleId: A, scryfallId: "a1", distance: 0.1 }, { oracleId: A, scryfallId: "a2", distance: 0.15 },
+        { oracleId: A, scryfallId: "a2", distance: 0.4 }, { oracleId: B, scryfallId: "b1", distance: 0.3 },
+      ],
+    ];
     const r = await lookupGuesses(vec, SCAN_MODEL);
     expect(stub.opts).toEqual({ isolationLevel: "repeatable read" });
     expect(r).toEqual({
       kind: "ok",
       index: "all-20261014",
-      answer: { guesses: [{ oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", score: 0.9 }, { oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, score: 0.7 }], margin: expect.closeTo(0.2) },
+      answer: {
+        guesses: [
+          { oracleId: A, scryfallId: "a1", name: "A", typeLine: "Instant", imageUri: "https://img/a1", score: 0.9,
+            printings: [{ scryfallId: "a1", score: expect.closeTo(0.9) }, { scryfallId: "a2", score: expect.closeTo(0.85) }] },
+          { oracleId: B, scryfallId: "b1", name: "B", typeLine: "Sorcery", imageUri: null, score: 0.7,
+            printings: [{ scryfallId: "b1", score: expect.closeTo(0.7) }] },
+        ],
+        margin: expect.closeTo(0.2),
+      },
     });
+    // One read for every guess's printings, by card, ranked per card and capped at twice MAX_PRINTINGS.
+    expect(stub.queries).toHaveLength(6);
+    expect(text(5).sql).toContain("where s.oracle_id = any(");
+    expect(text(5).sql).toContain("partition by s.oracle_id");
+    expect(text(5).params).toContain(`{${A},${B}}`);
+    expect(text(5).params).toContain(12);
     expect(text(0).sql).toContain("hnsw.iterative_scan");
     expect(text(0).sql).toContain("'lock_timeout', '2s'");
     expect(text(2).sql).not.toContain("<> all(");

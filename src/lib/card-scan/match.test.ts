@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMBED_DIM, SCAN_MODEL, decodeEmbedding, poolGuesses, vectorLiteral } from "./match";
+import { EMBED_DIM, MAX_PRINTINGS, SCAN_MODEL, decodeEmbedding, poolGuesses, scorePrintings, vectorLiteral } from "./match";
 
 /** A unit fingerprint pointing along axis `i`, as the client sends it. */
 function encodeUnit(i = 0, scale = 1): string {
@@ -56,6 +56,32 @@ describe("poolGuesses", () => {
     expect(r.guesses[0].score).toBe(1);
     expect(r.margin).toBeNull();
     expect(poolGuesses([]).guesses).toEqual([]);
+  });
+});
+
+describe("scorePrintings", () => {
+  it("scores each printing once by its nearest face, best first, the guess's own included", () => {
+    const got = scorePrintings({ scryfallId: "own", score: 0.9 }, [
+      { scryfallId: "b", distance: 0.3 }, { scryfallId: "c", distance: 0.2 }, { scryfallId: "b", distance: 0.15 },
+    ]);
+    expect(got.map((p) => p.scryfallId)).toEqual(["own", "b", "c"]);
+    expect(got[1].score).toBeCloseTo(0.85);
+  });
+
+  it(`stops at ${MAX_PRINTINGS}`, () => {
+    const rows = Array.from({ length: 20 }, (_, i) => ({ scryfallId: `p${i}`, distance: 0.2 + i / 100 }));
+    expect(scorePrintings({ scryfallId: "own", score: 0.95 }, rows)).toHaveLength(MAX_PRINTINGS);
+  });
+
+  it(`keeps the guess's own printing, last, when ${MAX_PRINTINGS} others outscore it`, () => {
+    const rows = Array.from({ length: MAX_PRINTINGS + 2 }, (_, i) => ({ scryfallId: `p${i}`, distance: 0.05 + i / 100 }));
+    const got = scorePrintings({ scryfallId: "own", score: 0.5 }, rows);
+    expect(got).toHaveLength(MAX_PRINTINGS);
+    expect(got.map((p) => p.scryfallId)).toEqual([...rows.slice(0, MAX_PRINTINGS - 1).map((r) => r.scryfallId), "own"]);
+  });
+
+  it("poolGuesses gives a guess with no printing rows its own printing alone", () => {
+    expect(poolGuesses([row(A, 0.1, "a1")]).guesses[0].printings).toEqual([{ scryfallId: "a1", score: expect.closeTo(0.9) }]);
   });
 });
 

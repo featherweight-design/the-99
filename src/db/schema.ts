@@ -3534,6 +3534,9 @@ export const scanIndex = pgTable("scan_index", {
   primaryKey({ columns: [t.scryfallId, t.face] }),
   check("scan_index_face_check", sql`${t.face} in ('front', 'back')`),
   index("scan_index_embedding_idx").using("hnsw", t.embedding.op("halfvec_cosine_ops")),
+  // A guess's printings are read by card (`lookupGuesses`): a few hundred rows at most, where a filtered HNSW walk
+  // could scan thousands.
+  index("scan_index_oracle_idx").on(t.oracleId),
 ]);
 
 /**

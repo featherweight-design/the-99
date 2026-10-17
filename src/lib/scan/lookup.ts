@@ -3,7 +3,7 @@
 // that may pass (the network, a server error, an index not yet loaded) is retried with a backoff while the scanner
 // says it is unsure and retrying; one that will not pass (signed out, the switch off, a model the server does not
 // hold, a body it cannot read) is not.
-import type { Guess as ServerGuess } from "../card-scan/match";
+import type { Guess as ServerGuess, ScoredPrinting } from "../card-scan/match";
 
 export type LookupResult =
   | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
@@ -36,6 +36,18 @@ export function marginClears(margin: number | null): boolean {
   return margin === null || margin >= SURE_MARGIN;
 }
 
+/**
+ * A guess's scored printings as the scanner may trust them: each entry a string id and a finite score, anything else
+ * dropped, so an answer from a server built before the field (none at all) reads as no printings.
+ */
+export function scoredPrintings(raw: unknown): ScoredPrinting[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((p) => {
+    const { scryfallId, score } = (p ?? {}) as { scryfallId?: unknown; score?: unknown };
+    return typeof scryfallId === "string" && typeof score === "number" && Number.isFinite(score) ? [{ scryfallId, score }] : [];
+  });
+}
+
 type Fetch = (url: string, init: RequestInit) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 type Deps = { fetch: Fetch; wait: (ms: number) => Promise<void>; onRetry?: (attempt: number) => void; signal?: AbortSignal };
 
@@ -66,7 +78,7 @@ export async function lookupCard(embedding: Float32Array, model: string, deps: D
       if (res.ok) {
         const body = (await res.json().catch(() => null)) as { index?: unknown; guesses?: unknown; margin?: unknown } | null;
         if (!body || typeof body.index !== "string" || !Array.isArray(body.guesses)) return { kind: "refused", reason: "unavailable" };
-        const guesses = body.guesses as ServerGuess[];
+        const guesses = (body.guesses as ServerGuess[]).map((g) => ({ ...g, printings: scoredPrintings(g.printings) }));
         const margin = typeof body.margin === "number" ? body.margin : null;
         return { kind: "match", index: body.index, guesses, margin, sure: guesses.length > 0 && marginClears(margin) };
       }
