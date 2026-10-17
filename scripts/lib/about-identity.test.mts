@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accountIdentity } from "../../src/lib/shell/identity";
-import { STAND_IN, applyPairs, identityLeftovers, identityOf, identityPlan } from "./about-identity.mjs";
+import { STAND_IN, applyPairs, hasToken, identityLeftovers, identityOf, identityPlan } from "./about-identity.mjs";
 
 const NAMED = { firstName: "Ana", lastName: "Ruiz", fullName: "Ana Ruiz", email: "ana@example.org" };
 const EMAIL_ONLY = { firstName: null, lastName: null, fullName: null, email: "hugh+clerk_test@example.org" };
@@ -61,5 +61,58 @@ describe("identityPlan + identityLeftovers", () => {
     const solo = identityPlan(identityOf({ fullName: "Sol", email: "s@x.io" }));
     expect(solo.chip).toBeNull();
     expect(solo.initials).toBeNull();
+  });
+});
+
+describe("identityLeftovers matches whole tokens, and the stand-in is clean", () => {
+  const clean = { text: "Sam sam@example.com Decks", attrs: "Account: Sam", chips: ["S"] };
+
+  it("ana@example.org: its local part is not found inside Mana Balance", () => {
+    const plan = identityPlan(identityOf(NAMED));
+    const page = { ...clean, text: "Mana Balance · Banana Republic · Sam", attrs: "Tool: Mana Balance" };
+    expect(identityLeftovers(plan, page)).toEqual([]);
+    // Still found as itself, as an address, and inside one.
+    expect(identityLeftovers(plan, { ...clean, text: "signed in as ana" })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, text: "ana@example.org" })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, attrs: "Mail ANA@EXAMPLE.ORG" })).toEqual(["label"]);
+  });
+
+  it("s@x.io: a one-letter local part is not found inside the stand-in's address or in prose", () => {
+    const plan = identityPlan(identityOf({ fullName: "Sol", email: "s@x.io" }));
+    expect(identityLeftovers(plan, { ...clean, text: "sam@example.com · Sam's decks · S" })).toEqual([]);
+    expect(identityLeftovers(plan, { ...clean, text: "Contact s@x.io" })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, text: "Hello Sol." })).toEqual(["text"]);
+    // A one-letter local part that is not the stand-in's is still a letter, not an identity, in prose.
+    const a = identityPlan(identityOf({ email: "a@x.io" }));
+    expect(identityLeftovers(a, { ...clean, text: "A deck for plan A" })).toEqual([]);
+    expect(identityLeftovers(a, { ...clean, text: "a@x.io" })).toEqual(["text"]);
+  });
+
+  it("an account named Sam is clean on the stand-in itself, and not when it shows its own address", () => {
+    const plan = identityPlan(identityOf({ firstName: "Sam", lastName: null, fullName: "Sam", email: "sam.k@x.io" }));
+    expect(identityLeftovers(plan, clean)).toEqual([]);
+    expect(identityLeftovers(plan, { ...clean, attrs: "Account: sam.k@x.io" })).toEqual(["label"]);
+    // An identity that IS the stand-in's, address and all, has nothing left to find.
+    const twin = identityPlan(identityOf({ firstName: "Sam", fullName: "Sam", email: "sam@example.com" }));
+    expect(identityLeftovers(twin, clean)).toEqual([]);
+  });
+
+  it("Ana Ruiz: the full name, the first name, the email and the chip are still found", () => {
+    const plan = identityPlan(identityOf(NAMED));
+    expect(plan.forbidden).toEqual(expect.arrayContaining(["Ana Ruiz", "Ana", "ana@example.org", "ana"]));
+    expect(identityLeftovers(plan, { ...clean, text: "Welcome back, Ana Ruiz." })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, text: "Ana's decks" })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, text: "Hi ANA" })).toEqual(["text"]);
+    expect(identityLeftovers(plan, { ...clean, chips: ["AR"] })).toEqual(["initials"]);
+    // Initials are the chip's alone: "AR" in prose is not the account.
+    expect(identityLeftovers(plan, { ...clean, text: "AR glasses" })).toEqual([]);
+  });
+
+  it("hasToken: a token at an edge, before punctuation and inside an address's local part", () => {
+    expect(hasToken("(Ana Ruiz)", "ana ruiz")).toBe(true);
+    expect(hasToken("hugh+clerk_test@example.org", "clerk_test")).toBe(true);
+    expect(hasToken("hugh+clerk_test@example.org", "hugh")).toBe(true);
+    expect(hasToken("ana.ruiz@x.io", "ana")).toBe(false);
+    expect(hasToken("x@ana.org", "ana")).toBe(false);
   });
 });

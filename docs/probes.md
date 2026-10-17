@@ -615,8 +615,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with the tools' switches
   on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to `off`
-  so no bubble, tour or sheet is photographed. It writes only `clearAboutSheet`'s seen marks, put back in a
-  `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
+  so no bubble, tour or sheet is photographed. It refuses any database but a scratch branch (`assertScratchBranch`)
+  before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
+  upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync
+  choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
   not captured is listed and exits 1.
 
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload

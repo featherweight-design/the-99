@@ -120,13 +120,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 10892,
+      "bytes": 13338,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {
@@ -434,13 +434,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 10420,
+      "bytes": 13296,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {
@@ -748,13 +748,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 11018,
+      "bytes": 13348,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {
@@ -1062,13 +1062,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 9868,
+      "bytes": 13172,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {
@@ -1376,13 +1376,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 10696,
+      "bytes": 13190,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {
@@ -1690,13 +1690,13 @@ export const SHOTS = {
     "tool-collection-sync": {
       "width": 780,
       "height": 520,
-      "bytes": 10358,
+      "bytes": 13126,
       "quality": 75,
       "halo": [
         0.0462,
-        0,
+        0.0579,
         0.9077,
-        1
+        0.887
       ]
     },
     "tool-find-a-deck": {

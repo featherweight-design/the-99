@@ -19,7 +19,9 @@
 // still carries any of them, or whose account control names another identity, fails rather than ships. Clerk's user is
 // not touched.
 //
-// IT WRITES to the database only what `clearAboutSheet` writes (every About entry marked seen), and puts the row back.
+// IT WRITES to the database only what `clearAboutSheet` writes (every About entry marked seen), and puts the row back,
+// and for `tool-collection-sync` the pending upload a file's preview writes (never confirmed), deleted in a `finally`.
+// It refuses any database that is not a scratch branch (`assertScratchBranch`) before its first write.
 // The theme is the cookie the picker writes (`the99_theme`), never a preference row.
 //
 //   PROBE_BASE=http://localhost:3417 pnpm capture:about
@@ -33,6 +35,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -46,6 +49,13 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const sql = neon(DATABASE_URL);
+// The capture writes the account's About row (`clearAboutSheet`, `restoreAboutSeen`), and with `collection-sync` a
+// pending upload's preview: a scratch branch only, checked by the database's own branch id before any write and before
+// the browser is launched. Production, staging and local-dev are refused (`scripts/lib/scratch-branch.mjs`).
+{
+  const [{ b: branch }] = await sql`select current_setting('neon.branch_id', true) as b`;
+  assertScratchBranch(branch, "capture:about");
+}
 
 const ALL_THEMES = ["amonkhet", "kamigawa", "ixalan", "phyrexia", "eldraine", "kaldheim"];
 const THEMES = process.env.CAPTURE_THEMES ? process.env.CAPTURE_THEMES.split(",") : ALL_THEMES;
@@ -113,7 +123,20 @@ async function fixture(userId) {
       and not exists (select 1 from decks d where d.user_id = ${userId} and ci.oracle_id in (d.commander_oracle_id, d.partner_oracle_id))
     group by ci.oracle_id, c.name order by c.name limit 1`;
   if (!free) throw new Error("the account owns no card free of every deck");
+  // The account's own collection as an export, row for row: the upload page reads it as a file and draws its choice
+  // (Sync among it) with nothing to warn about, since Replace changes nothing and no deck loses a card. Built here and
+  // handed to the page from memory, never written to disk.
+  const held = await sql`select c.name, ci.quantity, ci.set_code, ci.collector_number, ci.finish, ci.condition, ci.scryfall_id::text
+    from collection_items ci join cards c on c.oracle_id = ci.oracle_id where ci.user_id = ${userId}
+    order by c.name, ci.set_code, ci.collector_number, ci.finish`;
+  if (held.length === 0) throw new Error("the account holds no collection to read as a file");
+  const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [
+    "Name,Quantity,Set code,Collector number,Foil,Condition,Scryfall ID",
+    ...held.map((r) => [r.name, r.quantity, r.set_code, r.collector_number, r.finish === "nonfoil" ? "normal" : r.finish, r.condition, r.scryfall_id].map(cell).join(",")),
+  ].join("\n");
   return {
+    collectionCsv: csv,
     under: await byName("About · Under 99"),
     over: await byName("About · Over 99"),
     played: await byName("About · Played"),
@@ -233,6 +256,11 @@ function deckTools(f) {
   };
 }
 
+/** The Sync card, pickable: drawn only once a file is read and its comparison is in. */
+const SYNC_CHOICE = `${PAGE} [role='radio'][data-choice='sync']:not([aria-disabled='true'])`;
+/** The name the Sync preview's file is uploaded under: its pending upload row is found by it and deleted afterwards. */
+const UPLOAD_FILENAME = "about-capture-sync.csv";
+
 /**
  * The tools with a page of their own: the page, and the control in it the tool's moment anchors (`useMomentAnchor`),
  * found in the page's own tree (or the card details dialog). Each `find` runs in the page and returns the element.
@@ -252,10 +280,21 @@ function routeTools(f) {
     // Both live under the card details' All details, which is pressed open first.
     "find-a-deck": { path: `/collection?avail=free&card=${f.freeCard}`, steps: allDetails, find: drawn("[role='dialog'] [data-testid='fits-door']") },
     wishlist: { path: `/collection?card=${f.freeCard}`, steps: allDetails, find: drawn("[role='dialog'] [data-testid='card-wishlist'] button") },
-    // G14: the upload page with its drop zone, where the Sync choice appears once a file is read.
+    // G14: the Sync choice, which the upload page draws once a file is read, and which the tool's moment anchors
+    // (`UploadChoice`'s sync card). The account's own collection is handed to the file control and read; the choice is
+    // never pressed and nothing is confirmed.
     "collection-sync": {
       path: "/collection/replace",
-      find: `(() => { const b = ${byText(PAGE, "button", "Browse files")}; let n = b; while (n && !/dashed/.test(n.className ?? "")) n = n.parentElement; return n ?? b; })()`,
+      steps: async (page) => {
+        await page.locator(`${PAGE} input[type='file'][aria-label='Upload collection CSV']`).first().setInputFiles({
+          name: UPLOAD_FILENAME,
+          mimeType: "text/csv",
+          buffer: Buffer.from(f.collectionCsv, "utf8"),
+        });
+        await page.waitForSelector(SYNC_CHOICE, { timeout: 60_000 });
+        await settle(page);
+      },
+      find: drawn(SYNC_CHOICE),
     },
     lineup: { path: "/decks", find: `(() => { const t = ${byText(PAGE, "[role='tab']", "Tiles")}; return t?.closest("span.inline-flex") ?? t?.closest("[role='tablist']") ?? null; })()` },
     friends: { path: "/friends", find: byText(PAGE, "button", "Add a friend") },
@@ -486,9 +525,11 @@ async function shootTool(page, theme, id, el) {
 await clerkSetup();
 const browser = await chromium.launch();
 let about = null;
+let USER_ID = null;
 try {
   const signInPage = await browser.newPage();
   const userId = await signIn(signInPage, EMAIL, PASSWORD);
+  USER_ID = userId;
   // The account's own identity, read once from Clerk's user (never printed), as the account control derives it.
   const source = await signInPage.evaluate(() => {
     const u = window.Clerk.user;
@@ -525,6 +566,10 @@ try {
 } finally {
   try {
     if (about) await restoreAboutSeen(about, sql);
+    // The Sync preview's pending upload: never confirmed, so nothing else holds it.
+    if (USER_ID) {
+      await sql`delete from csv_uploads where user_id = ${USER_ID} and filename = ${UPLOAD_FILENAME} and confirmed_at is null`;
+    }
   } finally {
     await browser.close();
   }
