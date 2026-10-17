@@ -46,10 +46,12 @@ export async function spendInviteOnSignUp(
   if (done) return { spent: false, reason: "already" };
 
   return db.transaction(async (tx): Promise<SpendResult> => {
-    const now = await lockSenderIn(tx, found.senderId, deps.now);
-    // The newcomer's own invite lock too (the purge of either account takes its own), so the tombstone read below
-    // and the rows written after it are one step with respect to a deletion of the newcomer.
-    if (newUserId !== found.senderId) await lockSenderIn(tx, newUserId, now);
+    // The sender's invite lock and the newcomer's (the purge of either account takes its own), taken in the DATABASE's
+    // user-id order, the order `topUpGroupInvites` takes a group's locks in, so no two writers wait on each other.
+    // The time to judge a hold by is read once both are held.
+    const order = await tx.execute(sql`select id from unnest(${sql.param([found.senderId, newUserId])}::text[]) as t(id) order by id`);
+    let now = deps.now ?? new Date();
+    for (const r of order.rows as { id: string }[]) now = await lockSenderIn(tx, r.id, deps.now);
     // The deletion's tombstone is recorded in its own commit BEFORE the purge and keeps the id's hash for good, so a
     // `user.created` that arrives after the account was deleted (even after the raw id was retired) spends nothing.
     const [gone] = await tx.select({ id: accountTombstones.idHash }).from(accountTombstones)
