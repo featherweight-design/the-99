@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor, useSuppressMoment } from "./moments-provider";
 import { HALO_ATTR, TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { useMomentHold } from "../../lib/moments/hold";
-import { claimVisit, VISIT_KEY } from "../../lib/moments/visit";
+import { claimVisit, takeVisit, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentId } from "../../lib/moments/registry";
 
 const spendMomentAction = vi.fn(async (_id: unknown) => {});
@@ -723,6 +723,33 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     } finally {
       other.close();
       vi.useFakeTimers();
+    }
+  });
+
+  it("shows nothing for a claim that lands after a landing took the visit", async () => {
+    // A lock that runs the claim at once but hands its result back only when opened: the visit can be taken between
+    // the claim succeeding and the provider reading it, as a landing does.
+    let open!: () => void;
+    const gate = new Promise<void>((r) => (open = r));
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: { request: (_name: string, fn: () => unknown) => { const result = fn(); return gate.then(() => result); } },
+    });
+    try {
+      render(
+        <MomentsProvider live={LIVE} spent={[]}>
+          <Control id="wishlist" name="Wish" />
+        </MomentsProvider>,
+      );
+      onScreen("Wish");
+      await advance(ARRIVE_MS);
+      takeVisit();
+      await act(async () => open());
+      await advance(ARRIVE_MS * 2);
+      expect(screen.queryByRole("note")).toBeNull();
+      expect(spendMomentAction).not.toHaveBeenCalled();
+    } finally {
+      delete (navigator as { locks?: unknown }).locks;
     }
   });
 

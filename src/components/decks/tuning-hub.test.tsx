@@ -14,6 +14,7 @@ import { reveal } from "../../lib/ui/reveal";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 
 vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn(), readTuningHistory: vi.fn(), readTuningPastRun: vi.fn() }));
 // The real Proposed cuts panel is mounted below with injected reads; its server actions never load.
@@ -84,6 +85,31 @@ describe("TuningHub landing", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(false), cuts(4)]} />);
     expect(tile("suggested").tagName).toBe("DIV");
     expect(tile("suggested").textContent).toContain(copy.tools.suggested.needsReading);
+  });
+
+  it("makes each tool's tile its landing target, an inert one too, and History none (discovery R2, E11)", async () => {
+    let targets: Targets | null = null;
+    function Grab() {
+      const t = useTargets();
+      useEffect(() => {
+        targets = t;
+      }, [t]);
+      return null;
+    }
+    render(
+      <TargetsProvider>
+        <Grab />
+        <TuningHub deckId="d" drawn tools={[suggested(false), { tool: "mana", panel: <h2 id="mana-heading">Mana</h2> }, cuts(4), { tool: "history" }]} />
+      </TargetsProvider>,
+    );
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    for (const [id, tool] of [["suggested-changes", "suggested"], ["mana-balance", "mana"], ["proposed-cuts", "cuts"]] as const) {
+      expect(targets!.haloTarget(id)).toBe(true);
+      expect(tile(tool).hasAttribute("data-target-halo")).toBe(true);
+    }
+    // History is drawn and is no tool's target: no landing haloes it.
+    expect(tile("history")).toBeTruthy();
+    expect(tile("history").hasAttribute("data-target-halo")).toBe(false);
   });
 
   it("draws nothing when it is not drawn, and still settles the tab's loader", async () => {

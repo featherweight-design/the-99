@@ -28,6 +28,8 @@ import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
+import { randomUUID } from "node:crypto";
+import { LandingKeyed } from "../../../components/decks/landing-keyed";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
@@ -90,6 +92,8 @@ import { readShoppingLimit } from "../../../lib/swaps/read";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestSwitchEnv } from "../../../lib/switches/request";
+import { SWITCH_FLAGS } from "../../../lib/switches/flags";
+import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 import { switchBits } from "../../../lib/switches/resolve";
 
 // The two reads below are the builder's expensive half — measured against the
@@ -582,6 +586,13 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled(env);
+  // Try it's one-time `?tool=` (discovery R2, E11): a deck tool whose switch is on for this reader opens its tab
+  // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
+  const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
+  // A token per server render that carries `?tool=`: a client navigation to the same deck with a new (or the same)
+  // `?tool=` re-renders the page and moves it, and `LandingKeyed` remounts the deck's builder and providers for it; a render without one is
+  // null and keeps the builder as it is.
+  const landingRequest = query[TOOL_PARAM] === undefined ? null : randomUUID();
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
   // deck that was never analyzed (`holdsOpening`'s `analyzed`).
   const storedRead = await storedPermits;
@@ -737,8 +748,10 @@ export default async function DeckBuilderPage({
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected
       // row above an empty panel — the same rule `versions` already has for a brew.
+      landing={landing}
+      landingRequest={landingRequest}
       initialView={initialBuilderView(
-        readBuilderView(query[TAB_PARAM]),
+        landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
         versions.length + ((originRead && (await originRead)?.summary.startVersionId === null) ? 1 : 0),
         analysisEnabled,
@@ -776,6 +789,10 @@ export default async function DeckBuilderPage({
       {tooled}
     </ChangeCommanderProvider>
   ) : tooled;
+  // A new Try it landing (`?tool=`) remounts everything that is this deck's own state, the builder and every
+  // deck-local provider around it (an open stand-ins modal, I got it's confirm, Change commander's sheet), so it lands
+  // as an arrival from another route does. Keyed per deck too.
+  const landed = <LandingKeyed key={id} request={landingRequest}>{page}</LandingKeyed>;
   // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
   const deckTokens = tokensRead ? await tokensRead : null;
   // The buy box's figure includes the tokens' prices, which can be older than the cards' (the token ingest
@@ -789,7 +806,7 @@ export default async function DeckBuilderPage({
       provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
-      {page}
+      {landed}
     </DeckTokensProvider>
-  ) : page;
+  ) : landed;
 }

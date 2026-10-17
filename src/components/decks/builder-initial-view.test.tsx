@@ -28,6 +28,7 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { BuilderShell } = await import("./builder-shell");
+const { LandingKeyed } = await import("./landing-keyed");
 
 const DECK = {
   id: "deck-1",
@@ -81,6 +82,77 @@ async function mount(initialView: BuilderView, stats = false) {
   });
   return view;
 }
+
+describe("BuilderShell — a landing on the mounted shell (discovery R2 E11)", () => {
+  // As the page renders it: the landing's tab as the opening view, under `LandingKeyed`.
+  const shell = (landingRequest: string | null) => (
+    <LandingKeyed request={landingRequest}>
+      <BuilderShell mix={TEST_MIX}
+        deck={DECK}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        initialView={landingRequest === null ? "deck" : "games"}
+        statsEnabled={false}
+        statsData={null}
+        newestAsOf={null}
+        landing={landingRequest === null ? null : { tool: "matchups", target: "matchups", moment: "matchups", lands: { kind: "deck", tab: "games" } }}
+        landingRequest={landingRequest}/>
+    </LandingKeyed>
+  );
+  const selected = () => within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true });
+
+  it("opens the tool's tab when a client navigation to the same deck brings a new ?tool=, and only once per request", async () => {
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(shell(null));
+    });
+    expect(selected()).toHaveTextContent(addPanelCopy.tabs.deck);
+    await act(async () => view.rerender(shell("r1")));
+    expect(selected()).toHaveTextContent(gameLogCopy.tab.label);
+    // The reader moves on; a refresh carrying the same request leaves their tab alone.
+    const deckTab = within(screen.getAllByRole("tablist")[0]).getAllByRole("tab").find((t) => t.textContent?.includes(addPanelCopy.tabs.deck))!;
+    await act(async () => deckTab.click());
+    await act(async () => view.rerender(shell("r1")));
+    expect(selected()).toHaveTextContent(addPanelCopy.tabs.deck);
+    await act(async () => view.rerender(shell("r2")));
+    expect(selected()).toHaveTextContent(gameLogCopy.tab.label);
+  });
+});
+
+describe("BuilderShell — a Shopping landing over the Stats panel (discovery R2 E11)", () => {
+  it("puts Your deck back on its list when a same-deck ?tool= lands on Shopping", async () => {
+    window.localStorage.setItem("the99:deck-panel", "stats");
+    const shell = (landingRequest: string | null) => (
+      <LandingKeyed request={landingRequest}>
+        <BuilderShell mix={TEST_MIX}
+          deck={DECK}
+          suggestions={[]}
+          degraded={false}
+          firstRun={false}
+          commanderIdentity={["B", "R", "G"]}
+          arrivedFromImport={false}
+          initialView="deck"
+          statsEnabled
+          statsData={{ commanders: [] }}
+          newestAsOf={null}
+          landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
+          landingRequest={landingRequest}/>
+      </LandingKeyed>
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(shell(null));
+    });
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    await act(async () => view.rerender(shell("r1")));
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    window.localStorage.removeItem("the99:deck-panel");
+  });
+});
 
 describe("BuilderShell — the tab it opens on", () => {
   it("opens on the deck by default", async () => {

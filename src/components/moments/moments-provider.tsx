@@ -48,6 +48,9 @@ type Ctx = {
   register: (anchor: Anchor) => () => void;
   /** Spends a moment without showing it (the landing, discovery R2 E11). */
   suppress: (id: MomentId) => void;
+  /** Closes whatever bubble is showing without spending it (a landing's halo is the visit's one guide). */
+  /** Closes any bubble and holds every delivery until the returned release is called (a landing's halo). */
+  yieldBubble: () => () => void;
   /** The control the bubble shows beside: one moment can have several anchors (each row, the rail and the tab bar). */
   showingEl: HTMLElement | null;
   noteId: string;
@@ -218,11 +221,15 @@ export function MomentsProvider({
   const decideRef = useRef<() => void>(() => {});
   /** A claim on the visit is in flight; `again` records a decision asked for while it was. */
   const claiming = useRef(false);
+  /** Landings holding delivery (`yieldBubble`): while any stands, nothing shows. */
+  const holds = useRef(0);
   const again = useRef(false);
   const decide = useCallback(() => {
     windowTimer.current = null;
     // One decision at a time: a claim in flight owns the visit for this tab until it settles, so a decision asked for
     // meanwhile (a landing's spend, another tab's) runs when it does, never beside it.
+    // A landing's hold: nothing is delivered while it stands, and the visit it takes leaves nothing owed after.
+    if (holds.current > 0) return;
     if (claiming.current) {
       again.current = true;
       return;
@@ -269,7 +276,8 @@ export function MomentsProvider({
         void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle(true));
         return;
       }
-      if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
+      // A landing took the visit while the claim was in flight (its halo is the visit's one guide): nothing shows.
+      if (holds.current > 0 || peekVisit().taken || showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
         void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle());
         return;
       }
@@ -442,9 +450,25 @@ export function MomentsProvider({
     [liveSet, close, persist, broadcast],
   );
 
+  // A teardown: unspent inside its first second, so the moment comes back on a later visit; past it, R1's own timer
+  // has already spent it as seen.
+  // A landing's hold (`holds`, declared with the other refs): every delivery waits from the moment it yields until its
+  // visit is taken, since a claim already queued for the visit lock ahead of the landing's own write would otherwise
+  // show beside the halo. Read by `decide` and by a claim's continuation before it shows.
+  const yieldBubble = useCallback(() => {
+    holds.current += 1;
+    close(false);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      holds.current -= 1;
+    };
+  }, [close]);
+
   const ctx = useMemo<Ctx>(
-    () => ({ register, suppress, showingEl: showing?.el ?? null, noteId }),
-    [register, suppress, showing, noteId],
+    () => ({ register, suppress, yieldBubble, showingEl: showing?.el ?? null, noteId }),
+    [register, suppress, yieldBubble, showing, noteId],
   );
 
   return (
@@ -479,11 +503,21 @@ export function MomentsProvider({
   );
 }
 
+/**
+ * Closes whatever bubble is showing without spending it, so its moment returns on a later visit (d9 as Hugh's proxy,
+ * 2026-10-17: a landing's halo is the one guide on screen). A bubble past its `SPENT_AFTER_MS` was already spent by
+ * R1's own rule, as seen. Outside the provider it does nothing.
+ */
+export function useYieldMoment(): () => () => void {
+  return useContext(MomentsContext)?.yieldBubble ?? holdNothing;
+}
+
 /** Spends a moment without showing it (the landing, discovery R2 E11). Outside the provider it does nothing. */
 export function useSuppressMoment(): (id: MomentId) => void {
   return useContext(MomentsContext)?.suppress ?? noop;
 }
 const noop = () => {};
+const holdNothing = () => noop;
 
 /**
  * Makes a control a moment's anchor while `eligible` (its condition holds on the reader's own data). Spread the
@@ -492,9 +526,9 @@ const noop = () => {};
  * moment's own control and counts only while no other anchor of that moment is registered.
  *
  * While eligible the control is also the moment's TARGET (`useTarget`, discovery R2), so the landing and Show me reach
- * it with no second registration. A fallback is never a target, and `target: false` is for a shortcut that is not the
- * tool's own control, so the landing reaches the tool rather than the shortcut. No caller passes it yet: the deck
- * tools' shortcuts take it with the landing that reads their targets (R2·2b).
+ * it with no second registration. A fallback is never a target, and `target: false` keeps a control out of the
+ * registry: a shortcut that is not the tool's own control (the spine's trim line, the land cell, the Analysis tab),
+ * or a control that registers its target itself on a wider rule than the moment's (the Matchups split).
  */
 export function useMomentAnchor(
   id: MomentId,

@@ -158,7 +158,7 @@ export function SpineDesktop({
   const over = built > bodySize;
   const toCut = built - bodySize;
   // M3 (discovery R1): `Proposed cuts →` is the moment's control on a deck over its size, while the shortcut is drawn.
-  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut) });
+  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut), target: false }); // a shortcut, not the tool's target
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.

@@ -61,7 +61,7 @@ export function RoleCounterCell({
   was,
 }: RoleCounterCellProps) {
   const balance = onSeeShelf ? undefined : onBalanceMana;
-  const manaMoment = useMomentAnchor("mana-balance", { eligible: balanceMoment, copy: momentsCopy.manaBalance });
+  const manaMoment = useMomentAnchor("mana-balance", { eligible: balanceMoment, copy: momentsCopy.manaBalance, target: false }); // a shortcut, not the tool's target
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
   const inFlight = have === null;
