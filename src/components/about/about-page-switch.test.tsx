@@ -10,7 +10,8 @@ vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVi
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const { AboutPage } = await import("./about-page");
-const { ABOUT_VERSION, aboutEntries } = await import("../../lib/copy/about");
+const { ABOUT_VERSION } = await import("../../lib/copy/about");
+const { aboutEntries } = await import("../../lib/copy/about-entries");
 const switched = aboutEntries.find((e) => e.id === "locked-cards")!;
 
 const index = () => screen.queryByRole("navigation", { name: /new since your last visit/ });

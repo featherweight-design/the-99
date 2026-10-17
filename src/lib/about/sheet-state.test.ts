@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aboutEntries } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import { readSheetState } from "./sheet-state";
 
 const h = (v?: string) => new Headers(v === undefined ? {} : { "x-about-sheet": v });

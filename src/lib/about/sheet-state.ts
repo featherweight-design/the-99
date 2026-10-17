@@ -1,4 +1,4 @@
-import { aboutEntries } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
 import { SHEET_HEADER } from "./gate";
 

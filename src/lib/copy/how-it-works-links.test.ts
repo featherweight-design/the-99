@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aboutEntries } from "./about";
+import { aboutEntries } from "./about-entries";
 import { howItWorksRowsCopy } from "./how-it-works";
 import { entryRow, HOW_IT_WORKS_ID } from "./how-it-works-links";
 

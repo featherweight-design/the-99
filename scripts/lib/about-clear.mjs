@@ -45,7 +45,7 @@ export function sheetCookie(userId, origin, version = JSON.parse(readFileSync(VE
   };
 }
 
-const CATALOG_FILE = new URL("../../src/lib/copy/about.ts", import.meta.url);
+const CATALOG_FILE = new URL("../../src/lib/copy/about-entries.ts", import.meta.url);
 
 /**
  * Every entry id in the About catalog, read from its source. A probe is plain JS and cannot

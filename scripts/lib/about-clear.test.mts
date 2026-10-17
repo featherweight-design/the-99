@@ -39,14 +39,14 @@ describe("every probe that clears the About gate also clears the sheet (E5)", ()
 
 describe("catalogIds", () => {
   it("reads exactly the catalog's ids, in order", async () => {
-    const { aboutEntries } = await import("../../src/lib/copy/about");
+    const { aboutEntries } = await import("../../src/lib/copy/about-entries");
     expect(catalogIds()).toEqual(aboutEntries.map((e) => e.id));
   });
 });
 
 describe("variantIds", () => {
   it("reads every entry variant's seen id, in the form isSeen checks", async () => {
-    const { aboutEntries } = await import("../../src/lib/copy/about");
+    const { aboutEntries } = await import("../../src/lib/copy/about-entries");
     const { variantId } = await import("../../src/lib/about/visible");
     const expected = aboutEntries.flatMap((e) => (e.variant ? [variantId(e.id, e.variant.switch)] : []));
     expect(expected).toContain("upload-choice@COLLECTION_SYNC_ENABLED");

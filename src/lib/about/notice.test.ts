@@ -1,7 +1,8 @@
 // About's notice on Home's banner: the sheet's rule, with the appendix left out (Q3) and a browser whose sheet
 // cookie is current told nothing; and the ✕'s re-validation, which writes only what the page drew and is still new.
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
+import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
 import { sheetCookieIsCurrent, sheetCookieValue, sheetDecision } from "./gate";
 import { aboutDismissal, aboutLine, aboutNotice } from "./notice";

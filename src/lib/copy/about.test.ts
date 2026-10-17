@@ -14,7 +14,8 @@ import { existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, ALLOWANCE_SLOT, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
+import { ABOUT_VERSION, ALLOWANCE_SLOT, aboutCopy, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
+import { aboutEntries } from "./about-entries";
 import pin from "./about.version.json";
 
 const APP_DIR = join(process.cwd(), "src", "app");
