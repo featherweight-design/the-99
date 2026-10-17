@@ -6,7 +6,9 @@
 // query whose comments say "copy", "update" or "delete" still reads as the select it is. Dollar-quoted text is left in,
 // which can only refuse more.
 export function isReadStatement(text: string): boolean {
-  const t = codeOf(text).trim().toLowerCase();
+  const t = codeOf(text).trim().replace(/;\s*$/, "").toLowerCase();
+  // One statement only: a `;` left in the code would run what follows it past every check below.
+  if (t.includes(";")) return false;
   if (/^(begin|start transaction|commit|rollback|show)\b/.test(t)) return !/\bread write\b/.test(t);
   if (/^set\s+(transaction|session characteristics as transaction)\b/.test(t)) return !/\bread write\b/.test(t);
   if (!/^(select|with|\()/.test(t)) return false;

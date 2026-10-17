@@ -18,6 +18,8 @@ describe("isReadStatement", () => {
       "with all_claims as (\n  -- list update, a swap, an import resolve, not only Put back) cancels its own release here,\n  -- draft: its commit and its discard both delete it.\n  select 1\n) select * from all_claims",
       "select /* a copy, an update */ 1",
       "select 'delete me' as note",
+      "select 1;",
+      "select ';' as semi",
       'select "copy" from t',
     ]) expect(isReadStatement(q), q).toBe(true);
   });
@@ -45,6 +47,10 @@ describe("isReadStatement", () => {
       "select 1; -- a note\ndelete from decks",
       "select 'it''s' as x; delete from decks",
       "select /* note */ * from decks for update",
+      "begin; delete from decks; commit",
+      "commit; set default_transaction_read_only = off",
+      "show transaction_read_only; update decks set name = 'x'",
+      "set transaction isolation level repeatable read; delete from decks",
     ]) expect(isReadStatement(q), q).toBe(false);
   });
 });

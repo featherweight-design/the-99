@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ToolLanding } from "../../lib/discovery/tools";
 import { useToolLanding } from "./use-tool-landing";
 
@@ -17,6 +18,12 @@ export function ToolLandingMount({
   request: string | null;
   deferred?: boolean;
 }) {
-  useToolLanding(landing, request ?? "", { deferred });
+  // A deferred landing outlives its parameter: once stripped, a same-page refresh (`router.refresh()`) renders this
+  // with no landing and no request, and passing that on would end the wait. So a deferred landing is HELD until a new
+  // request replaces it or the page unmounts. Adjusted during render, so the hook never sees the null.
+  const [held, setHeld] = useState({ landing, request });
+  if (deferred && request !== null && request !== held.request) setHeld({ landing, request });
+  const live = deferred && request === null ? held : { landing, request };
+  useToolLanding(live.landing, live.request ?? "", { deferred });
   return null;
 }

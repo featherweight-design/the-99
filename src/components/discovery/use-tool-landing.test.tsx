@@ -3,6 +3,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
 import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "./targets-provider";
 import { LANDING_WAIT_MS, useToolLanding } from "./use-tool-landing";
+import { ToolLandingMount } from "./tool-landing-mount";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor } from "../moments/moments-provider";
 import { toolLanding } from "../../lib/discovery/tools";
 import type { MomentId } from "../../lib/moments/registry";
@@ -414,4 +415,27 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     useToolLanding(null, "r1", { deferred: true });
     return null;
   }
+
+  it("keeps waiting through a same-page refresh that renders the mount with no landing and no request", async () => {
+    at("?avail=free&tool=find-a-deck");
+    const landing = toolLanding("find-a-deck", () => true);
+    const tree = (props: { landing: typeof landing; request: string | null }) => (
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <ToolLandingMount {...props} deferred />
+          <Later />
+        </MomentsProvider>
+      </TargetsProvider>
+    );
+    const { rerender } = render(tree({ landing, request: "r1" }));
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    // `router.refresh()` after the parameter was stripped: the server decides no landing and no request.
+    rerender(tree({ landing: null, request: null }));
+    await flush();
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
+  });
 });
