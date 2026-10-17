@@ -100,7 +100,6 @@ async function snapshot(page) {
   const answered = await Promise.race([
     page.evaluate(() => {
       const overlay = document.querySelector('[data-testid="pending-overlay"]');
-      const main = document.querySelector("main");
       return {
         path: location.pathname + location.hash,
         overlay: overlay !== null,
