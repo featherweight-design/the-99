@@ -319,6 +319,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setVeiled(false);
     setQuery("");
     setReturned(null);
+    setActive(-1);
     setPhase("idle");
   }
 
