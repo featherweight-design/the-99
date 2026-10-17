@@ -11,6 +11,7 @@
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:admin-groups
 import "./lib/env.mjs";
+import type { GroupWriteDeps } from "../src/lib/admin/group-writes";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const run = Date.now().toString(36);
@@ -39,8 +40,9 @@ async function main() {
   const { randomUUID } = await import("node:crypto");
   let cleared = 0;
   // The probe's own universe, so Clerk is never asked; the rest is the shipped path.
-  const deps = {
-    accounts: async () => ({ accounts: [U1, U2, U3].map((id) => ({ id, name: id, email: null })) }),
+  // Typed, so a shape drift is reported against GroupWriteDeps rather than by printing Drizzle's transaction type, which overflows tsc's stack.
+  const deps: GroupWriteDeps = {
+    accounts: async () => ({ accounts: [U1, U2, U3].map((id) => ({ id, name: id, email: null, named: true })) }),
     rise: riseForAccounts,
     transaction: <T,>(fn: Parameters<typeof db.transaction<T>>[0]) => db.transaction(fn),
     afterCommit: () => void cleared++,
