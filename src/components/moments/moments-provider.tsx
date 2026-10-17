@@ -8,6 +8,8 @@ import { pickMoment, type MomentId } from "../../lib/moments/registry";
 import { claimVisit, peekVisit, releaseClaim, takeVisit, touchVisit, withVisitLock, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentCopy } from "../../lib/copy/moments";
 import { MomentBubble, type MomentPlace } from "./moment-bubble";
+import { useTarget } from "../discovery/targets-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 /**
  * The moments' one controller (discovery R1, plan `2026-10-16-moments.md`). Mounted once by the shell, which hands it
@@ -25,6 +27,9 @@ import { MomentBubble, type MomentPlace } from "./moment-bubble";
  * screen for `SPENT_AFTER_MS`. Spending takes the visit in every tab (`lib/moments/visit.ts`) and writes the id to the
  * account through `spendMomentAction`.
  */
+/** The channel every tab hears a spend on. */
+const SPENT_CHANNEL = "the99.moments.spent";
+
 export const ARRIVE_MS = 600;
 export const SPENT_AFTER_MS = 1000;
 /** How long a failed spend waits before it is written again. */
@@ -41,6 +46,8 @@ type Showing = Anchor & { since: number };
 
 type Ctx = {
   register: (anchor: Anchor) => () => void;
+  /** Spends a moment without showing it (the landing, discovery R2 E11). */
+  suppress: (id: MomentId) => void;
   /** The control the bubble shows beside: one moment can have several anchors (each row, the rail and the tab bar). */
   showingEl: HTMLElement | null;
   noteId: string;
@@ -152,13 +159,23 @@ export function MomentsProvider({
   }, []);
 
 
+  // Tells every other tab a moment is spent. Before the provider's own channel is open (a descendant's mount effect
+  // runs first), a one-off sender carries it, so an early spend is never lost to the other tabs.
+  const broadcast = useCallback((id: MomentId) => {
+    if (channel.current !== null) return channel.current.postMessage(id);
+    if (typeof BroadcastChannel === "undefined") return;
+    const once = new BroadcastChannel(SPENT_CHANNEL);
+    once.postMessage(id);
+    once.close();
+  }, []);
+
   const spend = useCallback((id: MomentId) => {
     if (spent.current.has(id)) return;
     spent.current.add(id);
     void withVisitLock(() => takeVisit());
-    channel.current?.postMessage(id);
+    broadcast(id);
     persist(id);
-  }, [persist]);
+  }, [persist, broadcast]);
 
   /** Closes the bubble. `byReader` spends it at once; a teardown spends it only past `SPENT_AFTER_MS`. */
   const close = useCallback(
@@ -199,8 +216,17 @@ export function MomentsProvider({
 
   // The retry re-enters `decide` through this, since a callback cannot name itself before it is declared.
   const decideRef = useRef<() => void>(() => {});
+  /** A claim on the visit is in flight; `again` records a decision asked for while it was. */
+  const claiming = useRef(false);
+  const again = useRef(false);
   const decide = useCallback(() => {
     windowTimer.current = null;
+    // One decision at a time: a claim in flight owns the visit for this tab until it settles, so a decision asked for
+    // meanwhile (a landing's spend, another tab's) runs when it does, never beside it.
+    if (claiming.current) {
+      again.current = true;
+      return;
+    }
     // A hidden page shows nothing: its time on screen would be counted without a reader seeing it.
     if (showingRef.current !== null || document.hidden) return;
     // A fallback gives way to the moment's own control whenever that control is drawn, on screen or not.
@@ -221,17 +247,34 @@ export function MomentsProvider({
     // An exclusive claim on the visit across tabs, made under the visit lock and held until the spend takes it or a
     // teardown releases it, so two tabs whose windows close together never both show one. Refused while another tab
     // holds it: look again, since that claim may be released or expire.
+    claiming.current = true;
+    // The claim settles: the next decision asked for meanwhile runs now (or `force` asks one itself).
+    const settle = (force = false) => {
+      claiming.current = false;
+      const run = force || again.current;
+      again.current = false;
+      if (run) decideRef.current();
+    };
     void withVisitLock(() => claimVisit(TAB_ID)).then((ok) => {
       if (!ok) {
+        if (again.current) return settle();
+        claiming.current = false;
         if (windowTimer.current === null) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
         return;
       }
       const anchor = clear.find((a) => a.id === id)!;
+      // Suppressed while the claim was in flight: the landing spent it, so it never shows, and the window decides again
+      // once the claim is back, since a control already on screen fires no new intersection to wake it.
+      if (spent.current.has(anchor.id)) {
+        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle(true));
+        return;
+      }
       if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
-        void withVisitLock(() => releaseClaim(TAB_ID));
+        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle());
         return;
       }
       show(anchor);
+      settle();
     });
   }, [liveSet, show]);
 
@@ -250,12 +293,17 @@ export function MomentsProvider({
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("storage", onStorage);
     if (typeof BroadcastChannel !== "undefined") {
-      channel.current = new BroadcastChannel("the99.moments.spent");
+      channel.current = new BroadcastChannel(SPENT_CHANNEL);
       channel.current.onmessage = (e: MessageEvent) => {
         if (typeof e.data !== "string") return;
+        const added = !spent.current.has(e.data);
         spent.current.add(e.data);
         const s = showingRef.current;
         if (s !== null && s.id === e.data) close(false);
+        // Another tab's landing spends without taking the visit (`suppress`), so a control here may still be owed its
+        // bubble, freed by the close or by the spend itself (`after`): the window opens again, as it does when another
+        // tab's claim is heard. A spend that took the visit finds nothing owed.
+        if (added) armRef.current();
       };
     }
     return () => {
@@ -364,7 +412,40 @@ export function MomentsProvider({
     [liveSet, close],
   );
 
-  const ctx = useMemo<Ctx>(() => ({ register, showingEl: showing?.el ?? null, noteId }), [register, showing, noteId]);
+  // The landing (discovery R2, E11) spends a tool's moment through here, before it scrolls, so no bubble can show for
+  // it. The id goes into the spent set, which every pending delivery reads (`decide` skips a spent moment, so a tie
+  // window already open passes over it); a bubble already showing for it closes as the reader's own close would; and
+  // the spend is written through the shipped persistence path. Only a live moment is spent: with `MOMENTS_ENABLED` off
+  // nothing is live, and nothing is written.
+  const suppress = useCallback(
+    (id: MomentId) => {
+      if (!liveSet.has(id)) return;
+      // Recorded once, and never by `spend`, which takes the visit: a landing is not the reader seeing a bubble.
+      const added = !spent.current.has(id);
+      if (added) {
+        spent.current.add(id);
+        broadcast(id);
+        persist(id);
+      }
+      // Closed as a teardown, not as the reader's close: under `SPENT_AFTER_MS` the claim goes back (the id is already
+      // spent, so the moment never returns); past it the timer has already spent the id and taken the visit, which
+      // stays taken.
+      const closed = showingRef.current?.id === id;
+      if (closed) close(false);
+      // Then the window decides again whenever the spent set or the bubble moved: a closed bubble frees the window, and
+      // a new spend can free a moment that waits on it (`after`: Mana Balance on Suggested changes). A control already
+      // on screen fires no new intersection to wake it.
+      // Through the arrival window, as another tab's spend is: one already open is left to run (its callback reads the
+      // new spent set, and a control arriving inside it still takes part in the tie), else a new one opens.
+      if (added || closed) armRef.current();
+    },
+    [liveSet, close, persist, broadcast],
+  );
+
+  const ctx = useMemo<Ctx>(
+    () => ({ register, suppress, showingEl: showing?.el ?? null, noteId }),
+    [register, suppress, showing, noteId],
+  );
 
   return (
     <MomentsContext.Provider value={ctx}>
@@ -398,11 +479,22 @@ export function MomentsProvider({
   );
 }
 
+/** Spends a moment without showing it (the landing, discovery R2 E11). Outside the provider it does nothing. */
+export function useSuppressMoment(): (id: MomentId) => void {
+  return useContext(MomentsContext)?.suppress ?? noop;
+}
+const noop = () => {};
+
 /**
  * Makes a control a moment's anchor while `eligible` (its condition holds on the reader's own data). Spread the
  * result on the control: `ref` registers it, and `aria-describedby` points at the bubble while it shows. Outside the
  * provider, or for a moment that is not live or already spent, it does nothing. A `fallback` anchor stands in for the
  * moment's own control and counts only while no other anchor of that moment is registered.
+ *
+ * While eligible the control is also the moment's TARGET (`useTarget`, discovery R2), so the landing and Show me reach
+ * it with no second registration. A fallback is never a target, and `target: false` is for a shortcut that is not the
+ * tool's own control, so the landing reaches the tool rather than the shortcut. No caller passes it yet: the deck
+ * tools' shortcuts take it with the landing that reads their targets (R2·2b).
  */
 export function useMomentAnchor(
   id: MomentId,
@@ -411,7 +503,8 @@ export function useMomentAnchor(
     copy,
     place = "below",
     fallback = false,
-  }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace; fallback?: boolean },
+    target = true,
+  }: { eligible: boolean; copy: MomentCopy; place?: MomentPlace; fallback?: boolean; target?: boolean },
 ): { ref: (el: HTMLElement | null) => void; "aria-describedby"?: string } {
   const ctx = useContext(MomentsContext);
   const [el, setEl] = useState<HTMLElement | null>(null);
@@ -421,6 +514,8 @@ export function useMomentAnchor(
     if (!register || !eligible || el === null) return;
     return register({ id, el, copy: { tool, line }, place, fallback });
   }, [register, eligible, el, id, tool, line, place, fallback]);
+  const targetRef = useTarget(eligible && target && !fallback ? id : null);
+  const ref = useMergedRef(setEl, targetRef);
   const shown = ctx !== null && el !== null && ctx.showingEl === el;
-  return { ref: setEl, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
+  return { ref, ...(shown ? { "aria-describedby": ctx.noteId } : {}) };
 }

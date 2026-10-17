@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
-import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor } from "./moments-provider";
+import { useEffect, useState } from "react";
+import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor, useSuppressMoment } from "./moments-provider";
+import { HALO_ATTR, TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { useMomentHold } from "../../lib/moments/hold";
-import { VISIT_KEY } from "../../lib/moments/visit";
+import { claimVisit, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentId } from "../../lib/moments/registry";
 
 const spendMomentAction = vi.fn(async (_id: unknown) => {});
@@ -57,6 +58,29 @@ function Control({
       {name}
     </button>
   );
+}
+
+/** The landing's press, standing in for `useToolLanding`. */
+let suppressNow: ((id: MomentId) => void) | null = null;
+function Suppress({ id }: { id: MomentId }) {
+  const suppress = useSuppressMoment();
+  useEffect(() => {
+    suppressNow = suppress;
+  }, [suppress]);
+  return (
+    <button type="button" onClick={() => suppress(id)}>
+      land on {id}
+    </button>
+  );
+}
+
+let targets: Targets | null = null;
+function GrabTargets() {
+  const t = useTargets();
+  useEffect(() => {
+    targets = t;
+  }, [t]);
+  return null;
 }
 
 function Hold() {
@@ -494,5 +518,293 @@ describe("MomentsProvider", () => {
   it("does nothing outside the provider", async () => {
     render(<Control id="lineup" name="Stats" />);
     expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("aria-describedby")).toBe(false);
+  });
+});
+
+describe("suppressMoment (the landing, discovery R2 E11)", () => {
+  it("spends a moment whose window is open, so its bubble never arrives, and writes it once", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS / 2);
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    await advance(ARRIVE_MS * 4);
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByRole("button", { name: "Stats" }).hasAttribute("data-moment-halo")).toBe(false);
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+    // The landing takes no visit: another moment may still arrive.
+    expect(window.localStorage.getItem(VISIT_KEY)).not.toContain('"taken":true');
+  });
+
+  it("lets the next moment on screen take the window it cancelled", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    onScreen("Top off");
+    onScreen("Wish");
+    fireEvent.click(screen.getByRole("button", { name: "land on top-off" }));
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Wish, a tip");
+  });
+
+  // Called as the landing calls it, never through a press: a press outside a showing bubble is the bubble's own
+  // dismiss, which would close and spend it whatever `suppress` did.
+  const visitTaken = () => JSON.parse(window.localStorage.getItem(VISIT_KEY) ?? "{}").taken === true;
+
+  it("closes a bubble showing for that moment before it counts as seen, spends it once, and takes no visit", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
+    act(() => suppressNow!("lineup"));
+    await advance(0);
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+    expect(visitTaken()).toBe(false);
+  });
+
+  it("gives the visit back when it closes a bubble before it counts as seen, so the next moment can arrive", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    // Both on screen before the first bubble, so nothing after the suppression announces Wish again.
+    onScreen("Top off");
+    onScreen("Wish");
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+    act(() => suppressNow!("top-off"));
+    await advance(ARRIVE_MS);
+    await advance(0);
+    expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+  });
+
+  it("closes a bubble showing for that moment after it counted as seen, writes nothing more, and the visit stays taken", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    await advance(SPENT_AFTER_MS);
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(visitTaken()).toBe(true);
+    act(() => suppressNow!("lineup"));
+    await advance(0);
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(visitTaken()).toBe(true);
+  });
+
+  it("decides again when it spends the moment a claim was in flight for, so a control already on screen still gets its bubble", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    onScreen("Top off");
+    onScreen("Wish");
+    // The window closes and the claim for Top off is taken asynchronously; the landing spends Top off before it lands.
+    act(() => {
+      vi.advanceTimersByTime(ARRIVE_MS);
+      suppressNow!("top-off");
+    });
+    await advance(0);
+    await advance(0);
+    expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+    expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+    // Wish's claim is the one standing: Top off's settled release did not clear it, so another tab is refused.
+    await advance(0);
+    expect(claimVisit("another-tab")).toBe(false);
+  });
+
+  it("closes a bubble another tab's landing spent, and lets the next control already on screen take the window", async () => {
+    vi.useRealTimers();
+    const other = new BroadcastChannel("the99.moments.spent");
+    const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+    try {
+      render(
+        <MomentsProvider live={LIVE} spent={[]}>
+          <Control id="top-off" name="Top off" />
+          <Control id="wishlist" name="Wish" />
+        </MomentsProvider>,
+      );
+      onScreen("Top off");
+      onScreen("Wish");
+      await wait(ARRIVE_MS + 100);
+      expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+      other.postMessage("top-off");
+      await wait(ARRIVE_MS + 300);
+      expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+      expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
+  it("leaves an arrival window already open to run, so a control arriving inside it still takes part in the tie", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Wish");
+    await advance(100);
+    act(() => suppressNow!("lineup"));
+    await advance(0);
+    expect(screen.queryByRole("note")).toBeNull();
+    await advance(100);
+    onScreen("Top off");
+    await advance(ARRIVE_MS - 200);
+    // Top off is first in the registry's order, and it arrived inside the window.
+    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+  });
+
+  // Mana Balance waits on Suggested changes (`after`): on screen alone, its window passes and shows nothing.
+  const MANA_LIVE: MomentId[] = ["suggested-changes", "mana-balance"];
+
+  it("frees a moment that waits on the one it spends, with no bubble closed", async () => {
+    render(
+      <MomentsProvider live={MANA_LIVE} spent={[]}>
+        <Control id="mana-balance" name="Mana" />
+        <Suppress id="suggested-changes" />
+      </MomentsProvider>,
+    );
+    onScreen("Mana");
+    await advance(ARRIVE_MS * 2);
+    expect(screen.queryByRole("note")).toBeNull();
+    act(() => suppressNow!("suggested-changes"));
+    await advance(ARRIVE_MS);
+    await advance(0);
+    expect(screen.getByRole("note", { name: "Mana, a tip" })).toBeTruthy();
+  });
+
+  it("frees a moment here that waits on one another tab's landing spent", async () => {
+    vi.useRealTimers();
+    const other = new BroadcastChannel("the99.moments.spent");
+    const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+    try {
+      render(
+        <MomentsProvider live={MANA_LIVE} spent={[]}>
+          <Control id="mana-balance" name="Mana" />
+        </MomentsProvider>,
+      );
+      onScreen("Mana");
+      await wait(ARRIVE_MS * 2);
+      expect(screen.queryByRole("note")).toBeNull();
+      other.postMessage("suggested-changes");
+      await wait(ARRIVE_MS + 300);
+      expect(screen.getByRole("note", { name: "Mana, a tip" })).toBeTruthy();
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
+  it("tells the other tabs when it is called from a descendant's mount effect, before the provider's channel opens", async () => {
+    vi.useRealTimers();
+    const heard: unknown[] = [];
+    const other = new BroadcastChannel("the99.moments.spent");
+    other.onmessage = (e) => heard.push(e.data);
+    function OnMount() {
+      const suppress = useSuppressMoment();
+      useEffect(() => suppress("lineup"), [suppress]);
+      return null;
+    }
+    try {
+      render(
+        <MomentsProvider live={LIVE} spent={[]}>
+          <OnMount />
+        </MomentsProvider>,
+      );
+      await new Promise((r) => setTimeout(r, 50));
+      expect(heard).toEqual(["lineup"]);
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
+  it("writes nothing for a moment that is not live (MOMENTS_ENABLED off) or already spent", async () => {
+    const { unmount } = render(
+      <MomentsProvider live={[]} spent={[]}>
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    unmount();
+    render(
+      <MomentsProvider live={LIVE} spent={["lineup"]}>
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    await advance(ARRIVE_MS);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+
+  it("does nothing outside the provider", () => {
+    render(<Suppress id="lineup" />);
+    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("a moment's control is its target (discovery R2)", () => {
+  function Anchor({ eligible = true, fallback = false, target }: { eligible?: boolean; fallback?: boolean; target?: boolean }) {
+    const a = useMomentAnchor("top-off", { eligible, fallback, target, copy: { tool: "Top off", line: "fills." } });
+    return (
+      <button type="button" {...a}>
+        Top off
+      </button>
+    );
+  }
+  const drawn = (el: React.ReactNode) => {
+    targets = null;
+    render(
+      <TargetsProvider>
+        <GrabTargets />
+        <MomentsProvider live={[]} spent={[]}>{el}</MomentsProvider>
+      </TargetsProvider>,
+    );
+    return targets!.haloTarget("top-off");
+  };
+
+  it("registers while eligible, whatever MOMENTS_ENABLED says", () => {
+    expect(drawn(<Anchor />)).toBe(true);
+    expect(screen.getByRole("button", { name: "Top off" }).hasAttribute(HALO_ATTR)).toBe(true);
+  });
+
+  it("registers nothing while not eligible, as a fallback, or with target: false", () => {
+    expect(drawn(<Anchor eligible={false} />)).toBe(false);
+    cleanup();
+    expect(drawn(<Anchor fallback />)).toBe(false);
+    cleanup();
+    expect(drawn(<Anchor target={false} />)).toBe(false);
   });
 });
