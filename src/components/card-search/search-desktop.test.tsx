@@ -6,7 +6,7 @@ vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: async () => [],
   cardSignalsAction: async () => ({}),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 // md and up: the desktop's frame, not the phone's.
 vi.mock("../ui/use-min-width", () => ({ useMinWidth: () => true }));

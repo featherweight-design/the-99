@@ -8,7 +8,7 @@ vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: (q: string) => searchAllCardsAction(q),
   cardSignalsAction: (ids: string[]) => cardSignalsAction(ids),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 // The results' half is its own chunk with its own tests; here only the shell's half is under test.
 vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 
@@ -102,6 +102,23 @@ describe("the search sheet (phone)", () => {
     await act(async () => fireEvent.keyDown(field(), { key: "Escape" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(icon);
+  });
+
+  it("opens with an empty field after the Close button, after Back,", async () => {
+    const icon = mount();
+    for (const leave of [
+      () => fireEvent.click(screen.getByRole("button", { name: "Close search" })),
+      () => fireEvent(window, new PopStateEvent("popstate")),
+    ]) {
+      await act(async () => fireEvent.click(icon));
+      await type("sol");
+      expect((field() as HTMLInputElement).value).toBe("sol");
+      await act(async () => void leave());
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await act(async () => fireEvent.click(icon));
+      expect((field() as HTMLInputElement).value).toBe("");
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Close search" })));
+    }
   });
 
   it("asks for the recent cards' signals fresh on open, and only when there are any", async () => {

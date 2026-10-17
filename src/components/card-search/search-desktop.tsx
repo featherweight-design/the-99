@@ -41,7 +41,7 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
+  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
@@ -108,7 +108,8 @@ function DesktopFrame() {
         // A dialog only while it is up: a closed one still matches `[role="dialog"]`, which the swap receipt waits out.
         role={isOpen ? "dialog" : undefined}
         aria-labelledby="card-search-heading-desktop"
-        hidden={!isOpen}
+        hidden={!isOpen && !veiled}
+        inert={!isOpen && veiled}
         // Focusable like the phone frame: the shared lowerKeyboard() and a card dismissal put focus here.
         tabIndex={-1}
         data-card-search-sheet=""

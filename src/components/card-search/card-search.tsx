@@ -55,6 +55,8 @@ type CardSearchContextValue = {
   /** Closes the search; focus goes back to whatever opened it. */
   closeSearch: () => void;
   isOpen: boolean;
+  /** A picked card is on its way up: the frame stays drawn (and inert) until the card is, so the page is never shown between. */
+  veiled: boolean;
   /** The field's text as typed, and its setter (which also drops the return ring and a stale failure). */
   query: string;
   setQuery: (next: string) => void;
@@ -107,6 +109,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [recentSignals, setRecentSignals] = useState<Record<string, CardSignals> | null>(null);
   const [moved, setActive] = useState(-1);
   const [returned, setReturned] = useState<string | null>(null);
+  const [veiled, setVeiled] = useState(false);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [bodyEl, setBodyEl] = useState<HTMLDivElement | null>(null);
@@ -163,6 +166,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const close = useCallback(() => {
     setOpen(false);
     setActive(-1);
+    // Leaving the search (Close, Escape, Back) empties the field: it opens fresh next time. A picked card does not come
+    // through here, so the search comes back as it was when the card is dismissed.
+    setQuery("");
+    setReturned(null);
+    setPhase("idle");
     openerRef.current?.focus();
   }, []);
 
@@ -242,6 +250,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         // The row is the card's opener, so the card's own close puts focus back on it (H3).
         opener: bodyRef.current?.querySelector<HTMLElement>(`[data-card-search-row="${CSS.escape(card.oracleId)}"]`) ?? null,
       });
+      setVeiled(true);
       setOpen(false);
     },
     [userId],
@@ -261,13 +270,23 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // the ring on the row that opened it (H3).
   // At md and up the desktop's frame is drawn (PR D), so the search comes back there too (D8).
   const onCardDismissed = useCallback(() => {
+    setVeiled(false);
     setOpen(true);
   }, []);
+
+  // The card is drawn: the veil lifts. A read that hangs does not hold the page back for ever.
+  const onCardShown = useCallback(() => setVeiled(false), []);
+  useEffect(() => {
+    if (!veiled) return;
+    const t = window.setTimeout(() => setVeiled(false), VEIL_MAX_MS);
+    return () => window.clearTimeout(t);
+  }, [veiled]);
 
   // The card's read failed, so no card came up: the search comes back with the failure and Try again (S6).
   const onCardFailed = useCallback(() => {
     if (searching) setPhase("failed");
     else setRecentsFailed(true);
+    setVeiled(false);
     setOpen(true);
   }, [searching]);
 
@@ -296,6 +315,10 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   if (shownOn !== pathname) {
     setShownOn(pathname);
     setOpen(false);
+    setVeiled(false);
+    setQuery("");
+    setReturned(null);
+    setPhase("idle");
   }
 
   const onClear = useCallback(() => {
@@ -350,6 +373,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       warmSearch,
       closeSearch: close,
       isOpen: open,
+      veiled,
       query,
       setQuery: changeQuery,
       phase,
@@ -367,7 +391,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       pick,
       retry,
     }),
-    [openSearch, warmSearch, close, open, query, changeQuery, phase, searching, online, list, active, busy, placeBody, onFieldKey, escape, onClear, pick, retry],
+    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, active, busy, placeBody, onFieldKey, escape, onClear, pick, retry],
   );
 
   const layerProps: SearchLayerProps = {
@@ -389,6 +413,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     onAnnounce: setAnnouncement,
     onCardDismissed,
     onCardFailed,
+    onCardShown,
     recentsFailed,
     open,
     openCardRef,
@@ -411,7 +436,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
 /** The phone's full-screen sheet (S1 to S7's frame): the field row, the bar, and the host the results draw into. */
 function PhoneFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
+  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -483,7 +508,8 @@ function PhoneFrame() {
       data-card-search-sheet=""
       // Focusable itself, so lowering the keyboard keeps focus (and Escape, and Tab) inside the sheet.
       tabIndex={-1}
-      hidden={!isOpen}
+      hidden={!isOpen && !veiled}
+      inert={!isOpen && veiled}
       className="fixed inset-0 z-40 flex flex-col bg-[color:var(--bg)] outline-none md:hidden"
     >
       <h2 id="card-search-heading" className="sr-only">
@@ -568,6 +594,9 @@ export function SearchProgress() {
     </div>
   );
 }
+
+/** The longest the frame stays drawn for a card that has not come up. */
+const VEIL_MAX_MS = 4000;
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 function subscribeDesktop(onChange: () => void) {
