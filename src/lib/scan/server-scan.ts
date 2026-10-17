@@ -71,6 +71,8 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       if (state.kind === "match" && !(scan.value && sameCard(scan.value, f))) return IDLE;
       return state;
     },
+    /** A lookup is in flight (its retries included). */
+    waiting: () => inFlight !== null,
     /** Abandon any lookup in flight (the toggle went off, or the page was left). */
     stop: forget,
   };

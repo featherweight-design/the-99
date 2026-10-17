@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
+import { scanTimer } from "../../../lib/scan/timing";
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { ADDED_MS, DARK_HOLD_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
@@ -159,8 +161,9 @@ describe("useCardScan", () => {
     const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
     const other = new Float32Array(EMBED_DIM);
     other[1] = 1;
-    // Card A until its lookup is asked for, then one frame of card B, then no further frame at all: the answer for A
-    // lands while B is in view and has not settled, and nothing after it re-checks.
+    // Card A until its lookup is asked for; no frame is read while it is in flight, so the first frame after the answer
+    // for A lands is card B, then no further frame at all: the answer is for a card that has left, and nothing after
+    // it re-checks.
     let left = false;
     const readFrame = async (): Promise<FrameRead> => {
       await new Promise((r) => setTimeout(r, 5));
@@ -171,12 +174,13 @@ describe("useCardScan", () => {
       }
       return new Promise<FrameRead>(() => {});
     };
-    const { hook } = setup({ fetch: fetch as unknown as typeof globalThis.fetch, readFrame });
-    await waitFor(() => expect(left).toBe(true), { timeout: 4000 });
-    await new Promise((r) => setTimeout(r, 20));
+    const { hook, onAdd } = setup({ fetch: fetch as unknown as typeof globalThis.fetch, readFrame });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
     await act(async () => answer(new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await waitFor(() => expect(left).toBe(true), { timeout: 4000 });
     await new Promise((r) => setTimeout(r, 30));
     expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
+    expect(onAdd).not.toHaveBeenCalled();
   });
 
   it("shows the blocked screen on a browser with no camera API at all", async () => {
@@ -439,5 +443,129 @@ describe("useCardScan", () => {
       act(() => hook.result.current.setMode("fast"));
       expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
     });
+  });
+});
+
+// The speed lane's fix (2026-10-16): a read is one long run of the models, and a response's steps waited for the read
+// in progress, so the loop reads nothing while the scanner waits on the server.
+describe("useCardScan reads no frame while it waits on the server", () => {
+  it("while a lookup is in flight, and reads again once the answer is in", async () => {
+    let answer: (r: Response) => void = () => {};
+    const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
+    let reads = 0;
+    let readsAtLookup = -1;
+    const { hook } = setup({
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+    });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    readsAtLookup = reads;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(reads).toBe(readsAtLookup);
+    await act(async () => answer(new Response(JSON.stringify({ index: "all", guesses: [SOL], margin: null }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    await waitFor(() => expect(reads).toBeGreaterThan(readsAtLookup), { timeout: 4000 });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }));
+  });
+
+  it("while an add waits for the list", async () => {
+    let reads = 0;
+    let land: (ok: boolean) => void = () => {};
+    const onAddWait = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    let t = 0;
+    const deps: CardScanDeps = {
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+      getUserMedia: async () => stream(),
+      fetch: vi.fn(() => json({ index: "all", guesses: [SOL], margin: null })) as unknown as typeof globalThis.fetch,
+      wait: async () => {},
+      now: () => (t += 200),
+      storage: null,
+    };
+    const hook = renderHook(() => useCardScan(true, deps, onAddWait, () => {}));
+    act(() => hook.result.current.attachVideo(document.createElement("video")));
+    await waitFor(() => expect(onAddWait).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    const at = reads;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(reads).toBe(at);
+    await act(async () => land(true));
+    await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
+  });
+});
+
+describe("useCardScan's wait on the server is bounded", () => {
+  it("reads again while a lookup hangs, so a card taken away still ends it", async () => {
+    const fetch = vi.fn(() => new Promise<Response>(() => {}));
+    let reads = 0;
+    setup({
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+    });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    const at = reads;
+    await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
+  });
+});
+
+describe("useCardScan's timing row", () => {
+  const sized = () => {
+    const v = document.createElement("video");
+    Object.defineProperty(v, "videoWidth", { value: 640 });
+    return v;
+  };
+  it("counts no read while the camera has no picture yet", async () => {
+    const timer = scanTimer("phone");
+    let reads = 0;
+    setup({
+      timer,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "none" }, cardInView: false, dark: false };
+      },
+    });
+    await waitFor(() => expect(reads).toBeGreaterThan(3));
+    expect(timer.row()).toBeNull();
+  });
+
+  it("times only an answer that reaches the panel, not one behind Normal's printing step", async () => {
+    const timer = scanTimer("phone");
+    const other = new Float32Array(EMBED_DIM);
+    other[1] = 1;
+    let n = 0;
+    const store = new Map([["the99.scan.mode", "normal"]]);
+    const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: () => {} } as unknown as Storage;
+    let t = 0;
+    const deps: CardScanDeps = {
+      timer,
+      storage,
+      loadChoices: async () => [{ scryfallId: "p1" } as unknown as PrintingChoice],
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        n++;
+        if (n < 15) return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+        if (n < 30) return { frame: { kind: "none" }, cardInView: false, dark: false };
+        return { frame: { kind: "card", embedding: other }, cardInView: true, dark: false };
+      },
+      getUserMedia: async () => stream(),
+      fetch: vi.fn(() => json({ index: "all", guesses: [SOL], margin: null })) as unknown as typeof globalThis.fetch,
+      wait: async () => {},
+      now: () => (t += 200),
+    };
+    const hook = renderHook(() => useCardScan(true, deps, vi.fn(async () => true), () => {}));
+    act(() => hook.result.current.attachVideo(sized()));
+    await waitFor(() => expect(n).toBeGreaterThan(45), { timeout: 8000 });
+    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } });
+    expect(timer.row()?.guess).toHaveLength(1);
   });
 });

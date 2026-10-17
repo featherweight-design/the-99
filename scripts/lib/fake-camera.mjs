@@ -21,6 +21,27 @@ async function cardImage(name) {
 
 /** Writes the clip for `scene` into `dir` and returns its path. */
 export async function writeFakeCamera(scene, dir, id) {
+  return writeFakeClip([[scene, 30]], dir, id);
+}
+
+/**
+ * Writes a clip of scenes in turn, each `[scene, frames]` (every scene the same `w` and `h`), and returns its path.
+ * Chromium loops the clip, so `[[empty, 60], [card, 90]]` puts a card down and takes it away again, over and over.
+ */
+export async function writeFakeClip(parts, dir, id) {
+  const frames = [];
+  for (const [scene, n] of parts) {
+    const jpeg = await sceneJpeg(scene);
+    for (let i = 0; i < n; i++) frames.push(jpeg);
+  }
+  await mkdir(dir, { recursive: true });
+  const file = path.join(dir, `${id}.mjpeg`);
+  await writeFile(file, Buffer.concat(frames));
+  return file;
+}
+
+/** One still of `scene`, as a JPEG. */
+async function sceneJpeg(scene) {
   const img = scene.card ? await cardImage(scene.card) : null;
   const browser = await chromium.launch();
   try {
@@ -40,11 +61,7 @@ export async function writeFakeCamera(scene, dir, id) {
       g.rotate(((s.angle ?? 0) * Math.PI) / 180);
       g.drawImage(im, (-ch * ratio) / 2, -ch / 2, ch * ratio, ch);
     }, { s: scene, img });
-    const jpeg = await page.screenshot({ type: "jpeg", quality: 92 });
-    await mkdir(dir, { recursive: true });
-    const file = path.join(dir, `${id}.mjpeg`);
-    await writeFile(file, Buffer.concat(Array.from({ length: 30 }, () => jpeg)));
-    return file;
+    return await page.screenshot({ type: "jpeg", quality: 92 });
   } finally {
     await browser.close();
   }
