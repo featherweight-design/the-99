@@ -14,14 +14,31 @@
 // said the same thing in a straight register ("N cards → M legal commanders"),
 // and shipping both would put two strings with identical content on one surface.
 
+//
+// Help me choose's door (discovery R3 E2, G1): with `helpMeChoose` on, the banner's line ends in
+// `Not sure which? Help me choose →`, on its own 32px line in the phone ribbon. It is R1's M12 anchor
+// from R3 on, at both widths: the banner draws exactly when M12's condition holds (no deck yet,
+// `firstRun` in the page). Off, the banner is as shipped and M12 is absent with its tool.
+
+"use client";
+
 import { commandersCopy } from "../../lib/copy/commanders";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { momentsCopy } from "../../lib/copy/moments";
+import { ChooseDoorPress } from "../intake/help-me-choose-door";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 type GuidedBannerProps = {
   uniqueCardsRead: number;
   candidateCount: number;
+  /** `HELP_ME_CHOOSE_ENABLED`, resolved on the server for this reader. */
+  helpMeChoose?: boolean;
 };
 
-export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerProps) {
+export function GuidedBanner({ uniqueCardsRead, candidateCount, helpMeChoose = false }: GuidedBannerProps) {
+  // One anchor per drawing: only one is displayed at a time, and the provider counts the one on screen.
+  const phoneMoment = useMomentAnchor("help-me-choose", { eligible: helpMeChoose, copy: momentsCopy.helpMeChoose });
+  const deskMoment = useMomentAnchor("help-me-choose", { eligible: helpMeChoose, copy: momentsCopy.helpMeChoose });
   return (
     <>
       {/* ── Mobile ribbon style ── */}
@@ -78,6 +95,15 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
             {commandersCopy.firstRun.directive}
           </p>
+          {helpMeChoose && (
+            <p
+              data-testid="guided-choose-phone"
+              className="m-0 mt-[2px] flex min-h-[32px] items-center gap-[5px] text-[13px] text-[color:var(--fg-muted)]"
+            >
+              {helpMeChooseCopy.door.commandersLead}{" "}
+              <ChooseDoorPress {...phoneMoment} className="inline-flex min-h-[32px] items-center" />
+            </p>
+          )}
         </div>
       </div>
 
@@ -159,6 +185,13 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           >
             {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
             {commandersCopy.firstRun.directive}
+            {helpMeChoose && (
+              <span data-testid="guided-choose-desk">
+                {" "}
+                <span style={{ color: "var(--fg-muted)" }}>{helpMeChooseCopy.door.commandersLead}</span>{" "}
+                <ChooseDoorPress {...deskMoment} />
+              </span>
+            )}
           </p>
         </div>
       </div>

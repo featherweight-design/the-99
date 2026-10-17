@@ -7,6 +7,7 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { permanentRedirect } from "next/navigation";
 import { NoCardsEmpty } from "../../components/commanders/no-cards-empty";
 import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
+import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
@@ -218,6 +219,7 @@ export default async function CommandersPage({
         availOk={availOk}
         printedIn={printedIn}
         savedAvail={savedAvail}
+        helpMeChoose={helpMeChooseEnabled(env)}
       />
     </section>
   );

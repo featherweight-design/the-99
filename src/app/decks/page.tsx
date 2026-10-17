@@ -6,6 +6,7 @@ import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { preconsEnabled } from "../../lib/precons/flag";
+import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { readPreconSummary } from "../../lib/precons/summary";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
@@ -134,6 +135,7 @@ export default async function DecksPage({
       shopping={data.shopping}
       cartEnabled={allDecksCartEnabled(env)}
       precons={preconSummary ? { summary: await preconSummary } : null}
+      helpMeChoose={helpMeChooseEnabled(env)}
       buildable={data.buildable}
       cards={data.cards}
       // One clock for the whole page, read on the server. Every relative date

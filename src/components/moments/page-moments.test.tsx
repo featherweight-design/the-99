@@ -11,6 +11,7 @@ import { NavRail, TabBar } from "../shell/nav";
 import { StatsViewSwitch } from "../decks/lineup/stats-view-switch";
 import { PreconDoor } from "../decks/precons/precon-door";
 import { UploadChoice, type SyncChoice } from "../collection/upload-choice";
+import { GuidedBanner } from "../commanders/guided-banner";
 
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: async () => {} }));
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
@@ -64,7 +65,38 @@ afterEach(() => {
   notify = null;
 });
 
-describe("M12, Discover in the rail and the tab bar", () => {
+describe("M12, the door in /commanders' guided banner (discovery R3 E2)", () => {
+  const doors = () => screen.getAllByRole("link", { name: "Help me choose →" });
+  it("carries Help me choose on the banner's door, at either width", async () => {
+    wrap(<GuidedBanner uniqueCardsRead={1418} candidateCount={64} helpMeChoose />);
+    const [phone, desk] = doors();
+    await seen(desk);
+    const bubble = note(momentsCopy.helpMeChoose.tool);
+    expect(bubble).not.toBeNull();
+    expect(desk.getAttribute("aria-describedby")).toBe(bubble?.id);
+    expect(phone.getAttribute("aria-describedby")).toBeNull();
+  });
+  it("takes it from Discover, which is only the fallback while the door is drawn", async () => {
+    wrap(
+      <>
+        <GuidedBanner uniqueCardsRead={1418} candidateCount={64} helpMeChoose />
+        <NavRail locked={false} theme="amonkhet" helpMoment />
+      </>,
+    );
+    const discover = screen.getAllByRole("link").find((a) => a.getAttribute("href") === "/discover")!;
+    await seen(discover);
+    expect(note(momentsCopy.helpMeChoose.tool)).toBeNull();
+    expect(discover.getAttribute("aria-describedby")).toBeNull();
+  });
+  it("is absent with the switch off: no door, no anchor", async () => {
+    wrap(<GuidedBanner uniqueCardsRead={1418} candidateCount={64} />);
+    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+    await seen(screen.getAllByRole("heading")[0]);
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+});
+
+describe("M12's fallback, Discover in the rail and the tab bar (no banner drawn)", () => {
   const discover = () => screen.getAllByRole("link").find((a) => a.getAttribute("href") === "/discover")!;
   it.each([
     ["the rail", () => <NavRail locked={false} theme="amonkhet" helpMoment />],

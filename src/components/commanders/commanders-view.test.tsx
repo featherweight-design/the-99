@@ -899,3 +899,19 @@ describe("CommandersView — the rows' art and their place in the list", () => {
     }
   });
 });
+
+// Discovery R3 E2: the view hands the guided banner Help me choose's switch, and draws the banner only on first run.
+describe("the first-run banner's door", () => {
+  const props = { results: results(3), degraded: false, uniqueCardsRead: 1418, candidateCount: 3, freeRanking: null, availOk: true };
+  it("carries the door on first run with the switch on", () => {
+    render(<CommandersView {...props} firstRun helpMeChoose />);
+    expect(screen.getAllByRole("link", { name: "Help me choose →" })).toHaveLength(2);
+  });
+  it("draws no door with the switch off, or past first run", () => {
+    const { rerender } = render(<CommandersView {...props} firstRun />);
+    expect(screen.getByText("Meet your commanders")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+    rerender(<CommandersView {...props} firstRun={false} helpMeChoose />);
+    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+  });
+});

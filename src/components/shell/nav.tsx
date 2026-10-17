@@ -572,7 +572,7 @@ type NavSlotProps = {
   className: string;
   // The pointer rail's name tag listens on its slots (useRailTag). The tab bar passes none.
   handlers?: ReturnType<ReturnType<typeof useRailTag>["bind"]>;
-  /** The slot is a moment's anchor (M12 on Discover). */
+  /** The slot is a moment's fallback anchor (M12 on Discover, behind /commanders' banner door). */
   moment?: boolean;
   children: React.ReactNode;
 };
@@ -580,11 +580,14 @@ type NavSlotProps = {
 // No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
 // tooltip would show beside it.
 function NavSlot({ href, name, active, pip, className, handlers, moment = false, children }: NavSlotProps) {
-  // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's.
+  // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's. From R3 on
+  // its own anchor is the door in /commanders' guided banner (E2), so this slot is a FALLBACK: it counts only while
+  // that door is not drawn (a reader with cards and no deck whose collection leads no commander, so no banner).
   const helpMoment = useMomentAnchor("help-me-choose", {
     eligible: moment,
     copy: momentsCopy.helpMeChoose,
     place: pip === "rail" ? "right" : "below",
+    fallback: true,
   });
   return (
     <Link
