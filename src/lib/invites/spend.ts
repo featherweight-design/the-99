@@ -11,6 +11,7 @@ import { db } from "../../db";
 import { accountTombstones, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
 import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
+import { CODE_MAX_TRIES } from "./rules";
 import { lockSenderIn } from "./send";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -63,7 +64,9 @@ export async function spendInviteOnSignUp(
     const [edge] = await tx.select({ inviter: inviteEdges.inviterUserId }).from(inviteEdges)
       .where(eq(inviteEdges.inviteeUserId, newUserId));
     if (edge) return { spent: false, reason: "already" };
-    const waiting = row.state === "reserved" || row.state === "claimed";
+    // A claim whose five tries ran out is over while its Clerk cleanup is pending: a ticket made before then spends nothing.
+    const exhausted = row.state === "claimed" && row.codeTries >= CODE_MAX_TRIES;
+    const waiting = (row.state === "reserved" || row.state === "claimed") && !exhausted;
     if (!waiting || row.holdsUntil === null || row.holdsUntil.getTime() <= now.getTime()) return { spent: false, reason: "lapsed" };
 
     await tx.update(inviteReservations).set({ state: "spent", email: null, resolvedAt: now, codeHmac: null, codeExpiresAt: null })

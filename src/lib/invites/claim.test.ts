@@ -82,6 +82,10 @@ describe("decideHandOver (Continue to sign-up)", () => {
     const proven = claimed({ provenAt: NOW, clerkInvitationId: "inv_1" });
     expect(decideHandOver(proven, COOKIE, NOW)).toEqual({ kind: "go", email: "a@x.dev", staleInvitationId: "inv_1" });
   });
+  it("ends a claim whose five tries ran out, even proven and with Clerk cleanup still pending", () => {
+    const exhausted = claimed({ provenAt: NOW, codeTries: CODE_MAX_TRIES });
+    expect(decideHandOver(exhausted, COOKIE, NOW)).toEqual({ kind: "ended" });
+  });
   it("ends for an unproven claim, another browser or a lapsed claim", () => {
     expect(decideHandOver(claimed(), COOKIE, NOW)).toEqual({ kind: "ended" });
     expect(decideHandOver(claimed({ provenAt: NOW }), "other", NOW)).toEqual({ kind: "ended" });

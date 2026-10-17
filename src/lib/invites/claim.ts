@@ -7,7 +7,7 @@
  * Each step's decision is a PURE function over the row (`decideClaim`, `decideConfirm`, `decideHandOver`), tested
  * alone; the functions below read the row under the sender's lock, apply the decision and write.
  */
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
@@ -182,7 +182,7 @@ export async function confirmCode(
   token: string,
   rawCode: string,
   presentedSecret: string | null,
-  deps: { now?: Date; env?: { INVITE_CODE_SECRET?: string } } = {},
+  deps: { now?: Date; env?: { INVITE_CODE_SECRET?: string }; clerk?: ClerkInvites } = {},
 ): Promise<ConfirmResult> {
   if (!isQrToken(token)) return ENDED;
   const secret = inviteSecret(deps.env ?? { INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET });
@@ -191,7 +191,8 @@ export async function confirmCode(
   const [found] = await db.select({ userId: inviteReservations.userId }).from(inviteReservations)
     .where(eq(inviteReservations.qrTokenHash, hash));
   if (!found) return ENDED;
-  return db.transaction(async (tx): Promise<ConfirmResult> => {
+  let ending: { id: string; email: string | null; clerkId: string | null } | null = null;
+  const result = await db.transaction(async (tx): Promise<ConfirmResult> => {
     const now = await lockSenderIn(tx, found.userId, deps.now);
     const [row] = await tx.select().from(inviteReservations).where(eq(inviteReservations.qrTokenHash, hash)).for("update");
     const decision = decideConfirm(row, presentedSecret, rawCode, secret, now);
@@ -205,9 +206,12 @@ export async function confirmCode(
         await tx.update(inviteReservations).set({ codeTries: row.codeTries + 1 }).where(eq(inviteReservations.id, row.id));
         return { ok: false, reason: "wrong", triesLeft: decision.triesLeft };
       case "ends":
-        await tx.update(inviteReservations).set({
-          state: "revoked", codeTries: CODE_MAX_TRIES, email: null, resolvedAt: now, codeHmac: null, codeExpiresAt: null,
-        }).where(eq(inviteReservations.id, row.id));
+        // The fifth wrong try. The row keeps its address and invitation id for now (every step already reads five tries
+        // as ended): they are what ends a pending Clerk ticket, and once erased nothing could find one. It is revoked
+        // below, after Clerk has been asked, and the sweep finishes it if that fails.
+        await tx.update(inviteReservations).set({ codeTries: CODE_MAX_TRIES, codeHmac: null, codeExpiresAt: null })
+          .where(eq(inviteReservations.id, row.id));
+        ending = { id: row.id, email: row.email, clerkId: row.clerkInvitationId };
         return ENDED;
       case "expired":
         return { ok: false, reason: "expired" };
@@ -215,6 +219,25 @@ export async function confirmCode(
         return ENDED;
     }
   });
+  if (ending) await finishEnded(ending, deps.clerk ?? clerkInvites, deps.now ?? new Date());
+  return result;
+}
+
+/**
+ * Ends a claim whose tries ran out: its Clerk invitations (by the stored id and by address and reservation) first,
+ * then, only if they are gone, the row itself (`revoked`, its address erased, its invite back). A failure leaves it
+ * as it is for the sweep, which treats a claim with spent tries as lapsed.
+ */
+async function finishEnded(row: { id: string; email: string | null; clerkId: string | null }, clerk: ClerkInvites, now: Date): Promise<void> {
+  try {
+    const byId = row.clerkId !== null ? await clerk.revoke(row.clerkId) : true;
+    const byAddress = row.email !== null ? await clerk.revokeFor(row.email, row.id) : true;
+    if (!byId || !byAddress) return;
+  } catch {
+    return;
+  }
+  await db.update(inviteReservations).set({ state: "revoked", email: null, clerkInvitationId: null, resolvedAt: now })
+    .where(and(eq(inviteReservations.id, row.id), eq(inviteReservations.state, "claimed")));
 }
 
 // ------------------------------------------------------------------------------------------------------- hand over
@@ -224,6 +247,8 @@ export type HandOverDecision = { kind: "go"; email: string; staleInvitationId: s
 export function decideHandOver(row: Row | undefined, presentedSecret: string | null, now: Date): HandOverDecision {
   if (!row || row.kind !== "qr" || !claimLive(row, now) || !cookieMatches(row, presentedSecret)) return END;
   if (row.provenAt === null || row.email === null) return END;
+  // A claim whose tries ran out is over, even while its Clerk cleanup is still pending.
+  if (row.codeTries >= CODE_MAX_TRIES) return END;
   return { kind: "go", email: row.email, staleInvitationId: row.clerkInvitationId };
 }
 
@@ -269,6 +294,16 @@ export async function handOver(
   // ended before another is made, so a retry never leaves a first ticket the stored id cannot reach.
   if (!(await clerk.revokeFor(decision.email, row.id))) return { ok: false, reason: "failed" };
   const made = await clerk.create({ emailAddress: decision.email, reservationId: row.id, notify: false, ignoreExisting: true });
+  if (!made.ok && made.reason === "indeterminate") {
+    // Clerk may have made it. If the claim changed, ended or was purged while it was asked, the cleanup that ran has
+    // not seen this one, and the address it was for is gone from the row: end it by the address captured here.
+    const [now2] = await db.select({ state: inviteReservations.state, email: inviteReservations.email }).from(inviteReservations)
+      .where(eq(inviteReservations.id, row.id));
+    if (!now2 || now2.state !== "claimed" || now2.email !== decision.email) {
+      if (!(await clerk.revokeFor(decision.email, row.id))) console.warn("[invites] hand-over: late invitation not reconciled");
+    }
+    return { ok: false, reason: "failed" };
+  }
   if (!made.ok || made.url === null) return { ok: false, reason: "failed" };
 
   // Stored under the claim still standing: a reservation resolved while Clerk was asked leaves a ticket that must
@@ -282,6 +317,8 @@ export async function handOver(
       eq(inviteReservations.state, "claimed"),
       // Its 7 days may have run out while Clerk was asked: such a claim takes the revoke path below.
       gt(inviteReservations.holdsUntil, new Date()),
+      // …nor one whose tries ran out while Clerk was asked.
+      lt(inviteReservations.codeTries, CODE_MAX_TRIES),
       eq(inviteReservations.email, decision.email),
       sql`${inviteReservations.clerkInvitationId} is not distinct from ${decision.staleInvitationId}`,
     ))

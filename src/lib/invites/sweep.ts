@@ -11,10 +11,11 @@
  *    pending invitation whose public metadata names the reservation and records its id, so the spend and the return
  *    both find it.
  */
-import { and, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
+import { CODE_MAX_TRIES } from "./rules";
 
 /** The most rows one run touches in each step, so a backlog never makes a run that does not finish. */
 export const SWEEP_BATCH = 50;
@@ -34,15 +35,25 @@ async function endInvitation(clerk: ClerkInvites, row: Pick<Row, "id" | "email" 
   return byId && byAddress;
 }
 
-export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites = clerkInvites): Promise<SweepReport> {
+/**
+ * `senderIds` limits every query to those senders' rows. The cron passes none (every sender); a probe on a database
+ * other lanes read passes its own per-run ids, so it can never return or erase a row that is not its fixture.
+ */
+export async function sweepInvites(
+  now: Date = new Date(),
+  clerk: ClerkInvites = clerkInvites,
+  opts: { senderIds?: readonly string[] } = {},
+): Promise<SweepReport> {
+  const scope = opts.senderIds ? inArray(inviteReservations.userId, [...opts.senderIds]) : undefined;
   const report: SweepReport = { returned: 0, revoked: 0, reconciled: 0, kept: 0 };
 
   // 1. Open rows whose time has passed.
-  const lapsed = await db.select().from(inviteReservations).where(or(
+  const lapsed = await db.select().from(inviteReservations).where(and(scope, or(
     and(eq(inviteReservations.state, "qr_open"), lte(inviteReservations.qrExpiresAt, now)),
     and(inArray(inviteReservations.state, ["claimed", "reserved"]), lte(inviteReservations.holdsUntil, now)),
-    // Random, so rows whose cleanup keeps failing cannot hold every run's batch.
-  )).orderBy(sql`random()`).limit(SWEEP_BATCH);
+    // A claim whose five tries ran out and whose Clerk cleanup did not finish when it ended.
+    and(eq(inviteReservations.state, "claimed"), gte(inviteReservations.codeTries, CODE_MAX_TRIES)),
+  ))).orderBy(sql`random()`).limit(SWEEP_BATCH);
   for (const row of lapsed) {
     if (!(await endInvitation(clerk, row))) {
       report.kept += 1;
@@ -57,6 +68,7 @@ export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites =
 
   // 2. Resolved rows still carrying an invitation id: a revoke that failed when they ended.
   const leftover = await db.select().from(inviteReservations).where(and(
+    scope,
     inArray(inviteReservations.state, ["returned", "revoked"]),
     isNotNull(inviteReservations.clerkInvitationId),
   )).orderBy(sql`random()`).limit(SWEEP_BATCH);
@@ -73,6 +85,7 @@ export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites =
 
   // 3. Holding email reservations whose send was indeterminate.
   const unknown = await db.select().from(inviteReservations).where(and(
+    scope,
     eq(inviteReservations.kind, "email"),
     eq(inviteReservations.state, "reserved"),
     isNull(inviteReservations.clerkInvitationId),
