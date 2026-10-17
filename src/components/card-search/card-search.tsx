@@ -175,7 +175,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   }, []);
 
   // The desktop's dropdown is not modal, and the page behind it keeps its scroll.
-  useScrollLock(open && !desktop);
+  // Held through the veil too: the page behind a picked card must not scroll under the frame that is still up.
+  useScrollLock((open || veiled) && !desktop);
   // One history entry while the sheet is up, so Back closes it in one press (resolution 3).
   useBackDismiss(open, close);
 
@@ -422,6 +423,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   return (
     <CardSearchContext.Provider value={value}>
       {children}
+      {/* While a picked card is on its way up the frame is inert, which takes it out of hit testing: this wrapper keeps
+      the page underneath from taking a press. No role, so the history handover and the swap receipt see no dialog. */}
+      {veiled ? <div aria-hidden data-card-search-veil="" className="fixed inset-0 z-[41]" /> : null}
       {/* The phone's sheet. At md and up the desktop draws its own field from the same context (PR D), handing it
           `inputRef` and `placeBody`; one frame is mounted at a time, so the results have one host. */}
       {desktop ? null : <PhoneFrame />}

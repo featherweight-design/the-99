@@ -66,5 +66,11 @@ describe("a row focus came back to keeps the list's keys", () => {
     expect(sheet.hidden).toBe(false);
     expect(sheet.hasAttribute("inert")).toBe(true);
     expect(sheet.getAttribute("role")).toBeNull();
+    // The inert frame is out of hit testing, so a plain wrapper keeps the page from taking a press meanwhile, and the
+    // phone's scroll lock stays on; neither is a dialog.
+    const veil = document.querySelector<HTMLElement>("[data-card-search-veil]");
+    expect(veil).not.toBeNull();
+    expect(veil!.getAttribute("role")).toBeNull();
+    expect(document.body.style.overflow).toBe("hidden");
   });
 });
