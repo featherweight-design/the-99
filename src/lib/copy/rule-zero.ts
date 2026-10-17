@@ -54,8 +54,10 @@ export const ruleZeroCopy = {
   // The page and the read (T1 to T10)
   page: {
     title: "Rule 0 check",
-    meta: (pod: string, setter: string | null, n: number, closes: string) =>
-      `${pod} · set by ${setter ?? "you"} · ${seated(n)} · open until ${closes}`,
+    // The meta line after the pod's name (drawn in bold), then `open until`: its own line on the phone, after a ` · `
+    // on desktop. "Thursday night · set by Colin · 4 seated · open until 9:40 pm tomorrow"
+    metaSetBy: (setter: string | null, n: number) => ` · set by ${setter ?? "you"} · ${seated(n)}`,
+    metaOpen: (closes: string) => `open until ${closes}`,
     closesTomorrow: (time: string) => `${time} tomorrow`, // "9:40 pm tomorrow"; today's close is the time alone
     seats: "Seats", // setter only
     readKicker: "The read",
@@ -85,7 +87,9 @@ export const ruleZeroCopy = {
     comparing: (names: string, both: boolean, reads: string) => `Comparing ${names}: ${both ? "both" : "all"} read ${reads}.`,
     readingBody: (names: string, both: boolean, reads: string, name: string) =>
       `${names.charAt(0).toUpperCase()}${names.slice(1)} ${both ? "both" : "all"} read ${reads}. ${name}’s joins in a second.`,
-    band: "TABLE", // the rail's dashed middle; the rail is hidden from assistive tech
+    band: "TABLE", // the rail's dashed middle
+    railLabel: "Each seat placed on the five brackets",
+    keyLabel: "What the counts on each seat are",
     split: "A split: these two decks are a bracket apart.",
     splitBody: "With two seats there’s no rest of the table, so both are marked.",
     leftOut: (n: number) => (n === 1 ? "One seat isn’t in the read yet." : `${n} seats aren’t in the read yet.`),
@@ -108,7 +112,7 @@ export const ruleZeroCopy = {
     split: "Split",
     whyLead: "What puts it here:",
     whyCombo: (a: string, b: string, tutors: number) =>
-      `it can find a two-card combo, ${a} + ${b}, with ${tutors} tutors to reach it. Upgraded allows a combo only as a draw away.`,
+      `it can find a two-card combo, ${a} + ${b}, with ${tutors === 1 ? "1 tutor" : `${tutors} tutors`} to reach it. Upgraded allows a combo only as a draw away.`,
     whyLimit: (have: number, label: string, below: string, limit: number) => `${have} ${label}, where ${below} allows ${limit}.`,
     whyLow: (bracket: string) => `nothing we counted passes ${bracket}’s limits, and the rest of the table reads higher. Counts can miss cards, so ask what it’s built to do.`,
     // T6: a low range nobody answered. `name` is null for the viewer's own seat.
@@ -121,12 +125,16 @@ export const ruleZeroCopy = {
     short: (n: number) => `${n} of 100 cards.`,
     shortBody: "A deck is read once it’s complete, so this seat is left out of the read for now.",
     over: (n: number) => `${n} cards, over 100.`,
-    overBody: "Its last reading is from before that change and isn’t used. Back at 100, it joins the read.",
+    // Neutral on whether a reading exists: an over-100 deck may never have been read (the board's had one).
+    overBody: "Any reading from before that change isn’t used. Back at 100, it joins the read.",
     readingNow: "Reading this deck.",
     readingNowBody: "It’s at 100 and hasn’t been read before; this takes a second or two.",
     waiting: (name: string) => `${name} picks their own deck on their phone. Until then this seat is left out of the read.`,
+    commanders: (commander: string, partner: string) => `${commander} + ${partner}`, // a partner pair, as whyCombo pairs cards
     picking: "Picking their deck", // T10: the deck line of a seat that waits
     pickingOwn: "Picking your deck",
+    pickingSub: "their seat joins the read when they do", // T10: the commander line of a seat that waits
+    pickingSubOwn: "your seat joins the read when you do",
     needsAnalysis: "Needs a fresh analysis.",
     needsAnalysisBody: (name: string | null) =>
       name === null

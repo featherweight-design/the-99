@@ -20,7 +20,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   const view = await loadTable(userId, id);
   if (view) {
     return (
-      <div className="mx-auto w-full max-w-[1300px] px-[14px] pt-[18px] pb-[34px] md:px-[34px] md:pt-[28px]">
+      <div className="w-full">
         <TableBody view={view} gamesEnabled={socialGamesEnabled(env)} now={new Date()} />
       </div>
     );
@@ -28,7 +28,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   const closed = await loadClosedTable(userId, id);
   if (!closed) notFound();
   return (
-    <div className="mx-auto w-full px-[14px] md:px-[34px]">
+    <div className="w-full">
       <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />
     </div>
   );

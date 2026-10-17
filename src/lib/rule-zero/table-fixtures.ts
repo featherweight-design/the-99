@@ -156,8 +156,8 @@ const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView =>
     tableId: "table-1",
     podName: "Thursday night",
     closesAt: new Date("2026-10-17T21:40:00Z"),
-    setByYou: o.setBy === null,
     setBy: "Colin",
+    setByYou: false,
     viewerDeckId: input.find((s) => s.you)?.deck ? VIEWER_DECK_ID : null,
     revision: AT,
     seenAt: null,
@@ -173,7 +173,7 @@ export const TABLES = {
   T2: table([you(), colin(zimone()), peter(ashling()), max(gisa())]),
   T3: table([you(), colin(sai()), peter(giada()), max(gisa())]),
   T4: table([you(), colin(zimone()), peter(giada()), max(gisa())]),
-  T5: table([you(), colin(zimone())], { setBy: null }),
+  T5: table([you(), colin(zimone())], { setBy: "Hugh", setByYou: true }),
   T6: table([you(), colin(zimone([4, 5], 4)), peter(miku()), max(gisa())]),
   T7: table([you(), colin(zimone([4, 5], 1)), peter(ashling()), max(gisa())]),
   T8: table([
@@ -184,7 +184,7 @@ export const TABLES = {
     max({ ...gisa(), built: 100 }),
   ]),
   T9: table([you(), colin(sai()), peter(deck("Ashling Elementals", "Ashling, the Limitless", null)), max(gisa())]),
-  T10: table([you(), peter({ ...giada(), built: 86 }), max(null)], { setBy: null }),
+  T10: table([you(), peter({ ...giada(), built: 86 }), max(null)], { setBy: "Hugh", setByYou: true }),
   /** Legal, with a row this deployment cannot read: its player analyzes it (rules.ts `needsAnalysis`). */
   needsAnalysis: table([
     you(),

@@ -38,7 +38,11 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
       <h2 className="m-0 font-display text-[19px] font-bold leading-[1.3] [text-wrap:pretty]">
         <Inked text={title} ink={ink} />
       </h2>
-      {body ? <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">{body}</p> : null}
+      {body ? (
+        <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
+          <Emphasized text={body} />
+        </p>
+      ) : null}
       {draw.read.kind === "read" ? <Rail draw={draw} /> : null}
       <CountsKey />
       <div className="flex flex-col gap-[2px] border-t border-[color:var(--border)] pt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">
@@ -63,6 +67,29 @@ function Inked({ text, ink }: { text: string; ink: { phrase: string; kind: FlagK
   );
 }
 
+/**
+ * The sentence names brackets in bold (the boards' `<b>`): `em` marks a phrase where the sentence is spoken, and
+ * `Emphasized` draws the marks. The copy module's sentences stay plain strings.
+ */
+const OPEN = "\u0001";
+const CLOSE = "\u0002";
+const em = (phrase: string): string => `${OPEN}${phrase}${CLOSE}`;
+
+function Emphasized({ text }: { text: string }) {
+  const parts = text.split(new RegExp(`${OPEN}(.*?)${CLOSE}`, "g"));
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 === 1 ? (
+          <b key={i} className="font-semibold text-[color:var(--fg)]">{p}</b>
+        ) : (
+          p
+        ),
+      )}
+    </>
+  );
+}
+
 /** The bracket a seat reads, spoken: the answer, the single bracket, or the range. */
 function readsPhrase(s: SeatDraw): string {
   if (!s.chip) return "";
@@ -79,12 +106,12 @@ function seatPart(s: SeatDraw): string {
   const deck = s.seat.deck?.name ?? "";
   if (!s.chip || !s.read) return "";
   if (s.chip.answered !== null && s.chip.permits.length > 1) {
-    return r.seatDeclared(s.seat.you ? "You" : s.seat.displayName, BRACKET_NAMES[s.chip.answered]);
+    return r.seatDeclared(s.seat.you ? "You" : s.seat.displayName, em(BRACKET_NAMES[s.chip.answered]));
   }
   if (s.chip.answered === null && s.chip.permits.length > 1) {
-    return r.seatReadsRange(whoseSeat(s), deck, bracketPhrase(s.chip.permits), BRACKET_NAMES[s.read.face]);
+    return r.seatReadsRange(whoseSeat(s), deck, em(bracketPhrase(s.chip.permits)), BRACKET_NAMES[s.read.face]);
   }
-  return r.seatReads(whoseSeat(s), deck, readsPhrase(s));
+  return r.seatReads(whoseSeat(s), deck, em(readsPhrase(s)));
 }
 
 /** The read seats, the viewer's first, as T8 and T9 name them, and the brackets they read. */
@@ -94,7 +121,7 @@ function compared(draw: TableDraw): { names: string; both: boolean; reads: strin
   return {
     names: seatNames(read.map((s) => (s.seat.you ? null : s.seat.displayName))),
     both: read.length === 2,
-    reads: bracketPhrase(faces),
+    reads: em(bracketPhrase(faces)),
   };
 }
 
@@ -118,8 +145,8 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
     case "one": {
       const deck = h.seat.seat.deck?.name ?? "";
       const who = whose(h.seat.seat.you ? null : h.seat.seat.displayName);
-      const middle = draw.read.kind === "read" ? bracketPhrase(middleBrackets(draw.read.middle)) : "";
-      const reads = readsPhrase(h.seat);
+      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : "";
+      const reads = em(readsPhrase(h.seat));
       const line = h.seat.rangeLine;
       // T7: a drifted declaration replaces the closing line; T3: a low seat closes on its own line.
       const body = line?.kind === "drifted"
@@ -132,7 +159,7 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
     }
     case "two":
     case "many": {
-      const middle = draw.read.kind === "read" ? bracketPhrase(middleBrackets(draw.read.middle)) : "";
+      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : "";
       const parts = readsList(draw.seats.filter((s) => s.read?.flag).map(seatPart));
       out = { title: h.kind === "two" ? r.two : r.many(h.n), ink: null, body: `${r.middleIs(middle)} ${parts}` };
       break;
@@ -164,9 +191,10 @@ function Rail({ draw }: { draw: TableDraw }) {
   const placed = draw.seats.filter((s) => s.read);
   const ranges = placed.filter((s) => s.chip && s.chip.answered === null && s.chip.permits.length > 1);
   return (
-    // Hidden from assistive tech: every face here is a seat below, with its chip and its tag in words.
+    // One image to assistive tech: every face here is a seat below, with its chip and its tag in words.
     <div
-      aria-hidden
+      role="img"
+      aria-label={copy.read.railLabel}
       data-testid="read-rail"
       className="relative grid grid-cols-5 rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[4px] pb-[6px] pt-[10px]"
     >
@@ -212,7 +240,8 @@ function Rail({ draw }: { draw: TableDraw }) {
 
 function RailFace({ seat }: { seat: SeatDraw }) {
   const kind = seat.read?.flag ? flagKind(seat.read.flag) : null;
-  const ring = seat.seat.you ? "0 0 0 1.5px var(--accent)" : kind ? `0 0 0 2px ${FLAG_INK[kind]}` : "0 0 0 1px rgba(255,255,255,.12)";
+  // A flagged seat's ring is its flag's ink, the viewer's own included (T5); the accent rings an unflagged own seat.
+  const ring = kind ? `0 0 0 2px ${FLAG_INK[kind]}` : seat.seat.you ? "0 0 0 1.5px var(--accent)" : "0 0 0 1px rgba(255,255,255,.12)";
   const style: CSSProperties = { boxShadow: ring };
   return (
     <span data-testid="rail-face" data-you={seat.seat.you ? "" : undefined} data-flag={kind ?? undefined} className="rounded-full" style={style}>
@@ -220,7 +249,7 @@ function RailFace({ seat }: { seat: SeatDraw }) {
         name={seat.seat.displayName}
         commander={seat.seat.deck ? { artCropUri: seat.seat.deck.commander.artCropUri } : null}
         size={30}
-        className="rounded-full! [border:1.5px_solid_var(--bg)]!"
+        className="rounded-full! bg-[color:var(--elevated)]! font-semibold! text-[color:var(--fg-muted)]! [border:1.5px_solid_var(--bg)]!"
       />
     </span>
   );
@@ -230,7 +259,7 @@ function RailFace({ seat }: { seat: SeatDraw }) {
 function CountsKey() {
   const labels = deckAnalysisCopy.findings.labels;
   return (
-    <div data-testid="counts-key" className="flex flex-wrap gap-x-[12px] gap-y-[4px] font-mono text-[10px] text-[color:var(--fg-muted)]">
+    <div role="group" aria-label={copy.read.keyLabel} data-testid="counts-key" className="flex flex-wrap gap-x-[12px] gap-y-[4px] font-mono text-[10px] text-[color:var(--fg-muted)]">
       {FINDING_ORDER.map((id) => (
         <span key={id} className="inline-flex items-center gap-[5px]">
           <span aria-hidden className="[&_svg]:h-[12px] [&_svg]:w-[12px]">

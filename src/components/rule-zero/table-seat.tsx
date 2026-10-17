@@ -66,14 +66,19 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
 
       <div
         className={
-          "relative grid grid-cols-[84px_minmax(0,1fr)_auto] gap-x-[12px] gap-y-[10px] p-[12px] "
+          // Phone rows are spaced by margins (R1's `.ln` rows: 10px under the art, 8px to a sub line, 12px to the
+          // counts); desktop's three columns by the grid's gap.
+          "relative grid grid-cols-[84px_minmax(0,1fr)_auto] gap-x-[12px] gap-y-0 p-[12px] "
           + "md:grid-cols-[132px_minmax(0,1fr)_auto] md:items-center md:gap-x-[18px] md:gap-y-[4px] md:pl-[12px] md:pr-[16px] "
           + (kind ? "md:pt-[16px] md:pb-[14px]" : "")
         }
       >
         <span
           aria-hidden
-          className="col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] md:row-span-2 md:h-[92px] md:w-[132px] md:rounded-[10px]"
+          className={
+            "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] md:row-span-2 md:h-[92px] md:w-[132px] md:rounded-[10px] md:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
+            + (art ? "" : "bg-[radial-gradient(120px_80px_at_50%_40%,#262A35,var(--surface))]")
+          }
         >
           {art ? (
             <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
@@ -97,34 +102,47 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           {deck ? (
             <>
               <span className="truncate text-[13.5px] text-[color:var(--fg-body)] md:text-[14px]">{deck.name}</span>
-              <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.commander.name}</span>
+              <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.partner ? copy.commanders(deck.commander.name, deck.partner.name) : deck.commander.name}</span>
             </>
           ) : state.kind === "waiting" ? (
-            <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
-              {seat.you ? copy.pickingOwn : copy.picking}
-            </span>
+            <>
+              <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
+                {seat.you ? copy.pickingOwn : copy.picking}
+              </span>
+              <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                {seat.you ? copy.pickingSubOwn : copy.pickingSub}
+              </span>
+            </>
           ) : null}
         </span>
 
+        {/* Desktop's chip row (`.br`) sits in the name column with the sub line beside the chip; on the phone the row
+            dissolves (`contents`) so the chip takes its own row and the sub line the row under it. */}
         {chip ? (
-          <span className="col-span-2 col-start-1 row-start-2 flex min-w-0 flex-wrap items-center gap-x-[10px] gap-y-[4px] md:col-span-1 md:col-start-2 md:self-start">
-            <BracketChip permits={chip.permits} answered={chip.answered} />
-            {state.kind === "stale" ? (
-              <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
-                <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
-                {copy.stale}
-              </span>
-            ) : null}
-            {draw.rangeLine ? (
-              <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] max-md:basis-full md:text-[10px]">
-                {rangeLineText(draw.rangeLine)}
+          <span className="max-md:contents md:col-start-2 md:row-start-2 md:mt-[4px] md:flex md:min-w-0 md:flex-wrap md:items-center md:gap-x-[10px] md:gap-y-[4px] md:self-start">
+            <span className="max-md:col-span-2 max-md:col-start-1 max-md:row-start-2 max-md:mt-[10px] max-md:self-center">
+              <BracketChip permits={chip.permits} answered={chip.answered} />
+            </span>
+            {state.kind === "stale" || draw.rangeLine ? (
+              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-md:col-span-3 max-md:col-start-1 max-md:row-start-3 max-md:mt-[8px] md:contents">
+                {state.kind === "stale" ? (
+                  <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
+                    <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
+                    {copy.stale}
+                  </span>
+                ) : null}
+                {draw.rangeLine ? (
+                  <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[10px]">
+                    {rangeLineText(draw.rangeLine)}
+                  </span>
+                ) : null}
               </span>
             ) : null}
           </span>
         ) : null}
 
         {kind ? (
-          <span className="col-start-3 row-start-2 self-start justify-self-end md:row-start-1 md:self-end">
+          <span className="col-start-3 row-start-2 self-center justify-self-end max-md:mt-[10px] md:row-start-1 md:self-end">
             <FlagTag kind={kind} />
           </span>
         ) : null}
@@ -132,8 +150,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         {chip && draw.counts ? (
           <span
             className={
-              "col-span-3 col-start-1 row-start-3 md:col-span-1 md:col-start-3 md:justify-self-end "
-              + (kind ? "md:row-start-2 md:self-start" : "md:row-span-2 md:row-start-1 md:self-center")
+              "col-span-3 col-start-1 row-start-4 mt-[12px] md:col-span-1 md:col-start-3 md:mt-0 md:justify-self-end "
+              + (kind ? "md:row-start-2 md:mt-[4px] md:self-start" : "md:row-span-2 md:row-start-1 md:self-center")
             }
           >
             <SeatFacts counts={draw.counts} driving={draw.driving} />
@@ -244,7 +262,7 @@ export function SeatFacts({ counts, driving }: { counts: Record<FindingId, numbe
                   : "border-[color:var(--border)] bg-[color:var(--surface-sunken)] font-semibold text-[color:var(--fact)]")
             }
           >
-            <span aria-hidden className={n === 0 && !lifted ? "opacity-50" : undefined}>
+            <span aria-hidden className={"[&_svg]:h-[13px] [&_svg]:w-[13px] " + (n === 0 && !lifted ? "opacity-50" : "")}>
               <FindingMark id={id} />
             </span>
             {n}

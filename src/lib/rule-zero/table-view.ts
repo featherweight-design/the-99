@@ -61,7 +61,9 @@ const keyOf = (s: TableSeat) => `seat-${s.seat}`;
 
 export function drawTable(view: TableView): TableDraw {
   const draws: SeatDraw[] = [...view.seats].sort((a, b) => a.seat - b.seat).map((seat) => {
-    const reading = seat.read ? seat.deck?.reading ?? null : null;
+    // The loader reads a seat whenever its state is in the read, placed or not: T10's lone read seat keeps its chip
+    // and counts with nothing to compare it to.
+    const reading = seat.deck?.reading ?? null;
     const r = seat.read;
     // A split's lower seat names no reason (T5, D5): neither seat is called the problem, and the upper one's
     // reason is what the two differ by.

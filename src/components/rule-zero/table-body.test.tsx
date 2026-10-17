@@ -16,6 +16,7 @@ const draw = (view: TableView, gamesEnabled = true) =>
   render(<TableBody view={view} gamesEnabled={gamesEnabled} now={NOW} />);
 
 const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
+const meta = () => screen.getByRole("heading", { level: 1 }).nextElementSibling as HTMLElement;
 const headline = () => within(screen.getByTestId("read-card")).getByRole("heading", { level: 2 });
 
 describe("TableBody", () => {
@@ -29,7 +30,8 @@ describe("TableBody", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Rule 0 check");
     // After hydration the close time is the reader's own zone's, so the expectation is too (`closesWhen`).
     const closes = closesWhen(TABLES.T1.closesAt, NOW);
-    expect(screen.getByText(`Thursday night · set by Colin · 4 seated · open until ${closes}`)).toBeInTheDocument();
+    // The pod's name is bold and `open until` breaks to its own line on the phone: the meta line reads as one run.
+    expect(meta()).toHaveTextContent(`Thursday night · set by Colin · 4 seated · open until ${closes}`);
   });
 
   it("T2: the high seat carries ▲ Above the table in words, its reason, and the headline in its ink", () => {
@@ -43,7 +45,9 @@ describe("TableBody", () => {
     expect(within(colin).getByLabelText("Two-card infinites: 1")).toHaveAttribute("data-driving");
     expect(headline()).toHaveTextContent("Colin’s Zimone Combo reads above the table.");
     expect(headline().querySelector("[data-ink='high']")).toHaveTextContent("above the table");
-    expect(screen.getByText("The table sits at Upgraded; Zimone Combo reads Optimized. Worth a word before you shuffle.")).toBeInTheDocument();
+    expect(within(screen.getByTestId("read-card")).getByText(/sits at/)).toHaveTextContent(
+      "The table sits at Upgraded; Zimone Combo reads Optimized. Worth a word before you shuffle.",
+    );
   });
 
   it("T3: the low seat carries ▼ Below the table and says counts can miss cards", () => {
@@ -65,7 +69,7 @@ describe("TableBody", () => {
     expect(screen.getAllByTestId("flag-tag").map((t) => t.textContent)).toEqual(["Split", "Split"]);
     expect(screen.queryByTestId("read-band")).toBeNull();
     expect(headline()).toHaveTextContent(copy.read.split);
-    expect(screen.getByText(/· set by you · 2 seated ·/)).toBeInTheDocument();
+    expect(meta()).toHaveTextContent(/· set by you · 2 seated/);
   });
 
   it("T6: the declared range and the undeclared one each say what they are measured from", () => {

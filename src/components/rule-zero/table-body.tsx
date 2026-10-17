@@ -13,6 +13,7 @@ import { drawTable, logGameHref, type TableView } from "../../lib/rule-zero/tabl
 import { closesWhen } from "../../lib/social/when";
 import { GhostButton } from "../ui/button";
 import { useHydrated } from "../ui/hydrated-art";
+import { BackLink } from "./back-link";
 import { ReadCard } from "./read-card";
 import { TableSeat } from "./table-seat";
 
@@ -37,30 +38,50 @@ export function TableBody({
   const closes = closesWhen(view.closesAt, now, useHydrated() ? undefined : "UTC");
   const log = gamesEnabled ? logGameHref(view) : null;
   return (
-    <div data-testid="table-body" className="flex flex-col gap-[14px] md:gap-[22px]">
-      <header className="flex flex-col">
-        <h1 className="m-0 font-display text-[24px] font-bold leading-[1.2] md:text-[30px]">{copy.title}</h1>
-        <p className="m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] md:text-[12px]">
-          {copy.meta(view.podName, view.setBy, view.seats.length, closes)}
-        </p>
-      </header>
-      <div className="flex flex-col gap-[14px] md:grid md:grid-cols-[minmax(0,1fr)_392px] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[28px]">
-        <div className="md:col-start-2 md:row-start-1">
-          <ReadCard draw={draw} updated={updated} />
-        </div>
-        <div className="flex flex-col gap-[10px] md:col-start-1 md:row-span-2 md:row-start-1" data-testid="table-seats">
-          {draw.seats.map((s) => (
-            <TableSeat key={s.key} draw={s} />
-          ))}
-        </div>
-        {log ? (
-          <div className="md:col-start-2 md:row-start-2 md:self-start">
-            <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
-              {copy.log}
-            </GhostButton>
+    <div data-testid="table-body" className="flex flex-col">
+      {/* The phone's back row sits outside the padded column (R1); desktop's sits in the head band (R2). */}
+      <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] md:hidden" glyph />
+      <div className="flex flex-col gap-[14px] px-[16px] pb-[22px] md:block md:p-0">
+        <header className="flex flex-col md:border-b md:border-b-[color:var(--border)] md:px-[34px] md:pb-[16px] md:pt-[22px]">
+          <BackLink className="mb-[6px] hidden gap-[6px] text-[13px] md:flex" />
+          <h1 className="m-0 font-display text-[24px] font-bold leading-[1.2] md:text-[30px]">{copy.title}</h1>
+          <p className="m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] md:text-[12px] md:leading-normal">
+            <b className="font-medium text-[color:var(--fg-body)]">{view.podName}</b>
+            {copy.metaSetBy(view.setByYou ? null : view.setBy, view.seats.length)}
+            <span className="hidden md:inline"> · </span>
+            <br className="md:hidden" />
+            {copy.metaOpen(closes)}
+          </p>
+        </header>
+        {/* One mount of each part, placed by the grid: desktop's right column is the read over Log this game (14px
+            apart), and the seats span both rows on the left. */}
+        <div className="flex flex-col gap-[14px] md:grid md:grid-cols-[minmax(0,1fr)_392px] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[28px] md:gap-y-[14px] md:px-[34px] md:pb-[28px] md:pt-[22px]">
+          <div className="md:col-start-2 md:row-start-1">
+            <ReadCard draw={draw} updated={updated} />
           </div>
-        ) : null}
+          <div className="flex flex-col gap-[10px] md:col-start-1 md:row-span-2 md:row-start-1" data-testid="table-seats">
+            {draw.seats.map((s) => (
+              <TableSeat key={s.key} draw={s} />
+            ))}
+          </div>
+          {log ? (
+            <div className="md:col-start-2 md:row-start-2">
+              <LogGame href={log} />
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
+  );
+}
+
+function LogGame({ href }: { href: string }) {
+  return (
+    <GhostButton
+      href={href}
+      className="flex min-h-[44px] w-full items-center justify-center gap-[8px] whitespace-nowrap rounded-[10px] px-[18px] text-[14.5px]"
+    >
+      {copy.log}
+    </GhostButton>
   );
 }
