@@ -2494,6 +2494,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read by nobody else, a lapsed QR returning its invite, an unconfigured QR writing nothing, an admin Set, a group
   top-up that lowers nobody, a revoke and the history lines. It WRITES its own per-run ids only, and fails closed:
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+  The claim-cookie pre-bind: a well-shaped presented secret is bound as is (its hash stored), a retry after a lost first
+  answer is a `wait`, and a malformed secret is replaced by a minted one (mutation-checked: always mint and it fails).
   PR 3 (the newcomer's backend) adds, with Resend and Clerk stubbed: Send code refused before anything is claimed when
   mail is unconfigured, a claim holding the SAME invite the QR held for 7 days, the 60-second resend cooldown, another
   browser refused, five wrong tries ending the row with its invite back, a proven claim handed over with

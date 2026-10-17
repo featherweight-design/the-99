@@ -117,3 +117,14 @@ describe("the code", () => {
     for (const bad of ["12345", "1234567", "12a456", ""]) expect(parseCode(bad), bad).toBeNull();
   });
 });
+
+describe("isClaimSecretShape", () => {
+  it("accepts 43 base64url characters and nothing else", async () => {
+    const { isClaimSecretShape } = await import("./rules");
+    expect(isClaimSecretShape("a".repeat(43))).toBe(true);
+    expect(isClaimSecretShape("a".repeat(42))).toBe(false);
+    expect(isClaimSecretShape("a".repeat(44))).toBe(false);
+    expect(isClaimSecretShape(`${"a".repeat(42)}+`)).toBe(false);
+    expect(isClaimSecretShape(null)).toBe(false);
+  });
+});

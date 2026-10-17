@@ -75,3 +75,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   row opened anywhere else, an expired QR (N11) or an ended one (N12) names nobody. The client flow (`components/join/`)
   calls the three actions and keeps Clerk's sign-in a redirect. Proof, signed out at both widths: `pnpm probe:invites-join`
   (the contact sheet cannot photograph these routes: it signs in).
+  The claim cookie is set by the PROXY on the GET of `/join/<token>` when the browser has none (`claim-cookie.ts`, Web
+  Crypto so the edge can mint it), and `claimInvite` binds that PRESENTED secret when it is 43 base64url characters
+  (else it mints one, the cookies-blocked fallback). A first Send code whose response is lost therefore leaves the
+  cookie behind: the retry is a `wait`, not an ended claim holding its invite for 7 days.

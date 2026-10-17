@@ -318,7 +318,9 @@ async function main() {
     check("…and claims nothing: the QR is still open and the 6 stand", (await stateOf(r1)).state === "qr_open" && (await left(P)) === 5);
     check("a malformed address is invalid before anything is claimed", (await claimInvite(q1.token, "nope", null, { env, mail })).ok === false
       && (await stateOf(r1)).state === "qr_open");
-    const c1 = await claimInvite(q1.token, " N1@X.dev ", null, { env, mail });
+    // The proxy hands the browser its secret with the page; Send code binds THAT one (so a lost first answer leaves the cookie).
+    const PRE = "p".repeat(43);
+    const c1 = await claimInvite(q1.token, " N1@X.dev ", PRE, { env, mail });
     check("Send code claims it and mails the code", c1.ok && c1.mailed && mailed.length === 1 && mailed[0].to === "n1@x.dev" && /^\d{6}$/.test(lastCode()));
     const sc1 = await stateOf(r1);
     const days = Number((await db.execute<{ d: string }>(sql`select (extract(epoch from (holds_until - now())) / 86400)::text as d from invite_reservations where id = ${r1}`)).rows[0].d);
@@ -328,6 +330,13 @@ async function main() {
     check("the watch reads it claimed", (await readSenderQr(P, q1.token))?.state === "claimed");
     if (!c1.ok) throw new Error("claim failed");
     const cookie1 = c1.claimSecret;
+    check("a well-shaped presented secret is bound as is", cookie1 === PRE
+      && (await db.execute<{ h: string }>(sql`select claim_secret_hash as h from invite_reservations where id = ${r1}`)).rows[0].h === (await import("../src/lib/invites/tokens")).secretHash(PRE));
+    // Lost response: the first answer never arrived, the cookie did. The retry presents the same secret: wait, then confirm works.
+    {
+      const retry = await claimInvite(q1.token, "n1@x.dev", PRE, { env, mail });
+      check("a retry after a lost first answer waits on the cooldown, not ended", !retry.ok && retry.reason === "wait");
+    }
 
     // The resend cooldown, another browser, and a changed address.
     const wait = await claimInvite(q1.token, "n1@x.dev", cookie1, { env, mail });
@@ -373,7 +382,8 @@ async function main() {
     const q5 = await showInviteQr(P, SECRET);
     if (!q5.ok) throw new Error("no QR 5");
     const r5 = await idOfToken(q5.token);
-    const c5 = await claimInvite(q5.token, "tries@x.dev", null, { env, mail });
+    const c5 = await claimInvite(q5.token, "tries@x.dev", "short", { env, mail });
+    check("a malformed presented secret is replaced by a minted one", c5.ok && c5.claimSecret !== "short" && /^[A-Za-z0-9_-]{43}$/.test(c5.claimSecret));
     if (!c5.ok) throw new Error("claim 5 failed");
     await db.execute(sql`update invite_reservations set code_tries = 4, clerk_invitation_id = 'inv_tries', proven_at = now() where id = ${r5}`);
     const downClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
