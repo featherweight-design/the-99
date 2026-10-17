@@ -22,6 +22,7 @@ export const ADMIN_TABS = [
   // admin page) does not read. The list page draws it under the tab strip instead.
   { key: "accounts", href: "/admin/accounts", title: adminCopy.tabs.accounts, sub: null },
   { key: "models", href: "/admin/models", title: adminCopy.tabs.models, sub: adminCopy.models.sub },
+  { key: "invites", href: "/admin/invites", title: adminCopy.tabs.invites, sub: adminCopy.invites.tree.sub },
 ] as const;
 
 /** A group's name and description, for the head's detail mode on its page. */
@@ -129,6 +130,21 @@ function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObjec
   }, [headRef, tabsRef]);
 }
 
+/**
+ * Six tabs pass a phone's width (handoff M4: "its tab strip scrolling"), so the strip scrolls, and the current tab is
+ * brought into view on arrival. Only the strip moves: `scrollLeft`, never `scrollIntoView`, which would move the page.
+ */
+function useCurrentTabInView(tabsRef: RefObject<HTMLElement | null>, key: string) {
+  useEffect(() => {
+    const strip = tabsRef.current;
+    const tab = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!strip || !tab) return;
+    const right = tab.offsetLeft - strip.offsetLeft + tab.offsetWidth;
+    if (right > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = right - strip.clientWidth;
+    else if (tab.offsetLeft - strip.offsetLeft < strip.scrollLeft) strip.scrollLeft = tab.offsetLeft - strip.offsetLeft;
+  }, [tabsRef, key]);
+}
+
 export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readonly GroupHeadName[] }) {
   const pathname = usePathname() ?? "/admin";
   const current = tabFor(pathname);
@@ -148,6 +164,7 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
   const ref = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
   usePinnedHead(ref, tabsRef);
+  useCurrentTabInView(tabsRef, current.key);
   return (
     // Pinned (design table R2 delta `page`): the shell scrolls the document, so the head is sticky
     // over the page's content (on a phone only its tab strip, `usePinnedHead`), and a page's own
@@ -185,7 +202,11 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
           {sub}
         </p>
       )}
-      <nav ref={tabsRef} aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">
+      <nav
+        ref={tabsRef}
+        aria-label={adminCopy.tabsLabel}
+        className="mt-[4px] flex gap-[15px] overflow-x-auto overflow-y-hidden [scrollbar-width:none] md:gap-[24px] [&::-webkit-scrollbar]:hidden"
+      >
         {ADMIN_TABS.map((tab) => {
           const selected = tab.key === current.key;
           return (

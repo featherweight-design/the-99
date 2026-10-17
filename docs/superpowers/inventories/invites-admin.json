@@ -40,6 +40,14 @@
         { "wait": "[data-testid='group-top-up']", "settle": 1500 },
         { "scrollTo": "[data-testid='group-top-up']", "settle": 500 }
       ]
+    },
+    {
+      "id": "admin-invites-tree",
+      "label": "/admin/invites, the sixth tab: the tree of who invited whom (M4)",
+      "view": "src/components/admin/invite-tree.tsx",
+      "steps": [
+        { "goto": "/admin/invites", "wait": "[data-testid='invite-tree']", "settle": 1500 }
+      ]
     }
   ]
 }

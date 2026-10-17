@@ -16,7 +16,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 export const adminCopy = {
   door: { label: "Admin" },
   eyebrow: "Admin",
-  tabs: { costs: "Costs", switches: "Switches", groups: "Groups", accounts: "Accounts", models: "Models" },
+  tabs: { costs: "Costs", switches: "Switches", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites" },
   tabsLabel: "Admin pages",
 
   costs: {
@@ -350,6 +350,32 @@ export const adminCopy = {
     open: "Open ›",
     /** An invite edge whose account was deleted. (new, for /copy-review) */
     deleted: "deleted account",
+    /** M4, the Invites tab: the tree of who invited whom (handoff `admin.sub`, `treeRoot`, `nodeMeta`). */
+    tree: {
+      sub: "Who invited whom. Founders are the accounts from before launch; a waiting invite can be revoked here.",
+      root: "Founders · accounts from before launch",
+      /** The phone's root label. (new, for /copy-review) */
+      rootPhone: "Founders",
+      label: "Who invited whom",
+      nodeMeta: (left: number, invited: number) => `${left} left · invited ${invited}`,
+      joined: (day: string) => `joined ${day}`,
+      owner: "owner",
+      returns: (day: string) => `returns ${day}`,
+      /** The phone's waiting leaf, its first line, and the name of a phone row's press. (new, for /copy-review) */
+      waitingHow: (how: string) => `Waiting · ${how}`,
+      openAccount: (name: string) => `Open ${name}`,
+      /** The desktop toolbar's search and its three counts. (new, for /copy-review) */
+      search: "Find an account",
+      accounts: (n: number) => `${n} ${n === 1 ? "account" : "accounts"}`,
+      invited: (n: number) => `${n} invited`,
+      waiting: (n: number) => `${n} waiting`,
+      noMatch: (q: string) => `No account matches “${q}”.`,
+      /** A search carried down to the phone, where the field is not drawn, and its way back. (new, for /copy-review) */
+      filtered: (q: string) => `Showing accounts matching “${q}”.`,
+      clear: "Clear search",
+      /** The tree with no account at all (Clerk down and nothing stored). (new, for /copy-review) */
+      empty: "No accounts yet.",
+    },
     /** M3, a group's top-up. (new, for /copy-review) */
     groupSection: "Top up invites",
     groupField: "Top up each member to",

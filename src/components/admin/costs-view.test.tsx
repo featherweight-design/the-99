@@ -434,6 +434,7 @@ describe("AdminHead", () => {
       ["Groups", "/admin/groups", null],
       ["Accounts", "/admin/accounts", null],
       ["Models", "/admin/models", null],
+      ["Invites", "/admin/invites", null],
     ]);
   });
 });
