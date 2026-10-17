@@ -15,6 +15,7 @@ import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/d
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { socialCopy } from "../../lib/copy/social";
+import { changedLine } from "../../lib/rule-zero/live";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
 import { faceInitials } from "../../lib/social/initials";
@@ -28,7 +29,7 @@ const copy = ruleZeroCopy.seat;
 /** The name a seat prints: the game log's `You` for the viewer, else the display name as seated. */
 export const seatName = (d: SeatDraw): string => (d.seat.you ? gameSeatsCopy.seats.you : d.seat.displayName);
 
-export function TableSeat({ draw }: { draw: SeatDraw }) {
+export function TableSeat({ draw, now }: { draw: SeatDraw; /** The clock the changed line counts from. */ now: Date }) {
   const { seat, state, chip, read } = draw;
   const deck = seat.deck;
   const kind = read?.flag ? flagKind(read.flag) : null;
@@ -163,6 +164,11 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
       </div>
 
       <SeatMore draw={draw} why={why} />
+      {draw.changed ? (
+        <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px]">
+          <Changed text={changedLine(draw.changed, now)} />
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -318,4 +324,14 @@ export function driversSentence(draw: SeatDraw): string | null {
     return copy.whyCombo(a.name, b.name, d.tutors);
   }
   return null;
+}
+
+/** The changed dot and its words (S5), in the accent: a 7px dot, then the line. Shared with the read's `Since you looked`. */
+export function Changed({ text, className = "text-[10.5px]" }: { text: string; className?: string }) {
+  return (
+    <span data-testid="changed" className={"inline-flex items-center gap-[6px] font-mono text-[color:var(--accent)] " + className}>
+      <i aria-hidden className="block h-[7px] w-[7px] rounded-full bg-[color:var(--accent)]" />
+      {text}
+    </span>
+  );
 }

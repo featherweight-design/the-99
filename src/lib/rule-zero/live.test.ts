@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TableView } from "../social/rule-zero-table";
-import { changedAgo, reviveTableView, seatChanged, sinceYouLooked } from "./live";
+import { changedLine, reviveTableView, seatChanged, sinceYouLooked } from "./live";
 
 const T = (iso: string) => new Date(`2026-10-17T${iso}Z`);
 const seat = (displayName: string, changedAt: Date, opts: { you?: boolean; deck?: string | null } = {}) =>
@@ -35,16 +35,16 @@ describe("sinceYouLooked", () => {
   });
 });
 
-describe("changedAgo", () => {
-  it("reads in the seat line's register", () => {
-    expect(changedAgo(T("21:42:00"), T("21:42:59"))).toBe("just now");
-    expect(changedAgo(T("21:42:00"), T("21:43:00"))).toBe("1 min ago");
-    expect(changedAgo(T("21:42:00"), T("22:41:59"))).toBe("59 min ago");
-    expect(changedAgo(T("21:42:00"), T("23:42:00"))).toBe("2 hr ago");
+describe("changedLine", () => {
+  it("reads as the boards draw it", () => {
+    expect(changedLine(T("21:42:00"), T("21:42:59"))).toBe("changed just now");
+    expect(changedLine(T("21:42:00"), T("21:43:00"))).toBe("changed 1 min ago");
+    expect(changedLine(T("21:42:00"), T("22:41:59"))).toBe("changed 59 min ago");
+    expect(changedLine(T("21:42:00"), T("23:42:00"))).toBe("changed 2 hr ago");
   });
 
   it("never reads a clock skewed ahead of the server as the future", () => {
-    expect(changedAgo(T("21:42:30"), T("21:42:00"))).toBe("just now");
+    expect(changedLine(T("21:42:30"), T("21:42:00"))).toBe("changed just now");
   });
 });
 

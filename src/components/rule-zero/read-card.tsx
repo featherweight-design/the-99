@@ -17,6 +17,7 @@ import { FindingMark } from "../decks/finding-mark";
 import { ProvenanceOpener } from "../decks/provenance-panel";
 import { Face } from "../social/face";
 import { FLAG_INK, flagKind, type FlagKind } from "./flag-tag";
+import { Changed } from "./table-seat";
 
 const copy = ruleZeroCopy;
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
@@ -44,7 +45,15 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
       <h2 className="m-0 font-display text-[19px] font-bold leading-[1.3] [text-wrap:pretty]">
         <Inked text={title} ink={ink} />
       </h2>
-      {body ? (
+      {draw.since.length > 0 ? (
+        // S5, W5: a change since the viewer last looked takes the sentence's place, as the boards draw it.
+        <p data-testid="since" className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
+          <Changed text={copy.read.since} className="text-[12px]" />
+          {draw.since.map((s, i) => (
+            <Swapped key={i} name={s.name} deck={s.deck} />
+          ))}
+        </p>
+      ) : body ? (
         <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
           <Emphasized text={body} />
         </p>
@@ -59,6 +68,20 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
         </CardDetailProvider>
       </div>
     </section>
+  );
+}
+
+/** ` Colin swapped to **Sai Thopters**.`: the copy's sentence with its deck in bold. */
+function Swapped({ name, deck }: { name: string; deck: string }) {
+  const text = copy.read.swappedTo(name, deck);
+  const at = text.lastIndexOf(deck);
+  return (
+    <>
+      {" "}
+      {text.slice(0, at)}
+      <b className="font-semibold">{deck}</b>
+      {text.slice(at + deck.length)}
+    </>
   );
 }
 

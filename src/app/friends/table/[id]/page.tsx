@@ -11,7 +11,7 @@ import { ruleZeroEnabled, socialGamesEnabled } from "../../../../lib/social/flag
 import { loadClosedTable, loadTable } from "../../../../lib/social/rule-zero-table";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { DeckPageSwitches } from "../../../../components/decks/deck-page-switches";
-import { TableBody } from "../../../../components/rule-zero/table-body";
+import { TableLive } from "../../../../components/rule-zero/table-live";
 import { TableClosed } from "../../../../components/rule-zero/table-closed";
 
 export default async function TablePage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
       // The read's provenance sheet is the deck page's, and draws its method tags from the same switch.
       <DeckPageSwitches howItWorks={howItWorksEnabled(env)}>
         <div className="w-full">
-          <TableBody view={view} gamesEnabled={socialGamesEnabled(env)} now={new Date()} />
+          <TableLive initial={view} gamesEnabled={socialGamesEnabled(env)} now={new Date()} />
         </div>
       </DeckPageSwitches>
     );

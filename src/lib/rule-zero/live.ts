@@ -7,6 +7,7 @@
  * (`markSeen`). Before their first draw there is nothing to have looked at, so nothing is changed. The viewer's own
  * seat never carries the dot: its changes are their own, which the swap draws as `changed just now` (PR 7).
  */
+import { ruleZeroCopy } from "../copy/rule-zero";
 import type { TableSeat, TableView } from "../social/rule-zero-table";
 
 export function seatChanged(seat: Pick<TableSeat, "you" | "changedAt">, seenAt: Date | null): boolean {
@@ -20,12 +21,11 @@ export function sinceYouLooked(view: Pick<TableView, "seats" | "seenAt">): { nam
 
 const MINUTE_MS = 60_000;
 
-/** How long ago a seat changed, in the seat line's register: `just now`, `1 min ago`, `2 hr ago`. A table lasts a day. */
-export function changedAgo(at: Date, now: Date): string {
+/** A changed seat's line: `changed just now`, `changed 1 min ago`, `changed 2 hr ago`. A table lasts a day. */
+export function changedLine(at: Date, now: Date): string {
   const minutes = Math.floor(Math.max(0, now.getTime() - at.getTime()) / MINUTE_MS);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  return `${Math.floor(minutes / 60)} hr ago`;
+  if (minutes < 1) return ruleZeroCopy.seat.changedNow;
+  return ruleZeroCopy.seat.changedAgo(minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hr ago`);
 }
 
 /** The JSON a poll answers turns every date into a string: put the ones `TableView` carries back. */

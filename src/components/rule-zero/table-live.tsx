@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
 import { markTableSeen } from "../../app/friends/table/actions";
 import { reviveTableView } from "../../lib/rule-zero/live";
-import type { TableView } from "../../lib/social/rule-zero-table";
+import type { TableView } from "../../lib/rule-zero/table-view";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
 
@@ -32,16 +32,18 @@ const clock = (d: Date) =>
 export function TableLive({
   initial,
   gamesEnabled,
-  closes,
+  now: serverNow,
 }: {
   initial: TableView;
   gamesEnabled: boolean;
-  closes: string;
+  /** The server's clock at the page's draw; each answered check moves it to the reader's. */
+  now: Date;
 }) {
   const router = useRouter();
   const [view, setView] = useState(initial);
   const [closed, setClosed] = useState<Closed | null>(null);
   const [updated, setUpdated] = useState<string | undefined>(undefined);
+  const [now, setNow] = useState(serverNow);
   // The visit's own `seenAt`, never moved by this visit's writes.
   const lookedAt = useRef(initial.seenAt);
   const tableId = initial.tableId;
@@ -64,7 +66,9 @@ export function TableLive({
         if (stopped) return;
         if (poll.kind === "closed") setClosed(poll.closed);
         else setView(reviveTableView(poll.view));
-        setUpdated(clock(new Date()));
+        const at = new Date();
+        setNow(at);
+        setUpdated(clock(at));
       } catch {
         // A failed check is the next check's to make; nothing the reader sees changes.
       } finally {
@@ -93,5 +97,5 @@ export function TableLive({
   }, [tableId, revision, closed]);
 
   if (closed) return <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />;
-  return <TableBody view={{ ...view, seenAt: lookedAt.current }} gamesEnabled={gamesEnabled} closes={closes} updated={updated} />;
+  return <TableBody view={{ ...view, seenAt: lookedAt.current }} gamesEnabled={gamesEnabled} now={now} updated={updated} />;
 }
