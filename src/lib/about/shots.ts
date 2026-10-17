@@ -41,14 +41,20 @@ export type ShotEntry = { width: number; height: number; bytes: number; quality:
 export type ShotSet = Record<string, Record<string, ShotEntry>>;
 const SET = SHOTS as unknown as ShotSet;
 
+/** A captured entry, read as an own property only: `toString` or `constructor` is never a shot. */
+function entry(set: ShotSet, theme: string, id: string): ShotEntry | undefined {
+  const shots = Object.hasOwn(set, theme) ? set[theme] : undefined;
+  return shots !== undefined && Object.hasOwn(shots, id) ? shots[id] : undefined;
+}
+
 /**
  * The image for `id` in the reader's `theme` (the theme cookie's value, as the shell reads it). A theme with no capture
  * of it, an unknown theme included, reads the default theme's; an id the default has not captured is null.
  */
 export function shotFor(theme: string | undefined, id: string, set: ShotSet = SET): Shot | null {
-  const own = isThemeKey(theme) ? set[theme]?.[id] : undefined;
+  const own = isThemeKey(theme) ? entry(set, theme, id) : undefined;
   const key = own ? (theme as string) : DEFAULT_THEME;
-  const e = own ?? set[DEFAULT_THEME]?.[id];
+  const e = own ?? entry(set, DEFAULT_THEME, id);
   if (!e) return null;
   const halo = e.halo ? { x: e.halo[0], y: e.halo[1], w: e.halo[2], h: e.halo[3] } : null;
   return { src: `/about/shots/${key}/${id}.webp`, width: e.width, height: e.height, halo };

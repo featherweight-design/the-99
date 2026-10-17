@@ -89,6 +89,14 @@ describe("the screenshot set's budget", () => {
 });
 
 describe("shotFor", () => {
+  it("is null for an id only the object prototype answers to, in a theme or by the default's fallback", () => {
+    for (const id of ["toString", "constructor", "__proto__", "hasOwnProperty"]) {
+      expect(shotFor("kaldheim", id)).toBeNull();
+      expect(shotFor("innistrad", id)).toBeNull();
+    }
+    expect(shotFor("toString", "home")?.src).toBe(`/about/shots/${DEFAULT_THEME}/home.webp`);
+  });
+
   it("reads the reader's own theme", () => {
     expect(shotFor("kaldheim", "home")?.src).toBe("/about/shots/kaldheim/home.webp");
   });
