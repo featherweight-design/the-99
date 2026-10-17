@@ -169,6 +169,13 @@ async function run(page, steps) {
     // not happen, and a step that does nothing photographs the route in the
     // previous state while the cell is counted as reached. Playwright rejects
     // `""` loudly, which is the outcome to want.
+    // `store` writes the page's localStorage, key by key: a preference a surface reads as it mounts (the scanner's
+    // remembered mode) is set before the press that mounts it, so no row races the previous row's leftover.
+    if (step.store !== undefined) {
+      await page.evaluate((items) => {
+        for (const [k, v] of Object.entries(items)) window.localStorage.setItem(k, v);
+      }, step.store);
+    }
     if (step.click !== undefined) {
       await onPage(page, step.click).first().click({ timeout: 15_000 });
     }

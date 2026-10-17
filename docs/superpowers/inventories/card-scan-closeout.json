@@ -110,6 +110,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -120,11 +125,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "wait": "text=Save 1 copy",
@@ -209,6 +209,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "normal"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -219,11 +224,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Normal$",
-          "settle": 300
         },
         {
           "wait": "text=Add this printing",
@@ -282,6 +282,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "normal"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -292,11 +297,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Normal$",
-          "settle": 300
         },
         {
           "wait": "text=Save 1 copy",
@@ -381,6 +381,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -391,11 +396,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "wait": "text=Not sure. Which is it?",
@@ -424,6 +424,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -434,11 +439,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "wait": "text=Scanning isn’t ready yet. Add cards by name for now.",
@@ -523,6 +523,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -533,11 +538,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "files": "[data-testid=scan-photos-input]",
@@ -629,6 +629,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -639,11 +644,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "wait": "text=Save 1 copy",
@@ -736,6 +736,11 @@
           "settle": 6000
         },
         {
+          "store": {
+            "the99.scan.mode": "fast"
+          }
+        },
+        {
           "clickRole": "button",
           "name": "^(\\+\\s*)?Add( cards)?$",
           "wait": "[role=dialog]",
@@ -746,11 +751,6 @@
           "name": "^Scan$",
           "wait": "[data-testid=scanner]",
           "settle": 500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Auto$",
-          "settle": 300
         },
         {
           "wait": "text=Save 1 copy",
