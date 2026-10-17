@@ -305,10 +305,11 @@ export function useCardScan(
   const reading = scanScreen(inputs);
   const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
   const answer = server.kind === "match" ? server.result : null;
-  // The answer on screen now, for a rollback that lands later: only the answer still showing is turned down.
+  // The answer last on screen, for a rollback that lands later: only that answer is turned down. Kept across a missed
+  // frame or two (the server keeps its match through them, so the same answer comes back), replaced by the next one.
   const liveAnswer = useRef<object | null>(null);
   useEffect(() => {
-    liveAnswer.current = answer;
+    if (answer) liveAnswer.current = answer;
   });
   // Marks of optimistic adds that were taken back: a later rollback never restores one of them.
   const takenBack = useRef(new WeakSet<object>());
