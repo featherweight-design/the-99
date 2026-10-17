@@ -338,6 +338,13 @@ describe("perRequestProblems", () => {
     expect(check(src)).toEqual([msg("readFresh", "in a loop around cachePageForUser's load, where its result could reach the next load")]);
   });
 
+  it("fails a use after a cachePageForUser call that is started and awaited later, since its load may still be running", () => {
+    const src = page_(`export default async function Page() {\n  let fresh;\n  const pending = cachePageForUser(u, "home", [], async () => ({ value: await fresh, store: true }));\n  fresh = readFresh(u);\n  await pending;\n}`);
+    expect(check(src)).toEqual([msg("readFresh", "in a page that does not await every cachePageForUser call where it is made, so its load could still be running")]);
+    const wrapped = page_(`export default async function Page() {\n  const d = await (cachePageForUser(u, "home", [], load));\n  await readFresh(u);\n}`);
+    expect(check(wrapped)).toEqual([]);
+  });
+
   it("fails a page whose cachePageForUser calls are in more than one function", () => {
     const src = page_(`async function a() { return cachePageForUser(u, "a", [], load); }\nexport default async function Page() {\n  await cachePageForUser(u, "b", [], load);\n  await readFresh(u);\n}`);
     expect(check(src)).toEqual([msg("readFresh", "in a page whose cachePageForUser calls are not all in one function, so it cannot be checked")]);
