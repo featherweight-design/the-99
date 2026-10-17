@@ -25,6 +25,7 @@
 //
 //   pnpm tsx scripts/about-fixtures.mts            (the account is E2E_AUDIT_USER_EMAIL, read through Clerk)
 //   ABOUT_FIXTURE_USER=user_... pnpm tsx scripts/about-fixtures.mts
+import { randomUUID } from "node:crypto";
 import { requireEnv } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import {
@@ -201,13 +202,17 @@ async function writeDeck(
   commander: string,
   rows: Map<string, number>,
 ): Promise<string> {
-  const [{ id }] = (await sql`insert into decks (user_id, name, commander_oracle_id)
-    values (${viewer}, ${name}, ${commander}) returning id`) as { id: string }[];
-  await sql`update user_prefs set about_seen_ids = array_append(about_seen_ids, ${deckMark(role, id)})
-    where user_id = ${colinId}`;
-  for (const [oracle, n] of rows) {
-    await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${oracle}, ${n})`;
-  }
+  // The id is allocated here so the deck, its mark and its cards commit together: a deck left without its mark would
+  // escape the next run's cleanup.
+  const id = randomUUID();
+  await sql.transaction([
+    sql`insert into decks (id, user_id, name, commander_oracle_id) values (${id}, ${viewer}, ${name}, ${commander})`,
+    sql`update user_prefs set about_seen_ids = array_append(about_seen_ids, ${deckMark(role, id)})
+      where user_id = ${colinId}`,
+    ...[...rows].map(
+      ([oracle, n]) => sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${oracle}, ${n})`,
+    ),
+  ]);
   return id;
 }
 
