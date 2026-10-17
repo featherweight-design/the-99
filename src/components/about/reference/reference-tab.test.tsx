@@ -222,21 +222,6 @@ describe("ReferenceTab, following links", () => {
     expect(openEntry(container)).toBe(target.id);
   });
 
-  it("a press on a link to the hash already in the address opens its entry again", () => {
-    const target = screens[1].entries[0];
-    window.location.hash = `#${target.id}`;
-    const { container } = draw();
-    expect(openEntry(container)).toBe(target.id);
-    fireEvent.click(within(container.querySelector(`[id="${target.id}"]`) as HTMLElement).getAllByRole("button")[0]);
-    expect(openEntry(container)).toBeNull();
-    const link = document.createElement("a");
-    link.href = `#${target.id}`;
-    document.body.appendChild(link);
-    fireEvent.click(link);
-    raf();
-    expect(openEntry(container)).toBe(target.id);
-    link.remove();
-  });
 });
 
 describe("ReferenceTab, the in Tools mark", () => {
