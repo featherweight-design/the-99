@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   atFloor: vi.fn(),
   observeHit: vi.fn(),
   headers: vi.fn(),
+  ensureSenderProfile: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -17,6 +18,7 @@ vi.mock("../../lib/invites/send", () => ({ sendEmailInvite: m.sendEmailInvite, s
 vi.mock("../../lib/invites/floor", () => ({ atFloor: m.atFloor }));
 vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
+vi.mock("./sender-profile", () => ({ ensureSenderProfile: m.ensureSenderProfile }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { sendEmailInviteAction, showInviteQrAction } from "./invite-actions";
@@ -53,6 +55,9 @@ describe("sendEmailInviteAction", () => {
     expect(m.atFloor).toHaveBeenCalledTimes(1);
     expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev");
     expect(m.observeHit).toHaveBeenCalledWith("user_a", "invite-email");
+    // A first-time sender (Home, before /friends) gets a profile before the invite that lists them.
+    expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_a");
+    expect(m.ensureSenderProfile.mock.invocationCallOrder.at(-1)!).toBeLessThan(m.sendEmailInvite.mock.invocationCallOrder.at(-1)!);
   });
 
   it("answers a throw as failed, still under the floor", async () => {
@@ -80,6 +85,8 @@ describe("showInviteQrAction", () => {
     m.showInviteQr.mockResolvedValue({ ok: true, token: "tok", expiresAt: at });
     expect(await showInviteQrAction()).toEqual({ ok: true, token: "tok", url: "https://the-99.dev/join/tok", expiresAt: at });
     expect(m.showInviteQr).toHaveBeenCalledWith("user_a", SECRET);
+    expect(m.ensureSenderProfile).toHaveBeenCalledWith("user_a");
+    expect(m.ensureSenderProfile.mock.invocationCallOrder.at(-1)!).toBeLessThan(m.showInviteQr.mock.invocationCallOrder.at(-1)!);
   });
 
   it("holds nothing when the origin cannot be read", async () => {

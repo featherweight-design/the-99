@@ -125,6 +125,8 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, i
   // While the chooser is open the toast is drawn inside its dialog, which keeps Tab within itself.
   const toastEl = <SocialToast toast={toast} onDone={() => setToast(null)} />;
   function openChooser() {
+    // While a link is being made the press is held, as on /friends: an answer must not land in a chooser opened since.
+    if (makingNow.current) return;
     // Closing it returns focus to Add a friend, never to a Show pressed earlier.
     showOpener.current = null;
     setToast(null);
@@ -158,6 +160,8 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, i
     const friend = s ? ended.find((l) => l.token === s.token)?.friend : null;
     if (!s || !friend || s.friendsBefore.has(friend.publicId)) return;
     setShown(null);
+    // The chooser's path 1 was that link: it closes as the dialog does, and the toast says so.
+    setAdding((a) => (a === "link" ? null : a));
     say(socialCopy.page.accepted(friend.displayName));
   }, [router]);
   const watched = [...new Set([...(shown ? [shown.token] : []), ...links.map((l) => l.token)])];

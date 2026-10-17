@@ -5,14 +5,20 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
 vi.mock("../../app/friends/actions", () => actions);
 vi.mock("../social/invite-sheet", () => ({
-  InviteSheet: ({ screen }: { screen: string }) => <div role="dialog" aria-label="Invite chooser" data-screen={screen} />,
+  InviteSheet: ({ screen, onFriendLink, onClose }: { screen: string; onFriendLink: () => void; onClose: () => void }) => (
+    <div role="dialog" aria-label="Invite chooser" data-screen={screen}>
+      <button type="button" onClick={onFriendLink}>friend link</button>
+      <button type="button" onClick={onClose}>close chooser</button>
+    </div>
+  ),
 }));
 vi.mock("../social/add-friend-dialog", () => ({
   AddFriendDialog: ({ onClose, returnFocusRef }: { onClose: () => void; returnFocusRef: { current: HTMLElement | null } }) => (
     <div role="dialog"><button type="button" onClick={() => { onClose(); returnFocusRef.current?.focus(); }}>close</button></div>
   ),
 }));
-vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
+const watch = vi.hoisted(() => ({ useInviteWatch: vi.fn() }));
+vi.mock("../social/use-invite-watch", () => watch);
 
 import { socialCopy } from "../../lib/copy/social";
 import { FriendsSection, seatPlan, type FriendsSectionProps } from "./friends-section";
@@ -144,6 +150,33 @@ describe("FriendsSection", () => {
     fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
     expect(screen.getByRole("dialog", { name: "Invite chooser" }).getAttribute("data-screen")).toBe("choose");
     expect(actions.createInviteAction).not.toHaveBeenCalled();
+  });
+
+  const INVITES = { left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false };
+
+  it("with invites on, holds Add a friend while a link is being made, so a closed chooser cannot reopen into its answer", async () => {
+    let answer!: (v: unknown) => void;
+    actions.createInviteAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    render(<FriendsSection {...props({ invites: INVITES })} />);
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
+    fireEvent.click(screen.getByRole("button", { name: "friend link" }));
+    fireEvent.click(screen.getByRole("button", { name: "close chooser" }));
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invitePending }));
+    expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
+    await act(async () => { answer({ ok: true, token: "t9", url: "https://x/friend/t9", expiresAt: inDays(7) }); });
+    expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
+  });
+
+  it("with invites on, closes the chooser's link screen when that link is accepted, and says so", async () => {
+    actions.createInviteAction.mockResolvedValue({ ok: true, token: "t9", url: "https://x/friend/t9", expiresAt: inDays(7) });
+    render(<FriendsSection {...props({ invites: INVITES })} />);
+    fireEvent.click(screen.getByRole("button", { name: socialCopy.page.invite }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "friend link" })); });
+    expect(screen.getByRole("dialog", { name: "Invite chooser" }).getAttribute("data-screen")).toBe("link");
+    const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
+    act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
+    expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
+    expect(screen.getByText(socialCopy.page.accepted("Colin"))).toBeTruthy();
   });
 
   it("ignores a link that has already expired", () => {

@@ -12,15 +12,15 @@
 // would redraw as a spent link over the outcome it is showing. So those defer `/friends` with `after()`.
 // Nothing here names a social table: the writes live in `lib/social/`.
 
-import { currentUser } from "@clerk/nextjs/server";
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { ensureSenderProfile } from "./sender-profile";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
-  createInvite, declineInvite, ensureProfile, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
+  createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
 } from "../../lib/social/friends";
 import { setCommander } from "../../lib/social/commander";
 import { addMembers, createPod, deletePod, leavePod, removeMember, renamePod, type LeaveOutcome } from "../../lib/social/pods";
@@ -101,9 +101,7 @@ export async function createInviteAction(): Promise<CreateInviteOutcome> {
   if (!userId) return OFF;
   const origin = originFrom(await headers());
   if (origin === null) return { ok: false, reason: "noOrigin" };
-  // A link is read and redeemed through its inviter's profile, and Home's Add a friend can be pressed before /friends
-  // ever made one: make it first, from the Clerk first name as /friends does (decision 10). A stored one is kept.
-  await ensureProfile(userId, (await currentUser())?.firstName);
+  await ensureSenderProfile(userId);
   const made = await createInvite(userId);
   if (!made.ok) return made;
   refreshFriends();
