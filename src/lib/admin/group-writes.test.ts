@@ -55,7 +55,7 @@ let env: Record<string, string> = {};
 let clerk: "ok" | "down" = "ok";
 const deps = () => ({
   accounts: async () => ({
-    accounts: clerk === "down" ? [{ id: "u_hugh", name: null, email: null }] : [{ id: "u_hugh", name: "Hugh", email: null }, { id: "u_theo", name: "Theo", email: null }, { id: "u_jun", name: "Jun", email: null }],
+    accounts: clerk === "down" ? [{ id: "u_hugh", name: "Account ·hugh", email: null, named: false }] : [{ id: "u_hugh", name: "Hugh", email: null, named: true }, { id: "u_theo", name: "Theo", email: null, named: true }, { id: "u_jun", name: "Jun", email: null, named: true }],
     clerk,
   }),
   rise: (before: SwitchSnapshot, after: SwitchSnapshot, ids: readonly string[]) => riseBetween(env as NodeJS.ProcessEnv, before, after, ids),

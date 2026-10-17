@@ -18,8 +18,8 @@ const { AdminHead } = await import("./admin-head");
 type Env = Partial<Record<SwitchName, string>>;
 const AT = new Date("2026-10-11T14:02:00Z");
 const ACCOUNTS: Account[] = [
-  { id: "u1", name: "Hugh", email: null },
-  { id: "u2", name: "Mara", email: null },
+  { id: "u1", name: "Hugh", email: null, named: true },
+  { id: "u2", name: "Mara", email: null, named: true },
 ];
 const ov = (o: Partial<OverrideDetail>): OverrideDetail => ({ scope: "app", groupId: null, userId: null, value: "on", note: null, updatedBy: "u1", updatedAt: AT, ...o });
 
