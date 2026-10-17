@@ -93,11 +93,21 @@ describe("the list", () => {
   });
 
   it("keeps Done (N) closed until pressed, and dates a done note by its own date", async () => {
-    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: "2026-10-09T12:00:00.000Z" })]));
+    // The year is read off the clock: the date is written bare only inside the current year, so a fixture
+    // pinned to a calendar year goes red the day the clock leaves it (the clock-shifted run found this one).
+    const year = new Date().getFullYear();
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: `${year}-03-09T12:00:00.000Z` })]));
     expect(screen.queryByText("finished")).toBeNull();
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getByText("finished")).toBeTruthy();
-    expect(screen.getAllByText("done 9 Oct").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("done 9 Mar").length).toBeGreaterThan(0);
+  });
+
+  it("writes the year on a done note from another year", () => {
+    const year = new Date().getFullYear() - 1;
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: `${year}-03-09T12:00:00.000Z` })]));
+    click(screen.getByRole("button", { name: /Done \(1\)/ }));
+    expect(screen.getAllByText(`done 9 Mar ${year}`).length).toBeGreaterThan(0);
   });
 
   it("replaces the input with the cap line at 100 notes, done ones counting", () => {
