@@ -93,7 +93,7 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
 
   return (
     <>
-      <figure className="m-0 mt-[2px] flex flex-col items-center gap-[8px] md:mt-[4px]">
+      <figure className="m-0 mt-[4px] flex flex-col items-center gap-[8px]">
         {/* The plate is #F4F5F8 in every theme (a camera wants dark on light): 235px at phone, 206 at desktop. */}
         <div className="rounded-[10px] bg-[#F4F5F8] p-[16px]">
           <svg
@@ -103,7 +103,7 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
             shapeRendering="crispEdges"
             className="block h-[203px] w-[203px] md:h-[174px] md:w-[174px]"
           >
-            <path d={qr.d} fill="#0E0F14" />
+            <path d={qr.d} className="fill-[color:var(--bg)]" />
           </svg>
         </div>
         {/* No caption at phone: the phone is the camera (R2 Invite phone). */}
@@ -112,7 +112,11 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
 
       {canShare ? (
         <div className="mt-[18px] flex flex-col gap-[8px] md:hidden">
-          <button type="button" onClick={share} className="h-[48px] w-full cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] font-sans text-[15px] font-semibold text-[color:var(--bg)]">
+          <button type="button" onClick={share} className="flex h-[48px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[8px] border-0 bg-[color:var(--accent)] font-sans text-[15px] font-semibold text-[color:var(--bg)]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+              <path d="M12 15V4M8 8l4-4 4 4" />
+              <path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7" />
+            </svg>
             {d.share}
           </button>
         </div>

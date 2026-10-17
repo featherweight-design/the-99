@@ -257,6 +257,8 @@ describe("AddFriendDialog", () => {
     render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
     expect(screen.getByText(d.sub)).toBeTruthy();
     const qr = screen.getByRole("img", { name: d.qrAria });
+    // The dark module follows the theme's --bg rather than one theme's hex (Invites PR 4 gap 9).
+    expect(qr.querySelector("path")?.getAttribute("class")).toContain("fill-[color:var(--bg)]");
     expect(qr.querySelector("path")!.getAttribute("d")!.length).toBeGreaterThan(100);
     expect((screen.getByRole("textbox", { name: d.linkAria }) as HTMLInputElement).value).toBe(URL_);
     expect(screen.getByText(d.meta("Thu, Oct 22"))).toBeTruthy();
@@ -284,6 +286,8 @@ describe("AddFriendDialog", () => {
     render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-16T21:12:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
     fireEvent.click(await screen.findByRole("button", { name: d.share }));
     expect(share).toHaveBeenCalledWith({ url: URL_, text: d.shareText });
+    // The press carries the 18px share icon (Invites PR 4 gap 8).
+    expect(screen.getByRole("button", { name: d.share }).querySelector("svg")?.getAttribute("width")).toBe("18");
     expect(screen.getByText(d.soon, { exact: false }).className).toContain("--warning");
     // Share is drawn at phone only, so Copy link is still the filled press at desktop.
     expect(screen.getByRole("button", { name: d.copy }).className).toContain("md:bg-[color:var(--accent)]");
