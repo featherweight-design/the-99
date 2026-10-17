@@ -607,6 +607,13 @@ export function useDialogA11y(
      */
     closeOnEscape?: boolean;
     /**
+     * Hold Tab inside the dialog. On by default, as an `aria-modal` surface must. A NON-MODAL panel passes false:
+     * the page beside it stays usable (the ? panel at 1280, discovery R2·8 row 26), so Tab walks out of the panel
+     * into the page and back, and a Tab pressed in the page is the page's. Without it, the hook's ambiguous-focus
+     * rule below read a focused page control as "on neither dialog" and pulled it into the panel on every Tab.
+     */
+    trapTab?: boolean;
+    /**
      * Where focus goes on close, when the caller knows better than
      * `document.activeElement` did at mount.
      *
@@ -643,6 +650,7 @@ export function useDialogA11y(
   const returnFocusRef = options?.returnFocusRef;
   const lockScroll = options?.lockScroll ?? true;
   const closeOnEscape = options?.closeOnEscape ?? true;
+  const trapTab = options?.trapTab ?? true;
   const inert = options?.inert ?? false;
 
   // Remember what had focus before the dialog opened; return it on close.
@@ -734,7 +742,7 @@ export function useDialogA11y(
         if (closeOnEscape) onClose();
         return;
       }
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab" || !trapTab) return;
       const focusables = visibleFocusables(root);
       // A modal whose every control is disabled (the replace confirm while it writes) has
       // nowhere to send focus, and letting Tab through would walk out of an `aria-modal`
@@ -778,5 +786,5 @@ export function useDialogA11y(
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogRef, onClose, closeOnEscape, inert]);
+  }, [dialogRef, onClose, closeOnEscape, trapTab, inert]);
 }

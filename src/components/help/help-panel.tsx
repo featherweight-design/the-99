@@ -60,7 +60,8 @@ export function HelpPanel({
   // The sheet is the shell's sheet: modal, page held, Back closes it. The panel holds nothing (row 26).
   // Focus moves in to the ✕, the panel's first control, so a phone's keyboard does not rise on open.
   const closeRef = useRef<HTMLButtonElement | null>(null);
-  useDialogA11y(ref, onClose, { lockScroll: !desk, returnFocusRef, initialFocusRef: closeRef });
+  // The panel is not modal, so Tab is not held in it: the page beside it is the reader's to Tab through.
+  useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
 

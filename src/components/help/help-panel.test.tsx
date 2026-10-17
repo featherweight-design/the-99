@@ -10,7 +10,7 @@ import { HelpButton, HelpRoot } from "./help-root";
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }) }));
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", async (orig) => ({ ...(await orig<typeof import("../../lib/ui/reveal")>()), reveal: vi.fn() }));
 
 const entry = (id: string, screen: EntryPayload["screen"], view?: DeckView, caption = `${id} first. ${id} rest.`, keys: string[] = []): EntryPayload => ({
   id, title: `Title ${id}`, caption, keys, screen, ...(view ? { view } : {}),
@@ -52,8 +52,9 @@ function Control({ id }: { id: "stand-ins" }) {
   return <button ref={ref} type="button" data-control={id}>control</button>;
 }
 
-const draw = ({ on = true, deckView, control = false }: { on?: boolean; deckView?: DeckView; control?: boolean } = {}) =>
-  render(
+type DrawOpts = { on?: boolean; deckView?: DeckView; control?: boolean };
+const draw = (opts: DrawOpts = {}) => render(tree(opts));
+const tree = ({ on = true, deckView, control = false }: DrawOpts = {}) => (
     <TargetsProvider>
       <HelpRoot on={on}>
         <HelpButton place="rail" />
@@ -61,8 +62,8 @@ const draw = ({ on = true, deckView, control = false }: { on?: boolean; deckView
         {control && <Control id="stand-ins" />}
         <button type="button">page</button>
       </HelpRoot>
-    </TargetsProvider>,
-  );
+    </TargetsProvider>
+);
 
 const q = () => screen.getByRole("button", { name: helpPanelCopy.button });
 const panel = () => screen.getByRole("dialog", { name: helpPanelCopy.button });
@@ -110,6 +111,27 @@ describe("the ?", () => {
     expect(document.activeElement).toBe(q());
   });
 
+  it("closes on the ? again, giving focus back to it", async () => {
+    stubViewport(1300);
+    draw();
+    await openIt();
+    expect(panel().contains(document.activeElement)).toBe(true);
+    fireEvent.click(q());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(q().getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(q());
+  });
+
+  it("closes on leaving the page", async () => {
+    stubViewport(1300);
+    const r = draw();
+    await openIt();
+    pathname = "/decks";
+    r.rerender(tree());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(q().getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("closes on ✕", async () => {
     draw();
     await openIt();
@@ -127,6 +149,26 @@ describe("the two forms", () => {
     expect(panel().tagName).toBe("SECTION");
     expect(document.querySelector("[data-help-scrim]")).toBeNull();
     expect(document.querySelector("[data-help-grabber]")).toBeNull();
+  });
+
+  it("leaves the page usable from md: a Tab pressed in the page is the page's, not pulled into the panel", async () => {
+    stubViewport(1300);
+    draw();
+    await openIt();
+    const page = screen.getByRole("button", { name: "page" });
+    page.focus();
+    // fireEvent answers false when a listener cancelled the key.
+    expect(fireEvent.keyDown(window, { key: "Tab" })).toBe(true);
+    expect(document.activeElement).toBe(page);
+  });
+
+  it("holds Tab in the sheet below md, as a modal must", async () => {
+    stubViewport(390);
+    draw();
+    await openIt();
+    screen.getByRole("button", { name: "page" }).focus();
+    // Held (jsdom draws nothing, so where the trap would send focus cannot be shown here).
+    expect(fireEvent.keyDown(window, { key: "Tab" })).toBe(false);
   });
 
   it("is a modal sheet below md, over a scrim that closes it, with a grabber", async () => {

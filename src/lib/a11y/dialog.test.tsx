@@ -89,6 +89,39 @@ describe("useDialogA11y focus trap with nothing to focus", () => {
   });
 });
 
+describe("useDialogA11y trapTab", () => {
+  // A non-modal panel (the ? at 1280) leaves the page usable: a Tab pressed on a page control is the page's.
+  function setup(options?: Parameters<typeof useDialogA11y>[2]) {
+    const el = document.createElement("div");
+    el.setAttribute("role", "dialog");
+    const inside = document.createElement("button");
+    el.appendChild(inside);
+    const page = document.createElement("button");
+    document.body.append(page, el);
+    appended.push(el, page);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, vi.fn(), { lockScroll: false, ...options });
+    });
+    page.focus();
+    const tab = new KeyboardEvent("keydown", { key: "Tab", cancelable: true, bubbles: true });
+    page.dispatchEvent(tab);
+    return { tab, page };
+  }
+
+  it("pulls a Tab from outside into the dialog by default", () => {
+    // jsdom draws nothing, so the trap finds no visible control to move to; holding the key is what it can show.
+    const { tab } = setup();
+    expect(tab.defaultPrevented).toBe(true);
+  });
+
+  it("leaves Tab alone with trapTab false", () => {
+    const { tab, page } = setup({ trapTab: false });
+    expect(tab.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(page);
+  });
+});
+
 describe("useDialogA11y scroll lock", () => {
   it("locks body scroll by default", () => {
     renderDialog();
