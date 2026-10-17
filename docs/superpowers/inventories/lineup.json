@@ -216,19 +216,6 @@
           "scrollTo": "[data-stats-card=worth]"
         }
       ]
-    },
-    {
-      "id": "about",
-      "label": "/about: the decks-stats entry and its figure",
-      "view": "src/components/about/stats-figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "[data-specimen=decks-stats]",
-          "settle": 1200,
-          "scrollTo": "#decks-stats"
-        }
-      ]
     }
   ]
 }

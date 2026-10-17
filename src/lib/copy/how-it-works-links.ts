@@ -1,7 +1,6 @@
-// The parts of About's "How the app reaches its answers" that point AT it: the entries' link line,
-// the contents group, the About sheet's one line, and the id a visit records (plan 2026-09-28,
-// PR C). No imports, deliberately. The contents rail and the sheet are client components and the
-// proxy reads the id, and `how-it-works.ts` builds its rows from the scoring and cadence
+// The parts of About's "How the app reaches its answers" that point AT it: which row explains each
+// entry, the About sheet's one line, and the id a visit records (plan 2026-09-28, PR C). No imports,
+// deliberately. The sheet is a client component and the proxy reads the id, and `how-it-works.ts` builds its rows from the scoring and cadence
 // constants, none of which belong in either bundle.
 //
 // Wording passed /copy-review in lane (2026-09-29).
@@ -10,11 +9,6 @@
 export const HOW_IT_WORKS_ID = "how-it-works";
 
 export const howItWorksLinksCopy = {
-  /** An entry's line to the row that explains it. `↓` is drawn apart and hidden from readers. */
-  entryLink: "How this is decided",
-  /** The contents group, in the rail and in the phone's list. */
-  group: "How the app reaches its answers",
-  groupCount: (n: number) => `${n} rows`,
   /** The About sheet's one line. It rides a sheet already drawing and never summons one. */
   sheetLine: "Also new: how the app reaches its answers, at the foot of About.",
 } as const;

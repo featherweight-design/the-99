@@ -254,19 +254,6 @@
           "settle": 800
         }
       ]
-    },
-    {
-      "id": "about-entry",
-      "label": "/about: the Stats: the deck, drawn entry, its curve specimen with Creature lit",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "#deck-stats",
-          "scrollTo": "#deck-stats",
-          "settle": 1200
-        }
-      ]
     }
   ]
 }

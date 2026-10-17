@@ -38,7 +38,7 @@
       "view": "src/components/about/how-it-works.tsx",
       "steps": [
         {
-          "goto": "/about#how-it-works",
+          "goto": "/about?tab=reference#how-it-works",
           "wait": "#how-it-works",
           "settle": 800
         }
@@ -50,7 +50,7 @@
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {
-          "goto": "/about#how-brackets",
+          "goto": "/about?tab=reference#how-brackets",
           "wait": "#how-brackets-body",
           "settle": 800
         }
@@ -58,24 +58,12 @@
     },
     {
       "id": "appendix-landed",
-      "label": "/about#how-written \u2014 the last row landed, washed",
+      "label": "/about#how-written \u2014 the last row landed, open",
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {
-          "goto": "/about#how-written",
-          "wait": "#how-written [data-jumped]",
-          "settle": 800
-        }
-      ]
-    },
-    {
-      "id": "entry-link-line",
-      "label": "/about#roles \u2014 an entry with its How this is decided line",
-      "view": "src/components/about/about-page.tsx",
-      "steps": [
-        {
-          "goto": "/about#roles",
-          "wait": "li#roles [data-entry-link]",
+          "goto": "/about?tab=reference#how-written",
+          "wait": "#how-written-body",
           "settle": 800
         }
       ]
@@ -86,95 +74,9 @@
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {
-          "goto": "/about#how-roles",
+          "goto": "/about?tab=reference#how-roles",
           "wait": "#how-roles-body a[href='#roles']",
           "settle": 800
-        }
-      ]
-    },
-    {
-      "id": "contents-rail-group",
-      "label": "/about#how-prices \u2014 the rail's group, Prices current",
-      "view": "src/components/about/contents-r6.tsx",
-      "widths": [
-        "desktop"
-      ],
-      "steps": [
-        {
-          "goto": "/about#how-prices",
-          "wait": "nav a[data-entry-row][href='#how-prices']",
-          "settle": 1000
-        }
-      ]
-    },
-    {
-      "id": "contents-list-group",
-      "label": "/about \u2014 the phone list's fifth row, open",
-      "view": "src/components/about/contents-r6.tsx",
-      "widths": [
-        "phone"
-      ],
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "nav a[href='#how-it-works']",
-          "settle": 800
-        },
-        {
-          "click": "button[aria-label*='How the app reaches its answers']",
-          "settle": 400
-        },
-        {
-          "wait": "#contents-entries-how-it-works",
-          "settle": 300
-        }
-      ]
-    },
-    {
-      "id": "contents-search-row-phone",
-      "label": "/about \u2014 the contents search matching a row title",
-      "view": "src/components/about/contents-r6.tsx",
-      "widths": [
-        "phone"
-      ],
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "nav:not(.sticky) input",
-          "settle": 800
-        },
-        {
-          "fill": "nav:not(.sticky) input",
-          "text": "prices",
-          "settle": 500
-        },
-        {
-          "wait": "nav:not(.sticky) a[data-entry-row][href='#how-prices']",
-          "settle": 300
-        }
-      ]
-    },
-    {
-      "id": "contents-search-row-desktop",
-      "label": "/about \u2014 the contents search matching a row title",
-      "view": "src/components/about/contents-r6.tsx",
-      "widths": [
-        "desktop"
-      ],
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "nav.sticky input",
-          "settle": 800
-        },
-        {
-          "fill": "nav.sticky input",
-          "text": "prices",
-          "settle": 500
-        },
-        {
-          "wait": "nav.sticky a[data-entry-row][href='#how-prices']",
-          "settle": 300
         }
       ]
     },
@@ -184,7 +86,7 @@
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {
-          "goto": "/about#how-recommendations",
+          "goto": "/about?tab=reference#how-recommendations",
           "wait": "#how-recommendations-body",
           "settle": 800
         }
@@ -196,7 +98,7 @@
       "view": "src/components/about/how-rows.tsx",
       "steps": [
         {
-          "goto": "/about#how-availability",
+          "goto": "/about?tab=reference#how-availability",
           "wait": "#how-availability-body",
           "settle": 800
         }

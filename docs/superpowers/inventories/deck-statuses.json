@@ -92,18 +92,6 @@
           "settle": 3000
         }
       ]
-    },
-    {
-      "id": "about-versions",
-      "label": "/about \u00b7 the statuses entry, with all seven plates",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "main, [role=main], h1",
-          "settle": 2500
-        }
-      ]
     }
   ]
 }

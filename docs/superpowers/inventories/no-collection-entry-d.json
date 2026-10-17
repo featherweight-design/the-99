@@ -77,34 +77,6 @@
         }
       ],
       "account": "D: holds cards"
-    },
-    {
-      "id": "about-start-without",
-      "label": "/about: the new entry `Starting without a collection file` with the ways group as its figure, one caption at both widths",
-      "view": "src/components/about/figures.tsx",
-      "account": "D: holds cards",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "[data-specimen='start-without-a-collection']",
-          "settle": 1200,
-          "scrollTo": "[data-specimen='start-without-a-collection']"
-        }
-      ]
-    },
-    {
-      "id": "about-precons-edit",
-      "label": "/about: the precons entry with R3's sentence (`Press Add cards in your Collection, then Pick them…`)",
-      "view": "src/components/about/about-page.tsx",
-      "account": "D: holds cards",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "#precons",
-          "settle": 1200,
-          "scrollTo": "#precons"
-        }
-      ]
     }
   ]
 }

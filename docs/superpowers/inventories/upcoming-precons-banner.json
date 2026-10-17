@@ -69,18 +69,6 @@
           "settle": 1500
         }
       ]
-    },
-    {
-      "id": "about",
-      "label": "/about#upcoming-precons: `Commander sets on the way` in chapter 03 after `Starting from a precon`, its specimen one announced set",
-      "view": "src/components/about/upcoming-precons-figure.tsx",
-      "steps": [
-        {
-          "goto": "/about#upcoming-precons",
-          "wait": "#upcoming-precons",
-          "settle": 1500
-        }
-      ]
     }
   ]
 }

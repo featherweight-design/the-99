@@ -319,18 +319,6 @@
           "settle": 2000
         }
       ]
-    },
-    {
-      "id": "ab",
-      "label": "/about: the precons entry and its figure, a PreconTile (AB)",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about#precons",
-          "wait": "#precons",
-          "settle": 2500
-        }
-      ]
     }
   ]
 }

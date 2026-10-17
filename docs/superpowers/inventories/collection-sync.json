@@ -345,19 +345,6 @@
           "settle": 4000
         }
       ]
-    },
-    {
-      "id": "about-upload-choice",
-      "label": "/about: the upload-choice entry in its Sync form, three-card plate",
-      "view": "src/components/about/collection-edit-figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "#upload-choice",
-          "settle": 2500,
-          "scrollTo": "#upload-choice"
-        }
-      ]
     }
   ]
 }

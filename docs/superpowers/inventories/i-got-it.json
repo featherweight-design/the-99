@@ -387,30 +387,6 @@
           "settle": 1500
         }
       ]
-    },
-    {
-      "id": "about-got-it",
-      "label": "/about#shopping-got-it: Marking a card you bought, two Shopping rows and the receipt",
-      "view": "src/components/about/purchase-figures.tsx",
-      "steps": [
-        {
-          "goto": "/about#shopping-got-it",
-          "wait": "#shopping-got-it",
-          "settle": 1200
-        }
-      ]
-    },
-    {
-      "id": "about-deck-printings",
-      "label": "/about#deck-printings: Choosing a printing for a deck, the Set region in deck scope",
-      "view": "src/components/about/purchase-figures.tsx",
-      "steps": [
-        {
-          "goto": "/about#deck-printings",
-          "wait": "#deck-printings",
-          "settle": 1200
-        }
-      ]
     }
   ]
 }

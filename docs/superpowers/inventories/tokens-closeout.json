@@ -121,19 +121,6 @@
       "widths": [
         "phone"
       ]
-    },
-    {
-      "id": "about-tokens",
-      "label": "/about: the deck-tokens entry and its figure",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about",
-          "wait": "[data-specimen='deck-tokens']",
-          "settle": 1200,
-          "scrollTo": "[data-specimen='deck-tokens']"
-        }
-      ]
     }
   ]
 }

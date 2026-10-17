@@ -8,7 +8,6 @@ import { ANNOUNCED_KEY, AnnouncedGroup, announcedPrintings, useAnnouncedVisit, t
 import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
-import { UpcomingPreconsFigureBody } from "../../about/upcoming-precons-figure";
 
 // The shared card-details trigger and hover-preview provider, passed through untouched but recorded, so a test can
 // say the revealed commanders are drawn by THOSE components (import identity) and with what.
@@ -330,12 +329,6 @@ describe("AnnouncedGroup", () => {
       expect(screen.getByTestId("revealed-strip")).toBeInTheDocument();
       expect(screen.queryByTestId("revealed-tiles")).toBeNull();
       expect(screen.getByTestId("revealed-card")).toBeInTheDocument();
-    });
-
-    it("is how About's upcoming-precons specimen draws its set", () => {
-      render(<UpcomingPreconsFigureBody />);
-      expect(screen.getByTestId("revealed-strip")).toBeInTheDocument();
-      expect(screen.queryByTestId("revealed-tiles")).toBeNull();
     });
   });
 

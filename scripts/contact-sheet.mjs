@@ -278,8 +278,8 @@ async function run(page, steps) {
     // /about inventory's five figure rows found their marks after one of them
     // silently scrolled past its own subject.
     //
-    // Scoped like every other verb — `[data-specimen]` is page content, and a
-    // shell that grew one would otherwise win on document order.
+    // Scoped like every other verb — a scroll target is page content, and a
+    // shell that grew a match would otherwise win on document order.
     if (step.scrollTo !== undefined) {
       const target = onPage(page, step.scrollTo).first();
       await target.waitFor({ state: "attached", timeout: 15_000 });

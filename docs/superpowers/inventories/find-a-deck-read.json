@@ -254,22 +254,6 @@
           "settle": 1200
         }
       ]
-    },
-    {
-      "id": "about-entry",
-      "label": "/about#find-a-deck-read: the entry after Find a deck for it, with its ReadRow specimen",
-      "view": "src/components/about/figures.tsx",
-      "steps": [
-        {
-          "goto": "/about#find-a-deck-read",
-          "wait": "#find-a-deck-read",
-          "settle": 1200
-        },
-        {
-          "scrollTo": "#find-a-deck-read",
-          "settle": 400
-        }
-      ]
     }
   ]
 }
