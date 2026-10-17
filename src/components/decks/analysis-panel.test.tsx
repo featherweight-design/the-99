@@ -15,6 +15,8 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";
 import { benchmarksWire } from "./__fixtures__/benchmarks";
+import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
+import { useEffect } from "react";
 
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
@@ -266,6 +268,46 @@ describe("AnalysisPanel", () => {
     expect(screen.queryByTestId("analysis-blocked")).toBeNull();
     fireEvent.click(within(screen.getByTestId("analysis-empty")).getByRole("button", { name: copy.idle.cta }));
     expect(onRequest).toHaveBeenCalledTimes(1);
+  });
+
+  // Discovery R2, E11: with the hub off there are no tiles, so Suggested changes' landing target is its frame, or
+  // with no reading held the empty state that asks for one; with the hub on, the tile is (tuning-hub.test.tsx).
+  describe("Suggested changes' landing target with the hub off", () => {
+    let targets: Targets | null = null;
+    function Grab() {
+      const t = useTargets();
+      useEffect(() => {
+        targets = t;
+      }, [t]);
+      return null;
+    }
+    const drawWith = (state: ProfileState, hub?: () => React.ReactNode) =>
+      render(
+        <TargetsProvider>
+          <Grab />
+          <CardDetailProvider fetchCard={async () => null}>
+            <AnalysisPanel state={state} onRequest={onRequest} hub={hub} tuning={() => <p>tuning</p>}>
+            </AnalysisPanel>
+          </CardDetailProvider>
+        </TargetsProvider>,
+      );
+
+    it("is the tool's frame over a reading", () => {
+      drawWith(ready());
+      expect(targets!.haloTarget("suggested-changes")).toBe(true);
+      expect(screen.getByText("tuning").parentElement!.hasAttribute("data-target-halo")).toBe(true);
+    });
+
+    it("is the empty state before a first reading", () => {
+      drawWith({ kind: "idle" });
+      expect(targets!.haloTarget("suggested-changes")).toBe(true);
+      expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
+    });
+
+    it("is nothing here with the hub on", () => {
+      drawWith({ kind: "idle" }, () => <p>hub</p>);
+      expect(targets!.haloTarget("suggested-changes")).toBe(false);
+    });
   });
 
   // Suggested changes follows the analysis: drawn last, and only over a reading,

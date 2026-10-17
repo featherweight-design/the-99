@@ -22,6 +22,7 @@ import { ImproveDoor, type HelpRead } from "./mana-improve-door";
 import { hardestClause, LandFacts, ManaSection, PatternRows } from "./mana-sections";
 import { FailureMark } from "./tuning-history";
 import { useStoredKeys } from "./use-folded-shelves";
+import { useTarget } from "../discovery/targets-provider";
 
 /** The counting frame appears only after this, so a fast read never flashes it. */
 const COUNTING_DELAY_MS = 400;
@@ -89,12 +90,15 @@ export function ManaBalancePanel({
   }, [revision, reread]);
 
   const sections = useStoredKeys(manaOpenKey(deckId));
+  // The head is the tool's landing target (discovery R2, E11): drawn in the ready and failed states, so a landing
+  // waits out the first read.
+  const target = useTarget("mana-balance");
 
   if (failed && data === null) {
     return (
       <section aria-labelledby="mana-heading" data-mana-state="failed" className={SHELL} style={SHELL_STYLE}>
         <div className="flex flex-col gap-[6px]">
-          <h2 id="mana-heading" tabIndex={-1} className={`flex items-center gap-[9px] ${HEADING}`} style={{ color: "var(--fg)" }}>
+          <h2 id="mana-heading" ref={target} tabIndex={-1} className={`flex items-center gap-[9px] ${HEADING}`} style={{ color: "var(--fg)" }}>
             <span style={{ color: "var(--danger)" }}><FailureMark size={16} label={copy.failed.tag} /></span>
             {copy.failed.heading}
           </h2>
@@ -128,7 +132,7 @@ export function ManaBalancePanel({
     <section aria-labelledby="mana-heading" data-mana-state={balance.state} className={SHELL} style={SHELL_STYLE}>
       <div className="flex flex-col gap-[6px]">
         <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[3px]">
-          <h2 id="mana-heading" tabIndex={-1} className={HEADING} style={{ color: "var(--fg)" }}>{copy.title}</h2>
+          <h2 id="mana-heading" ref={target} tabIndex={-1} className={HEADING} style={{ color: "var(--fg)" }}>{copy.title}</h2>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.sub(pipTotal, sourceTotal)}</span>
         </div>
         {colorless ? (

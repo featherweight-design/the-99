@@ -48,6 +48,8 @@ type Ctx = {
   register: (anchor: Anchor) => () => void;
   /** Spends a moment without showing it (the landing, discovery R2 E11). */
   suppress: (id: MomentId) => void;
+  /** Closes whatever bubble is showing without spending it (a landing's halo is the visit's one guide). */
+  yieldBubble: () => void;
   /** The control the bubble shows beside: one moment can have several anchors (each row, the rail and the tab bar). */
   showingEl: HTMLElement | null;
   noteId: string;
@@ -442,9 +444,13 @@ export function MomentsProvider({
     [liveSet, close, persist, broadcast],
   );
 
+  // A teardown: unspent inside its first second, so the moment comes back on a later visit; past it, R1's own timer
+  // has already spent it as seen.
+  const yieldBubble = useCallback(() => close(false), [close]);
+
   const ctx = useMemo<Ctx>(
-    () => ({ register, suppress, showingEl: showing?.el ?? null, noteId }),
-    [register, suppress, showing, noteId],
+    () => ({ register, suppress, yieldBubble, showingEl: showing?.el ?? null, noteId }),
+    [register, suppress, yieldBubble, showing, noteId],
   );
 
   return (
@@ -479,6 +485,15 @@ export function MomentsProvider({
   );
 }
 
+/**
+ * Closes whatever bubble is showing without spending it, so its moment returns on a later visit (d9 as Hugh's proxy,
+ * 2026-10-17: a landing's halo is the one guide on screen). A bubble past its `SPENT_AFTER_MS` was already spent by
+ * R1's own rule, as seen. Outside the provider it does nothing.
+ */
+export function useYieldMoment(): () => void {
+  return useContext(MomentsContext)?.yieldBubble ?? noop;
+}
+
 /** Spends a moment without showing it (the landing, discovery R2 E11). Outside the provider it does nothing. */
 export function useSuppressMoment(): (id: MomentId) => void {
   return useContext(MomentsContext)?.suppress ?? noop;
@@ -492,9 +507,9 @@ const noop = () => {};
  * moment's own control and counts only while no other anchor of that moment is registered.
  *
  * While eligible the control is also the moment's TARGET (`useTarget`, discovery R2), so the landing and Show me reach
- * it with no second registration. A fallback is never a target, and `target: false` is for a shortcut that is not the
- * tool's own control, so the landing reaches the tool rather than the shortcut. No caller passes it yet: the deck
- * tools' shortcuts take it with the landing that reads their targets (R2·2b).
+ * it with no second registration. A fallback is never a target, and `target: false` keeps a control out of the
+ * registry: a shortcut that is not the tool's own control (the spine's trim line, the land cell, the Analysis tab),
+ * or a control that registers its target itself on a wider rule than the moment's (the Matchups split).
  */
 export function useMomentAnchor(
   id: MomentId,

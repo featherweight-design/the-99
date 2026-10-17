@@ -18,6 +18,8 @@ import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tunin
 import { ReviewRunProvider, type ReviewRun } from "./review-run";
 import { historyDate, summaryText, TuningHistory } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
+import { useTarget } from "../discovery/targets-provider";
+import type { TargetId } from "../../lib/discovery/targets";
 
 /** While a run is in flight the landing re-reads at the tools' own cadence. */
 const WATCH_MS = 3000;
@@ -480,8 +482,14 @@ function ReviewNote({ row, counted, onBack }: { row: HistoryRow; counted: boolea
   );
 }
 
+/** A credit tool's landing target is its tile, never its run press (discovery R2, E11). History is no tool of C2's. */
+const TILE_TARGETS: Partial<Record<TuningTool, TargetId>> = {
+  suggested: "suggested-changes", mana: "mana-balance", cuts: "proposed-cuts",
+};
+
 function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
   const name = NAMES[view.tool];
+  const targetRef = useTarget(TILE_TARGETS[view.tool] ?? null);
   const markInk = view.running ? "var(--accent)" : view.inert ? "var(--fg-locked)" : "var(--fg-body)";
   const body = (
     <>
@@ -518,13 +526,14 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
   const shell = "flex min-h-[44px] flex-col gap-[6px] rounded-[10px] px-[14px] py-[12px] text-left md:min-h-[112px] md:px-[16px] md:py-[14px]";
   if (view.inert) {
     return (
-      <div data-tool-tile={view.tool} data-inert="" className={shell} style={{ background: "transparent", border: "1px dashed var(--border-dashed)" }}>
+      <div ref={targetRef} data-tool-tile={view.tool} data-inert="" className={shell} style={{ background: "transparent", border: "1px dashed var(--border-dashed)" }}>
         {body}
       </div>
     );
   }
   return (
     <button
+      ref={targetRef}
       type="button"
       data-tool-tile={view.tool}
       data-running={view.running || undefined}

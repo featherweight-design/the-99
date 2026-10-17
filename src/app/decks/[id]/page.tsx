@@ -90,6 +90,8 @@ import { readShoppingLimit } from "../../../lib/swaps/read";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestSwitchEnv } from "../../../lib/switches/request";
+import { SWITCH_FLAGS } from "../../../lib/switches/flags";
+import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 import { switchBits } from "../../../lib/switches/resolve";
 
 // The two reads below are the builder's expensive half — measured against the
@@ -582,6 +584,9 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled(env);
+  // Try it's one-time `?tool=` (discovery R2, E11): a deck tool whose switch is on for this reader opens its tab
+  // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
+  const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
   // deck that was never analyzed (`holdsOpening`'s `analyzed`).
   const storedRead = await storedPermits;
@@ -737,8 +742,9 @@ export default async function DeckBuilderPage({
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected
       // row above an empty panel — the same rule `versions` already has for a brew.
+      landing={landing}
       initialView={initialBuilderView(
-        readBuilderView(query[TAB_PARAM]),
+        landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
         versions.length + ((originRead && (await originRead)?.summary.startVersionId === null) ? 1 : 0),
         analysisEnabled,

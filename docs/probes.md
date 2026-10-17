@@ -579,6 +579,22 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   runs on a scratch branch off local-dev only (it refuses production, staging and local-dev by `neon.branch_id`, `assertScratchBranch`; cut one as in the safety rules above), and puts back every table the confirm can write from a
   snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true`.
 
+- `pnpm probe:tool-landing` opens each deck tool's Try it address, `/decks/<id>?tool=<tool>`, in a real browser at
+  390 and 1300 (discovery R2·2, E11). For each of Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper
+  stand-ins, Friends' spares and Matchups it tries the account's decks (up to `PROBE_DECKS`, default 12) until one
+  draws the tool's target, and asserts the halo on that target alone (a Tuning hub tile, or the panel's head with the
+  hub off; the first other-ways press holding that tool's glyph, ⇄ or the spare, on a Shopping row; the Matchups
+  split; the Top off door), `?tool=` stripped with the rest of the address kept, no bubble at all on a haloed landing
+  (then and 1.5s on, inside the halo) and the visit taken, since the halo is the visit's one guide (d9), nothing pressed, and the tool's moment spent exactly when
+  `MOMENTS_ENABLED` is on. A deck that does not draw the target must strip with no halo, spend nothing and leave the visit untouched (taken only
+  when a bubble arrived on it); each landing starts on a fresh visit (R1's visit record cleared); a tool no
+  deck draws is SKIP, never PASS. Then a stale id (`nope`, `wishlist`, `tour:banner`) is stripped with no halo and
+  writes nothing, and a deck id that does not exist (a deleted deck's) draws the not-found page (the route streams behind `loading.tsx`, so
+  `notFound()` answers 200). It WRITES only the account's `user_prefs.moments_spent`
+  (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
+  staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
+  switches on, then off, and with the probe's own `MOMENTS_ENABLED` matching the server's.
+
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
   buckets, the rows a confirm would write, staleness and the token rows it would change. READ-ONLY by

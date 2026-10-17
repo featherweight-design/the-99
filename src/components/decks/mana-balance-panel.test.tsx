@@ -8,6 +8,8 @@ import type { ManaColor, ManaSupplyCardRow } from "../../lib/mana/supply";
 import { readManaBalance } from "../../lib/tuning/mana-balance";
 import { toClientBalance, type ManaPanelData } from "../../lib/tuning/mana-view";
 import { ManaBalancePanel, manaOpenKey } from "./mana-balance-panel";
+import { useEffect } from "react";
+import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 
 const openCard = vi.fn();
 // The trigger is a stand-in that presses through `openCard` and hovers through the REAL preview hook, as the shipped one does.
@@ -63,6 +65,33 @@ const heading = () => document.getElementById("mana-heading");
 beforeEach(() => {
   openCard.mockReset();
   localStorage.clear();
+});
+
+function grabTargets() {
+  const box: { t: Targets | null } = { t: null };
+  function Grab() {
+    const t = useTargets();
+    useEffect(() => {
+      box.t = t;
+    }, [t]);
+    return null;
+  }
+  return { box, Grab };
+}
+
+describe("ManaBalancePanel's landing target (discovery R2, E11)", () => {
+  it("is the panel's head, once the first read has drawn it", async () => {
+    const { box, Grab } = grabTargets();
+    render(
+      <TargetsProvider>
+        <Grab />
+        <ManaBalancePanel deckId="d" read={async () => gishath()} />
+      </TargetsProvider>,
+    );
+    await waitFor(() => expect(heading()).not.toBeNull());
+    expect(box.t!.haloTarget("mana-balance")).toBe(true);
+    expect(heading()!.hasAttribute("data-target-halo")).toBe(true);
+  });
 });
 
 describe("ManaBalancePanel: reading", () => {

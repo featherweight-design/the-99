@@ -2,6 +2,8 @@
 // was logged with: counts with denominators, never a rate, and nothing from a friend's live rows.
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
+import { HALO_ATTR, TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { GamesPanel } from "./games-panel";
 import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { summarizeMatchups } from "../../lib/decks/matchups";
@@ -157,5 +159,49 @@ describe("the History vs line", () => {
     expect(vsParts(seat({ commander: tymna, partner: thrasios }))).toEqual({ name: "Tymna the Weaver + Thrasios", sub: null });
     expect(vsParts(seat({ commander: tymna, partner: thrasios, label: "Zed" }))).toEqual({ name: "Zed", sub: "Tymna the Weaver + Thrasios" });
     expect(vsParts(seat({ commander: tymna }))).toEqual({ name: "Tymna the Weaver", sub: null });
+  });
+});
+
+describe("the switch is Matchups' landing target (discovery R2, E11)", () => {
+  function grab() {
+    const box: { t: Targets | null } = { t: null };
+    function Grab() {
+      const t = useTargets();
+      useEffect(() => {
+        box.t = t;
+      }, [t]);
+      return null;
+    }
+    return { box, Grab };
+  }
+  const by = { g1: [seat({ commander: yuriko, colorIdentity: ["U", "B"] })] };
+
+  // Before the third game the moment is not yet due, but the switch is drawn, so a landing still reaches it.
+  it.each([
+    ["one game, before the moment is due", [game("g1")]],
+    ["three games, with the moment due", [game("g1"), game("g2"), game("g3")]],
+  ])("is the radiogroup with %s", (_, games) => {
+    const { box, Grab } = grab();
+    render(
+      <TargetsProvider>
+        <Grab />
+        <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} gameOpponents={wire(games, by)} />
+      </TargetsProvider>,
+    );
+    const split = screen.getByRole("radiogroup", { name: copy.split });
+    expect(box.t!.haloTarget("matchups")).toBe(true);
+    expect(split.hasAttribute(HALO_ATTR)).toBe(true);
+  });
+
+  it("is nothing with no opponent recorded, since no switch is drawn", () => {
+    const { box, Grab } = grab();
+    const games = [game("g1"), game("g2"), game("g3")];
+    render(
+      <TargetsProvider>
+        <Grab />
+        <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} gameOpponents={wire(games, {})} />
+      </TargetsProvider>,
+    );
+    expect(box.t!.haloTarget("matchups")).toBe(false);
   });
 });

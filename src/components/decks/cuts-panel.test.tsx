@@ -9,6 +9,8 @@ import { CutsPanelView, type CutsDeps } from "./cuts-panel";
 import { ReviewRunProvider } from "./review-run";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { useEffect } from "react";
+import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 
 const detail = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: detail.open }), useCardIntent: () => ({}) }));
@@ -53,6 +55,33 @@ const mount = async (d: CutsDeps) => { render(<CutsPanelView deckId="d1" deps={d
 beforeEach(() => {
   resetDeckVisitForTests();
   visitBaseline("d1", "cuts", { okKey: null, runId: null });
+});
+
+function grabTargets() {
+  const box: { t: Targets | null } = { t: null };
+  function Grab() {
+    const t = useTargets();
+    useEffect(() => {
+      box.t = t;
+    }, [t]);
+    return null;
+  }
+  return { box, Grab };
+}
+
+describe("CutsPanelView's landing target (discovery R2, E11)", () => {
+  it("is the panel's head", async () => {
+    const { box, Grab } = grabTargets();
+    render(
+      <TargetsProvider>
+        <Grab />
+        <CutsPanelView deckId="d1" deps={deps(panelOf())} />
+      </TargetsProvider>,
+    );
+    const head = await screen.findByRole("heading", { name: copy.heading });
+    expect(box.t!.haloTarget("proposed-cuts")).toBe(true);
+    expect(head.hasAttribute("data-target-halo")).toBe(true);
+  });
 });
 
 describe("CutsPanelView", () => {

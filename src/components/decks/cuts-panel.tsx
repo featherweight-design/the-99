@@ -28,6 +28,8 @@ import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } f
 import { FailMark } from "../ui/credit-button";
 import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
 import { ArtLayer } from "../ui/art-layer";
+import { useMergedRef } from "../ui/use-merged-ref";
+import { useTarget } from "../discovery/targets-provider";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
@@ -122,6 +124,10 @@ export function CutsPanelView({
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // The head is the tool's landing target (discovery R2, E11) wherever the panel is drawn: in the hub only once its
+  // tile is gone, and mounted directly with the hub off.
+  const target = useTarget("proposed-cuts");
+  const headRef = useMergedRef(headingRef, target);
   // Each press takes a token, so a superseded press's late answer is never drawn.
   const token = useRef(0);
   const settledRef = useRef(onSettled);
@@ -197,7 +203,7 @@ export function CutsPanelView({
     return (
       <section aria-labelledby="cuts-heading" className="mt-[18px] rounded-[11px] px-[14px] py-[16px] md:px-[20px] md:py-[18px]"
         style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
-        <h2 id="cuts-heading" className="flex items-center gap-[9px] font-display text-[17px] font-semibold md:text-[19px]" style={{ color: "var(--fg)" }}>
+        <h2 id="cuts-heading" ref={target} className="flex items-center gap-[9px] font-display text-[17px] font-semibold md:text-[19px]" style={{ color: "var(--fg)" }}>
           <FailMark label={copy.failed.tag} />{copy.failed.heading}
         </h2>
         <p className="mt-[6px] text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.failed.body}</p>
@@ -310,7 +316,7 @@ export function CutsPanelView({
         panel={panel}
         lead={lead}
         cutCount={madeCuts}
-        headingRef={headingRef}
+        headingRef={headRef}
         onPress={() => void press()}
         band={running ? (
           <CutsBand accent>

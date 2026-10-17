@@ -124,6 +124,8 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import { reveal } from "../../lib/ui/reveal";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { useToolLanding } from "../discovery/use-tool-landing";
+import type { ToolLanding } from "../../lib/discovery/tools";
 import { useMergedRef } from "../ui/use-merged-ref";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 
@@ -303,6 +305,9 @@ interface BuilderShellProps {
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
   tuningHubEnabled?: boolean;
+  /** Try it's `?tool=` (discovery R2, E11), decided by the page from this reader's switches: the deck tool to land
+   *  on. The page opens its tab; the shell opens its view and lands on its target. Null strips the parameter. */
+  landing?: Pick<ToolLanding, "tool" | "target" | "moment" | "lands"> | null;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -367,9 +372,13 @@ export function BuilderShell({
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
+  landing = null,
 }: BuilderShellProps) {
-  // UI state
-  const [filter, setFilter] = useState<"all" | "shopping">("all");
+  // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
+  const [filter, setFilter] = useState<"all" | "shopping">(
+    landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
+  );
+  useToolLanding(landing, deck.id);
   // The grouping persists per reader, as the List / Card view does (`DECK_GROUPING_KEY`): "I read decks by role"
   // is a fact about the reader, not about one deck. By type until this browser says otherwise, which is also what
   // the server renders.
@@ -1467,9 +1476,11 @@ export function BuilderShell({
   // Not while Analysis is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
   const offAnalysis = view !== "analysis";
+  // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
     eligible: atSize && offAnalysis,
     copy: momentsCopy.suggestedChanges,
+    target: false,
   });
   const cutsTabMoment = useMomentAnchor("proposed-cuts", {
     eligible: built > bodySize && offAnalysis,

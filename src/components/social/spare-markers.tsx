@@ -206,7 +206,7 @@ export function OtherWaysPress({
         // No pressed fill (#1875 draws none): the open modal is the state, and aria-expanded says it.
         className={`flex items-center bg-transparent [border:1px_solid_var(--border-strong)] ${oneLine ? "h-[26px] gap-[6px] rounded-[6px] px-[7px]" : "h-[36px] gap-[8px] rounded-[9px] px-[10px] md:h-[26px] md:gap-[6px] md:rounded-[6px] md:px-[7px]"}`}
       >
-        {swap ? <span className={`font-mono leading-none text-[color:var(--warning)] ${oneLine ? "text-[14px]" : "text-[16px] md:text-[14px]"}`}>⇄</span> : null}
+        {swap ? <span data-testid="standin-glyph" className={`font-mono leading-none text-[color:var(--warning)] ${oneLine ? "text-[14px]" : "text-[16px] md:text-[14px]"}`}>⇄</span> : null}
         {spare ? (
           <span className="flex text-[color:var(--fact)]" data-testid="spare-glyph">
             <SpareGlyph size={16} />
