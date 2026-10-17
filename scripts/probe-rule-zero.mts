@@ -261,8 +261,30 @@ async function main() {
     // Two viewers polling one unread deck at once: one computes, the other does not.
     const legalB2 = await legal(B, "Bo's fresh deck");
     await rz.setSeatDeck(B, T7, legalB2);
-    const both = await Promise.all([readOnTheSpot(A, T7, bSeat, ownerDeps), readOnTheSpot(C, T7, bSeat, ownerDeps)]);
-    check("two polls at once compute once", both.filter((r) => r === "read").length === 1 && both.every((r) => r === "read" || r === "busy" || r === "skipped"), both.join());
+    // The first build is held open until the second poll has answered, and every build is counted: with the lock gone
+    // both would compute, and `firstReading` alone would still let only one publish.
+    let computes = 0;
+    let open!: () => void;
+    const held = new Promise<void>((r) => { open = r; });
+    const counted = (env: NodeJS.ProcessEnv) => {
+      const deps = ownerDeps(env);
+      return {
+        ...deps,
+        compute: async (deckId: string, userId: string) => {
+          computes += 1;
+          if (computes === 1) await held;
+          return deps.compute(deckId, userId);
+        },
+      };
+    };
+    let firstStarted!: () => void;
+    const started = new Promise<void>((r) => { firstStarted = r; });
+    const first = readOnTheSpot(A, T7, bSeat, (env) => { firstStarted(); return counted(env); });
+    await started;
+    const second = await readOnTheSpot(C, T7, bSeat, counted);
+    open();
+    const firstResult = await first;
+    check("two polls at once compute once", second === "busy" && firstResult === "read" && computes === 1, `${firstResult},${second},${computes}`);
     // The owner presses Analyze, then edits, while another player's on-the-spot build runs: the owner's row stands.
     const legalB3 = await legal(B, "Bo's raced deck");
     await rz.setSeatDeck(B, T7, legalB3);
