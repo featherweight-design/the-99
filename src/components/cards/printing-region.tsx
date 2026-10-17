@@ -310,16 +310,30 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     () => (overflow ? matching(query.trim().toLowerCase(), finish) : entries),
     [entries, overflow, query, finish, matching],
   );
-  // The short list alone until Show all, unless a search is narrowing every printing.
-  const limited = shortList !== null && !showAll && query.trim() === "";
-  const hidden = limited ? entries.filter((p) => !p.dormant && !shortList.includes(p.scryfallId ?? "")).length : 0;
+  // The short list alone until Show all, unless a search is narrowing every printing. A selection
+  // outside the short list rides right after it, and keeps that place once Show all is pressed, so
+  // the press only ever adds tiles after the ones already drawn.
+  const searching = query.trim() !== "";
+  const limited = shortList !== null && !showAll && !searching;
+  const [keptExtra, setKeptExtra] = useState<string | null>(null);
+  const extraKey = limited
+    ? (selectedKey !== null && !shortList.includes(selectedKey) ? selectedKey : null)
+    : keptExtra;
+  const ordered = useMemo(() => {
+    if (shortList === null || searching) return null;
+    const lead = matched.filter((p) => p.dormant || shortList.includes(p.scryfallId ?? ""));
+    const extra = extraKey === null ? undefined : matched.find((p) => !lead.includes(p) && p.scryfallId === extraKey);
+    const rest = matched.filter((p) => !lead.includes(p) && p !== extra);
+    return { shown: extra ? [...lead, extra] : lead, rest };
+  }, [shortList, searching, matched, extraKey]);
+  const hidden = limited && ordered ? ordered.rest.length : 0;
   // A selected tile a search has narrowed out stays first (B2): the way back is never lost.
   const visible = useMemo(() => {
-    const shown = limited ? matched.filter((p) => p.dormant || shortList.includes(p.scryfallId ?? "")) : matched;
-    if (selectedKey === null || shown.some((p) => p.scryfallId === selectedKey)) return shown;
+    if (ordered) return limited ? ordered.shown : [...ordered.shown, ...ordered.rest];
+    if (selectedKey === null || matched.some((p) => p.scryfallId === selectedKey)) return matched;
     const sel = entries.find((p) => p.scryfallId === selectedKey);
-    return sel ? [sel, ...shown] : shown;
-  }, [matched, entries, selectedKey, limited, shortList]);
+    return sel ? [sel, ...matched] : matched;
+  }, [ordered, limited, matched, entries, selectedKey]);
   // Show all removes its own press: focus goes to the first printing it added, never the document.
   const revealFrom = useRef<string | null>(null);
   useEffect(() => {
@@ -619,8 +633,9 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
         <button
           type="button"
           onClick={() => {
-            const first = entries.find((p) => !p.dormant && !shortList!.includes(p.scryfallId ?? ""));
+            const first = ordered?.rest[0];
             revealFrom.current = first ? tileKey(first) : null;
+            setKeptExtra(extraKey);
             setShowAll(true);
           }}
           className="mt-[12px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)]"

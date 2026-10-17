@@ -97,7 +97,9 @@ function similarity(distance: number): number {
 
 /**
  * A guess's printings: its own printing and every printing among `rows`, each scored by its nearest face, best first,
- * at most `MAX_PRINTINGS`.
+ * at most `MAX_PRINTINGS`. The guess's own printing always keeps a place: the guess came from HNSW, which is
+ * approximate, while `rows` rank exact distances, so `MAX_PRINTINGS` others can outscore it. It then takes the last
+ * place, which keeps the list sorted, since it scored under every one of them.
  */
 export function scorePrintings(guess: { scryfallId: string; score: number }, rows: readonly PrintingRow[]): ScoredPrinting[] {
   const byId = new Map<string, number>([[guess.scryfallId, guess.score]]);
@@ -105,7 +107,8 @@ export function scorePrintings(guess: { scryfallId: string; score: number }, row
     const score = similarity(r.distance);
     if (score > (byId.get(r.scryfallId) ?? -Infinity)) byId.set(r.scryfallId, score);
   }
-  return [...byId].map(([scryfallId, score]) => ({ scryfallId, score }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_PRINTINGS);
+  const sorted = [...byId].map(([scryfallId, score]) => ({ scryfallId, score })).sort((a, b) => b.score - a.score);
+  const top = sorted.slice(0, MAX_PRINTINGS);
+  if (top.some((p) => p.scryfallId === guess.scryfallId)) return top;
+  return [...top.slice(0, MAX_PRINTINGS - 1), sorted.find((p) => p.scryfallId === guess.scryfallId)!];
 }

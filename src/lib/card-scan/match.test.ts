@@ -73,6 +73,13 @@ describe("scorePrintings", () => {
     expect(scorePrintings({ scryfallId: "own", score: 0.95 }, rows)).toHaveLength(MAX_PRINTINGS);
   });
 
+  it(`keeps the guess's own printing, last, when ${MAX_PRINTINGS} others outscore it`, () => {
+    const rows = Array.from({ length: MAX_PRINTINGS + 2 }, (_, i) => ({ scryfallId: `p${i}`, distance: 0.05 + i / 100 }));
+    const got = scorePrintings({ scryfallId: "own", score: 0.5 }, rows);
+    expect(got).toHaveLength(MAX_PRINTINGS);
+    expect(got.map((p) => p.scryfallId)).toEqual([...rows.slice(0, MAX_PRINTINGS - 1).map((r) => r.scryfallId), "own"]);
+  });
+
   it("poolGuesses gives a guess with no printing rows its own printing alone", () => {
     expect(poolGuesses([row(A, 0.1, "a1")]).guesses[0].printings).toEqual([{ scryfallId: "a1", score: expect.closeTo(0.9) }]);
   });

@@ -507,6 +507,17 @@ describe("PrintingRegion role=choose source=catalog", () => {
       expect(screen.queryByRole("button", { name: showAll })).toBeNull();
     });
 
+    it("keeps a selection outside the short list right after it, in place on Show all, and focuses the first tile added", () => {
+      renderChoose({ shortList: ["id-3"], selected: "id-1" });
+      const before = screen.getAllByRole("radio");
+      expect(labels()).toEqual([expect.stringContaining("Commander Masters"), expect.stringContaining("Commander 2021")]);
+      fireEvent.click(screen.getByRole("button", { name: showAll }));
+      const after = screen.getAllByRole("radio");
+      expect(after.slice(0, 2)).toEqual(before);
+      expect(after[2].getAttribute("aria-label")).toContain("Secret Lair");
+      expect(document.activeElement).toBe(after[2]);
+    });
+
     it("draws no press when the short list already holds every printing, and every printing with none", () => {
       const { unmount } = renderChoose({ shortList: ["id-1", "id-2", "id-3"] });
       expect(screen.queryByRole("button", { name: showAll })).toBeNull();
