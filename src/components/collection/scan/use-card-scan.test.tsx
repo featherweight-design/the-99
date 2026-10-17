@@ -143,11 +143,26 @@ describe("useCardScan", () => {
   it("withdraws an answer once a different card is in the frame, so Add never takes the card before it", async () => {
     const other = new Float32Array(EMBED_DIM);
     other[1] = 1;
-    let frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
-    const { hook } = setup({ readFrame: async () => { await new Promise((r) => setTimeout(r, 5)); return frame; } });
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure" } }), { timeout: 4000 });
-    frame = { frame: { kind: "card", embedding: other }, cardInView: true, dark: false };
-    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } }), { timeout: 4000 });
+    const third = new Float32Array(EMBED_DIM);
+    third[2] = 1;
+    // Once the first card is answered and added, the frames show other cards that never agree with each other, so
+    // nothing new settles and no second lookup replaces the state: the screen can only stop showing the first card's
+    // answer by withdrawing it. Read by read, never a wall-clock window.
+    let swapped = false;
+    let n = 0;
+    const { hook } = setup({
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        if (!swapped) return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+        n++;
+        return { frame: { kind: "card", embedding: n % 2 ? other : third }, cardInView: true, dark: false };
+      },
+    });
+    await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
+    swapped = true;
+    await waitFor(() => expect(n).toBeGreaterThan(3));
+    await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 100)));
+    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
   });
 
   it("tells the player once when reads keep failing, and stands no answer meanwhile", async () => {
@@ -343,24 +358,40 @@ describe("useCardScan", () => {
 
     it("turns down an answer whose add is taken back during a missed frame, so it does not read Added when it returns", async () => {
       const card: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
-      let gap = false;
+      // The missed frame is ONE read, counted, never a wall-clock window: the test clock moves per read, so a window
+      // let a busy machine read enough empty frames to settle "no card", which is another case (a second copy). The
+      // take-back lands DURING that missed frame (once it has been read and drawn), and the card is read again only once
+      // the take-back has been said.
+      let settle!: (kept: boolean) => void;
+      let gap = 0;
+      let release!: () => void;
+      const held = new Promise<void>((r) => (release = r));
       const { hook, onAdd, onProblem } = setup({
         readFrame: async () => {
           await new Promise((r) => setTimeout(r, 5));
-          return gap ? { frame: { kind: "none" }, cardInView: false, dark: false } : card;
+          if (gap === 1) {
+            gap = 2;
+            return { frame: { kind: "none" }, cardInView: false, dark: false };
+          }
+          if (gap === 2) {
+            // The empty frame has been read and drawn: the take-back lands now, and the card waits for it.
+            gap = 3;
+            settle(false);
+            await held;
+          }
+          return card;
         },
       });
-      let settle!: (kept: boolean) => void;
       onAdd.mockImplementation(async () => ({ settled: new Promise<boolean>((r) => { settle = r; }) }));
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
-      gap = true;
-      await act(async () => new Promise((r) => setTimeout(r, 40)));
-      await act(async () => settle(false));
-      gap = false;
+      gap = 1;
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring"), { timeout: 4000 });
+      await act(async () => release());
       await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 300)));
       expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring");
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "added" } });
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+      expect(hook.result.current.count).toBe(0);
+      await act(async () => new Promise((r) => setTimeout(r, 300)));
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
