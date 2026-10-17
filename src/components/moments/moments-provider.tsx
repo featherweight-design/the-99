@@ -376,14 +376,17 @@ export function MomentsProvider({
   // nothing is live, and nothing is written.
   const suppress = useCallback(
     (id: MomentId) => {
-      if (!liveSet.has(id) || spent.current.has(id)) return;
-      if (showingRef.current?.id === id) {
-        close(true);
-        return;
+      if (!liveSet.has(id)) return;
+      // Recorded once, and never by `spend`, which takes the visit: a landing is not the reader seeing a bubble.
+      if (!spent.current.has(id)) {
+        spent.current.add(id);
+        channel.current?.postMessage(id);
+        persist(id);
       }
-      spent.current.add(id);
-      channel.current?.postMessage(id);
-      persist(id);
+      // Closed as a teardown, not as the reader's close: under `SPENT_AFTER_MS` the claim goes back (the id is already
+      // spent, so the moment never returns); past it the timer has already spent the id and taken the visit, which
+      // stays taken.
+      if (showingRef.current?.id === id) close(false);
     },
     [liveSet, close, persist],
   );

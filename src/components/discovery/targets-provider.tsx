@@ -13,11 +13,13 @@ import { reveal } from "../../lib/ui/reveal";
  * One id can have several controls (each Shopping row's other-ways press); the target is the FIRST of them in the
  * document that is drawn, so the landing reaches the top one.
  *
- * The halo is R1's own: the shipped `data-moment-halo` attribute, set on the control and taken off after `ms`. It
- * never draws a bubble and never presses anything.
+ * The halo is R1's own look, drawn by the rule that draws a bubble's (`data-target-halo` beside `data-moment-halo`),
+ * set on the control and taken off after `ms`. It never draws a bubble and never presses anything.
  */
 export const HALO_MS = 2400;
-export const HALO_ATTR = "data-moment-halo";
+/** The landing's own halo attribute, drawn by the same rule as a bubble's `data-moment-halo` (globals.css). Its own,
+ *  so a bubble's teardown never takes a landing's halo off, and a landing's timer never takes a bubble's off. */
+export const HALO_ATTR = "data-target-halo";
 
 export type Targets = {
   targetRect: (id: TargetId) => DOMRect | null;

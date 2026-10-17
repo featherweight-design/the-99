@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor, useSuppressMoment } from "./moments-provider";
-import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
+import { HALO_ATTR, TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { useMomentHold } from "../../lib/moments/hold";
 import { VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentId } from "../../lib/moments/registry";
@@ -61,8 +61,12 @@ function Control({
 }
 
 /** The landing's press, standing in for `useToolLanding`. */
+let suppressNow: ((id: MomentId) => void) | null = null;
 function Suppress({ id }: { id: MomentId }) {
   const suppress = useSuppressMoment();
+  useEffect(() => {
+    suppressNow = suppress;
+  }, [suppress]);
   return (
     <button type="button" onClick={() => suppress(id)}>
       land on {id}
@@ -552,7 +556,11 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     expect(screen.getByRole("note").getAttribute("aria-label")).toBe("Wish, a tip");
   });
 
-  it("closes a bubble already showing for that moment, spent", async () => {
+  // Called as the landing calls it, never through a press: a press outside a showing bubble is the bubble's own
+  // dismiss, which would close and spend it whatever `suppress` did.
+  const visitTaken = () => JSON.parse(window.localStorage.getItem(VISIT_KEY) ?? "{}").taken === true;
+
+  it("closes a bubble showing for that moment before it counts as seen, spends it once, and takes no visit", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
         <Control id="lineup" name="Stats" />
@@ -562,9 +570,48 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     onScreen("Stats");
     await advance(ARRIVE_MS);
     expect(screen.getByRole("note", { name: "Stats, a tip" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "land on lineup" }));
+    act(() => suppressNow!("lineup"));
+    await advance(0);
     expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
     expect(spendMomentAction).toHaveBeenCalledWith("lineup");
+    expect(visitTaken()).toBe(false);
+  });
+
+  it("gives the visit back when it closes a bubble before it counts as seen, so the next moment can arrive", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    onScreen("Top off");
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+    act(() => suppressNow!("top-off"));
+    onScreen("Wish");
+    await advance(ARRIVE_MS * 4);
+    expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+  });
+
+  it("closes a bubble showing for that moment after it counted as seen, writes nothing more, and the visit stays taken", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="lineup" name="Stats" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Stats");
+    await advance(ARRIVE_MS);
+    await advance(SPENT_AFTER_MS);
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(visitTaken()).toBe(true);
+    act(() => suppressNow!("lineup"));
+    await advance(0);
+    expect(screen.queryByRole("note", { name: "Stats, a tip" })).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledTimes(1);
+    expect(visitTaken()).toBe(true);
   });
 
   it("writes nothing for a moment that is not live (MOMENTS_ENABLED off) or already spent", async () => {
@@ -614,7 +661,7 @@ describe("a moment's control is its target (discovery R2)", () => {
 
   it("registers while eligible, whatever MOMENTS_ENABLED says", () => {
     expect(drawn(<Anchor />)).toBe(true);
-    expect(screen.getByRole("button", { name: "Top off" }).hasAttribute("data-moment-halo")).toBe(true);
+    expect(screen.getByRole("button", { name: "Top off" }).hasAttribute(HALO_ATTR)).toBe(true);
   });
 
   it("registers nothing while not eligible, as a fallback, or with target: false", () => {

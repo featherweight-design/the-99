@@ -52,6 +52,25 @@ describe("TargetsProvider", () => {
     expect(el.hasAttribute(HALO_ATTR)).toBe(false);
   });
 
+  it("never touches a bubble's halo on the same control, and a bubble's teardown never takes the landing's off", () => {
+    render(
+      <TargetsProvider>
+        <Grab />
+        <Control id="matchups" name="Matchups" />
+      </TargetsProvider>,
+    );
+    const el = screen.getByRole("button", { name: "Matchups" });
+    el.setAttribute("data-moment-halo", "");
+    api!.haloTarget("matchups");
+    // The bubble leaves while the landing's halo is up, as MomentBubble's cleanup does.
+    el.removeAttribute("data-moment-halo");
+    expect(el.hasAttribute(HALO_ATTR)).toBe(true);
+    el.setAttribute("data-moment-halo", "");
+    act(() => vi.advanceTimersByTime(HALO_MS));
+    expect(el.hasAttribute(HALO_ATTR)).toBe(false);
+    expect(el.hasAttribute("data-moment-halo")).toBe(true);
+  });
+
   it("restarts a halo asked for again, rather than ending at the first one's time", () => {
     render(
       <TargetsProvider>
