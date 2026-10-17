@@ -179,4 +179,13 @@ describe("JoinFlow", () => {
     fireEvent.click(button);
     expect(m.hand).toHaveBeenCalledTimes(1);
   });
+  it("re-enables Continue when the page is restored from the back/forward cache", async () => {
+    vi.stubGlobal("location", { ...window.location, assign: vi.fn() });
+    m.hand.mockResolvedValue({ ok: true, url: "https://clerk.example/ticket" });
+    start({ kind: "proven", sender, email: "a@x.dev" });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.toSignUp }));
+    await screen.findByRole("button", { name: joinCopy.continuing });
+    fireEvent(window, Object.assign(new Event("pageshow"), { persisted: true }));
+    await waitFor(() => expect((screen.getByRole("button", { name: joinCopy.toSignUp }) as HTMLButtonElement).disabled).toBe(false));
+  });
 });

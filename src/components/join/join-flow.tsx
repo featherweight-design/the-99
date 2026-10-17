@@ -73,6 +73,14 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     if (step === "code") codeRef.current?.focus();
     else document.getElementById("friend-landing-title")?.focus();
   }, [step]);
+  // Coming back from Clerk through the back/forward cache restores this page as it was left, Continue disabled.
+  useEffect(() => {
+    const restored = (e: PageTransitionEvent) => {
+      if (e.persisted) setLeaving(false);
+    };
+    window.addEventListener("pageshow", restored);
+    return () => window.removeEventListener("pageshow", restored);
+  }, []);
   // The resend countdown ticks only while it counts.
   const waiting = waitUntil > now;
   useEffect(() => {
