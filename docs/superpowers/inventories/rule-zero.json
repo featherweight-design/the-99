@@ -1,6 +1,6 @@
 {
   "feature": "Rule 0 PR 3: the read-only table page at /friends/table/[id] (plan 2026-10-16-rule-zero.md, PR 3; the read boards T1 to T10, the needsAnalysis seat and the expired page L4/H3)",
-  "note": "Needs RULE_ZERO_ENABLED=true and its parent SOCIAL_FRIENDS_ENABLED=true for the reader (registry: RULE_ZERO_ENABLED needs SOCIAL_FRIENDS_ENABLED), and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_USER set to the account the sheet signs in as (E2E_AUDIT_USER_EMAIL, the audit account user_3Hdjdoc...) on a SCRATCH BRANCH off local-dev only: the seed refuses production, staging and local-dev (assertScratchBranch) and must equal RZ_FIXTURE_BRANCH. It seeds Colin's pod Thursday night (you, Colin the owner, Peter, and Max, Colin's friend and not yours) with fixed table ids, every reading a real analysis of a cloned list. The open tables close 20 hours after the seed runs, so reseed before a rerun the next day. The sheet itself writes nothing: the page neither marks seen nor reads on the spot in PR 3.",
+  "note": "Needs RULE_ZERO_ENABLED=true and its parent SOCIAL_FRIENDS_ENABLED=true for the reader (registry: RULE_ZERO_ENABLED needs SOCIAL_FRIENDS_ENABLED), and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_USER set to the account the sheet signs in as (E2E_AUDIT_USER_EMAIL, the audit account user_3Hdjdoc...) on a SCRATCH BRANCH off local-dev only: the seed refuses production, staging and local-dev (assertScratchBranch) and must equal RZ_FIXTURE_BRANCH. It seeds Colin's pod Thursday night (you, Colin the owner, Peter, and Max, Colin's friend and not yours) with fixed table ids, every reading a real analysis of a cloned list. The open tables close 20 hours after the seed runs, so reseed before a rerun the next day. From PR 4 the page records each draw (markTableSeen) and its 20-second poll reads unread seats on the spot, so a run moves S5's seen_at and T9's reading: reseed before every run.",
   "clearAbout": true,
   "widths": [
     { "label": "phone", "width": 390, "height": 2300 },
@@ -79,6 +79,18 @@
       "label": "Expired (L4/H3): the night is over, faces down",
       "view": "src/components/rule-zero/table-closed.tsx",
       "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000012", "wait": "[data-testid=table-closed]", "settle": 1200 }]
+    },
+    {
+      "id": "s4",
+      "label": "S4/W4 another seat after a swap, already looked: Colin's new deck, no dot",
+      "view": "src/components/rule-zero/table-live.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000013", "wait": "[data-testid=table-body]", "settle": 1200 }]
+    },
+    {
+      "id": "s5",
+      "label": "S5/W5 another seat after a swap, on the next look: the changed dot on Colin's seat and Since you looked",
+      "view": "src/components/rule-zero/table-live.tsx",
+      "steps": [{ "goto": "/friends/table/7a0e0000-0000-4000-8000-000000000014", "wait": "[data-testid=since]", "settle": 1200 }]
     }
   ]
 }
