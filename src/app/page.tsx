@@ -22,6 +22,8 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
+import { socialFriendsEnabled, socialGamesEnabled } from "../lib/social/flag";
+import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
 import { loadArrivalsBanner } from "../lib/precons/banner";
@@ -295,6 +297,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     }
   }
 
+  // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
+  // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
+  // section, as a failed Commitments read draws no card.
+  let homeFriends: HomeFriends | null = null;
+  if (socialFriendsEnabled(env)) {
+    try {
+      homeFriends = await loadHomeFriends(userId, now);
+    } catch (error) {
+      console.error("home: the friends section could not be read", error);
+    }
+  }
+
   const dashboard = (
     <Dashboard
       stats={data.stats}
@@ -308,6 +322,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       about={about}
       cartEnabled={allDecksCartEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
+      friends={homeFriends && { ...homeFriends, games: socialGamesEnabled(env) }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}
