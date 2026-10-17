@@ -30,8 +30,12 @@ const DECK = "22222222-2222-4222-8222-222222222222";
 const SOL = "6d0a5f7e-1111-4222-8333-444455556666";
 const cardsInDeck = [{ oracleId: SOL, name: "Sol Ring", typeLine: "Artifact", imageUri: null }];
 
+// Dates are formatted in LOCAL time and a year other than the current one is written out, so a fixture is built at local
+// noon in the current year: a UTC literal drifts a day at +12 and beyond, and a pinned year goes red when the clock leaves it.
+const YEAR = new Date().getFullYear();
+const at = (year: number, month: number, day: number) => new Date(year, month, day, 12).toISOString();
 const note = (id: string, text: string, over: Partial<NoteView> = {}): NoteView => ({
-  id, body: text, drawn: [{ kind: "text", text }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null, ...over,
+  id, body: text, drawn: [{ kind: "text", text }], createdAt: at(YEAR, 9, 2), doneAt: null, ...over,
 });
 let clock = 1000;
 const view = (open: NoteView[], done: NoteView[] = []): DeckNotesView => ({ open, done, readAt: ++clock });
@@ -75,15 +79,12 @@ describe("a deck with notes", () => {
 });
 
 describe("formatNoteDate", () => {
-  const now = new Date("2026-10-12T12:00:00.000Z");
+  const now = new Date(YEAR, 9, 12, 12);
   it("names the year only outside the current one", () => {
-    expect(formatNoteDate("2026-10-02T12:00:00.000Z", now)).toBe("2 Oct");
-    expect(formatNoteDate("2025-10-02T12:00:00.000Z", now)).toBe("2 Oct 2025");
+    expect(formatNoteDate(at(YEAR, 9, 2), now)).toBe("2 Oct");
+    expect(formatNoteDate(at(YEAR - 1, 9, 2), now)).toBe(`2 Oct ${YEAR - 1}`);
   });
 });
-
-// 9 March at local noon: the date is formatted in local time, so a UTC literal drifts a day at +12 and beyond.
-const localNoon = (year: number) => new Date(year, 2, 9, 12).toISOString();
 
 describe("the list", () => {
   it("shows six open notes in the order given, then Show all N", async () => {
@@ -99,7 +100,7 @@ describe("the list", () => {
     // The year is read off the clock: the date is written bare only inside the current year, so a fixture
     // pinned to a calendar year goes red the day the clock leaves it (the clock-shifted run found this one).
     const year = new Date().getFullYear();
-    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: localNoon(year) })]));
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: at(year, 2, 9) })]));
     expect(screen.queryByText("finished")).toBeNull();
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getByText("finished")).toBeTruthy();
@@ -108,14 +109,14 @@ describe("the list", () => {
 
   it("writes the year on a done note from another year", () => {
     const year = new Date().getFullYear() - 1;
-    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: localNoon(year) })]));
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: at(year, 2, 9) })]));
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getAllByText(`done 9 Mar ${year}`).length).toBeGreaterThan(0);
   });
 
   it("replaces the input with the cap line at 100 notes, done ones counting", () => {
     const open = Array.from({ length: 60 }, (_, i) => note(`o${i}`, `o ${i}`));
-    const done = Array.from({ length: 40 }, (_, i) => note(`d${i}`, `d ${i}`, { doneAt: "2026-10-09T12:00:00.000Z" }));
+    const done = Array.from({ length: 40 }, (_, i) => note(`d${i}`, `d ${i}`, { doneAt: at(YEAR, 9, 9) }));
     mount(view(open, done));
     expect(screen.getByText(/This deck holds 100 notes/)).toBeTruthy();
     expect(screen.getByText("done ones count too")).toBeTruthy();
@@ -252,7 +253,7 @@ describe("writes run one at a time", () => {
 
 describe("a row", () => {
   it("selects with the box named for its text, and unselects a done one", async () => {
-    mount(view([note("a", "water the plants")], [note("b", "all done", { doneAt: "2026-10-09T12:00:00.000Z" })]));
+    mount(view([note("a", "water the plants")], [note("b", "all done", { doneAt: at(YEAR, 9, 9) })]));
     click(screen.getByRole("checkbox", { name: "Done: water the plants" }));
     expect(stub.setNoteDone).toHaveBeenCalledWith(DECK, "a", true);
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
