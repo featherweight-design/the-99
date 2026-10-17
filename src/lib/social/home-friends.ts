@@ -14,7 +14,7 @@ export type HomeFriends = { you: Omit<OwnProfile, "publicId"> | null; friends: F
 
 /**
  * The viewer's own face, their friends and their open links, from ONE snapshot, as /friends reads them. Read-only, unlike `ensureProfile`: Home never creates a profile, so a viewer who has none draws
- * their initials in their seat.
+ * their seat with no initials (a blank face) until /friends makes one.
  */
 export async function loadHomeFriends(viewerId: string, now = new Date()): Promise<HomeFriends> {
   return db.transaction(async (tx) => {

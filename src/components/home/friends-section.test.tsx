@@ -36,6 +36,8 @@ describe("FriendsSection", () => {
     const { container } = render(<FriendsSection {...props()} />);
     expect(screen.getByRole("heading", { name: socialCopy.home.head })).toBeTruthy();
     expect(screen.getByText(socialCopy.home.you)).toBeTruthy();
+    // Your seat is hidden from screen readers, like the empty seats beside it.
+    expect(screen.getByText(socialCopy.home.you).closest("li")?.getAttribute("aria-hidden")).toBe("true");
     expect(seats(container)).toEqual(["empty", "empty", "empty", "empty"]);
     expect(screen.getByText(`${socialCopy.home.invite} ${socialCopy.home.inviteMore(true)}`)).toBeTruthy();
     expect(screen.getByRole("button", { name: socialCopy.page.invite })).toBeTruthy();
@@ -71,29 +73,30 @@ describe("FriendsSection", () => {
   });
 
   it("a link open: the line with time left and Show, and the first empty seat holds the diamond", () => {
-    const { container } = render(<FriendsSection {...props({ links: [{ token: "t1", expiresAt: inDays(6) }] })} />);
+    const { container } = render(<FriendsSection {...props({ links: [{ token: "t1", createdAt: new Date(NOW), expiresAt: inDays(6) }] })} />);
     const line = screen.getByText(socialCopy.home.links(1)).closest("p")!;
     expect(within(line).getByText("6 days left")).toBeTruthy();
-    expect(within(line).getByRole("button", { name: socialCopy.invites.show })).toBeTruthy();
+    expect(within(line).getByText(socialCopy.invites.show)).toBeTruthy();
     expect(line.className).toContain("--fg-muted");
+    expect(within(line).getByRole("button", { name: /^Show the link made / })).toBeTruthy();
     expect(seats(container)).toEqual(["held", "empty", "empty", "empty"]);
   });
 
   it("under a day left reads in the warning ink", () => {
-    render(<FriendsSection {...props({ links: [{ token: "t1", expiresAt: new Date(Date.parse(NOW) + 3_600_000) }] })} />);
+    render(<FriendsSection {...props({ links: [{ token: "t1", createdAt: new Date(NOW), expiresAt: new Date(Date.parse(NOW) + 3_600_000) }] })} />);
     const line = screen.getByText(socialCopy.home.links(1)).closest("p")!;
     expect(within(line).getByText("Under a day left")).toBeTruthy();
     expect(line.className).toContain("--warning");
   });
 
   it("two links open: the count and See them, to /friends", () => {
-    render(<FriendsSection {...props({ links: [{ token: "a", expiresAt: inDays(2) }, { token: "b", expiresAt: inDays(5) }] })} />);
+    render(<FriendsSection {...props({ links: [{ token: "a", createdAt: new Date(NOW), expiresAt: inDays(2) }, { token: "b", createdAt: new Date(NOW), expiresAt: inDays(5) }] })} />);
     expect(screen.getByText(socialCopy.home.links(2))).toBeTruthy();
     expect(screen.getByRole("link", { name: /See them/ }).getAttribute("href")).toBe("/friends");
   });
 
   it("ignores a link that has already expired", () => {
-    const { container } = render(<FriendsSection {...props({ links: [{ token: "old", expiresAt: inDays(-1) }] })} />);
+    const { container } = render(<FriendsSection {...props({ links: [{ token: "old", createdAt: new Date(NOW), expiresAt: inDays(-1) }] })} />);
     expect(screen.queryByText(socialCopy.home.links(1))).toBeNull();
     expect(seats(container)).not.toContain("held");
   });

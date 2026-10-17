@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createInviteAction } from "../../app/friends/actions";
 import { socialCopy } from "../../lib/copy/social";
 import { invitePath } from "../../lib/social/client-rules";
+import { madeWhen, underADay } from "../../lib/social/when";
 import type { ProfileCommander } from "../../lib/social/commander";
 import type { InviteOutcome } from "../../lib/social/friends";
 import { AddFriendDialog } from "../social/add-friend-dialog";
@@ -27,14 +28,13 @@ import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { useInviteWatch } from "../social/use-invite-watch";
 
 const h = socialCopy.home;
-const DAY_MS = 86_400_000;
 /** Five seats at both widths (R2.2); past five, four faces and the count. */
 export const SEATS = 5;
 
 export type FriendsSectionProps = {
   you: { displayName: string; commander: ProfileCommander | null } | null;
   friends: { publicId: string; displayName: string; commander: ProfileCommander | null }[];
-  links: { token: string; expiresAt: Date }[];
+  links: { token: string; createdAt: Date; expiresAt: Date }[];
   /** The render's one clock, from the server. */
   now: string;
   /** SOCIAL_GAMES_ENABLED: the no-friends line names seating friends in a game only while it is on (G5). */
@@ -104,7 +104,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
   }
 
-  function showLink(link: { token: string; expiresAt: Date }) {
+  function showLink(link: { token: string; createdAt: Date; expiresAt: Date }) {
     setShown({ token: link.token, url: linkUrl(link.token), expiresAt: link.expiresAt, friendsBefore: new Set(listed.current) });
   }
 
@@ -134,8 +134,8 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
 
       <ul className="m-0 flex list-none items-start justify-between p-0">
         {friends.length === 0 && (
-          <li className="flex w-[56px] flex-none flex-col items-center gap-[6px] min-[1180px]:w-[52px]">
-            <Face name={you?.displayName ?? h.you} commander={you?.commander ?? null} size={40} />
+          <li aria-hidden className="flex w-[56px] flex-none flex-col items-center gap-[6px] min-[1180px]:w-[52px]">
+            <Face name={you?.displayName ?? ""} commander={you?.commander ?? null} size={40} />
             <span className="text-[11.5px] text-[color:var(--fg-faint)]">{h.you}</span>
           </li>
         )}
@@ -187,7 +187,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
       )}
 
       {open.length > 0 && (
-        <p className={`m-0 flex flex-wrap items-center gap-[6px] font-mono text-[11px] ${msLeft < DAY_MS ? "text-[color:var(--warning)]" : "text-[color:var(--fg-muted)]"}`}>
+        <p className={`m-0 flex flex-wrap items-center gap-[6px] font-mono text-[11px] ${soonest && underADay(soonest.expiresAt, nowDate) ? "text-[color:var(--warning)]" : "text-[color:var(--fg-muted)]"}`}>
           <span>{h.links(open.length)}</span>
           <span aria-hidden className="text-[color:var(--fg-faint)]">·</span>
           {open.length === 1 ? (
@@ -197,6 +197,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
               <button
                 type="button"
                 onClick={() => showLink(soonest)}
+                aria-label={socialCopy.invites.showAria(madeWhen(soonest.createdAt, nowDate))}
                 className="-my-[14px] min-h-[44px] cursor-pointer border-0 bg-transparent px-[8px] font-sans text-[12.5px] font-medium text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] min-[1180px]:my-0 min-[1180px]:min-h-0 min-[1180px]:px-[2px]"
               >
                 {socialCopy.invites.show}
