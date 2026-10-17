@@ -14,7 +14,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createInviteAction } from "../../app/friends/actions";
 import { socialCopy } from "../../lib/copy/social";
 import { invitePath } from "../../lib/social/client-rules";
@@ -26,10 +26,13 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { useInviteWatch } from "../social/use-invite-watch";
+import { useHydrated } from "../ui/hydrated-art";
 
 const h = socialCopy.home;
 /** Five seats at both widths (R2.2); past five, four faces and the count. */
 export const SEATS = 5;
+/** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
+const CLOCK_TICK_MS = 60_000;
 
 export type FriendsSectionProps = {
   you: { displayName: string; commander: ProfileCommander | null } | null;
@@ -56,7 +59,26 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
 
 export function FriendsSection({ you, friends, links, now, games, friendPages, className = "" }: FriendsSectionProps) {
   const router = useRouter();
-  const nowDate = new Date(now);
+  // The server's clock, moved on by the client's minute tick from the server's draw plus the client's elapsed time,
+  // as /friends does, so a link crossing its last day turns to the warning ink without a redraw.
+  const nowMs = Date.parse(now);
+  const [tickedAt, setTickedAt] = useState(nowMs);
+  const nowDate = useMemo(() => new Date(Math.max(nowMs, tickedAt)), [nowMs, tickedAt]);
+  const drawnAt = useRef<{ server: number; client: number } | null>(null);
+  useEffect(() => {
+    drawnAt.current = { server: nowMs, client: Date.now() };
+  }, [nowMs]);
+  const ticking = links.length > 0;
+  useEffect(() => {
+    if (!ticking) return;
+    const t = setInterval(() => {
+      if (drawnAt.current) setTickedAt(drawnAt.current.server + Date.now() - drawnAt.current.client);
+    }, CLOCK_TICK_MS);
+    return () => clearInterval(t);
+  }, [ticking]);
+  // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
+  const hydrated = useHydrated();
+  const timeZone = hydrated ? undefined : "UTC";
   const open = links.filter((l) => l.expiresAt.getTime() > nowDate.getTime());
   const plan = seatPlan(friends.length);
   const [making, setMaking] = useState(false);
@@ -66,6 +88,15 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
   const toastSeq = useRef(0);
   const say = (text: string, retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
   const addRef = useRef<HTMLButtonElement>(null);
+  // Where focus goes when the dialog closes: the Show press that opened it while it still stands, else Add a friend.
+  const showOpener = useRef<HTMLElement | null>(null);
+  const [dialogReturn] = useState(() => ({
+    get current(): HTMLElement | null {
+      const opener = showOpener.current;
+      // Safari does not focus a pressed button, so the capture can be the body: that is no opener.
+      return opener && opener !== document.body && opener.isConnected ? opener : addRef.current;
+    },
+  }));
 
   const listed = useRef(new Set<string>());
   useEffect(() => {
@@ -99,12 +130,14 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
     const out = await createInviteAction().catch(() => null);
     makingNow.current = false;
     setMaking(false);
+    if (out?.ok) showOpener.current = null;
     if (out?.ok) setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listed.current) });
     else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
     else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
   }
 
   function showLink(link: { token: string; createdAt: Date; expiresAt: Date }) {
+    showOpener.current = document.activeElement as HTMLElement | null;
     setShown({ token: link.token, url: linkUrl(link.token), expiresAt: link.expiresAt, friendsBefore: new Set(listed.current) });
   }
 
@@ -197,7 +230,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
               <button
                 type="button"
                 onClick={() => showLink(soonest)}
-                aria-label={socialCopy.invites.showAria(madeWhen(soonest.createdAt, nowDate))}
+                aria-label={socialCopy.invites.showAria(madeWhen(soonest.createdAt, nowDate, timeZone))}
                 className="-my-[14px] min-h-[44px] cursor-pointer border-0 bg-transparent px-[8px] font-sans text-[12.5px] font-medium text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] min-[1180px]:my-0 min-[1180px]:min-h-0 min-[1180px]:px-[2px]"
               >
                 {socialCopy.invites.show}
@@ -224,7 +257,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, c
       </button>
 
       {shown ? (
-        <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={nowDate} timeZone={undefined} onClose={() => setShown(null)} returnFocusRef={addRef} />
+        <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={nowDate} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} />
       ) : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>

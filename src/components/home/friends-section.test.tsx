@@ -1,8 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../app/friends/actions", () => ({ createInviteAction: vi.fn() }));
+vi.mock("../social/add-friend-dialog", () => ({
+  AddFriendDialog: ({ onClose, returnFocusRef }: { onClose: () => void; returnFocusRef: { current: HTMLElement | null } }) => (
+    <div role="dialog"><button type="button" onClick={() => { onClose(); returnFocusRef.current?.focus(); }}>close</button></div>
+  ),
+}));
 vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
 
 import { socialCopy } from "../../lib/copy/social";
@@ -93,6 +98,30 @@ describe("FriendsSection", () => {
     render(<FriendsSection {...props({ links: [{ token: "a", createdAt: new Date(NOW), expiresAt: inDays(2) }, { token: "b", createdAt: new Date(NOW), expiresAt: inDays(5) }] })} />);
     expect(screen.getByText(socialCopy.home.links(2))).toBeTruthy();
     expect(screen.getByRole("link", { name: /See them/ }).getAttribute("href")).toBe("/friends");
+  });
+
+  it("moves its clock on while mounted, so a link crossing into its last day turns to the warning ink", () => {
+    vi.useFakeTimers({ now: Date.parse(NOW) });
+    try {
+      // One day and thirty seconds left at the server's draw: not yet under a day.
+      const at = new Date(Date.parse(NOW) + 86_400_000 + 30_000);
+      render(<FriendsSection {...props({ links: [{ token: "t1", createdAt: new Date(NOW), expiresAt: at }] })} />);
+      const line = () => screen.getByText(socialCopy.home.links(1)).closest("p")!;
+      expect(line().className).toContain("--fg-muted");
+      act(() => { vi.advanceTimersByTime(60_000); });
+      expect(line().className).toContain("--warning");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("returns focus to Show when the dialog Show opened closes", () => {
+    render(<FriendsSection {...props({ links: [{ token: "t1", createdAt: new Date(NOW), expiresAt: inDays(6) }] })} />);
+    const show = screen.getByRole("button", { name: /^Show the link made / });
+    show.focus();
+    fireEvent.click(show);
+    fireEvent.click(screen.getByRole("button", { name: "close" }));
+    expect(document.activeElement).toBe(show);
   });
 
   it("ignores a link that has already expired", () => {

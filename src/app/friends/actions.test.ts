@@ -12,6 +12,8 @@ const m = vi.hoisted(() => ({
   setDisplayName: vi.fn(),
   setCommander: vi.fn(),
   createInvite: vi.fn(),
+  ensureProfile: vi.fn(),
+  currentUser: vi.fn(),
   revokeInvite: vi.fn(),
   redeemInvite: vi.fn(),
   spendAlreadyFriendsInvite: vi.fn(),
@@ -33,8 +35,9 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitch
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
+vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/social/friends", () => ({
-  setDisplayName: m.setDisplayName, createInvite: m.createInvite, revokeInvite: m.revokeInvite,
+  setDisplayName: m.setDisplayName, createInvite: m.createInvite, ensureProfile: m.ensureProfile, revokeInvite: m.revokeInvite,
   redeemInvite: m.redeemInvite, declineInvite: m.declineInvite, readInvite: m.readInvite, unfriend: m.unfriend,
   spendAlreadyFriendsInvite: m.spendAlreadyFriendsInvite,
 }));
@@ -147,6 +150,14 @@ describe("friend links", () => {
     expect(await actions.createInviteAction()).toEqual({
       ok: true, token: TOKEN, url: `https://staging.the-99.dev/friend/${TOKEN}`, expiresAt,
     });
+  });
+
+  it("makes the inviter's profile before the link, so a link made from Home before /friends is redeemable", async () => {
+    m.currentUser.mockResolvedValue({ firstName: "Hugh" });
+    m.createInvite.mockResolvedValue({ ok: true, token: TOKEN, expiresAt: new Date("2026-10-22T00:00:00Z") });
+    await actions.createInviteAction();
+    expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Hugh");
+    expect(m.ensureProfile.mock.invocationCallOrder[0]).toBeLessThan(m.createInvite.mock.invocationCallOrder[0]);
   });
 
   it("makes no link when the origin cannot be read", async () => {
