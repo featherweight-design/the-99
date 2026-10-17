@@ -18,8 +18,9 @@ export type PhotoState =
   | { kind: "sure"; guess: ScanGuess; guesses: ScanGuess[] }
   | { kind: "notSure"; guesses: ScanGuess[] }
   | { kind: "added"; guess: ScanGuess }
-  /** No card found, a file the browser cannot open (HEIC in Chrome), or a lookup that never answered. */
-  | { kind: "failed" };
+  /** No card found, a file the browser cannot open (HEIC in Chrome), or a lookup that never answered; `notReady` when
+   * the server has no scan index yet, so the photo was never checked rather than holding no card. */
+  | { kind: "failed"; notReady?: true };
 
 /** One photo's row: its thumbnail (an object URL, kept for the life of the list) and what it became. */
 export type PhotoRow = { id: number; thumb: string; state: PhotoState };
@@ -116,8 +117,9 @@ export function usePhotoReader(
     });
     if (signal.aborted) return { kind: "failed" };
     if (r.kind !== "match") {
-      onProblemRef.current(r.kind === "refused" && r.reason === "notReady" ? "notReady" : "photoFailed");
-      return { kind: "failed" };
+      const notReady = r.kind === "refused" && r.reason === "notReady";
+      onProblemRef.current(notReady ? "notReady" : "photoFailed");
+      return notReady ? { kind: "failed", notReady: true } : { kind: "failed" };
     }
     const guesses = r.guesses.map((g) => ({ oracleId: g.oracleId, name: g.name, typeLine: g.typeLine, imageUri: g.imageUri }));
     if (guesses.length === 0) return { kind: "failed" };

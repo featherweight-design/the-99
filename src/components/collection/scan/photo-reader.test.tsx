@@ -60,6 +60,16 @@ describe("usePhotoReader", () => {
     expect(d.readFrame).toHaveBeenCalledTimes(1);
   });
 
+  it("marks a photo the server had no index to check as not ready, with no retry", async () => {
+    const onProblem = vi.fn();
+    const { d } = deps({ fetch: vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ error: "no-index" }) }) as unknown as Response) });
+    const { result } = renderHook(() => usePhotoReader(d, vi.fn(async () => true), "fast", onProblem));
+    act(() => result.current.choose([file("one.jpg")]));
+    await waitFor(() => expect(result.current.rows[0].state).toEqual({ kind: "failed", notReady: true }));
+    expect(d.fetch).toHaveBeenCalledTimes(1);
+    expect(onProblem).toHaveBeenCalledWith("notReady");
+  });
+
   it("reads a lookup that never answered as no card, and says so once per photo", async () => {
     const onProblem = vi.fn();
     const { d } = deps({ fetch: vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }) as unknown as Response) });

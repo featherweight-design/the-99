@@ -126,7 +126,7 @@ function PhotoItem({ row, index, total, phone, busy, onPick }: { row: PhotoRow; 
       body = <span className={SUB}>{copy.photos.photoOf(index, total)}</span>;
       break;
     case "failed":
-      body = <span className="min-w-0 flex-1 text-[13px] text-[color:var(--fg-muted)]">{copy.photos.noCard}</span>;
+      body = <span className="min-w-0 flex-1 text-[13px] text-[color:var(--fg-muted)]">{s.notReady ? copy.notReady : copy.photos.noCard}</span>;
       break;
     case "notSure":
       body = (
