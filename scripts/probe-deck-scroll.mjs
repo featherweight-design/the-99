@@ -1,139 +1,168 @@
-// #348: the deck detail screen must have exactly one scrolling context — the
-// document. Walks the rendered tree at several viewport heights and reports any
-// element that both overflows and is allowed to scroll, plus where the sticky
-// quick-add dock actually sits relative to the viewport bottom.
+// Opening a deck lands at the top of its page (Hugh, 2026-10-17: once, on Android in production, Deck Details landed at
+// the bottom, near the tokens, after a scroll to the bottom of /decks). PARKED as can't-reproduce: every path below landed at
+// y=0 in Chromium and WebKit, at full speed and under Slow 4G with a 4x CPU throttle. Kept so the next report can be run
+// against at once.
 //
-// Run by hand: `node scripts/probe-deck-scroll.mjs` (optionally PROBE_DECK=<id>).
-// Not part of `pnpm test`: it needs a browser and a signed-in session.
-import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
-import { chromium } from "playwright";
+// On deployed staging, READ-ONLY: it signs in with a minted Clerk ticket (as `measure:load` does, which writes nothing),
+// loads each start page at a phone width, scrolls it to the bottom, presses a deck and samples `scrollY` every 100ms until
+// the page settles; then goes Back and opens a different deck from the restored position. It also opens the deck a phone
+// prefetches in full (/decks' first tile, Home's first resume deck), which commits with no loading screen: that is the path
+// on which Next's own scroll-to-top is the only thing moving the page. Exits 1 if any landing settles anywhere but 0.
+//
+//   pnpm probe:deck-scroll                     # 390x844, Chromium and WebKit, /decks and Home
+//   PROBE_ENGINES=chromium PROBE_STARTS="/decks?folder=<id>" PROBE_SIZE=412x915 pnpm probe:deck-scroll
+//   PROBE_SLOW=1 pnpm probe:deck-scroll        # Chromium only: Slow 4G (562.5ms, 180,000 bytes/s) and a 4x CPU throttle
+import { chromium, webkit } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { lookupUserId, mintSignInToken } from "./lib/measure-deployed.mjs";
+import { onPage } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
-  "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
-  "CLERK_SECRET_KEY",
-]);
-const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+const BASE = "https://staging.the-99.dev";
+const env = requireEnv(["THE_99_CLERK_SECRET_KEY_STAGING", "THE_99_E2E_AUDIT_USER_EMAIL"]);
+const [W, H] = (process.env.PROBE_SIZE ?? "390x844").split("x").map(Number);
+const ENGINES = (process.env.PROBE_ENGINES ?? "chromium,webkit").split(",");
+const STARTS = (process.env.PROBE_STARTS ?? "/decks,/").split(",");
+const SLOW = process.env.PROBE_SLOW === "1";
+const DECK = /^\/decks\/[0-9a-f-]{36}$/;
+const DECK_LINKS = 'a[href^="/decks/"]';
 
-const VIEWPORTS = [
-  { label: "iPhone 13 · 390x844", width: 390, height: 844 },
-  { label: "desktop short · 1300x620", width: 1300, height: 620 },
-  { label: "desktop · 1300x900", width: 1300, height: 900 },
-  { label: "desktop tall · 1440x1400", width: 1440, height: 1400 },
-];
-
-async function signIn(page) {
-  await setupClerkTestingToken({ page });
+async function signIn(browser) {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  const userId = await lookupUserId(env.THE_99_CLERK_SECRET_KEY_STAGING, env.THE_99_E2E_AUDIT_USER_EMAIL);
+  const ticket = await mintSignInToken(env.THE_99_CLERK_SECRET_KEY_STAGING, userId);
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
-  const failure = await page.evaluate(
-    async ([email, password]) => {
-      try {
-        const signIn = window.Clerk.client.signIn;
-        let attempt = email.includes("+clerk_test")
-          ? await signIn.create({ identifier: email })
-          : await signIn.create({ identifier: email, password });
-        if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
-          const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
-          await signIn.prepareFirstFactor({
-            strategy: "email_code",
-            emailAddressId: factor?.emailAddressId,
-          });
-          attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
-        }
-        if (attempt.status !== "complete") return `sign-in status: ${attempt.status}`;
-        await window.Clerk.setActive({ session: attempt.createdSessionId });
-        return null;
-      } catch (error) {
-        return error?.errors?.[0]?.longMessage ?? String(error);
-      }
-    },
-    [EMAIL, PASSWORD],
-  );
-  if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 60_000 });
+  const got = await page.evaluate(async (t) => {
+    const a = await window.Clerk.client.signIn.create({ strategy: "ticket", ticket: t });
+    await window.Clerk.setActive({ session: a.createdSessionId });
+    return window.Clerk.user.id;
+  }, ticket);
+  if (got !== userId) throw new Error("signed in as the wrong account");
+  const state = await ctx.storageState();
+  await ctx.close();
+  return state;
 }
 
-async function inspect(page) {
-  return page.evaluate(() => {
-    const overflowing = [];
-    for (const node of document.querySelectorAll("body *")) {
-      const s = getComputedStyle(node);
-      const scrolls = (axis) => axis === "auto" || axis === "scroll";
-      if (!scrolls(s.overflowY) && !scrolls(s.overflowX)) continue;
-      const dy = node.scrollHeight - node.clientHeight;
-      const dx = node.scrollWidth - node.clientWidth;
-      if (dy <= 1 && dx <= 1) continue;
-      if (node.getClientRects().length === 0) continue;
-      const cls = (node.className ?? "").toString().slice(0, 90);
-      overflowing.push({
-        el: `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ""}.${cls}`,
-        overflowY: s.overflowY,
-        overflowX: s.overflowX,
-        dy,
-        dx,
-      });
-    }
-    const dock = document.querySelector('[data-testid="quick-add-dock"]');
-    const r = dock?.getBoundingClientRect();
-    return {
-      overflowing,
-      docScroll: document.documentElement.scrollHeight - document.documentElement.clientHeight,
-      dock: r
-        ? {
-            bottom: Math.round(r.bottom),
-            viewportH: window.innerHeight,
-            gapFromBottom: Math.round(window.innerHeight - r.bottom),
-            position: getComputedStyle(dock).position,
-          }
-        : null,
-    };
-  });
-}
-
-await clerkSetup();
-const browser = await chromium.launch();
-
-let deckId = process.env.PROBE_DECK;
-if (!deckId) {
-  const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
-  const page = await context.newPage();
-  await signIn(page);
-  await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
-  deckId = await page.evaluate(() => {
-    // `/decks/new` and `/decks/import` are routes, not decks — match a UUID.
-    const uuid = /^\/decks\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-    const a = [...document.querySelectorAll('a[href^="/decks/"]')].find((n) =>
-      uuid.test(n.getAttribute("href") ?? ""),
-    );
-    return a?.getAttribute("href")?.split("/")[2] ?? null;
-  });
-  await context.close();
-  if (!deckId) throw new Error("No deck found on /decks — set PROBE_DECK.");
-}
-console.log(`deck: ${deckId}`);
-
-for (const { label, width, height } of VIEWPORTS) {
-  const context = await browser.newContext({ viewport: { width, height } });
-  const page = await context.newPage();
-  await signIn(page);
-  await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(900);
-  const seen = await inspect(page);
-  console.log(`\n########## ${label}`);
-  console.log(`  document scroll overflow: ${seen.docScroll}px`);
-  console.log(
-    `  dock: ${seen.dock ? `${seen.dock.position}, ${seen.dock.gapFromBottom}px above viewport bottom` : "ABSENT"}`,
-  );
-  if (seen.overflowing.length === 0) {
-    console.log("  nested scrollports: none");
-  } else {
-    for (const o of seen.overflowing) {
-      console.log(`  NESTED SCROLLPORT y=${o.overflowY} x=${o.overflowX} dy=${o.dy} dx=${o.dx}`);
-      console.log(`    ${o.el}`);
-    }
+/** Deck hrefs in page content, in document order, and whether each is visible now. */
+async function deckLinks(page) {
+  const links = onPage(page, DECK_LINKS);
+  const out = [];
+  for (let i = 0; i < (await links.count()); i++) {
+    const l = links.nth(i);
+    const href = await l.getAttribute("href");
+    if (!DECK.test(href ?? "")) continue;
+    // In the viewport, not merely rendered: Playwright's isVisible() is true for a link scrolled off-screen, and tap()
+    // would then scroll it into view first, moving the position the press is made from.
+    const box = (await l.isVisible()) ? await l.boundingBox() : null;
+    const vh = await page.evaluate(() => window.innerHeight);
+    out.push({ href, link: l, visible: box !== null && box.y + box.height > 0 && box.y < vh });
   }
-  await context.close();
+  return out;
 }
 
-await browser.close();
+/** A deck page that has drawn its content: a deck's path, no loading screen, and a page taller than two screens. */
+const DECK_READY = () =>
+  /^\/decks\/[0-9a-f-]{36}$/.test(location.pathname) &&
+  document.querySelector("[data-loading-screen]") === null &&
+  document.documentElement.scrollHeight > 2 * window.innerHeight;
+/** A list page back with its decks drawn. */
+const LIST_READY = () =>
+  !/^\/decks\/[0-9a-f-]{36}$/.test(location.pathname) &&
+  [...document.querySelectorAll('main a[href^="/decks/"]')].some((a) => /^\/decks\/[0-9a-f-]{36}$/.test(a.getAttribute("href")));
+
+/**
+ * Runs `act`, waits for `ready` (or throws), then samples scrollY until the page has held still for 3s, and returns the
+ * trace and the landing. A loading screen can already sit at the destination's URL at y=0, so stillness alone proves
+ * nothing until the content it is waiting for has arrived.
+ */
+async function landing(page, act, ready) {
+  await page.evaluate(() => {
+    // One sampler per run: a run's timer stops once a later run replaces it, so a trace never mixes two clocks.
+    const run = (window.__scrollRun = (window.__scrollRun ?? 0) + 1);
+    const samples = (window.__scroll = []);
+    const t0 = performance.now();
+    const tick = () => {
+      if (window.__scrollRun !== run) return;
+      samples.push([Math.round(performance.now() - t0), Math.round(window.scrollY), location.pathname, document.documentElement.scrollHeight]);
+      if (samples.length < 400) setTimeout(tick, 100);
+    };
+    tick();
+  });
+  await act();
+  await page.waitForFunction(ready, null, { timeout: 90_000 });
+  let last = "", still = 0;
+  for (let i = 0; i < 400 && still < 30; i++) {
+    await page.waitForTimeout(100);
+    const now = await page.evaluate(() => `${window.scrollY} ${document.documentElement.scrollHeight} ${location.pathname}`).catch(() => "");
+    still = now === last ? still + 1 : 0;
+    last = now;
+  }
+  if (still < 30) throw new Error("the page never held still for 3s");
+  const trace = await page.evaluate(() => window.__scroll).catch(() => []);
+  const end = await page.evaluate(() => ({ y: Math.round(window.scrollY), h: document.documentElement.scrollHeight, path: location.pathname }));
+  return { trace, end };
+}
+
+const failures = [];
+let checked = 0;
+const browserTypes = { chromium, webkit };
+for (const name of ENGINES) {
+  if (SLOW && name !== "chromium") continue;
+  const browser = await browserTypes[name].launch();
+  const state = await signIn(browser);
+  for (const start of STARTS) {
+    const ctx = await browser.newContext({ storageState: state, viewport: { width: W, height: H }, hasTouch: true, isMobile: name === "chromium" });
+    const page = await ctx.newPage();
+    if (SLOW) {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 562.5, downloadThroughput: 180_000, uploadThroughput: 84_375 });
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    }
+    await page.goto(`${BASE}${start}`, { waitUntil: "load", timeout: 120_000 });
+    await page.waitForFunction((sel) => [...document.querySelectorAll(`main ${sel}`)].some((a) => /^\/decks\/[0-9a-f-]{36}$/.test(a.getAttribute("href"))), DECK_LINKS, { timeout: 90_000 });
+    // Idle long enough for a phone's in-view full prefetch of the first deck to finish.
+    await page.waitForTimeout(8_000);
+    const first = (await deckLinks(page))[0].href;
+    const cases = [
+      ["the deck at the bottom", async () => (await deckLinks(page)).filter((d) => d.visible).at(-1)],
+      ["Back, then another deck", null],
+      ["the fully prefetched deck", async () => (await deckLinks(page)).find((d) => d.href === first)],
+    ];
+    let opened = null;
+    for (const [label, pick] of cases) {
+      if (pick === null) {
+        await landing(page, () => page.goBack(), LIST_READY);
+      } else {
+        await page.goto(`${BASE}${start}`, { waitUntil: "load", timeout: 120_000 }).catch(() => {});
+        await page.waitForTimeout(label.includes("prefetched") ? 8_000 : 2_000);
+      }
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForTimeout(800);
+      const from = await page.evaluate(() => Math.round(window.scrollY));
+      const target = pick ? await pick() : (await deckLinks(page)).filter((d) => d.visible && d.href !== opened).at(-1);
+      // A case with nothing to press is a failure: a run that skipped a path has not verified it.
+      if (!target) { console.log(`FAIL ${name} ${start} · ${label}: no deck to press`); failures.push(`${name} ${start} · ${label} (no deck to press)`); continue; }
+      // A link scrolled out of view is pressed by dispatching the click, as a tap on it would arrive.
+      const { end, trace } = await landing(page, () => (target.visible ? target.link.tap() : target.link.dispatchEvent("click")), DECK_READY);
+      opened = target.href;
+      const ok = DECK.test(end.path) && end.y === 0;
+      const steps = trace.filter((r, i) => i === 0 || r[1] !== trace[i - 1][1] || r[2] !== trace[i - 1][2]).map((r) => `${r[0]}ms y=${r[1]}`).join(", ");
+      console.log(`${ok ? "ok  " : "FAIL"} ${name} ${start} · ${label}: from y=${from}, landed y=${end.y} of ${end.h} on ${end.path} (${steps})`);
+      checked++;
+      if (!ok) failures.push(`${name} ${start} · ${label}`);
+    }
+    await ctx.close();
+  }
+  await browser.close();
+}
+// A run that checked nothing (PROBE_SLOW=1 with no Chromium among the engines, say) has verified nothing.
+if (checked === 0) {
+  console.error("no landing was checked: PROBE_SLOW runs Chromium only, so include it in PROBE_ENGINES");
+  process.exit(1);
+}
+if (failures.length) {
+  console.error(`\n${failures.length} landing(s) not at the top:\n  ${failures.join("\n  ")}`);
+  process.exit(1);
+}
+console.log("\nevery deck landed at the top");
