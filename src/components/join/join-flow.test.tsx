@@ -141,4 +141,15 @@ describe("JoinFlow", () => {
     expect(boxes[0].className).toContain("group-focus-within:shadow");
     expect(boxes[0].className).toContain("--danger");
   });
+  it("holds the code field read-only while Confirm is pending, so a retry cannot carry other digits", async () => {
+    let release: (v: unknown) => void = () => {};
+    m.confirm.mockReturnValue(new Promise((r) => { release = r; }));
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    const input = screen.getByLabelText(joinCopy.codeAria) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await waitFor(() => expect(input.readOnly).toBe(true));
+    release({ ok: true });
+    await screen.findByText(joinCopy.okTitle);
+  });
 });

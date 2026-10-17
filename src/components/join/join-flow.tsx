@@ -203,7 +203,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 ))}
               </div>
               <input
-                ref={codeRef} value={digits} inputMode="numeric" autoComplete="one-time-code" maxLength={CODE_LENGTH}
+                ref={codeRef} value={digits} readOnly={busy} inputMode="numeric" autoComplete="one-time-code" maxLength={CODE_LENGTH}
                 aria-label={copy.codeAria} aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
                 className="absolute inset-0 h-full w-full cursor-text border-0 bg-transparent text-transparent caret-transparent opacity-0 outline-none"
                 onChange={(e) => { setCode(e.target.value); setLine(null); setToast(null); }}
