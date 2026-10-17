@@ -76,7 +76,7 @@ const whoseSeat = (s: SeatDraw): string => whose(s.seat.you ? null : s.seat.disp
 /** One seat's part of a read sentence (T4 to T6): what it declared, the range it is measured from, or its bracket. */
 function seatPart(s: SeatDraw): string {
   const r = copy.read;
-  const deck = s.seat.deck?.deckName ?? "";
+  const deck = s.seat.deck?.name ?? "";
   if (!s.chip || !s.read) return "";
   if (s.chip.answered !== null && s.chip.permits.length > 1) {
     return r.seatDeclared(s.seat.you ? "You" : s.seat.displayName, BRACKET_NAMES[s.chip.answered]);
@@ -116,7 +116,7 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       out = { title: r.balanced(bracketPhrase(h.reads)), ink: null, body: r.balancedBody };
       break;
     case "one": {
-      const deck = h.seat.seat.deck?.deckName ?? "";
+      const deck = h.seat.seat.deck?.name ?? "";
       const who = whose(h.seat.seat.you ? null : h.seat.seat.displayName);
       const middle = draw.read.kind === "read" ? bracketPhrase(middleBrackets(draw.read.middle)) : "";
       const reads = readsPhrase(h.seat);
@@ -218,7 +218,7 @@ function RailFace({ seat }: { seat: SeatDraw }) {
     <span data-testid="rail-face" data-you={seat.seat.you ? "" : undefined} data-flag={kind ?? undefined} className="rounded-full" style={style}>
       <Face
         name={seat.seat.displayName}
-        commander={seat.seat.deck ? { artCropUri: seat.seat.deck.artCropUri } : null}
+        commander={seat.seat.deck ? { artCropUri: seat.seat.deck.commander.artCropUri } : null}
         size={30}
         className="rounded-full! [border:1.5px_solid_var(--bg)]!"
       />

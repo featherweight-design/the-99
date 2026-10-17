@@ -3,9 +3,17 @@
  * owner, Peter, and Max, Colin's friend and not yours), one per state T1 to T10. For the page's tests and its
  * contact sheet; the decks are the boards' own. No seat but the viewer's carries a deck id, as the loader's does not.
  */
-import type { FindingId } from "../bracket/findings";
+import { declarationAsk } from "../bracket/declaration-ask";
+import { FINDING_ORDER, type FindingId } from "../bracket/findings";
 import type { Bracket, BracketLean, CardRef, ComboRef } from "../bracket/types";
-import type { SeatReading, TableSeatDeck, TableSeatView, TableView } from "./table-view";
+import { verdictSubLine } from "../bracket/verdict-head";
+import { driversFor, inRead, seatState, seatValue, tableRead, type DriverVerdict, type SeatDeck } from "./rules";
+import type { TableSeat, TableView } from "./table-view";
+
+/** A fixture seat's reading before the loader reduces it: the verdict `driversFor` takes, its declaration, its counts. */
+type SeatReading = DriverVerdict & { declared: Bracket | null; counts: Record<FindingId, number> };
+type TableSeatDeck = SeatDeck & { deckName: string; commanderName: string; artCropUri: string | null; verdict: SeatReading | null };
+type TableSeatView = Omit<TableSeat, "deck" | "state" | "value" | "read" | "drivers"> & { deck: TableSeatDeck | null };
 
 type Counts = Record<FindingId, number>;
 const counts = (gameChangers = 0, massLandDenial = 0, extraTurns = 0, twoCardCombos = 0, tutors = 0): Counts => ({
@@ -105,16 +113,59 @@ const colin = (d: TableSeatDeck | null) => seat(2, "Colin", d, { podOwner: true 
 const peter = (d: TableSeatDeck | null) => seat(3, "Peter", d);
 const max = (d: TableSeatDeck | null) => seat(4, "Max", d, { publicId: null });
 
-const table = (seats: TableSeatView[], o: Partial<TableView> = {}): TableView => ({
-  tableId: "table-1",
-  podName: "Thursday night",
-  setBy: "Colin",
-  closesAt: new Date("2026-10-17T21:40:00Z"),
-  revision: AT,
-  viewerDeckId: VIEWER_DECK_ID,
-  seats,
-  ...o,
-});
+/**
+ * The table as `loadTable` returns it: each seat placed by the same `rules.ts` steps the loader runs (`seatState`,
+ * `seatValue`, `tableRead`, `driversFor`), and its reading reduced to the loader's shape.
+ */
+const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView => {
+  const placed = input.map((s) => {
+    const state = seatState(s.deck);
+    const verdict = s.deck?.verdict && inRead(state) ? s.deck.verdict : null;
+    return { s, state, verdict, value: verdict ? seatValue(verdict.permits, verdict.declared) : null };
+  });
+  const read = tableRead(placed.map((p) => ({ id: String(p.s.seat), value: p.value })));
+  const at = new Map(read.kind === "read" ? read.seats.map((r) => [r.id, r]) : []);
+  const seats: TableSeat[] = placed.map(({ s, state, verdict, value }) => {
+    const r = at.get(String(s.seat));
+    const d = s.deck;
+    return {
+      ...s,
+      deck: d && {
+        deckId: s.you ? VIEWER_DECK_ID : null,
+        name: d.deckName,
+        commander: { name: d.commanderName, artCropUri: d.artCropUri },
+        partner: null,
+        cards: d.built + (100 - d.size),
+        reading: verdict && {
+          permits: [...verdict.permits],
+          declared: verdict.declared,
+          ask: declarationAsk(verdict.permits, verdict.declared),
+          findings: FINDING_ORDER.map((id) => ({ id, count: verdict.counts[id] })),
+          subLine: verdictSubLine(verdict),
+          lean: null,
+          rangeReasons: [],
+        },
+      },
+      state,
+      value,
+      read: r ? { face: r.face, distance: r.distance, flag: r.flag } : null,
+      drivers: r?.flag && verdict ? driversFor(verdict, r.flag, r.face) : null,
+    };
+  });
+  return {
+    tableId: "table-1",
+    podName: "Thursday night",
+    closesAt: new Date("2026-10-17T21:40:00Z"),
+    setByYou: o.setBy === null,
+    setBy: "Colin",
+    viewerDeckId: input.find((s) => s.you)?.deck ? VIEWER_DECK_ID : null,
+    revision: AT,
+    seenAt: null,
+    read: read.kind === "read" ? { kind: "read", middle: read.middle, band: read.band } : read,
+    seats,
+    ...o,
+  };
+};
 
 /** Every state the read boards draw, by frame. */
 export const TABLES = {

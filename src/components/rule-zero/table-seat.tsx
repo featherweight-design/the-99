@@ -34,7 +34,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
   const kind = read?.flag ? flagKind(read.flag) : null;
   const name = seatName(draw);
   const why = driversSentence(draw);
-  const art = deck?.artCropUri ?? null;
+  const art = deck?.commander.artCropUri ?? null;
 
   return (
     <article
@@ -96,8 +96,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           </span>
           {deck ? (
             <>
-              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] md:text-[14px]">{deck.deckName}</span>
-              <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.commanderName}</span>
+              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] md:text-[14px]">{deck.name}</span>
+              <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.commander.name}</span>
             </>
           ) : state.kind === "waiting" ? (
             <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
@@ -129,14 +129,14 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           </span>
         ) : null}
 
-        {chip && deck?.verdict ? (
+        {chip && draw.counts ? (
           <span
             className={
               "col-span-3 col-start-1 row-start-3 md:col-span-1 md:col-start-3 md:justify-self-end "
               + (kind ? "md:row-start-2 md:self-start" : "md:row-span-2 md:row-start-1 md:self-center")
             }
           >
-            <SeatFacts counts={deck.verdict.counts} driving={draw.driving} />
+            <SeatFacts counts={draw.counts} driving={draw.driving} />
           </span>
         ) : null}
       </div>
