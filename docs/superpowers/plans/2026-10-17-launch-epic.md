@@ -33,7 +33,7 @@ in this repository. Read them there; the quotes below are the ones this plan rel
   content behind login."
 - `teaser-credits-and-tiers-2026-10-17.md` (welcome grant sizing). Recommended 15 credits for 30 days, about $0.85 per
   signup at most; a migration is needed (`credit_grants.source` is checked to `plan`/`pack`, and `credit_grants_pack_never_expires_check` allows `expires_at` only on `plan`); spend order free, welcome,
-  plan, pack; about 24 fully used grants reach `HARD_STOP_USD`.
+  plan, pack. Its `HARD_STOP_USD` arithmetic no longer applies: the app-wide spending limits are being removed (see D0).
 - `hugh-todos.md`, sections "Terms decisions" and "Welcome credits + supporter tier", and the privacy page line.
 
 ## Locked decisions
@@ -44,11 +44,13 @@ in this repository. Read them there; the quotes below are the ones this plan rel
 | L2 | Invite-only stays for a while. A free, read-only PUBLIC surface is planned later in this epic to answer the FCP's free-access and "email registration" point; its scope is researched in Phase F (card pages, commander pages, shared-deck pages; what peers show logged out). | FCP brief item 3; precedent brief "no peer gates card content" |
 | L3 | No per-crop artist credit (peers crop art without one). The card-art blur and wash are treated as covered (DeckCheck blurs art washes; the card itself stays visible). A Design alternative is optional and adopted only if it matches today's intent. | FCP brief item 4; precedent brief |
 | L4 | The FCP notice appears on every page, signed in or out, but SUBTLY: small muted footer text, Scryfall style, plus /about and the Terms. Text: the FCP template naming "The 99", then "Card images and mana symbols are copyright Wizards of the Coast, LLC. Card data and images from Scryfall; prices from Mana Pool. Not affiliated with Wizards of the Coast, Scryfall or Mana Pool." | FCP rule 2; precedent brief §recommendation |
-| L5 | Welcome credits for new sign-ups (recommended 15 credits, 3 runs of each smart tool, 30-day expiry; Hugh confirms), plus an onboarding "Where credits work" section. Ships BEFORE more users onboard, after payments U2a, and only once `BUDGET_USD`/`HARD_STOP_USD` are raised. | teaser brief §2; `src/lib/model/spend-rule.ts` |
-| L6 | Pricing copy sells AI runs, states that every card, deck and collection view stays free, never says "unlock", and leads with the pack. | FCP brief item 6; precedent brief |
+| L5 | Welcome credits for new sign-ups: 15 credits (3 runs of each smart tool), expiring after 30 days, plus an onboarding "Where credits work" section. Ships BEFORE more users onboard, after payments U2a. | teaser brief §2 |
+| L6 | Pricing copy sells AI runs, states that every card, deck and collection view stays free, never says "unlock", and leads with the pack. Both the pack and the monthly plan ship at launch; the plan sits behind the pack on `/credits` and is worded as a credit bundle that renews, never a membership. | FCP brief item 6; precedent brief |
 | L7 | A privacy page and a terms page (none exist): receipts and refunds via support@the-99.dev, the admin PII line ("admins can see account emails for support; views are logged"), the FCP notice, and data deletion (the account purge exists). | hugh-todos privacy line |
 | L8 | Admin PII masking is a launch prerequisite (its own plan, in progress). | PII masking plan |
 | L9 | The supporter tier is post-launch and out of this epic. | teaser brief §4 |
+| L10 | The app-wide spending limits (`BUDGET_USD`, `HARD_STOP_USD`) are removed entirely. The Anthropic workspace limits carry spend: $150 a month for The 99's workspace, $250 for the org. The removal ships as three PRs by another lane: A (server and `/admin`), B (UI readers and copy), C (the type). | Hugh, 2026-10-17 |
+| L11 | Users must be 18 or older (Hugh answered No to Anthropic's under-18 question). | Hugh, 2026-10-17 |
 
 ## Phases and PRs
 
@@ -63,15 +65,16 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | A2 | The notice on /about; an audit that mana and guild symbols stay out of the logo, favicon, manifest icons and marketing (FCP rule 4) | A1 | No (existing About layout) | Yes | S | TBD |
 | A3 | Record L3 as settled (no artist line; washes stay). Optional: a Design exploration of an unblurred wash, adopted only if it keeps today's intent | none | Optional | No | S (doc) | TBD |
 | **B. Privacy and terms** | | | | | | |
-| B1 | Public `/privacy` and `/terms` (added to `isPublic` in `src/proxy.ts`): receipts and refunds via support@the-99.dev, the admin PII line, the FCP notice, data deletion (`purgeAccount`), the AI vendor named. Linked from the footer, `/credits` and `/sign-up` | A0, A1; E3 for the "views are logged" sentence | Built from A0 | Yes, and `prose-pass` for the long text | M | TBD |
+| B1 | Public `/privacy` and `/terms` (added to `isPublic` in `src/proxy.ts`): receipts and refunds via support@the-99.dev, the admin PII line, the FCP notice, data deletion (`purgeAccount`), the AI vendor named, and that users must be 18 or older (L11). Linked from the footer, `/credits` and `/sign-up` | A0, A1; E3 for the "views are logged" sentence | Built from A0 | Yes, and `prose-pass` for the long text | M | TBD |
 | **C. Pricing copy** | | | | | | |
-| C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access" | U1 (#2006, merged) | No (copy only) | Yes | S | TBD |
+| C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access"; the monthly plan reads as a credit bundle that renews, never a membership | U1 (#2006, merged) | No (copy only) | Yes | S | TBD |
+| U3 | The monthly plan, per the buying-credits plan, in the launch and drawn behind the pack on `/credits` (L6) | per that plan; C1 for its wording | per that plan | Yes | per that plan | TBD |
 | **D. Welcome credits** | | | | | | |
-| D0 | Raise `BUDGET_USD` and `HARD_STOP_USD` in `spend-rule.ts` to the number Hugh sets (open decision 1) | Hugh's number | No | No | S | TBD |
-| D1 | Migration: `credit_grants.source = 'welcome'` in `credit_grants_source_check`, `credit_grants_pack_never_expires_check` rewritten so `expires_at` is required on `welcome` (today it allows `expires_at` only on `plan`), a partial unique index (one per user ever); the grant written on `user.created` (the webhook route exists) and on first signed-in load, idempotent; spend order free, welcome, plan, pack; the 20-a-day paid limit applies; behind a new switch; a ledger probe on a scratch branch | U2a, D0 | No | No | M | TBD |
+| D0 | REPLACED (2026-10-17): no budget step. The app-wide limits are removed instead (L10), in three PRs owned by another lane. Welcome credits do not wait on them | none | No | No | none | other lane |
+| D1 | Migration: `credit_grants.source = 'welcome'` in `credit_grants_source_check`, `credit_grants_pack_never_expires_check` rewritten so `expires_at` is required on `welcome` (today it allows `expires_at` only on `plan`), a partial unique index (one per user ever); the grant written on `user.created` (the webhook route exists) and on first signed-in load, idempotent; spend order free, welcome, plan, pack; the 20-a-day paid limit applies; behind a new switch; a ledger probe on a scratch branch | U2a | No | No | M | TBD |
 | D2 | Onboarding "Where credits work": the five tools, one line each, a Try it link per tool (`?tool=` landings), and a live line ("15 welcome credits, expire Nov 16. Each run uses 1."); a Moment pointing to it | D1, U2b, a Design handoff | Yes | Yes | M | TBD |
 | **E. Admin PII masking** (its own plan) | | | | | | |
-| E1 to E4 | PII masking PR 1 (masked at the source), PR 2 (surfaces), PR 3 (Show, the reveal log), PR 4 (exact-email lookup) | per that plan | Handoff #2003 | per that plan | per that plan | TBD |
+| E1 to E4 | PII masking PR 1 (masked at the source), PR 2 (surfaces, including masked names in the `/admin` Costs per-account table, per the R3 design table), PR 3 (Show, the reveal log), PR 4 (exact-email lookup) | per that plan | Handoff #2003 | per that plan | per that plan | TBD |
 | **F. Public read-only surface** | | | | | | |
 | F1 | Research: what DeckCheck, EDHREC, Archidekt, Moxfield and Scryfall show logged out; which of card pages, commander pages and shared-deck pages to open; cost, caching and abuse notes; a recommendation for Hugh | none | No | No | S (doc) | TBD |
 | F2 | Design brief and handoff for the chosen scope | F1, Hugh's scope ruling | Yes | Yes | doc | TBD |
@@ -79,31 +82,37 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | **G. Close-out** | | | | | | |
 | G1 | About entries for the features Hugh names (welcome credits, the public surface), one `ABOUT_VERSION` bump at the end of the launch, per the 2026-09-21 batching ruling | all feature PRs | Yes (About artboards) | Yes | S | TBD |
 
+Admin costs, a note rather than a phase: `/admin` Costs will read Anthropic's Usage and Cost API per workspace through
+`ANTHROPIC_ADMIN_KEY` (set on both Vercel projects), replacing the hand-typed Elsewhere figure.
+
 ## Open decisions for Hugh
 
-1. **The budget and the hard stop.** Today `BUDGET_USD = 10` and `HARD_STOP_USD = 20` a month; about 24 fully used
-   welcome grants reach the stop, which pauses every model call in the app until the 1st. The brief suggests budgeting
-   about $1 per expected signup on top of current use, inside the shared $100 Anthropic account cap. D0 waits on the
-   number.
-2. **The welcome grant.** 15 credits and 30 days is the recommendation; confirm both or name others. Also confirm the
-   brief's "convert the leftover on purchase" idea is out of scope for this epic (listed below as not in this plan).
-3. **The public surface's scope.** Decided after F1 reports: which routes open, and whether sign-up opens with them.
-4. **Plan vs pack emphasis.** L6 leads with the pack. Decide whether the monthly plan (U3) ships at launch at all; the
-   FCP brief reads a plan as closer to the barred "subscriptions" than a one-off pack.
+1. **The public surface's scope.** Decided after F1 reports: which routes open, and whether sign-up opens with them.
+
+## Decided
+
+- **The budget and the hard stop** (2026-10-17). Removed entirely rather than raised (L10); D0 is replaced by that
+  removal.
+- **The welcome grant** (2026-10-17). 15 credits, expiring after 30 days. Converting the leftover on purchase stays out
+  of scope (below).
+- **Plan vs pack** (2026-10-17). Both ship at launch. The pack leads on `/credits`; the monthly plan (U3) sits behind it,
+  worded as a credit bundle that renews, never a membership (L6).
+- **Age** (2026-10-17). Users must be 18 or older, stated in `/terms` (L11).
 
 ## Order
 
 **Before `PAYMENTS_ENABLED` goes on in production:**
 
 1. U1 and U2a merged (the credits plan already gates production on U2a).
-2. A1 (the notice is on every page) and C1 (pricing copy).
+2. A1 (the notice is on every page) and C1 (pricing copy). U3 (the monthly plan) is in the launch, after C1 and
+   behind the pack.
 3. E1 to E3 (masking and the reveal log), then B1, whose privacy page states that reveals are logged. A privacy
    page must not claim a log that does not exist yet.
 4. B1 merged and linked from `/credits`, so receipts and refunds have a stated route.
 
 **Before invites widen (any new batch of invites beyond the current players):**
 
-1. D0, D1 and D2 (welcome credits and where they work), with U2b merged so the credit line can show a welcome lot.
+1. D1 and D2 (welcome credits and where they work), with U2b merged so the credit line can show a welcome lot.
 2. Everything in the payments list above, since a new player can reach `/credits` on day one.
 
 **Before invite-only is lifted or any public launch:** F1 to F3 and Hugh's scope ruling, then G1.
@@ -115,6 +124,7 @@ A2, A3 and F1 have no dependencies and can run in parallel with the rest.
 - The supporter tier (L9; revisit at about 10 plan subscribers).
 - Invite credits for the sender, the leftover-conversion on purchase, and the day-23 reminder (teaser brief §3). Each is
   a candidate follow-up once welcome credits have run for a month.
+- Removing the app-wide spending limits (L10): three PRs owned by another lane.
 - Contacting Wizards or Scryfall (L1). If a public launch ever outgrows the peer pattern, revisit.
 
 ## Feature-acceptance close-out
