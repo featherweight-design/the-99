@@ -9,12 +9,11 @@
 import { cookies } from "next/headers";
 import { atFloor } from "../../lib/invites/floor";
 import { claimInvite, confirmCode, handOver, senderOfToken, type ClaimResult, type ConfirmResult, type HandOverResult } from "../../lib/invites/claim";
-import { HOLD_MS, joinPath } from "../../lib/invites/rules";
+import { CLAIM_COOKIE, claimCookieOptions } from "../../lib/invites/claim-cookie";
 import { observeHit } from "../../lib/rate/observe";
 import { socialInvitesEnabled } from "../../lib/social/flag";
 import { resolveSwitchEnv } from "../../lib/switches/snapshot";
 
-const COOKIE = "invite_claim";
 
 /** The token's sender when their switch is on; null when it is off or the token is nobody's. */
 async function liveSender(token: unknown): Promise<string | null> {
@@ -36,16 +35,9 @@ export async function claimInviteAction(token: unknown, email: unknown): Promise
   await observeHit(sender, "invite-claim");
   const jar = await cookies();
   // The same floor as the email path, whatever the address, so the answer's speed tells nothing about it.
-  const result = await atFloor(() => claimInvite(token, email, jar.get(COOKIE)?.value ?? null));
+  const result = await atFloor(() => claimInvite(token, email, jar.get(CLAIM_COOKIE)?.value ?? null));
   if (result.ok) {
-    jar.set(COOKIE, result.claimSecret, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      // This invite's own page, and the 7 days its claim holds: never sent anywhere else.
-      path: joinPath(token),
-      maxAge: Math.floor(HOLD_MS / 1000),
-    });
+    jar.set(CLAIM_COOKIE, result.claimSecret, claimCookieOptions(token));
     // The secret stays in the cookie: the page is never handed it.
     return { ok: true, mailed: result.mailed };
   }
@@ -58,12 +50,12 @@ export async function confirmCodeAction(token: unknown, code: unknown): Promise<
   if (typeof code !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
   await observeHit(sender, "invite-code");
   const jar = await cookies();
-  return confirmCode(token, code, jar.get(COOKIE)?.value ?? null);
+  return confirmCode(token, code, jar.get(CLAIM_COOKIE)?.value ?? null);
 }
 
 export async function handOverAction(token: unknown): Promise<HandOverResult> {
   const sender = await liveSender(token);
   if (!sender || typeof token !== "string") return ENDED;
   const jar = await cookies();
-  return handOver(token, jar.get(COOKIE)?.value ?? null);
+  return handOver(token, jar.get(CLAIM_COOKIE)?.value ?? null);
 }

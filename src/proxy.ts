@@ -16,6 +16,8 @@ import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib
 import { resolveSwitchEnv, switchSnapshotState } from "./lib/switches/snapshot";
 import { SWITCHES_HEADER } from "./lib/switches/request";
 import { switchBits } from "./lib/switches/resolve";
+import { CLAIM_COOKIE, claimCookieOptions, mintClaimSecret } from "./lib/invites/claim-cookie";
+import { isQrToken } from "./lib/invites/rules";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
@@ -87,6 +89,15 @@ export default clerkMiddleware(async (auth, req) => {
   // the legacy gate left is still corrected if the reader returns to it.
   // Any navigation the gate would handle (a document load or a client transition, never a
   // prefetch), since a reader sent here by a redirect arrives either way.
+  // A newcomer's browser is handed its claim secret when it first loads the invite page, so a first Send code whose
+  // response never arrives still leaves the cookie behind; `claimInvite` binds the presented secret.
+  const withClaimCookie = (response: NextResponse): NextResponse => {
+    const token = path.startsWith("/join/") ? path.slice("/join/".length) : "";
+    if (req.method === "GET" && isQrToken(token) && !req.cookies.get(CLAIM_COOKIE)) {
+      response.cookies.set(CLAIM_COOKIE, mintClaimSecret(), claimCookieOptions(token));
+    }
+    return response;
+  };
   const rekeyLegacy = (response: NextResponse): NextResponse => {
     if (userId && path === "/about" && gateHandles(req.method, req.headers)) {
       response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
@@ -101,7 +112,7 @@ export default clerkMiddleware(async (auth, req) => {
   // the sheet) and no longer writes the `about_sheet` cookie; Home reads that cookie, never writes it, to keep a
   // browser that already showed the sheet for these entries from being told again. It never redirects either.
   if (userId && aboutSheetEnabled(env)) return rekeyLegacy(pass());
-  if (!userId) return pass();
+  if (!userId) return withClaimCookie(pass());
 
   if (path === "/about" && gateHandles(req.method, req.headers)) return rekeyLegacy(pass());
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return pass();

@@ -137,6 +137,11 @@ export function joinPath(token: string): string {
   return `/join/${token}`;
 }
 
+/** A claim secret's shape: 256 bits as base64url, 43 characters. A presented secret of any other shape is never bound. */
+export function isClaimSecretShape(raw: unknown): raw is string {
+  return typeof raw === "string" && /^[A-Za-z0-9_-]{43}$/.test(raw);
+}
+
 /** An invite QR token's shape: 256 bits as base64url, 43 characters (`qrToken`). Checked before anything is read. */
 export function isQrToken(raw: unknown): raw is string {
   return typeof raw === "string" && /^[A-Za-z0-9_-]{43}$/.test(raw);

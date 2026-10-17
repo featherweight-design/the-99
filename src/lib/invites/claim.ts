@@ -13,7 +13,7 @@ import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
 import { mailConfig, sendMail, type MailConfig, type MailResult } from "./mail";
 import { lockSenderIn } from "./send";
-import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isEmailShape, isQrToken, normalizeEmail, parseCode, resendWaitMs } from "./rules";
+import { CODE_MAX_TRIES, CODE_TTL_MS, codeState, HOLD_MS, isClaimSecretShape, isEmailShape, isQrToken, normalizeEmail, parseCode, resendWaitMs } from "./rules";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "./tokens";
 
 type Row = typeof inviteReservations.$inferSelect;
@@ -134,7 +134,7 @@ export async function claimInvite(
     if (decision.kind === "wait") return { ok: false as const, reason: "wait" as const, waitMs: decision.waitMs };
     if (decision.kind === "ended") return ENDED;
     const code = newCode();
-    const claimSecret = decision.kind === "first" ? newClaimSecret() : presentedSecret!;
+    const claimSecret = decision.kind === "first" ? (isClaimSecretShape(presentedSecret) ? presentedSecret : newClaimSecret()) : presentedSecret!;
     await tx.update(inviteReservations).set({
       state: "claimed",
       email,

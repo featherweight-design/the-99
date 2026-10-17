@@ -422,3 +422,34 @@ describe("a friend link (Social R1 E8)", () => {
     expect(protect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the invite claim cookie (signed out, /join/<token>)", () => {
+  const TOKEN = "A".repeat(43);
+  const join = (path: string, method = "GET", cookie?: string) => {
+    const req = new NextRequest(`https://the99.test${path}`, { method, headers: { accept: "text/html" } });
+    if (cookie) req.cookies.set("invite_claim", cookie);
+    return req;
+  };
+  beforeEach(() => session.mockResolvedValue({ userId: null }));
+
+  it("hands a browser with none a fresh httpOnly secret scoped to the token's page", async () => {
+    const res = await proxy(auth, join(`/join/${TOKEN}`));
+    const set = res?.headers.get("set-cookie") ?? "";
+    expect(set).toMatch(/invite_claim=[A-Za-z0-9_-]{43};/);
+    expect(set).toContain(`Path=/join/${TOKEN}`);
+    expect(set).toContain("Max-Age=604800");
+    expect(set).toContain("HttpOnly");
+    expect(set.toLowerCase()).toContain("samesite=lax");
+  });
+  it("sets a different secret per request", async () => {
+    const a = (await proxy(auth, join(`/join/${TOKEN}`)))?.headers.get("set-cookie");
+    const b = (await proxy(auth, join(`/join/${TOKEN}`)))?.headers.get("set-cookie");
+    expect(a).not.toEqual(b);
+  });
+  it("leaves a browser that has one, a POST, a malformed token and other paths alone", async () => {
+    expectPassed(await proxy(auth, join(`/join/${TOKEN}`, "GET", "x".repeat(43))));
+    expectPassed(await proxy(auth, join(`/join/${TOKEN}`, "POST")));
+    expectPassed(await proxy(auth, join("/join/short")));
+    expectPassed(await proxy(auth, join("/")));
+  });
+});
