@@ -165,7 +165,8 @@ export function TableSeat({ draw, now }: { draw: SeatDraw; /** The clock the cha
 
       <SeatMore draw={draw} why={why} />
       {draw.changed ? (
-        <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px]">
+        // The phone's seat line (S5: `.ln`) and the desktop row's control strip under the text column (W5: `.ctl`).
+        <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px] md:-mt-[8px] md:gap-[10px] md:pb-[8px] md:pl-[162px] md:pr-[16px]">
           <Changed text={changedLine(draw.changed, now)} />
         </div>
       ) : null}
