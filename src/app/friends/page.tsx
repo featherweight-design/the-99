@@ -37,10 +37,14 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
   // The invite count (invites PR 4), read beside the rest; null with invites off, so the head draws as shipped.
-  // A failure still reaches the error boundary through the `await` below; the bare `catch` only keeps it from
-  // reading as unhandled when another read throws first.
-  const invitesRead = socialInvitesEnabled(env) ? loadInviteCount(userId, now) : Promise.resolve(null);
-  invitesRead.catch(() => {});
+  // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
+  // never an error: the count is an extra, and Add a friend's link path works without it.
+  const invitesRead = socialInvitesEnabled(env)
+    ? loadInviteCount(userId, now).catch((error: unknown) => {
+        console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
+        return null;
+      })
+    : Promise.resolve(null);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   const [profile, { friends, links }, pods, shared] = await Promise.all([
     ensureProfile(userId, user?.firstName),
