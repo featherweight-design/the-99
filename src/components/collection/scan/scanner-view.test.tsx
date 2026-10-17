@@ -185,6 +185,27 @@ describe("ScannerView", () => {
     expect(onNotThis).toHaveBeenCalled();
   });
 
+  it("leads with the scored printings, the best selected, and takes the selection on Add this printing", () => {
+    const pc = (n: string) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: null, collectorNumber: n,
+      releasedAt: null, imageUri: `https://cards.scryfall.io/normal/front/0/0/${n}.jpg?1`, flavorName: null, finishes: ["nonfoil" as const], owned: {},
+    });
+    const choices = [pc("1"), pc("2"), pc("3"), pc("4")];
+    const guess = { ...SOL, printings: [{ scryfallId: choices[2].scryfallId, score: 0.9 }, { scryfallId: choices[0].scryfallId, score: 0.8 }] };
+    const onChoosePrinting = vi.fn();
+    draw({ mode: "normal", panel: { kind: "choose", guess, choices }, onChoosePrinting });
+    const tiles = within(panel()).getAllByRole("radio");
+    expect(tiles).toHaveLength(2);
+    expect(tiles[0].getAttribute("aria-checked")).toBe("true");
+    expect(within(panel()).getByRole("button", { name: collectionEditCopy.add.choose.showAll })).toBeTruthy();
+    // The tiles draw Scryfall's small picture.
+    expect(panel().innerHTML).toContain("/small/front/0/0/3.jpg");
+    fireEvent.click(tiles[1]);
+    expect(onChoosePrinting).not.toHaveBeenCalled();
+    fireEvent.click(within(panel()).getByRole("button", { name: copy.view.addPrinting }));
+    expect(onChoosePrinting).toHaveBeenCalledWith(choices[0]);
+  });
+
   it("draws the second copy's line and press", () => {
     draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: { kind: "second", count: 2 } } });
     expect(within(panel()).getByText(copy.again.already(2))).toBeTruthy();

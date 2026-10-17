@@ -77,6 +77,8 @@ describe("CardScanner", () => {
           storage: { getItem: () => "normal", setItem: () => {} } as unknown as Storage,
           loadChoices: async () => [
             { scryfallId: "00000000-0000-4000-8000-000000000001", setCode: "c21", setName: null, collectorNumber: "1", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {} },
+            // A second printing, so the step opens: a card with one printing is added at it with no step.
+            { scryfallId: "00000000-0000-4000-8000-000000000002", setCode: "c22", setName: null, collectorNumber: "2", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {} },
           ],
         }}
         onAdd={vi.fn(async () => true)}
@@ -84,7 +86,7 @@ describe("CardScanner", () => {
         onNoneOfThese={vi.fn()}
       />,
     );
-    const tile = await screen.findByRole("radio", {}, { timeout: 4000 });
+    const tile = (await screen.findAllByRole("radio", {}, { timeout: 4000 }))[0];
     tile.focus();
     fireEvent.click(tile);
     await screen.findByText(collectionEditCopy.scan.view.added("Sol Ring"));

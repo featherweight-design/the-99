@@ -5,7 +5,8 @@ import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { CLOSER_BELOW, outlineInBox, outlineShare, type OutlineStore } from "../../../lib/scan/outline";
 import { PrintingRegion } from "../../cards/printing-region";
-import { outlineLook, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
+import { orderPrintings } from "../../../lib/scan/printing-order";
+import { outlineLook, scanThumb, type ScanGuess, type ScanMode, type ScanPanel, type ScanScreen, type ScanTorch } from "./scan-view";
 
 const copy = collectionEditCopy.scan;
 const chooseCopy = collectionEditCopy.add.choose;
@@ -320,22 +321,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
               {copy.view.loadingPrintings}
             </p>
           ) : (
-            // The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card
-            // out of the scanner's panel, which clips; the phone's one row scrolls sideways.
-            <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40vh)] min-h-0 overflow-y-auto"}>
-            <PrintingRegion
-              role="choose"
-              source="catalog"
-              layout={phone ? "row" : "grid"}
-              id={`scan-printings-${panel.guess.oracleId}`}
-              printings={panel.choices}
-              intro={phone ? chooseCopy.introPhone(panel.choices.length) : chooseCopy.intro(panel.choices.length)}
-              cardName={panel.guess.name}
-              colorIdentity={[]}
-              onPick={(c) => p.onChoosePrinting?.(c)}
-              autoFocus={!phone}
-            />
-            </div>
+            <ChoosePrintings key={panel.guess.oracleId} guess={panel.guess} choices={panel.choices} phone={phone} onChoose={(c) => p.onChoosePrinting?.(c)} />
           )}
           <button
             type="button"
@@ -611,5 +597,53 @@ function CameraIcon({ size, radius }: { size: number; radius: number }) {
         <circle cx="12" cy="13" r="3.5" />
       </svg>
     </span>
+  );
+}
+
+/**
+ * Normal's printing step, in the camera. With the printings the server scored for the scan (`orderPrintings`), the step
+ * leads with them, best first and the best selected, behind `Show all printings`, and Add this printing takes the
+ * selection (Hugh, 2026-10-16). Without them (a server built before the scores) every printing is drawn and a tap
+ * takes it, as before. Tiles draw Scryfall's small picture, the one the scanner fetched ahead as the card was answered.
+ */
+function ChoosePrintings({ guess, choices, phone, onChoose }: { guess: ScanGuess; choices: PrintingChoice[]; phone: boolean; onChoose: (c: PrintingChoice) => void }) {
+  const order = orderPrintings(choices, guess.printings ?? []);
+  const scored = order.short.length > 0;
+  const [selected, setSelected] = useState<string | null>(order.preselected?.scryfallId ?? null);
+  const thumbs = choices.map((c) => (c.imageUri ? { ...c, imageUri: scanThumb(c.imageUri) } : c));
+  const pick = thumbs.find((c) => c.scryfallId === selected) ?? null;
+  return (
+    <>
+      {/* The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card out of
+          the scanner's panel, which clips; the phone's one row scrolls sideways. */}
+      <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40vh)] min-h-0 overflow-y-auto"}>
+        <PrintingRegion
+          role="choose"
+          source="catalog"
+          layout={phone ? "row" : "grid"}
+          id={`scan-printings-${guess.oracleId}`}
+          printings={thumbs}
+          intro={phone ? chooseCopy.introPhone(choices.length) : chooseCopy.intro(choices.length)}
+          cardName={guess.name}
+          colorIdentity={[]}
+          onPick={(c) => (scored ? setSelected(c.scryfallId) : onChoose(choices.find((x) => x.scryfallId === c.scryfallId) ?? c))}
+          autoFocus={!phone}
+          {...(scored ? { selected, shortList: order.short.map((c) => c.scryfallId) } : {})}
+        />
+      </div>
+      {scored && (
+        <button
+          type="button"
+          disabled={!pick}
+          onClick={() => {
+            const c = choices.find((x) => x.scryfallId === selected);
+            if (c) onChoose(c);
+          }}
+          className="min-h-[44px] self-start rounded-[10px] border-0 bg-[color:var(--accent)] px-[18px] text-[14px] font-semibold text-[color:var(--bg)] disabled:opacity-40"
+        >
+          {copy.view.addPrinting}
+        </button>
+      )}
+    </>
   );
 }

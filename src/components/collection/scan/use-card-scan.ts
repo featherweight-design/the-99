@@ -9,6 +9,8 @@ import type { ScanFrame } from "../../../lib/scan/stable-card";
 import { photoOf } from "../../../lib/scan/photo";
 import type { ScanSource } from "../../../lib/collection/add-lines";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
+import { orderPrintings } from "../../../lib/scan/printing-order";
+import { scanThumb } from "./scan-view";
 import { readScanMode, writeScanMode } from "./mode-memory";
 import type { ScanGuess, ScanMode, ScanScreen } from "./scan-view";
 import { scanScreen, toScanGuess } from "./screen-state";
@@ -78,6 +80,8 @@ export type CardScanDeps = {
   photo?: (crop: Float32Array) => string | null;
   /** A card's printings, for Normal mode's step in the camera; an empty list or a throw is a read that failed. */
   loadChoices?: (oracleId: string) => Promise<PrintingChoice[]>;
+  /** Fetches a picture ahead of its tile (the step's short list); the browser's own `Image` by default. */
+  preload?: (src: string) => void;
   /** The session's timing row (`timing.ts`), when the scanner keeps one. */
   timer?: ScanTimer;
 };
@@ -398,22 +402,75 @@ export function useCardScan(
   // Normal mode's printing step, in the camera (Hugh, 2026-10-16): the card is held on the panel while its printings
   // load and the player picks one. A read that fails, or finds none, says so and turns that answer down, so the step
   // does not open again for the card still in view.
+  // Normal's printings, read once per card in a scanner session and begun as soon as the card is answered, so the
+  // step opens on printings already loading; the short list's pictures are fetched as they land, ahead of their tiles.
+  const choicesCache = useRef(new Map<string, Promise<PrintingChoice[]>>());
+  const preloaded = useRef(new Set<string>());
+  const choicesFor = useCallback((g: ScanGuess): Promise<PrintingChoice[]> => {
+    let read = choicesCache.current.get(g.oracleId);
+    if (!read) {
+      const load = depsRef.current.loadChoices;
+      read = Promise.resolve()
+        .then(() => (load ? load(g.oracleId) : []))
+        .catch(() => [] as PrintingChoice[])
+        .then((choices) => {
+          // A read that failed (or found none) is not kept, so the next time the card is chosen it is read again.
+          if (choices.length === 0 && choicesCache.current.get(g.oracleId) === read) choicesCache.current.delete(g.oracleId);
+          return choices;
+        });
+      choicesCache.current.set(g.oracleId, read);
+    }
+    // Each scan's own short list is fetched ahead, a second copy scanned from another printing included.
+    return read.then((choices) => {
+      const preload = depsRef.current.preload ?? preloadImage;
+      for (const c of orderPrintings(choices, g.printings ?? []).short) {
+        const src = c.imageUri && scanThumb(c.imageUri);
+        if (src && !preloaded.current.has(src)) {
+          preloaded.current.add(src);
+          preload(src);
+        }
+      }
+      return choices;
+    });
+  }, []);
   const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null) => {
     const seq = ++chooseSeq.current;
     setChoosing({ guess: g, snap, answer: from, choices: null });
-    const load = depsRef.current.loadChoices;
     loadingChoices.current = true;
-    void Promise.resolve()
-      .then(() => (load ? load(g.oracleId) : []))
-      .catch(() => [] as PrintingChoice[])
+    void choicesFor(g)
       .then((choices) => {
         if (seq === chooseSeq.current) loadingChoices.current = false;
         if (seq !== chooseSeq.current) return;
+        // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing.
+        if (choices.length > 0 && orderPrintings(choices, g.printings ?? []).autoPick) {
+          setChoosing((c) => (c ? { ...c, choices } : c));
+          void commit(g, snap, { choices, printing: choices[0] }).then((ok) => {
+            // An add that did not land leaves no step behind: the answer is turned down, as a take that failed is.
+            if (ok || seq !== chooseSeq.current) return;
+            setChoosing(null);
+            setDismissed(from);
+          });
+          return;
+        }
         if (choices.length > 0) return setChoosing((c) => (c ? { ...c, choices } : c));
         setChoosing(null);
         setDismissed(from);
         onProblemRef.current("notAdded");
       });
+  }, [choicesFor, commit]);
+  // In Normal, the printings of every card the server names start loading the moment it answers, sure or not, so the
+  // step that follows (by itself, or a pick from Not sure) opens on printings already on their way.
+  // Once per answer: the same answer handed back again (after a frame that was not its card) starts nothing new. A
+  // layout effect declared before the take below, so it runs first and the take's step finds the read already begun.
+  const prefetched = useRef<object | null>(null);
+  useLayoutEffect(() => {
+    if (mode !== "normal" || !answer || prefetched.current === answer) return;
+    prefetched.current = answer;
+    for (const g of answer.guesses.slice(0, 3)) void choicesFor(toScanGuess(g));
+  }, [mode, answer, choicesFor]);
+  // A scanner that closes takes any printing step still loading with it: a lone printing landing afterwards adds nothing.
+  useEffect(() => () => {
+    chooseSeq.current++;
   }, []);
   const stopChoosing = useCallback(() => {
     chooseSeq.current++;
@@ -543,4 +600,11 @@ function safeLocalStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+function preloadImage(src: string): void {
+  if (typeof Image === "undefined") return;
+  const img = new Image();
+  img.decoding = "async";
+  img.src = src;
 }

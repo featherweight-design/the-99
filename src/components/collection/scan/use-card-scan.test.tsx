@@ -375,6 +375,65 @@ describe("useCardScan", () => {
     });
     const CHOICES = [choice("1"), choice("2")];
 
+    it("adds a card with one printing at it, with no step", async () => {
+      const only = [choice("1")];
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: vi.fn(async () => only) });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId }), "normal", expect.anything(), { choices: only, printing: only[0] });
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
+
+    it("adds nothing when the scanner closes before a lone printing's read lands", async () => {
+      let land: (c: ReturnType<typeof choice>[]) => void = () => {};
+      const loadChoices = vi.fn(() => new Promise<ReturnType<typeof choice>[]>((r) => (land = r)));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices });
+      await waitFor(() => expect(loadChoices).toHaveBeenCalled(), { timeout: 4000 });
+      hook.unmount();
+      await act(async () => land([choice("1")]));
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it("reads a Not sure card's printings again when the read that ran ahead for it failed", async () => {
+      const SIGNET = { ...SOL, oracleId: "22222222-2222-4222-8222-222222222222", name: "Arcane Signet", score: 0.96 };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [SOL, SIGNET], margin: 0.01 }));
+      let signetReads = 0;
+      const loadChoices = vi.fn(async (id: string) => {
+        if (id === SIGNET.oracleId && signetReads++ === 0) throw new Error("offline");
+        return CHOICES;
+      });
+      const { hook } = setup({ storage: normal, loadChoices, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "notSure" } }), { timeout: 4000 });
+      await waitFor(() => expect(signetReads).toBe(1));
+      await act(async () => new Promise((r) => setTimeout(r, 20)));
+      await act(async () => hook.result.current.pick(SIGNET.oracleId));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 4000 });
+      expect(signetReads).toBe(2);
+    });
+
+    it("leaves no step behind when a lone printing's add does not land", async () => {
+      const only = [choice("1")];
+      const { hook, onAdd, onProblem } = setup({ storage: normal, loadChoices: vi.fn(async () => only) });
+      onAdd.mockImplementation(async () => false);
+      await waitFor(() => expect(onAdd).toHaveBeenCalled(), { timeout: 4000 });
+      await waitFor(() => expect(onProblem).toHaveBeenCalledWith("notAdded"));
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
+
+    it("reads the printings once as the card is answered, and fetches the scored ones' small pictures ahead", async () => {
+      const pics = CHOICES.map((c, i) => ({ ...c, imageUri: `https://cards.scryfall.io/normal/front/0/0/${i}.jpg?1` }));
+      const loadChoices = vi.fn(async () => pics);
+      const preload = vi.fn();
+      const scored = { ...SOL, printings: [{ scryfallId: pics[1].scryfallId, score: 0.9 }] };
+      const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
+      const { hook } = setup({ storage: normal, loadChoices, preload, fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: pics } }), { timeout: 4000 });
+      expect(loadChoices).toHaveBeenCalledTimes(1);
+      expect(preload).toHaveBeenCalledWith("https://cards.scryfall.io/small/front/0/0/1.jpg?1");
+      expect(preload).toHaveBeenCalledTimes(1);
+    });
+
     it("opens the card's printings in the camera, and the one picked goes on the list at that printing", async () => {
       const loadChoices = vi.fn(async () => CHOICES);
       const { hook, onAdd } = setup({ storage: normal, loadChoices });
@@ -467,7 +526,9 @@ describe("useCardScan", () => {
       await new Promise((r) => setTimeout(r, 300));
       await act(async () => hook.result.current.choosePrinting(CHOICES[0]));
       frame = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
-      await waitFor(() => expect(loadChoices).toHaveBeenCalledTimes(2), { timeout: 15000 });
+      // The second copy opens the step again, on the printings read once this session.
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }), { timeout: 15000 });
+      expect(loadChoices).toHaveBeenCalledTimes(1);
     });
 
     it("a card picked from Not sure opens its printings, with the closest cards it was picked from", async () => {
@@ -606,7 +667,7 @@ describe("useCardScan's timing row", () => {
     const deps: CardScanDeps = {
       timer,
       storage,
-      loadChoices: async () => [{ scryfallId: "p1" } as unknown as PrintingChoice],
+      loadChoices: async () => [{ scryfallId: "p1" }, { scryfallId: "p2" }] as unknown as PrintingChoice[],
       readFrame: async () => {
         await new Promise((r) => setTimeout(r, 5));
         n++;
