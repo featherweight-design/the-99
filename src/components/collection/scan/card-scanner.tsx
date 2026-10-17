@@ -58,6 +58,8 @@ export function CardScanner({
   const readFrame = useFrameReader(outline);
   // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it.
   const [timer] = useState(() => scanTimer(layout));
+  // One mount follows the 768px line (the sheet keeps it across a turn), so a session can span both layouts.
+  useEffect(() => timer.relayout(layout), [timer, layout]);
   const reviewAt = useRef<number | null>(null);
   const post = deps?.fetch ?? (typeof fetch === "function" ? fetch : null);
   const postRef = useRef(post);

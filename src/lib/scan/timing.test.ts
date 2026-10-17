@@ -21,6 +21,16 @@ describe("scanTimer", () => {
     t.answered(2600);
     expect(t.row()?.guess).toEqual([1200, 800]);
   });
+  it("names a session turned across the 768px line mixed, and keeps it so after turning back", () => {
+    const t = scanTimer("phone");
+    t.frame(0, 10, false);
+    t.relayout("phone");
+    expect(t.row()?.layout).toBe("phone");
+    t.relayout("desk");
+    t.relayout("phone");
+    expect(t.row()?.layout).toBe("mixed");
+  });
+
   it("does not time an answer with no card in view", () => {
     const t = scanTimer("desk");
     t.frame(0, 100, false);
