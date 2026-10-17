@@ -51,11 +51,17 @@ describe("lookupCard", () => {
   });
 
   it("retries a failure that may pass, saying so before each retry, and reads the answer that lands", async () => {
-    const d = deps(new Error("offline"), reply(503, { error: "no-index" }), reply(200, MATCH));
+    const d = deps(new Error("offline"), reply(503), reply(200, MATCH));
     const out = await lookupCard(emb, MODEL, d);
     expect(out.kind).toBe("match");
     expect(d.onRetry.mock.calls).toEqual([[1], [2]]);
     expect(d.wait.mock.calls).toEqual(LOOKUP_BACKOFF_MS.map((ms) => [ms]));
+  });
+
+  it("says not ready, with no retry, when the server has no scan index yet", async () => {
+    const d = deps(reply(503, { error: "no-index" }), reply(200, MATCH));
+    expect(await lookupCard(emb, MODEL, d)).toEqual({ kind: "refused", reason: "notReady" });
+    expect(d.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("gives up after its retries", async () => {

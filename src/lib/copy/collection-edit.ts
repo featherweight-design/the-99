@@ -538,6 +538,8 @@ export const collectionEditCopy = {
     press: "Scan",
     close: "Close the scanner",
     /** A lookup that failed: a ToastFrame, and the viewfinder keeps scanning. */
+    /** (new, for /copy-review) The server has no scan index yet (its 503 `no-index`): scanning cannot check a card. */
+    notReady: "Scanning isn’t ready yet. Add cards by name for now.",
     lookupFailed: "Couldn’t check that card. Hold it up again.",
     /** The detector or embedder would not load, or kept failing: nothing is being read. */
     noStart: "The scanner couldn’t start. Close it and try again.",

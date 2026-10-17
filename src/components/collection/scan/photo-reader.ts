@@ -59,7 +59,7 @@ export function usePhotoReader(
   deps: PhotoReaderDeps,
   onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanSource) => AddOutcome | Promise<AddOutcome>,
   mode: ScanMode,
-  onProblem: (kind: "photoFailed" | "notAdded" | "noStart") => void,
+  onProblem: (kind: "photoFailed" | "notReady" | "notAdded" | "noStart") => void,
 ): PhotoReader {
   const depsRef = useRef(deps);
   const onProblemRef = useRef(onProblem);
@@ -116,7 +116,7 @@ export function usePhotoReader(
     });
     if (signal.aborted) return { kind: "failed" };
     if (r.kind !== "match") {
-      onProblemRef.current("photoFailed");
+      onProblemRef.current(r.kind === "refused" && r.reason === "notReady" ? "notReady" : "photoFailed");
       return { kind: "failed" };
     }
     const guesses = r.guesses.map((g) => ({ oracleId: g.oracleId, name: g.name, typeLine: g.typeLine, imageUri: g.imageUri }));

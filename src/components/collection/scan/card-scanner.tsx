@@ -42,8 +42,10 @@ export function CardScanner({
   onNoneOfThese: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
-  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded" | "noStart" | "photoFailed" | "removed", name?: string) => {
+  const onProblem = useCallback((kind: "failed" | "refused" | "notReady" | "notAdded" | "noStart" | "photoFailed" | "removed", name?: string) => {
     if (kind === "notAdded") return setNotice(collectionEditCopy.add.printingsFailed);
+    // This database has no scan index yet: no card can be checked, and saying it failed would be untrue.
+    if (kind === "notReady") return setNotice(copy.notReady);
     if (kind === "removed") return setNotice(copy.view.removed(name ?? ""));
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     if (kind === "noStart") return setNotice(offline ? copy.offlineBody : copy.noStart);

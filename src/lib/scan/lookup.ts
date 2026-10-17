@@ -7,7 +7,7 @@ import type { Guess as ServerGuess, ScoredPrinting } from "../card-scan/match";
 
 export type LookupResult =
   | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
-  | { kind: "refused"; reason: "signedOut" | "off" | "model" | "badEmbedding" | "unavailable" }
+  | { kind: "refused"; reason: "signedOut" | "off" | "model" | "badEmbedding" | "unavailable" | "notReady" }
   | { kind: "failed" };
 
 /** Retries after the first try, and the wait before each (ms). */
@@ -55,6 +55,12 @@ const REFUSED: Record<number, "signedOut" | "off" | "badEmbedding" | "model"> = 
 
 /** A refusal the ROUTE wrote is JSON; the proxy's own answer to a signed-out request (its 404) is not, and is unavailable. */
 async function refusalOf(res: { status: number; json(): Promise<unknown> }): Promise<LookupResult | null> {
+  // The route's 503 `no-index`: this database has no scan index yet, which no retry will change. Any other 503 (the
+  // platform's own, or a lookup that timed out) may pass and is retried.
+  if (res.status === 503) {
+    const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    return body?.error === "no-index" ? { kind: "refused", reason: "notReady" } : null;
+  }
   const reason = REFUSED[res.status];
   if (!reason) return null;
   const isJson = await res.json().then(() => true, () => false);
