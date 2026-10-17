@@ -108,7 +108,8 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       ownerId,
     }),
     clerk,
-    month: utcMonthName(now),
+    // The list's spend column head is the short month (`Oct`), which its 52px track holds (R3, A1).
+    month: utcMonthName(now, "short"),
   };
 }
 

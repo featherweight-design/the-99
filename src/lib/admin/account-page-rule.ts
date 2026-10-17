@@ -36,8 +36,8 @@ export function utcClock(at: Date): string {
 }
 
 /** A month's name, read in UTC (`October`). */
-export function utcMonthName(at: Date): string {
-  return new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(at);
+export function utcMonthName(at: Date, month: "long" | "short" = "long"): string {
+  return new Intl.DateTimeFormat("en-US", { month, timeZone: "UTC" }).format(at);
 }
 
 /** The free allowance's count for every account, from the window's ledger rows and each account's own limit. */

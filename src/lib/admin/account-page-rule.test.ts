@@ -13,6 +13,7 @@ import {
   featureSpend,
   featureTotal,
   initials,
+  utcMonthName,
   matchesAccount,
   roleLine,
   switchGroups,
@@ -190,5 +191,13 @@ describe("featureSpend (A4)", () => {
       { feature: "intake", name: "Help me choose", presses: 9, spent: "$0.270" },
       { feature: "mystery", name: "mystery", presses: 1, spent: "$0.270" },
     ]);
+  });
+});
+
+describe("utcMonthName", () => {
+  it("names the UTC month in full, or short for the list's 52px spend head (R3, A1)", () => {
+    const at = new Date("2026-09-30T23:30:00Z");
+    expect(utcMonthName(at)).toBe("September");
+    expect(utcMonthName(at, "short")).toBe("Sep");
   });
 });
