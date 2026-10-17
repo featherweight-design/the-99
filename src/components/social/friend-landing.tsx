@@ -89,7 +89,7 @@ export function LandingColumn({
       </h1>
       {body && <p className={`m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px] ${land}`}>{body}</p>}
       <div className={`mt-[6px] flex flex-col gap-[8px] md:mt-[12px] md:flex-row md:gap-[10px] ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 font-mono text-[11px] ${fineMuted ? "mt-[4px] leading-[1.6] text-[color:var(--fg-muted)]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
+      {fine && <p className={`m-0 font-mono text-[11px] ${fineMuted ? "-mt-[4px] leading-[1.6] text-[color:var(--fg-muted)] md:-mt-[6px]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
     </section>
   );
 }

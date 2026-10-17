@@ -218,6 +218,10 @@ describe("JoinFlow", () => {
     expect(card.className).toContain("rotate-[-3deg]");
     expect(screen.getByTestId("friend-card-word").textContent).toBe(joinCopy.cardType);
     expect(screen.queryByTestId("friend-card-badge")).toBeNull();
+    // The face is drawn at twice the board's size, then halved: padding 4px, rules 7px, type line 7.5px after the scale.
+    const front = screen.getByTestId("friend-card-front");
+    expect(front.className).toContain("p-[8px]");
+    expect(screen.getByText(joinCopy.cardRules(sender.displayName), { exact: false }).className).toContain("text-[14px]");
   });
 
   it("N6: the check badge sits on the card, hidden from assistive tech", () => {
