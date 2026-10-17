@@ -29,7 +29,7 @@ function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "produc
   // The core's day rows from the same calls, as `loadCosts` reads them.
   const days = (detailRows.calls ?? []).map((c) => ({ day: c.createdAt.getUTCDate(), origin: c.origin, runs: 1, micro: c.micro ?? 0 }));
   const rows: CostRows = {
-    days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {}, paused: false,
+    days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {},
     outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete, evalsUnreadable: d.ledgersUnreadable.length > 0 },
   };
   return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} env={opts.env} month={month} current={OCT} />);

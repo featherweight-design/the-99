@@ -25,7 +25,7 @@ const NOW = new Date("2026-10-11T15:00:00Z");
 const p = (day: number, v: number, runs = 1): DayRow => ({ day, origin: "player", runs, micro: usdToMicro(v) });
 const sys = (day: number, v: number, runs = 1): DayRow => ({ day, origin: "system", runs, micro: usdToMicro(v) });
 const rows = (days: DayRow[], over: Partial<CostRows> = {}): CostRows => ({
-  days, playerAccounts: 1, ownerMicro: usdToMicro(0.884), ownerShareMicro: usdToMicro(5), previous: { runs: 19, micro: usdToMicro(0.813) }, settings: {}, paused: false, ...over,
+  days, playerAccounts: 1, ownerMicro: usdToMicro(0.884), ownerShareMicro: usdToMicro(5), previous: { runs: 19, micro: usdToMicro(0.813) }, settings: {}, ...over,
 });
 
 function draw(r: CostRows, month = OCT) {
@@ -42,14 +42,16 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.queryByRole("link", { name: "Next month" })).toBeNull();
 
     expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.135");
-    expect(screen.getByText("Player runs").parentElement).toHaveTextContent("9% of the $10 plan");
+    // No plan to be a share of since 2026-10-17: the tile says its runs and pace, as Model calls does.
+    expect(screen.getByText("Player runs").parentElement).toHaveTextContent("23 runs · on pace for");
+    expect(screen.getByText("Player runs").parentElement).not.toHaveTextContent("plan");
     expect(screen.getByText("Per active account").parentElement).toHaveTextContent("1 account with runs");
 
-    expect(screen.getByText("$0.884 of $10")).toBeInTheDocument();
-    expect(screen.getAllByText("$20 hard stop").length).toBeGreaterThan(0);
+    expect(screen.queryByText("$0.884 of $10")).toBeNull();
+    expect(screen.queryByText(/hard stop|plan/)).toBeNull();
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
-    // Two in-code rows, two recorded-here rows; the source label sits LEFT of the row's name.
-    expect(screen.getAllByText("in code")).toHaveLength(2);
+    // One in-code row (the owner's share), two recorded-here rows; the source label sits LEFT of the row's name.
+    expect(screen.getAllByText("in code")).toHaveLength(1);
     const here = screen.getAllByText("recorded here");
     expect(here).toHaveLength(2);
     for (const tag of here) expect(tag.previousElementSibling).toBeNull();
@@ -191,22 +193,13 @@ describe("CostsView, a ceiling that starts later", () => {
   });
 });
 
-describe("CostsView banners", () => {
-  it("warns on the pace (C2)", () => {
-    draw(rows([p(2, 4)]));
-    expect(screen.getByRole("status")).toHaveTextContent("On this pace, player runs pass the $10 plan around 28 October.");
-  });
-
-  it("warns at 80% and inks the player tile (C5)", () => {
-    draw(rows([p(2, 8.1)]));
-    expect(screen.getByRole("status")).toHaveTextContent("Player runs have reached 80% of the plan.");
-    expect(screen.getByText("81% of the $10 plan").className).toContain("var(--warning)");
-  });
-
-  it("says when runs are paused (C6)", () => {
-    draw(rows([p(2, 19.9)], { paused: true }));
-    expect(screen.getByRole("status")).toHaveTextContent("Runs are paused until November 1.");
-    expect(screen.getByRole("status").getAttribute("style")).toContain("var(--danger)");
+describe("CostsView, no app-wide limit (2026-10-17)", () => {
+  it("draws no banner on a pace, at 80% of the old plan, or past the old stop", () => {
+    for (const day of [p(2, 4), p(2, 8.1), p(2, 25)]) {
+      const { unmount } = draw(rows([day]));
+      expect(screen.queryByRole("status")).toBeNull();
+      unmount();
+    }
   });
 });
 

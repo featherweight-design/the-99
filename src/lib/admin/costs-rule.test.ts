@@ -10,14 +10,14 @@ import {
   startsAfter,
   usd,
   type CostRows,
-  type DayRow, settingsForMonth, type SettingRow } from "./costs-rule";
-import { BUDGET_USD, usdToMicro } from "../model/spend-rule";
+  type DayRow, settingsForMonth, type SettingRow, TREND_FLOOR_MICRO } from "./costs-rule";
+import { usdToMicro } from "../model/spend-rule";
 
 const OCT = { year: 2026, month: 9 };
 const NOW = new Date("2026-10-11T15:00:00Z"); // day 11 of 31
 
 function rows(days: DayRow[], over: Partial<CostRows> = {}): CostRows {
-  return { days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: 5_000_000, previous: { runs: 0, micro: 0 }, settings: {}, paused: false, ...over };
+  return { days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: 5_000_000, previous: { runs: 0, micro: 0 }, settings: {}, ...over };
 }
 const p = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "player", runs, micro: usdToMicro(usdValue) });
 const sys = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "system", runs, micro: usdToMicro(usdValue) });
@@ -50,45 +50,32 @@ describe("costSummary, the current month", () => {
     expect(s.playerByDay[5]).toBe(usdToMicro(0.452));
     expect(s.playerCumulative.at(-1)).toBe(usdToMicro(0.64));
     expect(s.playerPaceMicro).toBe(Math.round((usdToMicro(0.64) / 11) * 31));
-    expect(s.banner).toBeNull();
   });
 
-  it("names the day the pace passes the plan", () => {
-    // $4 over 11 days: $0.3636 a day passes $10 on day 28.
+  it("scales the trend to the pace, with no plan to hold it up (2026-10-17)", () => {
+    // $4 over 11 days paces to $11.27 by the 31st: the top of the chart, not a $10 plan.
     const s = costSummary(rows([p(2, 4)]), OCT, NOW);
-    expect(s.banner).toEqual({ kind: "pace", day: 28 });
-  });
-
-  it("puts the 80% alarm ahead of the pace (C5)", () => {
-    const s = costSummary(rows([p(2, 8.1)]), OCT, NOW);
-    expect(s.alarm).toBe(80);
-    expect(s.banner).toEqual({ kind: "alarm" });
-  });
-
-  it("puts the pause ahead of everything (C6)", () => {
-    const s = costSummary(rows([p(2, 8.1)], { paused: true }), OCT, NOW);
-    expect(s.banner).toEqual({ kind: "paused" });
+    expect(s.trendScaleMicro).toBe(s.playerPaceMicro);
+    expect(s.trendScaleMicro).toBe(Math.round((usdToMicro(4) / 11) * 31));
   });
 
   it("draws an empty month as zeros and no banner (C3)", () => {
     const s = costSummary(rows([], { playerAccounts: 0 }), OCT, NOW);
     expect(s.calls).toEqual({ runs: 0, micro: 0 });
     expect(s.perAccountMicro).toBeNull();
-    expect(s.banner).toBeNull();
-    expect(s.trendScaleMicro).toBe(Math.round(usdToMicro(BUDGET_USD) * 1.1));
+    expect(s.trendScaleMicro).toBe(TREND_FLOOR_MICRO);
   });
 });
 
 describe("costSummary, a past month (C4)", () => {
-  it("fills to the month's end with no pace, banner or pause", () => {
-    const s = costSummary(rows([p(30, 9), p(1, 0.5)], { paused: true }), { year: 2026, month: 8 }, NOW);
+  it("fills to the month's end with no pace", () => {
+    const s = costSummary(rows([p(30, 9), p(1, 0.5)]), { year: 2026, month: 8 }, NOW);
     expect(s.current).toBe(false);
     expect(s.elapsed).toBe(30);
     expect(s.playerByDay).toHaveLength(30);
     expect(s.playerPaceMicro).toBeNull();
     expect(s.callsPaceMicro).toBeNull();
-    expect(s.alarm).toBe(80);
-    expect(s.banner).toBeNull();
+    expect(s.trendScaleMicro).toBe(usdToMicro(9.5));
   });
 });
 
@@ -103,8 +90,9 @@ describe("costSummary, the rest", () => {
     expect(costSummary(rows([], { settings: { elsewhere_usd: elsewhere } }), { year: 2026, month: 8 }, NOW).elsewhere).toBeNull();
   });
 
-  it("never scales the trend below the plan plus 10%, and grows to fit the pace", () => {
-    expect(costSummary(rows([p(1, 0.1)]), OCT, NOW).trendScaleMicro).toBe(usdToMicro(11));
+  it("scales the trend to the series and its pace, never to a plan", () => {
+    const quiet = costSummary(rows([p(1, 0.1)]), OCT, NOW);
+    expect(quiet.trendScaleMicro).toBe(quiet.playerPaceMicro);
     const busy = costSummary(rows([p(1, 9)]), OCT, NOW);
     expect(busy.trendScaleMicro).toBe(busy.playerPaceMicro);
   });

@@ -2420,7 +2420,7 @@ export const modelCalls = pgTable("model_calls", {
   userId: text("user_id").notNull(),
   feature: text("feature").notNull(),
   // WHO STARTED THE CALL (migration 0082). `player` is a press in the app and the only origin
-  // the allowance and the spend cap read; `system` is a batch job (card labels, commander prose)
+  // the allowance and the owner's monthly share read; `system` is a batch job (card labels, commander prose)
   // writing ONE summary row per batch so dollars by origin and feature come from one table.
   // Every writer states it; the default only covers a build still serving during a deploy.
   origin: text("origin").notNull().default("player"),

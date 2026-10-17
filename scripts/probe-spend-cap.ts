@@ -1,8 +1,10 @@
-// The model SPEND CAP, proved against a real Postgres by calling the real `reserveModelCall`,
-// `settleModelCall` and `readAllowance`.
+// The model SPEND RULES that remain, proved against a real Postgres by calling the real
+// `reserveModelCall`, `settleModelCall` and `readAllowance`: per-account daily allowances, the
+// owner's monthly testing share, and the meters a settle writes. There is no app-wide monthly
+// limit (2026-10-17); case k proves nothing app-wide holds a friend.
 //
-// Every rule here is a fact about what a transaction read or wrote: a sum over the month's
-// ledger, a reservation priced at its worst case, a refund left out of the sum, a settle's meters.
+// Every rule here is a fact about what a transaction read or wrote: a sum over the owner's month,
+// a reservation priced at its worst case, a refund's recorded cost in the sum, a settle's meters.
 // The arithmetic is unit tested in `spend-rule.test.ts` and `prices.test.ts`; only a database can
 // say the SQL around it counts the right rows. The model is never called.
 //
@@ -10,52 +12,51 @@
 //   a  a friend gets 5 a day: five reserves pass, the sixth is refused `allowance`
 //   b  the owner (MODEL_OWNER_USER_ID) gets 10: ten pass, the eleventh is refused
 //   c  with the variable unset, the would-be owner gets 5
-//   d  the hard stop: app-wide month-to-date one worst case under $20 still reserves; that
-//      reservation reaches $20, and the next press, anyone's, is refused `paused`
-//   i  a STOPPED call (refunded at once, no meters yet) still counts at its worst case, since its
-//      upstream call keeps billing; a refunded row with no cost stops counting past its TTL
-//   j  a LATE OUTCOME writes its meters onto the refunded row, its real bill replaces its worst
-//      case, and a second write changes nothing
-//   e  a refunded call's RECORDED cost counts toward the month and can pause the app: credits
-//      count successes, dollars count everything billed
-//   f  the owner's share: the owner is refused `ownerShare` while a friend still reserves
 //   g  a settle writes tokens, model and cost; a refund writes them too, and its cost is counted;
 //      a settle with no usage writes no meters
-//   h  the alarm: a settle carrying app-wide billed spend over a line reports it exactly once, and
-//      a settle that crosses nothing reports nothing
+//   i  the owner's month one worst case under their share still reserves; that reservation fills
+//      it, and the owner's next press is refused `ownerShare`. A STOPPED call (refunded at once, no
+//      meters yet) still counts at its worst case, since its upstream call keeps billing; a
+//      refunded row with no cost stops counting past its TTL
+//   j  a LATE OUTCOME writes its meters onto the refunded row, its real bill replaces its worst
+//      case, and a second write changes nothing
+//   e  a refunded call's RECORDED cost counts toward the owner's month and can refuse them
+//      `ownerShare`: credits count successes, dollars count everything billed
+//   f  the owner's share: the owner is refused `ownerShare` while a friend still reserves
+//   k  no monthly figure holds a friend: with the app's month-to-date at $25 or more, and one
+//      friend's own month past the owner's whole share, both friends still reserve
 // The tuning and synopsis LATE-OUTCOME paths (an outcome landing after a Stop or the reaper) are
 // proved where those writers are: `probe:tuning-run` cases 1 and 2, `probe:synopsis` 8b.
 //
-// MONTH-TO-DATE IS APP-WIDE, so every row on the database counts, not only this run's. The
-// seeded cases read the current figure first and seed RELATIVE to it, and every seeded row is
-// deleted as soon as its case ends, again in the `finally`. A second process writing
-// `model_calls` on the same database while this runs moves the figure under it; run it alone.
+// THE OWNER'S MONTH-TO-DATE IS THE OWNER'S OWN, so cases i, j, e and f make a per-run id the owner
+// (`MODEL_OWNER_USER_ID`, in this process only) and seed relative to `ownerShareMicro()` from a
+// month that starts at zero; the share is pinned to its default so the seeds stay a few dollars.
+// Case k alone reads the app-wide figure, to seed past $25 relative to it, and its rows are
+// deleted as soon as it ends, again in the `finally`.
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
-//   - the friend/owner limit (`dailyLimitFor` returns the friend's 5 for everyone): fails
-//     b "the owner's ten reserve" and b "and reads a limit of ten".
-//   - the hard stop (`spendRefusal` never returns "paused"): fails d "the next press is refused
-//     paused", d "readAllowance says paused", and every i and e check that expects `paused`.
-//   - a refunded call's recorded cost counted (`monthSpend`'s priced sum back to `spent` rows
-//     only): fails e "a refunded call's recorded cost counts toward the month".
+//   - the owner's daily limit (`dailyLimitsFor` passes `owner: false`): fails b "the owner's ten
+//     reserve" and b "and reads a limit of ten".
+//   - the owner share (`spendRefusal`'s share comparison replaced by `false`): fails f "then the
+//     owner is refused ownerShare", f "readAllowance says ownerShare for the owner", and every i
+//     and e check that expects `ownerShare`.
+//   - a refunded call's recorded cost counted (`ownerMonthMicro`'s priced sum narrowed to `spent`
+//     rows): fails e "a refunded call's recorded cost counts toward the owner's month".
 //   - a refunded call with no cost counted at worst case (`countsAtWorstCase` admits `reserved`
 //     alone): fails i "a Stopped call ... still counts at its worst case" (and, downstream, j, i
 //     and e, since the reservation it let through is never settled).
-//   - the null guard (`recordModelUsage` writes whatever the row holds): fails j "and a second
-//     write does not change them" (and the checks after it, on the inflated bill).
+//   - a friend held to a monthly figure (`ownerMonthMicro`'s `isOwner` guard removed): fails k
+//     "the friend who paid it still reserves" and k "and neither reads a share refusal".
+//   - the null guard (`recordModelUsage` updates by id alone): fails j "and a second write does
+//     not change them" (and the checks after it, on the inflated bill).
 //   - settle sharing the meter writer (`settleModelCall` never calls `recordModelUsage`): fails
-//     g's three meter checks and h "reports it exactly once".
-//   - the owner share (`spendRefusal` ignores `ownerMonthMicro`): fails f "then the owner is
-//     refused ownerShare" and f "readAllowance says ownerShare for the owner".
-//   - the alarm crossing (`crossedAlarms` drops its `before < line` half): fails h "a settle past
-//     the line reports nothing".
-// And in the writers' own probes: `finishRun`'s late record removed fails probe:tuning-run
-// "2 · and still records what it billed on the unit"; `persistRun`'s fails "1 · and still records
-// ..."; the synopsis `finishRun`'s fails probe:synopsis "…and still records the late call's meters".
+//     g's three meter checks (and, downstream, i and e).
 //
 // It writes `model_calls` rows under per-run `user_id`s and deletes them in a `finally`. Point it
 // at `local-dev` or a scratch Neon branch, NEVER staging or production: it refuses staging's branch.
+// Prefer a scratch branch while any other checkout on the target runs a build older than
+// 2026-10-17: case k's $25 seed stands on the shared ledger for the length of that case.
 //
 //   pnpm probe:spend-cap
 // First, and on its own line: the helper's import loads `.env`, and anything reading
@@ -70,7 +71,6 @@ import { dailyLimitFor, ownerShareMicro, readAllowance, recordModelUsage, reserv
 import type { ModelUsage } from "../src/lib/model/client";
 import { costMicroUsd, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import {
-  HARD_STOP_USD,
   monthStartUtc,
   unpricedWorstCaseMicro,
   usdToMicro,
@@ -223,75 +223,36 @@ async function run() {
     check("g · a settle with no usage writes no meters", [b.status, b.input_tokens, b.cost], ["refunded", null, null]);
   }
 
-  // h · The alarm.
+  // i, j, e · The owner's month-to-date: a Stopped call counting at its worst case until its TTL
+  // or its meters; a late outcome's meters; and a refund's recorded cost counting toward it. The
+  // owner is a per-run id, so their month starts at zero and every seed below is under them.
   {
-    const u = newUser();
-    const seeded: string[] = [];
-    try {
-      const s = await billedMonth();
-      const line = [5, 8].map(usdToMicro).find((l) => l > s);
-      if (line === undefined) {
-        check("h · local-dev's month-to-date leaves an alarm line to cross", s < usdToMicro(8), true);
-      } else {
-        const pct = line === usdToMicro(5) ? 50 : 80;
-        // Just under the line; the settle below costs 10,000 micro-dollars and carries it over.
-        seeded.push(await seed(u, "spent", line - s - 1_000));
-        const warned: unknown[][] = [];
-        const warn = console.warn;
-        console.warn = (...args: unknown[]) => { warned.push(args); };
-        try {
-          const crossing = await reserve(u);
-          if (!("id" in crossing)) throw new Error(`h · reserve refused: ${crossing.refused}`);
-          await settle(crossing.id, "spent", { inputTokens: 0, outputTokens: 1_000, cacheReadTokens: 0, cacheWriteTokens: 0 });
-          const said = warned.map((w) => String(w[0]));
-          check(`h · a settle crossing ${pct}% reports it exactly once`,
-            [said.length, said.every((line) => line.includes(`crossed ${pct}%`))], [1, true]);
-          warned.length = 0;
-          const past = await reserve(u);
-          if (!("id" in past)) throw new Error(`h · reserve refused: ${past.refused}`);
-          await settle(past.id, "spent", { inputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 });
-          check("h · a settle past the line reports nothing", warned.length, 0);
-        } finally {
-          console.warn = warn;
-        }
-      }
-    } finally {
-      // This case's spent rows are real spend on the month: they go now, not at the end.
-      await fixture.execute(sql`delete from model_calls where user_id = ${u}`);
-      await unseed(seeded);
-    }
-  }
-
-  // d, i, j, e · The hard stop; a Stopped call counting at its worst case until its TTL or its
-  // meters; a late outcome's meters; and a refund's recorded cost counting toward the month.
-  {
-    const payer = newUser();
-    const [first, second] = [newUser(), newUser()];
-    const seeded: string[] = [];
+    const owner = newUser();
+    process.env.MODEL_OWNER_USER_ID = owner;
+    // Pinned to the default share so the seeded rows stay a few dollars, whatever the target's
+    // override says; every seed is still sized from `ownerShareMicro()`.
+    const shareOverride = process.env.MODEL_OWNER_MONTHLY_USD;
+    delete process.env.MODEL_OWNER_MONTHLY_USD;
     // Room for one call and SLACK more: a late outcome's small bill must still leave one call's room.
     const SLACK = 1_000;
     const tiny: ModelUsage = { inputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 };
     const meterOf = async (id: string) => (await rows<{ status: string; output_tokens: number | null; cost: string | null }>(sql`
       select status, output_tokens, cost_micro_usd::text as cost from model_calls where id = ${id}::uuid`))[0];
     try {
-      const m = await monthToDate();
-      const stop = usdToMicro(HARD_STOP_USD);
-      const fill = stop - m - W - SLACK;
-      if (fill < 0) throw new Error(`d · local-dev's month-to-date (${m}) already leaves no room under $${HARD_STOP_USD}`);
-      seeded.push(await seed(payer, "spent", fill));
+      const fill = ownerShareMicro() - W - SLACK;
+      if (fill < 0) throw new Error(`i · the owner's share (${ownerShareMicro()}) is under one call (${W})`);
+      await seed(owner, "spent", fill);
 
-      const held = await reserve(first);
-      check("d · one worst case under $20 still reserves", kindOf(held), "reserved");
-      if (!("id" in held)) throw new Error("d · the fixture reservation was refused");
-      check("d · that reservation reaches $20: the next press is refused paused", kindOf(await reserve(second)), "paused");
-      const read = await readAllowance(second);
-      check("d · readAllowance says paused, until the 1st of next month", read.paused?.until.toISOString() ?? null,
-        new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString());
+      const held = await reserve(owner);
+      check("i · the owner reserves while one worst case still fits their share", kindOf(held), "reserved");
+      if (!("id" in held)) throw new Error("i · the fixture reservation was refused");
+      check("i · that reservation fills the share: the owner's next press is refused ownerShare",
+        kindOf(await reserve(owner)), "ownerShare");
 
       // i · A Stop refunds the credit at once, with no meters: the call is still billing.
       await settle(held.id, "refunded");
       check("i · a Stopped call, refunded with no meters, still counts at its worst case",
-        kindOf(await reserve(second)), "paused");
+        kindOf(await reserve(owner)), "ownerShare");
 
       // j · Its outcome lands late, and records what it billed.
       await db.transaction((tx) => recordModelUsage(tx, held.id, { model: TUNING_MODEL, usage: tiny }));
@@ -302,29 +263,29 @@ async function run() {
       }));
       check("j · and a second write does not change them", await meterOf(held.id),
         { status: "refunded", output_tokens: 10, cost: String(costMicroUsd(TUNING_MODEL, tiny)) });
-      const reopened = await reserve(second);
-      check("j · with its real bill in place of its worst case, the app reopens", kindOf(reopened), "reserved");
+      const reopened = await reserve(owner);
+      check("j · with its real bill in place of its worst case, the owner reserves again", kindOf(reopened), "reserved");
       if ("id" in reopened) await settle(reopened.id, "refunded", tiny);
 
       // i · A Stopped call with no meters counts only inside its TTL.
-      const stopped = await seed(payer, "refunded", null);
-      seeded.push(stopped);
-      check("i · a refunded row with no cost, inside its TTL, pauses the app", kindOf(await reserve(second)), "paused");
+      const stopped = await seed(owner, "refunded", null);
+      check("i · a refunded row with no cost, inside its TTL, fills the share", kindOf(await reserve(owner)), "ownerShare");
       await fixture.execute(sql`
         update model_calls set created_at = created_at - (${RESERVATION_TTL_MS + 60_000} || ' milliseconds')::interval
         where id = ${stopped}::uuid`);
-      const aged = await reserve(second);
+      const aged = await reserve(owner);
       check("i · past its TTL it stops counting", kindOf(aged), "reserved");
       if ("id" in aged) await settle(aged.id, "refunded", tiny);
 
       // e · A refunded call's RECORDED cost counts: credits count successes, dollars everything billed.
-      check("e · before the refund's cost, the app is not paused", (await readAllowance(first)).paused, undefined);
-      seeded.push(await seed(payer, "refunded", SLACK * 2));
-      check("e · a refunded call's recorded cost counts toward the month", kindOf(await reserve(first)), "paused");
-      check("e · and readAllowance says paused", (await readAllowance(first)).paused !== undefined, true);
+      check("e · before the refund's cost, the owner reads no share refusal", (await readAllowance(owner, new Date(), "tuning")).ownerShare, undefined);
+      await seed(owner, "refunded", SLACK * 2);
+      check("e · a refunded call's recorded cost counts toward the owner's month", kindOf(await reserve(owner)), "ownerShare");
+      check("e · and readAllowance says ownerShare for the same call", (await readAllowance(owner, new Date(), "tuning")).ownerShare, true);
     } finally {
-      await unseed(seeded);
-      await fixture.execute(sql`delete from model_calls where user_id in (${first}, ${second})`);
+      delete process.env.MODEL_OWNER_USER_ID;
+      if (shareOverride !== undefined) process.env.MODEL_OWNER_MONTHLY_USD = shareOverride;
+      await fixture.execute(sql`delete from model_calls where user_id = ${owner}`);
     }
   }
 
@@ -333,8 +294,6 @@ async function run() {
     const owner = newUser();
     const friend = newUser();
     process.env.MODEL_OWNER_USER_ID = owner;
-    // Pinned to the default share: an override at or above the $20 hard stop (staging's is $25)
-    // makes `ownerShare` unreachable, because the stop is checked first and wins.
     const shareOverride = process.env.MODEL_OWNER_MONTHLY_USD;
     delete process.env.MODEL_OWNER_MONTHLY_USD;
     const seeded: string[] = [];
@@ -350,6 +309,26 @@ async function run() {
       if (shareOverride !== undefined) process.env.MODEL_OWNER_MONTHLY_USD = shareOverride;
       await unseed(seeded);
       await fixture.execute(sql`delete from model_calls where user_id in (${owner}, ${friend})`);
+    }
+  }
+
+  // k · No monthly figure holds a friend: with the app's month-to-date at $25 or more, and one
+  // friend's own month past the owner's whole share, both friends still reserve.
+  {
+    const payer = newUser();
+    const friend = newUser();
+    const BIG = usdToMicro(25);
+    try {
+      const m = await monthToDate();
+      await seed(payer, "spent", Math.max(BIG - m, 0) + ownerShareMicro() + W);
+      check("k · the app's month-to-date stands at $25 or more", (await monthToDate()) >= BIG, true);
+      check("k · the friend who paid it still reserves", kindOf(await reserve(payer)), "reserved");
+      check("k · another friend still reserves", kindOf(await reserve(friend)), "reserved");
+      check("k · and neither reads a share refusal",
+        [(await readAllowance(payer)).ownerShare, (await readAllowance(friend)).ownerShare], [undefined, undefined]);
+    } finally {
+      // Real spend on the month: it goes now, not at the end.
+      await fixture.execute(sql`delete from model_calls where user_id in (${payer}, ${friend})`);
     }
   }
 }

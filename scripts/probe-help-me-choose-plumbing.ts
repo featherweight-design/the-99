@@ -1,5 +1,5 @@
 // Help me choose PR 1's plumbing, proved against a real Postgres: the migration's constraints and
-// the per-feature paused check.
+// the per-feature owner-share check.
 //
 // WHAT ONLY A DATABASE CAN ANSWER HERE.
 //   THE MIGRATION'S RULES. A budget answer is whole dollars of at least $1 (stored as cents, a
@@ -8,40 +8,38 @@
 //   feature since PR 4 registered its `FEATURE_CALLS` entry, and refuses a feature the code cannot
 //   price. Each is a constraint or a partial index, which no
 //   unit test here can reach.
-//   "PAUSED" IS JUDGED PER FEATURE. `readAllowance` compares the month's app-wide spend plus one
-//   call against the hard stop, and the call it adds is now the named feature's own worst case. A
-//   month with room for the cheaper feature's call and not the dearer one's must read paused for
-//   the dearer feature only. The rule is `callMicroFor`, unit tested; what this proves is that
-//   `readAllowance` hands it the feature over the real ledger query.
+//   "OWNER SHARE" IS JUDGED PER FEATURE. `readAllowance` compares the owner's own month-to-date
+//   plus one call against the owner's share, and the call it adds is the named feature's own
+//   worst case. An owner month with room for the cheaper feature's call and not the dearer one's
+//   must read `ownerShare` for the dearer feature only. The rule is `callMicroFor`, unit tested;
+//   what this proves is that `readAllowance` hands it the feature over the real ledger query.
 //
-// THE PAUSED CASE WRITES ONE APP-WIDE SENTINEL: a spent `model_calls` row costed to leave the month
-// between the two calls' worst cases. The cap is app-wide, so while it stands EVERY account on the
-// target reads paused for the dearer feature. That is why this probe is pointed at a SCRATCH
-// branch, never at `local-dev` where other sessions' dev servers read the same ledger. It refuses
-// to run when the month holds an unpriced call still inside `RESERVATION_TTL_MS`, which counts at
-// its worst case and which it cannot place without restating `countsAtWorstCase`. Every row it writes is under a per-run `user_id` and is
-// deleted in a `finally`.
+// THE OWNER-SHARE CASE makes this run's per-run user the owner (`MODEL_OWNER_USER_ID`, in this
+// process only) and writes ONE spent `model_calls` row under it, costed to leave that owner's
+// month between the two calls' worst cases. The owner's figure is the owner's own rows, so no
+// other account reads anything different while it stands. Every row it writes is under the
+// per-run `user_id` and is deleted in a `finally`. Point it at `local-dev` or a scratch branch,
+// never staging or production.
 //
-//   PROBE_TARGET_URL=<scratch branch> pnpm probe:help-me-choose-plumbing
+//   PROBE_TARGET_URL=<database> pnpm probe:help-me-choose-plumbing
 //
 // The target is its own variable and is REQUIRED: `.env` is loaded with override, so a
-// `DATABASE_URL=` prefix would be discarded and the run would land on `local-dev`, the one
-// database this probe must not write its sentinel to. `src/db` reads `DATABASE_URL` at module
-// scope, so the modules that use it are imported only after it is set.
+// `DATABASE_URL=` prefix would be discarded and the run would land wherever `.env` points.
+// `src/db` reads `DATABASE_URL` at module scope, so the modules that use it are imported only
+// after it is set.
 import "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
-import { RESERVATION_TTL_MS, type ModelFeature } from "../src/lib/model/allowance-rule";
+import type { ModelFeature } from "../src/lib/model/allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
-import { HARD_STOP_USD, monthStartUtc, usdToMicro } from "../src/lib/model/spend-rule";
 
 neonConfig.webSocketConstructor = ws;
 
 const DATABASE_URL = process.env.PROBE_TARGET_URL;
-if (!DATABASE_URL) throw new Error("PROBE_TARGET_URL is not set: name the scratch branch to write to");
+if (!DATABASE_URL) throw new Error("PROBE_TARGET_URL is not set: name the database to write to");
 process.env.DATABASE_URL = DATABASE_URL;
 let allowance: typeof import("../src/lib/model/allowance");
 
@@ -106,8 +104,8 @@ async function migration() {
   check("an unknown read status is refused", await refusal(read("done")), "23514");
 }
 
-async function paused() {
-  console.log("\n2. Paused is judged per feature");
+async function ownerShare() {
+  console.log("\n2. The owner's share is judged per feature");
   const features = Object.keys(FEATURE_CALLS) as ModelFeature[];
   // Sized from the prices, never through `callMicroFor`: that is the rule under test, and a
   // fixture sized by it agrees with it whatever it does.
@@ -120,45 +118,45 @@ async function paused() {
   }
 
   // Section 1's refunded calls carry no cost, and an unpriced call counts at its worst case while
-  // its TTL runs, so they would move the month this section measures. They go first.
+  // its TTL runs, so they would move the month this section measures. They go first, which
+  // leaves this run's owner a month of exactly the sentinel below.
   await fixture.execute(sql`delete from intake_reads where user_id = ${USER}`);
   await fixture.execute(sql`delete from model_calls where user_id = ${USER}`);
-  const now = new Date();
-  const start = monthStartUtc(now);
-  const [inFlight] = await rows<{ n: number }>(sql`
-    select count(*)::int as n from model_calls
-    where cost_micro_usd is null and status in ('reserved', 'refunded') and created_at >= ${start.toISOString()}::timestamp
-      and created_at > ${new Date(now.getTime() - RESERVATION_TTL_MS).toISOString()}::timestamp`);
-  if (inFlight.n > 0) {
-    check("no unpriced call is in flight this month (the sentinel cannot be placed otherwise)", inFlight.n, 0);
-    return;
-  }
-  const [spend] = await rows<{ micro: string }>(sql`
-    select coalesce(sum(cost_micro_usd), 0) as micro from model_calls
-    where cost_micro_usd is not null and created_at >= ${start.toISOString()}::timestamp`);
-  // Leave the month with room for the small call and not the big one: halfway between them.
-  const room = Math.round((small.micro + big.micro) / 2);
-  const sentinel = usdToMicro(HARD_STOP_USD) - Number(spend.micro) - room;
-  if (sentinel < 0) {
-    check("the month has room for a sentinel", Number(spend.micro), `under ${usdToMicro(HARD_STOP_USD) - room}`);
-    return;
-  }
-  await fixture.execute(sql`
-    insert into model_calls (user_id, feature, status, model, cost_micro_usd)
-    values (${USER}, 'synopsis', 'spent', 'claude-sonnet-5', ${sentinel})`);
+  const ownerBefore = process.env.MODEL_OWNER_USER_ID;
+  const shareBefore = process.env.MODEL_OWNER_MONTHLY_USD;
+  process.env.MODEL_OWNER_USER_ID = USER;
+  // The default share keeps the sentinel a few dollars; it is sized from `ownerShareMicro()` all the same.
+  delete process.env.MODEL_OWNER_MONTHLY_USD;
+  try {
+    const now = new Date();
+    // Leave the owner's month with room for the small call and not the big one: halfway between them.
+    const room = Math.round((small.micro + big.micro) / 2);
+    const sentinel = allowance.ownerShareMicro() - room;
+    if (sentinel < 0) {
+      check("the owner's share has room for a sentinel", allowance.ownerShareMicro(), `at least ${room}`);
+      return;
+    }
+    await fixture.execute(sql`
+      insert into model_calls (user_id, feature, status, model, cost_micro_usd)
+      values (${USER}, 'synopsis', 'spent', 'claude-sonnet-5', ${sentinel})`);
 
-  const read = allowance.readAllowance;
-  const reads = await Promise.all([read(USER, now, big.f), read(USER, now, small.f), read(USER, now)]);
-  check(`${big.f}, the dearer call (${big.micro}), reads paused`, reads[0].paused !== undefined, true);
-  check(`${small.f}, the cheaper call (${small.micro}), does not`, reads[1].paused !== undefined, false);
-  check("no feature named reads as the cheapest call, not paused", reads[2].paused !== undefined, false);
+    const read = allowance.readAllowance;
+    const reads = await Promise.all([read(USER, now, big.f), read(USER, now, small.f), read(USER, now)]);
+    check(`${big.f}, the dearer call (${big.micro}), reads ownerShare`, reads[0].ownerShare, true);
+    check(`${small.f}, the cheaper call (${small.micro}), does not`, reads[1].ownerShare, undefined);
+    check("no feature named reads as the cheapest call, no ownerShare", reads[2].ownerShare, undefined);
+  } finally {
+    if (ownerBefore === undefined) delete process.env.MODEL_OWNER_USER_ID;
+    else process.env.MODEL_OWNER_USER_ID = ownerBefore;
+    if (shareBefore !== undefined) process.env.MODEL_OWNER_MONTHLY_USD = shareBefore;
+  }
 }
 
 async function main() {
   try {
     allowance = await import("../src/lib/model/allowance");
     await migration();
-    await paused();
+    await ownerShare();
   } finally {
     await fixture.execute(sql`delete from intake_reads where user_id = ${USER}`);
     await fixture.execute(sql`delete from model_calls where user_id = ${USER}`);

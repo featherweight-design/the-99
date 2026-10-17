@@ -1,9 +1,9 @@
-import { ALARM_PCTS, BUDGET_USD, usdToMicro } from "../model/spend-rule";
+import { usdToMicro } from "../model/spend-rule";
 
 /**
  * The admin's Costs page as arithmetic (admin STATES C1 to C7). Pure and client-safe: `costs.ts`
  * runs the SQL and hands its rows here. Every month is a UTC calendar month, because that is how
- * the bill and the spend cap count (`spend-rule.ts`).
+ * the bill and the owner's share count (`spend-rule.ts`).
  */
 
 /** A UTC calendar month; `month` is 0-based, as `Date` has it. */
@@ -62,8 +62,6 @@ export type CostRows = {
   ownerShareMicro: number;
   previous: { runs: number; micro: number };
   settings: Partial<Record<SettingKey, Setting>>;
-  /** The spend cap refuses every press now (`readAllowance`'s `paused`). Current month only. */
-  paused: boolean;
   /**
    * Spend `model_calls` does not hold, and the part of it that is labels: card label batches, the
    * month's eval ledgers (drawn apart, never in System), and the manual collector's `labels` rows
@@ -85,7 +83,8 @@ export type SystemSplit = { labels: number; rewrites: number; total: number; lab
  */
 export type EvalSpend = { micro: number; partial: boolean };
 
-export type Banner = { kind: "paused" } | { kind: "alarm" } | { kind: "pace"; day: number } | null;
+/** The trend's least scale: a cent, so a month with no player runs still draws one. */
+export const TREND_FLOOR_MICRO = 10_000;
 
 export type CostSummary = {
   current: boolean;
@@ -109,22 +108,19 @@ export type CostSummary = {
   /** Month-end projections at the month's own daily rate. Current month only. */
   callsPaceMicro: number | null;
   playerPaceMicro: number | null;
-  /** The highest alarm percentage the player series has reached, or 0. */
-  alarm: number;
-  banner: Banner;
   ownerMicro: number | null;
   ownerShareMicro: number;
   previous: { runs: number; micro: number };
   settings: Partial<Record<SettingKey, Setting>>;
   /** Counted against the account cap: entered with an as-of date inside this month. */
   elsewhere: Setting | null;
-  /** The trend's top: never under the plan plus 10% (design table, trend cap lines). */
+  /** The trend's top: the series or its pace, whichever is higher, and never under `TREND_FLOOR_MICRO`. */
   trendScaleMicro: number;
 };
 
 /**
  * Everything the Costs core draws, from the month's rows. `now` decides whether the month is the
- * current one: only that month has a pace, a pace banner and the pause.
+ * current one: only that month has a pace.
  */
 export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSummary {
   const current = sameMonth(month, monthOf(now));
@@ -146,16 +142,6 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
 
   const pace = (micro: number) => (current ? Math.round((micro / elapsed) * n) : null);
   const playerPaceMicro = pace(player.micro);
-  const plan = usdToMicro(BUDGET_USD);
-  const alarm = Math.max(0, ...ALARM_PCTS.filter((pct) => player.micro >= (plan * pct) / 100));
-
-  let banner: Banner = null;
-  if (current && rows.paused) banner = { kind: "paused" };
-  else if (current && alarm >= 80) banner = { kind: "alarm" };
-  else if (current && player.micro > 0 && player.micro < plan && (playerPaceMicro ?? 0) > plan) {
-    // The day the month's daily rate carries the series past the plan.
-    banner = { kind: "pace", day: Math.ceil((plan / player.micro) * elapsed) };
-  }
 
   const outside = rows.outside ?? { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0 };
   const labels = outside.batchMicro + outside.labelCallsMicro;
@@ -182,14 +168,14 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
     playerByDay: byDay,
     callsPaceMicro: pace(calls.micro),
     playerPaceMicro,
-    alarm,
-    banner,
     ownerMicro: rows.ownerMicro,
     ownerShareMicro: rows.ownerShareMicro,
     previous: rows.previous,
     settings: rows.settings,
     elsewhere: elsewhere && elsewhere.asOf.startsWith(prefix) ? elsewhere : null,
-    trendScaleMicro: Math.max(Math.round(plan * 1.1), player.micro, playerPaceMicro ?? 0),
+    // The series' own height, never a plan's: there is none since 2026-10-17. At least a cent, so
+    // an empty month still draws a scale.
+    trendScaleMicro: Math.max(player.micro, playerPaceMicro ?? 0, TREND_FLOOR_MICRO),
   };
 }
 

@@ -3,12 +3,7 @@ import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "./allowance-rule";
 import { featureWorstCaseMicroUsd } from "./prices";
 import {
-  ALARM_PCTS,
-  BUDGET_USD,
-  crossedAlarms,
-  HARD_STOP_USD,
   monthStartUtc,
-  nextMonthStartUtc,
   OWNER_SHARE_USD,
   ownerShareUsdFrom,
   countsAtWorstCase,
@@ -21,19 +16,13 @@ const now = new Date("2026-09-24T12:00:00Z");
 
 describe("the constants", () => {
   it("are the ruled figures", () => {
-    expect([HARD_STOP_USD, BUDGET_USD, OWNER_SHARE_USD]).toEqual([20, 10, 5]);
-    expect(ALARM_PCTS).toEqual([50, 80]);
+    expect(OWNER_SHARE_USD).toBe(5);
   });
 });
 
 describe("the month", () => {
   it("starts and ends on UTC calendar boundaries", () => {
     expect(monthStartUtc(now).toISOString()).toBe("2026-09-01T00:00:00.000Z");
-    expect(nextMonthStartUtc(now).toISOString()).toBe("2026-10-01T00:00:00.000Z");
-  });
-
-  it("rolls the year in December", () => {
-    expect(nextMonthStartUtc(new Date("2026-12-31T23:59:59Z")).toISOString()).toBe("2027-01-01T00:00:00.000Z");
   });
 
   it("reads the instant in UTC, whatever the local clock says", () => {
@@ -79,59 +68,24 @@ describe("unpricedWorstCaseMicro", () => {
 
 describe("spendRefusal", () => {
   const call = 208_000;
-  const stop = usdToMicro(HARD_STOP_USD);
   const share = usdToMicro(OWNER_SHARE_USD);
 
-  it("lets a call through that fits under the hard stop exactly", () => {
-    expect(spendRefusal({ appMonthMicro: stop - call, ownerMonthMicro: null, callMicro: call })).toBeNull();
-  });
-
-  it("pauses the app once one more call would pass the hard stop", () => {
-    expect(spendRefusal({ appMonthMicro: stop - call + 1, ownerMonthMicro: null, callMicro: call })).toBe("paused");
-  });
-
   it("holds the owner to their share, and a friend never", () => {
-    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share - call + 1, callMicro: call })).toBe("ownerShare");
-    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share - call, callMicro: call })).toBeNull();
-    expect(spendRefusal({ appMonthMicro: share, ownerMonthMicro: null, callMicro: call })).toBeNull();
+    expect(spendRefusal({ ownerMonthMicro: share - call + 1, callMicro: call })).toBe("ownerShare");
+    expect(spendRefusal({ ownerMonthMicro: share - call, callMicro: call })).toBeNull();
+    expect(spendRefusal({ ownerMonthMicro: null, callMicro: call })).toBeNull();
   });
 
   it("holds the owner to an overridden share when one is passed", () => {
-    // Below the stop, and the app total equal to the owner's own: the state a lone owner reaches.
-    const wide = usdToMicro(15);
-    const at = (owner: number) => spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: wide });
+    const wide = usdToMicro(25);
+    const at = (owner: number) => spendRefusal({ ownerMonthMicro: owner, callMicro: call, ownerShareMicro: wide });
     expect(at(share)).toBeNull();
     expect(at(wide - call)).toBeNull();
     expect(at(wide - call + 1)).toBe("ownerShare");
   });
 
-  it("pauses at the hard stop before an owner share above it can refuse", () => {
-    const above = usdToMicro(25);
-    const owner = stop - call + 1;
-    expect(spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: above })).toBe("paused");
-  });
-
-  it("names the pause over the share when both apply", () => {
-    expect(spendRefusal({ appMonthMicro: stop, ownerMonthMicro: share, callMicro: call })).toBe("paused");
-  });
-});
-
-describe("crossedAlarms", () => {
-  const five = usdToMicro(5);
-  const eight = usdToMicro(8);
-
-  it("reports a settle that carries spend onto or over a line", () => {
-    expect(crossedAlarms(five - 1, five)).toEqual([50]);
-    expect(crossedAlarms(eight - 1, eight + 100)).toEqual([80]);
-  });
-
-  it("reports both lines when one settle crosses both", () => {
-    expect(crossedAlarms(five - 1, eight)).toEqual([50, 80]);
-  });
-
-  it("stays quiet below a line, and once past it", () => {
-    expect(crossedAlarms(0, five - 1)).toEqual([]);
-    expect(crossedAlarms(five, five + 1_000)).toEqual([]);
+  it("never refuses a friend, however much the month has spent (no app-wide limit, 2026-10-17)", () => {
+    expect(spendRefusal({ ownerMonthMicro: null, callMicro: usdToMicro(1_000) })).toBeNull();
   });
 });
 

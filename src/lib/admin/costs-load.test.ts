@@ -25,7 +25,6 @@ vi.mock("../../db", () => ({
 vi.mock("../model/allowance", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../model/allowance")>()),
   modelOwnerUserId: () => "user_owner",
-  readAllowance: async () => ({ paused: false }),
 }));
 
 const { loadCosts, readEvalLedgers } = await import("./costs");
@@ -42,27 +41,27 @@ afterEach(() => {
 describe("loadCosts", () => {
   it("reads the owner's share from MODEL_OWNER_MONTHLY_USD", async () => {
     process.env.MODEL_OWNER_MONTHLY_USD = "25";
-    const { summary: s } = await loadCosts(OCT, "user_admin", NOW);
+    const { summary: s } = await loadCosts(OCT, NOW);
     expect(s.ownerShareMicro).toBe(25_000_000);
     expect(s.ownerMicro).toBe(0);
   });
 
   it("falls back to spend-rule's share when the env var is unset", async () => {
     delete process.env.MODEL_OWNER_MONTHLY_USD;
-    const { summary: s } = await loadCosts(OCT, "user_admin", NOW);
+    const { summary: s } = await loadCosts(OCT, NOW);
     expect(s.ownerShareMicro).toBe(5_000_000);
   });
 
   it("reads every figure inside one repeatable-read transaction", async () => {
     reads.outside = 0;
     reads.options.length = 0;
-    await loadCosts(OCT, "user_admin", NOW);
+    await loadCosts(OCT, NOW);
     expect(reads.options).toEqual([{ isolationLevel: "repeatable read" }]);
     expect(reads.outside).toBe(0);
   });
 
   it("hands the view the committed eval ledgers, and their month apart from the system figure", async () => {
-    const { summary, detail } = await loadCosts(OCT, "user_admin", NOW);
+    const { summary, detail } = await loadCosts(OCT, NOW);
     const files = readdirSync(join(process.cwd(), "docs/superpowers/eval")).filter((f) => /^ledger.*\.jsonl$/.test(f));
     expect(files.length).toBeGreaterThan(0);
     expect(detail.ledgers.map((l) => l.file).sort()).toEqual(files.sort());

@@ -115,10 +115,10 @@ describe("callMicroFor", () => {
 });
 
 describe("reserveModelCall and the origins", () => {
-  it("prices the cap from player rows only and writes its own origin", async () => {
+  it("reads a friend's player rows only, never a month's spend, and writes its own origin", async () => {
     const wheres: unknown[] = [];
     let inserted: Record<string, unknown> | undefined;
-    const answers: unknown[][] = [[{ app: "0", user: "0" }], [], []];
+    const answers: unknown[][] = [[]];
     const tx = {
       execute: async () => ({ rows: [] }),
       select: () => ({ from: () => ({ where: (w: unknown) => { wheres.push(w); return Promise.resolve(answers.shift() ?? []); } }) }),
@@ -128,8 +128,9 @@ describe("reserveModelCall and the origins", () => {
     expect(got).toEqual({ id: "call-1" });
     expect(inserted?.origin).toBe("player");
     const dialect = new PgDialect();
-    // The month's priced and unpriced reads AND the window's ledger rows: a system call is a credit in none.
-    expect(wheres).toHaveLength(3);
+    // The window's ledger rows alone: a friend has no monthly figure since 2026-10-17 (no
+    // app-wide limit; only the owner's share reads one), and a system call is a credit in none.
+    expect(wheres).toHaveLength(1);
     for (const w of wheres) {
       const q = dialect.sqlToQuery(w as never);
       expect(q.sql).toContain('"model_calls"."origin" = $');
@@ -142,7 +143,7 @@ describe("reserveModelCall and the origins", () => {
     const spent = (n: number) => Array.from({ length: n }, (_, i) => ({ status: "spent", createdAt: new Date(now.getTime() - (i + 1) * 60_000) }));
     const dialect = new PgDialect();
     const reserve = async (used: number) => {
-      const answers: unknown[][] = [[{ app: "0", user: "0" }], [], spent(used)];
+      const answers: unknown[][] = [spent(used)];
       const reads: string[] = [];
       const tx = {
         execute: vi.fn(async (q: never) => {
@@ -172,9 +173,51 @@ describe("reserveModelCall and the origins", () => {
     const got = await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system");
     expect(got).toEqual({ id: "call-s" });
     expect(inserted).toMatchObject({ userId: "user_a", feature: "synopsis", origin: "system" });
-    // No lock, no month's spend, no allowance: the player path's three reads never ran.
+    // No lock, no allowance: the player path's reads never ran.
     expect(tx.execute).not.toHaveBeenCalled();
     expect(tx.select).not.toHaveBeenCalled();
+  });
+});
+
+describe("reserveModelCall and the owner's share", () => {
+  const before = process.env.MODEL_OWNER_USER_ID;
+  afterEach(() => {
+    if (before === undefined) delete process.env.MODEL_OWNER_USER_ID;
+    else process.env.MODEL_OWNER_USER_ID = before;
+  });
+  const reserve = async (userId: string, ownerMicro: number | null) => {
+    const wheres: unknown[] = [];
+    // The owner's priced sum and unpriced rows (the owner only), then the window's ledger rows.
+    const answers: unknown[][] = ownerMicro === null ? [[]] : [[{ micro: String(ownerMicro) }], [], []];
+    const tx = {
+      execute: async () => ({ rows: [] }),
+      select: () => ({ from: () => ({ where: (w: unknown) => { wheres.push(w); return Promise.resolve(answers.shift() ?? []); } }) }),
+      insert: () => ({ values: () => ({ returning: async () => [{ id: "call-1" }] }) }),
+    };
+    return { got: await reserveModelCall(tx as never, userId, "tuning", "claude-sonnet-5"), wheres };
+  };
+
+  it("reads the owner's own month and refuses past the share", async () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    const share = ownerShareMicro();
+    const call = featureWorstCaseMicroUsd("tuning", "claude-sonnet-5");
+    expect((await reserve("user_owner", share - call)).got).toEqual({ id: "call-1" });
+    const over = await reserve("user_owner", share - call + 1);
+    expect(over.got).toEqual({ refused: "ownerShare" });
+    // The figure is the owner's alone: both month reads are scoped to their user id.
+    for (const w of over.wheres.slice(0, 2)) {
+      const q = new PgDialect().sqlToQuery(w as never);
+      expect(q.sql).toContain('"model_calls"."user_id" = $');
+      expect(q.params).toContain("user_owner");
+    }
+  });
+
+  it("never reads a month's spend for a friend: there is no app-wide limit to hold them to", async () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    const friend = await reserve("user_a", null);
+    expect(friend.got).toEqual({ id: "call-1" });
+    // The window's ledger rows, and nothing else.
+    expect(friend.wheres).toHaveLength(1);
   });
 });
 
@@ -203,16 +246,16 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
   const spentToday = (n: number) => Array.from({ length: n }, () => ({ status: "spent", createdAt: new Date(now.getTime() - 60_000) }));
 
   it("funds from the free allowance while it has room, reading no lot, and counts only allowance runs in the window", async () => {
-    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1)]);
+    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1)]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBeNull();
-    expect(f.wheres).toHaveLength(3);
-    const window = new PgDialect().sqlToQuery(f.wheres[2] as never);
+    expect(f.wheres).toHaveLength(1);
+    const window = new PgDialect().sqlToQuery(f.wheres[0] as never);
     expect(window.sql).toContain('"model_calls"."credit_grant_id" is null');
   });
 
   it("refuses exactly as today once the allowance is spent and the player holds no lot", async () => {
-    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), []]);
+    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), []]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
     expect(f.inserted()).toBeUndefined();
   });
@@ -223,7 +266,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       { id: "plan-1", source: "plan", units: 60, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-10-01T00:00:00Z") },
     ];
     const usage = [{ grantId: "pack-1", spent: "3", reserved: null }];
-    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("plan-1");
   });
@@ -231,14 +274,14 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
   it("refuses when every lot is spent, counting a reservation still in flight", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
     const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - 1000] }];
-    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
   });
 
   it("a lot's stranded reservation gives its credit back", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
     const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - RESERVATION_TTL_MS - 1] }];
-    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("pack-1");
   });
@@ -298,7 +341,6 @@ describe("recordModelUsage writes one part per provider call (admin brief, rule 
     const inserted: { table: unknown; rows: unknown[] }[] = [];
     const tx = {
       update: () => ({ set: () => ({ where: () => ({
-        // Dated before this month, so the alarm read is never reached.
         returning: async () => (first ? [{ createdAt: new Date("2000-01-01T00:00:00Z"), cost: 1 }] : []),
       }) }) }),
       insert: (table: unknown) => ({ values: async (rows: unknown[]) => { inserted.push({ table, rows }); } }),

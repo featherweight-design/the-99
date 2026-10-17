@@ -37,34 +37,20 @@ export const adminCopy = {
     tileSub: {
       runs: (runs: number) => plural(runs, "run", "runs"),
       pace: (v: string) => `on pace for ${v}`,
-      ofPlan: (pct: number, plan: string) => `${pct}% of the ${plan} plan`,
       ofCeiling: (pct: number, cap: string) => `${pct}% of the ${cap} ceiling`,
       ofCeilingAtLeast: (pct: number, cap: string) => `at least ${pct}% of the ${cap} ceiling`,
       system: "labels, rewrites and prose",
       accounts: (n: number) => (n === 0 ? "no accounts with runs" : `${plural(n, "account", "accounts")} with runs`),
-    },
-    banner: {
-      paused: (month: string) => `Runs are paused until ${month} 1.`,
-      alarm: (pct: number) => `Player runs have reached ${pct}% of the plan.`,
-      pace: (plan: string, date: string) => `On this pace, player runs pass the ${plan} plan around ${date}.`,
     },
     caps: "Against the caps",
     capsMeta: "set in code and read only, except the rows recorded here",
     capsReference: "The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.",
     // `here` names a figure typed in on this page, not read from code; owed to /copy-review.
     capSource: { code: "in code", here: "recorded here" },
-    capRows: { plan: "Player runs, planned budget", owner: "Owner testing share", ceiling: "System ceiling", account: "Anthropic account cap" },
+    capRows: { owner: "Owner testing share", ceiling: "System ceiling", account: "Anthropic account cap" },
     of: (figure: string, cap: string) => `${figure} of ${cap}`,
     notSet: (figure: string) => `${figure} · not set`,
-    ticks: {
-      alarm: (cap: string, pct: number) => `${cap} · ${pct}%`,
-      plan: (cap: string) => `${cap} plan`,
-      hardStop: (cap: string) => `${cap} hard stop`,
-    },
     capSub: {
-      planLines: (lines: string) => `${lines}. `,
-      plan: "BUDGET_USD, ALARM_PCTS and HARD_STOP_USD, in spend-rule.ts.",
-      planPace: (v: string) => ` Hatched: the rest of the month on this pace, to ${v}.`,
       owner: "MODEL_OWNER_MONTHLY_USD, or OWNER_SHARE_USD in spend-rule.ts when it is unset.",
       noOwner: "MODEL_OWNER_USER_ID is not set, so no account has a share.",
       ceiling: "System rows in model_calls and card label batches. Evals are not counted.",
@@ -82,7 +68,6 @@ export const adminCopy = {
     changeCap: "Change the cap",
     changeCeiling: "Change the ceiling",
     trendPlayer: "Player runs, month to date",
-    trendPlayerMeta: (plan: string) => `against the ${plan} plan`,
     trendNote: "Free rewrites are system spend and not in this line.",
     trend: {
       scale: (v: string) => `${v} scale`,
