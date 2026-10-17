@@ -12,7 +12,7 @@ Low Sun (the default theme), and the section and row are drawn in all six themes
 | One friend | H2, P2 | `FRIENDS · 1`, `All friends ›`; one face, then four empty seats to the row's end; Add a friend. |
 | Two to five friends | rule | Every face, in /friends' order (by name), then empty seats to the end of the row. |
 | Six or more (overflow) | H3, P3 | Four faces, then `+N` (`aria-hidden`; the heading carries the total). |
-| Phone placement | P1–P4 (top), P5 (option B) | First under the header buttons and banner; Commitments stays last. |
+| Phone placement | P1–P4 | After Ready to build, before Pick up where you left off; Commitments stays last. |
 | A friend link open, no friends | H4, P4 | `Friend link open · 6 days left · Show` under the line; the next empty seat carries the diamond. |
 | A link open, under a day | rule | `Under a day left` in `--warning`. |
 | Two or more links open | rule | `3 friend links open · See them ›` to /friends. |

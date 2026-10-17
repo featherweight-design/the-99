@@ -1,6 +1,6 @@
 # The 99 — Friends on Home (Social R3 addendum) · design handoff, R1
 
-`design_handoff_the99_social_r3/addendum-friends-home/` · 2026-10-16 · account 1 · **R2, for audit. Not approved.**
+`design_handoff_the99_social_r3/addendum-friends-home/` · 2026-10-16 · account 1 · **R2b, approved by Hugh, 2026-10-16.** Build from these files once every line has been through `/copy-review`.
 
 A light addendum. Home gains a permanent Friends section, and the first-run checklist gains a Friends row. Both sit
 behind `SOCIAL_FRIENDS_ENABLED`. Phone and desktop, in all six themes.
@@ -41,7 +41,8 @@ The canvas is live as a Design artifact in account 1: `The 99 - Friends on Home 
 
 ## The answer in one line
 
-At 1280 Friends sits under Commitments in the right column; at 390 it is on the first screen, under the header buttons.
+At 1280 Friends sits under Commitments in the right column; at 390 it sits after Ready to build, before Pick up where
+you left off.
 It is a section, not a card: a mono label, a row of five seats that always spans the width, and one Add a friend. On the checklist it is
 an unnumbered row under step 3, live from the first visit, done at one friend.
 
@@ -49,9 +50,19 @@ an unnumbered row under step 3, live from the first visit, done at one friend.
 
 ## Decisions log
 
+### R2b (Hugh's picks, 2026-10-16) — approved
+
+- **Phone placement: after Ready to build** (Hugh picked R2's option P5). At 390 Friends sits between Ready to build's
+  `All commanders` line and Pick up where you left off. The heroes stay first; Commitments stays last. P1–P4 are
+  redrawn there; R2's first-screen frames are retired.
+- **Empty seats fill the row** (R2.2 kept), and **the diamond** in the next empty seat while a link is open stays (G2).
+- **The tour stays as approved** (G1, Design's call, Hugh delegated it). Step 6 keeps its one light, on the banner.
+  The checklist row is on the page the tour runs over, a second light would break the tour's one-control-per-step
+  shape, and with the invite-only launch most newcomers reach that step with the row already done.
+
 ### R2 (Hugh's notes on R1, 2026-10-16)
 
-- **R2.1 · Phone: Friends moves up (P1–P4).** R1 put it last, after Commitments, about 1,700px down the page. It now sits
+- **R2.1 · Phone: Friends moves up.** *Superseded by R2b: after Ready to build.* R1 put it last, after Commitments, about 1,700px down the page. It now sits
   first under the header buttons (and the banner, when it shows), above Ready to build, so it is on the first screen.
   Commitments stays last. Desktop is unchanged: the right column is already on the first screen. The two widths now
   order the blocks differently, which `dashboard.tsx` does today only by one DOM order; engineering draws Friends in
@@ -147,15 +158,15 @@ an unnumbered row under step 3, live from the first visit, done at one friend.
 
 | # | Gap | For |
 |---|---|---|
-| G1 | Discovery R3's tour, step 6 (C7) says nothing of Friends because the checklist had no row (G25). It now does: step 6 could gain one sentence and a second light on the row. Not drawn. | **Hugh** |
-| G2 | The diamond in the next empty seat (H4) is the one decorative change to a seat. Drop it if it reads as a control. | **Hugh** |
+| G1 | Closed (R2b, Design's call): the tour stays as approved; step 6 keeps one light, on the banner. | Closed |
+| G2 | Closed (Hugh, R2b): the diamond in the next empty seat stays. | Closed |
 | G3 | Home reads `listFriends` and the viewer's open links. Both join Home's `cachePageForUser` key: `friendGeneration(viewer)` for friends (AGENTS.md, `check:list-cache`), the viewer's stamp for their own links. `/decks` is untouched. | Engineering |
 | G4 | The invite-only round (brief 2026-10-16) may give Add a friend two paths. Home's press opens whatever that dialog becomes; nothing here changes. | Engineering |
 | G5 | The no-friends line names seating and spares. With `SOCIAL_GAMES_ENABLED` or spares off for the reader, that clause goes (`Add the people you play with.`). | Copy |
 | G6 | Every new string is a placeholder for `/copy-review`. About entries are paused for this line (Discovery R3); Friends already has its social-line entry. | Copy |
 | G7 | The commitments column today renders only with Commitments. It now renders when either block does. | Engineering |
-| G8 | Friends is first at 390 and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS `order` below 1180. | Engineering |
-| G9 | Phone placement: top (P1–P4) or after Ready to build (P5). | **Hugh** |
+| G8 | Friends sits after Ready to build at 390 and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS `order` below 1180. | Engineering |
+| G9 | Closed (Hugh, R2b): at 390, after Ready to build. | Closed |
 
 ## Not done this round
 

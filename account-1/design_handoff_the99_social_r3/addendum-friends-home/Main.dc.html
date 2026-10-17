@@ -13,9 +13,9 @@
 </helmet>
 <div style="width:1280px;min-height:1760px;box-sizing:border-box;padding:56px 64px 64px;background:#14110E;font-family:'IBM Plex Sans',sans-serif;color:#C0B8A6;display:flex;flex-direction:column;gap:30px">
   <header style="display:flex;flex-direction:column;gap:10px">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#8B8270">SOCIAL R3 ADDENDUM · DISCOVERY R3 G25 · 2026-10-16 · ACCOUNT 1 · R2, HUGH’S NOTES ON R1</span>
-    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:40px;line-height:1.1;color:#EDE6D8">Friends on Home · R2</h1>
-    <p style="margin:0;max-width:1040px;font-size:17px;line-height:1.6;color:#EDE6D8">At 1280 Friends sits under Commitments in the right column; at 390 it moves up to the first screen, under the header buttons. It is a section, not a card: a label, a row of five seats that spans the width, and one Add a friend. On the first-run checklist it is an unnumbered row under step 3, live from the first visit.</p>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#8B8270">SOCIAL R3 ADDENDUM · DISCOVERY R3 G25 · 2026-10-16 · ACCOUNT 1 · R2b, APPROVED BY HUGH</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:40px;line-height:1.1;color:#EDE6D8">Friends on Home · R2b</h1>
+    <p style="margin:0;max-width:1040px;font-size:17px;line-height:1.6;color:#EDE6D8">At 1280 Friends sits under Commitments in the right column; at 390 it sits after Ready to build, before Pick up where you left off. It is a section, not a card: a label, a row of five seats that spans the width, and one Add a friend. On the first-run checklist it is an unnumbered row under step 3, live from the first visit.</p>
   </header>
 
   <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
@@ -24,7 +24,7 @@
       <span style="font-size:13px;color:#8B8270">Look at Home at 1280, H1–H4; Home at 390, P1–P4</span>
       <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.55">
         <li><b style="color:#EDE6D8;font-weight:600">1280:</b> the right column, under Commitments. The left column stays the deck work: Ready to build, then Pick up where you left off.</li>
-        <li><b style="color:#EDE6D8;font-weight:600">390 (R2):</b> first under the header buttons and the banner, above Ready to build, so it is on the first screen. Commitments stays last. P5 draws the alternative, after Ready to build.</li>
+        <li><b style="color:#EDE6D8;font-weight:600">390 (R2b, Hugh’s pick):</b> after Ready to build, before Pick up where you left off. The heroes stay first; Commitments stays last.</li>
         <li><b style="color:#EDE6D8;font-weight:600">The banner</b> spans both columns above the body and keeps its place. Friends never moves above it, and the two show together (H2, P2).</li>
         <li><b style="color:#EDE6D8;font-weight:600">Quiet:</b> no surface, border or ✕. The column’s one card stays Commitments.</li>
       </ul>
@@ -105,15 +105,15 @@ class Component extends DCLogic {
       ['Switch off', 'SOCIAL_FRIENDS_ENABLED off: no section, no row.'],
     ].map(([what, how], i) => ({ what, how, row: row(i, '200px 1fr') }));
     const gaps = [
-      ['G1', 'Discovery R3’s tour, step 6 (C7): with Friends now on the checklist, step 6 could name it in one sentence with a second light. Not drawn.', 'Hugh'],
-      ['G2', 'The empty seat that holds the diamond (H4) is the one decorative change to a seat. Drop it if it reads as a control.', 'Hugh'],
+      ['G1', 'Closed (Design’s call, R2b): the tour stays as approved. Step 6 keeps one light, on the banner; the row is on the checklist itself, and most newcomers arrive with it done.', 'Closed'],
+      ['G2', 'Closed (Hugh, R2b): the diamond in the next empty seat stays.', 'Closed'],
       ['G3', 'Home reads friends and open links. Each read joins the cache key: friendGeneration(viewer) for friends, the stamp for the viewer’s own links. /decks is untouched.', 'Engineering'],
       ['G4', 'The invite-only round may give Add a friend two paths. Home’s press opens whatever that dialog becomes; nothing here changes.', 'Engineering'],
       ['G5', 'The line names seating and spares. With SOCIAL_GAMES_ENABLED or spares off, that clause goes.', 'Copy'],
       ['G6', 'Every new string is a placeholder for /copy-review. About entries are paused for this line.', 'Copy'],
       ['G7', 'The right column renders today only with Commitments. It now renders when either block does, so Friends stands alone if the Commitments read fails.', 'Engineering'],
-      ['G8', 'Friends is first at 390 and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS order below 1180.', 'Engineering'],
-      ['G9', 'Phone placement: first under the header buttons (P1–P4), or after Ready to build (P5).', 'Hugh'],
+      ['G8', 'Friends sits between Ready to build and the resume rows at 390, and in the right column at 1280: one block in two orders. Draw it in two places, or reorder with CSS order below 1180.', 'Engineering'],
+      ['G9', 'Closed (Hugh, R2b): at 390, after Ready to build. Empty seats fill the row.', 'Closed'],
     ].map(([id, text, who], i) => ({
       id, text, for: who, row: row(i, '44px 1fr 110px'),
       forStyle: `justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:${who === 'Hugh' ? '#EDE6D8' : '#8B8270'}`,

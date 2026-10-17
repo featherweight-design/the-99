@@ -25,7 +25,7 @@
       "y": 0,
       "w": 1280,
       "h": 1760,
-      "title": "Main · the calls, locks and gaps (R2)",
+      "title": "Main · the calls, locks and gaps (R2b, approved)",
       "page": "boards"
     },
     "Home-Desktop.dc.html": {
@@ -39,9 +39,9 @@
     "Home-Phone.dc.html": {
       "x": 4160,
       "y": 0,
-      "w": 2270,
+      "w": 1840,
       "h": 2260,
-      "title": "Home at 390 · P1–P5 (R2)",
+      "title": "Home at 390 · P1–P4 (R2b)",
       "page": "boards"
     },
     "Checklist-Desktop.dc.html": {

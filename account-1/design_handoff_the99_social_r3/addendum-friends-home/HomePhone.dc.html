@@ -67,7 +67,7 @@
   <dc-import name="PhoneChrome" theme="{{ theme }}" part="tabs" hint-size="390px,74px"></dc-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["none","one","four","many","pending","pendingSoon"],"default":"many"},"banner":{"editor":"boolean","default":false},"place":{"editor":"enum","options":["top","mid","end"],"default":"top"},"$preview":{"width":390,"height":2060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["none","one","four","many","pending","pendingSoon"],"default":"many"},"banner":{"editor":"boolean","default":false},"place":{"editor":"enum","options":["top","mid","end"],"default":"mid"},"$preview":{"width":390,"height":2060}}'>
 class Component extends DCLogic {
   renderVals() {
     const TH = {
@@ -116,7 +116,7 @@ class Component extends DCLogic {
     };
     return {
       theme, s, banner, state: p.state || 'many',
-      top: (p.place || 'top') === 'top', mid: p.place === 'mid', end: p.place === 'end',
+      top: p.place === 'top', mid: (p.place || 'mid') === 'mid', end: p.place === 'end',
       heroes: [
         { name: 'Zimone, Infinite Analyst', type: 'Legendary Creature — Human Wizard', fit: '84', fits: '212', art: '/_blob/2d6f874a494e6f1abf5da2904d33be25' },
         { name: 'Giada, Font of Hope', type: 'Legendary Creature — Angel', fit: '81', fits: '198', art: '/_blob/7d3c5a2e7417781f6f5dec087ccf9548' },
