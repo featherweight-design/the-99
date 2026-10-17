@@ -336,16 +336,17 @@ describe("perRequestProblems", () => {
 
   it("fails a use after the call that sits in a loop around it", () => {
     const src = page_(`export default async function Page() {\n  let r;\n  for (const k of ks) {\n    await cachePageForUser(u, k, [], async () => ({ value: r, store: true }));\n    r = await readFresh(u);\n  }\n}`);
-    expect(check(src)).toEqual([msg("readFresh", "in a loop around cachePageForUser's load, where its result could reach the next load")]);
+    expect(check(src)).toEqual([plainMsg]);
   });
 
   it("fails a use after a cachePageForUser call that is started and awaited later, since its load may still be running", () => {
     const src = page_(`export default async function Page() {\n  let fresh;\n  const pending = cachePageForUser(u, "home", [], async () => ({ value: await fresh, store: true }));\n  fresh = readFresh(u);\n  await pending;\n}`);
-    expect(check(src)).toEqual([msg("readFresh", "in a page that does not await every cachePageForUser call where it is made, so its load could still be running")]);
+    expect(check(src)).toEqual([plainMsg]);
     const wrapped = page_(`export default async function Page() {\n  const d = await (cachePageForUser(u, "home", [], load));\n  await readFresh(u);\n}`);
     expect(check(wrapped)).toEqual([]);
   });
 
+  const plainMsg = msg("readFresh", "in a page whose cachePageForUser calls are not each a plain awaited statement of its page function, so their order cannot be read");
   const unchecked = msg("readFresh", "in a page whose cachePageForUser calls are not all made directly in its exported page function, so it cannot be checked");
   const raw = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${body}`;
 
@@ -377,6 +378,21 @@ describe("perRequestProblems", () => {
     expect(check(helper)).toEqual([unchecked]);
     const notExported = raw(`async function Page() {\n  await cachePageForUser(u, "a", [], load);\n  await readFresh(u);\n}\nexport default Page;`);
     expect(check(notExported)).toEqual([unchecked]);
+  });
+
+  it("reads order from the body's statements: a destructuring default and a computed or namespace call are refused", () => {
+    const destructured = page_(`let fresh;\nconst { data = await cachePageForUser(u, "home", [], async () => ({ value: fresh, store: true })) } = { f: (fresh = await readFresh(u)) };`);
+    expect(check(destructured)).toEqual([plainMsg]);
+    const computed = page_(`await cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait cache["cachePageForUser"](u, "b", [], async () => ({ value: fresh, store: true }));`);
+    expect(check(computed)).toEqual([unchecked]);
+    // A separate listed reader, so the namespace import of page-cache is not itself the listed module's import.
+    const reader = "src/lib/home/summary.ts";
+    const ns = () => `import * as cache from "../lib/cache/page-cache";\nimport { getCollectionStats } from "../lib/home/summary";\n${fn(`await cache.cachePageForUser(u, "a", [], load);\nconst s = await getCollectionStats(u);`)}`;
+    expect(perRequestProblems([page], { [reader]: "test" }, () => [], ns, () => true)).toEqual([
+      `PER-REQUEST ${page} uses getCollectionStats (from ${reader}) in a page whose cachePageForUser calls are not all made directly in its exported page function, so it cannot be checked`,
+    ]);
+    const nested = page_(`const d = await cachePageForUser(u, "home", [], load);\nif (d) {\n  try { await readFresh(u); } catch { /* none */ }\n}`);
+    expect(check(nested)).toEqual([]);
   });
 
   it("reports a stale entry: missing, unimported or without a reason", () => {

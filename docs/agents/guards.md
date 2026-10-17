@@ -202,8 +202,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`scripts/lib/list-cache-tables.mjs`), each module with its reason. The page's own import of a listed module is not
   followed, because its tables are read fresh on every request and cannot go stale. The claim is checked, not
   trusted (`perRequestProblems`, read from the page's TypeScript syntax tree): the page imports it by name, and every
-  use sits directly in the page's `export default function`, which holds all its `cachePageForUser` calls, each awaited where it is made,
-  after the last of them and in no loop. A use in any other function or at module scope fails without tracing whether the load calls it: the rule is
+  use sits directly in the page's `export default function`, which holds all its `cachePageForUser` calls, each a plain awaited statement of its body (`await cachePageForUser(...)` or `const x = await cachePageForUser(...)`),
+  in a statement after the last of them: order is read from the body's statements, never source positions. A use in any other function or at module scope fails without tracing whether the load calls it: the rule is
   strict so it can be exact. No loader on the cached path may import it, and a listed module that is missing,
   unimported or reasonless is reported. This
   is how a surface whose facts move nothing in the key (a friend's rename, a link's expiry, another player's seat) sits
