@@ -311,6 +311,36 @@ function cacheCalls(text) {
   return calls;
 }
 
+const mentions = (text, name) => new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\b`).test(text);
+
+/**
+ * Every name in a page that reaches one of `names`: the names themselves, and every function the page defines (a
+ * `function` declaration or a `const` holding an arrow or function expression) whose body mentions a reaching name,
+ * to a fixpoint. Mapped to the imported name it reaches, so a load that calls a helper, or IS a named helper, is caught.
+ */
+function reaching(src, names) {
+  const out = new Map(names.map((n) => [n, n]));
+  const defs = [];
+  for (const m of src.matchAll(/\bfunction\s+([\w$]+)\s*\(|\bconst\s+([\w$]+)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*(?::[^=]*)?=>|[\w$]+\s*=>)/g)) {
+    const open = src.indexOf("{", m.index + m[0].length - 1);
+    const arrowExpr = open < 0 || /=>\s*[^{\s]/.test(src.slice(m.index, open));
+    const body = arrowExpr ? src.slice(m.index, src.indexOf("\n", m.index + m[0].length) + 1 || undefined) : balanced(src, open, "{", "}");
+    defs.push({ name: m[1] ?? m[2], body });
+  }
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const { name, body } of defs) {
+      if (out.has(name)) continue;
+      const hit = [...out.keys()].find((n) => mentions(body, n));
+      if (hit) {
+        out.set(name, out.get(hit));
+        grew = true;
+      }
+    }
+  }
+  return out;
+}
+
 /** The local names a source value-imports from `module` (named imports only; a default or namespace import is refused). */
 function namesImportedFrom(text, fromFile, mod) {
   const names = [];
@@ -333,7 +363,8 @@ function namesImportedFrom(text, fromFile, mod) {
  * Every way a page's per-request read could be cached after all (`PER_REQUEST_READS`). Four rules:
  * - the listed module exists, and some cached page imports it (a stale entry exempts nothing, so it is reported);
  * - the page imports it by name, so its calls can be found (a default or namespace import is refused);
- * - no imported name appears in `cachePageForUser`'s load (any argument after the key), where it would be stored;
+ * - no imported name, and no function the page defines that reaches one, appears in `cachePageForUser`'s load (any
+ *   argument after the key, a named load included), where it would be stored;
  * - no loader on the cached path imports it, because then the module IS the payload's.
  */
 export function perRequestProblems(
@@ -361,9 +392,10 @@ export function perRequestProblems(
         continue;
       }
       const loads = cacheCalls(text).flatMap((args) => args.slice(3)).join("\n");
-      for (const name of names) {
-        if (new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\b`).test(loads)) {
-          out.push(`PER-REQUEST ${page} calls ${name} (from ${mod}) inside cachePageForUser's load, so it would be cached`);
+      for (const [name, via] of reaching(codeOnly(text), names)) {
+        if (mentions(loads, name)) {
+          const through = via === name ? "" : ` through ${name}`;
+          out.push(`PER-REQUEST ${page} calls ${via} (from ${mod}) inside cachePageForUser's load${through}, so it would be cached`);
         }
       }
       if (filesOf(page).map((f) => f.split("\\").join("/")).includes(mod)) {

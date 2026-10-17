@@ -259,21 +259,21 @@ describe("socialKeyProblems", () => {
 describe("perRequestProblems", () => {
   // A page and a listed module that both exist, so `namesImportedFrom` resolves the import as the real guard does.
   const page = "src/app/page.tsx";
-  const listed_ = "src/lib/cache/page-cache.ts";
-  const listedEntry = { [listed_]: "read per request beside the cached payload" };
+  const listedModule = "src/lib/cache/page-cache.ts";
+  const listedEntry = { [listedModule]: "read per request beside the cached payload" };
   const none = () => [] as string[];
   const page_ = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${body}`;
   const check = (src: () => string, opts: { perRequest?: Record<string, string>; reach?: string[]; exists?: boolean } = {}) =>
     perRequestProblems([page], opts.perRequest ?? listedEntry, () => opts.reach ?? [], src, () => opts.exists ?? true);
 
-  it("passes a listed_ the page calls only outside cachePageForUser's load", () => {
+  it("passes a module the page calls only outside cachePageForUser's load", () => {
     const src = page_(`const data = await cachePageForUser(userId, "home", [day], async (env) => load(env));\nconst fresh = await readFresh(userId);`);
     expect(check(src)).toEqual([]);
   });
 
   it("fails a call inside the load, naming the page, the export and the module", () => {
     const src = page_(`const data = await cachePageForUser(userId, "home", [day], async (env) => ({ fresh: await readFresh(userId) }));`);
-    expect(check(src)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listed_}) inside cachePageForUser's load, so it would be cached`]);
+    expect(check(src)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listedModule}) inside cachePageForUser's load, so it would be cached`]);
   });
 
   it("reads an aliased import by its local name", () => {
@@ -288,26 +288,41 @@ describe("perRequestProblems", () => {
 
   it("fails when a cached loader also imports the module", () => {
     const src = page_(`const d = await cachePageForUser(u, "home", [], load);\nawait readFresh(u);`);
-    expect(check(src, { reach: [listed_] })).toEqual([`PER-REQUEST ${listed_} is imported by a loader on ${page}'s cached path, so it is not read per request`]);
+    expect(check(src, { reach: [listedModule] })).toEqual([`PER-REQUEST ${listedModule} is imported by a loader on ${page}'s cached path, so it is not read per request`]);
   });
 
   it("fails a namespace or default import, whose calls it cannot find", () => {
     const src = () => `import * as fresh from "../lib/cache/page-cache";\nconst d = await cachePageForUser(u, "home", [], async () => fresh.readFresh(u));`;
-    expect(check(src)).toEqual([`PER-REQUEST ${page} imports ${listed_} without naming what it uses, so its calls cannot be checked`]);
+    expect(check(src)).toEqual([`PER-REQUEST ${page} imports ${listedModule} without naming what it uses, so its calls cannot be checked`]);
+  });
+
+  it("fails a named load, or an inline load calling a page helper, that reaches the export", () => {
+    const named = page_(`async function load(u) { return { fresh: await readFresh(u) }; }\nconst d = await cachePageForUser(u, "home", [], load);`);
+    expect(check(named)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listedModule}) inside cachePageForUser's load through load, so it would be cached`]);
+    const helper = page_(`const pick = async (u) => readFresh(u);\nconst d = await cachePageForUser(u, "home", [], async () => ({ x: await pick(u) }));`);
+    expect(check(helper)).toEqual([`PER-REQUEST ${page} calls readFresh (from ${listedModule}) inside cachePageForUser's load through pick, so it would be cached`]);
+  });
+
+  it("fails a default import, alone or beside named ones", () => {
+    const alone = () => `import readFresh from "../lib/cache/page-cache";\nconst d = await cachePageForUser(u, "home", [], load);`;
+    const beside = () => `import D, { readFresh } from "../lib/cache/page-cache";\nconst d = await cachePageForUser(u, "home", [], load);`;
+    const msg = `PER-REQUEST ${page} imports ${listedModule} without naming what it uses, so its calls cannot be checked`;
+    expect(check(alone)).toEqual([msg]);
+    expect(check(beside)).toEqual([msg]);
   });
 
   it("reports a stale entry: missing, unimported or without a reason", () => {
-    expect(check(none as unknown as () => string, { exists: false })).toEqual([`PER-REQUEST ${listed_} is listed but does not exist`]);
-    expect(check(() => "const d = 1;")).toEqual([`PER-REQUEST ${listed_} is listed but no cached page imports it`]);
-    expect(check(page_(""), { perRequest: { [listed_]: " " } })).toEqual([`PER-REQUEST ${listed_} is listed with no reason`]);
+    expect(check(none as unknown as () => string, { exists: false })).toEqual([`PER-REQUEST ${listedModule} is listed but does not exist`]);
+    expect(check(() => "const d = 1;")).toEqual([`PER-REQUEST ${listedModule} is listed but no cached page imports it`]);
+    expect(check(page_(""), { perRequest: { [listedModule]: " " } })).toEqual([`PER-REQUEST ${listedModule} is listed with no reason`]);
   });
 
-  it("does not follow a page's own import of a listed listed_, and still follows it from a loader", () => {
+  it("does not follow a page's own import of a listed module, and still follows it from a loader", () => {
     const full = loaderFiles(["src/app/page.tsx"], {});
-    // A listed_ Home imports directly that no other file on its path imports: skipping the page's edge must drop it.
+    // A listedModule Home imports directly that no other file on its path imports: skipping the page's edge must drop it.
     const pageOnly = full.filter((f) => f.startsWith("src/lib/") && loaderFiles(["src/app/page.tsx"], { [f]: "test" }).includes(f) === false);
-    expect(pageOnly.length, "Home imports some listed_ only directly, or this case proves nothing").toBeGreaterThan(0);
-    // A listed_ also imported by a loader stays on the path even when listed, which is what rule 4 then reports.
+    expect(pageOnly.length, "Home imports some listedModule only directly, or this case proves nothing").toBeGreaterThan(0);
+    // A listedModule also imported by a loader stays on the path even when listed, which is what rule 4 then reports.
     const shared = full.find((f) => f.startsWith("src/lib/") && loaderFiles(["src/app/page.tsx"], { [f]: "test" }).includes(f));
     expect(shared).toBeDefined();
   });
