@@ -116,7 +116,8 @@ function Overrides({ title, items, empty, section }: { title: string; items: Ove
   const choices =
     kind === "group"
       ? page.groupChoices.map((g) => ({ id: g.id, label: g.name, sub: g.id, search: g.name.toLocaleLowerCase("en-US") }))
-      : page.people.map((p) => ({ id: p.id, label: p.label, sub: p.email ?? p.id, search: `${p.label} ${p.email ?? ""}`.toLocaleLowerCase("en-US") }));
+      // A person's second line is the masked email, never the id; the search is the masked name (Admin R3, D3, D14).
+      : page.people.map((p) => ({ id: p.id, label: p.label, sub: p.email ?? "", search: p.label.toLocaleLowerCase("en-US") }));
   return (
     <>
       <SectionHead title={title} meta={items.length ? String(items.length) : copy.sectionNone} />

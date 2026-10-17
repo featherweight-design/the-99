@@ -2,6 +2,7 @@
 // name or address. The one place raw values leave the server is a logged reveal (`revealAccount`).
 
 import { adminMaskCopy } from "../copy/admin";
+import type { Account } from "./accounts";
 
 /** The fields of a Clerk user the masked name is made from. */
 export type NameSource = { id: string; firstName: string | null; lastName: string | null; username: string | null };
@@ -46,3 +47,6 @@ export function maskInitials(name: string, named: boolean): string | null {
   const letters = words.length > 1 ? words.slice(0, 2).map(firstLetter) : Array.from(words[0] ?? "").slice(0, 2);
   return letters.join("").toLocaleUpperCase("en-US");
 }
+
+/** An account known only by its id (Clerk did not list it, or Clerk is down): masked like one with no name. */
+export const unlistedAccount = (id: string): Account => ({ id, ...maskName({ id, firstName: null, lastName: null, username: null }), email: null });

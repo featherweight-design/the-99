@@ -9,6 +9,8 @@ import { isOverrideName } from "../switches/registry";
 import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
 import { SNAPSHOT_SQL } from "../switches/snapshot";
 import type { Account } from "./accounts";
+import { unlistedAccount } from "./mask";
+import { accountName } from "./names";
 
 /**
  * What every admin write that can move a switch shares (admin plan 8c and 9a): the one advisory lock,
@@ -69,7 +71,7 @@ async function preview(tx: Tx, rise: SwitchRise, accounts: readonly Account[]): 
   const mean = new Map(rows.map((r) => [r.feature, r.mean === null ? null : Math.round(r.mean)]));
   const byId = new Map(accounts.map((a) => [a.id, a]));
   return {
-    names: rise.accounts.map((id) => byId.get(id)?.name ?? byId.get(id)?.email ?? id),
+    names: rise.accounts.map((id) => accountName(byId.get(id) ?? unlistedAccount(id))),
     count: rise.accounts.length,
     costs: rise.capabilities.map((key) => ({ key, reserveMicroUsd: featureWorstCaseMicroUsd(featureOf(key)), meanMicroUsd: mean.get(featureOf(key)) ?? null })),
     // Each account's own limit (`dailyLimit`: its group's allowance, the owner's own, or the

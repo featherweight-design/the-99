@@ -15,11 +15,13 @@ import { sourceText } from "./switch-page-rule";
 const copy = adminCopy.accounts;
 const lower = (s: string) => s.toLocaleLowerCase("en-US");
 
-/** A2: a name or email holding the query, or a Clerk id starting with it. An empty query keeps every account. */
-export function matchesAccount(a: Account, query: string): boolean {
+/**
+ * A7 (Admin R3, D10, D14): a masked name holding the query, case-insensitively. Nothing else reaches the client to
+ * match on: no email, no id. An empty query keeps every account. A whole email is looked up on the server instead.
+ */
+export function matchesAccount(a: Pick<Account, "name">, query: string): boolean {
   const q = lower(query.trim());
-  if (!q) return true;
-  return [a.name, a.email].some((v) => v !== null && lower(v).includes(q)) || lower(a.id).startsWith(q);
+  return !q || lower(a.name).includes(q);
 }
 
 /** The avatar's letters: the name's first two words, else the email's or the id's first letter. */

@@ -2,7 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminUserIds } from "./access";
-import { maskEmail, maskName } from "./mask";
+import { maskEmail, maskName, unlistedAccount } from "./mask";
 
 /**
  * The accounts this environment's admin counts (READINESS audit finding 6). The app stores only
@@ -124,7 +124,7 @@ export async function listAccounts(
   } catch (error) {
     console.error("admin: accounts could not be read from Clerk; listing stored ids", error);
     const ids = [...new Set(await deps.storedUserIds())].filter((id) => id !== "system");
-    return { accounts: orderAccounts(ids.map((id) => masked({ id, email: null })), deps.ownerIds), clerk: "down" };
+    return { accounts: orderAccounts(ids.map(unlistedAccount), deps.ownerIds), clerk: "down" };
   }
 }
 

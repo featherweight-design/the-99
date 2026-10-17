@@ -3,6 +3,7 @@ import type { AccountSwitches } from "../switches/explain";
 import { isSwitchName, SWITCHES, type SwitchName } from "../switches/registry";
 import type { OverrideRow, OverrideValue, SwitchSnapshot } from "../switches/resolve";
 import type { Account } from "./accounts";
+import { unlistedAccount } from "./mask";
 import { accountName, accountNames } from "./names";
 import { fmtWhen, type HistoryItem, type SwitchEvent } from "./switch-page-rule";
 
@@ -234,7 +235,7 @@ export function memberRows(input: {
   const { accounts, snapshot, groupId, groupNames, effects } = input;
   const listed = new Set(accounts.map((a) => a.id));
   const extra = groupId
-    ? [...snapshot.groupOf].filter(([id, g]) => g === groupId && !listed.has(id)).map(([id]) => ({ id, name: null, email: null }))
+    ? [...snapshot.groupOf].filter(([id, g]) => g === groupId && !listed.has(id)).map(([id]) => unlistedAccount(id))
     : [];
   const empty: Effect = { gains: [], losses: [] };
   return [...accounts, ...extra].map((a) => {

@@ -154,7 +154,8 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
   const shown = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("en-US");
     if (!q) return rows;
-    return rows.filter((r) => `${r.name} ${r.email ?? ""} ${r.id}`.toLocaleLowerCase("en-US").includes(q));
+    // The masked name only: nothing else reaches the client to search (Admin R3, D14).
+    return rows.filter((r) => r.name.toLocaleLowerCase("en-US").includes(q));
   }, [rows, query]);
 
   const edit = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement>) => {
