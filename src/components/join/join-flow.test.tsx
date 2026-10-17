@@ -152,4 +152,19 @@ describe("JoinFlow", () => {
     release({ ok: true });
     await screen.findByText(joinCopy.okTitle);
   });
+  it("moves focus to the new step's heading after a confirmation, and to the code field on the code step", async () => {
+    m.confirm.mockResolvedValue({ ok: true });
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    fireEvent.change(screen.getByLabelText(joinCopy.codeAria), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await screen.findByText(joinCopy.okTitle);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: joinCopy.okTitle })));
+    cleanup();
+    m.claim.mockResolvedValue({ ok: true, mailed: true });
+    start({ kind: "email", sender });
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByText(joinCopy.codeBody("new@x.dev"));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(joinCopy.codeAria)));
+  });
 });

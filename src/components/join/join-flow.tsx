@@ -60,6 +60,17 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     // Only the first face turns on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // A step change hands focus to the new step: the code field on the code step, the heading otherwise, so the
+  // control that was pressed leaving the page does not drop a keyboard or screen-reader reader to the top.
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    if (step === "code") codeRef.current?.focus();
+    else document.getElementById("friend-landing-title")?.focus();
+  }, [step]);
   // The resend countdown ticks only while it counts.
   const waiting = waitUntil > now;
   useEffect(() => {
