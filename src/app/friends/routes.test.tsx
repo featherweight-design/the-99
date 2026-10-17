@@ -20,6 +20,9 @@ const m = vi.hoisted(() => ({
   listSharedPods: vi.fn(),
   redeemInviteAction: vi.fn(),
   declineInviteAction: vi.fn(),
+  takeReceipt: vi.fn(),
+  spendInviteOnSignUp: vi.fn(),
+  friendPublicId: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -35,8 +38,13 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../lib/social/friends", () => ({
-  readInvite: m.readInvite, ensureProfile: m.ensureProfile,
+  readInvite: m.readInvite, ensureProfile: m.ensureProfile, friendPublicId: m.friendPublicId,
   loadFriendsAndLinks: async (userId: string, now: Date) => ({ friends: await m.listFriends(userId), links: await m.listOpenInvites(userId, now) }),
+}));
+vi.mock("../../lib/invites/spend", async (orig) => ({
+  ...(await orig<typeof import("../../lib/invites/spend")>()),
+  takeReceipt: m.takeReceipt,
+  spendInviteOnSignUp: m.spendInviteOnSignUp,
 }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
@@ -73,6 +81,9 @@ beforeEach(() => {
   m.listFriends.mockResolvedValue([DAVE]);
   m.listPods.mockResolvedValue([]);
   m.listSharedPods.mockResolvedValue([]);
+  m.takeReceipt.mockResolvedValue(null);
+  m.spendInviteOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
+  m.friendPublicId.mockResolvedValue(null);
 });
 afterEach(cleanup);
 
@@ -99,6 +110,38 @@ describe("/friends", () => {
   it("draws no receipt for an id that is not the reader's friend", async () => {
     render(await FriendsPage({ searchParams: query({ accepted: "00000000-0000-4000-8000-000000000009" }) }));
     expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+  });
+
+  describe("a newcomer's first arrival (invites R8, ruling D)", () => {
+    const RES = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
+
+    it("runs the spend when the account's own invitation names a reservation, with its first name", async () => {
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      await FriendsPage({ searchParams: query() });
+      expect(m.spendInviteOnSignUp).toHaveBeenCalledWith("user_1", RES, "Ana");
+    });
+
+    it("spends nothing for an account with no reservation, or a forged-looking one", async () => {
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: "not-a-uuid" } });
+      await FriendsPage({ searchParams: query() });
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: {} });
+      await FriendsPage({ searchParams: query() });
+      expect(m.spendInviteOnSignUp).not.toHaveBeenCalled();
+    });
+
+    it("draws the receipt naming the inviter from the edge, with no ?accepted= in the URL", async () => {
+      m.takeReceipt.mockResolvedValue("user_inviter");
+      m.friendPublicId.mockResolvedValue(DAVE.publicId);
+      render(await FriendsPage({ searchParams: query() }));
+      expect(m.friendPublicId).toHaveBeenCalledWith("user_1", "user_inviter");
+      expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
+    });
+
+    it("draws no receipt once the edge has shown it (takeReceipt answers null)", async () => {
+      render(await FriendsPage({ searchParams: query() }));
+      expect(m.friendPublicId).not.toHaveBeenCalled();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
   });
 
   it("lets a read that throws reach the error boundary (E16)", async () => {

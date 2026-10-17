@@ -225,6 +225,42 @@ async function befriendIn(tx: Tx, a: string, b: string): Promise<void> {
   await tx.insert(friendLinks).values(friendshipRows(a, b)).onConflictDoNothing();
 }
 
+/**
+ * An invited newcomer's first rows (invites plan PR 3, R8), inside the spend's transaction: their profile (the Clerk
+ * first name, else "Player", kept when one exists) and the friendship with the account that invited them. Idempotent,
+ * so the webhook and the newcomer's first `/friends` can both run it in either order.
+ */
+export async function welcomeInvitedIn(tx: Tx, senderId: string, newcomerId: string, offeredName: unknown): Promise<void> {
+  const displayName = cleanDisplayName(offeredName) ?? "Player";
+  await tx.insert(socialProfiles).values({ userId: newcomerId, displayName }).onConflictDoNothing();
+  await befriendIn(tx, senderId, newcomerId);
+}
+
+/** What `/join/[token]` shows of the account that invited the newcomer (ruling B): a name and a commander, or null. */
+export type InviteSender = { displayName: string; commander: ProfileCommander | null };
+
+export async function readInviteSender(senderId: string): Promise<InviteSender | null> {
+  const [row] = await db
+    .select({ displayName: socialProfiles.displayName, ...commanderColumns })
+    .from(socialProfiles)
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .where(eq(socialProfiles.userId, senderId));
+  return row ? { displayName: row.displayName, commander: toCommander(row) } : null;
+}
+
+/**
+ * The public id of one of the viewer's own friends, by account id: joined on the viewer's own link row, so an account
+ * that is not their friend reads as null. The newcomer's receipt names their inviter through it.
+ */
+export async function friendPublicId(viewerId: string, friendUserId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ publicId: socialProfiles.publicId })
+    .from(friendLinks)
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    .where(and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, friendUserId)));
+  return row?.publicId ?? null;
+}
+
 export type RedeemResult =
   | { ok: true; friend: { publicId: string; displayName: string }; alreadyFriends: boolean }
   | { ok: false; reason: "notFound" | "ended" | "self" };

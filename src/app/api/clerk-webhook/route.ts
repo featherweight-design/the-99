@@ -1,6 +1,7 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
+import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -12,9 +13,11 @@ export const dynamic = "force-dynamic";
  * `CLERK_WEBHOOK_SIGNING_SECRET`, on every call. Until that secret is set the route answers 503 and does nothing;
  * an unsigned or forged request is refused with 400 before anything runs.
  *
- * Only `user.deleted` does anything: it purges every row the app holds for that account
- * (`purgeAccount`). Any other event is acknowledged and ignored, so subscribing to more events in the
- * dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
+ * Two events do something. `user.deleted` purges every row the app holds for that account (`purgeAccount`).
+ * `user.created` spends the invite reservation the account's invitation named, when it names one
+ * (`spendInviteOnSignUp`, invites plan R8); it reads no feature switch, since an invitation already accepted is
+ * honored whatever the switches say, as a taken payment is. Any other event is acknowledged and ignored, so
+ * subscribing to more events in the dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
 export async function POST(req: NextRequest) {
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return new Response("Webhook verification failed", { status: 400 });
   }
+  if (evt.type === "user.created") return spendOnCreated(evt.data);
   if (evt.type !== "user.deleted") return new Response("Ignored", { status: 200 });
   const userId = evt.data.id;
   if (typeof userId !== "string" || userId.length === 0) return new Response("No user id", { status: 400 });
@@ -47,5 +51,24 @@ export async function POST(req: NextRequest) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[clerk-webhook] purge failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     return new Response("Purge failed", { status: 500 });
+  }
+}
+
+/**
+ * An invited sign-up. A missing or unknown reservation spends nothing and still answers 200, so Clerk does not retry
+ * an event that has nothing to do; a failure to spend answers 500, and the retry (or the newcomer's first `/friends`)
+ * finishes it, since the spend is one transaction and idempotent.
+ */
+async function spendOnCreated(data: { id?: unknown; first_name?: unknown; public_metadata?: unknown }): Promise<Response> {
+  const reservationId = reservationIdFrom(data.public_metadata);
+  if (reservationId === null) return new Response("Ignored", { status: 200 });
+  if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
+  try {
+    const result = await spendInviteOnSignUp(data.id, reservationId, data.first_name);
+    console.info(`[clerk-webhook] user.created: invite ${result.spent ? "spent" : result.reason}`);
+    return new Response("Handled", { status: 200 });
+  } catch {
+    console.error("[clerk-webhook] user.created: invite spend failed");
+    return new Response("Spend failed", { status: 500 });
   }
 }

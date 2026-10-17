@@ -2452,6 +2452,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read by nobody else, a lapsed QR returning its invite, an unconfigured QR writing nothing, an admin Set, a group
   top-up that lowers nobody, a revoke and the history lines. It WRITES its own per-run ids only, and fails closed:
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+  PR 3 (the newcomer's backend) adds, with Resend and Clerk stubbed: Send code refused before anything is claimed when
+  mail is unconfigured, a claim holding the SAME invite the QR held for 7 days, the 60-second resend cooldown, another
+  browser refused, five wrong tries ending the row with its invite back, a proven claim handed over with
+  `notify: false, ignoreExisting: true` (a reopen revoking the stored invitation and making a fresh one), an address
+  with an account drawing N9 and still holding, the spend (one edge, one friendship, `held` down once, run twice
+  writing nothing more, in both orders with the first `/friends` and exactly one receipt), a lapsed, revoked, spent or
+  unknown reservation spending and forming nothing, the sweep (returns after the invitation is ended, a failed revoke
+  kept with its id and returned next run, an indeterminate send reconciled) and the purge's Clerk half with the tree
+  kept. Mutation-checked: drop the `held` decrement, the receipt's null check or the sweep's keep-on-failed-revoke and
+  the matching checks fail.
 - `pnpm probe:scan-auto` proves Auto's optimistic add in Chromium at 390 and 1300, with the fake camera and a stubbed
   match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card

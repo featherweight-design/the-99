@@ -62,4 +62,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   The actions are `src/app/friends/invite-actions.ts`; the sender's sheet polls `GET /api/invite-qr?t=` (own row
   only). Admin history lines are `admin_events` kinds `invites_set`, `invites_topped_up` and `invite_revoked`; a
   sender's own sends and a newcomer's join are NOT logged there, because `admin_events.actor_id` survives the purge
-  and would keep a deleted player's id: PR 6 reads them from the rows. Proof: `pnpm probe:invites`.
+  and would keep a deleted player's id: PR 6 reads them from the rows. PR 3 is the newcomer's backend: `claimInvite`,
+  `confirmCode` and `handOver` (`claim.ts`, each decision a pure function) behind the actions in `src/app/join/actions.ts`
+  (the token's SENDER's switch decides, off reads as N12; the claim secret travels only in an httpOnly cookie on the
+  token's own path); `spendInviteOnSignUp` (`spend.ts`, from `user.created` in the Clerk webhook and from the
+  newcomer's first `/friends`, idempotent in either order, with `takeReceipt` drawing the band once from the edge);
+  `sweepInvites` behind the hourly `GET /api/cron/invite-sweep`; and the purge revoking the sender's pending Clerk
+  invitations after it commits. Proof: `pnpm probe:invites`.
