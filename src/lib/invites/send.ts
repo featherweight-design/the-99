@@ -77,6 +77,13 @@ export async function sendEmailInvite(
     console.info(`[invites] invite-email refused code=${made.code ?? "none"}`);
   } else {
     console.warn("[invites] invite-email indeterminate");
+    // Clerk may have made it. While the reservation still holds, the sweep reconciles it by its address (PR 3); one
+    // resolved meanwhile (an admin revoke) has had its address erased, so it is reconciled here, from this one.
+    const [row] = await db.select({ state: inviteReservations.state }).from(inviteReservations)
+      .where(eq(inviteReservations.id, reservationId));
+    if (row?.state !== "reserved" && !(await clerk.revokeFor(email, reservationId))) {
+      console.warn("[invites] invite-email: late invitation not reconciled");
+    }
   }
   return { ok: true };
 }

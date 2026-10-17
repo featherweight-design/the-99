@@ -204,6 +204,23 @@ async function main() {
     check("the revoked row is not rewritten with the late id", mid[0].state === "revoked" && mid[0].clerk === null);
     await invariant(S, "a mid-send revoke");
 
+    // The same race with an indeterminate answer: the send has no id to revoke, so it reconciles by the address it
+    // still holds (the revoke erased the row's).
+    check("Set 1 left for the indeterminate mid-send revoke", (await setInvites(ADMIN, S, 1)).ok);
+    let release2!: () => void;
+    const gate2 = new Promise<void>((r) => { release2 = r; });
+    const lostLate = stubClerk(async () => { await gate2; return { ok: false, reason: "indeterminate" }; });
+    const pending2 = sendEmailInvite(S, "lost-late@x.dev", { clerk: lostLate.clerk });
+    while (lostLate.created.length === 0) await new Promise((r) => setTimeout(r, 20));
+    const lateId = lostLate.created[0].reservationId;
+    check("an admin revokes it mid-send", (await revokeReservation(ADMIN, lateId, { clerk: lostLate.clerk })).changed);
+    release2();
+    check("the indeterminate send still answers ok", (await pending2).ok);
+    // Two look-ups by address: the revoke's own (it found no id) and the send's, after Clerk's answer was lost.
+    check("the send reconciles by its own address, after the revoke's",
+      lostLate.revokedFor.filter((r) => r.email === "lost-late@x.dev" && r.reservationId === lateId).length === 2,
+      JSON.stringify(lostLate.revokedFor));
+
     // A key change while a QR is live: the old QR cannot be opened by any token derivable now, so a re-show returns
     // it and makes a new one the sender's own watch can read.
     check("Set K 1 left", (await setInvites(ADMIN, K, 1)).ok);
@@ -256,7 +273,7 @@ async function main() {
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
-      byKind.invites_set === 9 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 3, JSON.stringify(byKind));
+      byKind.invites_set === 10 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
     await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L})`);
