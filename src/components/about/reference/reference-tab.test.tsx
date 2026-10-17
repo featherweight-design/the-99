@@ -187,6 +187,8 @@ describe("ReferenceTab, search", () => {
     expect(screen.getByText(referenceCopy.noneNote)).toBeTruthy();
     fireEvent.click(screen.getByRole("link", { name: referenceCopy.noneOut }));
     expect(field().value).toBe("");
+    // The link leaves with the search; focus lands on the field rather than nowhere.
+    expect(document.activeElement).toBe(field());
     expect((container.querySelector("[data-reference-screen]")!.parentElement as HTMLElement).hidden).toBe(false);
   });
 });

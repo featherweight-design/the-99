@@ -10,7 +10,7 @@
 // `explained in` links) opens that entry where it stands.
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { aboutCopy } from "../../../lib/copy/about";
 import { referenceCopy } from "../../../lib/copy/discovery";
 import { HOW_IT_WORKS_ID } from "../../../lib/copy/how-it-works-links";
@@ -124,6 +124,7 @@ export type ReferenceTabProps = {
 
 export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabProps) {
   const [query, setQuery] = useState("");
+  const field = useRef<HTMLInputElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openScreens, setOpenScreens] = useState<ReadonlySet<string>>(new Set());
 
@@ -203,6 +204,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
     <div data-about-reference className="mt-[16px] flex items-start gap-[48px] px-[16px] md:mt-[28px] md:px-0">
       <div className="flex min-w-0 flex-1 flex-col gap-[12px] md:gap-[14px]">
         <SearchField
+          ref={field}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
@@ -270,6 +272,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
               href={`#screen-${screens[0]?.key ?? ""}`}
               onClick={(e) => {
                 e.preventDefault();
+                // The link leaves with the search, so focus goes to the field the reader searched from.
+                field.current?.focus();
                 setQuery("");
               }}
               className="mt-[6px] self-start py-[8px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline"
