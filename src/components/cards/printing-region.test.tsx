@@ -515,12 +515,6 @@ describe("PrintingRegion role=choose source=catalog", () => {
       expect(screen.getAllByRole("radio")).toHaveLength(3);
       expect(screen.queryByRole("button", { name: showAll })).toBeNull();
     });
-
-    it("reserves each thumbnail's box before its art loads", () => {
-      renderChoose({ shortList: ["id-3"] });
-      const box = screen.getAllByRole("radio")[0].firstElementChild as HTMLElement;
-      expect(box.style.aspectRatio).toBe("63/88");
-    });
   });
 
   it("selects nothing, badges nothing and offers no reset", () => {

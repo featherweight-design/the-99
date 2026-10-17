@@ -145,8 +145,8 @@ type ChooseRegionProps = {
    */
   tiles?: "confirm";
   /**
-   * The scanner's short list (Normal mode): the printings it identified, by catalog id, best first
-   * (`orderPrintings`). They lead, alone, with a `Show all printings` press after them, which adds
+   * A short list: printings by catalog id, best first, for the scanner's Normal mode to pass from
+   * `orderPrintings` (the scan lane wires it; no caller passes it yet). They lead, alone, with a `Show all printings` press after them, which adds
    * every other printing AFTER them, so no tile already drawn moves. A search reads every printing.
    * Absent or empty, every printing is drawn as before.
    */

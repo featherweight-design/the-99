@@ -10,8 +10,8 @@
 //      cards' rows, which put the margin near the gate;
 //   e. the most-printed card in the index still gets three distinct guesses;
 //   f. a request naming another model is refused, and nothing is read;
-//   g. each guess carries its card's printings near the fingerprint: the first guess's list is the exact scan's, in
-//      its order, and the most-printed card's stops at `MAX_PRINTINGS`, each printing once, best first.
+//   g. each guess carries its card's printings near the fingerprint: the first guess's list is the exact scan's best
+//      (within halfvec's 2e-3 of the cut), and the most-printed card's stops at `MAX_PRINTINGS`, each printing once, best first.
 //
 // It REPLACES `scan_index` on its database, so it refuses production, staging and local-dev by `neon.branch_id`
 // (`assertScratchBranch`). Point the worktree's `.env` DATABASE_URL at a scratch branch made from local-dev, migrated
@@ -26,7 +26,7 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { publishScanIndex, readScanRows, scanRowsRefusal } from "./lib/scan-index";
 import { lookupGuesses } from "../src/lib/card-scan/lookup";
 import { SURE_MARGIN } from "../src/lib/scan/lookup";
-import { EMBED_DIM, MAX_PRINTINGS, SCAN_MODEL, poolGuesses, scorePrintings } from "../src/lib/card-scan/match";
+import { EMBED_DIM, MAX_PRINTINGS, SCAN_MODEL, poolGuesses } from "../src/lib/card-scan/match";
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL, SCAN_ROWS_DIR } = requireEnv(["DATABASE_URL", "SCAN_ROWS_DIR"]);
@@ -115,16 +115,21 @@ try {
     for (let i = 0; i < EMBED_DIM; i++) q[i] /= Math.sqrt(norm);
     return q;
   };
-  // g's exact answer: a card's printings scored by their nearest face over every row of that card, as the lookup scores
-  // them, so the two lists name the same printings in the same order.
-  const exactPrintings = (q: Float32Array, oracleId: string, own: { scryfallId: string; score: number }) => {
+  // g's exact answer: a card's printings scored by their nearest face over every row of that card in fp32. The lookup
+  // scores halfvec rows, which d allows 2e-3 off fp32, so a printing the lookup returns must be within that of the
+  // exact list's cut: two printings with near-identical art can swap places, or across the cap, and both are right.
+  const printingsAgree = (q: Float32Array, oracleId: string, got: { scryfallId: string; score: number }[]) => {
     const near: { scryfallId: string; distance: number }[] = [];
     for (const r of per.get(oracleId) ?? []) {
       let s = 0;
       for (let i = 0; i < EMBED_DIM; i++) s += q[i] * data.vectors[r * EMBED_DIM + i];
       near.push({ scryfallId: data.keys[r][0], distance: 1 - s });
     }
-    return scorePrintings(own, near).map((p) => p.scryfallId);
+    const all = new Map<string, number>();
+    for (const n of near) all.set(n.scryfallId, Math.max(all.get(n.scryfallId) ?? -Infinity, 1 - n.distance));
+    const exact = [...all.values()].sort((x, y) => y - x);
+    const cut = exact[Math.min(exact.length, got.length) - 1] ?? -Infinity;
+    return got.length === Math.min(MAX_PRINTINGS, all.size) && got.every((p) => (all.get(p.scryfallId) ?? -Infinity) >= cut - 2e-3);
   };
   const per = new Map<string, number[]>();
   data.keys.forEach(([, , oid], r) => per.set(oid, [...(per.get(oid) ?? []), r]));
@@ -145,7 +150,7 @@ try {
     }
     if (got.answer.guesses[0]?.oracleId === want.guesses[0]?.oracleId) sameTop += 1;
     const first = got.answer.guesses[0];
-    if (first && exactPrintings(q, first.oracleId, first).join() === first.printings.map((p) => p.scryfallId).join()) samePrintings += 1;
+    if (first && printingsAgree(q, first.oracleId, first.printings)) samePrintings += 1;
     for (const g of got.answer.guesses) {
       const w = want.guesses.find((x) => x.oracleId === g.oracleId);
       if (w) worstScore = Math.max(worstScore, Math.abs(w.score - g.score));
@@ -168,7 +173,7 @@ try {
   check("d. some margins land near the gate", nearGate >= 10, `${nearGate}`);
   check(`d. margins under ${GATE + 0.1} within 4e-3 of fp32`, worstMargin <= 4e-3, worstMargin.toFixed(5));
   check(`d. never the other side of the ${GATE} sure gate`, gateFlips === 0, `${gateFlips}`);
-  check("g. the first guess's printings are the exact scan's, in its order", samePrintings === QUERIES * 2, `${samePrintings}/${QUERIES * 2}`);
+  check("g. the first guess's printings are the exact scan's best, within halfvec's 2e-3", samePrintings === QUERIES * 2, `${samePrintings}/${QUERIES * 2}`);
 
   // e. the most-printed card
   const [topOracle, topRows] = [...per.entries()].sort((a, b) => b[1].length - a[1].length)[0];
