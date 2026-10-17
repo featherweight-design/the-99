@@ -209,10 +209,11 @@ describe("suggestionsFor", () => {
       { deckId: "near-old", value: one(3), lastPlayedAt: at(1) },
       { deckId: "near-new", value: one(3), lastPlayedAt: at(5) },
       { deckId: "near-never", value: one(3), lastPlayedAt: null },
-      { deckId: "mid", value: range(1, 2), lastPlayedAt: at(8) },
+      // Nearest (0 from a middle of 2) and never played: it leads only because distance comes before recency.
+      { deckId: "mid", value: range(1, 2), lastPlayedAt: null },
       { deckId: "unread", value: null, lastPlayedAt: at(12) },
     ];
-    const got = suggestionsFor("seated", distanceFrom(one(4), 2.5), own, 2.5);
+    const got = suggestionsFor("seated", distanceFrom(one(4), 2), own, 2);
     expect(got.map((d) => d.deckId)).toEqual(["mid", "near-new", "near-old"]);
   });
 
