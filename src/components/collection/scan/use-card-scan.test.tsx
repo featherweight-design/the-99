@@ -496,3 +496,21 @@ describe("useCardScan reads no frame while it waits on the server", () => {
     await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
   });
 });
+
+describe("useCardScan's wait on the server is bounded", () => {
+  it("reads again while a lookup hangs, so a card taken away still ends it", async () => {
+    const fetch = vi.fn(() => new Promise<Response>(() => {}));
+    let reads = 0;
+    setup({
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      },
+    });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    const at = reads;
+    await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
+  });
+});

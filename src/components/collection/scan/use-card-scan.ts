@@ -33,6 +33,8 @@ type Snap = { named: ScanGuess[]; crop: Float32Array | null; empties: number };
 export const ADDED_MS = 800;
 /** How long frames must stay dark before the dark line shows. */
 export const DARK_HOLD_MS = 1000;
+/** The longest the read loop waits on the server before it reads a frame anyway. A lookup answers in about 100ms. */
+export const MAX_WAIT_MS = 1000;
 /** Failed reads in a row before the player is told the scanner cannot start. */
 export const READ_FAILURES_TOLD = 3;
 
@@ -241,7 +243,12 @@ export function useCardScan(
         // render it sets off) waits for the read in progress to end, so reading on cost a whole read per step, about
         // 1.4s of a phone's 3s frame-to-guess (the speed lane's measure, 2026-10-16). The card in view is read
         // again once the answer is in.
-        while (!stop && (scanner.waiting() || committing.current || loadingChoices.current)) await afterPaint();
+        // The wait is bounded: a request that hangs must not stop the reads that would forget it (a frame that
+        // empties, or another card), so after `MAX_WAIT_MS` one frame is read and the wait begins again.
+        const waitFrom = performance.now();
+        while (!stop && (scanner.waiting() || committing.current || loadingChoices.current) && performance.now() - waitFrom < MAX_WAIT_MS) {
+          await afterPaint();
+        }
       }
     })();
     return () => {
