@@ -370,6 +370,9 @@ export const adminCopy = {
       invited: (n: number) => `${n} invited`,
       waiting: (n: number) => `${n} waiting`,
       noMatch: (q: string) => `No account matches “${q}”.`,
+      /** A search carried down to the phone, where the field is not drawn, and its way back. (new, for /copy-review) */
+      filtered: (q: string) => `Showing accounts matching “${q}”.`,
+      clear: "Clear search",
       /** The tree with no account at all (Clerk down and nothing stored). (new, for /copy-review) */
       empty: "No accounts yet.",
     },

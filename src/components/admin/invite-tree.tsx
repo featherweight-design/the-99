@@ -217,10 +217,25 @@ export function InviteTreeView({
           ))}
         </span>
       </div>
+      {/* The search field is desktop only; a search made there and carried below `md` (a resize, a rotation) says so
+          on the phone and can be cleared, so the tree is never left cut with no way back. */}
+      {query.trim() && shown.length > 0 && (
+        <p data-testid="invite-tree-filtered" className="m-0 mb-[10px] flex flex-wrap items-center gap-x-[10px] text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere] md:hidden">
+          {tree.filtered(query.trim())}
+          <button type="button" onClick={() => setQuery("")} className={TEXT_BUTTON}>
+            {tree.clear}
+          </button>
+        </p>
+      )}
       {roots.length === 0 ? (
         <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{tree.empty}</p>
       ) : shown.length === 0 ? (
-        <p className="m-0 text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{tree.noMatch(query.trim())}</p>
+        <p className="m-0 flex flex-wrap items-center gap-x-[10px] text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">
+          {tree.noMatch(query.trim())}
+          <button type="button" onClick={() => setQuery("")} className={TEXT_BUTTON}>
+            {tree.clear}
+          </button>
+        </p>
       ) : (
         <>
           <p className="m-0 pb-[8px] pt-[2px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border-strong)] md:pt-[4px] md:text-[10.5px]">
