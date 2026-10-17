@@ -95,6 +95,8 @@ export function SocialModal({
   }, [screen]);
   useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
   const visible = useVisualViewportFrame();
+  // Rule 0's setup (640) keeps its board's rhythm: 24px sides from md, lined up with its footer, and its own gaps.
+  const setup = width === 640;
 
   const frame = (
     <div
@@ -118,7 +120,7 @@ export function SocialModal({
         <div aria-hidden className="flex justify-center pt-[9px] md:hidden">
           <span className="mb-[4px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
         </div>
-        <div className="flex items-center gap-[4px] px-[18px] md:px-[20px] md:pt-[12px]">
+        <div className={`flex items-center gap-[4px] px-[18px] md:pt-[12px] ${setup ? "md:px-[24px]" : "md:px-[20px]"}`}>
           {onBack ? (
             <button
               ref={back}
@@ -144,9 +146,9 @@ export function SocialModal({
           </button>
         </div>
         {sub ? (
-          <p className="mx-[18px] mb-[14px] mt-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)] md:mx-[20px]">{sub}</p>
+          <p className={`mx-[18px] mt-0 text-[13px] text-[color:var(--fg-muted)] ${setup ? "mb-[12px] leading-[1.55] md:mx-[24px] md:mb-[16px]" : "mb-[14px] leading-[1.5] md:mx-[20px]"}`}>{sub}</p>
         ) : null}
-        <div data-social-modal-body="" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] pb-[24px] md:px-[20px] md:pb-[18px]">{children}</div>
+        <div data-social-modal-body="" className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] ${setup ? "pb-[18px] md:px-[24px] md:pb-[22px]" : "pb-[24px] md:px-[20px] md:pb-[18px]"}`}>{children}</div>
         {footer ? (
           <div data-social-modal-footer="" className="flex flex-none items-center justify-between gap-[12px] border-t border-t-[color:var(--border)] px-[24px] pb-[18px] pt-[14px]">
             {footer}

@@ -9,7 +9,7 @@ export function SeatArt({ art, name, ring, children }: { art: string | null; nam
   return (
     <span
       aria-hidden
-      className={`relative block h-[74px] overflow-hidden rounded-[10px] md:h-[84px] ${
+      className={`relative block h-[74px] overflow-hidden rounded-[10px] bg-[color:var(--surface)] md:h-[84px] ${
         ring
           ? "[border:1px_solid_var(--accent)] shadow-[0_0_0_1px_var(--accent),0_10px_24px_rgba(0,0,0,.45)]"
           : "[border:1px_solid_rgba(255,255,255,.08)] shadow-[0_10px_24px_rgba(0,0,0,.45)]"

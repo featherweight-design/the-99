@@ -139,7 +139,7 @@ export function SetupSheet({
             </button>
           )}
         </div>
-        <p className="m-0 pt-[12px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.friendDecksFoot}</p>
+        <p className="m-0 pt-[18px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.friendDecksFoot}</p>
       </SocialModal>
     );
   }
@@ -258,7 +258,7 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
             className={`absolute right-[5px] top-[5px] flex h-[24px] w-[24px] items-center justify-center rounded-[7px] ${
               on
                 ? "bg-[color:var(--accent)] text-[color:var(--bg)] [border:1.5px_solid_var(--accent)]"
-                : "bg-[rgba(14,15,20,.55)] [border:1.5px_solid_rgba(230,232,240,.7)]"
+                : "bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] [border:1.5px_solid_color-mix(in_oklab,var(--fg)_70%,transparent)]"
             }`}
           >
             {on ? (
