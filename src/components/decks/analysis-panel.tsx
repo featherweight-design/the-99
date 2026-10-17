@@ -105,9 +105,10 @@ export function AnalysisPanel({
   /** The Tuning hub (`tuningHubEnabled`, two or more tools on): when present it is drawn INSTEAD of `tuning` and `cuts`,
    *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
    *  reading (a deck built long), and it decides for itself whether it draws at all. */
-  hub?: (permits: readonly Bracket[] | null) => ReactNode;
-  /** Whether `hub` draws anything for these permits (the shell's one rule, `TuningHub`'s `drawn`). Where it draws
-   *  nothing, Suggested changes has no tile, so the empty state is its landing target, as with the hub off. */
+  hub?: (permits: readonly Bracket[] | null, drawn: boolean) => ReactNode;
+  /** Whether `hub` draws anything for these permits (the shell's one rule). The panel latches it for the visit and hands
+   *  the result to `hub` as `drawn`, so the hub and the landing target read one answer. Where the hub draws nothing,
+   *  Suggested changes has no tile, so the empty state is its landing target, as with the hub off. */
   hubDraws?: (permits: readonly Bracket[] | null) => boolean;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
@@ -180,8 +181,14 @@ export function AnalysisPanel({
   // registry until it shows.
   // With the hub ON but drawing nothing (no reading, the deck at its size, Mana Balance off), the empty state stands
   // in for the tile it would have drawn.
+  // Latched for the visit, as the hub was before it moved here: once drawn the hub stays, so the last cut that brings a
+  // never-read deck to its size leaves the tiles (and Suggested changes' tile target) in place. The tab remounts this
+  // panel on every visit, which resets it.
   const hubPermits = held && !behind ? slotDeck(held.profile).permits : null;
-  const tiles = hub !== undefined && (hubDraws?.(hubPermits) ?? true);
+  const hubDrawsNow = hub !== undefined && (hubDraws?.(hubPermits) ?? true);
+  const [hubShown, setHubShown] = useState(hubDrawsNow);
+  if (hubDrawsNow && !hubShown) setHubShown(true);
+  const tiles = hubDrawsNow || (hub !== undefined && hubShown);
   const emptyTarget = useTarget(!tiles && tuning ? "suggested-changes" : null);
   return (
     <>
@@ -248,7 +255,7 @@ export function AnalysisPanel({
           but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
           stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
           reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
-      {hub ? hub(hubPermits) : null}
+      {hub ? hub(hubPermits, tiles) : null}
       {!hub && held && tuning ? (
         <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}

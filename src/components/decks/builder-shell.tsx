@@ -1955,13 +1955,13 @@ export function BuilderShell({
                   cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
                   mana={manaBalanceEnabled ? manaPanel : undefined}
                   hubDraws={hubDraws}
-                  hub={!tuningHubEnabled ? undefined : (permits) => (
+                  hub={!tuningHubEnabled ? undefined : (permits, drawn) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      drawn={hubDraws(permits)}
+                      drawn={drawn}
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}

@@ -264,6 +264,8 @@ export function TuningHub({
       setPast(null);
       setReview(null);
       setReturnRow(null);
+      // No tile to hand focus back to: the tile the reader last left belongs to an earlier open, not this one.
+      setLeftTool(null);
       setOpening(null);
     } else if (tools.some((t) => t.tool === asked)) {
       setReview(null);
