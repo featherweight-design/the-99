@@ -764,6 +764,23 @@ describe("the Lock cards mode, through BuilderShell", () => {
     await act(async () => write.resolve({ ok: true }));
   });
 
+  it("ends the mode when a same-deck ?tool= lands on Shopping (discovery R2 E11)", async () => {
+    const deck = makeDeck([sol, signet]);
+    const shell = (landingRequest: string | null) => (
+      <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
+        commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null} neverCut
+        landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
+        landingRequest={landingRequest} />
+    );
+    const view = render(shell(null));
+    await act(async () => lockButton()!.click());
+    expect(doneButton()).not.toBeNull();
+    await act(async () => view.rerender(shell("r1")));
+    await act(async () => screen.getByRole("tab", { name: /^All/ }).click());
+    expect(lockButton()).not.toBeNull();
+    expect(doneButton()).toBeNull();
+  });
+
   it("ends the mode on a switch to Shopping", async () => {
     renderShell([sol, signet]);
     await act(async () => lockButton()!.click());

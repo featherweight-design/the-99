@@ -620,7 +620,7 @@ export function BuilderShell({
       setView(landing.lands.tab);
       if (landing.lands.tab === "deck") {
         deckPanel[1]("list");
-        if (landing.lands.view === "shopping") setFilter("shopping");
+        if (landing.lands.view === "shopping") changeFilter("shopping");
       }
       if (landing.lands.tab === "analysis") setHubRequest({ tool: null, nonce: landingRequest });
     }
