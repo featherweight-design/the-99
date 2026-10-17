@@ -23,9 +23,11 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { neon } from "@neondatabase/serverless";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { PRODUCTION_BRANCH, STAGING_BRANCH } from "./lib/scratch-branch.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(BASE)) throw new Error("Set PROBE_BASE to a local server.");
 const QUICK = process.env.PROBE_QUICK === "1";
@@ -155,7 +157,11 @@ async function run(page, label, press) {
   const everUp = samples.some((s) => s?.overlay);
   const answers = samples.every((s) => s !== null);
   const trace = samples.map((s) => (s === null ? "X" : s.overlay ? (s.leaving ? "l" : "O") : ".")).join("");
-  const extra = await page.evaluate(() => ({ history: window.__probe.history, longtasks: window.__probe.longtasks.filter((l) => l.ms > 200) })).catch(() => ({ history: [], longtasks: [] }));
+  // Host-side deadline: a renderer that stopped answering leaves an evaluate pending, not rejected.
+  const extra = await Promise.race([
+    page.evaluate(() => ({ history: window.__probe.history, longtasks: window.__probe.longtasks.filter((l) => l.ms > 200) })).catch(() => null),
+    new Promise((resolve) => setTimeout(() => resolve(null), 3_000)),
+  ]).then((v) => v ?? { history: [], longtasks: [] });
   console.log(`   ${label}: from ${startPath}; samples ${trace}; end path ${last?.path}; beacons ${last?.beacons}; history ${extra.history.length}; long tasks ${extra.longtasks.length}`);
   for (const h of extra.history.slice(0, 4)) console.log(`      ${h.name} ${h.url} @${h.t} ${h.stack}`);
   report(answers, `${label}: the page answers throughout`);
@@ -169,6 +175,10 @@ async function run(page, label, press) {
   return { stuck, everUp };
 }
 
+// The probe writes the audit account's About row (put back below): never production, never staging, never a
+// database that cannot say which branch it is.
+const [{ branch }] = await neon(DATABASE_URL)`select current_setting('neon.branch_id', true) as branch`;
+if (!branch || branch === PRODUCTION_BRANCH || branch === STAGING_BRANCH) throw new Error(`refusing branch ${branch ?? "(unknown)"}`);
 await clerkSetup();
 const browser = await chromium.launch();
 const { state, userId, aboutRow } = await signIn(browser);
@@ -206,7 +216,7 @@ try {
     await context.close();
   }
 } finally {
-  await restoreAboutSeen(userId, aboutRow).catch(() => {});
+  await restoreAboutSeen(aboutRow).catch((error) => report(false, "the audit account's About row was put back", error instanceof Error ? error.message : String(error)));
   await browser.close();
 }
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
