@@ -1,0 +1,19 @@
+import { creditsPageCopy } from "../../lib/copy/credits-page";
+import { CreditsText } from "../ui/credits-text";
+
+const c = creditsPageCopy;
+
+export const PAGE = "mx-auto flex w-full leading-[normal] max-w-[1040px] flex-col gap-[22px] px-[16px] pb-[28px] pt-[18px] md:gap-[26px] md:px-[48px] md:pb-[40px] md:pt-[34px]";
+
+/** The title and sub, drawn by the page, its loading screen and its read-failed state alike. */
+export function CreditsHead() {
+  return (
+    <div className="flex flex-col gap-[6px]">
+      <h1 className="m-0 font-display text-[26px] font-bold text-[color:var(--fg)] md:text-[30px]">{c.title}</h1>
+      <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">
+        <CreditsText text={`${c.sub} · ${c.subLink}`} />
+      </span>
+    </div>
+  );
+}
+

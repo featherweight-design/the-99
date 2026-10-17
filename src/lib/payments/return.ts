@@ -1,0 +1,84 @@
+import { and, desc, eq } from "drizzle-orm";
+import type Stripe from "stripe";
+import { db } from "../../db";
+import { creditGrants } from "../../db/schema";
+import { decideReturn, isSessionId, type ReturnRead } from "./return-rule";
+import { isOurSession } from "./packs";
+
+/**
+ * The Checkout return's read (buying-credits plan E1). SERVER-ONLY, and the only place the page touches the
+ * Session. It RETRIEVES the Session by id, lets `decideReturn` refuse one that is not this viewer's, and only
+ * then looks for the grant, by Session id AND this viewer's id (a grant row of another account never answers).
+ * A Session Stripe does not know reads as `none`; any other failure throws, so the caller can say it could
+ * not check rather than draw a band that is not true.
+ */
+export async function readReturn(stripe: Stripe, input: { sessionId: unknown; viewerId: string }): Promise<ReturnRead> {
+  if (!isSessionId(input.sessionId)) return { kind: "none" };
+  const session = await retrieveOrNull(stripe, input.sessionId);
+  if (!session) return { kind: "none" };
+  const facts = { metadata: session.metadata ?? {}, paymentStatus: session.payment_status };
+  if (decideReturn(facts, input.viewerId, null).kind === "none") return { kind: "none" };
+  const [grant] = await db.select({ units: creditGrants.units }).from(creditGrants)
+    .where(and(eq(creditGrants.externalId, input.sessionId), eq(creditGrants.userId, input.viewerId)));
+  return decideReturn(facts, input.viewerId, grant?.units ?? null);
+}
+
+async function retrieveOrNull(stripe: Stripe, sessionId: string): Promise<Stripe.Checkout.Session | null> {
+  try {
+    return await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (error) {
+    if ((error as { code?: unknown })?.code === "resource_missing") return null;
+    throw error;
+  }
+}
+
+/**
+ * A purchase's receipt link, fetched on demand and never stored (plan E8): the Session's PaymentIntent's latest
+ * Charge's `receipt_url`. The same ownership check as the return: a Session that is not this app's or not this
+ * viewer's answers null, as does one with no charge yet.
+ */
+export async function receiptUrlFor(stripe: Stripe, input: { sessionId: unknown; viewerId: string }): Promise<string | null> {
+  if (!isSessionId(input.sessionId)) return null;
+  const session = await retrieveOrNull(stripe, input.sessionId);
+  if (!session || !input.viewerId) return null;
+  if (!isOurSession(session.metadata) || session.metadata?.user_id !== input.viewerId) return null;
+  const intent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+  if (!intent) return null;
+  const pi = await stripe.paymentIntents.retrieve(intent, { expand: ["latest_charge"] });
+  const charge = pi.latest_charge;
+  const url = charge && typeof charge !== "string" ? charge.receipt_url : null;
+  return typeof url === "string" && url.startsWith("https://") ? url : null;
+}
+
+/**
+ * The reader's purchases, newest first, for the history list (plan E8). One row per `credit_grants` lot: a pack
+ * now, a plan month once the subscription PR writes them (the shape is ready: `source`, `units`, `revokedUnits`,
+ * `externalId`). `externalId` is the Checkout Session id a Receipt link is fetched by; it is never a Stripe
+ * URL, and no receipt URL is stored.
+ */
+export type CreditHistoryRow = {
+  id: string;
+  source: "plan" | "pack";
+  units: number;
+  revokedUnits: number;
+  createdAt: Date;
+  externalId: string | null;
+};
+
+export const HISTORY_LIMIT = 100;
+
+export function creditHistoryQuery(userId: string) {
+  return db.select({
+    id: creditGrants.id,
+    source: creditGrants.source,
+    units: creditGrants.units,
+    revokedUnits: creditGrants.revokedUnits,
+    createdAt: creditGrants.createdAt,
+    externalId: creditGrants.externalId,
+  }).from(creditGrants).where(eq(creditGrants.userId, userId)).orderBy(desc(creditGrants.createdAt)).limit(HISTORY_LIMIT);
+}
+
+export async function listCreditHistory(userId: string): Promise<CreditHistoryRow[]> {
+  const rows = await creditHistoryQuery(userId);
+  return rows.map((r) => ({ ...r, source: r.source === "plan" ? "plan" : "pack" }));
+}

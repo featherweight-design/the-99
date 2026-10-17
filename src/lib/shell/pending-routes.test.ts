@@ -26,6 +26,9 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     expect(key("/decks/precons?view=rows")).toBe("kept:precons");
     expect(key("/decks/precons/EldraziUnbound_CMM")).toBe("decks");
     expect(key("/decks/new")).toBe("deckNew");
+    // /credits draws its own skeleton (P6), never Home's crown.
+    expect(key("/credits")).toBe("kept:credits");
+    expect(key("/credits?checkout=done&session_id=cs_1")).toBe("kept:credits");
   });
 
   it("names the kept routes as kept, with their own screen", () => {

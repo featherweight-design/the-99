@@ -2451,6 +2451,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
   production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
   the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
+- `pnpm probe:credits-return` proves the Checkout return's read and the purchase history (buying-credits E1, E8, G5)
+  against a real database, through the real `readReturn`, `listCreditHistory` and `fulfilCheckoutSession`, with Stripe a
+  stand-in whose `checkout.sessions.retrieve` serves a crafted Session or throws: a paid pack Session of the viewer with no
+  grant reads `processing` at the pack's size, and `added` at the GRANT's units once the grant lands; another viewer reading
+  that Session id reads `none`, and a Session naming them under that id finds no grant of theirs; a Session with no or
+  another `metadata.app`, an unknown pack, an unpaid status or a non-`cs_` id (Stripe never asked) reads `none`; a Session
+  Stripe does not know reads `none` and any other error throws; the history is the viewer's lots newest first and none of
+  anyone else's. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch the database reports, and staging,
+  production and local-dev are refused by id. `.env` overrides an exported `DATABASE_URL`, so the target is
+  `PROBE_DATABASE_URL`. Mutation-checked twice (the `user_id` condition dropped from the grant lookup, the
+  `metadata.user_id` check dropped from `decideReturn`).
 - `pnpm probe:token-printings` proves which token printings a player holds (token printings TP1) against a real database,
   through the real `writeUploadTokens`, `syncPreconTokens` and `purgeAccount`, on fixtures of its own (two tokens and three
   printings under per-run ids, since local-dev holds no token catalog): a Replace upload writes each printing it read as an

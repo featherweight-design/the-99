@@ -40,7 +40,9 @@ export function packCheckoutParams(input: CheckoutInput): Stripe.Checkout.Sessio
     payment_method_types: ["card"],
     automatic_tax: { enabled: true },
     customer_update: { address: "auto" },
-    success_url: `${back}?checkout=done`,
+    // `{CHECKOUT_SESSION_ID}` is Stripe's own template, filled in on the redirect. It is written literally, never
+    // through URLSearchParams or encodeURIComponent: an encoded brace is not substituted.
+    success_url: `${back}?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${back}?checkout=cancelled`,
   };
 }
