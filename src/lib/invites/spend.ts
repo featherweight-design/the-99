@@ -75,6 +75,16 @@ export async function spendInviteOnSignUp(
 }
 
 /**
+ * The inviter whose receipt this newcomer has not yet seen, WITHOUT marking it shown: the page resolves the inviter's
+ * public id first and marks it (`takeReceipt`) only once everything it needs has been read.
+ */
+export async function pendingReceipt(inviteeId: string): Promise<string | null> {
+  const [row] = await db.select({ inviter: inviteEdges.inviterUserId }).from(inviteEdges)
+    .where(and(eq(inviteEdges.inviteeUserId, inviteeId), isNull(inviteEdges.receiptShownAt)));
+  return row?.inviter ?? null;
+}
+
+/**
  * The newcomer's first `/friends`, in either order with the webhook: when their edge has not yet shown its receipt it
  * is marked shown and the inviter's account id answered, once; every later call answers null. The band is drawn from
  * the edge, never from the URL, since the after-sign-up redirect carries no sender (ruling D).

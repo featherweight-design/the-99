@@ -21,6 +21,7 @@ const m = vi.hoisted(() => ({
   redeemInviteAction: vi.fn(),
   declineInviteAction: vi.fn(),
   takeReceipt: vi.fn(),
+  pendingReceipt: vi.fn(),
   spendInviteOnSignUp: vi.fn(),
   friendPublicId: vi.fn(),
 }));
@@ -44,6 +45,7 @@ vi.mock("../../lib/social/friends", () => ({
 vi.mock("../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../lib/invites/spend")>()),
   takeReceipt: m.takeReceipt,
+  pendingReceipt: m.pendingReceipt,
   spendInviteOnSignUp: m.spendInviteOnSignUp,
 }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
@@ -82,6 +84,7 @@ beforeEach(() => {
   m.listPods.mockResolvedValue([]);
   m.listSharedPods.mockResolvedValue([]);
   m.takeReceipt.mockResolvedValue(null);
+  m.pendingReceipt.mockResolvedValue(null);
   m.spendInviteOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
   m.friendPublicId.mockResolvedValue(null);
 });
@@ -130,10 +133,12 @@ describe("/friends", () => {
     });
 
     it("draws the receipt naming the inviter from the edge, with no ?accepted= in the URL", async () => {
+      m.pendingReceipt.mockResolvedValue("user_inviter");
       m.takeReceipt.mockResolvedValue("user_inviter");
       m.friendPublicId.mockResolvedValue(DAVE.publicId);
       render(await FriendsPage({ searchParams: query() }));
       expect(m.friendPublicId).toHaveBeenCalledWith("user_1", "user_inviter");
+      expect(m.takeReceipt).toHaveBeenCalledTimes(1);
       expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
     });
 
@@ -143,7 +148,14 @@ describe("/friends", () => {
       expect(m.takeReceipt).not.toHaveBeenCalled();
     });
 
-    it("draws no receipt once the edge has shown it (takeReceipt answers null)", async () => {
+    it("does not consume the receipt when the inviter lookup itself throws, so the retry still draws it", async () => {
+      m.pendingReceipt.mockResolvedValue("user_inviter");
+      m.friendPublicId.mockRejectedValue(new Error("db down"));
+      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("db down");
+      expect(m.takeReceipt).not.toHaveBeenCalled();
+    });
+
+    it("draws no receipt once the edge has shown it (nothing pending)", async () => {
       render(await FriendsPage({ searchParams: query() }));
       expect(m.friendPublicId).not.toHaveBeenCalled();
       expect(screen.queryByRole("status")).toBeNull();

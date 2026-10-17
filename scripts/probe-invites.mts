@@ -370,6 +370,7 @@ async function main() {
     const id1 = (await stateOf(r2)).clerk;
     check("…its id stored, and no url", Boolean(id1) && id1?.endsWith("_h") === true);
     const h2 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
+    check("a hand-over also ends whatever is still pending for the reservation before making one", clerk3.revokedFor.some((r) => r.reservationId === r2 && r.email === "n2@x.dev"));
     check("continuing again revokes the stored invitation and makes a fresh one", h2.ok && clerk3.revoked.includes(id1!) && clerk3.created.length === 2);
 
     // An address with an account draws N9 and the reservation keeps holding.

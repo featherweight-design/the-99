@@ -14,7 +14,7 @@ import { socialFriendsEnabled } from "../../lib/social/flag";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks } from "../../lib/social/friends";
-import { reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
+import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
 import { PodsPane } from "../../components/social/pods-pane";
@@ -42,10 +42,11 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     listPods(userId),
     listSharedPods(userId),
   ]);
-  // Taken LAST, after every read the page needs has succeeded: a read that throws shows the error boundary, and a
-  // receipt already marked shown would never be drawn on the retry.
-  const inviterId = await takeReceipt(userId);
-  const inviterPublicId = inviterId === null ? null : await friendPublicId(userId, inviterId);
+  // The inviter is resolved first and the receipt marked shown LAST, once every read the page needs has succeeded: a
+  // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
+  const pendingInviter = await pendingReceipt(userId);
+  const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
+  if (pendingInviter !== null) await takeReceipt(userId);
   return (
     <FriendsView
       profile={profile}

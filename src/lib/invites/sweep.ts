@@ -39,7 +39,8 @@ export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites =
   const lapsed = await db.select().from(inviteReservations).where(or(
     and(eq(inviteReservations.state, "qr_open"), lte(inviteReservations.qrExpiresAt, now)),
     and(inArray(inviteReservations.state, ["claimed", "reserved"]), lte(inviteReservations.holdsUntil, now)),
-  )).limit(SWEEP_BATCH);
+    // Random, so rows whose cleanup keeps failing cannot hold every run's batch.
+  )).orderBy(sql`random()`).limit(SWEEP_BATCH);
   for (const row of lapsed) {
     if (!(await endInvitation(clerk, row))) {
       report.kept += 1;
@@ -56,7 +57,7 @@ export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites =
   const leftover = await db.select().from(inviteReservations).where(and(
     inArray(inviteReservations.state, ["returned", "revoked"]),
     isNotNull(inviteReservations.clerkInvitationId),
-  )).limit(SWEEP_BATCH);
+  )).orderBy(sql`random()`).limit(SWEEP_BATCH);
   for (const row of leftover) {
     if (await clerk.revoke(row.clerkInvitationId!)) {
       const done = await db.update(inviteReservations).set({ clerkInvitationId: null })

@@ -7,7 +7,7 @@
  * Each step's decision is a PURE function over the row (`decideClaim`, `decideConfirm`, `decideHandOver`), tested
  * alone; the functions below read the row under the sender's lock, apply the decision and write.
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
@@ -248,6 +248,9 @@ export async function handOver(
   if (decision.staleInvitationId !== null && !(await clerk.revoke(decision.staleInvitationId))) {
     return { ok: false, reason: "failed" };
   }
+  // Whatever is still pending for this reservation (an earlier create whose answer was lost, so no id was stored) is
+  // ended before another is made, so a retry never leaves a first ticket the stored id cannot reach.
+  if (!(await clerk.revokeFor(decision.email, row.id))) return { ok: false, reason: "failed" };
   const made = await clerk.create({ emailAddress: decision.email, reservationId: row.id, notify: false, ignoreExisting: true });
   if (!made.ok || made.url === null) return { ok: false, reason: "failed" };
 
@@ -260,6 +263,8 @@ export async function handOver(
     .where(and(
       eq(inviteReservations.id, row.id),
       eq(inviteReservations.state, "claimed"),
+      // Its 7 days may have run out while Clerk was asked: such a claim takes the revoke path below.
+      gt(inviteReservations.holdsUntil, new Date()),
       eq(inviteReservations.email, decision.email),
       sql`${inviteReservations.clerkInvitationId} is not distinct from ${decision.staleInvitationId}`,
     ))
