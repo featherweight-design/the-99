@@ -20,9 +20,9 @@ const tree = inv.tree;
 
 const LINE = "before:absolute before:content-[''] before:left-[8px] md:before:left-[12px]";
 const CELL: Record<RailCell, string> = {
-  v: `${LINE} before:inset-y-0 before:[border-left:1px_solid_var(--border-dashed)]`,
+  v: `${LINE} before:top-0 before:-bottom-px before:[border-left:1px_solid_var(--border-dashed)]`,
   blank: "",
-  tv: `${LINE} before:inset-y-0 before:[border-left:1px_solid_var(--border-dashed)] after:absolute after:content-[''] after:top-1/2 after:left-[8px] after:w-[9px] after:[border-top:1px_solid_var(--border-dashed)] md:after:left-[12px] md:after:w-[12px]`,
+  tv: `${LINE} before:top-0 before:-bottom-px before:[border-left:1px_solid_var(--border-dashed)] after:absolute after:content-[''] after:top-1/2 after:left-[8px] after:w-[9px] after:[border-top:1px_solid_var(--border-dashed)] md:after:left-[12px] md:after:w-[12px]`,
   t: `${LINE} before:top-0 before:h-1/2 before:w-[9px] before:[border-left:1px_solid_var(--border-dashed)] before:[border-bottom:1px_solid_var(--border-dashed)] before:rounded-bl-[5px] md:before:w-[12px] md:before:rounded-bl-[6px]`,
 };
 
@@ -85,7 +85,7 @@ function DeletedRow({ row }: { row: Extract<TreeRow, { kind: "deleted" }> }) {
     <div role="treeitem" aria-level={row.cells.length + 1} aria-selected={false} data-node="deleted" className={ROW}>
       <Rails cells={row.cells} />
       <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)]`} />
-      <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-baseline md:gap-[10px]">
+      <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
         <span className="text-[color:var(--fg-muted)]">{inv.deleted}</span>
         {row.joined && <small className={SMALL}>{tree.joined(row.joined)}</small>}
       </span>
@@ -105,8 +105,10 @@ function WaitingRow({ row, onRevoke, busy }: { row: Extract<TreeRow, { kind: "wa
       <span aria-hidden className={`${FACE} border-[1.5px] border-dashed border-[color:var(--border-dashed)]`} />
       <span className="flex min-w-0 flex-1 flex-col md:hidden">
         <span>{tree.waitingHow(row.how)}</span>
-        <small className={`truncate ${SMALL}`}>
-          {row.email} · {tree.returns(row.returns)}
+        {/* A long address gives way; the return date never does. */}
+        <small className={`flex min-w-0 ${SMALL}`}>
+          <span className="min-w-0 truncate">{row.email}</span>
+          <span className="flex-none whitespace-pre"> · {tree.returns(row.returns)}</span>
         </small>
       </span>
       <span className="hidden min-w-0 flex-1 [overflow-wrap:anywhere] md:inline">{inv.waiting(row.how, row.email)}</span>
@@ -163,7 +165,8 @@ export function InviteTreeView({
           placeholder={tree.search}
           aria-label={tree.search}
           containerClassName="h-[36px] w-[360px] rounded-[7px] px-[12px] py-0"
-          className="text-[13px]"
+          // 13px as drawn, but 16px on a touch screen (an iPad passes `md`), where iOS zooms a smaller field.
+          className="text-[16px] [@media(pointer:fine)]:text-[13px]"
         />
         <span data-testid="invite-tree-counts" className="ml-auto flex gap-[8px]">
           {[tree.accounts(accounts), tree.invited(invited), tree.waiting(waiting)].map((t) => (

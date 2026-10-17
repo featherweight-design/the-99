@@ -1,5 +1,5 @@
 import { adminCopy } from "../copy/admin";
-import { HOLD_MS, holdsInvite } from "../invites/rules";
+import { holdsInvite } from "../invites/rules";
 import type { Account } from "./accounts";
 import { initials, matchesAccount } from "./account-page-rule";
 import { countFor, fmtDay, type Edge, type ReservationRow } from "./invites-rule";
@@ -130,6 +130,3 @@ export function flattenTree(roots: readonly TreeNode[]): TreeRow[] {
 
 /** A node's meta: `N left · invited K`, the owner first on the phone. */
 export const nodeMeta = (left: number, invited: number) => copy.nodeMeta(left, invited);
-
-/** When a waiting leaf's invite was sent, for its accessible name (the row draws only the return). */
-export const sentOf = (holdsUntil: Date) => fmtDay(new Date(holdsUntil.getTime() - HOLD_MS));
