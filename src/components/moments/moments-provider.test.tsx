@@ -637,6 +637,31 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
   });
 
+  it("closes a bubble another tab's landing spent, and lets the next control already on screen take the window", async () => {
+    vi.useRealTimers();
+    const other = new BroadcastChannel("the99.moments.spent");
+    const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+    try {
+      render(
+        <MomentsProvider live={LIVE} spent={[]}>
+          <Control id="top-off" name="Top off" />
+          <Control id="wishlist" name="Wish" />
+        </MomentsProvider>,
+      );
+      onScreen("Top off");
+      onScreen("Wish");
+      await wait(ARRIVE_MS + 100);
+      expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+      other.postMessage("top-off");
+      await wait(ARRIVE_MS + 300);
+      expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+      expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
   it("tells the other tabs when it is called from a descendant's mount effect, before the provider's channel opens", async () => {
     vi.useRealTimers();
     const heard: unknown[] = [];

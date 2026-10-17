@@ -278,7 +278,12 @@ export function MomentsProvider({
         if (typeof e.data !== "string") return;
         spent.current.add(e.data);
         const s = showingRef.current;
-        if (s !== null && s.id === e.data) close(false);
+        // Another tab's landing spends without taking the visit (`suppress`), so a control here may still be owed its
+        // bubble: the window opens again, as it does when another tab's claim is heard.
+        if (s !== null && s.id === e.data) {
+          close(false);
+          armRef.current();
+        }
       };
     }
     return () => {
