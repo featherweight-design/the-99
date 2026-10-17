@@ -2089,6 +2089,12 @@ export const userPrefs = pgTable(
      * (`spendMomentWrite`), because of the stamp trigger above.
      */
     momentsSpent: text("moments_spent").array().notNull().default(sql`'{}'::text[]`),
+    /**
+     * When this reader's first-run tour was spent (discovery R3, `lib/discovery/tour.ts`): written once, only while
+     * null (`spendTourWrite`), because of the stamp trigger above, so taking the tour again moves nothing. Null is a
+     * tour never taken.
+     */
+    tourSeenAt: timestamp("tour_seen_at", { withTimezone: true }),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
