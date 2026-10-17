@@ -89,7 +89,7 @@ describe("GET /api/rule-zero/tables/[id]", () => {
   });
 
   it("is not there with Rule 0 off for the reader, or with its parent off", async () => {
-    for (const env of [{ SOCIAL_FRIENDS_ENABLED: "true" }, { RULE_ZERO_ENABLED: "true" }]) {
+    for (const env of [{ SOCIAL_FRIENDS_ENABLED: "true" }, { RULE_ZERO_ENABLED: "true" }] as Record<string, string>[]) {
       stub.env = env;
       expect((await get()).status).toBe(404);
     }
