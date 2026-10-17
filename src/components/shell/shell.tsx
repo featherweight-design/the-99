@@ -21,6 +21,8 @@ import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
 import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
+import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
+import { HelpRoot } from "../help/help-root";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -78,6 +80,8 @@ export default async function Shell({
   };
   // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
   const cardSearch = cardSearchEnabled(env);
+  // The ? (discovery R2·8): only the boolean reaches the client; off, no ? is drawn anywhere.
+  const help = helpPanelEnabled(env);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
   // The moments live for this reader and the ones already spent (discovery R1). Off, or none live, the spent set is not
@@ -111,6 +115,7 @@ export default async function Shell({
       <TargetsProvider>
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchShell userId={cardSearch ? userId : null}>
+      <HelpRoot on={help}>
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -130,6 +135,7 @@ export default async function Shell({
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>
+      </HelpRoot>
       </CardSearchShell>
       </MomentsProvider>
       </TargetsProvider>

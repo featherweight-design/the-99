@@ -185,6 +185,7 @@
     "probe:added-at": "tsx scripts/probe-added-at.ts",
     "probe:collection-sync-ui": "node scripts/probe-collection-sync-ui.mjs",
     "probe:tool-landing": "node scripts/probe-tool-landing.mjs",
+    "probe:help-panel": "node scripts/probe-help-panel.mjs",
     "capture:about": "node scripts/capture-about.mjs",
     "fixtures:about": "tsx scripts/about-fixtures.mts",
     "probe:collection-write": "tsx scripts/probe-collection-write.ts",
