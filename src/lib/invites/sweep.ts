@@ -11,7 +11,7 @@
  *    pending invitation whose public metadata names the reservation and records its id, so the spend and the return
  *    both find it.
  */
-import { and, eq, gt, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
@@ -76,7 +76,9 @@ export async function sweepInvites(now: Date = new Date(), clerk: ClerkInvites =
     isNotNull(inviteReservations.email),
     gt(inviteReservations.holdsUntil, now),
     lte(inviteReservations.createdAt, new Date(now.getTime() - RECONCILE_AFTER_MS)),
-  )).limit(SWEEP_BATCH);
+    // A refused send stays reserved with no id until its hold ends, and looks the same as an indeterminate one: a fixed
+    // order would let a backlog of them take every run's batch. A random draw gives each its turn.
+  )).orderBy(sql`random()`).limit(SWEEP_BATCH);
   for (const row of unknown) {
     const found = await clerk.findFor(row.email!, row.id);
     if (!found.ok || found.id === null) continue;

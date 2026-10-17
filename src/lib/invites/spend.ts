@@ -8,7 +8,8 @@
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
+import { accountTombstones, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
+import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
 import { lockSenderIn } from "./send";
 
@@ -19,7 +20,9 @@ export type SpendResult =
   /** Already done for this account, by an earlier run: nothing written. */
   | { spent: false; reason: "already" }
   /** No such reservation, or it is not an invitation a newcomer can be spent on. */
-  | { spent: false; reason: "unknown" | "lapsed" };
+  | { spent: false; reason: "unknown" | "lapsed" }
+  /** The account was deleted: a delayed `user.created` must not bring its rows back. */
+  | { spent: false; reason: "deleted" };
 
 export function reservationIdFrom(metadata: unknown): string | null {
   const id = typeof metadata === "object" && metadata !== null ? (metadata as { inviteReservation?: unknown }).inviteReservation : undefined;
@@ -44,6 +47,11 @@ export async function spendInviteOnSignUp(
 
   return db.transaction(async (tx): Promise<SpendResult> => {
     const now = await lockSenderIn(tx, found.senderId, deps.now);
+    // The deletion's tombstone is recorded in its own commit BEFORE the purge and keeps the id's hash for good, so a
+    // `user.created` that arrives after the account was deleted (even after the raw id was retired) spends nothing.
+    const [gone] = await tx.select({ id: accountTombstones.idHash }).from(accountTombstones)
+      .where(eq(accountTombstones.idHash, tombstoneHash(newUserId)));
+    if (gone) return { spent: false, reason: "deleted" };
     const [row] = await tx.select().from(inviteReservations).where(eq(inviteReservations.id, reservationId)).for("update");
     if (!row) return { spent: false, reason: "unknown" };
     // An account an invite already created is not spent on twice: the one edge per invitee is the record.

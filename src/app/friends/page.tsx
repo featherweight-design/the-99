@@ -35,8 +35,6 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // receipt is then drawn once from the edge, whichever of the two ran first.
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
-  const inviterId = await takeReceipt(userId);
-  const inviterPublicId = inviterId === null ? null : await friendPublicId(userId, inviterId);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   const [profile, { friends, links }, pods, shared] = await Promise.all([
     ensureProfile(userId, user?.firstName),
@@ -44,6 +42,10 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     listPods(userId),
     listSharedPods(userId),
   ]);
+  // Taken LAST, after every read the page needs has succeeded: a read that throws shows the error boundary, and a
+  // receipt already marked shown would never be drawn on the retry.
+  const inviterId = await takeReceipt(userId);
+  const inviterPublicId = inviterId === null ? null : await friendPublicId(userId, inviterId);
   return (
     <FriendsView
       profile={profile}

@@ -7,7 +7,7 @@
  * Each step's decision is a PURE function over the row (`decideClaim`, `decideConfirm`, `decideHandOver`), tested
  * alone; the functions below read the row under the sender's lock, apply the decision and write.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { inviteReservations } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "./clerk";
@@ -253,8 +253,16 @@ export async function handOver(
 
   // Stored under the claim still standing: a reservation resolved while Clerk was asked leaves a ticket that must
   // not stay usable.
+  // And under the claim as it was READ: the address this invitation is for, and the invitation id then stored. A second
+  // hand-over that completed while Clerk was asked (the same browser changed and proved another address) has moved
+  // one of them, so this one loses and revokes what it made, and only one ticket is ever stored.
   const stored = await db.update(inviteReservations).set({ clerkInvitationId: made.id })
-    .where(and(eq(inviteReservations.id, row.id), eq(inviteReservations.state, "claimed")))
+    .where(and(
+      eq(inviteReservations.id, row.id),
+      eq(inviteReservations.state, "claimed"),
+      eq(inviteReservations.email, decision.email),
+      sql`${inviteReservations.clerkInvitationId} is not distinct from ${decision.staleInvitationId}`,
+    ))
     .returning({ id: inviteReservations.id });
   if (stored.length === 0) {
     if (!(await clerk.revoke(made.id))) console.warn("[invites] hand-over: late invitation not revoked");

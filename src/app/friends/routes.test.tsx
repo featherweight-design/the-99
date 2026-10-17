@@ -137,6 +137,12 @@ describe("/friends", () => {
       expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
     });
 
+    it("does not consume the receipt when a read the page needs throws, so the retry still draws it", async () => {
+      m.listFriends.mockRejectedValue(new Error("db down"));
+      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("db down");
+      expect(m.takeReceipt).not.toHaveBeenCalled();
+    });
+
     it("draws no receipt once the edge has shown it (takeReceipt answers null)", async () => {
       render(await FriendsPage({ searchParams: query() }));
       expect(m.friendPublicId).not.toHaveBeenCalled();

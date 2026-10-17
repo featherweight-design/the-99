@@ -33,7 +33,9 @@ const N3 = `probe_inv_n3_${run}`;
 const N4 = `probe_inv_n4_${run}`;
 const Z = `probe_inv_z_${run}`; // PR 3: a sender whose account is purged
 const W = `probe_inv_w_${run}`; // PR 3: Z's invitee
-const PR3 = [P, N1, N2, N3, N4, Z, W];
+const Q = `probe_inv_q_${run}`; // PR 3: a sender with a backlog for the sweep
+const N5 = `probe_inv_n5_${run}`; // PR 3: a newcomer whose account was deleted
+const PR3 = [P, N1, N2, N3, N4, Z, W, Q, N5];
 const SECRET = "c0ffee".repeat(11).slice(0, 64);
 
 let failed = 0;
@@ -487,15 +489,70 @@ async function main() {
     check("a run with nothing to do returns nothing", rep3.returned === 0 && rep3.revoked === 0, JSON.stringify(rep3));
     await invariant(P, "the sweep");
 
+    // A delayed user.created for an account that was deleted spends nothing, even with its raw id long retired.
+    check("Set 20 left for P again", (await setInvites(ADMIN3, P, 20)).ok);
+    check("a send for the deleted account's invitation", (await sendEmailInvite(P, "tomb@x.dev", { clerk: ok.clerk })).ok);
+    const tombRes = (await db.execute<{ id: string }>(sql`select id from invite_reservations where user_id = ${P} and email = 'tomb@x.dev'`)).rows[0].id;
+    const { tombstoneHash } = await import("../src/lib/account/purge");
+    await db.execute(sql`insert into account_tombstones (id_hash, clerk_id) values (${tombstoneHash(N5)}, null)`);
+    const deleted = await spendInviteOnSignUp(N5, tombRes, "Eve");
+    check("a deleted account's late sign-up event spends nothing and recreates nothing", deleted.spent === false && (deleted as { reason?: string }).reason === "deleted"
+      && (await stateOf(tombRes)).state === "reserved"
+      && Number((await db.execute<{ n: number }>(sql`select (select count(*) from social_profiles where user_id = ${N5}) + (select count(*) from friend_links where user_id = ${N5} or friend_user_id = ${N5}) + (select count(*) from invite_edges where invitee_user_id = ${N5}) as n`)).rows[0].n) === 0);
+    await invariant(P, "a refused late spend");
+
+    // Two hand-overs overlap: the second finished (another address proven) while Clerk was asked for the first, so the
+    // first loses, revokes what it made and stores nothing.
+    const q4 = await showInviteQr(P, SECRET);
+    if (!q4.ok) throw new Error("no QR 4");
+    const r4 = await idOfToken(q4.token);
+    const c4 = await claimInvite(q4.token, "race-a@x.dev", null, { env, mail });
+    if (!c4.ok) throw new Error("claim 4 failed");
+    await confirmCode(q4.token, lastCode(), c4.claimSecret, { env });
+    const raceClerk = stubClerk(() => ({ ok: true, id: "inv_loser", url: "https://accounts.probe/loser" }));
+    raceClerk.clerk.create = async (i) => {
+      raceClerk.created.push(i);
+      // The other hand-over wins while this create is in flight.
+      await db.execute(sql`update invite_reservations set email = 'race-b@x.dev', clerk_invitation_id = 'inv_winner' where id = ${r4}`);
+      return { ok: true, id: "inv_loser", url: "https://accounts.probe/loser" };
+    };
+    const overlapped = await handOver(q4.token, c4.claimSecret, { clerk: raceClerk.clerk });
+    check("an overlapped hand-over loses: ended, its own invitation revoked, the winner's id kept",
+      !overlapped.ok && raceClerk.revoked.includes("inv_loser") && (await stateOf(r4)).clerk === "inv_winner");
+
+    // A backlog of refused sends cannot starve a reconcile: each run draws its batch at random.
+    const bulk = Array.from({ length: 60 }, (_, i) => `('${Q}', 'email', 'reserved', 'bulk${i}@x.dev', now() + interval '6 days', now() - interval '10 minutes')`).join(", ");
+    await db.execute(sql.raw(`insert into invite_reservations (user_id, kind, state, email, holds_until, created_at) values ${bulk}`));
+    await db.execute(sql`insert into invite_balances (user_id, held) values (${Q}, 100)`);
+    const target = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, email, holds_until, created_at)
+      values (${Q}, 'email', 'reserved', 'target@x.dev', now() + interval '6 days', now() - interval '10 minutes') returning id`)).rows[0].id;
+    const bl = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    bl.clerk.findFor = async (_e, rid) => ({ ok: true, id: rid === target ? "inv_target" : null });
+    let reconciledAt = -1;
+    for (let run = 0; run < 25 && reconciledAt < 0; run += 1) {
+      await sweepInvites(new Date(), bl.clerk);
+      if ((await stateOf(target)).clerk === "inv_target") reconciledAt = run + 1;
+    }
+    check("a backlog over the batch still reaches an indeterminate send", reconciledAt > 0, `after ${reconciledAt} runs`);
+
     // The purge's Clerk half: the sender's invitations are revoked after it commits, the tree kept with a null side.
     await db.execute(sql`insert into invite_balances (user_id, held) values (${Z}, 3)`);
     await db.execute(sql`
       insert into invite_reservations (user_id, kind, state, holds_until, email, clerk_invitation_id, created_at)
       values (${Z}, 'email', 'reserved', now() + interval '3 days', 'z@x.dev', 'inv_z', now())`);
+    await db.execute(sql`
+      insert into invite_reservations (user_id, kind, state, holds_until, email, created_at)
+      values (${Z}, 'email', 'reserved', now() + interval '3 days', 'z-lost@x.dev', now())`);
     await db.execute(sql`insert into invite_edges (inviter_user_id, invitee_user_id, kind) values (${Z}, ${W}, 'email')`);
     const purgeRevoked: string[] = [];
-    const rep = await purgeAccount(Z, { revoke: async (id) => { purgeRevoked.push(id); return true; } });
-    check("the purge revokes the sender's pending invitation after it commits", purgeRevoked.join() === "inv_z" && rep.invitations.found === 1 && rep.invitations.revoked === 1);
+    const purgeFor: string[] = [];
+    const rep = await purgeAccount(Z, {
+      revoke: async (id) => { purgeRevoked.push(id); return true; },
+      revokeFor: async (email) => { purgeFor.push(email); return true; },
+    });
+    check("the purge revokes the sender's pending invitation after it commits", purgeRevoked.join() === "inv_z" && rep.invitations.revoked === 2);
+    check("…and finds a send whose id was never stored by its address, which nothing else could after the purge", purgeFor.join() === "z-lost@x.dev" && rep.invitations.found === 2);
     check("…and the reservations and balance are gone", Number((await db.execute<{ n: number }>(sql`select (select count(*) from invite_reservations where user_id = ${Z}) + (select count(*) from invite_balances where user_id = ${Z}) as n`)).rows[0].n) === 0);
     const zEdge = (await db.execute<{ inviter: string | null; invitee: string | null }>(sql`select inviter_user_id as inviter, invitee_user_id as invitee from invite_edges where invitee_user_id = ${W}`)).rows;
     check("the tree is kept with the deleted side null", zEdge.length === 1 && zEdge[0].inviter === null && zEdge[0].invitee === W);
@@ -509,17 +566,19 @@ async function main() {
       byKind.invites_set === 10 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 4, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id in (${ADMIN}, ${ADMIN3})`);
-    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z})`);
-    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z})`);
+    await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);
+    await db.execute(sql`delete from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q})`);
     const pr3 = PR3.map((id) => `'${id}'`).join(", ");
     await db.execute(sql.raw(`delete from invite_edges where inviter_user_id in (${pr3}) or invitee_user_id in (${pr3})`));
     await db.execute(sql.raw(`delete from friend_links where user_id in (${pr3}) or friend_user_id in (${pr3})`));
     await db.execute(sql.raw(`delete from social_profiles where user_id in (${pr3})`));
     await db.execute(sql.raw(`delete from user_data_stamps where user_id in (${pr3})`));
+    const { tombstoneHash: th } = await import("../src/lib/account/purge");
+    await db.execute(sql`delete from account_tombstones where id_hash = ${th(N5)}`);
     if (groupId) await db.execute(sql`delete from flag_groups where id = ${groupId}`);
     const { rows: left } = await db.execute<{ n: number }>(sql`
-      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}))
-        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}))
+      select (select count(*) from invite_reservations where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q}))
+        + (select count(*) from invite_balances where user_id in (${S}, ${T}, ${O}, ${K}, ${L}, ${P}, ${Z}, ${Q}))
         + (select count(*) from invite_edges where inviter_user_id = any(${sql.param(PR3)}::text[]) or invitee_user_id = any(${sql.param(PR3)}::text[]))
         + (select count(*) from social_profiles where user_id = any(${sql.param(PR3)}::text[]))
         + (select count(*) from admin_events where actor_id in (${ADMIN}, ${ADMIN3})) as n`);

@@ -84,7 +84,10 @@ export type PurgeReport = {
 
 export async function purgeAccount(
   userId: string,
-  deps: { revoke?: (invitationId: string) => Promise<boolean> } = {},
+  deps: {
+    revoke?: (invitationId: string) => Promise<boolean>;
+    revokeFor?: (email: string, reservationId: string) => Promise<boolean>;
+  } = {},
 ): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
   const { report, invitationIds } = await db.transaction(async (tx) => {
@@ -120,5 +123,5 @@ export async function purgeAccount(
     const stamp = await tx.execute(sql`delete from user_data_stamps where user_id = ${userId}`);
     return { report: { social, rows, invitesUnlinked, stamp: stamp.rowCount ?? 0 }, invitationIds };
   });
-  return { ...report, invitations: await revokeAfterPurge(invitationIds, deps.revoke) };
+  return { ...report, invitations: await revokeAfterPurge(invitationIds, deps) };
 }
