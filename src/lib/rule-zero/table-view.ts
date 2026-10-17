@@ -8,6 +8,7 @@ import type { DeclarationAsk } from "../bracket/declaration-ask";
 import type { FindingId } from "../bracket/findings";
 import type { Bracket } from "../bracket/types";
 import type { TableSeat, TableView } from "../social/rule-zero-table";
+import { seatChanged, sinceYouLooked } from "./live";
 import type { Drivers, SeatState } from "./rules";
 
 export type { TableSeat, TableView };
@@ -33,6 +34,8 @@ export type SeatDraw = {
   driving: FindingId[];
   /** The five findings' counts, for a seat in the read. */
   counts: Record<FindingId, number> | null;
+  /** When the seat changed, while that is after the viewer's `seenAt` (the changed dot, S5); else null. */
+  changed: Date | null;
 };
 
 export type Headline =
@@ -58,6 +61,8 @@ export type TableDraw = {
   headline: Headline;
   /** Seats not in the read, for the sentence that says so. */
   leftOut: number;
+  /** `Since you looked`: each changed seat holding a deck, and the deck it holds now. Empty: no line. */
+  since: { name: string; deck: string }[];
 };
 
 const keyOf = (s: TableSeat) => `seat-${s.seat}`;
@@ -82,11 +87,12 @@ export function drawTable(view: TableView): TableDraw {
       drivers,
       driving: drivingOf(drivers),
       counts: reading ? countsOf(reading.findings) : null,
+      changed: seatChanged(seat, view.seenAt) ? seat.changedAt : null,
     };
   });
 
   const leftOut = draws.filter((d) => d.read === null).length;
-  return { read: view.read, seats: draws, headline: headlineOf(view.read, draws, leftOut), leftOut };
+  return { read: view.read, seats: draws, headline: headlineOf(view.read, draws, leftOut), leftOut, since: sinceYouLooked(view) };
 }
 
 function countsOf(findings: readonly { id: FindingId; count: number }[]): Record<FindingId, number> {

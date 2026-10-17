@@ -1,0 +1,41 @@
+/**
+ * What the live table shows has moved since the viewer last drew it (plan `2026-10-16-rule-zero.md` PR 4; readiness
+ * G5; boards S5, W5): the changed dot on a seat and `Since you looked` on the read. Pure: the page hands in the
+ * snapshot it drew and the time it draws at.
+ *
+ * A seat is changed when its `changedAt` is after the viewer's `seenAt`, the `revision` of the last snapshot they drew
+ * (`markSeen`). Before their first draw there is nothing to have looked at, so nothing is changed. The viewer's own
+ * seat never carries the dot: its changes are their own, which the swap draws as `changed just now` (PR 7).
+ */
+import { ruleZeroCopy } from "../copy/rule-zero";
+import type { TableSeat, TableView } from "../social/rule-zero-table";
+
+export function seatChanged(seat: Pick<TableSeat, "you" | "changedAt">, seenAt: Date | null): boolean {
+  return !seat.you && seenAt !== null && seat.changedAt.getTime() > seenAt.getTime();
+}
+
+/** `Since you looked`'s sentences, in seat order: each changed seat that now holds a deck, and what it holds. */
+export function sinceYouLooked(view: Pick<TableView, "seats" | "seenAt">): { name: string; deck: string }[] {
+  return view.seats.flatMap((s) => (seatChanged(s, view.seenAt) && s.deck ? [{ name: s.displayName, deck: s.deck.name }] : []));
+}
+
+const MINUTE_MS = 60_000;
+
+/** A changed seat's line: `changed just now`, `changed 1 min ago`, `changed 2 hr ago`. A table lasts a day. */
+export function changedLine(at: Date, now: Date): string {
+  const minutes = Math.floor(Math.max(0, now.getTime() - at.getTime()) / MINUTE_MS);
+  if (minutes < 1) return ruleZeroCopy.seat.changedNow;
+  return ruleZeroCopy.seat.changedAgo(minutes < 60 ? `${minutes} min ago` : `${Math.floor(minutes / 60)} hr ago`);
+}
+
+/** The JSON a poll answers turns every date into a string: put the ones `TableView` carries back. */
+export function reviveTableView(raw: TableView): TableView {
+  const at = (d: Date | string) => new Date(d);
+  return {
+    ...raw,
+    closesAt: at(raw.closesAt),
+    revision: at(raw.revision),
+    seenAt: raw.seenAt === null ? null : at(raw.seenAt),
+    seats: raw.seats.map((s) => ({ ...s, changedAt: at(s.changedAt) })),
+  };
+}

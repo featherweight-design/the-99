@@ -13,7 +13,11 @@ const m = vi.hoisted(() => ({
   loadClosedTable: vi.fn(),
   howItWorksEnabled: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
+vi.mock("next/navigation", () => ({
+  notFound: () => { throw new Error("NOT_FOUND"); },
+  useRouter: () => ({ refresh: () => {} }),
+}));
+vi.mock("../actions", () => ({ markTableSeen: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../../lib/social/flag", () => ({ ruleZeroEnabled: m.ruleZeroEnabled, socialGamesEnabled: m.socialGamesEnabled }));

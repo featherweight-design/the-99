@@ -1,0 +1,135 @@
+"use client";
+
+// The table, live (plan `2026-10-16-rule-zero.md` PR 4; readiness G5; boards S4, S5, W4, W5): the page draws the
+// server's snapshot, and this asks `GET /api/rule-zero/tables/[id]` again every 20 seconds while the page is
+// visible, at once when it comes back into view or the window takes focus, and hands each answer to the same body.
+// Nothing is promised live: a change arrives on the next check.
+//
+// Since you looked: the changed dot and the read's line compare each seat with the viewer's `seenAt` AS THE VISIT
+// FOUND IT, held for the whole visit, so a change that arrives mid-visit keeps its dot until the reader leaves. The
+// visit's `seenAt` is the one its FIRST check answers, asked at once on arrival and before this visit records
+// anything: a Back or Forward can restore the page's earlier payload from the router's cache, whose `seenAt` is the
+// one an earlier visit arrived with. Until that check lands the page's own `seenAt` stands in.
+//
+// The page records the drawn snapshot's `revision` (`markTableSeen`) once the visit's `seenAt` is known, and only
+// while the page is visible: an answer that lands in a hidden tab has not been seen, so it is recorded when the
+// page comes back into view, and never if the reader leaves first. So the next visit starts from what this one
+// actually showed, and a refresh does not lose it.
+//
+// A closed table's answer swaps the body for the closed page in place (L4). A 404 (the reader left the pod, or
+// their seat went) refreshes the route, whose page then answers not found.
+
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
+import { markTableSeen } from "../../app/friends/table/actions";
+import { reviveTableView } from "../../lib/rule-zero/live";
+import type { TableView } from "../../lib/rule-zero/table-view";
+import { TableBody } from "./table-body";
+import { TableClosed } from "./table-closed";
+
+export const POLL_MS = 20_000;
+
+type Closed = Extract<TablePoll, { kind: "closed" }>["closed"];
+
+const clock = (d: Date) =>
+  new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(d).toLowerCase();
+
+/** Record what the page shows, once the visit's `seenAt` is known and while the page is visible. */
+function recordSeen(tableId: string, shown: { revision: number; live: boolean }, recorded: { current: number }) {
+  if (!shown.live || document.visibilityState !== "visible" || shown.revision <= recorded.current) return;
+  recorded.current = shown.revision;
+  // Best effort: a lost write costs one visit's dots, never the table.
+  markTableSeen(tableId, new Date(shown.revision).toISOString()).catch(() => {});
+}
+
+export function TableLive({
+  initial,
+  gamesEnabled,
+  now: serverNow,
+}: {
+  initial: TableView;
+  gamesEnabled: boolean;
+  /** The server's clock at the page's draw; each answered check moves it to the reader's. */
+  now: Date;
+}) {
+  const router = useRouter();
+  const [view, setView] = useState(initial);
+  const [closed, setClosed] = useState<Closed | null>(null);
+  const [updated, setUpdated] = useState<string | undefined>(undefined);
+  const [now, setNow] = useState(serverNow);
+  // The visit's own `seenAt`: the first check's, never moved by this visit's writes.
+  const [lookedAt, setLookedAt] = useState(initial.seenAt);
+  const [arrived, setArrived] = useState(false);
+  const tableId = initial.tableId;
+  // What the page shows now, and the newest revision it has recorded, for the handlers below.
+  const shown = useRef({ revision: initial.revision.getTime(), live: false });
+  const recorded = useRef(0);
+  // Whether the visit's first check has answered: held across re-runs of the checking effect.
+  const firstAnswered = useRef(false);
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  });
+
+  useEffect(() => {
+    let stopped = false;
+    let inFlight = false;
+    const check = async () => {
+      if (stopped || inFlight || document.visibilityState !== "visible") return;
+      inFlight = true;
+      try {
+        const res = await fetch(`/api/rule-zero/tables/${tableId}`, { cache: "no-store" });
+        if (stopped) return;
+        if (res.status === 404) {
+          routerRef.current.refresh();
+          return;
+        }
+        if (!res.ok) return;
+        const poll = (await res.json()) as TablePoll;
+        if (stopped) return;
+        if (poll.kind === "closed") setClosed(poll.closed);
+        else {
+          const next = reviveTableView(poll.view);
+          setView(next);
+          if (!firstAnswered.current) {
+            firstAnswered.current = true;
+            setLookedAt(next.seenAt);
+            setArrived(true);
+          }
+        }
+        const at = new Date();
+        setNow(at);
+        setUpdated(clock(at));
+      } catch {
+        // A failed check is the next check's to make; nothing the reader sees changes.
+      } finally {
+        inFlight = false;
+      }
+    };
+    const timer = window.setInterval(check, POLL_MS);
+    void check();
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      recordSeen(tableId, shown.current, recorded);
+      void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [tableId]);
+
+  const revision = view.revision.getTime();
+  useEffect(() => {
+    shown.current = { revision, live: arrived && !closed };
+    recordSeen(tableId, shown.current, recorded);
+  });
+
+  if (closed) return <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />;
+  return <TableBody view={{ ...view, seenAt: lookedAt }} gamesEnabled={gamesEnabled} now={now} updated={updated} />;
+}
