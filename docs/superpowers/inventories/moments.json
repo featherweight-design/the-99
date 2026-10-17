@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R1, the moments (plan 2026-10-16-moments.md). Rows land with the PR that mounts each moment: PR 1 is the foundation and draws nothing on its own.",
   "clearAbout": true,
-  "note": "Needs MOMENTS_ENABLED on. Each row clears this browser's visit (`clearVisit`, then a reload through its `goto`) and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row). M12 needs an account with no deck, so its rows are in `moments-no-deck.json`, run as that account. M15 needs one whose collection came from an upload; it previews a pasted list and presses no confirm, but a preview is not read-only: it inserts an unconfirmed `csv_uploads` row, which the runner does not remove. Run M15 against a fixture account on local-dev or a scratch branch, never staging or production. A row that shows its moment for a second spends it on the account, and the runner resets no database, so a row passes once per account: run one width, or one row, at a time, and empty `moments_spent` (or use a fresh fixture account) before the next.",
+  "note": "Needs MOMENTS_ENABLED on. Every load starts with the visit's moment taken, so nothing arrives while the runner signs in; each row's `clearVisit` makes its next load a fresh visit, and the row then loads its route once and waits for its own note by name, so a different moment fails the row. The account's spent set is NOT reset by the runner: before a run, the account's user_prefs.moments_spent must hold none of the row's moments, except `suggested-changes` for the M4 row (run M2 and M4 in separate runs, or M4 after M2 has been spent by the M2 row). M12 needs an account with no deck, so its rows are in `moments-no-deck.json`, run as that account. M15 needs one whose collection came from an upload; it previews a pasted list and presses no confirm, but a preview is not read-only: it inserts an unconfirmed `csv_uploads` row, which the runner does not remove. Run M15 against a fixture account on local-dev or a scratch branch, never staging or production. A row that shows its moment for a second spends it on the account, and the runner resets no database, so a row passes once per account: run one width, or one row, at a time, and empty `moments_spent` (or use a fresh fixture account) before the next.",
   "out": "contact-sheets/moments",
   "planned": [
     {
@@ -80,10 +80,6 @@
       "view": "src/components/decks/last-slots-strip.tsx",
       "steps": [
         {
-          "goto": "/decks/${UNDER_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -107,10 +103,6 @@
       "view": "src/components/decks/builder-shell.tsx",
       "steps": [
         {
-          "goto": "/decks/${FULL_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -129,10 +121,6 @@
       "label": "/decks/[id], a deck over its size: M3 Proposed cuts on `Proposed cuts →` (else the Analysis tab)",
       "view": "src/components/decks/spine-desktop.tsx",
       "steps": [
-        {
-          "goto": "/decks/${OVER_DECK}",
-          "wait": "[role=tablist]"
-        },
         {
           "clearVisit": true
         },
@@ -153,10 +141,6 @@
       "view": "src/components/decks/role-counter-cell.tsx",
       "steps": [
         {
-          "goto": "/decks/${FULL_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -176,14 +160,10 @@
       "view": "src/components/decks/game-matchups.tsx",
       "steps": [
         {
-          "goto": "/decks/${GAMES_DECK}?view=games",
-          "wait": "[role=radiogroup]"
-        },
-        {
           "clearVisit": true
         },
         {
-          "goto": "/decks/${GAMES_DECK}?view=games",
+          "goto": "/decks/${GAMES_DECK}?tab=games",
           "wait": "[role=radiogroup]",
           "settle": 1500
         },
@@ -203,10 +183,6 @@
       "view": "src/components/shell/account-menu.tsx",
       "steps": [
         {
-          "goto": "/decks",
-          "wait": "h1, h2"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -225,10 +201,6 @@
       "label": "/decks/[id] Shopping, a row over the deck's limit: M5 Cheaper stand-ins on its ⇄ press",
       "view": "src/components/social/spare-markers.tsx",
       "steps": [
-        {
-          "goto": "/decks/${STANDIN_DECK}",
-          "wait": "[role=tablist]"
-        },
         {
           "clearVisit": true
         },
@@ -258,10 +230,6 @@
       "view": "src/components/social/spare-markers.tsx",
       "steps": [
         {
-          "goto": "/decks/${SPARE_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -290,10 +258,6 @@
       "view": "src/components/decks/decklist-row.tsx",
       "steps": [
         {
-          "goto": "/decks/${SHORT_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -302,7 +266,7 @@
           "settle": 1500
         },
         {
-          "scrollTo": "span:text-is('short')",
+          "scrollTo": "span.inline-flex.flex-none:has(span:text-is('short'))",
           "settle": 300
         },
         {
@@ -319,10 +283,6 @@
         "desktop"
       ],
       "steps": [
-        {
-          "goto": "/collection?card=${UNUSED_CARD}",
-          "wait": "[role=dialog]"
-        },
         {
           "clearVisit": true
         },
@@ -349,10 +309,6 @@
         "phone"
       ],
       "steps": [
-        {
-          "goto": "/collection?card=${UNUSED_CARD}",
-          "wait": "[role=dialog]"
-        },
         {
           "clearVisit": true
         },
@@ -385,10 +341,6 @@
       ],
       "steps": [
         {
-          "goto": "/decks/${UNOWNED_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -403,7 +355,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^${UNOWNED_CARD_NAME}",
+          "name": "^View details for ${UNOWNED_CARD_NAME}$",
           "wait": "[role=dialog]",
           "settle": 1500
         },
@@ -426,10 +378,6 @@
       ],
       "steps": [
         {
-          "goto": "/decks/${UNOWNED_DECK}",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -444,7 +392,7 @@
         },
         {
           "clickRole": "button",
-          "name": "^${UNOWNED_CARD_NAME}",
+          "name": "^View details for ${UNOWNED_CARD_NAME}$",
           "wait": "[role=dialog]",
           "settle": 1500
         },
@@ -470,10 +418,6 @@
       "view": "src/components/decks/lineup/stats-view-switch.tsx",
       "steps": [
         {
-          "goto": "/decks",
-          "wait": "[role=tablist]"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -492,10 +436,6 @@
       "label": "/decks/new, the picker: M14 Precons on `Browse precons →`",
       "view": "src/components/decks/precons/precon-door.tsx",
       "steps": [
-        {
-          "goto": "/decks/new",
-          "wait": "[data-testid=precon-door]"
-        },
         {
           "clearVisit": true
         },
@@ -519,10 +459,6 @@
       "label": "/collection/replace, a second upload's choice step: M15 Sync on the Sync card (an account with an anchor upload, so the card does not show syncOff)",
       "view": "src/components/collection/upload-choice.tsx",
       "steps": [
-        {
-          "goto": "/collection/replace",
-          "wait": "h1:visible"
-        },
         {
           "clearVisit": true
         },

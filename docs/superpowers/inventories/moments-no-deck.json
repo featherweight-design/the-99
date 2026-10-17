@@ -10,10 +10,6 @@
       "view": "src/components/shell/nav.tsx",
       "steps": [
         {
-          "goto": "/commanders",
-          "wait": "h1, h2"
-        },
-        {
           "clearVisit": true
         },
         {
@@ -35,10 +31,6 @@
       "label": "/commanders, an account with no deck (phone): M12 Help me choose above the tab bar's Discover",
       "view": "src/components/shell/nav.tsx",
       "steps": [
-        {
-          "goto": "/commanders",
-          "wait": "h1, h2"
-        },
         {
           "clearVisit": true
         },

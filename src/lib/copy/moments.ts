@@ -5,7 +5,8 @@ import { numberWord } from "./number-words";
  * `/copy-review`). Each line is drawn from its tool's own About entry or shipped strings, so it promises nothing the
  * tool does not do. `tool` renders in `--fg` semibold and `line` follows it in `--fg-body`, as one sentence.
  *
- * Copy-review, 2026-10-16: M7 leads with the marker's own word, which is `short` (audit resolution 1: the marker never
+ * Copy-review, 2026-10-16 (close-out): M7, M11 and M12 cut to fit the bubble's three lines at desktop's 300px, where
+ * each clipped mid-word. M7 leads with the marker's own word, which is `short` (audit resolution 1: the marker never
  * reads `none free`); M13 gains its missing `was`; M15 drops `is new:`, which would go stale on the first day.
  */
 export type MomentCopy = { tool: string; line: string };
@@ -38,7 +39,7 @@ export const momentsCopy = {
   friendSpares: { tool: "A friend has a spare", line: "of this card. Press to see who, before you buy." },
   cardAssignments: {
     tool: "Short",
-    line: "means another deck holds a copy this one needs. When you commit, you choose which deck keeps it.",
+    line: "means another deck holds a copy this one needs. You pick which keeps it when you commit.",
   },
   findADeck: {
     tool: "Find a deck",
@@ -51,11 +52,11 @@ export const momentsCopy = {
   },
   friendsAfterGame: {
     tool: "Playing with friends?",
-    line: "Add them from your account menu, under Friends. Then you can seat them when you log a game.",
+    line: "Add them under Friends in your account menu, then seat them when you log a game.",
   },
   helpMeChoose: {
     tool: "Not sure where to start?",
-    line: "Help me choose ranks commanders by what you say you want, owned or not. It’s in Discover.",
+    line: "Help me choose, in Discover, ranks any commander by what you want.",
   },
   lineup: {
     tool: "Stats",
