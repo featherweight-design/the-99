@@ -1,6 +1,7 @@
 // measure:scan-recall — how often the scan index's HNSW search disagrees with an exact scan, on a database's own
-// build. READ-ONLY: one repeatable-read, read-only transaction; the only settings it makes are transaction-local
-// (`hnsw.ef_search`, and turning the index off for the exact scan). It writes nothing and builds nothing.
+// build. READ-ONLY: one repeatable-read, read-only transaction; every setting it makes is transaction-local
+// (`hnsw.ef_search` and `hnsw.iterative_scan`, as `lookupGuesses` sets them, and the index turned off for the exact
+// scan). It writes nothing and builds nothing.
 //
 //   MEASURE_URL=<direct url> MEASURE_BRANCH=br-... pnpm measure:scan-recall
 //
