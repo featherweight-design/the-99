@@ -19,6 +19,9 @@ export type Standing = {
   /** Paid credits left, as the `Allowance` carries them: absent while the player holds no lot. */
   plan?: number;
   pack?: number;
+  /** The paid limit's counter, as the `Allowance` carries it: `hasCredit` shuts paid credits at it. */
+  paidUsedToday?: number;
+  paidLimit?: number;
   now: string;
 };
 
@@ -32,6 +35,8 @@ export function toStanding(a: Allowance, now: Date): Standing {
     ownerShare: a.ownerShare === true,
     ...(a.plan !== undefined ? { plan: a.plan } : {}),
     ...(a.pack !== undefined ? { pack: a.pack } : {}),
+    ...(a.paidUsedToday !== undefined ? { paidUsedToday: a.paidUsedToday } : {}),
+    ...(a.paidLimit !== undefined ? { paidLimit: a.paidLimit } : {}),
     now: now.toISOString(),
   };
 }

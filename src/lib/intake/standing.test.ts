@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bareStanding, closedBy, formLine, standingLine } from "./standing";
+import { bareStanding, closedBy, formLine, standingLine, toStanding } from "./standing";
 
 const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, paused: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
 
@@ -28,5 +28,13 @@ describe("the form's credit line", () => {
     const over = { ...base, used: 6, nextAt: "2026-10-12T01:00:00.000Z", reopensAt: "2026-10-12T03:00:00.000Z" };
     expect(bareStanding(over)).toMatch(/^0 of 5 left · reset at /);
     expect(bareStanding(over)).toBe(bareStanding({ ...over, used: 5, nextAt: over.reopensAt }));
+  });
+});
+
+describe("the paid limit reaches the form", () => {
+  it("toStanding carries the counter, so a player at the paid limit reads spent", () => {
+    const allowance = { used: 5, limit: 5, reopensAt: new Date("2026-10-12T03:00:00Z"), nextAt: null, pack: 9, paidUsedToday: 20, paidLimit: 20 };
+    expect(closedBy(toStanding(allowance, new Date()))).toBe("spent");
+    expect(closedBy(toStanding({ ...allowance, paidUsedToday: 19 }, new Date()))).toBeNull();
   });
 });
