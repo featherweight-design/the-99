@@ -194,7 +194,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
           placeholder={referenceCopy.search}
           aria-label={referenceCopy.search}
           containerClassName={`h-[46px] rounded-[10px] bg-[color:var(--surface-sunken)] px-[14px] ${q ? "border-[color:var(--accent)]" : ""}`}
-          className="text-[15px]"
+          className="text-[15px] touch:text-base"
         />
 
         {!q && whatsNew.length > 0 && (

@@ -124,6 +124,20 @@ describe("ReferenceTab, search", () => {
     expect(list.hidden).toBe(true);
   });
 
+  it("finds an entry by a phrase only its keys hold", () => {
+    const all = screens.flatMap((s) => s.entries);
+    const lower = (t: string) => t.toLowerCase();
+    // A key phrase no entry's title or caption carries, so only the key search can find it.
+    const found = all
+      .flatMap((e) => e.keys.map((k) => ({ e, k })))
+      .find(({ k }) => k.length >= 4 && all.every((x) => !lower(x.title).includes(lower(k)) && !lower(x.caption).includes(lower(k))));
+    expect(found, "an entry with a key phrase found only in keys").toBeTruthy();
+    const { container } = draw();
+    type(found!.k);
+    const hits = container.querySelector("[data-reference-hits]") as HTMLElement;
+    expect(within(hits).getAllByRole("link").some((a) => a.getAttribute("href") === `#${found!.e.id}`)).toBe(true);
+  });
+
   it("finds an entry by a word only its caption holds", () => {
     const e = screens.flatMap((s) => s.entries).find((x) => x.caption.includes("Mana Pool")) ?? first;
     const word = e === first ? first.caption.split(" ")[1] : "Mana Pool";

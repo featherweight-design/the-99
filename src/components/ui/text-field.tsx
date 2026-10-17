@@ -135,7 +135,8 @@ export function SearchField({
     },
     [callerRef],
   );
-  // Any text at all earns the ✕, spaces included: a reader can always clear what they typed.
+  // Any text at all earns the ✕, spaces included, so a reader can always clear what they typed. A field that
+  // searches on the trimmed query passes `clearTrimmed`, and there an all-spaces value earns none.
   const filled = typeof rest.value === "string" && (clearTrimmed ? rest.value.trim() : rest.value) !== "";
   return (
     <label
