@@ -1,6 +1,7 @@
 {
   "feature": "invites-admin",
   "note": "Plan `2026-10-16-invites.md`, PR 6 (Admin M1 to M4). Kept apart from `invites.json` because that inventory's `shares` block holds every row to the player's count line, which no admin surface draws.\n\nThe /admin rows (PR 6a, Admin M1 to M3) need the signed-in account to be an admin. They write nothing: the account and group rows reach their page by pressing a row or a card's Edit and photograph the field at rest, so no Save or Top up is pressed. Each `wait` names what only the invite surfaces draw (`account-invited-by` from `md`, the phone's `data-invite-meta`, `account-invites`, `group-top-up`).",
+  "clearAbout": true,
   "rows": [
     {
       "id": "admin-accounts-invites",
