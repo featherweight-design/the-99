@@ -15,7 +15,8 @@
 //     halo is the visit's one guide (E11's "with no bubble"; d9 as Hugh's proxy, 2026-10-17). A landing that haloes
 //     nothing leaves the visit untouched: it is taken only by a bubble that arrived on it, which is R1's.
 //   - a stale `?tool=` (unknown, a tool with no deck landing) stripped with no halo; a deck id that does not exist
-//     (as a deleted deck's) draws the not-found page. A deck that exists on ANOTHER account is not tried: the fixture
+//     (as a deleted deck's) lands on `/decks` with no `?tool` and no halo (STATES-showcase-reference, "Deck gone since
+//     render"). A deck that exists on ANOTHER account is not tried: the fixture
 //     holds one account, and the route's ownership check is `getDeckDetail`'s, unchanged here.
 //
 // THE DECKS: the signed-in account's own (`E2E_AUDIT_USER_EMAIL`), up to `PROBE_DECKS` (default 12). A tool is tried
@@ -430,14 +431,15 @@ async function walk(browser, w, userId, decks, spentAtStart) {
       const r = await land(page, `/decks/${decks[0]}?tool=${encodeURIComponent(id)}&probe=1`, [], null);
       check(r.search === "?probe=1" && r.haloed === 0, `${w.name} stale ?tool=${id}: stripped, no halo`, `${r.search}, ${r.haloed} haloed`);
     }
-    // The deck route streams behind its `loading.tsx`, so `notFound()` arrives after a 200 has been sent: the proof is
-    // the not-found page drawn (`shellCopy.notFound.heading`) with no deck and no halo, not the status.
+    // The deck route streams behind its `loading.tsx`, so the redirect arrives after a 200 has been sent: the proof is
+    // the address landing on `/decks` with no `?tool`, and nothing haloed there, not the status.
     await page.goto(`${BASE}/decks/00000000-0000-4000-8000-000000000000?tool=top-off`, { waitUntil: "domcontentloaded" });
-    const foreign = await page
-      .waitForFunction((scope) => /There’s no page here\./.test(document.querySelector(scope)?.innerText ?? ""), PAGE, { timeout: 15_000 })
-      .then(() => page.evaluate(() => ({ deck: document.querySelector("#tuning-heading, [data-testid='other-ways'], #game-matchups-heading") !== null, haloed: document.querySelectorAll("[data-target-halo]").length })))
+    const gone = await page
+      .waitForURL((u) => u.pathname === "/decks", { timeout: 15_000 })
+      .then(() => page.waitForTimeout(500))
+      .then(() => page.evaluate(() => ({ path: location.pathname, search: location.search, haloed: document.querySelectorAll("[data-target-halo]").length })))
       .catch(() => null);
-    check(foreign !== null && !foreign.deck && foreign.haloed === 0, `${w.name} a deck that does not exist: the not-found page, no deck, no halo`, JSON.stringify(foreign));
+    check(gone !== null && gone.search === "" && gone.haloed === 0, `${w.name} a deck that is gone: lands on /decks, no ?tool, no halo`, JSON.stringify(gone));
     check(JSON.stringify(await readSpent(userId)) === spentBefore, `${w.name} stale ids write nothing`, "moments_spent unchanged");
   } finally {
     await context.close();

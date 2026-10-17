@@ -58,3 +58,13 @@ describe("the deck page's landing remount", () => {
     expect(reads("landed")).toBe(2);
   });
 });
+
+describe("a Try it on a deck that is gone", () => {
+  it("lands on /decks, with no ?tool and so no halo, before the page falls to not-found", () => {
+    const text = src.getFullText();
+    const redirectAt = text.indexOf('if (!detail && query[TOOL_PARAM] !== undefined) redirect("/decks");');
+    const notFoundAt = text.indexOf("if (!detail) notFound();");
+    expect(redirectAt).toBeGreaterThan(-1);
+    expect(notFoundAt).toBeGreaterThan(redirectAt);
+  });
+});
