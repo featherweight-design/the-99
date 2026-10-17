@@ -662,6 +662,47 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     }
   });
 
+  // Mana Balance waits on Suggested changes (`after`): on screen alone, its window passes and shows nothing.
+  const MANA_LIVE: MomentId[] = ["suggested-changes", "mana-balance"];
+
+  it("frees a moment that waits on the one it spends, with no bubble closed", async () => {
+    render(
+      <MomentsProvider live={MANA_LIVE} spent={[]}>
+        <Control id="mana-balance" name="Mana" />
+        <Suppress id="suggested-changes" />
+      </MomentsProvider>,
+    );
+    onScreen("Mana");
+    await advance(ARRIVE_MS * 2);
+    expect(screen.queryByRole("note")).toBeNull();
+    act(() => suppressNow!("suggested-changes"));
+    await advance(0);
+    await advance(0);
+    expect(screen.getByRole("note", { name: "Mana, a tip" })).toBeTruthy();
+  });
+
+  it("frees a moment here that waits on one another tab's landing spent", async () => {
+    vi.useRealTimers();
+    const other = new BroadcastChannel("the99.moments.spent");
+    const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+    try {
+      render(
+        <MomentsProvider live={MANA_LIVE} spent={[]}>
+          <Control id="mana-balance" name="Mana" />
+        </MomentsProvider>,
+      );
+      onScreen("Mana");
+      await wait(ARRIVE_MS * 2);
+      expect(screen.queryByRole("note")).toBeNull();
+      other.postMessage("suggested-changes");
+      await wait(ARRIVE_MS + 300);
+      expect(screen.getByRole("note", { name: "Mana, a tip" })).toBeTruthy();
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
   it("tells the other tabs when it is called from a descendant's mount effect, before the provider's channel opens", async () => {
     vi.useRealTimers();
     const heard: unknown[] = [];

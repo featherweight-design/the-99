@@ -276,14 +276,14 @@ export function MomentsProvider({
       channel.current = new BroadcastChannel(SPENT_CHANNEL);
       channel.current.onmessage = (e: MessageEvent) => {
         if (typeof e.data !== "string") return;
+        const added = !spent.current.has(e.data);
         spent.current.add(e.data);
         const s = showingRef.current;
+        if (s !== null && s.id === e.data) close(false);
         // Another tab's landing spends without taking the visit (`suppress`), so a control here may still be owed its
-        // bubble: the window opens again, as it does when another tab's claim is heard.
-        if (s !== null && s.id === e.data) {
-          close(false);
-          armRef.current();
-        }
+        // bubble, freed by the close or by the spend itself (`after`): the window opens again, as it does when another
+        // tab's claim is heard. A spend that took the visit finds nothing owed.
+        if (added) armRef.current();
       };
     }
     return () => {
@@ -401,7 +401,8 @@ export function MomentsProvider({
     (id: MomentId) => {
       if (!liveSet.has(id)) return;
       // Recorded once, and never by `spend`, which takes the visit: a landing is not the reader seeing a bubble.
-      if (!spent.current.has(id)) {
+      const added = !spent.current.has(id);
+      if (added) {
         spent.current.add(id);
         broadcast(id);
         persist(id);
@@ -409,12 +410,12 @@ export function MomentsProvider({
       // Closed as a teardown, not as the reader's close: under `SPENT_AFTER_MS` the claim goes back (the id is already
       // spent, so the moment never returns); past it the timer has already spent the id and taken the visit, which
       // stays taken.
-      // Then the window decides again: whatever this took away (a showing bubble here, a claim in flight in `decide`),
-      // a control already on screen fires no new intersection to wake it.
-      if (showingRef.current?.id === id) {
-        close(false);
-        decideRef.current();
-      }
+      const closed = showingRef.current?.id === id;
+      if (closed) close(false);
+      // Then the window decides again whenever the spent set or the bubble moved: a closed bubble frees the window, and
+      // a new spend can free a moment that waits on it (`after`: Mana Balance on Suggested changes). A control already
+      // on screen fires no new intersection to wake it.
+      if (added || closed) decideRef.current();
     },
     [liveSet, close, persist, broadcast],
   );
