@@ -53,9 +53,9 @@ describe("who invited an account", () => {
     expect(rows.get("u_hugh")).toEqual({ left: 5, waiting: 0, invitedBy: { kind: "founder" } });
     expect(rows.get("u_colin")).toMatchObject({ left: 2, waiting: 1, invitedBy: { kind: "account", name: "Hugh" } });
     expect(rows.get("u_peter")).toMatchObject({ left: 0, waiting: 0, invitedBy: { kind: "deleted" } });
-    expect(phoneInviteMeta(rows.get("u_hugh")!)).toEqual(["5 invites", "founder"]);
-    expect(phoneInviteMeta(rows.get("u_colin")!)).toEqual(["2 · 1 waiting", "by Hugh"]);
-    expect(phoneInviteMeta(rows.get("u_peter")!)).toEqual(["0 invites", "by deleted account"]);
+    expect(phoneInviteMeta(rows.get("u_hugh")!)).toEqual({ figure: "5", after: " invites", by: "founder" });
+    expect(phoneInviteMeta(rows.get("u_colin")!)).toEqual({ figure: "2", after: " · 1 waiting", by: "by Hugh" });
+    expect(phoneInviteMeta(rows.get("u_peter")!)).toEqual({ figure: "0", after: " invites", by: "by deleted account" });
   });
 });
 

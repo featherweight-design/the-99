@@ -63,9 +63,12 @@ export function rowInvites(input: {
 }
 
 /** The phone row's invite pieces (Admin-Phone M1): `5 invites` or `2 · 1 waiting`, then `founder` or `by Hugh`. */
-export function phoneInviteMeta(r: RowInvites): string[] {
-  const count = r.waiting > 0 ? `${r.left}${inviteCopy.count.waiting(r.waiting)}` : copy.phoneInvites(r.left);
-  return [count, r.invitedBy.kind === "founder" ? copy.founder : copy.phoneBy(invitedByName(r.invitedBy))];
+export function phoneInviteMeta(r: RowInvites): { figure: string; after: string; by: string } {
+  return {
+    figure: String(r.left),
+    after: r.waiting > 0 ? inviteCopy.count.waiting(r.waiting) : copy.phoneInvites,
+    by: r.invitedBy.kind === "founder" ? copy.founder : copy.phoneBy(invitedByName(r.invitedBy)),
+  };
 }
 
 /** M2's fifth tile: what is left, then waiting and spent (the accounts this one's invites made). */

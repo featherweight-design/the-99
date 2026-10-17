@@ -321,7 +321,7 @@ export const adminCopy = {
     /** An account no invite brought in: from before launch. (new, for /copy-review) */
     founder: "founder",
     /** The phone row's meta pieces (Admin-Phone M1): `5 invites`, `by Hugh`. (new, for /copy-review) */
-    phoneInvites: (n: number) => `${n} invites`,
+    phoneInvites: " invites",
     phoneBy: (name: string) => `by ${name}`,
     /** M2's fifth tile. (new, for /copy-review) */
     tile: "Invites",
@@ -341,6 +341,8 @@ export const adminCopy = {
     invited: "Invited",
     joined: (day: string) => `joined ${day}`,
     waiting: (how: string, email: string) => `Waiting · ${how} · ${email}`,
+    /** The phone's waiting line, which drops how it was sent. (new, for /copy-review) */
+    waitingPhone: "Waiting · ",
     byEmail: "by email",
     inPerson: "in person",
     sentReturns: (sent: string, returns: string) => `sent ${sent} · returns ${returns}`,
@@ -352,6 +354,8 @@ export const adminCopy = {
     groupSection: "Top up invites",
     groupField: "Top up each member to",
     groupHelp: "Raises every member holding fewer to this many. Nobody is lowered, and the group keeps no count: a member who joins later gets nothing until the next top-up.",
+    /** The phone's shorter help line. (new, for /copy-review) */
+    groupHelpPhone: "Raises every member holding fewer. Nobody is lowered.",
     /** What Top up will do: who rises, with what they hold now, and how many already hold that many. (new, for /copy-review) */
     groupPending: (raised: number, of: number, n: number, who: string, held: number) =>
       raised === 0

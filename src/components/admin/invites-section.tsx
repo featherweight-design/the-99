@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { revokeInvite, setAccountInvites, topUpGroup } from "../../app/admin/invites/actions";
 import { fmtDay, invitedByName, setDraft, topUpDraft, type AccountInvites, type TopUpMember } from "../../lib/admin/invites-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
-import { Avatar } from "./accounts-list";
 import { SectionHead } from "./costs-detail";
 import { HistoryList } from "./switch-page";
 
@@ -17,17 +16,19 @@ import { HistoryList } from "./switch-page";
 // borrow the group editor's controls: a numeric field with its help line, and the pending bar with Undo and Save.
 
 const inv = adminCopy.invites;
-const CARD = "flex flex-col gap-[12px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[14px] md:px-[20px] md:py-[18px]";
+const CARD = "flex flex-col gap-[10px] md:gap-[12px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[14px] md:px-[20px] md:py-[18px]";
 const FIELD =
-  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] md:w-[140px] md:text-[14px]";
+  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] md:w-[120px] md:text-[14px]";
 const HELP = "text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-faint)]";
 const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
-const LINE = "flex flex-wrap items-center gap-x-[10px] gap-y-[2px] border-0 border-t border-solid border-[color:var(--border)] py-[9px] text-[13.5px] text-[color:var(--fg-body)]";
-const META = "font-mono text-[11px] text-[color:var(--fg-faint)]";
-const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60";
+const LINE = "flex min-h-[44px] items-center gap-[10px] border-0 border-t border-solid border-[color:var(--border)] py-[6px] text-[13px] text-[color:var(--fg-body)] md:min-h-[40px] md:text-[13.5px]";
+// Dates are desktop only (the phone frames draw none).
+const META = "hidden font-mono text-[11px] text-[color:var(--fg-faint)] md:inline";
+const FACE = "flex h-[26px] w-[26px] flex-none items-center justify-center overflow-hidden rounded-[7px] md:h-[28px] md:w-[28px]";
+const TEXT_BUTTON = "inline-flex min-h-[44px] md:min-h-[32px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60";
 
 /** The numeric field, its label and its help line, as the group editor draws a field. */
-function NumberField({ label, help, value, onChange, invalid, disabled }: { label: string; help: string; value: string; onChange: (v: string) => void; invalid: boolean; disabled: boolean }) {
+function NumberField({ label, help, helpPhone, value, onChange, invalid, disabled, edited }: { label: string; help: string; helpPhone?: string; value: string; onChange: (v: string) => void; invalid: boolean; disabled: boolean; edited: boolean }) {
   return (
     <label className="flex min-w-0 flex-col gap-[6px]">
       <span className="text-[13px] font-semibold text-[color:var(--fg)]">{label}</span>
@@ -38,9 +39,16 @@ function NumberField({ label, help, value, onChange, invalid, disabled }: { labe
         autoComplete="off"
         disabled={disabled}
         aria-invalid={invalid ? true : undefined}
-        className={FIELD}
+        className={`${FIELD} ${edited ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`}
       />
-      <span className={HELP}>{help}</span>
+      {helpPhone ? (
+        <>
+          <span className={`${HELP} md:hidden`}>{helpPhone}</span>
+          <span className={`${HELP} hidden md:inline`}>{help}</span>
+        </>
+      ) : (
+        <span className={HELP}>{help}</span>
+      )}
     </label>
   );
 }
@@ -95,11 +103,13 @@ function WhoLine({ initials, children, action }: { initials: string | null; chil
   return (
     <div className={LINE}>
       {initials === null ? (
-        <span aria-hidden className="h-[34px] w-[34px] flex-none rounded-[10px] border-[1.5px] border-dashed border-[color:var(--border-strong)]" />
+        <span aria-hidden className={`${FACE} border-[1.5px] border-dashed border-[color:var(--border-dashed)]`} />
       ) : (
-        <Avatar text={initials} size="sm" />
+        <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}>
+          {initials}
+        </span>
       )}
-      <span className="flex min-w-0 flex-1 flex-col gap-[2px] [overflow-wrap:anywhere]">{children}</span>
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[10px] [overflow-wrap:anywhere]">{children}</span>
       {action && <span className="ml-auto flex-none">{action}</span>}
     </div>
   );
@@ -148,11 +158,12 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
   }
 
   const by = invites.invitedBy;
+  const headId = useId();
   return (
     <>
-      <SectionHead title={inv.section} />
-      <section data-testid="account-invites" aria-label={inv.section} className={CARD}>
-        <NumberField label={inv.field} help={inv.fieldHelp(name)} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} />
+      <SectionHead title={inv.section} id={headId} />
+      <section data-testid="account-invites" aria-labelledby={headId} className={CARD}>
+        <NumberField label={inv.field} help={inv.fieldHelp(name)} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} edited={draft !== String(invites.left)} />
         {state.kind === "invalid" && (
           <p role="alert" className={ERROR}>
             {inv.invalid}
@@ -169,14 +180,17 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
             inFlight={inFlight}
           />
         )}
-        <div data-testid="account-invited-by-line">
-          <WhoLine initials={by.kind === "account" ? initialsOf(by.name) : null}>
-            <span>
-              {inv.invitedBy} {by.kind === "founder" ? <span className={META}>{inv.founder}</span> : strong(invitedByName(by))}
-            </span>
-            {by.kind !== "founder" && <span className={META}>{inv.joined(fmtDay(by.joinedAt))}</span>}
-          </WhoLine>
-        </div>
+        {/* A founder has no inviter, and the frames draw no row for one. */}
+        {by.kind !== "founder" && (
+          <div data-testid="account-invited-by-line">
+            <WhoLine initials={by.kind === "account" ? initialsOf(by.name) : null}>
+              <span>
+                {inv.invitedBy} {strong(invitedByName(by))}
+              </span>
+              <span className={META}>{inv.joined(fmtDay(by.joinedAt))}</span>
+            </WhoLine>
+          </div>
+        )}
         {invites.invited.map((e, i) => {
           const href = e.id === null ? null : `/admin/accounts/${encodeURIComponent(e.id)}`;
           return (
@@ -210,7 +224,14 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
                 </button>
               }
             >
-              <span>{inv.waiting(w.how, w.email)}</span>
+              <span className="md:hidden">
+                {inv.waitingPhone}
+                {w.email}
+              </span>
+              <span className="hidden md:inline">
+                {inv.waiting(w.how, "")}
+                {strong(w.email)}
+              </span>
               <span className={META}>{inv.sentReturns(w.sent, w.returns)}</span>
             </WhoLine>
           </div>
@@ -237,6 +258,7 @@ export function GroupTopUp({ groupId, members }: { groupId: string; members: rea
   const [inFlight, setInFlight] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const state = topUpDraft(draft, members);
+  const headId = useId();
 
   async function topUp() {
     if (state.kind !== "pending") return;
@@ -258,9 +280,9 @@ export function GroupTopUp({ groupId, members }: { groupId: string; members: rea
 
   return (
     <>
-      <SectionHead title={inv.groupSection} />
-      <section data-testid="group-top-up" aria-label={inv.groupSection} className={CARD}>
-        <NumberField label={inv.groupField} help={inv.groupHelp} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} />
+      <SectionHead title={inv.groupSection} id={headId} />
+      <section data-testid="group-top-up" aria-labelledby={headId} className={CARD}>
+        <NumberField label={inv.groupField} help={inv.groupHelp} helpPhone={inv.groupHelpPhone} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} edited={draft !== ""} />
         {state.kind === "invalid" && (
           <p role="alert" className={ERROR}>
             {inv.invalid}

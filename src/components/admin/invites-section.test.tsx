@@ -96,11 +96,20 @@ describe("AccountInvitesSection (M2)", () => {
     expect(within(screen.getByTestId("account-invites-history")).getByText("Colin sent an invitation: 1 waiting")).toBeInTheDocument();
   });
 
-  it("draws a founder's line, faint, with no joined date", () => {
+  it("draws no invited-by line for a founder", () => {
     render(<AccountInvitesSection accountId="u_hugh" name="Hugh" invites={{ ...INVITES, invitedBy: { kind: "founder" } }} />);
-    const line = screen.getByTestId("account-invited-by-line");
-    expect(line).toHaveTextContent(/^Invited by founder$/);
-    expect(within(line).getByText("founder").className).toContain("--fg-faint");
+    expect(screen.queryByTestId("account-invited-by-line")).toBeNull();
+    expect(screen.queryByText(/Invited by/)).toBeNull();
+  });
+
+  it("marks the field edited, and drops how a waiting invite was sent on the phone", () => {
+    render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
+    const input = screen.getByRole("textbox");
+    expect(input.className).toContain("--border-strong");
+    fireEvent.change(input, { target: { value: String(INVITES.left + 1) } });
+    expect(input.className).toContain("--accent");
+    const w = INVITES.waitingLines[0];
+    expect(screen.getByText((_, el) => el?.tagName === "SPAN" && el.className.includes("md:hidden") && el.textContent === `Waiting · ${w.email}`)).toBeTruthy();
   });
 
   it("revokes a waiting invite through the action and refreshes", async () => {

@@ -37,7 +37,8 @@ export function Avatar({ text, size }: { text: string; size: "sm" | "lg" }) {
 function Row({ row }: { row: AccountRow }) {
   const href = `/admin/accounts/${encodeURIComponent(row.id)}`;
   // The group as the desktop column draws it, `No group` included.
-  const phoneMeta = [row.group?.name ?? copy.noGroup, row.credits, ...phoneInviteMeta(row.invites)].filter(Boolean).join(" · ");
+  const phoneHead = [row.group?.name ?? copy.noGroup, row.credits].filter(Boolean).join(" · ");
+  const phoneInv = phoneInviteMeta(row.invites);
   const { left, waiting, invitedBy } = row.invites;
   return (
     <li data-account={row.id} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0]">
@@ -54,7 +55,10 @@ function Row({ row }: { row: AccountRow }) {
             {row.spend}
           </span>
         </div>
-        {phoneMeta && <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">{phoneMeta}</span>}
+        <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
+          {phoneHead} · <i className="not-italic text-[color:var(--accent)]">{phoneInv.figure}</i>
+          {phoneInv.after} · {phoneInv.by}
+        </span>
         <span className="hidden font-mono text-[12px] text-[color:var(--fg-body)] md:inline">
           <span className="sr-only">{copy.cols.group} </span>
           {row.group?.name ?? copy.noGroup}
@@ -63,14 +67,14 @@ function Row({ row }: { row: AccountRow }) {
           <span className="sr-only">{copy.cols.credits} </span>
           {row.credits}
         </span>
-        <span data-testid="account-invites" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}`}>
+        <span data-testid="account-invites" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg)]"}`}>
           <span className="sr-only">{inv.colInvites} </span>
           {left}
           {waiting > 0 && <span className="text-[color:var(--fg-muted)]">{inviteCopy.count.waiting(waiting)}</span>}
         </span>
         <span
           data-testid="account-invited-by"
-          className={`hidden min-w-0 font-mono text-[12px] [overflow-wrap:anywhere] md:inline ${invitedBy.kind === "account" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}
+          className={`hidden min-w-0 font-mono text-[12px] [overflow-wrap:anywhere] md:inline ${invitedBy.kind === "account" ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}
         >
           <span className="sr-only">{inv.colInvitedBy} </span>
           {invitedByName(invitedBy)}

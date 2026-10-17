@@ -16,10 +16,10 @@ export const INK = { player: "var(--accent)", labels: "var(--fact)", evals: "var
 export const fill = (ink: string, hatch = false) =>
   hatch ? `repeating-linear-gradient(135deg, ${ink} 0 3px, transparent 3px 6px)` : ink;
 
-export function SectionHead({ title, meta }: { title: string; meta?: string }) {
+export function SectionHead({ title, meta, id }: { title: string; meta?: string; id?: string }) {
   return (
     <div className="flex flex-wrap items-baseline gap-[10px] pt-[10px]">
-      <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{title}</h2>
+      <h2 id={id} className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{title}</h2>
       {meta && <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{meta}</span>}
     </div>
   );
