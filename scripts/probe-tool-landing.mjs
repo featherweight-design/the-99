@@ -75,7 +75,7 @@ const TOOLS = [
     id: "suggested-changes",
     name: "Suggested changes",
     tab: "analysis",
-    targets: [["[data-tool-tile='suggested']"], ["div:has(> [data-testid='analysis-empty'])", "div:has(> section[aria-labelledby='tuning-heading'])"]],
+    targets: [["[data-tool-tile='suggested']"], ["div:has(> [data-testid='analysis-empty'])", "section[aria-labelledby='tuning-heading']"]],
   },
   { id: "mana-balance", name: "Mana Balance", tab: "analysis", targets: [["[data-tool-tile='mana']"], ["#mana-heading"]] },
   { id: "stand-ins", name: "Cheaper stand-ins", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='standin-glyph'])"]] },

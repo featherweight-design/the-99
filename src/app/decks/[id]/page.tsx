@@ -590,7 +590,7 @@ export default async function DeckBuilderPage({
   // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
   const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
   // A token per server render that carries `?tool=`: a client navigation to the same deck with a new (or the same)
-  // `?tool=` re-renders the page and moves it, and `LandingKeyed` remounts the builder for it; a render without one is
+  // `?tool=` re-renders the page and moves it, and `LandingKeyed` remounts the deck's builder and providers for it; a render without one is
   // null and keeps the builder as it is.
   const landingRequest = query[TOOL_PARAM] === undefined ? null : randomUUID();
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
@@ -651,7 +651,6 @@ export default async function DeckBuilderPage({
       }
     : undefined;
   const shell = (
-    <LandingKeyed key={id} request={landingRequest}>
     <BuilderShell
       // One builder per deck: a client navigation to another deck reuses this element, and its
       // state (the tab, the list's Stats panel) would otherwise carry across. The providers
@@ -758,7 +757,6 @@ export default async function DeckBuilderPage({
         analysisEnabled,
       )}
     />
-    </LandingKeyed>
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
@@ -791,6 +789,10 @@ export default async function DeckBuilderPage({
       {tooled}
     </ChangeCommanderProvider>
   ) : tooled;
+  // A new Try it landing (`?tool=`) remounts everything that is this deck's own state, the builder and every
+  // deck-local provider around it (an open stand-ins modal, I got it's confirm, Change commander's sheet), so it lands
+  // as an arrival from another route does. Keyed per deck too.
+  const landed = <LandingKeyed key={id} request={landingRequest}>{page}</LandingKeyed>;
   // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
   const deckTokens = tokensRead ? await tokensRead : null;
   // The buy box's figure includes the tokens' prices, which can be older than the cards' (the token ingest
@@ -804,7 +806,7 @@ export default async function DeckBuilderPage({
       provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
-      {page}
+      {landed}
     </DeckTokensProvider>
-  ) : page;
+  ) : landed;
 }
