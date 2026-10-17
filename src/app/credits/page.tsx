@@ -2,8 +2,8 @@
 // them, a pack to buy. Decided from the READER's switches (`requestSwitchEnv`), never `process.env`.
 //
 // `notFound()` for a reader with the switch off, nothing held and nothing ever bought (`readerSeesCredits`, plan
-// E3); anything held or bought keeps the page, without its offers (O4). Loading is the shell's overlay (a route
-// owns no `loading.tsx` here, `route-loading.test.ts`), and a read that throws draws P7, never the error boundary.
+// E3); anything held or bought keeps the page, without its offers (O4). Loading is this route's own kept
+// `loading.tsx` (P6; `route-loading.test.ts` lists it), and a read that throws draws P7, never the error boundary.
 //
 // The return from Checkout (`?checkout=done&session_id=`) is read here ONCE, server-side, and followed by the band.
 // The id is the URL's, so it proves nothing: `readReturn` refuses a Session that is not this reader's own.

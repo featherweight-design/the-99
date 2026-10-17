@@ -12,7 +12,7 @@ const APP = dirname(fileURLToPath(import.meta.url));
 // itself at 120ms and escalates to the route's loading screen at 400ms, drawn by the shell; a
 // direct load streams the same screen from the shell's Suspense fallback. So a route segment owns
 // no `loading.tsx` of its own, because Next shows a boundary at press and would put the screen
-// back on every navigation. These five keep theirs, and with it their screen at press: each is a
+// back on every navigation. These keep theirs, and with it their screen at press: each is a
 // deck surface whose wait is long enough that the screen is the answer, not a fallback. The precon list's sits in a
 // route group, `(list)`, so the open precon beside it does not inherit it and keeps the shared screen.
 const KEPT = ["credits", "decks/[id]", "decks/[id]/changes", "decks/[id]/import", "decks/new/choose", "decks/precons/(list)"];

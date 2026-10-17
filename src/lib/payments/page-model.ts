@@ -46,7 +46,7 @@ export function buildCreditsModel(input: {
   switchOn: boolean;
   allowance: AllowanceFacts;
   history: readonly CreditHistoryRow[];
-  /** The packs on sale. Defaults to the registry; a test passes a second to prove the layout. */
+  /** The packs on sale. The page passes the registry's (`packOffers()`); a test passes a second to prove the layout. */
   offers: readonly PackOffer[];
 }): { sees: false } | { sees: true; model: CreditsModel } {
   const { allowance: a, history } = input;
