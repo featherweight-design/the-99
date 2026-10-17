@@ -22,6 +22,9 @@ const copy = ruleZeroCopy;
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
 /** The rail's five columns span its box less its 4px side padding; the band and spans are placed on them, not the box. */
 const COLS = "(100% - 8px)";
+/** A range span's bottom on the first face row (above the marks and names), and the step from one face row up to the next. */
+const SPAN_BOTTOM = 34;
+const FACE_STEP = 33;
 
 export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just now`'s when, once the poll lands (PR 4). */ updated?: string }) {
   const { title, ink, body } = speak(draw);
@@ -221,12 +224,20 @@ function Rail({ draw }: { draw: TableDraw }) {
       {ranges.map((s) => {
         const lo = s.chip!.permits[0];
         const hi = s.chip!.permits[s.chip!.permits.length - 1];
+        // A span rides its own face's row: faces in a column stack upward from the marks, one 30px face and a 3px gap
+        // apart, so two ranges whose faces share a column each follow their own face rather than overlapping.
+        const row = placed.filter((p) => p.read!.face === s.read!.face).indexOf(s);
         return (
           <span
             key={s.key}
             data-testid="read-span"
-            className="absolute bottom-[34px] z-0 h-[30px] rounded-[15px] border border-dashed border-[color:var(--fg-faint)]"
-            style={{ left: `calc(${COLS} * ${(lo - 1 + 0.2) / 5} + 4px)`, width: `calc(${COLS} * ${(hi - lo + 0.6) / 5})` }}
+            data-row={row}
+            className="absolute z-0 h-[30px] rounded-[15px] border border-dashed border-[color:var(--fg-faint)]"
+            style={{
+              bottom: `${SPAN_BOTTOM + row * FACE_STEP}px`,
+              left: `calc(${COLS} * ${(lo - 1 + 0.2) / 5} + 4px)`,
+              width: `calc(${COLS} * ${(hi - lo + 0.6) / 5})`,
+            }}
           />
         );
       })}
@@ -271,7 +282,7 @@ function CountsKey() {
     <div role="group" aria-label={copy.read.keyLabel} data-testid="counts-key" className="flex flex-wrap gap-x-[12px] gap-y-[4px] font-mono text-[10px] text-[color:var(--fg-muted)]">
       {FINDING_ORDER.map((id) => (
         <span key={id} className="inline-flex items-center gap-[5px]">
-          <span aria-hidden className="[&_svg]:h-[12px] [&_svg]:w-[12px]">
+          <span aria-hidden>
             <FindingMark id={id} />
           </span>
           {labels[id]}
