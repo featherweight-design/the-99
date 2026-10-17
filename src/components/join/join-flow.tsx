@@ -12,7 +12,7 @@ import { joinCopy as copy } from "../../lib/copy/join";
 import { CODE_LENGTH, isEmailShape, parseCode } from "../../lib/invites/rules";
 import { claimInviteAction, confirmCodeAction, handOverAction } from "../../app/join/actions";
 import { FriendCard, type CardFace } from "../social/friend-card";
-import { LandingColumn, PRIMARY_BUTTON } from "../social/friend-landing";
+import { FORM, NewcomerColumn } from "./newcomer-column";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 export type JoinStart =
@@ -24,8 +24,20 @@ export type JoinStart =
 
 type Step = "email" | "code" | "proven" | "account" | "expired" | "ended";
 
-const LINK = "cursor-pointer border-0 bg-transparent p-0 font-sans text-[14px] text-[color:var(--accent)] underline underline-offset-2 hover:text-[color:var(--accent-hover)] disabled:cursor-default disabled:opacity-60";
-const FIELD = "box-border h-[48px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] px-[14px] font-sans text-[16px] text-[color:var(--fg)] outline-none [border:1px_solid_var(--border-strong)] focus:[border-color:var(--accent)] md:h-[44px]";
+// The boards' presses are 100% x 48px at every width (`.b1`, `.b2`): the friend landing's own button is 44px from `md`.
+const PRESS = "box-border mt-[14px] inline-flex h-[48px] w-full cursor-pointer items-center justify-center rounded-[8px] font-sans text-[15px] no-underline disabled:cursor-default";
+const press = (state: "ready" | "busy" = "ready") =>
+  `${PRESS} border-0 font-semibold text-[color:var(--bg)] ${state === "busy" ? "bg-[color:var(--accent-strong)]" : "bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] disabled:opacity-60 disabled:hover:bg-[color:var(--accent)]"}`;
+/** N5: the boxes are empty, so Confirm steps back to the outline (`.b2`). */
+const PRESS_QUIET = `${PRESS.replace("mt-[14px]", "mt-[8px]")} bg-transparent font-medium text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] disabled:opacity-60`;
+const link = (cooling: boolean) =>
+  `inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[8px] font-sans text-[13.5px] font-medium no-underline disabled:cursor-default ${cooling ? "text-[color:var(--fg-locked)]" : "text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] disabled:opacity-60"}`;
+// N11, N12: the sign-in link inside the quiet mono line.
+const QUIET_LINK = "cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--accent)] no-underline hover:text-[color:var(--accent-hover)]";
+const QUIET = "m-0 mt-[22px] text-center font-mono text-[11px] leading-[1.55] text-[color:var(--fg-faint)]";
+const ERR = "m-0 mt-[10px] text-center text-[12.5px] leading-[1.45] text-[color:var(--danger)]";
+const field = (typed: boolean, locked: boolean) =>
+  `box-border h-[48px] w-full rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-sans text-[16px] outline-none placeholder:text-[color:var(--fg-placeholder)] focus:[border-color:var(--accent)] ${locked ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]"} ${typed ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"}`;
 
 function mmss(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -149,8 +161,11 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     void run(() => confirmCodeAction(token, parsed), (r) => {
       if (r.ok) setStep("proven");
       else if (r.reason === "wrong") setLine(copy.codeWrong);
-      else if (r.reason === "expired") setLine(copy.codeExpired);
-      else if (r.reason === "ended") end();
+      else if (r.reason === "expired") {
+        // N5: the expired code is spent, so the boxes clear and Confirm steps back until a new one is typed.
+        setCode("");
+        setLine(copy.codeExpired);
+      } else if (r.reason === "ended") end();
       else say(() => confirm());
     }, () => confirm());
   }
@@ -161,68 +176,75 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         setLeaving(true);
         window.location.assign(r.url);
       }
-      else if (r.reason === "account") setStep("account");
+      else if (r.reason === "account") {
+        // N9: the card turns face down and names nobody, as an ended invite does.
+        setUp(false);
+        setStep("account");
+      }
       else if (r.reason === "ended") end();
       else say(() => toSignUp());
     }, () => toSignUp());
   }
 
   // An ended or expired invite names nobody (N11, N12): its card is the back alone, whoever it was.
-  const named = step !== "ended" && step !== "expired";
+  const named = step !== "ended" && step !== "expired" && step !== "account";
   const face: CardFace | null = sender && named
     ? { name: sender.displayName, commander: sender.commander, type: copy.cardType, rules: copy.cardRules(sender.displayName) }
     : null;
   const name = sender?.displayName ?? "";
   const signIn = (
     <SignInButton mode="redirect">
-      <button type="button" className={LINK}>{copy.signIn}</button>
+      <button type="button" className={QUIET_LINK}>{copy.signIn}</button>
     </SignInButton>
   );
 
   let column: React.ReactNode;
   if (step === "email" && sender) {
     column = (
-      <LandingColumn
-        kicker={copy.brand}
+      <NewcomerColumn
+        variant="join"
         title={copy.title(name)}
         body={copy.body}
         fine={copy.fine(name)}
         landing={up ? "go" : "wait"}
         actions={
-          <form onSubmit={sendCode} noValidate className="flex w-full flex-col gap-[8px]">
-            <label className="flex flex-col gap-[6px] text-left font-mono text-[11px] uppercase tracking-[.08em] text-[color:var(--fg-faint)]">
-              {copy.emailLabel}
+          <form onSubmit={sendCode} noValidate className={FORM}>
+            <label className="flex flex-col text-left font-sans text-[13px] font-semibold text-[color:var(--fg)]">
+              <span className="mb-[6px]">{copy.emailLabel}</span>
               <input
                 type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
-                value={email} placeholder={copy.emailPlaceholder} className={FIELD} readOnly={busy}
+                value={email} placeholder={copy.emailPlaceholder} className={field(email.length > 0, busy)} readOnly={busy}
                 aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
                 onChange={(e) => { setEmail(e.target.value); setLine(null); setToast(null); }}
               />
             </label>
-            {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
-            <button type="submit" disabled={busy || waiting} className={PRIMARY_BUTTON}>{busy ? copy.sendingCode : waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.sendCode}</button>
+            {line && <p id="join-line" role="alert" className={ERR}>{line}</p>}
+            <button type="submit" disabled={busy || waiting} className={press(busy ? "busy" : "ready")}>{busy ? copy.sendingCode : waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.sendCode}</button>
           </form>
         }
       />
     );
   } else if (step === "code" && sender) {
     const digits = code.replace(/\D/g, "").slice(0, CODE_LENGTH);
+    // Only a wrong code (N4) is drawn in danger; an expired one (N5) is a neutral empty row with Confirm stepped back.
+    const wrong = line === copy.codeWrong;
+    const expired = line === copy.codeExpired;
     column = (
-      <LandingColumn
-        kicker={copy.brand}
+      <NewcomerColumn
+        variant="join"
         title={copy.codeTitle}
         body={copy.codeBody(email)}
         landing="go"
         actions={
-          <form onSubmit={confirm} noValidate className="flex w-full flex-col gap-[10px]">
-            <div className="group relative">
-              <div aria-hidden className="grid grid-cols-6 gap-[6px]">
+          <form onSubmit={confirm} noValidate className={FORM}>
+            <div role="group" aria-label={copy.codeAria} className="group relative">
+              <div aria-hidden className="flex justify-center gap-[8px]">
                 {Array.from({ length: CODE_LENGTH }, (_, i) => (
                   <span
                     key={i}
-                    className={`flex h-[52px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] text-[color:var(--fg)] ${line ? "[border:1px_solid_var(--danger)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
+                    className={`box-border flex h-[54px] w-[44px] items-center justify-center rounded-[8px] bg-[color:var(--surface-sunken)] font-mono text-[22px] font-semibold ${digits[i] ? "text-[color:var(--fg)]" : "text-[color:var(--fg-disabled)]"} ${wrong ? "[border:1px_solid_var(--danger)]" : digits[i] ? "[border:1px_solid_var(--accent)]" : "[border:1px_solid_var(--border-strong)]"} ${i === Math.min(digits.length, CODE_LENGTH - 1) ? "group-focus-within:shadow-[0_0_0_2px_var(--accent)]" : ""}`}
                   >
-                    {digits[i] ?? ""}
+                    {digits[i] ?? "·"}
                   </span>
                 ))}
               </div>
@@ -233,13 +255,18 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH)); setLine(null); setToast(null); }}
               />
             </div>
-            {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
-            <button type="submit" disabled={busy || digits.length < CODE_LENGTH} className={PRIMARY_BUTTON}>{busy ? copy.confirming : copy.confirm}</button>
-            <div className="flex flex-wrap items-center justify-center gap-x-[16px] gap-y-[6px] md:justify-start">
-              <button type="button" className={LINK} disabled={busy || waiting} onClick={() => sendCode()}>
+            {line && <p id="join-line" role="alert" className={ERR}>{line}</p>}
+            <button
+              type="submit" disabled={busy || digits.length < CODE_LENGTH} data-quiet={expired && digits.length === 0 ? "true" : undefined}
+              className={expired && digits.length === 0 ? PRESS_QUIET : press()}
+            >
+              {busy ? copy.confirming : copy.confirm}
+            </button>
+            <div className="mt-[6px] flex flex-wrap items-center justify-center gap-[4px]">
+              <button type="button" className={link(waiting)} disabled={busy || waiting} onClick={() => sendCode()}>
                 {waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.resend}
               </button>
-              <button type="button" className={LINK} disabled={busy} onClick={() => { setLine(null); setToast(null); setStep("email"); }}>{copy.otherEmail}</button>
+              <button type="button" className={link(false)} disabled={busy} onClick={() => { setLine(null); setToast(null); setStep("email"); }}>{copy.otherEmail}</button>
             </div>
           </form>
         }
@@ -247,37 +274,39 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     );
   } else if (step === "proven" && sender) {
     column = (
-      <LandingColumn
-        kicker={copy.brand}
+      <NewcomerColumn
+        variant="join"
         title={copy.okTitle}
         body={copy.okBody(name)}
         landing="go"
-        actions={<button type="button" disabled={busy || leaving} className={PRIMARY_BUTTON} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button>}
+        actions={<div className={FORM}><button type="button" disabled={busy || leaving} className={press()} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button></div>}
       />
     );
   } else if (step === "account" && sender) {
     column = (
-      <LandingColumn
-        kicker={copy.brand}
+      <NewcomerColumn
+        variant="join"
         title={copy.haveAccountTitle}
         body={copy.haveAccountBody(email, name)}
         landing="go"
         actions={
-          <SignInButton mode="redirect">
-            <button type="button" className={PRIMARY_BUTTON}>{copy.signIn}</button>
-          </SignInButton>
+          <div className={FORM}>
+            <SignInButton mode="redirect">
+              <button type="button" className={press()}>{copy.signIn}</button>
+            </SignInButton>
+          </div>
         }
       />
     );
   } else if (step === "expired") {
-    column = <LandingColumn kicker={copy.brand} brand title={copy.expiredTitle} body={copy.expiredBody} actions={<p className="m-0 text-[14px] text-[color:var(--fg-body)]">{copy.haveOne} {signIn}</p>} />;
+    column = <NewcomerColumn variant="join" title={copy.expiredTitle} body={copy.expiredBody} actions={<p className={QUIET}>{copy.haveOne} {signIn}</p>} />;
   } else {
-    column = <LandingColumn kicker={copy.brand} brand title={copy.endedTitle} body={copy.endedBody} actions={<p className="m-0 text-[14px] text-[color:var(--fg-body)]">{copy.haveOne} {signIn}</p>} />;
+    column = <NewcomerColumn variant="join" title={copy.endedTitle} body={copy.endedBody} actions={<p className={QUIET}>{copy.haveOne} {signIn}</p>} />;
   }
 
   return (
     <>
-      <FriendCard face={face} up={up} arrival dim={step === "expired"} />
+      <FriendCard face={face} up={up} arrival dim={step === "expired"} compact word={copy.cardType} badge={step === "proven"} />
       {column}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </>

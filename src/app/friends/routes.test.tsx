@@ -184,6 +184,8 @@ describe("/friend/[token]", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.landing.signedOutTitle);
     expect(screen.getByRole("button", { name: socialCopy.landing.signIn })).toBeTruthy();
     expect(screen.getByText(socialCopy.landing.signedOutFine)).toBeTruthy();
+    // L1 as the board draws it: --fg-muted, 1.6 leading, 4px under the buttons (measured on the rendered board).
+    expect(screen.getByText(socialCopy.landing.signedOutFine).className).toContain("text-[color:var(--fg-muted)]");
     // Face down and naming nobody: the back alone, and no Create an account (G3).
     expect(screen.getByTestId("friend-card-back")).toBeTruthy();
     // Signed out, the shell draws no <main>, so the page is its own.

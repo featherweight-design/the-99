@@ -62,6 +62,7 @@ export function LandingColumn({
   body,
   actions,
   fine,
+  fineMuted,
   landing,
 }: {
   kicker: string;
@@ -71,6 +72,8 @@ export function LandingColumn({
   body?: string;
   actions: ReactNode;
   fine?: string;
+  /** L1: the signed-out link's fine line as the board draws it (--fg-muted, 1.6 leading, 4px under the buttons). */
+  fineMuted?: boolean;
   landing?: "wait" | "go";
 }) {
   // A display name is up to 30 characters with no space required, so the column breaks a long one anywhere.
@@ -86,7 +89,7 @@ export function LandingColumn({
       </h1>
       {body && <p className={`m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px] ${land}`}>{body}</p>}
       <div className={`mt-[6px] flex flex-col gap-[8px] md:mt-[12px] md:flex-row md:gap-[10px] ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 mt-[6px] font-mono text-[11px] text-[color:var(--fg-faint)] ${land}`}>{fine}</p>}
+      {fine && <p className={`m-0 font-mono text-[11px] ${fineMuted ? "mt-[4px] leading-[1.6] text-[color:var(--fg-muted)]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
     </section>
   );
 }

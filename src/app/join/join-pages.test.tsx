@@ -38,6 +38,21 @@ describe("/join/[token]", () => {
     expect(m.readJoin).toHaveBeenCalledWith("tok", "secret");
     expect(screen.getByRole("heading", { name: joinCopy.endedTitle })).toBeTruthy();
   });
+
+  it("is one centred column at every width, with the 22px heading 28px under the card", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    m.cookie.mockReturnValue(undefined);
+    m.readJoin.mockResolvedValue({ kind: "ended" });
+    const { container } = render(await JoinPage({ params: Promise.resolve({ token: "tok" }) }));
+    const main = container.querySelector("main")!;
+    expect(main.className).not.toContain("md:flex-row");
+    expect(main.className).not.toContain("md:gap");
+    expect(main.className).toContain("pt-[44px]");
+    const h1 = screen.getByRole("heading", { name: joinCopy.endedTitle });
+    expect(h1.className).toContain("mt-[28px]");
+    expect(h1.className).toContain("text-[22px]");
+    expect(h1.className).not.toContain("md:");
+  });
 });
 
 describe("/sign-up", () => {
@@ -52,5 +67,25 @@ describe("/sign-up", () => {
     expect(screen.getByRole("heading", { name: inviteOnlyCopy.title })).toBeTruthy();
     expect(screen.getByRole("button", { name: inviteOnlyCopy.signIn })).toBeTruthy();
     expect(screen.getByText(inviteOnlyCopy.fine)).toBeTruthy();
+  });
+
+  it("draws the compact card back with its word, and emphasizes Invite someone new", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    render(await SignUpPage());
+    expect(screen.getByTestId("friend-card").dataset.variant).toBe("compact");
+    expect(screen.getByTestId("friend-card-word").textContent).toBe(inviteOnlyCopy.backWord);
+    const b = screen.getByText("Invite someone new");
+    expect(b.tagName).toBe("B");
+    expect(b.className).toContain("font-medium");
+  });
+
+  it("is one centred column at every width, on the shared frame", async () => {
+    m.auth.mockResolvedValue({ userId: null });
+    const { container } = render(await SignUpPage());
+    const main = container.querySelector("main")!;
+    expect(main.className).toContain("flex-col");
+    expect(main.className).not.toContain("md:flex-row");
+    expect(main.className).toContain("pt-[44px]");
+    expect(main.className).toContain("at_50%_18%");
   });
 });
