@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-17T20:10:00Z
+branch read this turn: docs/admin-pii-brief (brief `2026-10-17-admin-pii-masking.md`, PR #2001); main e8d2868 (`components/admin/accounts-list.tsx`, `account-page.tsx`, `invites-section.tsx`, `invite-tree.tsx`, `group-editor.tsx`, `override-picker.tsx`, `admin-head.tsx`, `collection/edit-toast.tsx` ToastFrame, `lib/admin/names.ts`, `copy/admin.ts`, `app/globals.css` themes; admin handoff R2)
+
+### Updated in this project
+- **Admin R3, masking personal data, for Hugh's audit.** `design_handoff_the99_admin/`: `R3/` canvas export (Main, scene `AdminR3.dc.html`, A1–A6 accounts list, B1–B2 account page, C1–C3 invite tree, group members, override picker, TH six themes; 900 and 390), `README-R3.md` (decisions D1–D14, G1–G2 for Hugh), `STATES-admin-R3.md`, `design-tables/admin-r3.md`, `admin-r3 · copy strings.ts`. Design canvas: "The 99 · Admin R3 · Masking". No PR until Hugh approves.
+
+### Earlier entry
 date: 2026-10-16T23:55:00Z
 branch read this turn: main 33bb5af (handoffs social_r1, social_r2, social_r3, discovery_onboarding README-r3 + STATES-tour-and-need; `components/home/dashboard.tsx`, `first-run.tsx`, `resume-decks.tsx`, `ready-to-build.tsx`, `components/social/face.tsx`, `add-friend-dialog.tsx`, `friend-card.tsx`, `open-links.tsx`, `friends-head.tsx`, `use-invite-watch.ts`, `copy/social.ts`, `copy/refresh.ts`, `lib/social/access.ts`, `theme/themes.ts`, `app/globals.css`; briefs discovery-and-onboarding, invite-only-launch)
 
