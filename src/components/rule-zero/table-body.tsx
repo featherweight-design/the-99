@@ -15,6 +15,7 @@ import { GhostButton } from "../ui/button";
 import { useHydrated } from "../ui/hydrated-art";
 import { BackLink } from "./back-link";
 import { ReadCard } from "./read-card";
+import { SeatsButton } from "./seats-button";
 import { TableSeat } from "./table-seat";
 
 const copy = ruleZeroCopy.page;
@@ -42,16 +43,21 @@ export function TableBody({
       {/* The phone's back row sits outside the padded column (R1); desktop's sits in the head band (R2). */}
       <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] xl:hidden" glyph />
       <div className="flex flex-col gap-[14px] px-[16px] pb-[22px] xl:block xl:p-0">
-        <header className="flex flex-col xl:border-b xl:border-b-[color:var(--border)] xl:px-[34px] xl:pb-[16px] xl:pt-[22px]">
-          <BackLink className="mb-[6px] hidden gap-[6px] text-[13px] xl:flex" />
-          <h1 className="m-0 font-display text-[24px] font-bold leading-[1.2] xl:text-[30px]">{copy.title}</h1>
-          <p className="m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] xl:text-[12px] xl:leading-normal">
+        {/* A grid, so `Seats` mounts once: beside the title on the phone (R1 `.pgh .row`), at the foot of the head's
+            right edge on desktop (R2 `.dph`, aligned to the end). */}
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[10px] xl:gap-x-[20px] xl:border-b xl:border-b-[color:var(--border)] xl:px-[34px] xl:pb-[16px] xl:pt-[22px]">
+          <BackLink className="col-start-1 mb-[6px] hidden gap-[6px] text-[13px] xl:flex" />
+          <h1 className="col-start-1 m-0 font-display text-[24px] font-bold leading-[1.2] xl:text-[30px]">{copy.title}</h1>
+          <p className="col-start-1 m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] xl:text-[12px] xl:leading-normal">
             <b className="font-medium text-[color:var(--fg-body)]">{view.podName}</b>
             {copy.metaSetBy(view.setByYou ? null : view.setBy, view.seats.length)}
             <span className="hidden xl:inline"> · </span>
             <br className="xl:hidden" />
             {copy.metaOpen(closes)}
           </p>
+          {view.setByYou ? (
+            <SeatsButton tableId={view.tableId} className="col-start-2 row-start-1 self-start xl:row-span-3 xl:self-end" />
+          ) : null}
         </header>
         {/* One mount of each part, placed by the grid: desktop's right column is the read over Log this game (14px
             apart), and the seats span both rows on the left. */}

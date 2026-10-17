@@ -158,7 +158,7 @@ export function SetupSheet({
             <button
               type="button"
               onClick={() => setScreen({ kind: "who" })}
-              className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[rgba(255,77,154,.5)] underline-offset-[4px]"
+              className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]"
             >
               <span aria-hidden>‹</span>
               {copy.back}

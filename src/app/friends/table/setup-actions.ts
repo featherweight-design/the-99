@@ -7,7 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../../lib/auth";
-import { ruleZeroEnabled } from "../../../lib/social/flag";
+import { ruleZeroEnabled, socialInvitesEnabled } from "../../../lib/social/flag";
 import { podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
@@ -18,16 +18,22 @@ async function reader(): Promise<string | null> {
 
 export type SetupOutcome = { ok: true; tableId: string } | { ok: false; reason: "off" | "occupied" | "refused" };
 
-/** Setup for one of the reader's pods (`Rule 0 check`). */
-export async function loadPodSetupAction(podId: unknown): Promise<PodSetup | null> {
-  const userId = await reader();
-  return userId === null ? null : podSetup(userId, podId);
+/** Setup for one of the reader's pods (`Rule 0 check`), and whether the invite row is drawn. */
+export async function loadPodSetupAction(podId: unknown): Promise<{ setup: PodSetup; invites: boolean } | null> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!ruleZeroEnabled(env)) return null;
+  const setup = await podSetup(userId, podId);
+  return setup ? { setup, invites: socialInvitesEnabled(env) } : null;
 }
 
-/** The setter's `Seats`: setup for the table, the seats kept. */
-export async function loadTableSetupAction(tableId: unknown): Promise<TableSetup | null> {
-  const userId = await reader();
-  return userId === null ? null : tableSetup(userId, tableId);
+/** The setter's `Seats`: setup for the table, the seats kept, and whether the invite row is drawn. */
+export async function loadTableSetupAction(tableId: unknown): Promise<{ setup: TableSetup; invites: boolean } | null> {
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!ruleZeroEnabled(env)) return null;
+  const setup = await tableSetup(userId, tableId);
+  return setup ? { setup, invites: socialInvitesEnabled(env) } : null;
 }
 
 /** Set the table. A pod whose table is already open, with the reader seated at it, answers that table. */

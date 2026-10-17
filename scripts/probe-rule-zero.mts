@@ -91,6 +91,22 @@ async function main() {
     check("D (A's friend, no deck) reads noDecks to A", (await rz.podSetupMembers(A, P1)).find((m) => m.publicId === pub[D])?.kind === "noDecks");
     check("setup lists nothing for a non-member", (await rz.podSetupMembers(E, P1)).length === 0);
 
+    // Setup's decks (plan PR 5): listed for the viewer and a friend only, newest first; a seat starts on the most
+    // recently played deck, else the most recently edited (G8); a non-friend is initials with nothing listed (D2, G3).
+    const forA = await rz.podSetup(A, P1);
+    const ofA = (u: string) => forA?.members.find((m) => m.publicId === pub[u]);
+    check("A's setup lists B's decks newest first", ofA(B)?.decks.map((d) => d.deckId).join() === `${deckB2},${deckB}`, ofA(B)?.decks.map((d) => d.name).join());
+    check("B starts on the deck edited last when neither was played", ofA(B)?.start === deckB2);
+    await db.execute(sql`insert into deck_games (deck_id, user_id, result, pod_size, played_at) values (${deckB}, ${B}, 'win', 4, now() - interval '1 day')`);
+    check("B starts on the deck played last", (await rz.podSetup(A, P1))?.members.find((m) => m.publicId === pub[B])?.start === deckB);
+    check("A owns the pod: no owner name for the invite row", forA?.owner === null && ofA(A)?.isOwner === true);
+    const bSetup = await rz.podSetup(B, P1);
+    const cForB = bSetup?.members.find((m) => m.publicId === pub[C]);
+    check("B sees A as the owner, by name", bSetup?.owner === "Ava");
+    check("a non-friend lists no decks and draws no art", cForB?.kind === "picksOwn" && cForB.decks.length === 0 && cForB.start === null && cForB.commander === null);
+    check("you lead setup's members", bSetup?.members[0]?.publicId === pub[B]);
+    check("setup is null for a non-member", (await rz.podSetup(E, P1)) === null);
+
     // The refusals, before any table exists.
     check("refuses a viewer not in the pod", (await rz.setTable(E, P1, [seat(pub[E]), seat(pub[A])])).kind === "refused");
     check("refuses a seat who is not a member", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A]), seat(pub[E])])) === JSON.stringify({ kind: "refused", reason: "notMember" }));
@@ -153,6 +169,12 @@ async function main() {
     const afterDelete = (await seatsOf(T1)).find((s) => s.user_id === B);
     check("a deleted deck leaves the seat, waiting", afterDelete !== undefined && afterDelete.deck_id === null);
 
+    // Seats reopens setup with the table's seats, for the setter alone.
+    const reopened = await rz.tableSetup(A, T1);
+    // B's and C's seats wait: B's deck was deleted above, and C cleared theirs.
+    const reopenedSeats = reopened?.seated.map((x) => `${x.publicId === pub[C]}:${x.deck?.name ?? "waits"}`).join();
+    check("Seats opens setup with the seats kept, in order, with their decks", reopenedSeats === `false:Ava's deck,false:waits,true:waits`, reopenedSeats);
+    check("Seats is the setter's alone", (await rz.tableSetup(B, T1)) === null);
     // The reseat: A drops C and seats D; B keeps their seat's change time and deck.
     await rz.markSeen(C, T1, new Date());
     const bBefore = (await seatsOf(T1)).find((s) => s.user_id === B)!;

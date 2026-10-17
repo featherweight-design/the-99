@@ -62,6 +62,15 @@ describe("Add a friend, invites off", () => {
 describe("Add a friend, invites on", () => {
   const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
 
+  it("opens on Invite someone new when it arrived as ?invite=new (Rule 0 setup's dashed row), with invites on only", () => {
+    window.history.replaceState(null, "", "/friends?invite=new");
+    draw({ invites, openInviteNew: true });
+    expect(screen.getByRole("dialog", { name: inviteCopy.path.title })).toBeTruthy();
+    cleanup();
+    draw({ openInviteNew: true });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("draws the count under the press and opens the chooser, making nothing", () => {
     draw({ invites });
     expect(document.querySelector("[data-invite-count]")?.textContent).toBe("2 invites left · 1 waiting");

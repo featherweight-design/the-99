@@ -101,6 +101,9 @@ export function qrPath(text: string, border = 2): QrPath {
 
 export const ACCEPTED_PARAM = "accepted";
 
+/** `/friends?invite=new` opens Add a friend on Invite someone new (Rule 0 setup's dashed row, from another page). */
+export const INVITE_PARAM = "invite";
+
 /** Where an accepted request lands: `/friends`, with the new friend's receipt resolved by `publicId` (E10). */
 export function friendsReceiptPath(publicId: string): string {
   return `/friends?${ACCEPTED_PARAM}=${encodeURIComponent(publicId)}`;
