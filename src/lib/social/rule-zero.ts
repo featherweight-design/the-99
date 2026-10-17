@@ -112,9 +112,9 @@ async function resolveSeatsIn(tx: Tx, viewerId: string, podId: string, asks: rea
 
 /**
  * Set a table for the pod's night: 2 to 8 of its members, the viewer among them, seated in the order given. Under
- * the pod row's lock it first deletes the pod's expired tables, then applies the one rule (G7): an open table
- * already there is answered `open` to a player seated at it and `occupied` to anyone else, with nothing written.
- * Two setups at once queue on the pod row, so the second always finds the first's table.
+ * the pod row's lock it applies the one rule (G7): an open table already there is answered `open` to a player seated
+ * at it and `occupied` to anyone else, with nothing written. Two setups at once queue on the pod row, so the second
+ * always finds the first's table. A setup that writes deletes the pod's expired tables first.
  */
 export async function setTable(viewerId: string, podId: unknown, rawSeats: unknown): Promise<SetTableResult> {
   if (!isUuid(podId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
@@ -122,7 +122,6 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
   return db.transaction(async (tx) => {
     const [pod] = await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, podId)).for("update");
     if (!pod || !(await isMemberIn(tx, podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
-    await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
     const [open] = await tx
       .select({ id: ruleZeroTables.id, closesAt: ruleZeroTables.expiresAt, setBy: socialProfiles.displayName, seated: ruleZeroSeats.userId })
       .from(ruleZeroTables)
@@ -137,6 +136,9 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
     }
     const seats = await resolveSeatsIn(tx, viewerId, podId, asks);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
+    // The pod's expired tables go only now, after the picked decks are held: deleting them locks their seats, and a
+    // deck delete locks its deck before its `set null` reaches a seat, so the seats must come after the decks here too.
+    await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
     const [table] = await tx
       .insert(ruleZeroTables)
       .values({ podId, setBy: viewerId, expiresAt: sql`now() + make_interval(hours => ${TABLE_HOURS})` })
