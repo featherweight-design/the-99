@@ -115,6 +115,12 @@ async function leg(browser, wide) {
   const explicit = await open("?view=rows&sort=name");
   report(`${tag} an explicit ?sort= in the URL beats the remembered one`, JSON.stringify(explicit) === JSON.stringify(byName), explicit.join(" | "));
 
+  // …and keeps it through a reload: the mirror must not strip a `sort=name` that overrides a remembered Quantity.
+  report(`${tag} the override stays in the address`, new URL(page.url()).searchParams.get("sort") === "name", page.url());
+  await page.reload({ waitUntil: "load" });
+  const reloaded = await firstNames(page);
+  report(`${tag} a reload keeps the explicit order, not the remembered one`, JSON.stringify(reloaded) === JSON.stringify(byName), reloaded.join(" | "));
+
   // Put the reader's own order back: the default is a choice too.
   await onPageRole(page, "button", /^Sort/).first().click();
   await page.locator('li[data-code="name"], [role="option"][data-code="name"]').first().click();
