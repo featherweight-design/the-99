@@ -128,7 +128,7 @@ The existing `admin.json` and `invites-admin.json` rows keep running; PR 2 updat
 - Create: `scripts/probe-admin-pii.mjs` + `pnpm probe:admin-pii`.
 
 - [ ] **Step 1:** Run `/copy-review` on the four strings; write the reviewed text.
-- [ ] **Step 2: Write the probe.** Signed in through `scripts/lib/surface.mjs` as an `ADMIN_USER_IDS` account against a local `next start`, it reads, from Clerk's dev instance in the script, every user's raw first name, last name and primary email, then loads each route in the inventory and fails if the HTML or any RSC flight response body contains one (case-insensitive, names of 3+ letters). Read-only.
+- [ ] **Step 2: Write the probe.** Signed in through `scripts/lib/surface.mjs` as an `ADMIN_USER_IDS` account against a local `next start`, it reads, from Clerk's dev instance in the script, every user's raw first name, last name and primary email, then loads each route in the inventory, including the account page head and every picker (the group editor's members, the override picker, Check an account) with each one opened, and fails if the HTML or any RSC flight response body contains one (case-insensitive, names of 3+ letters). Read-only.
 - [ ] **Step 3: Run** `pnpm probe:admin-pii` on local-dev before Task 2 (expected: FAIL, emails found) and after (expected: PASS). Put both outputs in the PR body.
 - [ ] **Step 4:** Contact sheet rows for PR 1's cells; `pnpm typecheck && pnpm lint && pnpm test`, stub build.
 - [ ] **Step 5: Commit** `Admin masking: copy and probe:admin-pii`.
@@ -228,7 +228,7 @@ The existing `admin.json` and `invites-admin.json` rows keep running; PR 2 updat
 
 ---
 
-## Open, for the orchestrator
+## Rulings (orchestrator, 2026-10-17)
 
-- **Ruling 5, the privacy page line.** No privacy page exists in `src/app` today, so there is nothing to add the line to. The plan leaves it out; it needs either a page (its own brief) or a home for the sentence.
-- **The account URL keeps the Clerk id** (G1): rulings 1 and 4 cover names and emails, and the id identifies no one outside Clerk. Recorded, not changed.
+- **Owed: ruling 5's privacy-page line** ("admins can see account emails for support and access, and each view is logged"). No privacy page exists in `src/app`; the line ships with that page, which is on Hugh's decisions list (it is also needed for payments and the FCP notice). Not built by this plan.
+- **The account URL keeps the Clerk id** (G1): rulings 1 and 4 cover names and emails, and the id identifies no one outside Clerk.
