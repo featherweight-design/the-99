@@ -282,12 +282,12 @@ describe("AnalysisPanel", () => {
       }, [t]);
       return null;
     }
-    const drawWith = (state: ProfileState, hub?: () => React.ReactNode) =>
+    const drawWith = (state: ProfileState, hub?: () => React.ReactNode, hubDraws?: () => boolean) =>
       render(
         <TargetsProvider>
           <Grab />
           <CardDetailProvider fetchCard={async () => null}>
-            <AnalysisPanel state={state} onRequest={onRequest} hub={hub} tuning={() => <p>tuning</p>}>
+            <AnalysisPanel state={state} onRequest={onRequest} hub={hub} hubDraws={hubDraws} tuning={() => <p>tuning</p>}>
             </AnalysisPanel>
           </CardDetailProvider>
         </TargetsProvider>,
@@ -304,9 +304,15 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
     });
 
-    it("is nothing here with the hub on", () => {
-      drawWith({ kind: "idle" }, () => <p>hub</p>);
+    it("is nothing here with the hub on and drawing its tiles", () => {
+      drawWith({ kind: "idle" }, () => <p>hub</p>, () => true);
       expect(targets!.haloTarget("suggested-changes")).toBe(false);
+    });
+
+    it("is the empty state with the hub on but drawing nothing (discovery R3, N1)", () => {
+      drawWith({ kind: "idle" }, () => null, () => false);
+      expect(targets!.haloTarget("suggested-changes")).toBe(true);
+      expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
     });
   });
 

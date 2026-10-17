@@ -53,6 +53,7 @@ export function AnalysisPanel({
   cuts,
   mana,
   hub,
+  hubDraws,
   opening = "off",
   overview,
   hold = null,
@@ -105,6 +106,9 @@ export function AnalysisPanel({
    *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
    *  reading (a deck built long), and it decides for itself whether it draws at all. */
   hub?: (permits: readonly Bracket[] | null) => ReactNode;
+  /** Whether `hub` draws anything for these permits (the shell's one rule, `TuningHub`'s `drawn`). Where it draws
+   *  nothing, Suggested changes has no tile, so the empty state is its landing target, as with the hub off. */
+  hubDraws?: (permits: readonly Bracket[] | null) => boolean;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -174,7 +178,11 @@ export function AnalysisPanel({
   // once it draws (`TuningPanel`'s `landingTarget`), and with no reading held, the empty state that asks for one. Proposed cuts and Mana Balance need no reading and
   // register their own heads. A frame under `hidden` (the opening, the overview being written) is passed over by the
   // registry until it shows.
-  const emptyTarget = useTarget(!hub && tuning ? "suggested-changes" : null);
+  // With the hub ON but drawing nothing (no reading, the deck at its size, Mana Balance off), the empty state stands
+  // in for the tile it would have drawn.
+  const hubPermits = held && !behind ? slotDeck(held.profile).permits : null;
+  const tiles = hub !== undefined && (hubDraws?.(hubPermits) ?? true);
+  const emptyTarget = useTarget(!tiles && tuning ? "suggested-changes" : null);
   return (
     <>
     {gated ? (
@@ -240,7 +248,7 @@ export function AnalysisPanel({
           but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
           stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
           reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
-      {hub ? hub(held && !behind ? slotDeck(held.profile).permits : null) : null}
+      {hub ? hub(hubPermits) : null}
       {!hub && held && tuning ? (
         <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}

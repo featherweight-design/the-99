@@ -368,6 +368,16 @@ describe("TuningHub opening a tool", () => {
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
   });
 
+  it("returns an open tool to the tiles on a request with no tool, opening nothing (discovery R3, N1)", async () => {
+    read.mockResolvedValue(empty);
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(tile("suggested")).toBeNull();
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
+    await waitFor(() => expect(tile("suggested")).not.toBeNull());
+    expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
+  });
+
   it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

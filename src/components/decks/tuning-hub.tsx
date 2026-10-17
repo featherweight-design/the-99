@@ -35,7 +35,9 @@ export type HubToolSpec =
   | { tool: "history" };
 
 /** A shortcut's ask: open this tool. `nonce` makes a second press of the same shortcut count. */
-export type HubRequest = { tool: TuningTool; nonce: number };
+/** A shortcut's ask: open `tool`, or with `tool: null` return to the tiles (N1 lands on Suggested changes' tile, so a
+ *  tool left open must close first). */
+export type HubRequest = { tool: TuningTool | null; nonce: number };
 
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -256,9 +258,16 @@ export function TuningHub({
   const [answered, setAnswered] = useState<number | null>(null);
   if (request && request.nonce !== answered) {
     setAnswered(request.nonce);
-    if (tools.some((t) => t.tool === request.tool)) {
+    const asked = request.tool;
+    if (asked === null) {
+      // Back to the tiles, with nothing focused or scrolled: the landing that asked brings its own target into view.
+      setPast(null);
       setReview(null);
-      setOpening((prev) => ({ tool: request.tool, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
+      setReturnRow(null);
+      setOpening(null);
+    } else if (tools.some((t) => t.tool === asked)) {
+      setReview(null);
+      setOpening((prev) => ({ tool: asked, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
 

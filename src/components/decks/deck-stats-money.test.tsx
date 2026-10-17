@@ -53,7 +53,7 @@ describe("DeckStatsView money card", () => {
     it("names the over rows and the limit on the shipped line, and presses through", () => {
       const onShop = vi.fn();
       drawOver(money(), { count: 2, limit: "$8" }, onShop);
-      const press = screen.getByRole("button", { name: "See the 12 in Shopping, 2 over your $8 limit" });
+      const press = screen.getByRole("button", { name: "See the 12 in Shopping, 2 over $8, your stand-in limit" });
       expect(press).toHaveTextContent("See the 12 in Shopping, 2 over $8");
       fireEvent.click(press);
       expect(onShop).toHaveBeenCalledTimes(1);
@@ -62,12 +62,18 @@ describe("DeckStatsView money card", () => {
     it("never says the over rows have cheaper stand-ins (R3 gap 10)", () => {
       drawOver(money(), { count: 2, limit: "$8" });
       const press = screen.getByRole("button", { name: /See the 12 in Shopping/ });
-      expect(press.getAttribute("aria-label")).not.toMatch(/stand-in/i);
+      expect(press.getAttribute("aria-label")).not.toMatch(/cheaper|have stand-ins/i);
+    });
+
+    it("keeps the visible words whole in the name, so a spoken label matches", () => {
+      drawOver(money(), { count: 2, limit: "$8" });
+      const press = screen.getByRole("button", { name: /See the 12 in Shopping/ });
+      expect(press.getAttribute("aria-label")).toContain(press.textContent!.replace("⟶", "").trim());
     });
 
     it("reads one copy to buy as it, with no count", () => {
       drawOver(money({ toBuy: { copies: 1, cents: 900, pricedCopies: 1 } }), { count: 1, limit: "$8" });
-      expect(screen.getByRole("button", { name: "See it in Shopping, over your $8 limit" })).toHaveTextContent("See it in Shopping, over $8");
+      expect(screen.getByRole("button", { name: "See it in Shopping, over $8, your stand-in limit" })).toHaveTextContent("See it in Shopping, over $8");
     });
 
     it("keeps the shipped line with nothing over", () => {

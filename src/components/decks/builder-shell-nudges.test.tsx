@@ -115,6 +115,12 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
     expect(written).toEqual(["suggested-changes"]);
   });
 
+  it("N1 with the hub on asks the hub back to its tiles, then lands", () => {
+    draw({ tuning: true, mana: true, hub: true });
+    act(() => seen.strip.onSuggest!());
+    expect(written).toEqual(["suggested-changes"]);
+  });
+
   it("N1: nothing under the body size, and nothing with Tuning off", () => {
     draw({ tuning: true, built: 98 });
     expect(seen.strip.onSuggest).toBeUndefined();
