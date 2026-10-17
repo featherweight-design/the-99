@@ -201,7 +201,7 @@ The handoff (#1927, 2026-10-16) post-dates every earlier decision these items le
 - 1, the magnifier's drawing (stroke 1.6, circle 8.5/8.5 r5.5, path `M13 13l4.5 4.5` in the mock): the app draws ONE
   magnifier, `SearchIcon`, redrawn in #1660 because the drawing the mock carries puts the handle inside the lens's
   stroke and reads as one smear at small sizes. The mock's geometry is that pre-#1660 drawing; the size is matched.
-  Raised to the orchestrator: #1660 predates the mock, so this stands only if it agrees.
+  Source: #1660, Hugh's bug batch A item 1, the later decision (orchestrator's ruling, 2026-10-17).
 - State "opened entry with no frame": unreachable. Every screen has a frame in every theme (`shots.test.ts` fails
   otherwise) and every entry is placed on its frame (the locator PR, R2·6a-2); the specimens retire in R2·7
   (readiness R2 gap 9).
