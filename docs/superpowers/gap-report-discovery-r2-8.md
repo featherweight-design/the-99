@@ -9,6 +9,8 @@ Table: `docs/superpowers/design-tables/discovery-r2-8-help.md` (148 rows, 18 sta
 - Row 58, the search icon: the shared `SearchIcon` at 16px, per the #1660 redraw (Hugh's bug batch A item 1), as recorded in `gap-report-discovery-r2-6a.md`.
 - Row 62, the clear ✕: `SearchField` keeps it in place with `visibility: hidden` while the field is empty, so the field's width does not move. It is not visible, so it reads as not drawn.
 
+- **Row 61 (input type), on touch only.** The search draws at 15px as drawn wherever a fine pointer is present, and at 16px under `hover: none` (`touch:text-base`). Below 16px, iOS Safari zooms the page when the field takes focus. This is the same rule R2·6a's Reference search ships under, so it is a deliberate platform deviation and not a gap. The desktop measurement is unchanged.
+
 ## Notes outside the table
 
 - Focus look: the shared field draws its accent border and ring while focused, even when empty. The table draws no focus state.
