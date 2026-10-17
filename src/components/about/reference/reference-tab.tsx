@@ -89,16 +89,16 @@ function EntryRow({ entry, open, onToggle }: { entry: ReferenceEntry; open: bool
         aria-expanded={open}
         aria-controls={body}
         onClick={onToggle}
-        className="grid w-full min-h-[48px] grid-cols-[minmax(0,1fr)] items-baseline gap-y-[3px] py-[10px] text-left [grid-template-areas:'title'_'first'] md:min-h-[44px] md:grid-cols-[300px_minmax(0,1fr)_56px_16px] md:items-center md:gap-x-[16px] md:py-[6px] md:[grid-template-areas:'title_first_mark_chev']"
+        className="grid w-full min-h-[48px] grid-cols-[minmax(0,1fr)] items-baseline gap-y-[3px] py-[10px] text-left [grid-template-areas:'title'_'first'] lg:min-h-[44px] lg:grid-cols-[300px_minmax(0,1fr)_56px_16px] lg:items-center lg:gap-x-[16px] lg:py-[6px] lg:[grid-template-areas:'title_first_mark_chev']"
       >
         <span className="text-[14.5px] font-medium text-[color:var(--fg)] [grid-area:title]">
           {entry.title}
-          {entry.inTools && <span className="font-mono text-[10.5px] font-normal text-[color:var(--accent)] md:hidden"> {referenceCopy.inTools}</span>}
+          {entry.inTools && <span className="font-mono text-[10.5px] font-normal text-[color:var(--accent)] lg:hidden"> {referenceCopy.inTools}</span>}
         </span>
-        <span aria-hidden className="hidden font-mono text-[10.5px] text-[color:var(--accent)] [grid-area:mark] md:inline">
+        <span className="hidden font-mono text-[10.5px] text-[color:var(--accent)] [grid-area:mark] lg:inline">
           {entry.inTools ? referenceCopy.inTools : ""}
         </span>
-        <span className="text-[13px] leading-[1.45] text-[color:var(--fg-faint)] [grid-area:first] md:overflow-hidden md:text-ellipsis md:whitespace-nowrap">
+        <span className="text-[13px] leading-[1.45] text-[color:var(--fg-faint)] [grid-area:first] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap">
           {entry.first}
         </span>
         <span aria-hidden className="hidden text-[13px] text-[color:var(--fg-faint)] [grid-area:chev] md:inline">
@@ -146,6 +146,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
     setQuery("");
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
+        // The pressed link unmounts with the search, so focus moves to the entry it opened.
+        document.getElementById(id)?.querySelector<HTMLElement>("button[aria-expanded]")?.focus({ preventScroll: true });
         noteAppScroll();
         document.getElementById(id)?.scrollIntoView({ block: "start" });
       }),
@@ -162,14 +164,26 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
         return; // a malformed fragment (`#%E0`) names no entry
       }
       if (!id || !reveal(id)) return;
+      setQuery(""); // a search hides every screen, the entry's with it
       requestAnimationFrame(() => {
         noteAppScroll();
         document.getElementById(id)?.scrollIntoView({ block: "start" });
       });
     };
+    // A link to the hash already in the address fires no `hashchange`, so pressing the same `explained in` line twice
+    // would open its entry only once. A press `go` already handled is left to it.
+    const again = (e: globalThis.MouseEvent) => {
+      if (e.defaultPrevented) return;
+      const a = (e.target as Element | null)?.closest?.("a[href^='#']");
+      if (a && a.getAttribute("href") === window.location.hash) window.setTimeout(follow, 0);
+    };
     follow();
     window.addEventListener("hashchange", follow);
-    return () => window.removeEventListener("hashchange", follow);
+    document.addEventListener("click", again);
+    return () => {
+      window.removeEventListener("hashchange", follow);
+      document.removeEventListener("click", again);
+    };
     // `reveal` reads `screenOf`, which follows `screens`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenOf]);
@@ -331,19 +345,31 @@ function ScreensIndex({ screens, howCount }: { screens: readonly ReferenceScreen
     // callbacks, and the one marked is the first of them in page order.
     const els = [...document.querySelectorAll("[data-reference-screen]")];
     const inBand = new Set<Element>();
-    const io = new IntersectionObserver(
-      (seen) => {
-        for (const s of seen) {
-          if (s.isIntersecting) inBand.add(s.target);
-          else inBand.delete(s.target);
-        }
-        const key = els.find((el) => inBand.has(el))?.getAttribute("data-reference-screen");
-        if (key) setCurrent(key);
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    );
-    for (const el of els) io.observe(el);
-    return () => io.disconnect();
+    let io: IntersectionObserver | null = null;
+    // The band is the top 30% of the viewport, set in pixels and rebuilt on resize rather than as a percentage root
+    // margin, which is not resolved against the viewport's height in every engine.
+    const watch = () => {
+      io?.disconnect();
+      inBand.clear();
+      io = new IntersectionObserver(
+        (seen) => {
+          for (const s of seen) {
+            if (s.isIntersecting) inBand.add(s.target);
+            else inBand.delete(s.target);
+          }
+          const key = els.find((el) => inBand.has(el))?.getAttribute("data-reference-screen");
+          if (key) setCurrent(key);
+        },
+        { rootMargin: `0px 0px -${Math.round(window.innerHeight * 0.7)}px 0px` },
+      );
+      for (const el of els) io.observe(el);
+    };
+    watch();
+    window.addEventListener("resize", watch);
+    return () => {
+      window.removeEventListener("resize", watch);
+      io?.disconnect();
+    };
   }, [screens]);
   return (
     <nav aria-label={referenceCopy.screensLabel} className="relative hidden w-[230px] flex-none flex-col gap-[2px] md:flex">

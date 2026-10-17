@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { aboutCopy } from "../../../lib/copy/about";
 import { aboutEntries } from "../../../lib/copy/about-entries";
@@ -191,6 +191,66 @@ describe("ReferenceTab, search", () => {
   });
 });
 
+describe("ReferenceTab, following links", () => {
+  const raf = () => act(() => vi.runAllTimers());
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "setTimeout"] });
+    Element.prototype.scrollIntoView ??= () => {};
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("a search hit pressed moves focus to the entry it opens", () => {
+    const { container } = draw();
+    type(first.title);
+    const hits = container.querySelector("[data-reference-hits]") as HTMLElement;
+    fireEvent.click(within(hits).getAllByRole("link").find((a) => a.getAttribute("href") === `#${first.id}`)!);
+    raf();
+    expect(document.activeElement).toBe(document.getElementById(first.id)!.querySelector("button[aria-expanded]"));
+  });
+
+  it("a hash that arrives during a search clears the search, so its entry can be seen", () => {
+    const { container } = draw();
+    type("deck");
+    const target = screens[1].entries[0];
+    act(() => {
+      window.location.hash = `#${target.id}`;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(field().value).toBe("");
+    expect(openEntry(container)).toBe(target.id);
+  });
+
+  it("a press on a link to the hash already in the address opens its entry again", () => {
+    const target = screens[1].entries[0];
+    window.location.hash = `#${target.id}`;
+    const { container } = draw();
+    expect(openEntry(container)).toBe(target.id);
+    fireEvent.click(within(container.querySelector(`[id="${target.id}"]`) as HTMLElement).getAllByRole("button")[0]);
+    expect(openEntry(container)).toBeNull();
+    const link = document.createElement("a");
+    link.href = `#${target.id}`;
+    document.body.appendChild(link);
+    fireEvent.click(link);
+    raf();
+    expect(openEntry(container)).toBe(target.id);
+    link.remove();
+  });
+});
+
+describe("ReferenceTab, the in Tools mark", () => {
+  it("is announced at every width: the wide mark is not aria-hidden", () => {
+    const e = { ...first, inTools: true };
+    const { container } = draw({ screens: [{ ...screens[0], entries: [e, ...screens[0].entries.slice(1)] }, ...screens.slice(1)] });
+    const marks = [...(container.querySelector(`[id="${e.id}"]`) as HTMLElement).querySelectorAll("span")].filter(
+      (x) => x.textContent?.trim() === referenceCopy.inTools,
+    );
+    expect(marks.length).toBe(2);
+    expect(marks.every((m) => m.closest("[aria-hidden]") === null)).toBe(true);
+  });
+});
+
 describe("ReferenceTab, the screens index", () => {
   it("lists each screen with its count, and How it works only when it draws", () => {
     const { rerender } = draw();
@@ -213,10 +273,12 @@ describe("ReferenceTab, the screens index", () => {
 
   it("marks the first screen in the band, in page order, across the observer's partial reports", () => {
     let report: (entries: { target: Element; isIntersecting: boolean }[]) => void = () => {};
+    let margin: string | undefined;
     const Real = globalThis.IntersectionObserver;
     globalThis.IntersectionObserver = class {
-      constructor(cb: typeof report) {
+      constructor(cb: typeof report, opts?: IntersectionObserverInit) {
         report = cb;
+        margin = opts?.rootMargin;
       }
       observe() {}
       disconnect() {}
@@ -229,6 +291,8 @@ describe("ReferenceTab, the screens index", () => {
           .getAllByRole("link")
           .find((a) => a.getAttribute("aria-current") === "location")
           ?.getAttribute("href");
+      // The band is set in pixels from the viewport's height, never as a percentage.
+      expect(margin).toBe(`0px 0px -${Math.round(window.innerHeight * 0.7)}px 0px`);
       act(() => report([{ target: el(1), isIntersecting: true }]));
       act(() => report([{ target: el(2), isIntersecting: true }]));
       expect(current()).toBe(`#screen-${screens[1].key}`);
