@@ -332,9 +332,9 @@ async function main() {
     const wait = await claimInvite(q1.token, "n1@x.dev", cookie1, { env, mail });
     check("a resend inside 60 seconds waits", !wait.ok && wait.reason === "wait" && (wait.waitMs ?? 0) > 0);
     const later = new Date(Date.now() + 61_000);
-    check("another browser cannot resend or confirm", (await claimInvite(q1.token, "n1@x.dev", "other", { env, mail, now: later })).ok === false
+    check("another browser cannot resend or confirm", (await claimInvite(q1.token, "n1@x.dev", "other", { env, mail, now: later, clerk: ok.clerk })).ok === false
       && (await confirmCode(q1.token, lastCode(), "other", { now: later, env })).ok === false);
-    const resent = await claimInvite(q1.token, "n1b@x.dev", cookie1, { env, mail, now: later });
+    const resent = await claimInvite(q1.token, "n1b@x.dev", cookie1, { env, mail, now: later, clerk: ok.clerk });
     check("the same browser resends to a different address, the 7 days not restarted",
       resent.ok && mailed.length === 2 && mailed[1].to === "n1b@x.dev" && (await stateOf(r1)).holds === sc1.holds);
 
