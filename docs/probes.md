@@ -2605,7 +2605,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   nothing); `markSeen` keeping a swap that landed after its snapshot, never moving back; `on delete set null`; the
   setter's reseat keeping a staying seat's deck and change time; Home's read listing a table expiring in 2 seconds and
   dropping it after, with no write between; the next setup deleting the pod's expired table; and the account purge
-  removing all three tables' rows, deleting a table it set and closing a table it leaves with one seat. It refuses
+  removing all three tables' rows, deleting a table it set and closing a table it leaves with one seat. Since PR 2b it
+  also proves the table read (`loadTable`): a seated player reads every seat, a non-friend's seat by deck name with no
+  `publicId`, only the viewer's own seat carrying a deck id, no other account or deck id anywhere in the payload; an
+  unseated member, a stranger, a member who left and an expired table read null; one read seat is `notEnough` and two
+  make a read. And `readOnTheSpot`: a legal unread deck is computed once and stored as its OWNER's, a second call, a
+  stale reading and an unreadable older-version row all skip, an unseated member is refused, and two polls at once
+  compute once. Mutation-checked: dropping the grant's pod join lets a member who left read the table, and dropping
+  the advisory lock lets two polls both compute. It refuses
   staging, production and local-dev (`assertScratchBranch`): run it on a scratch branch made from local-dev. Mutation-
   checked: dropping the pod row's `FOR UPDATE` writes three tables under the concurrent setups, and dropping `greatest`
   lets an older acknowledgement move `seen_at` back.

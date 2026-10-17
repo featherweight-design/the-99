@@ -35,6 +35,16 @@ async function main() {
   const rz = await import("../src/lib/social/rule-zero");
   const { loadHomeTables } = await import("../src/lib/social/rule-zero-home");
   const { purgeAccount } = await import("../src/lib/account/purge");
+  const { loadTable, readOnTheSpot } = await import("../src/lib/social/rule-zero-table");
+  const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
+  const { loadDeckProfile } = await import("../src/lib/profile/load");
+  const { computeAndStoreProfile } = await import("../src/lib/profile/stored");
+  // The uncached builds (`unstable_cache` raises outside a request), under the owner's resolved switches.
+  const ownerDeps = (env: NodeJS.ProcessEnv) => ({
+    generation: readCatalogGeneration,
+    compute: (deckId: string, userId: string) => loadDeckProfile(deckId, userId, env),
+    env,
+  });
 
   const befriend = async (a: string, b: string) => {
     const t = await friends.createInvite(a);
@@ -198,6 +208,106 @@ async function main() {
     check("and gone after, with no write between", !(await loadHomeTables(A)).some((t) => t.tableId === T3));
     const P3b = await rz.setTable(A, P3, [seat(pub[A]), seat(pub[B])]);
     check("the pod's next setup deletes its expired table", P3b.kind === "set" && (await count(sql`select count(*)::int as n from rule_zero_tables where id = ${T3}`)) === 0);
+
+    // The table read (PR 2b). A legal deck is 99 Plains under a commander; A is everyone's friend, B and C are not friends.
+    const { rows: basics } = await db.execute<{ oracle_id: string; name: string }>(sql`
+      select oracle_id, name from cards where name in ('Plains', 'Island') order by name`);
+    const ISLAND = basics.find((b) => b.name === "Island")!.oracle_id;
+    const PLAINS = basics.find((b) => b.name === "Plains")!.oracle_id;
+    const legal = async (u: string, name: string) => {
+      const d = await deck(u, name);
+      await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${d}, ${PLAINS}, 99)`);
+      return d;
+    };
+    const legalA = await legal(A, "Ava's legal deck");
+    const legalB = await legal(B, "Bo's legal deck");
+    const legalC = await legal(C, "Cy's legal deck");
+    const P7 = await pod(A, "Reading", [B, C, D]);
+    const t7 = await rz.setTable(A, P7, [seat(pub[A], legalA), seat(pub[B], legalB), seat(pub[C], legalC)]);
+    if (t7.kind !== "set") throw new Error("table fixture refused");
+    const T7 = t7.tableId;
+    const viewC = await loadTable(C, T7);
+    const seatOf = (v: Awaited<ReturnType<typeof loadTable>>, name: string) => v?.seats.find((s) => s.displayName === name);
+    check("a seated player reads the table, every seat", viewC !== null && viewC.seats.length === 3);
+    check("a non-friend's seat shows their deck by name and no publicId", seatOf(viewC, "Bo")?.deck?.name === "Bo's legal deck" && seatOf(viewC, "Bo")?.publicId === null);
+    check("a friend's seat carries their publicId", seatOf(viewC, "Ava")?.publicId === pub[A]);
+    check("only the viewer's own seat carries a deck id", seatOf(viewC, "Cy")?.deck?.deckId === legalC && seatOf(viewC, "Bo")?.deck?.deckId === null && seatOf(viewC, "Ava")?.deck?.deckId === null);
+    const wire = JSON.stringify(viewC);
+    check("the payload names no other account or deck id", ![A, B, legalA, legalB].some((x) => wire.includes(x)));
+    check("a legal deck with no reading is unread", seatOf(viewC, "Bo")?.state.kind === "unread");
+    check("an unseated member reads null", (await loadTable(D, T7)) === null);
+    check("a stranger to the pod reads null", (await loadTable(E, T7)) === null);
+    const bSeat = seatOf(viewC, "Bo")!.seat;
+    check("C reads B's deck on the spot", (await readOnTheSpot(C, T7, bSeat, ownerDeps)) === "read");
+    check("stored as B's reading", (await count(sql`select count(*)::int as n from deck_profiles where deck_id = ${legalB} and user_id = ${B}`)) === 1);
+    check("a second read skips", (await readOnTheSpot(A, T7, bSeat, ownerDeps)) === "skipped");
+    const afterRead = seatOf(await loadTable(C, T7), "Bo");
+    check("the seat is now fresh, with its reading", afterRead?.state.kind === "fresh" && afterRead.value !== null && afterRead.deck?.reading !== null);
+    check("one read seat is not enough to compare", (await loadTable(C, T7))?.read.kind === "notEnough");
+    check("an unseated member cannot read a seat on the spot", (await readOnTheSpot(D, T7, bSeat, ownerDeps)) === "refused");
+    // Stale: the list changes under the reading, still legal. Never recomputed.
+    await db.execute(sql`update deck_cards set quantity = 98 where deck_id = ${legalB} and oracle_id = ${PLAINS}`);
+    await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${legalB}, ${ISLAND}, 1)`);
+    check("a changed list reads stale", seatOf(await loadTable(C, T7), "Bo")?.state.kind === "stale");
+    check("a stale reading is never read on the spot", (await readOnTheSpot(C, T7, bSeat, ownerDeps)) === "skipped");
+    // Unreadable: an older-version row over a dirty list. Its player analyzes it; nobody else computes it.
+    const cSeat = seatOf(viewC, "Cy")!.seat;
+    check("A reads C's deck on the spot", (await readOnTheSpot(A, T7, cSeat, ownerDeps)) === "read");
+    const twoRead = await loadTable(A, T7);
+    check("two read seats make a read, each placed", twoRead?.read.kind === "read" && twoRead.seats.filter((x) => x.read !== null).length === 2, JSON.stringify(twoRead?.read));
+    await db.execute(sql`update deck_profiles set profile_version = 1, dirty = true where deck_id = ${legalC}`);
+    check("an unreadable older row needs analysis", seatOf(await loadTable(A, T7), "Cy")?.state.kind === "needsAnalysis");
+    check("an unreadable older row is never read on the spot", (await readOnTheSpot(A, T7, cSeat, ownerDeps)) === "skipped");
+    // Two viewers polling one unread deck at once: one computes, the other does not.
+    const legalB2 = await legal(B, "Bo's fresh deck");
+    await rz.setSeatDeck(B, T7, legalB2);
+    // The first build is held open until the second poll has answered, and every build is counted: with the lock gone
+    // both would compute, and `firstReading` alone would still let only one publish.
+    let computes = 0;
+    let open!: () => void;
+    const held = new Promise<void>((r) => { open = r; });
+    const counted = (env: NodeJS.ProcessEnv) => {
+      const deps = ownerDeps(env);
+      return {
+        ...deps,
+        compute: async (deckId: string, userId: string) => {
+          computes += 1;
+          if (computes === 1) await held;
+          return deps.compute(deckId, userId);
+        },
+      };
+    };
+    let firstStarted!: () => void;
+    const started = new Promise<void>((r) => { firstStarted = r; });
+    const first = readOnTheSpot(A, T7, bSeat, (env) => { firstStarted(); return counted(env); });
+    await started;
+    const second = await readOnTheSpot(C, T7, bSeat, counted);
+    open();
+    const firstResult = await first;
+    check("two polls at once compute once", second === "busy" && firstResult === "read" && computes === 1, `${firstResult},${second},${computes}`);
+    // The owner presses Analyze, then edits, while another player's on-the-spot build runs: the owner's row stands.
+    const legalB3 = await legal(B, "Bo's raced deck");
+    await rz.setSeatDeck(B, T7, legalB3);
+    const racing = (env: NodeJS.ProcessEnv) => {
+      const deps = ownerDeps(env);
+      return {
+        ...deps,
+        compute: async (deckId: string, userId: string) => {
+          const built = await deps.compute(deckId, userId);
+          await computeAndStoreProfile(legalB3, B, ownerDeps(env));
+          await db.execute(sql`update deck_profiles set dirty = true where deck_id = ${legalB3}`);
+          return built;
+        },
+      };
+    };
+    check("a first reading that loses to the owner's press stores nothing", (await readOnTheSpot(A, T7, bSeat, racing)) === "skipped");
+    check("the owner's edited reading stands, still dirty", (await count(sql`select count(*)::int as n from deck_profiles where deck_id = ${legalB3} and dirty`)) === 1);
+    // A member who leaves the pod loses the table; an expired table reads null.
+    await pods.leavePod(C, P7);
+    check("a member who left reads null", (await loadTable(C, T7)) === null);
+    check("the others no longer see their seat", (await loadTable(A, T7))?.seats.length === 2);
+    await db.execute(sql`update rule_zero_tables set expires_at = now() - interval '1 second' where id = ${T7}`);
+    check("an expired table reads null", (await loadTable(A, T7)) === null);
 
     // The purge: X sits at a two-seat table (it closes), set a table (it goes), and sits at a three-seat one (it stays).
     const P4 = await pod(A, "Two", [X]);

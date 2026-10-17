@@ -234,6 +234,39 @@ export async function readStoredReading(
   };
 }
 
+/**
+ * A deck's stored reading as ANOTHER player's read sees it (Rule 0's table, readiness gaps 2, 8 and 9), on a
+ * transaction the caller holds so every seat comes from one snapshot. Unlike `readStoredReading` it never computes:
+ * a seat at a table is drawn from what its owner has, and the one write another player's read may cause is
+ * `readOnTheSpot`'s, for a deck with no usable row. So the older-version row `readStoredReading` would quietly
+ * rebuild is reported as `rebuildable` instead, for that caller to rebuild under the owner.
+ *
+ * - `none`: no row at all.
+ * - `rebuildable`: an older PROFILE_VERSION over the list it analyzed, clean and legal: the rebuild
+ *   `readStoredReading` makes, deterministic and model-free.
+ * - `unreadable`: a row a newer deployment wrote, or an older one over a dirty or changed list.
+ * - a reading: the current version, with whether it still describes the list.
+ *
+ * Null when the deck is not that owner's.
+ */
+export type SeatReading = "none" | "rebuildable" | "unreadable" | { profile: DeckProfile; fresh: boolean };
+
+export async function seatReadingIn(
+  tx: Tx,
+  deckId: string,
+  ownerId: string,
+): Promise<{ head: ProfileHead; reading: SeatReading } | null> {
+  const { head, row } = await readHeadAndRow(tx, deckId, ownerId);
+  if (!head) return null;
+  if (!row) return { head, reading: "none" };
+  if (row.profileVersion > PROFILE_VERSION) return { head, reading: "unreadable" };
+  if (row.profileVersion < PROFILE_VERSION) {
+    const rebuildable = !row.dirty && deckLegality(head).legal && sameList(row, head);
+    return { head, reading: rebuildable ? "rebuildable" : "unreadable" };
+  }
+  return { head, reading: { profile: row.profile, fresh: sameList(row, head) && !row.dirty } };
+}
+
 /** The stored profile when it is FRESH, else null. */
 export async function readStoredProfile(
   deckId: string,
@@ -291,8 +324,13 @@ export async function computeAndStoreProfile(
   {
     pinTo,
     rebuildOf,
+    firstReading,
   }: {
     pinTo?: CommitPin;
+    /** Rule 0's on-the-spot read (`readOnTheSpot`): the deck's FIRST reading, by a player who is not its owner.
+     *  It writes nothing over a row of any kind, one in this snapshot or one landing before the write: a reading
+     *  the owner pressed, and edited away from, is the owner's to recompute and never another player's. */
+    firstReading?: boolean;
     /** A quiet rebuild of a row an older PROFILE_VERSION wrote: the list the reader's read saw, and
      *  the pin it held. Written only over that list, and the pin is kept. So are the deck notices
      *  marks and the analysis date (`marks`): a rebuild is a deploy's, not the player's, and must
@@ -307,6 +345,7 @@ export async function computeAndStoreProfile(
   if (!head) return null;
   const legality = deckLegality(head);
   if (!legality.legal) return { kind: "illegal", built: legality.built, size: legality.size };
+  if (firstReading && row) return null;
 
   const list = listFingerprint(head);
   // A PIN IS FOR THE LIST THE COMMIT WROTE. An edit landing between the commit and this read has
@@ -514,6 +553,8 @@ export async function computeAndStoreProfile(
           // wrote the current version, and a rebuild finishing after it would put the old marks
           // and date back over a reading the player asked for. Matching nothing, it stores nothing.
           ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} < ${PROFILE_VERSION}` } : {}),
+          // A FIRST READING replaces nothing: a row the owner's press wrote while this computed stands.
+          ...(firstReading ? { setWhere: sql`false` } : {}),
         })
         .returning({ computedAt: deckProfiles.computedAt, dirty: deckProfiles.dirty });
       if (written) {
@@ -531,6 +572,8 @@ export async function computeAndStoreProfile(
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
+  // A first reading that stored nothing is no reading: the row the owner's press wrote is the one that stands.
+  if (firstReading && !stored) return null;
   // THE PRESS WON (review round 5): answer with the reading the store holds, never the computation
   // the guard just discarded. The row is at the current version now, so this read cannot rebuild.
   if (superseded) {
