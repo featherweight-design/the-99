@@ -7,7 +7,7 @@ import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { AverageCard } from "./deck-stats-average";
 import { Shell } from "./deck-stats-shell";
 import { InfoTip } from "../ui/info-tip";
-import { MoneyCard } from "./deck-stats-money";
+import { MoneyCard, type MoneyOverLimit } from "./deck-stats-money";
 import { ResultsCard } from "./deck-stats-results";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
 import type { ManaSupply } from "../../lib/mana/supply";
@@ -286,14 +286,25 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
   );
 }
 
-export function DeckStatsView({ data = null, onShop, onLogGame }: { data?: DeckStatsSlice | null; onShop?: () => void; onLogGame?: () => void }) {
+export function DeckStatsView({
+  data = null,
+  onShop,
+  overLimit = null,
+  onLogGame,
+}: {
+  data?: DeckStatsSlice | null;
+  onShop?: () => void;
+  /** N3 (discovery R3): the to-buy rows over the stand-in limit, for the Money card's Shopping line. */
+  overLimit?: MoneyOverLimit | null;
+  onLogGame?: () => void;
+}) {
   const card = (c: (typeof CARDS)[number]) =>
     c.key === "curve" && data ? (
       <CurveCard key={c.key} data={data} />
     ) : c.key === "jobs" && data?.jobs ? (
       <JobsCard key={c.key} tally={data.jobs} />
     ) : c.key === "money" && data?.money ? (
-      <MoneyCard key={c.key} money={data.money} onShop={onShop} />
+      <MoneyCard key={c.key} money={data.money} onShop={onShop} overLimit={overLimit} />
     ) : c.key === "colors" && data?.mana ? (
       <ColorsCard key={c.key} mana={data.mana} />
     ) : c.key === "average" && data?.average ? (

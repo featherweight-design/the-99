@@ -36,6 +36,9 @@ interface RoleCounterCellProps {
   /** The land cell's other action (Tuning hub R3, `Land cell — balance mana`): open Mana Balance.
    *  `onSeeShelf` takes precedence, so a cell carries one action at most. */
   onBalanceMana?: () => void;
+  /** N1 (discovery R3): open Suggested changes from a short cell with no shelf, on a deck at its body size. The
+   *  slot's third claim: a shelf's `consider →` and the land cell's `balance mana →` both take it first. */
+  onSuggest?: () => void;
   /** M4 (discovery R1): the deck is at its size, so `balance mana →` is Mana Balance's moment while it is drawn. */
   balanceMoment?: boolean;
   /** True when the deck was just filled (`deck.filled && autoCount > 0`). A
@@ -56,11 +59,13 @@ export function RoleCounterCell({
   advisory,
   onSeeShelf,
   onBalanceMana,
+  onSuggest,
   balanceMoment = false,
   justFilled = false,
   was,
 }: RoleCounterCellProps) {
   const balance = onSeeShelf ? undefined : onBalanceMana;
+  const suggest = onSeeShelf || balance ? undefined : onSuggest;
   const manaMoment = useMomentAnchor("mana-balance", { eligible: balanceMoment, copy: momentsCopy.manaBalance, target: false }); // a shortcut, not the tool's target
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
@@ -178,6 +183,11 @@ export function RoleCounterCell({
             <span className="hidden md:inline">{tuningHubShortcutsCopy.balanceMana}</span>
             <span className="md:hidden">{tuningHubShortcutsCopy.balanceManaShort}</span>
           </span>
+        ) : suggest && !inFlight ? (
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
+            <span className="hidden md:inline">{addPanelCopy.strip.suggestLink}</span>
+            <span className="md:hidden">{addPanelCopy.strip.suggestLinkShort}</span>
+          </span>
         ) : (
           /* Whenever the cell is not a control — met, short with no shelf built
              for it, or handed no handler at all — the caption goes and a dash
@@ -210,6 +220,21 @@ export function RoleCounterCell({
         {...manaMoment}
         aria-label={named(tuningHubShortcutsCopy.balanceManaAria(have ?? 0, target))}
         // The shipped interactive cell's border (design table, `Land cell — balance mana`).
+        className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
+      >
+        {face}
+      </button>
+    );
+  }
+
+  if (!onSeeShelf && suggest && !inFlight) {
+    return (
+      <button
+        type="button"
+        onClick={suggest}
+        data-shortcut="suggested-changes"
+        aria-label={named(addPanelCopy.strip.suggestAria(label, have ?? 0, target))}
+        // The shipped interactive cell's border, as the land cell's `balance mana →` draws it (R3 design table, N1).
         className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
       >
         {face}

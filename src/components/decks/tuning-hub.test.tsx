@@ -368,6 +368,31 @@ describe("TuningHub opening a tool", () => {
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
   });
 
+  it("returns an open tool to the tiles on a request with no tool, opening nothing (discovery R3, N1)", async () => {
+    read.mockResolvedValue(empty);
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(tile("suggested")).toBeNull();
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
+    await waitFor(() => expect(tile("suggested")).not.toBeNull());
+    expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
+  });
+
+  it("moves no focus to a tile left on an earlier open when a request returns to the tiles", async () => {
+    read.mockResolvedValue(empty);
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+    fireEvent.click(await waitFor(() => tile("cuts")!));
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
+    await waitFor(() => expect(tile("cuts")).not.toBeNull());
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "suggested", nonce: 1 }} />);
+    expect(await screen.findByRole("heading", { name: "Suggested changes" })).toBeTruthy();
+    (document.activeElement as HTMLElement | null)?.blur();
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
+    await waitFor(() => expect(tile("cuts")).not.toBeNull());
+    expect(document.activeElement).not.toBe(tile("cuts"));
+  });
+
   it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

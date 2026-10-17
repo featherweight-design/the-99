@@ -125,7 +125,7 @@ import { reveal } from "../../lib/ui/reveal";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
 import { useToolLanding } from "../discovery/use-tool-landing";
-import type { ToolLanding } from "../../lib/discovery/tools";
+import { TOOL_PARAM, toolLanding, type ToolId, type ToolLanding } from "../../lib/discovery/tools";
 import { useMergedRef } from "../ui/use-merged-ref";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 
@@ -381,7 +381,13 @@ export function BuilderShell({
   const [filter, setFilter] = useState<"all" | "shopping">(
     landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
   );
-  useToolLanding(landing, landingRequest ?? deck.id);
+  // A nudge's press (discovery R3, N1 to N3) lands as Try it does: it writes `?tool=` and hands the hook its own landing,
+  // so the halo, the visit and the moment follow one rule. Newer than the page's landing, so it wins until the next one.
+  const [pressedLanding, setPressedLanding] = useState<{ landing: ToolLanding; nonce: number } | null>(null);
+  useToolLanding(
+    pressedLanding?.landing ?? landing,
+    pressedLanding ? `press:${pressedLanding.nonce}` : (landingRequest ?? deck.id),
+  );
   // The grouping persists per reader, as the List / Card view does (`DECK_GROUPING_KEY`): "I read decks by role"
   // is a fact about the reader, not about one deck. By type until this browser says otherwise, which is also what
   // the server renders.
@@ -536,6 +542,25 @@ export function BuilderShell({
       setFilter(next);
     },
     [setLockMode],
+  );
+  // A nudge's press: open the tool's tab (and Your deck's Shopping view), then land on its target. Only a nudge whose
+  // tool is on for this reader is drawn, so the registry's switch is already decided.
+  const setDeckPanel = deckPanel[1];
+  const pressTool = useCallback(
+    (id: ToolId) => {
+      const next = toolLanding(id, () => true);
+      if (next === null || next.lands.kind !== "deck") return;
+      setView(next.lands.tab);
+      if (next.lands.view === "shopping") {
+        setDeckPanel("list");
+        changeFilter("shopping");
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set(TOOL_PARAM, id);
+      mirrorUrl(url, window.history.state);
+      setPressedLanding((p) => ({ landing: next, nonce: (p?.nonce ?? 0) + 1 }));
+    },
+    [changeFilter, setDeckPanel],
   );
   // Card details' `Tokens ›` asks for the deck's list at All, where the Tokens group is drawn: from Analysis, Consider or Games too.
   useEffect(() => {
@@ -1478,6 +1503,9 @@ export function BuilderShell({
   // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
   // Not while Analysis is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
+  // Whether the Tuning hub draws for these permits. Mana Balance needs no reading, so with it on the hub draws for any
+  // deck. One rule for the hub and for the panel deciding where Suggested changes' landing target is.
+  const hubDraws = (permits: readonly Bracket[] | null) => permits !== null || built > bodySize || manaBalanceEnabled;
   const offAnalysis = view !== "analysis";
   // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
@@ -1590,9 +1618,13 @@ export function BuilderShell({
               onOpenBracket={() => setView("analysis")}
               notice={headerNoticeTag}
               onOpenNotices={openNoticesSheet}
-              onProposedCuts={tuningHubEnabled && proposedCutsEnabled
-                ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
-                : undefined}
+              // N2b (discovery R3): on Proposed cuts' own switch. With the hub off, the press lands on the panel the tab
+              // mounts directly (R3 gap 7).
+              onProposedCuts={!proposedCutsEnabled
+                ? undefined
+                : tuningHubEnabled
+                  ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
+                  : () => pressTool("proposed-cuts")}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //
@@ -1798,8 +1830,21 @@ export function BuilderShell({
               justFilled={deck.filled && autoCount > 0}
               wasCounts={wasCounts}
               labelRows={labelRows}
-              onBalanceMana={tuningHubEnabled && manaBalanceEnabled && coloredPip
-                ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
+              // N2 (discovery R3): on Mana Balance's own switch, as gap 7 has it for `Proposed cuts →`.
+              onBalanceMana={!(manaBalanceEnabled && coloredPip)
+                ? undefined
+                : tuningHubEnabled
+                  ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
+                  : () => pressTool("mana-balance")}
+              // N1 (discovery R3): a deck at its body size (98 with a partner) offers Suggested changes from a short
+              // cell. It lands on the hub's tile, or with the hub off on the panel, or on the empty state when no
+              // reading is held (R3 gap 8); it never runs anything.
+              onSuggest={tuningEnabled && analysisEnabled && atSize
+                ? () => {
+                    // A hub tool left open hides the tiles: back to them first, so the tile is there to land on.
+                    if (tuningHubEnabled) setHubRequest({ tool: null, nonce: (hubNonce.current += 1) });
+                    pressTool("suggested-changes");
+                  }
                 : undefined}
               balanceMoment={atSize && coloredPip}
             />
@@ -1909,14 +1954,14 @@ export function BuilderShell({
                   }
                   cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
                   mana={manaBalanceEnabled ? manaPanel : undefined}
-                  hub={!tuningHubEnabled ? undefined : (permits) => (
+                  hubDraws={hubDraws}
+                  hub={!tuningHubEnabled ? undefined : (permits, drawn) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      // Mana Balance needs no reading, so with it on the hub draws for any deck.
-                      drawn={permits !== null || built > bodySize || manaBalanceEnabled}
+                      drawn={drawn}
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
@@ -2171,6 +2216,7 @@ export function BuilderShell({
                 grouping={grouping}
                 onFilterChange={changeFilter}
                 onGroupingChange={setGrouping}
+                onLandTool={pressTool}
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
                 autoCount={autoCount}
                 keptCount={keptCount}
