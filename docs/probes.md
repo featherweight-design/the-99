@@ -2970,3 +2970,14 @@ scratch branch only, and refuses staging and production by `neon.branch_id`.
   models over a 1280x720 frame (two cards, flat and tilted 15 degrees, off-centre): the sharpness gate holds down to a card
   covering 4% of the frame and fails at 3%; `MIN_CARD_AREA` (5%) is the tighter of the two, and the embedding stays within 0.9 of
   the card seen at 30% only from about 12% of the frame (about 8% reads 0.74 to 0.81, 5% reads 0.52 to 0.57).
+
+## probe:deck-scroll
+
+Opening a deck lands at the top of its page. Hugh saw Deck Details land at the bottom once, near the tokens, after a scroll
+to the bottom of /decks (Android, production, 2026-10-17). It is **parked as can't-reproduce**. Every path landed at y=0 in
+Chromium and WebKit at 390x844, at full speed and under Slow 4G with a 4x CPU throttle. The paths: /decks, Home and a
+folder, each scrolled to the bottom; Back to the restored list, then another deck; and the deck a phone prefetches in full,
+which commits with no loading screen. On deployed staging, READ-ONLY: it signs in with a minted Clerk ticket and only loads
+pages, scrolls and presses links. Exits 1 if any landing settles anywhere but 0. Run it first if the report comes back, with
+`PROBE_STARTS`, `PROBE_SIZE`, `PROBE_ENGINES` and `PROBE_SLOW=1` to match the reader's device and the page they came from.
+
