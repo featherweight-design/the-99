@@ -117,41 +117,42 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           ) : null}
         </span>
 
-        {/* Desktop's chip row (`.br`) sits in the name column with the sub line beside the chip; on the phone the row
-            dissolves (`contents`) so the chip takes its own row and the sub line the row under it. */}
+        {/* The phone's chip line: the chip, then the flag at the right, wrapping onto a second line when both do not fit
+            (a range chip and a flag at 320px), and the sub line always on a line of its own. On desktop this wrapper
+            dissolves (`contents`): the chip row (`.br`) sits in the name column with the sub line beside the chip, and
+            the flag in the right column over the counts. */}
         {chip ? (
-          <span className="max-xl:contents xl:col-start-2 xl:row-start-2 xl:mt-[4px] xl:flex xl:min-w-0 xl:flex-wrap xl:items-center xl:gap-x-[10px] xl:gap-y-[4px] xl:self-start">
-            <span className="max-xl:col-start-1 max-xl:col-end-3 max-xl:row-start-2 max-xl:mt-[10px] max-xl:self-center">
+          <span className="col-start-1 col-end-4 row-start-2 mt-[10px] flex flex-wrap items-center justify-between gap-[8px] xl:contents">
+            <span className="max-xl:contents xl:col-start-2 xl:row-start-2 xl:mt-[4px] xl:flex xl:min-w-0 xl:flex-wrap xl:items-center xl:gap-x-[10px] xl:gap-y-[4px] xl:self-start">
               <BracketChip permits={chip.permits} answered={chip.answered} />
+              {state.kind === "stale" || draw.rangeLine ? (
+                <span className="order-last flex basis-full flex-wrap items-center gap-x-[10px] gap-y-[4px] xl:contents">
+                  {state.kind === "stale" ? (
+                    <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
+                      <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
+                      {copy.stale}
+                    </span>
+                  ) : null}
+                  {draw.rangeLine ? (
+                    <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] xl:text-[10px]">
+                      {rangeLineText(draw.rangeLine)}
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
             </span>
-            {state.kind === "stale" || draw.rangeLine ? (
-              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-xl:col-start-1 max-xl:col-end-4 max-xl:row-start-3 max-xl:mt-[8px] xl:contents">
-                {state.kind === "stale" ? (
-                  <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
-                    <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
-                    {copy.stale}
-                  </span>
-                ) : null}
-                {draw.rangeLine ? (
-                  <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] xl:text-[10px]">
-                    {rangeLineText(draw.rangeLine)}
-                  </span>
-                ) : null}
+            {kind ? (
+              <span className="ml-auto xl:col-start-3 xl:row-start-1 xl:ml-0 xl:self-end xl:justify-self-end">
+                <FlagTag kind={kind} />
               </span>
             ) : null}
-          </span>
-        ) : null}
-
-        {kind ? (
-          <span className="col-start-3 row-start-2 self-center justify-self-end max-xl:mt-[10px] xl:row-start-1 xl:self-end">
-            <FlagTag kind={kind} />
           </span>
         ) : null}
 
         {chip && draw.counts ? (
           <span
             className={
-              "col-start-1 col-end-4 row-start-4 mt-[12px] xl:col-start-3 xl:col-end-4 xl:mt-0 xl:justify-self-end "
+              "col-start-1 col-end-4 row-start-3 mt-[12px] xl:col-start-3 xl:col-end-4 xl:mt-0 xl:justify-self-end "
               + (kind ? "xl:row-start-2 xl:mt-[4px] xl:self-start" : "xl:row-start-1 xl:row-end-3 xl:self-center")
             }
           >
@@ -300,7 +301,12 @@ export function driversSentence(draw: SeatDraw): string | null {
   if (d.kind === "ruledOut") {
     const nouns = deckAnalysisCopy.verdict.ruleNouns;
     return d.reasons
-      .map((r) => copy.whyLimit(r.have, nouns[r.rule][r.have === 1 ? 0 : 1], BRACKET_NAMES[d.below], r.limit))
+      .map((r) => {
+        // At Core and Upgraded the extra-turn rule counts combos that loop turns, not extra-turn cards (`slotDeck`'s
+        // loop clause); only Exhibition counts the cards themselves.
+        const noun = r.rule === "extraTurns" && d.below > 1 ? copy.loopNouns : nouns[r.rule];
+        return copy.whyLimit(r.have, noun[r.have === 1 ? 0 : 1], BRACKET_NAMES[d.below], r.limit);
+      })
       .join(" ");
   }
   if (d.kind === "assembled") {

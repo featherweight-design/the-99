@@ -10,6 +10,7 @@ import type { TableView } from "../../lib/rule-zero/table-view";
 import { closesWhen } from "../../lib/social/when";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
+import { driversSentence } from "./table-seat";
 
 const NOW = new Date("2026-10-16T21:40:00Z");
 const draw = (view: TableView, gamesEnabled = true) =>
@@ -207,5 +208,13 @@ describe("TableClosed", () => {
   it("claims no shared bracket when the read seats read differently", () => {
     draw(TABLES.mixed);
     expect(headline()).toHaveTextContent(copy.read.balancedMixed);
+  });
+
+  it("words an extra-turn reason at Core or Upgraded as combos that loop turns, and at Exhibition as cards", () => {
+    const seat = (below: 1 | 2 | 3, have: number) =>
+      ({ drivers: { kind: "ruledOut", below, reasons: [{ rule: "extraTurns", have, limit: 0 }] }, chip: null, rangeLine: null, seat: { you: false, displayName: "Colin" } }) as never;
+    expect(driversSentence(seat(3, 1))).toBe("1 combo that loops turns, where Upgraded allows 0.");
+    expect(driversSentence(seat(2, 2))).toBe("2 combos that loop turns, where Core allows 0.");
+    expect(driversSentence(seat(1, 1))).toBe("1 extra-turn card, where Exhibition allows 0.");
   });
 });

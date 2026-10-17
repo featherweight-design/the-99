@@ -33,7 +33,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   const closed = await loadClosedTable(userId, id);
   if (!closed) notFound();
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-1 flex-col">
       <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />
     </div>
   );

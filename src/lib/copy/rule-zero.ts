@@ -120,6 +120,8 @@ export const ruleZeroCopy = {
     whyCombo: (a: string, b: string, tutors: number) =>
       `it can find a two-card combo, ${a} + ${b}, with ${tutors === 1 ? "1 tutor" : `${tutors} tutors`} to reach it. Upgraded allows a combo only as a draw away.`,
     whyLimit: (have: number, label: string, below: string, limit: number) => `${have} ${label}, where ${below} allows ${limit}.`,
+    // What Core's and Upgraded's extra-turn limit counts: a two-card combo that loops turns (the brackets sheet's words).
+    loopNouns: ["combo that loops turns", "combos that loop turns"] as const,
     whyLow: (bracket: string) => `nothing we counted passes ${bracket}’s limits, and the rest of the table reads higher. Counts can miss cards, so ask what it’s built to do.`,
     // T6: a low range nobody answered. `name` is null for the viewer's own seat.
     whyLowRange: (lo: string, hi: string, name: string | null) =>
