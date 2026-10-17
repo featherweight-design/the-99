@@ -1,8 +1,8 @@
 import { adminCopy } from "../copy/admin";
 import type { Account } from "./accounts";
 
-/** An account as the admin's pages name it: its Clerk name, else its email, else its id. */
-export const accountName = (a: Account) => a.name ?? a.email ?? a.id;
+/** An account as the admin's pages name it: its masked name (Admin R3, D1). */
+export const accountName = (a: Account) => a.name;
 
 /**
  * How a page names the accounts an override or an event carries (the switch page's and the group

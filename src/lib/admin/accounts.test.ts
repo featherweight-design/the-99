@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: vi.fn(), auth: vi.fn() }));
 vi.mock("../../db", () => ({ db: {} }));
 
-const { listAccounts, orderAccounts } = await import("./accounts");
+const { findAccountIdByEmail, listAccounts, orderAccounts, readIdentity } = await import("./accounts");
 
-const user = (id: string, fullName: string | null, email: string | null = null) => ({
-  id,
-  fullName,
-  username: null,
-  primaryEmailAddress: email ? { emailAddress: email } : null,
-});
+/** A Clerk user: `name` is split on its first space into first and last name, as Clerk stores them. */
+const user = (id: string, name: string | null, email: string | null = null) => {
+  const [firstName, ...rest] = name ? name.split(" ") : [null];
+  return { id, firstName, lastName: rest.length ? rest.join(" ") : null, username: null, primaryEmailAddress: email ? { emailAddress: email } : null };
+};
+const tail = (id: string) => `Account ·${id.slice(-4)}`;
 
 describe("listAccounts", () => {
   it("pages through Clerk until a short page, and puts the owner first", async () => {
@@ -25,8 +25,8 @@ describe("listAccounts", () => {
     expect(out.clerk).toBe("ok");
     expect(out.accounts).toHaveLength(502);
     expect(out.accounts.slice(0, 2)).toEqual([
-      { id: "user_owner", name: "Hugh", email: null },
-      { id: "user_mara", name: "Mara", email: "mara@example.com" },
+      { id: "user_owner", name: "Hugh", email: null, named: true },
+      { id: "user_mara", name: "Mara", email: "m•••@e•••.com", named: true },
     ]);
   });
 
@@ -42,8 +42,8 @@ describe("listAccounts", () => {
     expect(out).toEqual({
       clerk: "down",
       accounts: [
-        { id: "user_b", name: null, email: null },
-        { id: "user_a", name: null, email: null },
+        { id: "user_b", name: tail("user_b"), email: null, named: false },
+        { id: "user_a", name: tail("user_a"), email: null, named: false },
       ],
     });
     error.mockRestore();
@@ -55,7 +55,7 @@ describe("listAccounts' deadline", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const listUsers = vi.fn(() => new Promise<{ data: never[] }>(() => {}));
     const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set(), deadlineMs: 20 });
-    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: null, email: null }] });
+    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: tail("user_a"), email: null, named: false }] });
     expect(listUsers).toHaveBeenCalledTimes(1);
     error.mockRestore();
   });
@@ -85,7 +85,7 @@ describe("listAccounts' deadline", () => {
 
   it("uses Clerk's answer when it lands inside the deadline", async () => {
     const out = await listAccounts({ listUsers: async () => ({ data: [user("user_a", "Ana")] }), storedUserIds: async () => [], ownerIds: new Set(), deadlineMs: 1000 });
-    expect(out).toEqual({ clerk: "ok", accounts: [{ id: "user_a", name: "Ana", email: null }] });
+    expect(out).toEqual({ clerk: "ok", accounts: [{ id: "user_a", name: "Ana", email: null, named: true }] });
   });
 
   it("refuses a read that fills every page, and takes the stored ids, rather than calling it whole", async () => {
@@ -95,7 +95,7 @@ describe("listAccounts' deadline", () => {
     const listUsers = vi.fn(async () => ({ data: full }));
     const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set() });
     expect(listUsers).toHaveBeenCalledTimes(MAX_PAGES);
-    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: null, email: null }] });
+    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: tail("user_a"), email: null, named: false }] });
     error.mockRestore();
   });
 
@@ -114,17 +114,60 @@ describe("listAccounts' deadline", () => {
   });
 });
 
+describe("listAccounts masks on the server", () => {
+  it("lists a masked name and email, and the payload carries neither whole", async () => {
+    const out = await listAccounts({
+      listUsers: async () => ({ data: [user("user_colin", "Colin Reyes", "colin@gmail.com")] }),
+      storedUserIds: async () => [],
+      ownerIds: new Set(),
+    });
+    expect(out.accounts).toEqual([{ id: "user_colin", name: "Colin R.", email: "c•••@g•••.com", named: true }]);
+    const payload = JSON.stringify(out);
+    expect(payload).not.toContain("Reyes");
+    expect(payload).not.toContain("colin@gmail.com");
+  });
+});
+
+describe("readIdentity", () => {
+  const deps = (getUser: (id: string) => Promise<unknown>) => ({ getUser, findByEmail: async () => [] }) as never;
+
+  it("answers the whole name and email of one account", async () => {
+    const out = await readIdentity("user_colin", deps(async () => user("user_colin", "Colin Reyes", "colin@gmail.com")));
+    expect(out).toEqual({ id: "user_colin", fullName: "Colin Reyes", email: "colin@gmail.com" });
+  });
+
+  it("is null for a user Clerk does not hold, and throws when Clerk fails", async () => {
+    expect(await readIdentity("user_x", deps(async () => null))).toBeNull();
+    await expect(readIdentity("user_x", deps(async () => { throw new Error("down"); }))).rejects.toThrow("down");
+  });
+});
+
+describe("findAccountIdByEmail", () => {
+  const deps = (users: { id: string; addresses: string[] }[]) =>
+    ({ getUser: async () => null, findByEmail: async () => users.map((u) => ({ id: u.id, emailAddresses: u.addresses.map((emailAddress) => ({ emailAddress })) })) }) as never;
+
+  it("answers the one account whose address equals the input exactly, whatever case Clerk stored", async () => {
+    expect(await findAccountIdByEmail("colin@gmail.com", deps([{ id: "user_colin", addresses: ["Colin@Gmail.com"] }]))).toBe("user_colin");
+  });
+
+  it("is null when Clerk's answer does not hold the address exactly, or two accounts hold it", async () => {
+    expect(await findAccountIdByEmail("colin@gmail.com", deps([{ id: "user_c", addresses: ["colin@gmail.co"] }]))).toBeNull();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await findAccountIdByEmail("a@b.com", deps([{ id: "u1", addresses: ["a@b.com"] }, { id: "u2", addresses: ["a@b.com"] }]))).toBeNull();
+    error.mockRestore();
+  });
+});
+
 describe("orderAccounts", () => {
-  it("sorts by name, then email, then id, case-insensitively", () => {
+  it("sorts by masked name case-insensitively, the accounts with no name last, then by id", () => {
     const out = orderAccounts(
       [
-        { id: "u3", name: null, email: null },
-        { id: "u2", name: null, email: "bea@example.com" },
-        { id: "u1", name: "alex", email: null },
-        { id: "u0", name: "Cleo", email: null },
+        { id: "u3", name: "Account ·u3", email: null, named: false },
+        { id: "u1", name: "alex", email: null, named: true },
+        { id: "u0", name: "Cleo", email: null, named: true },
       ],
       new Set(),
     );
-    expect(out.map((a) => a.id)).toEqual(["u1", "u2", "u0", "u3"]);
+    expect(out.map((a) => a.id)).toEqual(["u1", "u0", "u3"]);
   });
 });
