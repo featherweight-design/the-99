@@ -215,6 +215,70 @@ describe("useToolLanding", () => {
     expect(window.location.search).toBe("?tool=top-off");
   });
 
+  it("holds a claim queued for the visit lock ahead of it, so no other bubble shows beside its halo", async () => {
+    // A FIFO lock whose holders each wait at their own gate: Split's claim queues first, the landing's visit write
+    // behind it, so the claim's continuation runs while the visit is still free.
+    const opens: (() => void)[] = [];
+    const gates: Promise<void>[] = [0, 1, 2, 3].map(() => new Promise<void>((r) => opens.push(r)));
+    let chain: Promise<unknown> = Promise.resolve();
+    let n = 0;
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: {
+        request: (_name: string, fn: () => unknown) => {
+          const gate = gates[Math.min(n++, gates.length - 1)];
+          const run = chain.then(async () => {
+            await gate;
+            return fn();
+          });
+          chain = run.catch(() => {});
+          return run;
+        },
+      },
+    });
+    const openGate = () => opens[0]();
+    try {
+      at("?tool=top-off");
+      let draw: (() => void) | null = null;
+      function Later() {
+        const [on, setOn] = useState(false);
+        useEffect(() => {
+          draw = () => setOn(true);
+        }, []);
+        return on ? <Control id="top-off" name="Choose the last" /> : null;
+      }
+      mount(
+        "top-off",
+        <>
+          <Anchor id="matchups" name="Split" />
+          <Later />
+        </>,
+      );
+      onScreen("Split");
+      // The window closes: Split's claim is queued at the lock, not yet run.
+      await act(async () => {
+        vi.advanceTimersByTime(ARRIVE_MS);
+      });
+      expect(screen.queryByRole("note")).toBeNull();
+      act(() => draw!());
+      await flush();
+      expect(screen.getByRole("button", { name: "Choose the last" }).hasAttribute(HALO_ATTR)).toBe(true);
+      await act(async () => openGate());
+      await flush();
+      // The claim has landed and its continuation run, before the landing's write: the hold alone keeps Split away.
+      expect(screen.queryByRole("note", { name: "Split, a tip" })).toBeNull();
+      await act(async () => opens.slice(1).forEach((o) => o()));
+      await flush();
+      await act(async () => {
+        vi.advanceTimersByTime(SPENT_AFTER_MS * 2);
+      });
+      expect(screen.queryByRole("note", { name: "Split, a tip" })).toBeNull();
+      expect(spendMomentAction).not.toHaveBeenCalledWith("matchups");
+    } finally {
+      delete (navigator as { locks?: unknown }).locks;
+    }
+  });
+
   it("leaves the visit free when it haloes nothing", async () => {
     at("?tool=top-off");
     mount("top-off", <Control id="matchups" name="Split" />);

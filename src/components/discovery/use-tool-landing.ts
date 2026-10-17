@@ -60,8 +60,11 @@ export function useToolLanding(landing: Pick<ToolLanding, "tool" | "target" | "m
         // Only a halo spends: a target gone between the wait and the halo leaves its tip for a later visit.
         if (targets.haloTarget(target)) {
           // One guide at a time: a bubble already showing closes, unspent, so its moment comes back on a later visit.
-          yieldBubble();
-          void withVisitLock(() => takeVisit()).finally(spend);
+          const release = yieldBubble();
+          void withVisitLock(() => takeVisit()).finally(() => {
+            release();
+            spend();
+          });
         }
       }
       strip();
