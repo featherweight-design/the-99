@@ -228,6 +228,7 @@
     "catalog:fetch": "tsx scripts/catalog-fetch.ts",
     "db:copy:combos": "tsx scripts/copy-combos.ts",
     "db:copy:index": "tsx scripts/copy-index.ts",
+    "db:copy:scan-index": "tsx scripts/copy-scan-index.ts",
     "probe:catalog-copy": "tsx scripts/probe-catalog-copy.ts",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",

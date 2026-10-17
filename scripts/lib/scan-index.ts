@@ -11,6 +11,11 @@ export type ScanRows = {
   keys: [scryfallId: string, face: string, oracleId: string][];
   /** rows × dim, unit length. */
   vectors: Float32Array;
+  /**
+   * Each row's embedding as the source database printed it, when the rows come from one (the copy). Written as given,
+   * because a halfvec read into floats and printed again does not always land on the same fp16 value.
+   */
+  literals?: string[];
 };
 
 /** The fewest rows a real index publishes: the every-printing gallery held 103,823 on 2026-10-14. */
@@ -55,43 +60,80 @@ export function scanRowsRefusal(r: ScanRows & { dim: number; rows: number }, min
   return null;
 }
 
+/** One parameterised statement against the target: a `PoolClient`'s `query`, shaped down to what the publish uses. */
+export type ScanQuery = (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }>;
+
 /**
- * Replaces the index and its meta row in ONE transaction on `client`. The HNSW index is dropped first and built
+ * The publish's statements, inside a transaction the caller opened: the old rows and the index go, the new rows go
+ * in, the index is built again, the meta row is written and the count is checked. `beforeCommit` runs last, still
+ * inside the transaction (the copy's verify against its source); throwing from it rolls everything back.
+ */
+export async function publishScanIndexIn(
+  q: ScanQuery,
+  r: ScanRows,
+  log: (s: string) => void = () => {},
+  beforeCommit: () => Promise<void> = async () => {},
+): Promise<void> {
+  const rows = r.keys.length;
+  await q("set local maintenance_work_mem = '256MB'");
+  await q("drop index if exists scan_index_embedding_idx");
+  await q("delete from scan_index");
+  for (let start = 0; start < rows; start += BATCH) {
+    const end = Math.min(rows, start + BATCH);
+    const params: string[] = [];
+    const values: string[] = [];
+    for (let i = start; i < end; i++) {
+      const [sid, face, oid] = r.keys[i];
+      const p = params.length;
+      params.push(sid, face, oid, r.literals?.[i] ?? vectorLiteral(r.vectors.subarray(i * EMBED_DIM, (i + 1) * EMBED_DIM)));
+      values.push(`($${p + 1}::uuid, $${p + 2}, $${p + 3}::uuid, $${p + 4}::halfvec(${EMBED_DIM}))`);
+    }
+    await q(`insert into scan_index (scryfall_id, face, oracle_id, embedding) values ${values.join(",")}`, params);
+    if ((start / BATCH) % 40 === 0) log(`  ${end} of ${rows} rows`);
+  }
+  log("  building the HNSW index");
+  await q("create index scan_index_embedding_idx on scan_index using hnsw (embedding halfvec_cosine_ops)");
+  await q(
+    `insert into scan_index_meta (id, version, model, rows, published_at) values (1, $1, $2, $3, now())
+     on conflict (id) do update set version = excluded.version, model = excluded.model, rows = excluded.rows, published_at = now()`,
+    [r.version, r.model, rows],
+  );
+  const [{ n }] = (await q("select count(*)::int as n from scan_index")).rows as { n: number }[];
+  if (n !== rows) throw new Error(`published ${n} rows, expected ${rows}`);
+  await beforeCommit();
+}
+
+/**
+ * `publishScanIndexIn` in a transaction of its own on `client`: the index and its meta row are replaced in ONE
+ * transaction. The HNSW index is dropped first and built
  * after the rows, which is far quicker than maintaining it row by row; lookups wait on the table until it commits
  * (the drop holds an exclusive lock), and a failure anywhere rolls every step back, the old index included.
  */
 export async function publishScanIndex(client: PoolClient, r: ScanRows, log: (s: string) => void = () => {}): Promise<void> {
-  const rows = r.keys.length;
   await client.query("begin");
   try {
-    await client.query("set local maintenance_work_mem = '256MB'");
-    await client.query("drop index if exists scan_index_embedding_idx");
-    await client.query("delete from scan_index");
-    for (let start = 0; start < rows; start += BATCH) {
-      const end = Math.min(rows, start + BATCH);
-      const params: string[] = [];
-      const values: string[] = [];
-      for (let i = start; i < end; i++) {
-        const [sid, face, oid] = r.keys[i];
-        const p = params.length;
-        params.push(sid, face, oid, vectorLiteral(r.vectors.subarray(i * EMBED_DIM, (i + 1) * EMBED_DIM)));
-        values.push(`($${p + 1}::uuid, $${p + 2}, $${p + 3}::uuid, $${p + 4}::halfvec(${EMBED_DIM}))`);
-      }
-      await client.query(`insert into scan_index (scryfall_id, face, oracle_id, embedding) values ${values.join(",")}`, params);
-      if ((start / BATCH) % 40 === 0) log(`  ${end} of ${rows} rows`);
-    }
-    log("  building the HNSW index");
-    await client.query("create index scan_index_embedding_idx on scan_index using hnsw (embedding halfvec_cosine_ops)");
-    await client.query(
-      `insert into scan_index_meta (id, version, model, rows, published_at) values (1, $1, $2, $3, now())
-       on conflict (id) do update set version = excluded.version, model = excluded.model, rows = excluded.rows, published_at = now()`,
-      [r.version, r.model, rows],
-    );
-    const [{ n }] = (await client.query("select count(*)::int as n from scan_index")).rows as { n: number }[];
-    if (n !== rows) throw new Error(`published ${n} rows, expected ${rows}`);
+    await publishScanIndexIn((text, params) => client.query(text, params), r, log);
     await client.query("commit");
   } catch (err) {
     await client.query("rollback");
     throw err;
   }
+}
+
+/**
+ * The index as one comparable figure: its row count and an md5 over every row's text in key order. The embedding's
+ * text is its halfvec's, so a copy that wrote the same fp16 values reads the same figure on both sides.
+ */
+export const SCAN_FIGURE_SQL = `
+  select count(*)::int as rows,
+         md5(coalesce(string_agg(scryfall_id::text || ' ' || face || ' ' || oracle_id::text || ' ' || embedding::text,
+                                 chr(30) order by scryfall_id, face), '')) as md5
+  from scan_index`;
+
+/** A halfvec's text form (`[0.1,-0.2,...]`) into `out` at `offset`. */
+export function parseHalfvec(text: string, out: Float32Array, offset: number): void {
+  const inner = text.trim().replace(/^\[|\]$/g, "");
+  const parts = inner.split(",");
+  if (parts.length !== EMBED_DIM) throw new Error(`a row holds ${parts.length} values, not ${EMBED_DIM}`);
+  for (let d = 0; d < EMBED_DIM; d++) out[offset + d] = Number(parts[d]);
 }
