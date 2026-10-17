@@ -110,8 +110,8 @@ describe("a deck for each seat (U3, U4, V2, V3)", () => {
   it("opens a friend's decks by name and commander, and a pick returns to the seats", () => {
     toDecks();
     fireEvent.click(screen.getByText(c.pick).closest("button")!);
-    const list = screen.getByRole("listbox", { name: c.friendDecksList("Peter") });
-    expect(within(list).getAllByRole("option").map((o) => o.textContent)).toEqual([
+    const list = screen.getByRole("list", { name: c.friendDecksList("Peter") });
+    expect(within(list).getAllByRole("button").map((o) => o.textContent)).toEqual([
       "Giada AngelsGiada Angels commander",
       "Miku TokensMiku Tokens commander",
       `?${c.leaveItRow("Peter")}${c.leaveItSub}`,

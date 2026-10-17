@@ -55,6 +55,13 @@ export function TableLive({
 }) {
   const router = useRouter();
   const [view, setView] = useState(initial);
+  // A fresh server draw (the router's refresh after `Seats` saves) wins over what the page shows, adopted during
+  // render so the old seats never paint once more. The visit's `seenAt` stays its first check's.
+  const [drawn, setDrawn] = useState(initial);
+  if (initial !== drawn) {
+    setDrawn(initial);
+    setView(initial);
+  }
   const [closed, setClosed] = useState<Closed | null>(null);
   const [updated, setUpdated] = useState<string | undefined>(undefined);
   const [now, setNow] = useState(serverNow);

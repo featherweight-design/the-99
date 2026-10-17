@@ -51,7 +51,7 @@ export const ruleZeroCopy = {
     // Not drawn: your own seat with no deck (you have none, or Seats reopens a seat you cleared). Its pick is made on
     // the table, from your own seat.
     yourSeatWaits: "Pick yours on the table",
-    friendDecksList: (name: string) => `${name}’s decks`, // the listbox's name
+    friendDecksList: (name: string) => `${name}’s decks`, // the list's name
     backToSeats: "Back to the seats", // the ‹ on a player's decks
     whoGroup: "Who is playing", // the tiles' group name
     close: "Close",

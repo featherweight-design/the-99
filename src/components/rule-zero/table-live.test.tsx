@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
 vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen }));
+vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
 
 import { TABLES } from "../../lib/rule-zero/table-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
@@ -93,6 +94,16 @@ describe("TableLive", () => {
     expect(within(readCard()).getByTestId("since")).toBeInTheDocument();
     expect(within(readCard()).getByText(/^updated /)).toBeInTheDocument();
     expect(m.seen).toHaveBeenLastCalledWith(base.tableId, later(60_000).toISOString());
+  });
+
+  it("draws a fresh server payload at once (Seats saved, the router refreshed), keeping the visit's seenAt", async () => {
+    fetchMock.mockResolvedValue(open(base));
+    const { rerender } = render(<TableLive initial={base} gamesEnabled now={AT} />);
+    await settle();
+    expect(seatOf("Colin")).toBeTruthy();
+    const reseated = { ...base, seats: base.seats.filter((s) => s.displayName !== "Colin") };
+    rerender(<TableLive initial={reseated} gamesEnabled now={AT} />);
+    expect(screen.queryByRole("article", { name: "Colin’s seat" })).toBeNull();
   });
 
   it("takes the visit's seenAt from its first check, not from a payload Back restored from the router's cache", async () => {

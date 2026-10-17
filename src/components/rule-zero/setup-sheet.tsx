@@ -110,35 +110,36 @@ export function SetupSheet({
         screen={`friend-${m.publicId}`}
         width={640}
       >
-        <div role="listbox" aria-label={m.kind === "you" ? copy.yourDecksTitle : copy.friendDecksList(name)} className="flex flex-col gap-[2px] pt-[12px] md:pt-[16px]">
+        <ul aria-label={m.kind === "you" ? copy.yourDecksTitle : copy.friendDecksList(name)} className="m-0 flex list-none flex-col gap-[2px] p-0 pt-[12px] md:pt-[16px]">
           {m.decks.map((d) => (
-            <button
-              key={d.deckId}
-              type="button"
-              role="option"
-              aria-selected={picks[m.publicId] === d.deckId}
-              onClick={() => choose(d.deckId)}
-              className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-selected:bg-[color:var(--elevated)]"
-            >
-              <DeckArt deck={d} />
-              <DeckText name={d.name} sub={d.commanderName} gap={4} />
-            </button>
+            <li key={d.deckId}>
+              <button
+                type="button"
+                aria-pressed={picks[m.publicId] === d.deckId}
+                onClick={() => choose(d.deckId)}
+                className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-pressed:bg-[color:var(--elevated)]"
+              >
+                <DeckArt deck={d} />
+                <DeckText name={d.name} sub={d.commanderName} gap={4} />
+              </button>
+            </li>
           ))}
           {m.kind === "you" ? null : (
-            <button
-              type="button"
-              role="option"
-              aria-selected={picks[m.publicId] === null}
-              onClick={() => choose(null)}
-              className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-selected:bg-[color:var(--elevated)]"
-            >
-              <span aria-hidden className="flex h-[42px] w-[58px] flex-none items-center justify-center rounded-[7px] [border:1px_dashed_var(--border-dashed)] text-[16px] text-[color:var(--fg-muted)]">
-                ?
-              </span>
-              <DeckText name={copy.leaveItRow(name)} sub={copy.leaveItSub} gap={4} />
-            </button>
+            <li>
+              <button
+                type="button"
+                aria-pressed={picks[m.publicId] === null}
+                onClick={() => choose(null)}
+                className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-pressed:bg-[color:var(--elevated)]"
+              >
+                <span aria-hidden className="flex h-[42px] w-[58px] flex-none items-center justify-center rounded-[7px] [border:1px_dashed_var(--border-dashed)] text-[16px] text-[color:var(--fg-muted)]">
+                  ?
+                </span>
+                <DeckText name={copy.leaveItRow(name)} sub={copy.leaveItSub} gap={4} />
+              </button>
+            </li>
           )}
-        </div>
+        </ul>
         <p className="m-0 pt-[18px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.friendDecksFoot}</p>
       </SocialModal>
     );
