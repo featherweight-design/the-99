@@ -99,6 +99,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   draws every printing and a tap takes it, as before. The printings are read once per card in a scanner session,
   begun for every card the server names the moment it answers (`choicesFor`), and each scan's own short list's Scryfall
   small pictures are fetched as they land; the tiles draw the same small pictures (`scanThumb`).
+  **A database with no scan index says so**: the match route's 503 `no-index` is a refusal (`notReady`, never retried),
+  and the camera and Choose photos both say "Scanning isn’t ready yet" (`scan.notReady`) instead of a failed check.
 
 - **The wishlist** (scope §2, Hugh's ruling Q7, 2026-10-12; Social R2), behind `SOCIAL_WISHLIST_ENABLED`, which
   stands alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
