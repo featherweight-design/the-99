@@ -23,6 +23,7 @@ import { HomeDecksZero } from "./home-decks-zero";
 import { ReadyToBuild } from "./ready-to-build";
 import { Lock } from "../ui/lock";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
+import { FriendsSection, type FriendsSectionProps } from "./friends-section";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
@@ -34,6 +35,8 @@ export type DashboardProps = {
   decks: DeckListItem[];
   /** Null when the availability read failed. The card renders nothing, not a zero. */
   commitments: Commitments | null;
+  /** Friends on Home, read per request outside the cached payload. Null with SOCIAL_FRIENDS_ENABLED off or a failed read. */
+  friends?: (Omit<FriendsSectionProps, "className" | "now">) | null;
   shopping: ShoppingRollup;
   /**
    * The arrivals banner (upcoming precons), or null: switch off, nothing to show, or the read failed. Part of the
@@ -192,7 +195,11 @@ export function Dashboard(props: DashboardProps) {
           the split rather than staying at `sm`: left behind, it gave 640–1179 a
           third layout, one column wide with desktop padding. */}
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
-        <div className="flex min-w-0 flex-col gap-[12px] min-[1180px]:flex-auto min-[1180px]:gap-[11px]">
+        {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
+            build, Friends, the resume block, Commitments (Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
+            in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
+            every width, which this layout already accepts for Commitments. */}
+        <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
           {/* At zero cards it ranks nothing and leaves on its own (S12: absent, not empty). */}
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           {/* Sliced here rather than inside the section, so the section draws
@@ -201,16 +208,18 @@ export function Dashboard(props: DashboardProps) {
               the deleted `Your decks · 17` heading used to carry. */}
           {/* At zero decks the resume slot holds the ways in instead (first-run R2): the
               same pair as `/decks`, through one shared component. */}
-          {noDecks ? (
-            <HomeDecksZero />
-          ) : (
-            <ResumeDecks
-              decks={resumeDecks(props.decks)}
-              shopping={props.shopping}
-              total={props.decks.length}
-              now={new Date(props.now)}
-            />
-          )}
+          <div className="order-2 flex min-w-0 flex-col min-[1180px]:order-none">
+            {noDecks ? (
+              <HomeDecksZero />
+            ) : (
+              <ResumeDecks
+                decks={resumeDecks(props.decks)}
+                shopping={props.shopping}
+                total={props.decks.length}
+                now={new Date(props.now)}
+              />
+            )}
+          </div>
         </div>
 
         {/* The column exists only when the card does. Null when the availability
@@ -218,14 +227,26 @@ export function Dashboard(props: DashboardProps) {
             leaves rather than guessing — and an empty column reserving 316px
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
-        {props.commitments !== null && (
-          <div className="flex flex-col gap-[12px] min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:gap-[11px]">
-            <CommitmentsCard
-              commitments={props.commitments}
-              shopping={props.shopping}
-              totalCards={props.stats.totalCards}
-              cartEnabled={props.cartEnabled}
-            />
+        {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
+        {(props.commitments !== null || props.friends) && (
+          <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+            {props.commitments !== null && (
+              <div className="order-3 flex flex-col min-[1180px]:order-none">
+                <CommitmentsCard
+                  commitments={props.commitments}
+                  shopping={props.shopping}
+                  totalCards={props.stats.totalCards}
+                  cartEnabled={props.cartEnabled}
+                />
+              </div>
+            )}
+            {props.friends && (
+              <FriendsSection
+                {...props.friends}
+                now={props.now}
+                className="order-1 min-[1180px]:order-none min-[1180px]:mt-[4px]"
+              />
+            )}
           </div>
         )}
       </div>

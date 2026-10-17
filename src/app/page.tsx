@@ -23,6 +23,7 @@ import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
 import { socialFriendsEnabled, socialGamesEnabled } from "../lib/social/flag";
+import { wishlistEnabled } from "../lib/wishlist/flag";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { firstRunTourEnabled } from "../lib/discovery/onboarding-flag";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
@@ -322,7 +323,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       about={about}
       cartEnabled={allDecksCartEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
-      friends={homeFriends && { ...homeFriends, games: socialGamesEnabled(env) }}
+      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env) }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

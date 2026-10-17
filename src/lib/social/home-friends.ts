@@ -8,10 +8,9 @@ import { socialProfiles } from "../../db/schema";
 import { listFriends, type Friend } from "./access";
 import { commanderCard, commanderColumns, toCommander } from "./commander";
 import { listOpenInvites, type OpenInvite, type OwnProfile } from "./friends";
-import { MAX_OPEN_INVITES } from "./rules";
 
-/** What Home's Friends section draws. `you` is null until the viewer's profile exists; `maxLinks` is the open-link cap. */
-export type HomeFriends = { you: Omit<OwnProfile, "publicId"> | null; friends: Friend[]; links: OpenInvite[]; maxLinks: number };
+/** What Home's Friends section draws. `you` is null until the viewer's profile exists. */
+export type HomeFriends = { you: Omit<OwnProfile, "publicId"> | null; friends: Friend[]; links: OpenInvite[] };
 
 /**
  * The viewer's own face, their friends and their open links, from ONE snapshot, as /friends reads them. Read-only, unlike `ensureProfile`: Home never creates a profile, so a viewer who has none draws
@@ -26,7 +25,7 @@ export async function loadHomeFriends(viewerId: string, now = new Date()): Promi
       .where(eq(socialProfiles.userId, viewerId));
     const friends = await listFriends(viewerId, tx);
     const links = await listOpenInvites(viewerId, now, tx);
-    return { you: row ? { displayName: row.displayName, commander: toCommander(row) } : null, friends, links, maxLinks: MAX_OPEN_INVITES };
+    return { you: row ? { displayName: row.displayName, commander: toCommander(row) } : null, friends, links };
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });
 }
