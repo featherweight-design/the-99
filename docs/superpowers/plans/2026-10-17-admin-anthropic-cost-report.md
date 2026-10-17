@@ -1,18 +1,20 @@
 # /admin Costs reads Anthropic's cost report (plan)
 
-Ruled by the orchestrator 2026-10-17; the launch epic carries it as a note (`2026-10-17-launch-epic.md`, "Admin costs").
-Admin-only surface. No About entry (admin-only, as every admin round). Two PRs, in order, not stacked.
+Ruled by the orchestrator 2026-10-17 and approved after an independent review; the launch epic carries it as a note
+(`2026-10-17-launch-epic.md`, "Admin costs"). Admin-only surface. No About entry (admin-only, as every admin round).
+Two PRs, in order, not stacked.
 
 ## Goal
 
 The Costs page's account row stops depending on a figure Hugh types. It reads Anthropic's Usage and Cost Admin API
-for the month being viewed. It shows four things:
+for the month being viewed. It shows:
 (a) the total of **The 99** workspace against the workspace cap;
 (b) **this environment**, the app's own ledger (player plus system, as `costSummary` already sums it);
-(c) **elsewhere**, the workspace total minus this environment's ledger, floored at 0 (the other environment, plus anything
-else billed to that workspace). This replaces `elsewhere_usd`.
-(d) **other workspaces**, the rest of the org (every other workspace plus the default workspace's `null` id), against the
-org cap.
+(c) **elsewhere**, the workspace total minus this environment's ledger, floored at 0. That is the other environment
+and anything else billed to that workspace (see "What elsewhere contains"). It replaces `elsewhere_usd`.
+(d) **other workspaces** (PR 2), the rest of the org (every other workspace plus the default workspace's `null` id),
+against the org cap.
+(e) **The 99's API keys** (PR 2): name, partial hint and status only, so Hugh can see which keys bill to the workspace.
 
 ## Facts this plan rests on (checked 2026-10-17)
 
@@ -43,245 +45,376 @@ org cap.
   (Oct, entered today). Staging: `account_cap_usd` $50 (stale), `system_ceiling_usd` $30. So production's "account
   cap" is already the workspace cap.
 
+- `GET https://api.anthropic.com/v1/organizations/api_keys` (docs page fetched today, used in PR 2).
+  - **Query:** `after_id`, `before_id`, `limit` 1..1000 (default 20), `status`
+    (`active` | `archived` | `expired` | `inactive`), `workspace_id`, `created_by_user_id`.
+  - **Item:** `id`, `name`, `partial_key_hint` (string or null; "partially redacted"), `status`,
+    `scope` (`{type:"workspace", workspace_id}` | `{type:"organization"}`), the deprecated `workspace_id`,
+    `created_at`, `created_by`, `expires_at` and `principal`.
+  - **Page:** `has_more`, `first_id`, `last_id`; the next page is `after_id = last_id`.
+  - **Use:** the plan reads `name`, `partial_key_hint`, `status` and `scope` only.
+- The ledger's dollars are priced by the app from `src/lib/model/prices.ts`, not read from Anthropic's bill.
+- `ANTHROPIC_API_KEY` is read by four GitHub workflows: `card-labels.yml`, `commander-prose.yml`,
+  `commander-index.yml` and `tuning-contract.yml`. Evals run from a laptop key.
+
 ## Decisions
 
-1. **`account_cap_usd` becomes the workspace cap in its label.** The key is unchanged, so no migration and no data
-   moves. The row is relabeled "The 99 workspace cap", and the schema comment says so. Staging's $50 row is stale:
-   Hugh re-enters $150 on staging (settings are per database, and the workspace is shared).
-2. **A new stored setting `org_cap_usd` ($250)** with its own action, the same shape as `setAccountCap`. It is
-   stored, not in code, because both caps are console values. The Spend Limits API is Enterprise-only, so neither cap
-   can be read. This needs a migration that widens `admin_settings_key_check`. That is PR 2.
-3. **`elsewhere_usd` is retired, and its data is left in place.** Nothing reads it or writes it any more:
-   `setElsewhere`, the dialog's `elsewhere` kind, `dayOf`, and the copy keys all go. The rows (production's one Oct
-   row) and their `admin_events` audit stay, and the key stays in the check constraint so those rows remain valid.
-   No delete migration: dropping history is a separate call that nothing here needs. `settingsForMonth` stops
-   returning it, and `SETTING_KEYS` drops it. The loader filters stored rows to known keys instead of casting.
-4. **No fallback to a stored figure.** When the API cannot be read, elsewhere and other workspaces say why. They are
-   never filled from `elsewhere_usd`.
-5. **A failure is never cached.** It is thrown as `NotStored(kind)` and served unfiled, so the next load tries again.
-   The page has one reader, so that is at most one call per page load, inside the docs' once-a-minute guidance in
-   practice. A failed background revalidation keeps the last good entry. Its age shows in the as-of line, so stale data is never
-   presented as fresh. `no_key` is decided BEFORE `unstable_cache` is entered, so local dev and previews never touch the
-   cache or the network.
-6. **The key never enters the cache.** It is read inside the loader from `process.env`. It is never in `keyParts`, never
-   an argument, and never in `NotStored`, whose payload is the closed `kind` alone. That error object is the one
-   `unstable_cache` logs.
+1. **`account_cap_usd` becomes the workspace cap in its label.**
+   - The key is unchanged, so no migration and no data moves.
+   - The row is relabeled "The 99 workspace cap", and `schema.ts`'s settings comment says so (PR 1).
+   - Staging's $50 row is stale. Setting $150 there is Hugh's call, made on the page. No database write is planned.
+2. **A new stored setting `org_cap_usd` ($250)**, with its own action shaped like `setAccountCap`.
+   - It is stored rather than written in code, because both caps are console values. The Spend Limits API is
+     Enterprise-only, so neither cap can be read.
+   - It needs a migration that widens `admin_settings_key_check`. That is PR 2.
+3. **`elsewhere_usd` is retired, and its data is left in place.**
+   - PR 1 stops READING it: `settingsForMonth`, the view, and the view's "Enter elsewhere" control.
+   - PR 2 removes the WRITER: `setElsewhere`, `dayOf`, the dialog's `elsewhere` kind, `setting.asOf`,
+     `setting.badDate`, and the key in `SETTING_KEYS`. These are the same files PR 2 already opens for the org cap.
+     Until then the action has no caller on the page, for one PR's life.
+   - The rows (production's one Oct row) and their `admin_events` audit stay. The key also stays in the check
+     constraint so those rows remain valid.
+   - There is no delete migration and no fallback to the stored figure.
+4. **A failure is never served as data.**
+   - It is thrown as `NotStored(kind)` and returned unfiled.
+   - A module-level **negative memo** holds each failure for 60s, keyed by month (M3). A load inside that window gets
+     the same unread `kind` back without a fetch, so a broken key or a down API costs at most one call a minute per
+     instance. That matches the docs' once-a-minute guidance.
+   - The memo stores only `{ kind, count, until }`. It is never consulted for figures, and never for `no_key`.
+   - `no_key` is decided BEFORE `unstable_cache` and the memo, so local dev and previews touch neither the cache nor
+     the network.
+5. **The key never enters the cache.**
+   - It is read inside the loader from `process.env`.
+   - It is never in `keyParts`, never an argument, and never in `NotStored`. `NotStored`'s payload is the closed
+     `kind` alone, and it is the error object `unstable_cache` logs.
+6. **The two figures in elsewhere are read close together (H1).**
+   - The current month's cache key carries a five-minute bucket, `Math.floor(now / 300_000)`, so a cached total is
+     never more than one bucket older than the live ledger it is subtracted from.
+   - The remaining gap is the API's own ~5 minute lag and the ledger's pricing (decision 7). `ledgerAhead` is
+     therefore raised only when the ledger exceeds the workspace by MORE than a tolerance:
+     `max(1% of the workspace total, $0.05)`. It applies in every month, past ones included.
+   - Inside the tolerance, elsewhere simply reads $0, with no remark.
+7. **What elsewhere contains (H2).** It is the workspace bill minus THIS environment's ledger, so it holds:
+   - the other environment's spend;
+   - any other key billed to The 99. Candidates are GitHub's `ANTHROPIC_API_KEY`, which drives the four workflows
+     above, and the eval laptop key;
+   - the difference between the bill and the ledger's own pricing. The ledger is priced from
+     `src/lib/model/prices.ts`, so a run recorded with a null cost, or a price that has drifted from Anthropic's,
+     lands in elsewhere.
+
+   There is one wrinkle in the workflows. Label batches and prose runs are recorded in STAGING's tables
+   (`card_label_batches`, system `model_calls`), so staging's ledger already counts them. If GitHub's key is NOT on
+   The 99, staging's ledger overstates what The 99 bills, and staging's elsewhere reads low. Which keys sit on The 99
+   is what (e) shows. The orchestrator is confirming it.
+
+   Evals are NOT subtracted from elsewhere. That changes only once their key is shown to be on The 99, which is a
+   later decision and is not built here. The copy names elsewhere as "the other environment and anything else on
+   this workspace", and never claims more.
 
 ## Error taxonomy (`CostUnread`)
 
 | kind | when | fetch? | log |
 |---|---|---|---|
 | `no_key` | `ANTHROPIC_ADMIN_KEY` unset or blank | none | none (the key is optional) |
-| `refused` | 401 or 403 from either endpoint | yes | `[admin] anthropic cost unread: refused` |
-| `upstream` | 429, 5xx, a network error, a 5s timeout (`AbortSignal.timeout`), any other non-2xx | yes | `... upstream` |
+| `refused` | 401 or 403 from any endpoint | yes | `[admin] anthropic cost unread: refused` |
+| `rejected` | 400, 404 or 422: the request itself was refused (a bad window, a removed endpoint) | yes | `... rejected` |
+| `upstream` | 429, 5xx, any other non-2xx, a network error, or the shared 8s timeout | yes | `... upstream` |
 | `shape` | a body off the documented shape, an `amount` that is not a decimal, a currency other than USD, more than `MAX_PAGES` (10) pages | yes | `... shape` |
 | `no_workspace` | no unarchived workspace whose trimmed name equals `The 99`, ignoring case | yes | `... no_workspace` |
 | `ambiguous_workspace` (`count`) | two or more such workspaces: never guess | yes | `... ambiguous_workspace` |
 
-Each log line is ONE fixed string plus the kind. It carries no URL, header, status text, body or error message.
-Nothing throws out of the loader: every path returns.
+- Each log line is ONE fixed string plus the kind. It carries no URL, header, status text, body or error message.
+- Nothing throws out of the loader: every path returns.
+- **One timeout per read (M2):** a single `AbortSignal.timeout(8000)` is created per `readWorkspaceCost` call and
+  passed to every request in it (both lists, every page, and PR 2's key list).
+- **A future `ending_at` (M1):** the current month clamps `ending_at` to `now`, rounded down to the minute, never a
+  future instant. If the probe shows the API also refuses a clamped end, the request omits `ending_at` for the current
+  month. The probe settles which before merge.
 
 ## Data flow
 
-`page.tsx` (unchanged) calls `loadCosts(month, now)`. `loadCosts` runs, with `Promise.all`, the existing
-repeatable-read transaction AND `cachedWorkspaceCost(month, now)`, outside the transaction. `costSummary(rows, ...)`
-receives `rows.anthropic: WorkspaceCost` and computes the workspace block from the ledger it already sums.
-`CostsView` draws it. Only figures and an ISO `asOf` cross into `CostSummary`: no workspace id, no key, and no upstream
-text. `CostsView` is a server component, and the only client child, `SettingAction`, receives a kind and a label.
+1. `page.tsx` (unchanged) calls `loadCosts(month, now)`.
+2. `loadCosts` runs, with `Promise.all`, the existing repeatable-read transaction AND `cachedWorkspaceCost(month, now)`,
+   which sits outside the transaction.
+3. `costSummary(rows, ...)` receives `rows.anthropic: WorkspaceCost` and computes the workspace block from the ledger
+   it already sums.
+4. `CostsView` draws it.
+
+Only figures and an ISO `asOf` cross into `CostSummary`, plus PR 2's key rows. No workspace or key id, no key, and no
+upstream text cross. `CostsView` is a server component, and its only client child, `SettingAction`, receives a kind
+and a label.
 
 ## Files and signatures
 
 **`src/lib/admin/anthropic-cost-rule.ts`** (new, pure, client-safe; it imports only `costs-rule` types):
-- `WORKSPACE_NAME = "The 99"`, `MAX_PAGES = 10`, `COST_REPORT_URL`, `WORKSPACES_URL`.
-- `centsToMicro(amount: string): number | null`: exact string arithmetic, so that 1 cent = 10,000 micro-dollars
-  (`"123.45"` gives 1,234,500, and `"0.00005"` rounds half up to 1). A leading `-` is allowed (a credit line). Anything
-  but `/^-?\d+(\.\d+)?$/` gives null. No `parseFloat`.
-- `reportWindow(month: MonthKey, now: Date): { startingAt: string; endingAt: string }`. `starting_at` is the month
-  start. `ending_at` is the next month start, or for the current month the start of tomorrow UTC, whichever is earlier.
-- `costReportUrl(w, page?: string): string`: `bucket_width=1d&group_by[]=workspace_id&limit=31` (no `description`
-  grouping, so one page covers a month).
-- `workspacesUrl(afterId?: string): string`: `limit=1000`, so a single page in practice.
-- `parseCostPage(body: unknown): { rows: { workspaceId: string | null; micro: number }[]; hasMore: boolean; nextPage: string | null } | null`.
+- `WORKSPACE_NAME = "The 99"`, `MAX_PAGES = 10`, `COST_REPORT_URL`, `WORKSPACES_URL`, `LEDGER_AHEAD_FLOOR_MICRO = 50_000`.
+- `centsToMicro(amount: string): number | null` (L1).
+  - The amount is parsed by string arithmetic into exact hundred-thousandths of a cent. No `parseFloat`.
+  - Anything but `/^-?\d+(\.\d+)?$/` gives null. A leading `-` is allowed (a credit line).
+  - It is converted to micro-dollars once, with **half away from zero**: `"0.00005"` gives 1 and `"-0.00005"` gives -1.
+    1 cent is 10,000 micro.
+- `sumCents(rows): ...`: sums the exact cent amounts per workspace FIRST, then rounds once per workspace. A month of
+  sub-micro lines is never rounded line by line.
+- `reportWindow(month: MonthKey, now: Date): { startingAt: string; endingAt: string | null }`.
+  - `starting_at` is the month start.
+  - `ending_at` is the next month start for a past month. For the current month it is `now`, floored to the minute,
+    or `null` (omitted) if the probe shows that is refused (M1).
+- `costReportUrl(w, page?: string): string`: `bucket_width=1d&group_by[]=workspace_id&limit=31`.
+- `workspacesUrl(afterId?: string): string`: `limit=1000`. It **never** sends `include_archived=true` (L5).
+- `parseCostPage(body: unknown): { rows: { workspaceId: string | null; cents: Exact }[]; hasMore: boolean; nextPage: string | null } | null`.
 - `parseWorkspacePage(body: unknown): { items: { id: string; name: string; archived: boolean }[]; hasMore: boolean; lastId: string | null } | null`.
-- `matchWorkspace(items, name = WORKSPACE_NAME): { ok: true; id: string } | { ok: false; kind: "no_workspace" } | { ok: false; kind: "ambiguous_workspace"; count: number }`. Archived items are skipped.
-- `splitOrg(rows, workspaceId): { workspaceMicro: number; otherMicro: number; orgMicro: number }`. `null` ids and every
-  other id are counted as other.
-- `elsewhere(workspaceMicro: number, ledgerMicro: number): { micro: number; ledgerAhead: boolean }`, floored at 0.
-- `type CostUnread = "no_key" | "refused" | "upstream" | "shape" | "no_workspace" | "ambiguous_workspace"`
-- `type WorkspaceCost = { ok: true; asOf: string; workspaceMicro: number; otherMicro: number; orgMicro: number } | { ok: false; kind: CostUnread; count?: number }`
+- `matchWorkspace(items, name = WORKSPACE_NAME): { ok: true; id: string } | { ok: false; kind: "no_workspace" } | { ok: false; kind: "ambiguous_workspace"; count: number }`.
+  It skips any item with `archived_at` set, even though the API omits archived workspaces by default (L5).
+- `workspaceMicro(rows, workspaceId): number` (PR 1). PR 2 widens this to
+  `splitOrg(...): { workspaceMicro; otherMicro; orgMicro }`.
+- `elsewhere(workspaceMicro: number, ledgerMicro: number): { micro: number; ledgerAhead: boolean }`.
+  - It is floored at 0.
+  - `ledgerAhead` is set when `ledger − workspace > max(round(workspace / 100), LEDGER_AHEAD_FLOOR_MICRO)` (decision 6).
+- `type CostUnread = "no_key" | "refused" | "rejected" | "upstream" | "shape" | "no_workspace" | "ambiguous_workspace"`
+- `type WorkspaceCost = { ok: true; asOf: string; workspaceMicro: number } | { ok: false; kind: CostUnread; count?: number }`
+  - PR 2 adds `otherMicro`, `orgMicro` and `keys`.
 
-**`src/lib/admin/anthropic-cost.ts`** (new, SERVER-ONLY, added to `SERVER_ONLY` in `client-imports.test.ts`):
-- `type AnthropicDeps = { key: string | undefined; fetch: typeof fetch; log: (line: string) => void; now: () => Date }`. The default reads `process.env.ANTHROPIC_ADMIN_KEY`.
-- `readWorkspaceCost(month: MonthKey, now: Date, deps = defaultDeps()): Promise<WorkspaceCost>`. This read is not
-  cached. It fetches both lists in parallel and follows `next_page` and `last_id` up to `MAX_PAGES`. Every request is
-  `cache: "no-store"` and carries the header set `{ "x-api-key", "anthropic-version", "user-agent": "the-99-admin" }`.
-- `UNREAD_LOG = "[admin] anthropic cost unread"`.
+**`src/lib/admin/anthropic-cost.ts`** (new, SERVER-ONLY, added to `SERVER_ONLY` in `client-imports.test.ts`). The
+cache wrapper lives here too (M4). The probe imports this module but calls only the uncached read.
+- `type AnthropicDeps = { key: string | undefined; fetch: typeof fetch; log: (line: string) => void; now: () => Date }`.
+  The default reads `process.env.ANTHROPIC_ADMIN_KEY`.
+- `readWorkspaceCost(month: MonthKey, now: Date, deps = defaultDeps()): Promise<WorkspaceCost>`.
+  - This read is NOT cached.
+  - It fetches the two lists in parallel, under one shared `AbortSignal.timeout(8000)`.
+  - It follows `next_page` and `last_id` up to `MAX_PAGES`.
+  - Every request is `cache: "no-store"` and carries `{ "x-api-key", "anthropic-version": "2023-06-01", "user-agent": "the-99-admin" }`.
+- `cachedWorkspaceCost(month: MonthKey, now: Date, deps?): Promise<WorkspaceCost>`. In order:
+  1. A blank key returns `no_key`.
+  2. A live negative-memo entry for the month returns its unread `kind`.
+  3. Otherwise it calls
+     `unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, monthParam(month), current ? String(Math.floor(now / 300_000)) : "closed"], { revalidate })`.
+     `revalidate` is 300 for the current month and 3600 for a past one (a closed month can still settle).
+  4. `run` throws `new NotStored(result)` on `ok: false`. The wrapper catches it, writes the memo, and returns the
+     result unstored. This is the `user-lists.ts` pattern with its own `NotStored`, which carries only
+     `{ ok: false, kind, count }`.
+- `UNREAD_LOG = "[admin] anthropic cost unread"`; `NEGATIVE_MEMO_MS = 60_000`.
 
-**`src/lib/admin/anthropic-cost-cache.ts`** (new, server-only through its import of the above). It is kept apart so
-the probe can import `readWorkspaceCost` without `next/cache`.
-- `cachedWorkspaceCost(month: MonthKey, now: Date, key = process.env.ANTHROPIC_ADMIN_KEY): Promise<WorkspaceCost>`.
-  A blank key returns `{ ok: false, kind: "no_key" }` before any cache call. Otherwise it calls
-  `unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, monthParam(month), endingAt], { revalidate })`, where
-  `revalidate` is 300 for the current month and 3600 for a past one (a closed month can still settle for a while). `run` throws
-  `new NotStored(result)` on `ok: false` and the wrapper catches it and returns the result unstored (the
-  `user-lists.ts` pattern; its own `NotStored` class, carrying only `{ ok: false, kind, count }`). `endingAt` is in the
-  key so yesterday's current-month window is never served as today's beyond one stale read.
-
-**Modified (PR 1):**
+**Modified in PR 1:**
 - `costs-rule.ts`:
   - `CostRows.anthropic: WorkspaceCost` is added.
-  - `CostSummary.elsewhere` is removed, and `CostSummary.workspace` is added:
-    `{ ledgerMicro, read: { ok: true; asOf; totalMicro; elsewhereMicro; ledgerAhead; otherMicro; orgMicro } | { ok: false; kind; count? } }`.
-    `ledgerMicro` is `player.micro + systemSplit.total` (today's `accountTotal` without elsewhere; evals are still never in it).
-  - `SETTING_KEYS` drops `elsewhere_usd`, and `settingsForMonth` stops reading it.
-- `costs.ts`: `loadCosts` runs `cachedWorkspaceCost` beside the transaction, and filters setting rows to `SETTING_KEYS`.
+  - `CostSummary.elsewhere` is removed, and
+    `CostSummary.workspace: { ledgerMicro, read: { ok: true; asOf; totalMicro; elsewhereMicro; ledgerAhead } | { ok: false; kind; count? } }`
+    is added.
+  - `ledgerMicro` is `player.micro + systemSplit.total` (evals are never in it; decision 7).
+  - `settingsForMonth` stops returning `elsewhere_usd`. `SETTING_KEYS` keeps it until PR 2 removes the writer.
+- `costs.ts`: `loadCosts` runs `cachedWorkspaceCost` beside the transaction. A rejection is still mapped to `upstream`
+  rather than thrown.
 - `costs-view.tsx`: the account row becomes the workspace row.
-  - Its figure is the API total against the cap. Its segments are player, labels, rewrites, then elsewhere (hatched,
-    `INK.elsewhere`). Its scale is `max(cap, total, ledger, 1)`.
-  - Unread, the figure is the ledger alone plus `workspaceUnread`, with the bare track and the reason in the sub.
-  - A new "Other workspaces" row (`CapRow` plus `CapBar`) draws the org total. In PR 1 there is no org cap, so the
-    figure reads `notSet` over the bare track, the existing no-cap rule.
+  - **Figure:** the API total against the cap.
+  - **Segments:** player, labels, rewrites, then elsewhere (hatched, `INK.elsewhere`).
+  - **Scale:** `max(cap, total, ledger, 1)`.
+  - **Unread:** the ledger alone plus `workspaceUnread`, with the bare track and the reason in the sub.
   - `CapRow` gains `source?: "code" | "here" | "anthropic"`, replacing `here?: boolean`.
-  - The elsewhere `SettingAction` is removed.
-- `setting-dialog.tsx`: the `elsewhere` kind, the as-of field and the `setElsewhere` import are removed.
-- `src/app/admin/actions.ts`: `setElsewhere` and `dayOf` are removed.
-- `src/lib/copy/admin.ts`: the strings below; `capSub.elsewhere`, `capSub.you`, `capSub.noElsewhere`, `enterElsewhere`,
-  `updateElsewhere`, `setting.asOf` and `setting.badDate` are removed.
+  - The elsewhere `SettingAction` is removed. No "Other workspaces" row yet (M4).
+- `src/lib/copy/admin.ts`: the PR 1 strings below are added. `capSub.elsewhere`, `capSub.you`, `capSub.noElsewhere`,
+  `enterElsewhere` and `updateElsewhere` are removed.
+- `src/db/schema.ts`: comments only (L4). The `admin_settings` comment is changed so that `account_cap_usd` is the
+  The 99 workspace cap, and `elsewhere_usd` is retired with its rows kept. No constraint change in PR 1.
 - `src/lib/client-imports.test.ts`: `SERVER_ONLY` gains `lib/admin/anthropic-cost.ts`.
-- `docs/superpowers/design-tables/admin.md`: the Data sources rows (account cap and elsewhere become the cost report;
-  the workspace cap).
-- `scripts/probe-anthropic-cost.mts` (new), with `probe:anthropic-cost` in `package.json` and a `docs/probes.md` entry.
-- `AGENTS.md`: one line in the ops cluster (`ANTHROPIC_ADMIN_KEY`, Production scope, Sensitive, both projects; the
-  page degrades without it). Background goes in `docs/agents/ops.md`.
+- `docs/superpowers/design-tables/admin.md`: the Data sources rows.
+- `scripts/probe-anthropic-cost.mts` (new), `package.json` (`probe:anthropic-cost`) and `docs/probes.md`.
 
-**PR 2 (org cap):** `src/db/schema.ts` (check constraint plus comment); a migration from `pnpm db:generate` (sql,
-snapshot, journal); `costs-rule.ts` (`SETTING_KEYS` plus `org_cap_usd`, held like the account cap); `actions.ts`
-(`setOrgCap`); `setting-dialog.tsx` (kind `org`); `costs-view.tsx` (the org row's cap and tick, and its
-`SettingAction`); copy; and the tests.
+**PR 2 (org cap, keys, and retiring the writer):**
+- **Schema:** `src/db/schema.ts` (the check constraint gains `org_cap_usd`, keeping `elsewhere_usd`), and a migration
+  from `pnpm db:generate` (sql, snapshot and journal).
+- **Settings:** `costs-rule.ts` (`SETTING_KEYS` drops `elsewhere_usd` and adds `org_cap_usd`, held like the account
+  cap), `actions.ts` (`setOrgCap`, minus `setElsewhere`/`dayOf`), `setting-dialog.tsx` (kind `org`, minus `elsewhere`).
+- **Workspace read:** `anthropic-cost-rule.ts`, with `splitOrg` and a key rule:
+  - `parseKeyPage(body)` and `keyRows(items): { name: string; hint: string | null; status: "active" | "other"; statusWord: string }[]`.
+  - Only `name`, `partial_key_hint` and `status` survive. The `id`, `created_by`, `principal` and `scope` fields are
+    dropped at the parse.
+- **Workspace read:** `anthropic-cost.ts` adds a third request, `GET /v1/organizations/api_keys?workspace_id=<id>&limit=1000`.
+  - It is paged by `after_id = last_id`, under the same shared timeout and inside the same cached read.
+  - Its rows are also checked against `scope.workspace_id`.
+  - A failed key read leaves the figures standing: `keys: { ok: false, kind }`.
+- **View:** `costs-view.tsx` gains:
+  - the "Anthropic org cap" row (`CapRow` plus `CapBar`). Its segments are The 99's own, then other workspaces in
+    `INK.elsewhere` hatched (the ruled ink). Its tick is the org cap, plus a `SettingAction`.
+  - a "Keys on The 99" list under the caps: each key's name, hint, and `active` or its other status word.
+- **Copy, docs and tests:** the copy; `AGENTS.md` (one ops line: `ANTHROPIC_ADMIN_KEY`, Production scope, Sensitive,
+  both projects, degrades without it) and `docs/agents/ops.md`; the design table's org and keys rows; and the tests.
 
 ## Proposed copy (`adminCopy.costs`, owed to /copy-review)
 
+**PR 1:**
 - `capSource.anthropic`: `from Anthropic`
-- `capRows.workspace`: `The 99 workspace cap` (replaces `capRows.account`); `capRows.org`: `Anthropic org cap`
+- `capRows.workspace`: `The 99 workspace cap` (replaces `capRows.account`)
 - `capSub.workspace`: `Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched.`
-- `capSub.elsewhere(v, other)`: ` Elsewhere ${v}: ${other} and anything else on this workspace.` (`other` is the other
-  environment's name, from `adminEnvironment()`)
+- `capSub.elsewhere(v)`: ` Elsewhere ${v}: the other environment and anything else on this workspace.`
 - `capSub.ledgerAhead`: ` This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.`
-- `capSub.org(here, others)`: `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`
 - `asOf(time)`: ` Read from Anthropic at ${time}, about five minutes behind.` (`time` is `14:05 UTC`, or `17 Oct, 14:05 UTC` when not today)
 - `workspaceUnread(figure)`: `${figure} here · workspace not read`
 - `unread`:
   - `no_key`: `ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read.`
   - `refused`: `Anthropic refused the admin key.`
-  - `upstream`: `Anthropic’s cost report did not answer. The next load tries again.`
+  - `rejected`: `Anthropic refused the request for this month.`
+  - `upstream`: `Anthropic’s cost report did not answer. A load a minute from now tries again.`
   - `shape`: `Anthropic’s cost report came back in a shape this page does not read.`
   - `no_workspace(name)`: `No Anthropic workspace is named ${name}.`
   - `ambiguous(n, name)`: `${n} Anthropic workspaces are named ${name}, so none is read.`
 - `capsReference`: `The system ceiling and the Anthropic caps are reference lines. None of them blocks a call.`
-- PR 2: `changeOrgCap`: `Change the org cap`
+
+**PR 2:**
+- `capRows.org`: `Anthropic org cap`
+- `capSub.org(here, others)`: `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`
+- `changeOrgCap`: `Change the org cap`
+- `keys.title`: `Keys on The 99`
+- `keys.meta`: `name and hint only`
+- `keys.none`: `No keys on this workspace.`
+- `keys.unread`: `The key list was not read.`
 
 ## Design
 
-**No Design round is needed.** Every element is already drawn:
-- the workspace and org rows are `CapRow` plus `CapBar`;
+**PR 1 needs no Design round.** Every element is already drawn:
+- the workspace row is `CapRow` plus `CapBar`;
 - the hatched elsewhere segment and its ink are in the design table;
-- the bare track for no cap or an unread figure is the existing rule;
+- the bare track for an unread figure is the existing no-cap rule;
 - the source label, the as-of line and the reasons are text in existing slots.
 
-One open question, with the build default stated: the org row's **other workspaces** segment ink. The default is to
-reuse `INK.elsewhere` hatched, because both segments are spend this ledger cannot see, and The 99's segments draw as
-in the workspace row. If Design wants a distinct ink, that is a token swap. `design-pipeline-status.md` lists the admin handoff Green (R2); nothing there blocks.
+**PR 2's org row** reuses the same row. Its ink is ruled: `INK.elsewhere` hatched.
+
+**PR 2's key list is the one new element.** The build default is the detail tables' existing row-card shape
+(`SectionHead` plus rows, as in `costs-detail.tsx`), drawn the same at 900 and 390. It is an open question whether
+Design wants to draw it. Admin-only, so it is not blocking.
+
+`design-pipeline-status.md` lists the admin handoff Green (R2).
 
 ## Overlap with lane 9b (PII masking, `2026-10-17-admin-pii-masking.md`)
 
-Both lanes touch `costs.ts` (9b changes `loadCosts` to take the masked universe) and `costs-view.tsx`. 9b's
-`costs-view.tsx:315` target is the elsewhere "entered by" text, which PR 1 DELETES along with `capSub.you`. Whichever
-lane lands second rebases. If this one lands first, 9b drops that hunk, since no cap row prints "entered by" after it.
-`costs-detail.tsx` (9b's per-account table) is untouched here.
+Both lanes touch `costs.ts` (9b changes `loadCosts` to take the masked universe) and `costs-view.tsx`.
+- 9b's `costs-view.tsx:315` target is the elsewhere "entered by" text, which PR 1 DELETES along with `capSub.you`.
+- Whichever lane lands second rebases. If this one lands first, 9b drops that hunk.
+- `costs-detail.tsx` (9b's per-account table) is untouched here.
+- The keys list shows key names, not people, so it needs no mask.
 
 ## Tests
 
+**PR 1:**
 - `anthropic-cost-rule.test.ts`:
-  - `centsToMicro`: exact cases, half-up rounding, a negative amount, and refusals (`"1e3"`, `""`, `"1.2.3"`).
-  - Summing: empty-day buckets; three workspaces plus a `null` id; ids split between this workspace and the rest.
-  - `matchWorkspace` for 0, 1 and 2 matches, a case-insensitive and trimmed match, and an archived workspace skipped.
-  - `elsewhere`: floored at 0, with `ledgerAhead`.
-  - `reportWindow`: the current month, a past month, and the last day of a month.
-  - The URLs: `group_by[]`, `limit` and `page` encoding.
-- `anthropic-cost.test.ts`, with a mocked `fetch`:
-  - A missing or blank key returns `no_key`, with `fetch` never called and nothing logged.
-  - 401 and 403 give `refused`; 429, 500, a rejected fetch and an abort give `upstream`; a bad body and an 11th page
-    give `shape`.
-  - Two cost pages are followed with `page = next_page`, and workspaces with `after_id = last_id`.
+  - `centsToMicro`: exact cases; half away from zero (`"0.00005"` gives 1, `"-0.00005"` gives -1); refusals (`"1e3"`,
+    `""`, `"1.2.3"`).
+  - Sum-then-round: 31 lines of `"0.00004"` give 12, not 0.
+  - Empty-day buckets, several workspaces and a `null` id.
+  - `matchWorkspace` for 0, 1 and 2 matches, a case-insensitive and trimmed match, and an archived item skipped.
+  - `elsewhere`: floored at 0. `ledgerAhead` is false at exactly the tolerance and true one micro past it, at both the
+    1% and the $0.05 branch.
+  - `reportWindow`: the current month clamps to the floored minute; a past month; the last day of a month.
+  - The URLs: `group_by[]`, `limit`, `page`, and no `include_archived`.
+- `anthropic-cost.test.ts`, with `fetch` mocked:
+  - A missing or blank key returns `no_key`, with `fetch` never called, nothing logged, and `unstable_cache` never
+    called.
+  - Status codes: 401 and 403 give `refused`; 400, 404 and 422 give `rejected`; 429, 500, a rejected fetch and an
+    abort give `upstream`; a bad body and an 11th page give `shape`.
+  - Every request in one read receives the SAME signal.
+  - Pages are followed: `page = next_page` for the cost report and `after_id = last_id` for workspaces.
   - 0 and 2 workspaces match.
-  - **The key never escapes.** A sentinel key appears in no URL, in no `JSON.stringify(result)`, in no log line, and
-    exactly once per request in the headers.
-- `anthropic-cost-cache.test.ts`, with `next/cache` mocked:
-  - `no_key` never calls `unstable_cache`.
-  - The key parts are month, day and deployment, and never the key.
-  - `revalidate` is 300 for the current month and 3600 for a past one.
-  - A failure is returned unstored (`NotStored`), and the thrown object carries no key.
-- `costs-rule.test.ts`: the workspace block for read and unread; an `elsewhere_usd` row is ignored; the ledger excludes evals.
-- `costs-load.test.ts`: `loadCosts` hands the cached result through, and a cache rejection is still unread, not a throw.
+  - **The key never escapes.** A sentinel key appears in no URL, no `JSON.stringify(result)`, no log line and no
+    `NotStored`, and exactly once per request in the headers.
+  - **The cache:** the key parts are deployment, month and the five-minute bucket (`"closed"` for a past month), and
+    never the key. `revalidate` is 300 or 3600.
+  - **The memo:** a failure is returned unstored. A second call inside 60s returns the same kind with no fetch. A call
+    at 61s fetches again. A success is never memoized as a failure, and the memo never answers with figures.
+  - **No route opt-outs (L3):** read through `node:fs`, no file under `src/app/admin/` exports `dynamic` or
+    `fetchCache`, so no route segment overrides the fetch or cache behavior this read assumes.
+- `costs-rule.test.ts`: the workspace block, read and unread; an `elsewhere_usd` row is ignored; the ledger excludes evals.
+- `costs-load.test.ts`: `loadCosts` hands the cached result through, and a rejection becomes `upstream`, not a throw.
 - `costs-view.test.tsx`:
-  - The workspace row reads `$x of $150` with `from Anthropic` and the as-of line, and has a hatched elsewhere
-    segment.
+  - The workspace row reads `$x of $150`, with `from Anthropic`, the as-of line and a hatched elsewhere segment.
   - Each `kind` renders its reason with the bare track.
-  - The org row reads `not set` (PR 1), then with its cap (PR 2).
-  - No `Enter elsewhere` control is drawn.
-- `actions.test.ts`: the `setElsewhere` cases are removed. PR 2 adds `setOrgCap`, covering an accepted amount, a
-  refused one, and the audit row.
+  - There is no `Enter elsewhere` control and no org row.
 - `client-imports.test.ts`: the list entry. **Run the failure path once:** a scratch `"use client"` fixture importing
-  `anthropic-cost-cache.ts` must fail the test before the fixture is deleted.
+  `anthropic-cost.ts` must fail the test before the fixture is deleted.
+
+**PR 2:**
+- `splitOrg`.
+- `keyRows`: only `name`, `hint` and `status` survive; an `id` or a `created_by` in the input appears nowhere in the
+  output.
+- The key list is paged, and a failed key read leaves the figures standing.
+- `setOrgCap`: an accepted amount, a refused one, and the audit row.
+- `setElsewhere`'s cases are removed.
+- The view: the org row with and without a cap, and the key list's three states (rows, none, unread).
+- A migration snapshot check.
 
 ## PR boundaries
 
-- **PR 1, "Costs reads Anthropic's cost report"** (about 20 files): the new rule, loader, cache and their tests;
-  `costs-rule`, `costs`, `costs-view`, `setting-dialog`, `actions` and `copy` with their tests; `client-imports.test.ts`;
-  the probe, `package.json` and `docs/probes.md`; the design table; `AGENTS.md` and `docs/agents/ops.md`. It is
-  complete on its own: the org row draws `not set`.
-- Each PR is a UI PR: the design-review property table (Costs rows of `design-tables/admin.md`) before `gh pr create`,
-  and `feature-acceptance` at 900 and 390 on `/admin` (current and a past month), with the unread state photographed too.
-- **PR 2, "Org cap setting"** (about 10 files): the migration and the action, dialog, view and copy for `org_cap_usd`.
-  Opened after PR 1 merges.
+- **PR 1, "Costs reads Anthropic's cost report"**, 17 files:
+  1. `anthropic-cost-rule.ts`
+  2. its test
+  3. `anthropic-cost.ts`
+  4. its test
+  5. `costs-rule.ts`
+  6. its test
+  7. `costs.ts`
+  8. `costs-load.test.ts`
+  9. `costs-view.tsx`
+  10. its test
+  11. `copy/admin.ts`
+  12. `schema.ts` (comments)
+  13. `client-imports.test.ts`
+  14. `scripts/probe-anthropic-cost.mts`
+  15. `package.json`
+  16. `docs/probes.md`
+  17. `design-tables/admin.md`
+
+  `setting-dialog.tsx`, `actions.ts` and `actions.test.ts` move to PR 2 (decision 3); `AGENTS.md` and `ops.md` move
+  to PR 2. **Merge gate: the probe has run against the live API** (M1) and its output, figures only, is in the PR
+  body.
+- **PR 2, "Org cap, keys on The 99, Elsewhere retired"**, about 19 files: the four `actions`/`dialog`/schema/migration
+  groups above, the rule, the loader, the view and copy, the docs, and their tests. Opened after PR 1 merges.
+- Each PR is a UI PR:
+  - the design-review property table (the Costs rows of `design-tables/admin.md`) before `gh pr create`;
+  - `feature-acceptance` at 900 and 390 on `/admin`, current and a past month, with the unread state photographed too.
 
 ## Not in scope
 
-- The usage report (tokens), `group_by[]=description` per-model breakdowns, and reconciling the ledger against the
-  bill per model.
+- The usage report (tokens), `group_by[]=description` per-model breakdowns, and reconciling ledger against bill per
+  model.
+- Subtracting evals from elsewhere (a later decision, decision 7).
 - Alerts and thresholds.
 - Reading Spend Limits (Enterprise-only).
 - Deleting `elsewhere_usd` rows.
-- Enabling `cacheComponents` or migrating `unstable_cache` to `use cache` app-wide.
+- Any database write of the staging cap: it is Hugh's to set.
+- Enabling `cacheComponents` or `use cache`.
 - Masking (lane 9b).
-- Priority Tier spend, which the cost endpoint excludes.
+- Priority Tier spend.
 
 ## Verification (the key is never printed)
 
-1. **Locally, with no key** (`pnpm dev` on local-dev): `/admin` renders. The workspace row reads `‹ledger› here ·
-   workspace not read` with the `no_key` reason, and no request leaves for `api.anthropic.com` (check the server log
-   and a fetch spy in the test). This also covers previews, which have no key (Production scope only). The admin
-   itself exists on a preview only if `ADMIN_ENV_LABEL` is set there.
-2. **The probe**, `pnpm probe:anthropic-cost [YYYY-MM]`. It reads `ANTHROPIC_ADMIN_KEY` through the `scripts/lib/env.mjs`
-   convention, calls `readWorkspaceCost`, and prints ONLY the month, `ok`/`kind`, the match count and the three
-   figures in dollars. It prints no ids, headers or bodies, and it touches no database. The key is Sensitive in Vercel,
-   so `vercel env pull` cannot fetch it. Hugh runs the probe locally with the key typed into his shell for that one
-   command (`read -s` then a prefixed run, never a file), or skips the probe in favor of step 3.
-3. **Staging, after PR 1 merges** (both projects' top-level deploys run with Production scope, so staging has the key):
-   - Re-enter the workspace cap at $150 on staging.
-   - Load `staging.the-99.dev/admin`. The workspace total should match the console's Cost page filtered to The 99 for
-     the month, to the cent, allowing for the 5-minute lag.
-   - Elsewhere should equal the total minus staging's ledger, and Other workspaces should match the rest of the
-     console.
-   - Reload within 5 minutes: the as-of line does not move (cached).
-   - Step to September: the page renders past-month figures, or an honest unread reason if the API refuses that range.
-   - `vercel logs -p the-99-staging -q "anthropic cost"` shows no lines on success.
-4. **Production** after the deploy, the same read, with the org cap entered after PR 2.
+1. **Locally, with no key.** `/admin` renders, and the workspace row reads `‹ledger› here · workspace not read` with
+   the `no_key` reason. No request leaves for `api.anthropic.com`. This also covers previews, which have no key
+   (Production scope only).
+2. **The probe, MANDATORY before PR 1 merges.**
+   - **Run:** `pnpm probe:anthropic-cost [YYYY-MM]` calls `readWorkspaceCost` and touches no database.
+   - **Output:** only the month, `ok` or the kind, the match count, the window it sent (whether `ending_at` was sent
+     or omitted) and the figures in dollars. It prints no ids, headers or bodies.
+   - **No key:** it prints `no_key: ANTHROPIC_ADMIN_KEY is not set in this shell` plainly and exits 1 (L2).
+   - **Never put `ANTHROPIC_ADMIN_KEY` in `.env`** (L2). `scripts/lib/env.mjs` loads `.env` with `override: true`, so
+     a value there would silently win over the shell's, and a file is a place a key can leak from. The probe's header
+     and `docs/probes.md` both say so.
+   - **Where it runs:** the key is Sensitive in Vercel, so `vercel env pull` cannot fetch it. Hugh runs the probe
+     locally with the key typed for that one command (`read -s`, then a prefixed run).
+   - **What it settles:** the run also answers the clamped-`ending_at` question (M1) and how far back history goes,
+     with one current and one earlier month.
+3. **Staging, after PR 1 merges** (staging's top-level deploys run with Production scope, so staging has the key):
+   - Load `staging.the-99.dev/admin`. The total should match the console's Cost page for The 99 to the cent, allowing
+     for the lag.
+   - Elsewhere should equal the total minus staging's ledger.
+   - A reload inside the same five-minute bucket keeps the as-of time.
+   - Step to September.
+   - `vercel logs -p the-99-staging -q "anthropic cost"` is empty on success.
+4. **Production** after the deploy. After PR 2: the org row, and the key list read against the console's API keys
+   page.
 
 ## Open questions
 
-1. The org row's "other workspaces" ink. The default is `INK.elsewhere` hatched (above); this is for Design or Hugh.
-2. How far back `cost_report` serves history is not documented. Step 3 confirms it. If an early month is refused, the
-   page shows `upstream`, or `shape`. No new state is planned.
-3. Whether the stale staging `account_cap_usd` ($50) was meant as a staging-only cap. The plan assumes not, since there
-   is one shared workspace, and Hugh re-enters $150.
+1. Whether Design wants to draw PR 2's key list. The default is the detail tables' row-card shape.
+2. Which keys bill to The 99: GitHub's `ANTHROPIC_API_KEY` and the eval laptop key. The orchestrator is confirming,
+   and PR 2's key list shows it. It decides whether staging's elsewhere reads low (decision 7) and, later, whether
+   evals are subtracted.
+3. Whether a clamped current-month `ending_at` is accepted, and how far back `cost_report` serves. The mandatory probe
+   settles both before merge.
