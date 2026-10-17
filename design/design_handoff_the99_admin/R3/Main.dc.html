@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin R3, masking personal data</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.mono{font-family:'IBM Plex Mono',monospace}
+.card{border:1px solid #1A1F2B;border-radius:10px;padding:14px 16px;background:#1E1F26;display:flex;flex-direction:column;gap:7px}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9}
+.where{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C}
+.v{font-size:13px;line-height:1.6;color:#B3C0C2;text-wrap:pretty}
+.lock{display:flex;gap:10px;align-items:baseline;font-size:13px;line-height:1.55;color:#95A4A6}
+.lock b{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:11px;color:#C6D2D3;flex:none;width:22px}
+.av{width:34px;height:34px;border-radius:10px;border:1px solid #5C86C9;background:#121217;color:#5C86C9;font-family:'IBM Plex Mono',monospace;font-size:11.5px;display:flex;align-items:center;justify-content:center;flex:none}
+.btn{font-family:'IBM Plex Sans',sans-serif;height:32px;padding:0 12px;border-radius:8px;border:1px solid #2E3340;background:transparent;color:#C6D2D3;font-size:13px}
+</style>
+</helmet>
+<div style="width:1330px;box-sizing:border-box;padding:44px 40px 56px;background:#121217;color:#C6D2D3;font-family:'IBM Plex Sans',sans-serif;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+      <span class="mono" style="font-size:12px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em">ADMIN R3 · FOR AUDIT</span>
+      <span class="mono" style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#7C8A8C">Masking personal data</span>
+      <span class="mono" style="font-size:10.5px;color:#7C8A8C">brief 2026-10-17-admin-pii-masking.md · PR #2001 · R2 stands for everything not named here</span>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.15;max-width:1150px">Every person in /admin reads masked. One account at a time can be shown, and each Show is logged on that account.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:#B3C0C2;max-width:1060px;text-wrap:pretty">Frames are the shipped pages at 900×820 (with the rail) and 390×844 (with the tab bar), and they scroll. Production, October. Fixtures: Colin, Peter, Max and Chris, plus one account Clerk holds no name for. The owner’s row is drawn as <span class="mono" style="font-size:12.5px">You</span> so no real name appears; that is a fixture choice, not a proposal. Clerk ids, emails and times are illustrative.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+    <div class="card" style="gap:14px">
+      <span class="k">The masked row</span>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #2E3340;border-radius:10px;background:#121217">
+        <span class="av">CR</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:500">Colin R.</span><span class="mono" style="font-size:10.5px;color:#7C8A8C">c•••@g•••.com</span></div>
+        <button class="btn" type="button">Show</button>
+      </div>
+      <span class="v">Name: first name and last initial, else the Clerk username, else <span class="mono">Account ·9xQe</span> (the id’s last four). Email: the first letter of the mailbox and of the domain, then the ending. The Clerk id leaves the row.</span>
+    </div>
+    <div class="card" style="gap:14px">
+      <span class="k">Shown</span>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #5C86C9;border-radius:10px;background:#22232B">
+        <span class="av">CR</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:500">Colin Reyes</span><span class="mono" style="font-size:10.5px;color:#B3C0C2">colin.reyes@gmail.com</span><span class="mono" style="font-size:10.5px;color:#95A4A6">user_2qF8cK1mZr4Ty9Lw</span><span class="mono" style="font-size:10.5px;color:#5C86C9">Shown and logged · hides at 19:42 UTC</span></div>
+        <button class="btn" type="button">Hide</button>
+      </div>
+      <span class="v">The row gains the accent ring, the full name, email and Clerk id, and when it hides. Hide re-masks at once. Leaving the page, a reload, or 5 minutes re-masks it too; nothing is kept on the client.</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px"><span class="k">{{ c.k }}</span><span class="where">{{ c.where }}</span></div><span class="v">{{ c.v }}</span></div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #1A1F2B;padding-top:20px">
+    <span class="k" style="color:#7C8A8C">Locked rulings, drawn as written (brief §Rulings)</span>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 32px">
+      <sc-for list="{{ locks }}" as="l" hint-placeholder-count="6">
+        <div class="lock"><b>{{ l.n }}</b><span>{{ l.t }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1330,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: [
+        { k: "Avatars", where: "A1 · B1 · C1", v: "Kept. Initials come from the masked name, so they show no letter the name doesn’t. An account with no name gets the app’s diamond instead of letters." },
+        { k: "Clerk id", where: "A1 · B2", v: "Off the rows and the head; shown only on a revealed account, where it is what you copy into Clerk. The account URL keeps the id: that is engineering’s, not drawn." },
+        { k: "Where Show lives", where: "A2 · B1", v: "Accounts-list rows and the account page head only, one control that turns to Hide. The tree, group members, the picker and history lines stay masked and link to the account." },
+        { k: "Re-masking", where: "A2 · B2", v: "On leaving the view or after 5 minutes, whichever comes first. The hide time is printed in UTC like every admin time. A timeout re-masks quietly, no toast." },
+        { k: "The reveal log", where: "B2", v: "Each Show adds a line to the account page’s existing History list: You showed Colin R.’s name and email. No section of its own, no list-wide log." },
+        { k: "Waiting invites", where: "B1 · C1", v: "The recipient has no account, so there is nothing to Show or log against: the email stays masked everywhere. Revoke works from the masked line." },
+        { k: "One search field", where: "A3 · A4", v: "Name, or a whole email. A name filters the masked names as you type. An email waits for Enter, then finds exactly one account, still masked, or says none holds it and draws no rows." },
+        { k: "Failures", where: "A5 · A6", v: "A lookup or a reveal that fails, the log write included, is a transient error: the shared toast with Try again. Nothing is revealed and the row stays as it was." },
+        { k: "Assignments", where: "C2 · C3", v: "Group members, the override picker and the invite tree filter on the masked name. Pending sentences and history name people masked: Saving moves Colin R. from friends to testers." }
+      ],
+      locks: [
+        { n: "1", t: "Masked by default, everywhere in /admin: a display name and a masked email." },
+        { n: "2", t: "A per-account Show for the current view, each one an admin_events row. No bulk reveal." },
+        { n: "3", t: "Exact-email search finds one account and reveals no other. A partial email never matches." },
+        { n: "4", t: "Masking happens on the server; unmasked values reach the client only on a Show." },
+        { n: "5", t: "The privacy-page line is out of scope here." },
+        { n: "6", t: "Groups, overrides, invites and revokes all work from masked rows." }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
