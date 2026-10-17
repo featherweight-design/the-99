@@ -72,9 +72,10 @@ function PackCard({ offer, onFailure }: { offer: PackOffer; onFailure: (reason: 
           onClick={() => void buy()}
           disabled={busy}
           aria-busy={busy || undefined}
+          aria-label={c.pack.buyAria(offer.units, offer.price)}
           className="flex h-[44px] cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[color:var(--accent)] px-[20px] text-[14px] font-semibold text-[color:var(--bg)] disabled:cursor-default disabled:opacity-70 md:h-[40px]"
         >
-          {c.pack.buy(offer.units, offer.price)}
+          {c.pack.buy}
         </button>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.pack.via}</span>
       </div>

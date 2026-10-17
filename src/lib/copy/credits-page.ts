@@ -34,8 +34,12 @@ export const creditsPageCopy = {
   sub: "1 credit is 1 run of any tool",
   /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
   subLink: creditsCopy.link,
-  refunds:
-    "Refunds: email support@the-99.dev within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
+  supportEmail: "support@the-99.dev",
+  /** The refunds line around the address, so it can be drawn as a mailto link (`SupportLink`). */
+  refunds: {
+    before: "Refunds: email ",
+    after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
+  },
   bal: {
     total: "credits to spend",
     order: "Spent in this order",
@@ -54,7 +58,10 @@ export const creditsPageCopy = {
     heading: "Get more credits",
     title: (units: number) => `${units} credits`,
     fine: "Pack credits never expire. They’re forfeited if you delete your account.",
-    buy: (units: number, price: string) => `Buy ${units} credits · ${price}`,
+    /** The card already says the count and the price, so the button does not (Hugh, 2026-10-17). */
+    buy: "Buy pack",
+    /** The button's accessible name: with more than one pack on sale, "Buy pack" alone names none of them; the visible words stay inside the name (label in name). */
+    buyAria: (units: number, price: string) => `Buy pack: ${units} credits · ${price}`,
     via: "Checkout on Stripe · US cards",
   },
   /** Why a Buy press did nothing, one line each. Placeholders: not in the handoff's strings file. */
@@ -86,8 +93,11 @@ export const creditsPageCopy = {
     procSays: "Payment received. Credits usually land in a second or two.",
     addedPack: (units: number) => `${units} pack credits added`,
     slowTitle: "Still adding your credits",
-    slowSays:
-      "This can take a few minutes. You won’t be charged twice. If they haven’t landed in an hour, email support@the-99.dev.",
+    /** Around the address, like `refunds`. */
+    slowSays: {
+      before: "This can take a few minutes. You won’t be charged twice. If they haven’t landed in an hour, email ",
+      after: ".",
+    },
     cancelled: "Checkout closed. Nothing was charged.",
     dismiss: "Dismiss",
     toast: "Couldn’t check on your purchase.",

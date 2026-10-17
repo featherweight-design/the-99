@@ -5,6 +5,7 @@
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { HistoryItem } from "../../lib/payments/page-model";
 import { ReceiptLink } from "./receipt-link";
+import { SupportLink } from "./support-link";
 
 const c = creditsPageCopy;
 
@@ -37,7 +38,7 @@ export function History({ items, onReceiptFailed }: { items: readonly HistoryIte
           ))}
         </ul>
       )}
-      <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">{c.refunds}</p>
+      <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">{c.refunds.before}<SupportLink />{c.refunds.after}</p>
     </section>
   );
 }

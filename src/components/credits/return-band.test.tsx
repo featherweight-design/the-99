@@ -54,6 +54,7 @@ describe("ReturnBand states", () => {
     await tick(60_000);
     expect(screen.getByText("Still adding your credits")).toBeTruthy();
     expect(screen.getByText(/You won’t be charged twice/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "support@the-99.dev" }).getAttribute("href")).toBe("mailto:support@the-99.dev");
     expect(container.querySelector(".anim-search-progress")).toBeNull();
   });
 });
