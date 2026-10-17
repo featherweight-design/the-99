@@ -72,5 +72,10 @@ describe("a row focus came back to keeps the list's keys", () => {
     expect(veil).not.toBeNull();
     expect(veil!.getAttribute("role")).toBeNull();
     expect(document.body.style.overflow).toBe("hidden");
+    // Focus is held on the veil, and Tab goes nowhere while it stands.
+    expect(document.activeElement).toBe(veil);
+    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    await act(async () => void veil!.dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(true);
   });
 });

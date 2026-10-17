@@ -110,6 +110,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [moved, setActive] = useState(-1);
   const [returned, setReturned] = useState<string | null>(null);
   const [veiled, setVeiled] = useState(false);
+  const veilRef = useRef<HTMLDivElement>(null);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [bodyEl, setBodyEl] = useState<HTMLDivElement | null>(null);
@@ -279,6 +280,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const onCardShown = useCallback(() => setVeiled(false), []);
   useEffect(() => {
     if (!veiled) return;
+    veilRef.current?.focus({ preventScroll: true });
     const t = window.setTimeout(() => setVeiled(false), VEIL_MAX_MS);
     return () => window.clearTimeout(t);
   }, [veiled]);
@@ -426,7 +428,20 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       {children}
       {/* While a picked card is on its way up the frame is inert, which takes it out of hit testing: this wrapper keeps
       the page underneath from taking a press. No role, so the history handover and the swap receipt see no dialog. */}
-      {veiled ? <div aria-hidden data-card-search-veil="" className="fixed inset-0 z-[41]" /> : null}
+      {veiled ? (
+        <div
+          ref={veilRef}
+          aria-hidden
+          data-card-search-veil=""
+          // Keyboard focus waits here too (the frame it left is inert), and Tab goes nowhere: the arriving card
+          // dialog takes focus itself, so this holds the page back for exactly as long as the veil stands.
+          tabIndex={-1}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") e.preventDefault();
+          }}
+          className="fixed inset-0 z-[41] outline-none"
+        />
+      ) : null}
       {/* The phone's sheet. At md and up the desktop draws its own field from the same context (PR D), handing it
           `inputRef` and `placeBody`; one frame is mounted at a time, so the results have one host. */}
       {desktop ? null : <PhoneFrame />}
