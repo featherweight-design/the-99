@@ -46,6 +46,42 @@ describe("DeckStatsView money card", () => {
     expect(onShop).toHaveBeenCalledTimes(1);
   });
 
+  describe("N3 (discovery R3): rows over the stand-in limit", () => {
+    const drawOver = (m: MoneyStats, overLimit: { count: number; limit: string } | null, onShop = vi.fn()) =>
+      render(<DeckStatsView data={{ curve: manaCurve([]), types: typeCurve([]), money: m }} onShop={onShop} overLimit={overLimit} />);
+
+    it("names the over rows and the limit on the shipped line, and presses through", () => {
+      const onShop = vi.fn();
+      drawOver(money(), { count: 2, limit: "$8" }, onShop);
+      const press = screen.getByRole("button", { name: "See the 12 in Shopping, 2 over your $8 limit" });
+      expect(press).toHaveTextContent("See the 12 in Shopping, 2 over $8");
+      fireEvent.click(press);
+      expect(onShop).toHaveBeenCalledTimes(1);
+    });
+
+    it("never says the over rows have cheaper stand-ins (R3 gap 10)", () => {
+      drawOver(money(), { count: 2, limit: "$8" });
+      const press = screen.getByRole("button", { name: /See the 12 in Shopping/ });
+      expect(press.getAttribute("aria-label")).not.toMatch(/stand-in/i);
+    });
+
+    it("reads one copy to buy as it, with no count", () => {
+      drawOver(money({ toBuy: { copies: 1, cents: 900, pricedCopies: 1 } }), { count: 1, limit: "$8" });
+      expect(screen.getByRole("button", { name: "See it in Shopping, over your $8 limit" })).toHaveTextContent("See it in Shopping, over $8");
+    });
+
+    it("keeps the shipped line with nothing over", () => {
+      drawOver(money(), null);
+      const press = screen.getByRole("button", { name: "See the 12 in Shopping" });
+      expect(press).not.toHaveAttribute("aria-label");
+    });
+
+    it("never wraps the line (R3 gap 3)", () => {
+      drawOver(money(), { count: 2, limit: "$8" });
+      expect(screen.getByRole("button", { name: /See the 12 in Shopping/ })).toHaveClass("whitespace-nowrap");
+    });
+  });
+
   it("says Nothing when everything is owned, and drops the To buy legend and the link", () => {
     draw(money({ toBuy: { copies: 0, cents: 0, pricedCopies: 0 }, owned: { copies: 88, cents: 48645, pricedCopies: 88 } }), vi.fn());
     expect(card()).toHaveTextContent("Nothing");

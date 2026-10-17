@@ -22,7 +22,22 @@ function Figure({ k, v, sub, ink }: { k: string; v: string; sub: string; ink: st
   );
 }
 
-export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () => void }) {
+/** N3 (discovery R3): the deck's to-buy rows over its stand-in limit, and that limit as the Shopping view writes it. */
+export type MoneyOverLimit = { count: number; limit: string };
+
+/**
+ * `overLimit` is set only under `swapToolsEnabled` with at least one row over (N3): the Shopping line then names them, and
+ * `onShop` lands on the first over row's ⇄. Null keeps the line as shipped.
+ */
+export function MoneyCard({
+  money,
+  onShop,
+  overLimit = null,
+}: {
+  money: MoneyStats;
+  onShop?: () => void;
+  overLimit?: MoneyOverLimit | null;
+}) {
   const { value, owned, toBuy, basics, total, priciest } = money;
   const denom = copy.denom(total);
   const nothingToBuy = toBuy.copies === 0;
@@ -57,9 +72,13 @@ export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () =>
           type="button"
           data-money-shop
           onClick={onShop}
-          className="-mt-[6px] flex min-h-[44px] items-center self-start md:min-h-[28px]"
+          aria-label={overLimit ? copy.shopOverAria(toBuy.copies, overLimit.count, overLimit.limit) : undefined}
+          // One line at every width (R3 gap 3): N3 lengthens the line, and a wrap would grow the card.
+          className="-mt-[6px] flex min-h-[44px] items-center self-start whitespace-nowrap md:min-h-[28px]"
         >
-          <span className="border-b border-b-[color:color-mix(in_oklab,var(--warning)_45%,transparent)] font-mono text-[11px] text-[color:var(--warning)]">{copy.shopLink(toBuy.copies)}</span>
+          <span className="border-b border-b-[color:color-mix(in_oklab,var(--warning)_45%,transparent)] font-mono text-[11px] text-[color:var(--warning)]">
+            {overLimit ? copy.shopOver(toBuy.copies, overLimit.count, overLimit.limit) : copy.shopLink(toBuy.copies)}
+          </span>
           <span aria-hidden="true" className="ml-[8px] text-[12px] text-[color:var(--fg-muted)]">⟶</span>
         </button>
       )}

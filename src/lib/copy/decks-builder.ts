@@ -88,6 +88,11 @@ export const addPanelCopy = {
       have === null
         ? `${role}, count not yet known, target ${target}. See ${role.toLowerCase()} cards to consider.`
         : `${role}, ${have} of ${target}. See ${role.toLowerCase()} cards to consider.`,
+    // N1 (discovery R3): a short cell with no shelf, on a deck at its body size, offers Suggested changes in the
+    // slot the dash held. Never drawn in flight, so `have` is always known.
+    suggestLink: "suggest swaps →",
+    suggestLinkShort: "suggest →",
+    suggestAria: (role: string, have: number, target: number) => `${role}, ${have} of ${target}. Open Suggested changes.`,
     // A cell with no shelf to send anyone to is a figure and not a control.
     // Two cases reach it: the role has met its target, and the role is short
     // but Consider drew it no shelf because nothing owned fills it.

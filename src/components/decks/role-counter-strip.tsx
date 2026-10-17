@@ -50,6 +50,9 @@ type RoleCounterStripProps = {
   labelRows?: JobRowsByCard | null;
   /** Opens Mana Balance from the land cell, when that cell has no shelf to offer. */
   onBalanceMana?: () => void;
+  /** N1 (discovery R3): open Suggested changes from a cell under its target that has no shelf. The caller passes it
+   *  only on a deck at its body size with `tuningEnabled` on; the strip hands it to the short cells. */
+  onSuggest?: () => void;
   /** The deck is at its size: the land cell's `balance mana →` carries Mana Balance's moment (M4). */
   balanceMoment?: boolean;
 } & (
@@ -66,6 +69,7 @@ export function RoleCounterStrip({
   wasCounts,
   labelRows,
   onBalanceMana,
+  onSuggest,
   balanceMoment,
 }: RoleCounterStripProps) {
   const countRoles = roleCounterFor(labelRows);
@@ -143,6 +147,7 @@ export function RoleCounterStrip({
                 : undefined
             }
             onBalanceMana={role === "land" ? onBalanceMana : undefined}
+            onSuggest={onSuggest && counts[role] < mix.cells[role].target ? onSuggest : undefined}
             balanceMoment={role === "land" && balanceMoment}
           />
         ))}

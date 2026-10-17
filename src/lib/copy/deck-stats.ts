@@ -124,6 +124,13 @@ export const deckStatsCopy = {
     tagToBuy: "to buy",
     caption: "One square per card, owned first. Prices from Mana Pool. Basics are never priced or counted to buy.",
     shopLink: (n: number) => (n === 1 ? "See it in Shopping" : `See the ${n} in Shopping`),
+    // N3 (discovery R3): some to-buy rows are over the deck's stand-in limit. `n` counts copies, as the line above
+    // does, and `over` counts the rows the limit marks; a row over the limit is never a basic, so the two agree.
+    // The name says only that they are over the limit: an over row need not have a cheaper stand-in (R3 gap 10).
+    shopOver: (n: number, over: number, limit: string) =>
+      n === 1 ? `See it in Shopping, over ${limit}` : `See the ${n} in Shopping, ${over} over ${limit}`,
+    shopOverAria: (n: number, over: number, limit: string) =>
+      n === 1 ? `See it in Shopping, over your ${limit} limit` : `See the ${n} in Shopping, ${over} over your ${limit} limit`,
   },
   average: {
     // Counts the body (99, or 98 for a pair), as the Curve card says it counts the commander: EDHREC's type counts sum to the body.

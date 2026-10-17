@@ -11,7 +11,8 @@ import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
-import { isOverLimit } from "../../lib/swaps/limit";
+import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
+import type { ToolId } from "../../lib/discovery/tools";
 import { isLandFace } from "../../lib/cards/facet";
 import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve, type DeckStatsInput } from "../../lib/decks/stats";
@@ -177,6 +178,9 @@ type DecklistProps = {
   versions?: readonly { number: number; committedAt: Date }[];
   /** The Results card's empty-state link: opens the Games tab. */
   onLogGame?: () => void;
+  /** A nudge's press (discovery R3): the shell opens the tool's view and lands on its target. N3 lands on Cheaper
+   *  stand-ins, the first over row's ⇄. */
+  onLandTool?: (id: ToolId) => void;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -376,6 +380,7 @@ export function Decklist({
   filter,
   grouping,
   onFilterChange: onFilterChangeProp,
+  onLandTool,
   onGroupingChange,
   onUnresolvedExpandedChange,
   autoCount = 0,
@@ -709,6 +714,8 @@ export function Decklist({
   const shoppingOverCount = swapTools
     ? listShoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
     : 0;
+  // N3 (discovery R3): the Money card's Shopping line names the same count, under the same switch.
+  const moneyOver = swapTools && shoppingOverCount > 0 ? { count: shoppingOverCount, limit: formatLimit(swapTools.limitCents) } : null;
 
   // What the strip's buy link buys — the same rows, in the same order, as the
   // list on screen. Recomputed with the rest of this render, so a ✕ moves the
@@ -858,7 +865,12 @@ export function Decklist({
           {...lockProps}
         />
         <DeckBarPanel value="stats">
-        <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} onLogGame={onLogGame} />
+        <DeckStatsView
+          data={statsSlice}
+          onShop={moneyOver && onLandTool ? () => onLandTool("stand-ins") : () => onFilterChange("shopping")}
+          overLimit={onLandTool ? moneyOver : null}
+          onLogGame={onLogGame}
+        />
         </DeckBarPanel>
       </div>
     );

@@ -156,6 +156,47 @@ describe("role counter strip — a met cell is a figure", () => {
   });
 });
 
+describe("role counter strip — N1, suggest swaps (discovery R3)", () => {
+  const suggestFor = (role: MixRole, have: number) =>
+    screen.queryByRole("button", {
+      name: addPanelCopy.strip.suggestAria(TEST_MIX.cells[role].label, have, TEST_MIX.cells[role].target),
+    });
+
+  it("offers Suggested changes from a short cell with no shelf, in the dash's slot", () => {
+    const onSuggest = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSuggest={onSuggest} />);
+    const wipes = suggestFor("wipes", 0)!;
+    expect(wipes).toHaveTextContent(addPanelCopy.strip.suggestLink);
+    expect(wipes).toHaveTextContent(addPanelCopy.strip.suggestLinkShort);
+    expect(wipes).toHaveClass("border-border-strong");
+    fireEvent.click(wipes);
+    expect(onSuggest).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives a met cell nothing to suggest", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSuggest={vi.fn()} />);
+    expect(suggestFor("ramp", TEST_MIX.cells.ramp.target)).toBeNull();
+  });
+
+  it("leaves the slot to a shelf's consider →", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} onSuggest={vi.fn()} />);
+    expect(suggestFor("draw", 0)).toBeNull();
+    expect(cellFor("draw", 0)).not.toBeNull();
+  });
+
+  it("leaves the land cell to balance mana →", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onBalanceMana={vi.fn()} onSuggest={vi.fn()} />);
+    expect(suggestFor("land", 0)).toBeNull();
+    expect(suggestFor("draw", 0)).not.toBeNull();
+  });
+
+  it("draws the dash, as shipped, with no handler", () => {
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} />);
+    expect(screen.queryByText(addPanelCopy.strip.suggestLink)).toBeNull();
+    expect(screen.queryAllByRole("button", { name: /Open Suggested changes/ })).toHaveLength(0);
+  });
+});
+
 describe("role counter strip — one disclosure for the whole strip", () => {
   it("starts closed with the trigger and no panel", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
