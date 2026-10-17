@@ -26,7 +26,7 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label={creatorNoteCopy.title}
         data-creator-note
-        className="relative flex h-[min(700px,92dvh)] w-full flex-col rounded-t-[18px] border border-b-0 border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] md:h-[min(660px,90dvh)] md:w-[640px] md:rounded-[16px] md:border-b md:border-b-[color:var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
+        className="relative flex h-[min(700px,92dvh)] w-full flex-col rounded-t-[18px] border border-b-0 border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] md:h-[min(660px,90dvh)] md:w-[640px] md:rounded-[16px] md:border-b-[1px] md:border-b-[color:var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
       >
         <span aria-hidden className="mt-[8px] h-[4px] w-[40px] self-center rounded-full bg-[color:var(--border-dashed)] md:hidden" />
         <div className="flex items-start justify-between gap-[12px] px-[16px] pb-[10px] pt-[12px] md:px-[28px] md:pt-[24px]">

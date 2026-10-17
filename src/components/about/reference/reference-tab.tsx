@@ -15,6 +15,7 @@ import { aboutCopy } from "../../../lib/copy/about";
 import { referenceCopy } from "../../../lib/copy/discovery";
 import { HOW_IT_WORKS_ID } from "../../../lib/copy/how-it-works-links";
 import { searchEntries } from "../../../lib/about/search";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import type { ReferenceEntry, ReferenceScreen } from "../../../lib/about/reference";
 import { SearchField } from "../../ui/text-field";
 import { SearchIcon } from "../../ui/search-icon";
@@ -143,14 +144,23 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
     if (!reveal(id)) return;
     e.preventDefault();
     setQuery("");
-    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" })));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        noteAppScroll();
+        document.getElementById(id)?.scrollIntoView({ block: "start" });
+      }),
+    );
   };
 
   // A link to `#<entry id>`: what's new, a result, How it works' `explained in` lines, or one from another page.
   useEffect(() => {
     const follow = () => {
       const id = decodeURIComponent(window.location.hash.slice(1));
-      if (id && reveal(id)) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+      if (!id || !reveal(id)) return;
+      requestAnimationFrame(() => {
+        noteAppScroll();
+        document.getElementById(id)?.scrollIntoView({ block: "start" });
+      });
     };
     follow();
     window.addEventListener("hashchange", follow);
