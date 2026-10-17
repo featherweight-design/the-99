@@ -9,6 +9,25 @@ const friends = (x: number) => (x === 1 ? "1 friend" : `${x} friends`);
 const days = (x: number) => (x === 1 ? "1 day" : `${x} days`);
 
 export const socialCopy = {
+  // Friends on Home (Social R3 addendum, handoff `addendum-friends-home`; /copy-review 2026-10-16). Shipped strings are
+  // reused rather than repeated: page.invite, page.invitePending, page.accepted(name), invites.left(ms), invites.show,
+  // invites.tooMany, friends.openAria(name).
+  home: {
+    /** The mono label, drawn uppercase by CSS. */
+    head: "Friends",
+    /** After `head`, in its own tracking: how many friends. */
+    headCount: (n: number) => `· ${n}`,
+    all: "All friends", // the › is drawn
+    you: "You", // under your own face, in the no-friends state only
+    invite: "Add the people you play with.",
+    /** G5: the line's second sentence names Opponents only while SOCIAL_GAMES_ENABLED is on. */
+    inviteMore: (games: boolean) =>
+      games ? "Seat them when you log a game, and see their spares when you shop." : "See their spares when you shop.",
+    more: (n: number) => `+${n}`, // the overflow slot, aria-hidden
+    moreSub: "more",
+    links: (n: number) => (n === 1 ? "Friend link open" : `${n} friend links open`),
+    seeAll: "See them", // the › is drawn; to /friends
+  },
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
   menu: { friends: "Friends" },
 

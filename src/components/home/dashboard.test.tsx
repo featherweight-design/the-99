@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), usePathname: () => "/" }));
+vi.mock("../../app/friends/actions", () => ({ createInviteAction: vi.fn() }));
+vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
 import { Dashboard } from "./dashboard";
 import type { DeckListItem } from "../../lib/decks/read";
 
@@ -227,3 +230,45 @@ describe("Dashboard at zero cards with decks (no-collection entry S12)", () => {
     expect(container.querySelector("[data-lock-page-line]")).toBeNull();
   });
 });
+
+describe("Friends on Home", () => {
+  const FRIENDS = {
+    you: { displayName: "Hugh", commander: null },
+    friends: [{ publicId: "p1", displayName: "Colin", commander: null }],
+    links: [],
+    games: true,
+    friendPages: true,
+  };
+  const section = () => screen.getByRole("region", { name: "Friends · 1" });
+
+  it("is absent, with no space kept, when the page hands no friends (switch off or a failed read)", () => {
+    render(<Dashboard {...BASE} friends={null} />);
+    expect(screen.queryByRole("region", { name: /^Friends/ })).toBeNull();
+  });
+
+  it("is drawn once, under Commitments in the right column, and placed second below 1180 by order (G8)", () => {
+    render(<Dashboard {...BASE} friends={FRIENDS} />);
+    expect(screen.getAllByRole("region", { name: /^Friends/ })).toHaveLength(1);
+    expect(section().className).toMatch(/(^| )order-1( |$)/);
+    expect(section().className).toMatch(/min-\[1180px\]:order-none/);
+    // The column, and Commitments in it, before Friends in the DOM.
+    const column = section().parentElement!;
+    expect(column.textContent?.indexOf("Commitments")).toBeLessThan(column.textContent!.indexOf("Friends"));
+    expect(column.className).toMatch(/(^| )contents( |$)/);
+  });
+
+  it("keeps the right column for Friends alone when Commitments is absent (G7)", () => {
+    render(<Dashboard {...BASE} commitments={null} friends={FRIENDS} />);
+    expect(screen.queryByText("Commitments")).toBeNull();
+    expect(section().parentElement!.className).toContain("min-[1180px]:w-[316px]");
+    // Alone in the column, it sits at the column's top; under Commitments, 4px below the column's gap.
+    expect(section().className).toMatch(/min-\[1180px\]:mt-0( |$)/);
+  });
+
+  it("puts 6px above the section on the phone, and 4px under Commitments from 1180", () => {
+    render(<Dashboard {...BASE} friends={FRIENDS} />);
+    expect(section().className).toMatch(/(^| )mt-\[6px\]( |$)/);
+    expect(section().className).toMatch(/min-\[1180px\]:mt-\[4px\]( |$)/);
+  });
+});
+

@@ -16,6 +16,7 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { ensureSenderProfile } from "./sender-profile";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
@@ -100,6 +101,7 @@ export async function createInviteAction(): Promise<CreateInviteOutcome> {
   if (!userId) return OFF;
   const origin = originFrom(await headers());
   if (origin === null) return { ok: false, reason: "noOrigin" };
+  await ensureSenderProfile(userId);
   const made = await createInvite(userId);
   if (!made.ok) return made;
   refreshFriends();

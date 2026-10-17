@@ -7,6 +7,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { ensureSenderProfile } from "./sender-profile";
 import { atFloor } from "../../lib/invites/floor";
 import { sendEmailInvite, showInviteQr } from "../../lib/invites/send";
 import { joinPath } from "../../lib/invites/rules";
@@ -37,6 +38,8 @@ export async function sendEmailInviteAction(email: unknown): Promise<SendEmailIn
   if (!userId) return OFF;
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   await observeHit(userId, "invite-email");
+  // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
+  await ensureSenderProfile(userId);
   const outcome = await atFloor(async (): Promise<SendEmailInviteOutcome> => {
     try {
       return await sendEmailInvite(userId, email);
@@ -63,6 +66,7 @@ export async function showInviteQrAction(): Promise<ShowInviteQrOutcome> {
   if (!userId) return OFF;
   const origin = originFrom(await headers());
   if (origin === null) return { ok: false, reason: "noOrigin" };
+  await ensureSenderProfile(userId);
   const secret = inviteSecret({ INVITE_CODE_SECRET: process.env.INVITE_CODE_SECRET });
   if (!secret) console.warn("[invites] invite-qr unconfigured");
   const shown = await showInviteQr(userId, secret);
