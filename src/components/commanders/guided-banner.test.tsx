@@ -28,4 +28,30 @@ describe("GuidedBanner", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
     expect(screen.queryByText(/legal commander/)).toBeNull();
   });
+
+  // Discovery R3 E2 (G1): the door at the end of the banner's line at 1280, its own line at 390.
+  it("ends the line in Help me choose's door at both widths with the switch on", () => {
+    render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose />);
+    const links = screen.getAllByRole("link", { name: "Help me choose →" });
+    expect(links).toHaveLength(2);
+    for (const a of links) expect(a).toHaveAttribute("href", "/decks/new/choose");
+    expect(screen.getByTestId("guided-choose-phone")).toHaveTextContent("Not sure which? Help me choose →");
+    expect(links[0].className.split(/\s+/)).toEqual(expect.arrayContaining(["inline-flex", "min-h-[32px]"]));
+    expect(links[1].className).not.toContain("min-h-[32px]");
+    // At 1280 it closes the body paragraph itself, after the directive.
+    const desk = screen.getByTestId("guided-choose-desk");
+    expect(desk.parentElement!.tagName).toBe("P");
+    expect(desk.parentElement!.textContent).toBe(
+      "1,418 cards read. 24 can lead. I ranked them. You’re welcome. Pick a commander to build your first 99. Not sure which? Help me choose →",
+    );
+  });
+
+  it("is the banner as shipped with the switch off", () => {
+    const { container, rerender } = render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
+    const shipped = container.innerHTML;
+    expect(screen.queryByText(/Not sure which/)).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+    rerender(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose={false} />);
+    expect(container.innerHTML).toBe(shipped);
+  });
 });

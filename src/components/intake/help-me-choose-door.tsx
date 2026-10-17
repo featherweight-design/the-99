@@ -1,8 +1,9 @@
-// Help me choose's two doors (HANDOFF §1). Each is drawn only where its host passes the feature's
-// flag; neither reads the flag itself, because the flag is a server setting and both hosts render
-// on the client.
+// Help me choose's doors (HANDOFF §1, and discovery R3's empty-state lines). Each is drawn only where
+// its host passes the feature's flag; none reads the flag itself, because the flag is a server setting
+// and the hosts render on the client.
 
 import Link from "next/link";
+import type { ComponentProps } from "react";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
 import { CHOOSE_PATH } from "../../lib/intake/submit";
@@ -79,5 +80,22 @@ export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly
         {copy.cta}
       </Link>
     </p>
+  );
+}
+
+/**
+ * R3's quiet door press (C10): the tool's name as an underlined accent link, after a plain question
+ * the host draws. Never a button or a card. The rest of the props reach the link, so a host can make
+ * it a moment's anchor (M12 on /commanders' banner).
+ */
+export function ChooseDoorPress({ className = "", ...rest }: Omit<ComponentProps<typeof Link>, "href" | "children">) {
+  return (
+    <Link
+      href={CHOOSE_PATH}
+      {...rest}
+      className={`${className} text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px]`}
+    >
+      {copy.cta}
+    </Link>
   );
 }

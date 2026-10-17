@@ -25,12 +25,14 @@ const spelled = (n: number) => SMALL_NUMBERS[n] ?? n.toLocaleString("en-US");
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
 export const helpMeChooseCopy = {
-  /** The two doors (HANDOFF §1): the create picker's box, and the link on Discover's result line. */
+  /** The doors (HANDOFF §1): the create picker's box, the link on Discover's result line, and R3's empty-state lines. */
   door: {
     head: "Not sure what to build?",
     body: "Say what you want, and we’ll rank commanders by how well they fit it, owned or not.",
     cta: "Help me choose →",
     discoverLead: "Not sure what you want?",
+    /** /commanders' guided banner (discovery R3 E2, G1). `head` and `cta` serve the zero-deck door (E1). */
+    commandersLead: "Not sure which?",
   },
   intake: {
     title: "Help me choose",

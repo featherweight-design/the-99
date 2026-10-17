@@ -17,8 +17,10 @@ import { DecksZeroActions } from "@/components/decks/decks-zero";
  * sm:mt-[2px]`, so under this card's gap the body sits 18px above the buttons on a phone and
  * 16px on desktop (audit correction 8). The section gap is ResumeDecks' own (correction 10),
  * and the card is drawn at R2's stated padding and gap (correction 9).
+ *
+ * `helpMeChoose` (`HELP_ME_CHOOSE_ENABLED`, from the page) draws the shared door line (discovery R3 E1).
  */
-export function HomeDecksZero() {
+export function HomeDecksZero({ helpMeChoose = false }: { helpMeChoose?: boolean }) {
   const c = refreshCopy.zero;
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
@@ -37,7 +39,7 @@ export function HomeDecksZero() {
         </p>
         {/* DecksZero's column gives the group these gaps; this column gives the same. */}
         <div className="flex flex-col gap-[15px] sm:gap-[16px]">
-          <DecksZeroActions />
+          <DecksZeroActions helpMeChoose={helpMeChoose} />
         </div>
       </div>
     </section>

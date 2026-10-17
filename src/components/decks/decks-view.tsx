@@ -117,6 +117,8 @@ export type DecksViewProps = {
   cartEnabled?: boolean;
   /** The precons line (`PRECONS_ENABLED`), with its summary, or null when the switch is off. */
   precons?: { summary: PreconSummary | null } | null;
+  /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the zero state's door (discovery R3 E1). */
+  helpMeChoose?: boolean;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
   /** Copies owned, not distinct names — the second half of `buildableFrom`. */
@@ -204,6 +206,7 @@ export function DecksView({
   shopping,
   cartEnabled = false,
   precons = null,
+  helpMeChoose = false,
   buildable,
   cards,
   now: nowIso,
@@ -938,7 +941,7 @@ export function DecksView({
       ) : null}
 
       {zero ? (
-        <DecksZero buildable={buildable} cards={cards} />
+        <DecksZero buildable={buildable} cards={cards} helpMeChoose={helpMeChoose} />
       ) : (
         <div className="flex min-h-0 flex-auto flex-col">
           {/* THE LEVEL, above the chassis and on its own ground. It draws only

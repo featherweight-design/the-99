@@ -1,4 +1,5 @@
 import { allDecksCartEnabled } from "../lib/decks/all-decks-cart-flag";
+import { helpMeChooseEnabled } from "../lib/intake/flag";
 import type { ComponentProps } from "react";
 import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
@@ -334,6 +335,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       arrivals={data.arrivals}
       about={about}
       cartEnabled={allDecksCartEnabled(env)}
+      helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialGamesEnabled(env), friendPages: wishlistEnabled(env), invites }}
       // One clock for the whole page, read on the server, so every relative

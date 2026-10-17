@@ -4,7 +4,9 @@
 //
 // Distinct from the filtered empty, which offers Clear and no illustration.
 
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { ChooseDoorPress } from "../intake/help-me-choose-door";
 import { GhostButton, PrimaryButton } from "../ui/button";
 
 const CARD = "absolute h-[76px] w-[56px] rounded-[6px] border border-solid sm:h-[84px] sm:w-[62px] sm:rounded-[7px]";
@@ -33,7 +35,16 @@ function CardFanMark() {
   );
 }
 
-export function DecksZero({ buildable, cards }: { buildable: number; cards: number }) {
+export function DecksZero({
+  buildable,
+  cards,
+  helpMeChoose = false,
+}: {
+  buildable: number;
+  cards: number;
+  /** `HELP_ME_CHOOSE_ENABLED`, resolved on the server for this reader: the zero state's door (discovery R3 E1). */
+  helpMeChoose?: boolean;
+}) {
   const c = refreshCopy.zero;
   return (
     <div className="flex min-h-0 flex-auto flex-col items-center justify-center gap-[15px] px-[22px] py-[24px] text-center sm:gap-[16px] sm:px-[40px] sm:py-[26px]">
@@ -53,7 +64,7 @@ export function DecksZero({ buildable, cards }: { buildable: number; cards: numb
         {c.decksBody}
       </p>
 
-      <DecksZeroActions buildable={buildable} cards={cards} />
+      <DecksZeroActions buildable={buildable} cards={cards} helpMeChoose={helpMeChoose} />
     </div>
   );
 }
@@ -64,8 +75,20 @@ export function DecksZero({ buildable, cards }: { buildable: number; cards: numb
  * cannot drift (first-run ruling O1, 2026-09-28). A fragment, every class and margin as it
  * was inline here, so `/decks` renders identically; each host supplies the column around it.
  * Home passes no `buildable`, so its line never draws there (Hugh's ruling, 2026-09-28).
+ *
+ * `helpMeChoose` is `HELP_ME_CHOOSE_ENABLED` for this reader, read by each page exactly as /decks/new
+ * reads it: on, one quiet line under everything names the tool that fills the empty state (discovery
+ * R3 E1, C10); off, the group is exactly as shipped.
  */
-export function DecksZeroActions({ buildable = 0, cards = 0 }: { buildable?: number; cards?: number }) {
+export function DecksZeroActions({
+  buildable = 0,
+  cards = 0,
+  helpMeChoose = false,
+}: {
+  buildable?: number;
+  cards?: number;
+  helpMeChoose?: boolean;
+}) {
   const c = refreshCopy.zero;
   return (
     <>
@@ -89,6 +112,19 @@ export function DecksZeroActions({ buildable = 0, cards = 0 }: { buildable?: num
       {buildable > 0 && (
         <p className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)] sm:mt-[2px]">
           {c.buildableFrom(buildable, cards.toLocaleString("en-US"))}
+        </p>
+      )}
+
+      {/* On a phone the press itself is 32px tall, the door's hit, and the line grows to it. The
+          host's column places the line (centered on /decks, left on Home). The space is kept for
+          the line's text, which a screen reader reads; the gap draws it. */}
+      {helpMeChoose && (
+        <p
+          data-testid="decks-zero-choose"
+          className="m-0 flex flex-wrap items-center gap-x-[4px] text-[14px] leading-[1.5] text-[color:var(--fg-muted)] sm:mt-[4px] sm:text-[13.5px] sm:leading-normal"
+        >
+          {helpMeChooseCopy.door.head}{" "}
+          <ChooseDoorPress className="inline-flex min-h-[32px] items-center sm:inline sm:min-h-0" />
         </p>
       )}
     </>

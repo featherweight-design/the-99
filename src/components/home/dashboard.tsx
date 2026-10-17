@@ -51,6 +51,8 @@ export type DashboardProps = {
   about?: AboutLine | null;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
+  /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
+  helpMeChoose?: boolean;
   /**
    * Decks and no cards, with NO_COLLECTION_ENTRY_ENABLED (no-collection entry S12): the kicker counts the decks, the
    * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
@@ -210,7 +212,7 @@ export function Dashboard(props: DashboardProps) {
               same pair as `/decks`, through one shared component. */}
           <div className="order-2 flex min-w-0 flex-col min-[1180px]:order-none">
             {noDecks ? (
-              <HomeDecksZero />
+              <HomeDecksZero helpMeChoose={props.helpMeChoose} />
             ) : (
               <ResumeDecks
                 decks={resumeDecks(props.decks)}

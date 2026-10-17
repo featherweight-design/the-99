@@ -115,6 +115,8 @@ export type CommandersViewProps = {
       names none, and what the URL is written against, so `a=` appears only where the mode
       on screen differs from it. `all` for an account that has never chosen. */
   savedAvail?: Avail;
+  /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the guided banner's door (discovery R3 E2). */
+  helpMeChoose?: boolean;
 };
 
 export function CommandersView({
@@ -127,6 +129,7 @@ export function CommandersView({
   availOk,
   printedIn,
   savedAvail = "all",
+  helpMeChoose = false,
 }: CommandersViewProps) {
   const search = useSearchParams();
 
@@ -624,6 +627,7 @@ export function CommandersView({
           <GuidedBanner
             uniqueCardsRead={uniqueCardsRead}
             candidateCount={candidateCount}
+            helpMeChoose={helpMeChoose}
           />
         </div>
       )}
