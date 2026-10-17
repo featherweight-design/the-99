@@ -34,6 +34,8 @@ in this repository. Read them there; the quotes below are the ones this plan rel
 - `teaser-credits-and-tiers-2026-10-17.md` (welcome grant sizing). Recommended 15 credits for 30 days, about $0.85 per
   signup at most; a migration is needed (`credit_grants.source` is checked to `plan`/`pack`, and `credit_grants_pack_never_expires_check` allows `expires_at` only on `plan`); spend order free, welcome,
   plan, pack. Its `HARD_STOP_USD` arithmetic no longer applies: the app-wide spending limits are being removed (see D0).
+- The Phase F1 research brief on what peers show logged out (in the same folder). It informed the public surface ruling
+  (L12).
 - `hugh-todos.md`, sections "Terms decisions" and "Welcome credits + supporter tier", and the privacy page line.
 
 ## Locked decisions
@@ -41,7 +43,7 @@ in this repository. Read them there; the quotes below are the ones this plan rel
 | # | Ruling (Hugh, 2026-10-17) | Source |
 |---|---|---|
 | L1 | Avoid contacting Wizards where possible. Follow the observed peer pattern (DeckCheck the closest analog) as its least-gray version, and never be gray through omission: every notice, credit and free path the pattern carries, we carry. | precedent brief §1, §verdict |
-| L2 | Invite-only stays for a while. A free, read-only PUBLIC surface is planned later in this epic to answer the FCP's free-access and "email registration" point; its scope is researched in Phase F (card pages, commander pages, shared-deck pages; what peers show logged out). | FCP brief item 3; precedent brief "no peer gates card content" |
+| L2 | Invite-only stays for a while. A free, read-only PUBLIC surface is planned later in this epic to answer the FCP's free-access and "email registration" point; its scope is researched in Phase F (card pages, commander pages, shared-deck pages; what peers show logged out); the first cut is ruled as L12. | FCP brief item 3; precedent brief "no peer gates card content" |
 | L3 | No per-crop artist credit (peers crop art without one). The card-art blur and wash are treated as covered (DeckCheck blurs art washes; the card itself stays visible). A Design alternative is optional and adopted only if it matches today's intent. | FCP brief item 4; precedent brief |
 | L4 | The FCP notice appears on every page, signed in or out, but SUBTLY: small muted footer text, Scryfall style, plus /about and the Terms. Text: the FCP template naming "The 99", then "Card images and mana symbols are copyright Wizards of the Coast, LLC. Card data and images from Scryfall; prices from Mana Pool. Not affiliated with Wizards of the Coast, Scryfall or Mana Pool." | FCP rule 2; precedent brief §recommendation |
 | L5 | Welcome credits for new sign-ups: 15 credits (3 runs of each smart tool), expiring after 30 days, plus an onboarding "Where credits work" section. Ships BEFORE more users onboard, after payments U2a. | teaser brief §2 |
@@ -51,6 +53,7 @@ in this repository. Read them there; the quotes below are the ones this plan rel
 | L9 | The supporter tier is post-launch and out of this epic. | teaser brief §4 |
 | L10 | The app-wide spending limits (`BUDGET_USD`, `HARD_STOP_USD`) are removed entirely. The Anthropic workspace limits carry spend: $150 a month for The 99's workspace, $250 for the org. The removal ships as three PRs by another lane: A (server and `/admin`), B (UI readers and copy), C (the type). | Hugh, 2026-10-17 |
 | L11 | Users must be 18 or older (Hugh answered No to Anthropic's under-18 question). | Hugh, 2026-10-17 |
+| L12 | The public surface's first cut is public card pages and public commander pages: read-only catalog loaders that read no per-user data, cached at the CDN. The card page route is new; the commander page needs its own catalog-only loader. Anonymous reads get an IP-keyed rate-limit bucket, and a test proves the public loaders import nothing from collection, decks or `src/lib/social/`. Sign-up stays invite-only; search links out to Scryfall. Shared deck pages are deferred, to be decided together with opening sign-up. | Hugh, 2026-10-17; F1 brief |
 
 ## Phases and PRs
 
@@ -76,9 +79,9 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | **E. Admin PII masking** (its own plan) | | | | | | |
 | E1 to E4 | PII masking PR 1 (masked at the source), PR 2 (surfaces, including masked names in the `/admin` Costs per-account table, per the R3 design table), PR 3 (Show, the reveal log), PR 4 (exact-email lookup) | per that plan | Handoff #2003 | per that plan | per that plan | TBD |
 | **F. Public read-only surface** | | | | | | |
-| F1 | Research: what DeckCheck, EDHREC, Archidekt, Moxfield and Scryfall show logged out; which of card pages, commander pages and shared-deck pages to open; cost, caching and abuse notes; a recommendation for Hugh | none | No | No | S (doc) | TBD |
-| F2 | Design brief and handoff for the chosen scope | F1, Hugh's scope ruling | Yes | Yes | doc | TBD |
-| F3+ | Build, split per route at plan time (each route public in `src/proxy.ts`, no per-user data, the footer notice, rate limiting considered) | F2 | Built from F2 | Yes | TBD by F1 | TBD |
+| F1 | Research: what DeckCheck, EDHREC, Archidekt, Moxfield and Scryfall show logged out; which of card pages, commander pages and shared-deck pages to open; cost, caching and abuse notes; a recommendation for Hugh. DONE 2026-10-17; ruled as L12 | none | No | No | S (doc) | done |
+| F2 | Design brief and handoff for the L12 scope: a public card page and a public commander page, signed out, with search linking out to Scryfall | F1 (done), L12 | Yes | Yes | doc | TBD |
+| F3+ | Build, split per route at plan time: the new card page route and the commander page's catalog-only loader, each public in `src/proxy.ts`, CDN-cached, no per-user data, the footer notice; an IP-keyed rate-limit bucket for anonymous reads; a test that the public loaders import nothing from collection, decks or `src/lib/social/` | F2 | Built from F2 | Yes | split at plan time | TBD |
 | **G. Close-out** | | | | | | |
 | G1 | About entries for the features Hugh names (welcome credits, the public surface), one `ABOUT_VERSION` bump at the end of the launch, per the 2026-09-21 batching ruling | all feature PRs | Yes (About artboards) | Yes | S | TBD |
 
@@ -87,7 +90,7 @@ Admin costs, a note rather than a phase: `/admin` Costs will read Anthropic's Us
 
 ## Open decisions for Hugh
 
-1. **The public surface's scope.** Decided after F1 reports: which routes open, and whether sign-up opens with them.
+None remain.
 
 ## Decided
 
@@ -97,6 +100,8 @@ Admin costs, a note rather than a phase: `/admin` Costs will read Anthropic's Us
   of scope (below).
 - **Plan vs pack** (2026-10-17). Both ship at launch. The pack leads on `/credits`; the monthly plan (U3) sits behind it,
   worded as a credit bundle that renews, never a membership (L6).
+- **The public surface's scope** (2026-10-17). Card pages and commander pages first; sign-up stays invite-only;
+  shared deck pages deferred until sign-up opens (L12).
 - **Age** (2026-10-17). Users must be 18 or older, stated in `/terms` (L11).
 
 ## Order
@@ -115,15 +120,16 @@ Admin costs, a note rather than a phase: `/admin` Costs will read Anthropic's Us
 1. D1 and D2 (welcome credits and where they work), with U2b merged so the credit line can show a welcome lot.
 2. Everything in the payments list above, since a new player can reach `/credits` on day one.
 
-**Before invite-only is lifted or any public launch:** F1 to F3 and Hugh's scope ruling, then G1.
+**Before invite-only is lifted or any public launch:** F2 and F3 (F1 is done and the scope is ruled, L12), then G1.
 
-A2, A3 and F1 have no dependencies and can run in parallel with the rest.
+A2 and A3 have no dependencies and can run in parallel with the rest.
 
 ## Not in this plan
 
 - The supporter tier (L9; revisit at about 10 plan subscribers).
 - Invite credits for the sender, the leftover-conversion on purchase, and the day-23 reminder (teaser brief §3). Each is
   a candidate follow-up once welcome credits have run for a month.
+- Shared deck pages, and opening sign-up: deferred and decided together (L12).
 - Removing the app-wide spending limits (L10): three PRs owned by another lane.
 - Contacting Wizards or Scryfall (L1). If a public launch ever outgrows the peer pattern, revisit.
 
