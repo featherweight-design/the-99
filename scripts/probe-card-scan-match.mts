@@ -15,7 +15,7 @@
 //
 // It REPLACES `scan_index` on its database, so it refuses production, staging and local-dev by `neon.branch_id`
 // (`assertScratchBranch`). Point the worktree's `.env` DATABASE_URL at a scratch branch made from local-dev, migrated
-// to 0142, and SCAN_ROWS_DIR at `export_index.py all --server`'s output:
+// to 0144, and SCAN_ROWS_DIR at `export_index.py all --server`'s output:
 //
 //   SCAN_ROWS_DIR=… pnpm probe:card-scan-match
 import { requireEnv } from "./lib/env.mjs";

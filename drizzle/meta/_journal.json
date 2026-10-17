@@ -1009,6 +1009,13 @@
       "when": 1792200424172,
       "tag": "0143_invite_admin_events",
       "breakpoints": true
+    },
+    {
+      "idx": 144,
+      "version": "7",
+      "when": 1792201693307,
+      "tag": "0144_scan_index_oracle",
+      "breakpoints": true
     }
   ]
 }

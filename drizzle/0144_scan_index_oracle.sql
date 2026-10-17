@@ -1,0 +1,1 @@
+CREATE INDEX "scan_index_oracle_idx" ON "scan_index" USING btree ("oracle_id");
