@@ -263,7 +263,8 @@ export function SeatFacts({ counts, driving }: { counts: Record<FindingId, numbe
                   : "border-[color:var(--border)] bg-[color:var(--surface-sunken)] font-semibold text-[color:var(--fact)]")
             }
           >
-            <span aria-hidden className={"[&_svg]:h-[13px] [&_svg]:w-[13px] " + (n === 0 && !lifted ? "opacity-50" : "")}>
+            {/* The shared marks keep their 16px everywhere (`card-fact-mark.tsx`), over the boards' 13px. */}
+            <span aria-hidden className={n === 0 && !lifted ? "opacity-50" : undefined}>
               <FindingMark id={id} />
             </span>
             <span className="sr-only">{labels[id]}: </span>

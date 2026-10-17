@@ -225,4 +225,11 @@ describe("TableClosed", () => {
     expect(within(seat).getByTestId("seat-name")).toHaveClass("min-w-0", "truncate");
     expect(within(seat).getByText("not a friend")).toHaveClass("flex-none");
   });
+
+  it("rides each range span on its own face's row when two ranges' faces share a column", () => {
+    draw(TABLES.twoRanges);
+    const spans = screen.getAllByTestId("read-span");
+    expect(spans.map((el) => el.dataset.row).sort()).toEqual(["0", "1"]);
+    expect(new Set(spans.map((el) => el.style.bottom)).size).toBe(2);
+  });
 });
