@@ -48,7 +48,9 @@ describe("the changed dot and Since you looked (S5, W5)", () => {
 
 describe("TableLive", () => {
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
+  const open = (view: TableView) => json(200, { kind: "open", view });
   let fetchMock: ReturnType<typeof vi.fn>;
+  let visibility: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -56,62 +58,103 @@ describe("TableLive", () => {
     m.seen.mockClear();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
+    visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
   });
   afterEach(() => {
+    visibility.mockRestore();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  const tick = async () => {
+  const settle = async (ms = 0) => {
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(POLL_MS);
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  };
+  const show = async (state: "visible" | "hidden") => {
+    visibility.mockReturnValue(state);
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      await vi.advanceTimersByTimeAsync(0);
     });
   };
 
-  it("records the drawn revision, asks again every 20 seconds, and draws the answer against the visit's own seenAt", async () => {
+  it("checks at once on arrival, records what it drew, and asks again every 20 seconds against the visit's own seenAt", async () => {
+    fetchMock.mockResolvedValueOnce(open({ ...base, seenAt: AT }));
     render(<TableLive initial={{ ...base, seenAt: AT }} gamesEnabled now={AT} />);
+    await settle();
+    expect(fetchMock).toHaveBeenCalledWith(`/api/rule-zero/tables/${base.tableId}`, { cache: "no-store" });
     expect(m.seen).toHaveBeenCalledWith(base.tableId, AT.toISOString());
     expect(screen.queryAllByTestId("changed")).toHaveLength(0);
     // An answer whose seenAt already holds the swap (this visit recorded it a moment ago): the visit's own still marks it.
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "open", view: swapped(base, later(60_000)) }));
-    await tick();
-    expect(fetchMock).toHaveBeenCalledWith(`/api/rule-zero/tables/${base.tableId}`, { cache: "no-store" });
+    fetchMock.mockResolvedValueOnce(open(swapped(base, later(60_000))));
+    await settle(POLL_MS);
     expect(within(seatOf("Colin")).getByTestId("changed")).toBeInTheDocument();
     expect(within(readCard()).getByTestId("since")).toBeInTheDocument();
     expect(within(readCard()).getByText(/^updated /)).toBeInTheDocument();
     expect(m.seen).toHaveBeenLastCalledWith(base.tableId, later(60_000).toISOString());
   });
 
-  it("asks nothing while the page is hidden, and asks at once when it comes back", async () => {
-    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  it("takes the visit's seenAt from its first check, not from a payload Back restored from the router's cache", async () => {
+    // The cached payload is an earlier visit's: it arrived before Colin swapped. That visit saw the swap and recorded it.
+    const cached = swapped(base, AT);
+    fetchMock.mockResolvedValueOnce(open(swapped(base, later(60_000))));
+    render(<TableLive initial={cached} gamesEnabled now={later(120_000)} />);
+    expect(m.seen).not.toHaveBeenCalled();
+    await settle();
+    expect(screen.queryAllByTestId("changed")).toHaveLength(0);
+    expect(within(readCard()).queryByTestId("since")).toBeNull();
+  });
+
+  it("records nothing an answer brought while the page was hidden, and records it when the page comes back", async () => {
+    fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} gamesEnabled now={AT} />);
-    await tick();
-    expect(fetchMock).not.toHaveBeenCalled();
-    visibility.mockReturnValue("visible");
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "open", view: base }));
+    await settle();
+    expect(m.seen).toHaveBeenCalledTimes(1);
+    let land!: (r: Response) => void;
+    fetchMock.mockReturnValueOnce(new Promise<Response>((r) => { land = r; }));
+    await settle(POLL_MS);
+    visibility.mockReturnValue("hidden");
     await act(async () => {
-      document.dispatchEvent(new Event("visibilitychange"));
+      land(open(swapped(base, AT)));
       await vi.advanceTimersByTimeAsync(0);
     });
+    expect(m.seen).toHaveBeenCalledTimes(1);
+    fetchMock.mockResolvedValueOnce(open(swapped(base, AT)));
+    await show("visible");
+    expect(m.seen).toHaveBeenLastCalledWith(base.tableId, later(60_000).toISOString());
+  });
+
+  it("asks nothing while the page is hidden, and asks at once when it comes back", async () => {
+    visibility.mockReturnValue("hidden");
+    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    await settle(POLL_MS);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(m.seen).not.toHaveBeenCalled();
+    fetchMock.mockResolvedValueOnce(open(base));
+    await show("visible");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    visibility.mockRestore();
+    expect(m.seen).toHaveBeenCalledWith(base.tableId, AT.toISOString());
   });
 
   it("draws the closed table in place when the night has ended (L4)", async () => {
+    fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} gamesEnabled now={AT} />);
+    await settle();
     fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: "Thursday night", setBy: "Colin", faces: [] } }));
-    await tick();
+    await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     expect(screen.queryByTestId("table-body")).toBeNull();
   });
 
   it("refreshes the route when the reader has lost the table, and keeps drawing on a failed check", async () => {
-    render(<TableLive initial={base} gamesEnabled now={AT} />);
     fetchMock.mockRejectedValueOnce(new Error("offline"));
-    await tick();
+    render(<TableLive initial={base} gamesEnabled now={AT} />);
+    await settle();
     expect(screen.getByTestId("table-body")).toBeInTheDocument();
+    expect(m.seen).not.toHaveBeenCalled();
     fetchMock.mockResolvedValueOnce(json(404, null));
-    await tick();
+    await settle(POLL_MS);
     expect(m.refresh).toHaveBeenCalledTimes(1);
   });
 });
