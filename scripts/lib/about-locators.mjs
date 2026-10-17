@@ -68,9 +68,9 @@ export const ABOUT_LOCATORS = {
   "card-detail": { screen: "card-details", locator: "[role='dialog'] [data-testid='modal-art-mobile']" },
   "edit-copies": {
     screen: "card-details",
-    locator: "[role='dialog'] [data-testid='teaser-set']",
+    locator: "[role='dialog'] [data-testid='card-sheet'] button:has-text('All details')",
     reaches: true,
-    note: "the owned count; Edit copies is in the full sheet",
+    note: "Edit copies is in the full card details, which All details opens",
   },
   "fits-your-decks": {
     screen: "card-details",
