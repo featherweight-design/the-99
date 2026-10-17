@@ -217,4 +217,12 @@ describe("TableClosed", () => {
     expect(driversSentence(seat(2, 2))).toBe("2 combos that loop turns, where Core allows 0.");
     expect(driversSentence(seat(1, 1))).toBe("1 extra-turn card, where Exhibition allows 0.");
   });
+
+  it("truncates a long unbroken display name and keeps its tag whole beside it", () => {
+    const long = "Maximilianowiczaleksandrovski1";
+    draw({ ...TABLES.T1, seats: TABLES.T1.seats.map((x) => (x.displayName === "Max" ? { ...x, displayName: long } : x)) });
+    const seat = seatOf(long);
+    expect(within(seat).getByTestId("seat-name")).toHaveClass("min-w-0", "truncate");
+    expect(within(seat).getByText("not a friend")).toHaveClass("flex-none");
+  });
 });

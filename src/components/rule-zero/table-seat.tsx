@@ -97,7 +97,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           }
         >
           <span className="flex min-w-0 items-baseline gap-[7px] text-[15px] font-semibold text-[color:var(--fg)] xl:gap-[8px] xl:text-[16px]">
-            {name}
+            {/* A display name runs to 30 characters with no break; it truncates so the tag beside it stays in view. */}
+            <span data-testid="seat-name" className="min-w-0 truncate">{name}</span>
             <SeatTag draw={draw} />
           </span>
           {deck ? (
@@ -170,11 +171,11 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
 function SeatTag({ draw }: { draw: SeatDraw }) {
   const { seat } = draw;
   if (seat.you) {
-    return <span className="font-mono text-[9.5px] font-medium tracking-[0.12em] text-[color:var(--accent)]">{copy.you}</span>;
+    return <span className="flex-none font-mono text-[9.5px] font-medium tracking-[0.12em] text-[color:var(--accent)]">{copy.you}</span>;
   }
   const tag = seat.podOwner ? socialCopy.pods.ownerTag : seat.publicId === null ? socialCopy.pods.notFriendTag : null;
   if (!tag) return null;
-  return <small className="whitespace-nowrap font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small>;
+  return <small className="flex-none whitespace-nowrap font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small>;
 }
 
 const MORE = "relative mx-[12px] mb-[12px] xl:mb-[14px] xl:ml-[162px] xl:mr-[16px]";
