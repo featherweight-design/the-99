@@ -277,9 +277,33 @@ describe("the invite QR", () => {
     expect(screen.getByRole("timer").textContent).toContain("15:00");
   });
 
-  it("expires on the client's clock too", async () => {
+  it("expires when the client's clock reaches zero and the server, asked then, says so", async () => {
     await openQr(3);
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ state: "expired" }) });
     await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    await flush();
+    expect(screen.getByRole("img", { name: q.expiredAria })).toBeTruthy();
+  });
+
+  it("keeps a QR the server still holds live when the device clock reaches zero first, re-based to its time left", async () => {
+    // The device clock runs ahead: its countdown reaches zero while the server has two minutes left.
+    await openQr(3);
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ state: "live", secondsLeft: 120 }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    await flush();
+    expect(screen.queryByRole("img", { name: q.expiredAria })).toBeNull();
+    expect(time().textContent).toBe("2:00");
+    const asked = fetchMock.mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(WATCH_MS); });
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(asked);
+    expect(screen.getByRole("timer")).toBeTruthy();
+    // A failed ask at zero settles nothing either: the watch's next answer decides.
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
+    await flush();
+    expect(screen.queryByRole("img", { name: q.expiredAria })).toBeNull();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ state: "expired" }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(WATCH_MS); });
     expect(screen.getByRole("img", { name: q.expiredAria })).toBeTruthy();
   });
 

@@ -57,6 +57,18 @@ describe("useInviteQrWatch", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("hands each live answer's time left on, and keeps polling", async () => {
+    const onEnded = vi.fn();
+    const onLive = vi.fn();
+    renderHook(() => useInviteQrWatch(T, onEnded, onLive));
+    answer({ state: "live", secondsLeft: 120 });
+    await tick(WATCH_MS);
+    expect(onLive).toHaveBeenLastCalledWith(120);
+    await tick(WATCH_MS);
+    expect(onLive).toHaveBeenCalledTimes(2);
+    expect(onEnded).not.toHaveBeenCalled();
+  });
+
   it("polls nothing while the tab is hidden, and at once when it comes back", async () => {
     renderHook(() => useInviteQrWatch(T, vi.fn()));
     visibility = "hidden";

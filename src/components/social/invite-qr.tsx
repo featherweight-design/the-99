@@ -3,17 +3,18 @@
 // modal with a ‹ back to path 2. Live (Q1), the QR sits on the friend link's light plate inside a ring that drains over
 // its 15 minutes, with the time left as m:ss ticking each second from `expiresAt` on the client; under a minute (Q2)
 // the ring and the time turn --warning. Claimed (Q3), the plate becomes a card back and `Invitation sent`. Expired (Q4,
-// the watch says so, or the clock passes `expiresAt` and the server, asked once more, has no claim), the plate greys
+// the server says so, by the watch or by the one ask the screen makes when its countdown reaches zero; a live answer
+// re-bases the countdown instead), the plate greys
 // under an EXPIRED chip, the ring empties, and `Make a new QR` (Q5) runs the action again. The watch
 // (`useInviteQrWatch`) polls only while the QR is live; an end redraws the page, so the count moves.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { inviteCopy } from "../../lib/copy/invites";
 import { QR_TTL_MS, type InviteCount } from "../../lib/invites/rules";
 import { qrPath } from "../../lib/social/client-rules";
 import { InviteCountLine } from "./invite-count-line";
 import { FILLED_PRESS } from "./invite-new";
-import { readQrEnd, useInviteQrWatch } from "./use-invite-qr-watch";
+import { readQrState, useInviteQrWatch } from "./use-invite-qr-watch";
 
 const q = inviteCopy.qr;
 const TICK_MS = 1000;
@@ -59,23 +60,42 @@ export function InviteQr({
     const t = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(t);
   }, [live, qr.token]);
-  const secondsLeft = Math.max(0, Math.ceil((qr.expiresAt.getTime() - now) / 1000));
-  // The client's clock reaching zero is provisional: a claim made just before expiry is the server's to report, so
-  // the screen asks once more and takes its answer (claimed wins); anything else, a failed ask included, is expired.
+  // The deadline starts at the server's `expiresAt` and is re-based on every live answer's `secondsLeft`, read
+  // against this device's clock: a clock that runs ahead (or behind) would otherwise count down to a moment the
+  // server does not share. Keyed on the token, so a new QR starts from its own `expiresAt`.
+  const [rebased, setRebased] = useState<{ token: string; at: number } | null>(null);
+  const deadline = rebased?.token === qr.token ? rebased.at : qr.expiresAt.getTime();
+  const secondsLeft = Math.max(0, Math.ceil((deadline - now) / 1000));
+  const token = qr.token;
+  const onLive = useCallback(
+    (left: number) => {
+      const at = Date.now() + left * 1000;
+      setRebased({ token, at });
+      setNow(Date.now());
+    },
+    [token],
+  );
+  // The client's clock reaching zero is provisional: only the server ends a QR. The screen asks once at zero and
+  // takes a claim or an expiry; a live answer re-bases the countdown (and the watch keeps polling), and a failed ask
+  // settles nothing, so the watch's next poll decides.
   const onEndedNow = useRef(onEnded);
+  const onLiveNow = useRef(onLive);
   useEffect(() => {
     onEndedNow.current = onEnded;
-  }, [onEnded]);
+    onLiveNow.current = onLive;
+  }, [onEnded, onLive]);
   const atZero = live && secondsLeft === 0;
   useEffect(() => {
     if (!atZero) return;
     const ask = new AbortController();
-    void readQrEnd(qr.token, ask.signal).then((end) => {
-      if (!ask.signal.aborted) onEndedNow.current(end === "claimed" ? "claimed" : "expired");
+    void readQrState(qr.token, ask.signal).then((answer) => {
+      if (ask.signal.aborted || !answer) return;
+      if (answer.state === "live") onLiveNow.current(answer.secondsLeft);
+      else onEndedNow.current(answer.state);
     });
     return () => ask.abort();
   }, [atZero, qr.token]);
-  useInviteQrWatch(live ? qr.token : null, onEnded);
+  useInviteQrWatch(live ? qr.token : null, onEnded, onLive);
 
   const warn = live && secondsLeft < WARN_SECONDS;
   const pct = live ? Math.min(100, (secondsLeft * 1000 * 100) / QR_TTL_MS) : 0;

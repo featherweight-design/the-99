@@ -77,6 +77,15 @@ export function InviteNew({
   // (through `latest`), so it reads the address and the count as they are now.
   const inFlight = useRef(false);
   const latest = useRef<() => Promise<void>>(async () => {});
+  // A send answers after Back or Close has taken this screen away: nothing is drawn and no toast is raised, since a
+  // Try again would run a screen that no longer stands. The redraw an `out` race asks for still happens.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   async function send() {
     if (inFlight.current || sending || emailHeld) return;
     if (!shaped) {
@@ -89,6 +98,10 @@ export function InviteNew({
     setStage({ kind: "sending" });
     const out = await sendEmailInviteAction(email).catch(() => null);
     inFlight.current = false;
+    if (!mounted.current) {
+      if (out && !out.ok && out.reason === "out") onRefresh();
+      return;
+    }
     if (out?.ok) {
       setStage({ kind: "sent", last });
       setEmail("");

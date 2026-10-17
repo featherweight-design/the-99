@@ -139,6 +139,39 @@ describe("Add a friend, invites on, answers that land after the reader moved on"
     await act(async () => answer({ ok: true, token: TOKEN, url: `https://the-99.dev/join/${TOKEN}`, expiresAt: new Date(Date.now() + 900_000) }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+
+  it("puts a failed QR's Try again away when the sheet closes, so nothing can run the closed screen's action", async () => {
+    inv.showInviteQrAction.mockResolvedValue({ ok: false, reason: "unconfigured" });
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: inviteCopy.path.showQr })));
+    expect(screen.getByRole("alert").textContent).toContain(inviteCopy.qr.createFailed);
+    close();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: inviteCopy.path.retry })).toBeNull();
+    expect(inv.showInviteQrAction).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["‹ back", () => fireEvent.click(screen.getByRole("button", { name: inviteCopy.chooser.back }))],
+    ["Close", () => fireEvent.click(screen.getByRole("button", { name: socialCopy.dialog.close }))],
+  ])("raises no toast for an email send that fails after %s took path 2 away", async (_, leave) => {
+    let answer: (v: unknown) => void = () => {};
+    inv.sendEmailInviteAction.mockReturnValue(new Promise((r) => { answer = r; }));
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    const field = screen.getByLabelText(inviteCopy.path.emailLabel) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "jo@example.com" } });
+    fireEvent.submit(field.closest("form")!);
+    expect(inv.sendEmailInviteAction).toHaveBeenCalledTimes(1);
+    leave();
+    await act(async () => answer({ ok: false, reason: "failed" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: inviteCopy.path.retry })).toBeNull();
+  });
 });
 
 describe("a live QR's expiry with the sheet closed (state C4)", () => {

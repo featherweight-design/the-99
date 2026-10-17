@@ -187,6 +187,20 @@ export function FriendsView({
   // A counter, not the clock: two toasts in one millisecond are still two toasts.
   const toastSeq = useRef(0);
   const say = (text: string, retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
+  // A toast the chooser's own screens raised (a QR or an email that could not be made): its Try again runs that
+  // screen's handler, so it leaves with the sheet. One left standing would call an unmounted screen, which would run
+  // its action (reserving an invite) and draw nothing.
+  const sheetToast = useRef<number | null>(null);
+  const sheetSay = (text: string, retry?: SocialToastState["retry"]) => {
+    const id = ++toastSeq.current;
+    sheetToast.current = id;
+    setToast({ id, text, retry });
+  };
+  const closeSheetToast = () => {
+    const id = sheetToast.current;
+    sheetToast.current = null;
+    if (id !== null) setToast((t) => (t?.id === id ? null : t));
+  };
   const writeName = useFieldWrite(profile.displayName, setName);
   const writeCommander = useFieldWrite<ProfileCommander | null>(profile.commander, setCommander);
 
@@ -407,10 +421,11 @@ export function FriendsView({
           link={adding === "link" && shown ? { url: shown.url, expiresAt: shown.expiresAt, now, timeZone } : null}
           onClose={() => {
             if (adding === "link") setShown(null);
+            closeSheetToast();
             setAdding(null);
           }}
           returnFocusRef={dialogReturn}
-          say={say}
+          say={sheetSay}
           onRefresh={refresh}
           toast={toastEl}
           clearToast={() => setToast(null)}
