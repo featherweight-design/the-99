@@ -614,6 +614,27 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     expect(visitTaken()).toBe(true);
   });
 
+  it("decides again when it spends the moment a claim was in flight for, so a control already on screen still gets its bubble", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="top-off" />
+      </MomentsProvider>,
+    );
+    onScreen("Top off");
+    onScreen("Wish");
+    // The window closes and the claim for Top off is taken asynchronously; the landing spends Top off before it lands.
+    act(() => {
+      vi.advanceTimersByTime(ARRIVE_MS);
+      suppressNow!("top-off");
+    });
+    await advance(0);
+    await advance(0);
+    expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+    expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+  });
+
   it("tells the other tabs when it is called from a descendant's mount effect, before the provider's channel opens", async () => {
     vi.useRealTimers();
     const heard: unknown[] = [];

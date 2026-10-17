@@ -244,8 +244,13 @@ export function MomentsProvider({
         return;
       }
       const anchor = clear.find((a) => a.id === id)!;
-      // Suppressed while the claim was in flight: the landing spent it, so it never shows.
-      if (spent.current.has(anchor.id) || showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
+      // Suppressed while the claim was in flight: the landing spent it, so it never shows, and the window decides again
+      // once the claim is back, since a control already on screen fires no new intersection to wake it.
+      if (spent.current.has(anchor.id)) {
+        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => decideRef.current());
+        return;
+      }
+      if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
         void withVisitLock(() => releaseClaim(TAB_ID));
         return;
       }
