@@ -838,6 +838,22 @@ describe("ContestedCardRow — where an added copy goes", () => {
     expect(word.className).not.toContain("text-[10.5px]");
   });
 
+  it("hands focus on when a write folds the option a keyboard reader was on", () => {
+    // A held deck the player had picked is an option; clearing the pick lets it fold, removing the focused radio.
+    const holder = { deckId: "held", deckName: "HD - Held", quantity: 1, commanderCopies: 0, granted: 1, since: AUG, versionNumber: 1, allocated: 1 };
+    const brews = ["Kratos", "Gishath"].map((name) => ({
+      deckId: name, deckName: `HD - ${name}`, quantity: 1, commanderCopies: 0, granted: 0,
+      since: null, versionNumber: null, brew: true, allocated: 1,
+    }));
+    const base = { ...card(), cardName: "Sol Ring", arrived: 1, ownedBefore: 1, owned: 2 };
+    const { rerender } = render(<ContestedCardRow card={{ ...base, claimants: [holder, ...brews] }} addedCopy />);
+    const radio = screen.getByText("HD - Held").closest("[role=radio]") as HTMLElement;
+    radio.focus();
+    rerender(<ContestedCardRow card={{ ...base, claimants: [{ ...holder, granted: 0 }, ...brews] }} addedCopy />);
+    expect(screen.queryByText("HD - Held")).toBeNull();
+    expect((document.activeElement as HTMLElement).getAttribute("role")).toBe("radio");
+  });
+
   it("draws the shipped row with the switch off: no fold, and a brew's soft share still `gets it`", () => {
     render(<ContestedCardRow card={staging(18)} />);
     expect(screen.queryByText(addedCopyCopy.chooser.canUse)).toBeNull();

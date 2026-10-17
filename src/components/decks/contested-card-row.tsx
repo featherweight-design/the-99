@@ -215,6 +215,10 @@ export function ContestedCardRow({
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
   const group = useRef<HTMLUListElement>(null);
+  // THE OPTION THAT HAD FOCUS. A write can fold the deck a keyboard reader is on (clearing a
+  // holder's pick lets it fold), and removing the focused option drops focus to the document. The
+  // effect after the fold below hands it to the group's reachable option instead.
+  const focusedDeck = useRef<string | null>(null);
   // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
   // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
   // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
@@ -451,6 +455,16 @@ export function ContestedCardRow({
   const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned) : 0;
   const folding = foldN >= 1;
   const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
+  useEffect(() => {
+    const id = focusedDeck.current;
+    const ul = group.current;
+    if (id === null || ul === null) return;
+    if (ul.querySelector(`[data-deck="${CSS.escape(id)}"]`)) return;
+    focusedDeck.current = null;
+    // Only when focus really fell to the document: a reader who has moved on keeps their place.
+    if (document.activeElement && document.activeElement !== document.body) return;
+    ul.querySelector<HTMLElement>('[role="radio"][tabindex="0"]')?.focus();
+  }, [foldN]);
   const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;
   // A brew reading a loose copy as its own: every brew reads the same copy, so `gets it` on three
   // brews would claim three copies and `buys it` would be false. Only while the switch is on.
@@ -494,6 +508,14 @@ export function ContestedCardRow({
       <ul
         className="list-none p-0 m-0 flex flex-col gap-[4px]"
         ref={group}
+        onFocus={(e) => {
+          focusedDeck.current = (e.target as HTMLElement).closest("[data-deck]")?.getAttribute("data-deck") ?? null;
+        }}
+        onBlur={(e) => {
+          // A move out of the group forgets the option. A removal sends no related target, so it is kept.
+          const to = e.relatedTarget as Node | null;
+          if (to !== null && !e.currentTarget.contains(to)) focusedDeck.current = null;
+        }}
         role="radiogroup"
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
