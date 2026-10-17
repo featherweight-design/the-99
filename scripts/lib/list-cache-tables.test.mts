@@ -262,7 +262,8 @@ describe("perRequestProblems", () => {
   const listedModule = "src/lib/cache/page-cache.ts";
   const listedEntry = { [listedModule]: "read per request beside the cached payload" };
   const none = () => [] as string[];
-  const page_ = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${body}`;
+  const fn = (body: string) => `export default async function Page() {\n${body}\n}`;
+  const page_ = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${fn(body)}`;
   const check = (src: () => string, opts: { perRequest?: Record<string, string>; reach?: string[]; exists?: boolean } = {}) =>
     perRequestProblems([page], opts.perRequest ?? listedEntry, () => opts.reach ?? [], src, () => opts.exists ?? true);
 
@@ -283,12 +284,12 @@ describe("perRequestProblems", () => {
   });
 
   it("reads an aliased import by its local name", () => {
-    const src = () => `import { readFresh as fresh } from "../lib/cache/page-cache";\nconst d = await cachePageForUser(u, "home", [], async () => fresh(u));`;
+    const src = () => `import { readFresh as fresh } from "../lib/cache/page-cache";\n${fn(`const d = await cachePageForUser(u, "home", [], async () => fresh(u));`)}`;
     expect(check(src)).toEqual([inside("fresh")]);
   });
 
   it("reads a multiline import, and does not count the import itself as a use", () => {
-    const src = () => `import {\n  readFresh,\n} from "../lib/cache/page-cache";\nconst d = await cachePageForUser(u, "home", [], load);\nconst f = await readFresh(u);`;
+    const src = () => `import {\n  readFresh,\n} from "../lib/cache/page-cache";\n${fn(`const d = await cachePageForUser(u, "home", [], load);\nconst f = await readFresh(u);`)}`;
     expect(check(src)).toEqual([]);
   });
 
@@ -345,9 +346,28 @@ describe("perRequestProblems", () => {
     expect(check(wrapped)).toEqual([]);
   });
 
+  const unchecked = msg("readFresh", "in a page whose cachePageForUser calls are not all made directly in one page function, so it cannot be checked");
+  const raw = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${body}`;
+
   it("fails a page whose cachePageForUser calls are in more than one function", () => {
-    const src = page_(`async function a() { return cachePageForUser(u, "a", [], load); }\nexport default async function Page() {\n  await cachePageForUser(u, "b", [], load);\n  await readFresh(u);\n}`);
-    expect(check(src)).toEqual([msg("readFresh", "in a page whose cachePageForUser calls are not all in one function, so it cannot be checked")]);
+    const src = raw(`async function a() { return cachePageForUser(u, "a", [], load); }\n${fn(`await cachePageForUser(u, "b", [], load);\nawait readFresh(u);`)}`);
+    expect(check(src)).toEqual([unchecked]);
+  });
+
+  it("fails a read at module scope, which runs when the module loads rather than per request", () => {
+    expect(check(raw(`const d = await cachePageForUser(u, "home", [], load);\nconst f = await readFresh(u);`))).toEqual([unchecked]);
+  });
+
+  it("finds a parenthesized or member callee, and fails a page that reaches cachePageForUser any other way", () => {
+    const paren = page_(`await cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait (cachePageForUser)(u, "b", [], async () => ({ value: fresh, store: true }));`);
+    expect(check(paren)).toEqual([before("readFresh")]);
+    const member = page_(`await cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait cache.cachePageForUser(u, "b", [], async () => ({ value: fresh, store: true }));`);
+    expect(check(member)).toEqual([before("readFresh")]);
+    const bound = page_(`const c = cachePageForUser;\nawait cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait c(u, "b", [], async () => ({ value: fresh, store: true }));`);
+    expect(check(bound)).toEqual([unchecked]);
+    const aliased = () => `import { cachePageForUser as c } from "../lib/cache/page-cache";\nimport { readFresh } from "../lib/cache/page-cache";\n${fn(`await cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait c(u, "b", [], async () => ({ value: fresh, store: true }));`)}`;
+    // The fixture's listed module is page-cache itself, so the alias is reported as a use of it too.
+    expect(check(aliased)).toContain(unchecked);
   });
 
   it("reports a stale entry: missing, unimported or without a reason", () => {

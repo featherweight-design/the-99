@@ -362,13 +362,31 @@ function usesOf(file, name) {
 
 /** Every `cachePageForUser(...)` call expression in `file`. */
 function cacheCallNodes(file) {
-  const out = [];
+  const calls = [];
+  let indirect = false;
+  const unwrap = (n) => (ts.isParenthesizedExpression(n) ? unwrap(n.expression) : n);
+  const named = (n) => (ts.isIdentifier(n) && n.text === "cachePageForUser") ||
+    (ts.isPropertyAccessExpression(n) && n.name.text === "cachePageForUser");
   const visit = (n) => {
-    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "cachePageForUser") out.push(n);
+    if (ts.isImportDeclaration(n)) {
+      // Imported under another name or as a namespace, its calls go by a name this cannot see.
+      const b = n.importClause?.namedBindings;
+      if (b && ts.isNamedImports(b) && b.elements.some((e) => e.propertyName?.text === "cachePageForUser")) indirect = true;
+      return;
+    }
+    if (ts.isCallExpression(n) && named(unwrap(n.expression))) calls.push(n);
+    else if (ts.isIdentifier(n) && n.text === "cachePageForUser") {
+      // Any other reference (a binding, an argument) can call it where this cannot see.
+      let p = n.parent;
+      while (p && ts.isParenthesizedExpression(p)) p = p.parent;
+      const callee = p && ts.isCallExpression(p) && unwrap(p.expression) === n;
+      const propName = ts.isPropertyAccessExpression(n.parent) && n.parent.name === n;
+      if (!callee && !propName) indirect = true;
+    }
     ts.forEachChild(n, visit);
   };
   visit(file);
-  return out;
+  return { calls, indirect };
 }
 
 /**
@@ -406,9 +424,10 @@ export function perRequestProblems(
         out.push(`PER-REQUEST ${page} imports ${mod} without naming what it uses, so its uses cannot be checked`);
         continue;
       }
-      const calls = cacheCallNodes(file);
+      const { calls, indirect } = cacheCallNodes(file);
       const homes = new Set(calls.map((c) => scopeOf(c).fn));
-      const home = homes.size === 1 ? [...homes][0] : undefined;
+      // The page's own function: a module-scope read runs once when the module loads, never per request.
+      const home = homes.size === 1 && !indirect && !ts.isSourceFile([...homes][0]) ? [...homes][0] : undefined;
       const lastEnd = Math.max(...calls.map((c) => c.end));
       // "After the call" means after the load finished only when the call is awaited where it is made: a promise started
       // and awaited later leaves the load running while the code between them executes.
@@ -424,7 +443,7 @@ export function perRequestProblems(
           const inCall = calls.some((c) => c.pos <= at && at < c.end);
           let why = null;
           if (inCall) why = "inside cachePageForUser's load, so it would be cached";
-          else if (!home) why = "in a page whose cachePageForUser calls are not all in one function, so it cannot be checked";
+          else if (!home) why = "in a page whose cachePageForUser calls are not all made directly in one page function, so it cannot be checked";
           else if (!awaited) why = "in a page that does not await every cachePageForUser call where it is made, so its load could still be running";
           else if (fn !== home) why = "outside the page's own function, where the load could call it";
           else if (at < lastEnd) why = "before cachePageForUser's load, where its result could reach the cached payload";
