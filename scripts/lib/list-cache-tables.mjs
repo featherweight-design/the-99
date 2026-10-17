@@ -375,13 +375,15 @@ function cacheCallNodes(file) {
       return;
     }
     if (ts.isCallExpression(n) && named(unwrap(n.expression))) calls.push(n);
-    else if (ts.isIdentifier(n) && n.text === "cachePageForUser") {
-      // Any other reference (a binding, an argument) can call it where this cannot see.
+    else if (named(n)) {
+      // Any other reference (a binding, an argument, a saved member) can call it where this cannot see.
       let p = n.parent;
       while (p && ts.isParenthesizedExpression(p)) p = p.parent;
-      const callee = p && ts.isCallExpression(p) && unwrap(p.expression) === n;
-      const propName = ts.isPropertyAccessExpression(n.parent) && n.parent.name === n;
-      if (!callee && !propName) indirect = true;
+      if (!(p && ts.isCallExpression(p) && unwrap(p.expression) === n)) indirect = true;
+      if (ts.isPropertyAccessExpression(n)) {
+        ts.forEachChild(n.expression, visit);
+        return;
+      }
     }
     ts.forEachChild(n, visit);
   };
@@ -394,7 +396,7 @@ function cacheCallNodes(file) {
  * never its text. Four rules:
  * - the listed module exists, and some cached page imports it (a stale entry exempts nothing, so it is reported);
  * - the page imports it by name, so its uses can be found (a default or namespace import is refused);
- * - every use sits directly in the ONE function that holds the page's `cachePageForUser` calls, each call awaited where it
+ * - every use sits directly in the page's `export default function`, which holds all its `cachePageForUser` calls, each awaited where it
  *   is made, after the last of them and in no loop. The load runs during that call, so nothing written after it in the same function, once, can reach
  *   the payload. A use in any other function (a nested arrow, a helper, a module-scope `const load = ...`) or at module
  *   scope could be called by the load, so it fails without tracing whether it is: the rule is strict so it can be exact;
@@ -426,8 +428,12 @@ export function perRequestProblems(
       }
       const { calls, indirect } = cacheCallNodes(file);
       const homes = new Set(calls.map((c) => scopeOf(c).fn));
-      // The page's own function: a module-scope read runs once when the module loads, never per request.
-      const home = homes.size === 1 && !indirect && !ts.isSourceFile([...homes][0]) ? [...homes][0] : undefined;
+      // The page's own function, `export default function`: a module-scope read runs once when the module loads, never per
+      // request, and a helper holding the calls can be called twice, its second load taking the first call's read.
+      const only = homes.size === 1 ? [...homes][0] : undefined;
+      const exported = (f) => ts.isFunctionDeclaration(f) &&
+        (ts.getCombinedModifierFlags(f) & ts.ModifierFlags.ExportDefault) === ts.ModifierFlags.ExportDefault;
+      const home = only && !indirect && exported(only) ? only : undefined;
       const lastEnd = Math.max(...calls.map((c) => c.end));
       // "After the call" means after the load finished only when the call is awaited where it is made: a promise started
       // and awaited later leaves the load running while the code between them executes.
@@ -443,7 +449,7 @@ export function perRequestProblems(
           const inCall = calls.some((c) => c.pos <= at && at < c.end);
           let why = null;
           if (inCall) why = "inside cachePageForUser's load, so it would be cached";
-          else if (!home) why = "in a page whose cachePageForUser calls are not all made directly in one page function, so it cannot be checked";
+          else if (!home) why = "in a page whose cachePageForUser calls are not all made directly in its exported page function, so it cannot be checked";
           else if (!awaited) why = "in a page that does not await every cachePageForUser call where it is made, so its load could still be running";
           else if (fn !== home) why = "outside the page's own function, where the load could call it";
           else if (at < lastEnd) why = "before cachePageForUser's load, where its result could reach the cached payload";

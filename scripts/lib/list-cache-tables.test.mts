@@ -346,7 +346,7 @@ describe("perRequestProblems", () => {
     expect(check(wrapped)).toEqual([]);
   });
 
-  const unchecked = msg("readFresh", "in a page whose cachePageForUser calls are not all made directly in one page function, so it cannot be checked");
+  const unchecked = msg("readFresh", "in a page whose cachePageForUser calls are not all made directly in its exported page function, so it cannot be checked");
   const raw = (body: string) => () => `import { readFresh } from "../lib/cache/page-cache";\n${body}`;
 
   it("fails a page whose cachePageForUser calls are in more than one function", () => {
@@ -368,6 +368,15 @@ describe("perRequestProblems", () => {
     const aliased = () => `import { cachePageForUser as c } from "../lib/cache/page-cache";\nimport { readFresh } from "../lib/cache/page-cache";\n${fn(`await cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait c(u, "b", [], async () => ({ value: fresh, store: true }));`)}`;
     // The fixture's listed module is page-cache itself, so the alias is reported as a use of it too.
     expect(check(aliased)).toContain(unchecked);
+  });
+
+  it("fails a saved member reference and a helper holding the calls, even one inside the page", () => {
+    const saved = page_(`const c = cache.cachePageForUser;\nawait cache.cachePageForUser(u, "a", [], load);\nconst fresh = await readFresh(u);\nawait c(u, "b", [], async () => ({ value: fresh, store: true }));`);
+    expect(check(saved)).toEqual([unchecked]);
+    const helper = page_(`let fresh;\nconst step = async (k) => {\n  await cachePageForUser(u, k, [], async () => ({ value: { fresh }, store: true }));\n  fresh = await readFresh(u);\n};\nawait step("a");\nawait step("b");`);
+    expect(check(helper)).toEqual([unchecked]);
+    const notExported = raw(`async function Page() {\n  await cachePageForUser(u, "a", [], load);\n  await readFresh(u);\n}\nexport default Page;`);
+    expect(check(notExported)).toEqual([unchecked]);
   });
 
   it("reports a stale entry: missing, unimported or without a reason", () => {

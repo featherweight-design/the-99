@@ -202,7 +202,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`scripts/lib/list-cache-tables.mjs`), each module with its reason. The page's own import of a listed module is not
   followed, because its tables are read fresh on every request and cannot go stale. The claim is checked, not
   trusted (`perRequestProblems`, read from the page's TypeScript syntax tree): the page imports it by name, and every
-  use sits directly in the one function holding the page's `cachePageForUser` calls, each awaited where it is made,
+  use sits directly in the page's `export default function`, which holds all its `cachePageForUser` calls, each awaited where it is made,
   after the last of them and in no loop. A use in any other function or at module scope fails without tracing whether the load calls it: the rule is
   strict so it can be exact. No loader on the cached path may import it, and a listed module that is missing,
   unimported or reasonless is reported. This
