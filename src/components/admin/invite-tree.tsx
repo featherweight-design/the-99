@@ -1,17 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { revokeInvite } from "../../app/admin/invites/actions";
 import type { Account } from "../../lib/admin/accounts";
-import { filterTree, flattenTree, nodeMeta, type RailCell, type TreeNode, type TreeRow } from "../../lib/admin/invite-tree-rule";
+import { childRails, filterTree, nodeMeta, treeDepth, type RailCell, type TreeNode, type TreeRow } from "../../lib/admin/invite-tree-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SearchField } from "../ui/text-field";
 
 // The Invites tab (plan `2026-10-16-invites.md`, PR 6b; handoff Admin-Desktop and Admin-Phone M4): who invited whom.
-// Rows are flat siblings in one `role="tree"`; nesting is drawn by rail cells, one per level, whose lines are
+// The tree is nested lists (an always-open hierarchy of ordinary links and buttons, which a screen reader announces
+// by level; no composite widget to steer with arrow keys). Each row draws its nesting with rail cells, one per level, whose lines are
 // pseudo-elements (18px a level on the phone, 26px from `md`). On the phone a whole account row opens the account;
 // from `md` only its `Open ›` does.
 
@@ -47,7 +48,7 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
   const meta = nodeMeta(row.left, row.invited);
   const phoneMeta = [row.owner ? tree.owner : null, row.joined, meta].filter(Boolean).join(" · ");
   return (
-    <div role="treeitem" aria-level={row.cells.length + 1} aria-selected={false} data-node={row.id} className={ROW}>
+    <div data-node={row.id} className={ROW}>
       <Rails cells={row.cells} />
       <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}>
         {row.initials}
@@ -82,7 +83,7 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
 
 function DeletedRow({ row }: { row: Extract<TreeRow, { kind: "deleted" }> }) {
   return (
-    <div role="treeitem" aria-level={row.cells.length + 1} aria-selected={false} data-node="deleted" className={ROW}>
+    <div data-node="deleted" className={ROW}>
       <Rails cells={row.cells} />
       <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)]`} />
       <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
@@ -100,7 +101,7 @@ function WaitingRow({ row, onRevoke, busy }: { row: Extract<TreeRow, { kind: "wa
     </button>
   );
   return (
-    <div role="treeitem" aria-level={row.cells.length + 1} aria-selected={false} data-waiting={row.id} className={`${ROW} md:text-[color:var(--fg-muted)]`}>
+    <div data-waiting={row.id} className={`${ROW} md:text-[color:var(--fg-muted)]`}>
       <Rails cells={row.cells} />
       <span aria-hidden className={`${FACE} border-[1.5px] border-dashed border-[color:var(--border-dashed)]`} />
       <span className="flex min-w-0 flex-1 flex-col md:hidden">
@@ -117,6 +118,46 @@ function WaitingRow({ row, onRevoke, busy }: { row: Extract<TreeRow, { kind: "wa
         {revoke}
       </span>
     </div>
+  );
+}
+
+/** One level of the tree, as a list: each node's row, then its own list beneath it. */
+function Branch({ nodes, parent, onRevoke, busy, label, style }: {
+  nodes: readonly TreeNode[];
+  /** The parent's rail cells, or null for the roots. */
+  parent: readonly RailCell[] | null;
+  onRevoke: (id: string) => void;
+  busy: boolean;
+  label?: string;
+  style?: CSSProperties;
+}) {
+  const root = parent === null;
+  return (
+    <ul
+      role="list"
+      aria-label={label}
+      data-testid={root ? "invite-tree" : undefined}
+      style={style}
+      className={`m-0 list-none p-0 ${root ? "min-w-[calc(var(--tree-depth)*18px+220px)] md:min-w-[calc(var(--tree-depth)*26px+360px)]" : ""}`}
+    >
+      {nodes.map((n, i) => {
+        const cells = root ? [] : childRails(parent, i, nodes.length);
+        if (n.kind === "waiting") {
+          return (
+            <li key={n.id}>
+              <WaitingRow row={{ ...n, cells }} onRevoke={onRevoke} busy={busy} />
+            </li>
+          );
+        }
+        const { children, ...rest } = n;
+        return (
+          <li key={n.kind === "account" ? n.id : n.key}>
+            {rest.kind === "account" ? <AccountRow row={{ ...rest, cells }} /> : <DeletedRow row={{ ...rest, cells }} />}
+            {children.length > 0 && <Branch nodes={children} parent={cells} onRevoke={onRevoke} busy={busy} />}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -140,7 +181,7 @@ export function InviteTreeView({
   const [revoking, setRevoking] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const byId = useMemo(() => new Map(searchable.map((a) => [a.id, a])), [searchable]);
-  const rows = useMemo(() => flattenTree(filterTree(roots, query, byId)), [roots, query, byId]);
+  const shown = useMemo(() => filterTree(roots, query, byId), [roots, query, byId]);
 
   async function revoke(id: string) {
     setFailure(null);
@@ -178,7 +219,7 @@ export function InviteTreeView({
       </div>
       {roots.length === 0 ? (
         <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{tree.empty}</p>
-      ) : rows.length === 0 ? (
+      ) : shown.length === 0 ? (
         <p className="m-0 text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{tree.noMatch(query.trim())}</p>
       ) : (
         <>
@@ -186,16 +227,17 @@ export function InviteTreeView({
             <span className="md:hidden">{tree.rootPhone}</span>
             <span className="hidden md:inline">{tree.root}</span>
           </p>
-          <div role="tree" aria-label={tree.label} data-testid="invite-tree" className="flex flex-col">
-            {rows.map((row) =>
-              row.kind === "account" ? (
-                <AccountRow key={row.id} row={row} />
-              ) : row.kind === "deleted" ? (
-                <DeletedRow key={row.key} row={row} />
-              ) : (
-                <WaitingRow key={row.id} row={row} onRevoke={revoke} busy={revoking !== null} />
-              ),
-            )}
+          {/* A deep branch would squeeze the names to nothing, so the tree keeps room for a name past its deepest
+              rails and scrolls sideways in its own box rather than overflowing the page. */}
+          <div className="overflow-x-auto">
+            <Branch
+              nodes={shown}
+              parent={null}
+              onRevoke={revoke}
+              busy={revoking !== null}
+              label={tree.label}
+              style={{ "--tree-depth": treeDepth(shown) } as CSSProperties}
+            />
           </div>
         </>
       )}

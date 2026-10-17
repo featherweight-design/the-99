@@ -40,9 +40,11 @@ export function buildInviteTree(input: {
   now: Date;
 }): InviteTree {
   const byId = new Map(input.accounts.map((a) => [a.id, a]));
-  // An id an edge names that Clerk did not list (Clerk down, or not yet listed) is still drawn, by its id.
+  // An id Clerk did not list (Clerk down, or not yet listed) is still drawn, by its id: one an edge names, one
+  // holding a stock, or one with a reservation open, so a sender's waiting invites and their Revoke never vanish.
   const order = [...input.accounts.map((a) => a.id)];
-  for (const e of input.edges) for (const id of [e.inviter, e.invitee]) if (id !== null && !byId.has(id) && !order.includes(id)) order.push(id);
+  const extra = [...input.edges.flatMap((e) => [e.inviter, e.invitee]), ...input.balances.keys(), ...input.open.map((r) => r.userId)];
+  for (const id of extra) if (id !== null && !byId.has(id) && !order.includes(id)) order.push(id);
   const rank = new Map(order.map((id, i) => [id, i]));
 
   const openOf = new Map<string, ReservationRow[]>();
@@ -112,7 +114,16 @@ export function filterTree(roots: readonly TreeNode[], query: string, accounts: 
   return roots.map(keep).filter((n): n is TreeNode => n !== null);
 }
 
-/** The tree as the flat rows the page draws, each with its rail cells. */
+/**
+ * The rail cells of a node's child `i` of `count`, from the node's own cells: each of the node's levels carries on as a
+ * line where that ancestor had a later sibling (`tv`, `v`) and stops where it was the last (`t`, `blank`), then the
+ * child's own tee, or an elbow for the last child.
+ */
+export function childRails(parent: readonly RailCell[], i: number, count: number): RailCell[] {
+  return [...parent.map((c): RailCell => (c === "tv" || c === "v" ? "v" : "blank")), i === count - 1 ? "t" : "tv"];
+}
+
+/** The tree as flat rows, each with its rail cells, in the order the page draws them. */
 export function flattenTree(roots: readonly TreeNode[]): TreeRow[] {
   const rows: TreeRow[] = [];
   const walk = (n: TreeNode, rails: RailCell[]) => {
@@ -120,12 +131,17 @@ export function flattenTree(roots: readonly TreeNode[]): TreeRow[] {
     else {
       const { children, ...rest } = n;
       rows.push({ ...rest, cells: rails } as TreeRow);
-      const above = rails.map((c): RailCell => (c === "tv" || c === "v" ? "v" : "blank"));
-      children.forEach((c, i) => walk(c, [...above, i === children.length - 1 ? "t" : "tv"]));
+      children.forEach((c, i) => walk(c, childRails(rails, i, children.length)));
     }
   };
   roots.forEach((r) => walk(r, []));
   return rows;
+}
+
+/** How many levels below the roots the deepest node sits: what the page's minimum width is sized from. */
+export function treeDepth(roots: readonly TreeNode[]): number {
+  const depth = (n: TreeNode): number => (n.kind === "waiting" || n.children.length === 0 ? 0 : 1 + Math.max(...n.children.map(depth)));
+  return roots.length === 0 ? 0 : Math.max(...roots.map(depth));
 }
 
 /** A node's meta: `N left · invited K`, the owner first on the phone. */

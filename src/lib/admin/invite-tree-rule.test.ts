@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Account } from "./accounts";
-import { buildInviteTree, filterTree, flattenTree, type TreeRow } from "./invite-tree-rule";
+import { buildInviteTree, filterTree, flattenTree, treeDepth, type TreeRow } from "./invite-tree-rule";
 import type { Edge, ReservationRow } from "./invites-rule";
 
 // The Invites tab's tree (plan `2026-10-16-invites.md`, PR 6b; handoff Admin M4), pure: the board's own tree
@@ -74,6 +74,7 @@ describe("the invite tree", () => {
         { inviter: "u_hugh", invitee: "u_max", kind: "qr", joinedAt: day(20, 9) },
       ],
       open: [],
+      balances: new Map(),
     });
     expect(shape(flattenTree(t.roots))).toEqual(["- Hugh", "tv deleted", "t Max", "- Chris", "- deleted", "t Peter"]);
     expect(t.invited).toBe(2);
@@ -82,6 +83,22 @@ describe("the invite tree", () => {
   it("still draws an account Clerk did not list, by its id", () => {
     const t = build({ accounts: accounts.filter((a) => a.id !== "u_peter") });
     expect(shape(flattenTree(t.roots))).toContain("v,tv u_peter");
+  });
+
+  it("with Clerk down, still draws a sender known only by a stock or an open reservation, with its waiting invite", () => {
+    const t = build({
+      accounts: [],
+      edges: [],
+      balances: new Map([["u_quiet", 2]]),
+      open: [reservation({ id: "r9", userId: "u_lone", email: "x@example.com" })],
+    });
+    expect(shape(flattenTree(t.roots))).toEqual(["- u_quiet", "- u_lone", "t waiting x@example.com"]);
+    expect(t.waiting).toBe(1);
+  });
+
+  it("measures the deepest level below the roots", () => {
+    expect(treeDepth(build().roots)).toBe(2);
+    expect(treeDepth([])).toBe(0);
   });
 
   it("cuts to the accounts a search names, keeping the line from the root and what waits under a match", () => {

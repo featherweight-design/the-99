@@ -38,12 +38,37 @@ beforeEach(() => {
   refresh.mockReset();
 });
 
-describe("InviteTreeView (M4)", () => {
-  it("draws one tree of flat treeitems, nested by rail cells", () => {
+const rowsIn = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>("[data-node], [data-waiting]")];
+// How many lists hold a row: its level, as a screen reader announces it.
+const levelOf = (row: HTMLElement) => {
+  let n = 0;
+  for (let el: HTMLElement | null = row; el; el = el.parentElement) if (el.tagName === "UL") n++;
+  return n;
+};
+
+describe("InviteTreeView (M4), the hierarchy", () => {
+  it("is nested lists, one per level, with ordinary links and buttons and no composite tree widget", () => {
     view();
-    const t = screen.getByRole("tree", { name: "Who invited whom" });
-    const items = within(t).getAllByRole("treeitem");
-    expect(items.map((i) => i.getAttribute("aria-level"))).toEqual(["1", "2", "3", "3"]);
+    const t = screen.getByRole("list", { name: "Who invited whom" });
+    expect(screen.queryByRole("tree")).toBeNull();
+    expect(screen.queryByRole("treeitem")).toBeNull();
+    const items = rowsIn(t);
+    expect(items.map(levelOf)).toEqual([1, 2, 3, 3]);
+    // Each row sits in its own list item, its children in a list inside that item.
+    expect(items[1].closest("li")!.querySelector("ul")!.contains(items[2])).toBe(true);
+  });
+
+  it("keeps room for a name past the deepest rails, sized by the tree's depth", () => {
+    view();
+    expect(screen.getByTestId("invite-tree").style.getPropertyValue("--tree-depth")).toBe("2");
+    expect(screen.getByTestId("invite-tree").className).toContain("min-w-[calc(var(--tree-depth)*18px+220px)]");
+  });
+});
+
+describe("InviteTreeView (M4)", () => {
+  it("draws each row's rail cells", () => {
+    view();
+    const items = rowsIn(screen.getByTestId("invite-tree"));
     expect([...items[2].querySelectorAll("[data-rail]")].map((c) => c.getAttribute("data-rail"))).toEqual(["blank", "tv"]);
     expect([...items[3].querySelectorAll("[data-rail]")].map((c) => c.getAttribute("data-rail"))).toEqual(["blank", "t"]);
     expect(items[0].querySelector("[data-rail]")).toBeNull();
@@ -78,9 +103,9 @@ describe("InviteTreeView (M4)", () => {
     view();
     expect(screen.getByTestId("invite-tree-counts")).toHaveTextContent("3 accounts2 invited1 waiting");
     fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "col" } });
-    expect(screen.getAllByRole("treeitem").map((i) => i.getAttribute("data-node") ?? "waiting")).toEqual(["u_hugh", "u_colin", "u_peter", "waiting"]);
+    expect(rowsIn(screen.getByTestId("invite-tree")).map((i) => i.getAttribute("data-node") ?? "waiting")).toEqual(["u_hugh", "u_colin", "u_peter", "waiting"]);
     fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "zzz" } });
-    expect(screen.queryByRole("tree")).toBeNull();
+    expect(screen.queryByTestId("invite-tree")).toBeNull();
     expect(screen.getByText("No account matches “zzz”.")).toBeTruthy();
   });
 
