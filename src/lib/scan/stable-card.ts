@@ -4,7 +4,7 @@
 // is a reading like any other: when "no card" settles the frame is EMPTY, and the next card to settle is a new scan,
 // even the same card again (a second copy). A card that replaces another without the frame emptying is a new scan
 // too (a re-scan of a different card).
-import { nextTrack, startTrack, type Tracked } from "./track";
+import { DWELL_MS, nextTrack, startTrack, type Tracked } from "./track";
 
 /** The cosine two embeddings of one physical card clear frame to frame. A different card scores well under it. */
 export const SAME_CARD_COSINE = 0.85;
@@ -32,8 +32,10 @@ export const startStableScan = (now: number): StableScan => startTrack<ScanFrame
  * The scan after one more frame, and what it asks for: `lookup` once when a card settles (with that frame's
  * embedding), `empty` once when "no card" settles. Every other frame asks nothing. Pure.
  */
-export function nextStableScan(s: StableScan, f: ScanFrame, now: number): { scan: StableScan; event: ScanEvent } {
-  const scan = nextTrack(s, f, now, sameCard);
+export function nextStableScan(s: StableScan, f: ScanFrame, now: number, cardDwell: number = DWELL_MS): { scan: StableScan; event: ScanEvent } {
+  // `cardDwell` is how long a CARD must hold; an empty frame always holds the full dwell, so a missed frame or two
+  // never reads as the card having left (which would make the next read a second copy, R2).
+  const scan = nextTrack(s, f, now, sameCard, f.kind === "card" ? cardDwell : DWELL_MS);
   if (scan.changedAt === s.changedAt || scan.value === null) return { scan, event: null };
   return { scan, event: scan.value.kind === "card" ? { kind: "lookup", embedding: scan.value.embedding } : { kind: "empty" } };
 }

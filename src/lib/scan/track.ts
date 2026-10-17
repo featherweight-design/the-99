@@ -38,12 +38,12 @@ export function ageTrack<T>(s: Tracked<T>, now: number): Tracked<T> {
   return s.candidate === null ? s : { ...s, candidate: null };
 }
 
-/** The tracker after one more value is read at `now`. Pure. */
-export function nextTrack<T>(s: Tracked<T>, v: T, now: number, same: (a: T, b: T) => boolean): Tracked<T> {
+/** The tracker after one more value is read at `now`; `dwell` is how long a new value must hold. Pure. */
+export function nextTrack<T>(s: Tracked<T>, v: T, now: number, same: (a: T, b: T) => boolean, dwell: number = DWELL_MS): Tracked<T> {
   // The same as the settled value: keep it, as this frame read it.
   if (s.value !== null && same(s.value, v)) return { ...s, value: v, candidate: null, seenAt: now };
   const since = s.candidate && same(s.candidate.value, v) ? s.candidate.since : now;
-  if (now - since >= DWELL_MS) return { value: v, changedAt: now, before: s.value, candidate: null, seenAt: now };
+  if (now - since >= dwell) return { value: v, changedAt: now, before: s.value, candidate: null, seenAt: now };
   const candidate = { value: v, since };
   if (s.value !== null && now - s.seenAt >= LOSE_MS) return { value: null, changedAt: now, before: s.value, candidate, seenAt: now };
   return { ...s, candidate };

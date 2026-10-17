@@ -1,10 +1,11 @@
 // The lab's recorded behavior, on the server path: the dwell before a card is asked about, one lookup per stable card
+// (two when the early answer is not confident)
 // however long it stays, a new lookup for a second copy after the frame empties, and the retry with its own state.
 import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
 import { DWELL_MS } from "./track";
 import { LOOKUP_BACKOFF_MS } from "./lookup";
-import { serverScanner, type ServerState } from "./server-scan";
+import { CONFIDENT_MARGIN, EARLY_DWELL_MS, serverScanner, type ServerState } from "./server-scan";
 import type { ScanFrame } from "./stable-card";
 
 const MODEL = SCAN_MODEL;
@@ -31,7 +32,7 @@ const hold = (f: ScanFrame, n: number) => Array.from({ length: n }, () => f);
 
 describe("serverScanner", () => {
   it("asks nothing before the dwell, then once for a card however long it stays, and hands back its answer", async () => {
-    const before = await play(hold(card(0), Math.floor(DWELL_MS / 150)));
+    const before = await play(hold(card(0), Math.floor(EARLY_DWELL_MS / 150)));
     expect(before.fetch).not.toHaveBeenCalled();
     const { fetch, states, last } = await play(hold(card(0), 40));
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -102,5 +103,95 @@ describe("serverScanner", () => {
     const m = states.at(-1);
     expect(m?.kind).toBe("match");
     if (m?.kind === "match") expect(m.totalMs).toBe(m.ms + 300);
+  });
+});
+
+describe("serverScanner's early lookup", () => {
+  const answer = (margin: number) => ({ ok: true, status: 200, json: async () => ({ ...MATCH, margin }) });
+  it("shows a confident answer asked for at the early dwell, and asks once", async () => {
+    const fetch = vi.fn(async () => answer(CONFIDENT_MARGIN));
+    const { states, last } = await play(hold(card(0), Math.ceil(EARLY_DWELL_MS / 150) + 2), fetch);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(states).toEqual(["looking", "match"]);
+    expect(last.kind).toBe("match");
+  });
+  it("asks again at the full dwell when the early answer is not confident, and shows that one", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(answer(CONFIDENT_MARGIN - 0.01)).mockResolvedValue(answer(0.05));
+    const early = await play(hold(card(0), Math.floor(DWELL_MS / 150)), fetch);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(early.last.kind).toBe("looking");
+    const fetch2 = vi.fn().mockResolvedValueOnce(answer(CONFIDENT_MARGIN - 0.01)).mockResolvedValue(answer(0.05));
+    const { states, last } = await play(hold(card(0), 20), fetch2);
+    expect(fetch2).toHaveBeenCalledTimes(2);
+    expect(states).toEqual(["looking", "looking", "looking", "match"]);
+    expect(last.kind === "match" && last.result.margin).toBe(0.05);
+  });
+  it("does not ask again after the scanner is stopped", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    for (let i = 0; i < 4; i++) { s.frame(card(0), clock); await flush(); clock += 150; }
+    expect(fetch).toHaveBeenCalledTimes(1);
+    s.stop();
+    for (let i = 0; i < 10; i++) { s.frame(card(0), clock); await flush(); clock += 150; }
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("asks again at the full dwell from the run's start, at any cadence", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    // frames every 250ms: settles at 500, and the 750 frame has held 750ms
+    for (let i = 0; i < 4; i++) { s.frame(card(0), clock); await flush(); clock += 250; }
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("says it is looking, not retrying, while it waits to ask again", async () => {
+    const fetch = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(answer(0.01)).mockReturnValue(new Promise(() => {}));
+    const { states } = await play(hold(card(0), 4), fetch);
+    expect(states).toEqual(["looking", "retrying", "looking"]);
+  });
+  it("starts the full dwell again when the card's run is broken before it is asked again", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    const at = async (f: ScanFrame, t: number) => { clock = t; s.frame(f, t); await flush(); };
+    for (const t of [0, 150, 300]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(none, 450);
+    await at(none, 600);
+    await at(card(0), 750);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    for (const t of [900, 1050, 1200, 1350]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(card(0), 1500);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("counts a break in the card's run while the early answer is still on its way", async () => {
+    let clock = 0;
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise((r) => (land = r))).mockImplementation(async () => answer(0.05));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    const at = async (f: ScanFrame, t: number) => { clock = t; s.frame(f, t); await flush(); };
+    for (const t of [0, 150, 300]) await at(card(0), t);
+    await at(none, 1400);
+    land(answer(0.09));
+    await flush();
+    await at(card(0), 1600);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    for (const t of [1750, 1900, 2050, 2200]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(card(0), 2300);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("does not ask again once the card is gone", async () => {
+    const fetch = vi.fn(async () => answer(0.01));
+    const { states } = await play([...hold(card(0), 4), ...hold(none, 20)], fetch);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(states.at(-1)).toBe("idle");
+  });
+  it("still needs the full dwell before an empty frame forgets the card", async () => {
+    const fetch = vi.fn(async () => answer(0.5));
+    const { states } = await play([...hold(card(0), 6), ...hold(none, Math.floor(DWELL_MS / 150)), ...hold(card(0), 6)], fetch);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(states).not.toContain("idle");
   });
 });
