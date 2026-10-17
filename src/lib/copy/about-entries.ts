@@ -12,6 +12,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // ---- 01 · Your collection ------------------------------------------------
   {
     id: 'browse',
+    screen: 'collection',
     chapter: '01',
     title: 'Finding a card in your Collection',
     route: '/collection',
@@ -29,6 +30,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'collection-add',
+    screen: 'collection',
     switch: 'COLLECTION_EDIT_ENABLED',
     chapter: '01',
     title: 'Adding cards by hand',
@@ -48,6 +50,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'import',
+    screen: 'upload',
     chapter: '01',
     title: 'Importing your Collection',
     route: '/collection/replace',
@@ -74,6 +77,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // so each follows PRECONS_ENABLED without the entry going dark. One caption at both widths.
   {
     id: 'start-without-a-collection',
+    screen: 'collection',
     switch: 'NO_COLLECTION_ENTRY_ENABLED',
     chapter: '01',
     title: 'Starting without a collection file',
@@ -100,6 +104,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'upload-choice',
+    screen: 'upload',
     switch: 'COLLECTION_EDIT_ENABLED',
     chapter: '01',
     title: 'Replacing or adding from a file',
@@ -134,6 +139,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'post-import',
+    screen: 'upload',
     chapter: '01',
     title: 'How replacing your Collection affects your decks',
     route: '/collection/replace',
@@ -166,6 +172,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'import-issues',
+    screen: 'upload',
     chapter: '01',
     title: 'When an import can’t find a card',
     route: '/collection/replace',
@@ -188,6 +195,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'availability',
+    screen: 'collection',
     chapter: '01',
     title: 'Availability: what’s free, what’s taken, what to buy',
     route: '/collection?avail=inuse,over',
@@ -205,6 +213,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'sets',
+    screen: 'sets',
     chapter: '01',
     title: 'Completing a set',
     route: '/collection/sets',
@@ -221,6 +230,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'buy-tag',
+    screen: 'deck',
+    view: 'shopping',
     chapter: '01',
     title: 'What the cards you’re missing cost',
     route: '/decks',
@@ -242,6 +253,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // (the About rule, 2026-10-11). Copy through /prose-pass.
   {
     id: 'all-decks-cart',
+    screen: 'decks',
     chapter: '01',
     title: 'Shopping for all your decks',
     route: '/decks/shopping',
@@ -269,6 +281,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // merge, the deck-stats precedent. Caption through /prose-pass; the title to /copy-review.
   {
     id: 'added-copy',
+    screen: 'collection',
     chapter: '01',
     title: 'Where a new copy goes',
     route: '/collection',
@@ -288,6 +301,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'card-detail',
+    screen: 'card-details',
     chapter: '01',
     title: 'A closer look at any card',
     route: '/collection',
@@ -307,6 +321,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // ---- 02 · Finding a commander -------------------------------------------
   {
     id: 'edit-copies',
+    screen: 'card-details',
     switch: 'COLLECTION_EDIT_ENABLED',
     chapter: '01',
     title: 'Changing how many you own',
@@ -326,6 +341,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'remove-card',
+    screen: 'collection',
     switch: 'COLLECTION_EDIT_ENABLED',
     chapter: '01',
     title: 'Removing a card from your Collection',
@@ -343,6 +359,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'collection-history',
+    screen: 'history',
     switch: 'COLLECTION_EDIT_ENABLED',
     chapter: '01',
     title: 'Undoing a change to your Collection',
@@ -365,6 +382,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // The specimen is the Wishlist tab's own tile (E1, `wishlist/wishlist-tile.tsx`).
   {
     id: 'wishlist',
+    screen: 'wishlist',
     switch: 'SOCIAL_WISHLIST_ENABLED',
     chapter: '01',
     title: 'Keeping a wishlist',
@@ -389,6 +407,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'ready-to-build',
+    screen: 'home',
     chapter: '02',
     title: 'Your two daily commanders',
     route: '/',
@@ -405,6 +424,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'fit-score',
+    screen: 'commanders',
     chapter: '02',
     title: 'How fit scores work',
     route: '/commanders',
@@ -421,6 +441,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'commander-lane',
+    screen: 'commanders',
     chapter: '02',
     title: 'Commanders you can build today',
     route: '/commanders',
@@ -441,6 +462,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'discover',
+    screen: 'discover',
     chapter: '02',
     title: 'Commanders worth buying',
     route: '/discover',
@@ -458,6 +480,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'help-me-choose',
+    screen: 'new-deck',
     chapter: '02',
     title: 'Help me choose a commander',
     route: '/decks/new/choose',
@@ -478,6 +501,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'role-coverage',
+    screen: 'commanders',
     chapter: '02',
     title: 'What your cards already cover',
     route: '/commanders',
@@ -495,6 +519,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'commander-availability',
+    screen: 'commanders',
     chapter: '02',
     title: 'Owned isn’t the same as free',
     route: '/commanders',
@@ -511,6 +536,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'partners',
+    screen: 'new-deck',
     chapter: '02',
     title: 'Building with two commanders',
     // The figure is the import proposal (`PartnerSlot`, state C), which only /decks/import
@@ -531,6 +557,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   // ---- 03 · Building the 99 -----------------------------------------------
   {
     id: 'deck-page',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Everything about a deck, on one page',
     route: '/decks',
@@ -549,6 +577,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'deck-analysis',
+    screen: 'deck',
+    view: 'analysis',
     chapter: '03',
     title: 'Finding your deck’s bracket',
     route: '/decks',
@@ -585,12 +615,16 @@ export const aboutEntries: readonly AboutEntry[] = [
     // Restated, the same value: `scripts/lib/about-clear.mjs` reads the catalog's ids from this
     // file's source (`    id: '…',`), and a spread id is invisible to it.
     id: 'deck-benchmarks',
+    screen: 'deck',
+    view: 'analysis',
     keys: [...benchmarksAboutEntry.keys],
     switch: 'DECK_BENCHMARKS_ENABLED',
     marksPending: true,
   },
   {
     id: 'auto-fill',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Building the 99 for you',
     // The canvas names /decks/new, which is where the fill is ORDERED. The
@@ -616,6 +650,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'decklist-marks',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Reading a decklist row',
     route: '/decks',
@@ -634,6 +670,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'card-marks',
+    screen: 'collection',
     chapter: '03',
     title: 'Bracket marks on every card',
     route: '/collection',
@@ -653,6 +690,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'locked-cards',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Locking your favorite cards',
     route: '/decks',
@@ -672,6 +711,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'roles',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'How much ramp, draw and removal you need',
     route: '/decks',
@@ -690,6 +731,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'informed-build',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Targets that fit your commander',
     route: '/decks',
@@ -707,6 +750,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'combo-awareness',
+    screen: 'collection',
     chapter: '03',
     title: 'Spotting combos you already own',
     route: '/collection',
@@ -724,6 +768,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'decklist-order',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Sorting your decklist',
     route: '/decks',
@@ -742,6 +788,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'add-cards',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Adding a card by name',
     route: '/decks',
@@ -763,6 +811,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'fits-your-decks',
+    screen: 'card-details',
     chapter: '03',
     title: 'Find a deck for it',
     route: '/collection',
@@ -786,6 +835,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // `fits-your-decks`, which keeps describing the free list. Its own switch, so no ABOUT_VERSION
     // bump: a switched entry is announced when its switch turns on. Through /prose-pass, 2026-10-12.
     id: 'find-a-deck-read',
+    screen: 'card-details',
     chapter: '03',
     title: 'Which deck needs it most?',
     route: '/collection',
@@ -805,6 +855,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'versions',
+    screen: 'deck',
+    view: 'versions',
     chapter: '03',
     title: 'Committing a deck and its versions',
     route: '/decks',
@@ -823,6 +875,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'shopping',
+    screen: 'deck',
+    view: 'shopping',
     chapter: '03',
     title: 'Your shopping list',
     route: '/decks',
@@ -842,6 +896,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'deck-tokens',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'The tokens your deck makes',
     route: '/decks',
@@ -863,6 +919,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'stand-ins',
+    screen: 'deck',
+    view: 'shopping',
     chapter: '03',
     title: 'Cheaper stand-ins',
     route: '/decks',
@@ -886,6 +944,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   // and the spares-only modal's own body, drawn in place (E2, `social/spare-markers.tsx`).
   {
     id: 'friend-spares',
+    screen: 'deck',
+    view: 'shopping',
     switch: 'SOCIAL_FRIENDS_ENABLED',
     chapter: '03',
     title: 'When a friend has a spare',
@@ -914,6 +974,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   // (handoff README open 1, answered without an array form). Copy through /prose-pass.
   {
     id: 'shopping-got-it',
+    screen: 'deck',
+    view: 'shopping',
     chapter: '03',
     title: 'Marking a card you bought',
     route: '/decks',
@@ -933,6 +995,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'deck-import',
+    screen: 'new-deck',
     chapter: '03',
     title: 'Importing a deck, or updating one',
     route: '/decks/import',
@@ -962,6 +1025,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'review-and-commit',
+    screen: 'deck',
+    view: 'versions',
     chapter: '03',
     title: 'Reviewing changes before you commit',
     route: '/decks',
@@ -982,6 +1047,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'new-deck',
+    screen: 'new-deck',
     chapter: '03',
     title: 'Starting a new deck',
     route: '/decks/new',
@@ -998,6 +1064,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'precons',
+    screen: 'new-deck',
     chapter: '03',
     title: 'Starting from a precon',
     route: '/decks/precons',
@@ -1024,6 +1091,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'upcoming-precons',
+    screen: 'new-deck',
     chapter: '03',
     title: 'Commander sets on the way',
     route: '/decks/precons',
@@ -1044,6 +1112,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'change-commander',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'A new commander for the same 99',
     route: '/decks',
@@ -1065,6 +1135,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'undo-removal',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Putting a card back',
     route: '/decks',
@@ -1087,6 +1159,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'export',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Exporting your deck, or buying what’s missing',
     route: '/decks',
@@ -1111,6 +1185,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   // in and go out. Copy through /prose-pass.
   {
     id: 'deck-printings',
+    screen: 'deck',
+    view: 'your-deck',
     chapter: '03',
     title: 'Choosing a printing for a deck',
     route: '/decks',
@@ -1132,6 +1208,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   // ---- 04 · Playing and tuning --------------------------------------------
   {
     id: 'log-a-game',
+    screen: 'deck',
+    view: 'games',
     chapter: '04',
     title: 'Logging a game',
     route: '/decks',
@@ -1148,6 +1226,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'log-findings',
+    screen: 'deck',
+    view: 'games',
     chapter: '04',
     title: 'What your games are telling you',
     route: '/decks',
@@ -1167,6 +1247,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // follows its own switch, so both are `since: 14` and bump nothing; the specimens are the shipped PodCard and GameMatchups.
   {
     id: 'friends',
+    screen: 'friends',
     switch: 'SOCIAL_FRIENDS_ENABLED',
     chapter: '04',
     title: 'Friends and pods',
@@ -1185,6 +1266,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'opponents',
+    screen: 'deck',
+    view: 'games',
     switch: 'SOCIAL_GAMES_ENABLED',
     chapter: '04',
     title: 'Who you played against',
@@ -1204,6 +1287,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'suggested-changes',
+    screen: 'deck',
+    view: 'analysis',
     chapter: '04',
     title: 'Tuning a deck with Suggested changes',
     route: '/decks',
@@ -1228,6 +1313,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'proposed-cuts',
+    screen: 'deck',
+    view: 'analysis',
     chapter: '04',
     title: 'Cutting back to 99 with Proposed cuts',
     route: '/decks',
@@ -1257,6 +1344,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'mana-balance',
+    screen: 'deck',
+    view: 'analysis',
     chapter: '04',
     title: 'Reading your deck’s mana',
     route: '/decks',
@@ -1283,6 +1372,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'deck-stats',
+    screen: 'deck',
+    view: 'stats',
     chapter: '04',
     title: 'Stats: the deck, drawn',
     route: '/decks',
@@ -1313,6 +1404,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // deck-stats precedent. Caption through /prose-pass (2026-10-12); the title to /copy-review.
   {
     id: 'decks-stats',
+    screen: 'decks',
     chapter: '04',
     title: 'Stats: your decks, side by side',
     route: '/decks',
@@ -1332,6 +1424,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'notes',
+    screen: 'deck',
+    view: 'notes',
     chapter: '04',
     title: 'Notes on a deck',
     route: '/decks',
@@ -1355,6 +1449,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'credits',
+    screen: 'deck',
+    view: 'analysis',
     chapter: '04',
     title: 'How credits work',
     route: '/decks',
@@ -1406,6 +1502,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'statuses',
+    screen: 'decks',
     chapter: '04',
     title: 'What a deck’s status means',
     route: '/decks',
@@ -1422,6 +1519,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'folders',
+    screen: 'decks',
     chapter: '04',
     title: 'Organizing decks into folders',
     route: '/decks',
@@ -1440,6 +1538,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'resume',
+    screen: 'home',
     chapter: '04',
     title: 'Pick up where you left off',
     route: '/',
@@ -1456,6 +1555,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'commitments',
+    screen: 'home',
     chapter: '04',
     title: 'How much of your Collection is in use',
     route: '/',
@@ -1479,6 +1579,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   // unless you say otherwise." No orphaned fact; one entry fewer.
   {
     id: 'proxies',
+    screen: 'proxies',
     chapter: '04',
     title: 'Proxying instead of buying',
     route: '/collection/proxies',
@@ -1497,6 +1598,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'themes',
+    screen: 'account',
     chapter: '04',
     title: 'Picking a color theme',
     route: '/',

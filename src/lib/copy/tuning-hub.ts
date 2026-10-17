@@ -18,7 +18,7 @@ export const tuningHubCopy = {
     suggested: {
       name: "Suggested changes",
       purpose: "Up to five swaps, read from your games, your notes and the list.",
-      cost: "1 credit a run",
+      cost: "1 credit per run",
       /** Engineering (plan 2026-10-11): Suggested changes reads the deck's reading, and a deck
        *  over 100 has none, so its tile is inert there and says why. */
       needsReading: "Works from the deck’s analysis, and analysis needs a full deck.",
