@@ -82,10 +82,11 @@ export default clerkMiddleware(async (auth, req) => {
   const pass = () => NextResponse.next({ request: { headers } });
   const path = req.nextUrl.pathname;
   // A newcomer's browser is handed its claim secret when it first loads the invite page, so a first Send code whose
-  // response never arrives still leaves the cookie behind; `claimInvite` binds the presented secret.
+  // response never arrives still leaves the cookie behind; `claimInvite` binds the presented secret. Only a real navigation hands one out, never a prefetch, so a
+  // link the pointer passes over cannot race the page's own load with a second secret.
   const withClaimCookie = (response: NextResponse): NextResponse => {
     const token = path.startsWith("/join/") ? path.slice("/join/".length) : "";
-    if (req.method === "GET" && isQrToken(token) && !req.cookies.get(CLAIM_COOKIE)) {
+    if (gateHandles(req.method, req.headers) && isQrToken(token) && !req.cookies.get(CLAIM_COOKIE)) {
       response.cookies.set(CLAIM_COOKIE, mintClaimSecret(), claimCookieOptions(token));
     }
     return response;

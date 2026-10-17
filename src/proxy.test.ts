@@ -450,6 +450,8 @@ describe("the invite claim cookie (signed out, /join/<token>)", () => {
     expectPassed(await proxy(auth, join(`/join/${TOKEN}`, "GET", "x".repeat(43))));
     expectPassed(await proxy(auth, join(`/join/${TOKEN}`, "POST")));
     expectPassed(await proxy(auth, join("/join/short")));
+    const prefetch = new NextRequest(`https://the99.test/join/${TOKEN}`, { headers: { accept: "text/html", "next-router-prefetch": "1" } });
+    expectPassed(await proxy(auth, prefetch));
     expectPassed(await proxy(auth, join("/")));
   });
 });
