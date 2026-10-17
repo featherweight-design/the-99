@@ -12,6 +12,10 @@ vi.mock("../../app/card-search-actions", () => ({
 vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 
 const { CardSearchRoot, CardSearchIcon } = await import("./card-search");
+// The sheet loads its layer with a dynamic import on first open. Left lazy, the FIRST test paid that module's transform
+// inside its 3s `waitFor` and timed out on a cold cache or a busy machine; loading it here keeps the wait about the
+// results, which is what the tests are for.
+await import("./search-layer");
 
 afterEach(cleanup);
 
