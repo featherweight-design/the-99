@@ -188,4 +188,13 @@ describe("JoinFlow", () => {
     fireEvent(window, Object.assign(new Event("pageshow"), { persisted: true }));
     await waitFor(() => expect((screen.getByRole("button", { name: joinCopy.toSignUp }) as HTMLButtonElement).disabled).toBe(false));
   });
+  it("takes a pasted code with spaces whole (the server accepts it), so Confirm is enabled", () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    const input = screen.getByLabelText(joinCopy.codeAria) as HTMLInputElement;
+    // A browser cuts a paste to maxLength before any handler runs, so the field must not carry one: the digits are
+    // taken from the text and capped in the handler.
+    expect(input.hasAttribute("maxlength")).toBe(false);
+    fireEvent.change(input, { target: { value: "123 456" } });
+    expect((screen.getByRole("button", { name: joinCopy.confirm }) as HTMLButtonElement).disabled).toBe(false);
+  });
 });
