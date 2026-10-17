@@ -479,6 +479,8 @@
 
   /* Display face (1) */
   --font-display-face: var(--font-metamorphous);
+  /* Lifts the diamond numeral 1.5px (the pad is twice the lift): Metamorphous digits sit low on the cap box. */
+  --numeral-pad: 3px;
 }
 
 /* ------------------------------------------------------------------
