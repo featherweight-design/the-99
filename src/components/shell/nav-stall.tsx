@@ -178,12 +178,7 @@ function connection(): StallReport["connection"] {
  * start (the document's, on a direct load). Returns the cleanup that cancels it, which the
  * caller runs when the wait ends. `to` is the raw pathname the reader is waiting for.
  */
-export function watchStall(args: {
-  kind: StallReport["kind"];
-  from: string;
-  to: string;
-  config: NonNullable<StallConfig>;
-}): () => void {
+export function watchStall(args: StallArgs): () => void {
   const since = navigationStartedAt;
   let wasHidden = document.visibilityState === "hidden";
   const onVisibility = () => {
@@ -193,35 +188,57 @@ export function watchStall(args: {
   const timer = window.setTimeout(() => {
     if (reportedFor === args.to) return;
     reportedFor = args.to;
-    const report: StallReport = {
-      kind: args.kind,
-      from: pathPattern(args.from),
-      to: pathPattern(args.to),
-      at: pathPattern(location.pathname),
-      moved: location.pathname === args.to,
-      elapsedMs: Math.min(3_600_000, Math.round(performance.now() - since)),
-      loader: loaderNow(),
-      ...rscFor(args.to, previousStartedAt),
-      visible: document.visibilityState === "visible",
-      wasHidden,
-      online: navigator.onLine,
-      connection: connection(),
-      worker: Boolean(navigator.serviceWorker?.controller),
-      deployment: args.config.deployment,
-    };
-    try {
-      const body = new Blob([JSON.stringify(report)], { type: "application/json" });
-      if (!navigator.sendBeacon?.("/api/nav-stall", body)) {
-        void fetch("/api/nav-stall", { method: "POST", body, keepalive: true }).catch(() => {});
-      }
-    } catch {
-      // A diagnostic never throws into the page it is watching.
-    }
+    send(args, since, wasHidden);
   }, STALL_AFTER_MS);
   return () => {
     window.clearTimeout(timer);
     document.removeEventListener("visibilitychange", onVisibility);
   };
+}
+
+type StallArgs = {
+  kind: StallReport["kind"];
+  from: string;
+  to: string;
+  config: NonNullable<StallConfig>;
+};
+
+/**
+ * The pending overlay was found up with no navigation running: nothing is left to wait on, so this reports
+ * at once (once per navigation, like the rest) and the caller takes the overlay down. Its `elapsedMs` is
+ * the time since the last navigation started, which says how long the overlay had been up.
+ */
+export function reportOrphan(config: NonNullable<StallConfig>, at: string): void {
+  if (reportedFor === `orphan:${at}`) return;
+  reportedFor = `orphan:${at}`;
+  send({ kind: "orphan", from: at, to: at, config }, navigationStartedAt, document.visibilityState === "hidden");
+}
+
+function send(args: StallArgs, since: number, wasHidden: boolean): void {
+  const report: StallReport = {
+    kind: args.kind,
+    from: pathPattern(args.from),
+    to: pathPattern(args.to),
+    at: pathPattern(location.pathname),
+    moved: location.pathname === args.to,
+    elapsedMs: Math.min(3_600_000, Math.round(performance.now() - since)),
+    loader: loaderNow(),
+    ...rscFor(args.to, previousStartedAt),
+    visible: document.visibilityState === "visible",
+    wasHidden,
+    online: navigator.onLine,
+    connection: connection(),
+    worker: Boolean(navigator.serviceWorker?.controller),
+    deployment: args.config.deployment,
+  };
+  try {
+    const body = new Blob([JSON.stringify(report)], { type: "application/json" });
+    if (!navigator.sendBeacon?.("/api/nav-stall", body)) {
+      void fetch("/api/nav-stall", { method: "POST", body, keepalive: true }).catch(() => {});
+    }
+  } catch {
+    // A diagnostic never throws into the page it is watching.
+  }
 }
 
 /**

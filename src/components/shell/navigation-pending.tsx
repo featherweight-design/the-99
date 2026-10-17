@@ -19,6 +19,7 @@ import {
 import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes";
 import { Report, targetOf, useReportPending, type PendingScope, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
+import { useOrphanGuard } from "./orphan-guard";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
 import { noteDeckRoute } from "../../lib/decks/visit";
@@ -87,19 +88,15 @@ export function NavigationPendingProvider({ children, stall = null }: { children
   const [target, setTarget] = useState<string | null>(null);
   const [shown, setShown] = useState<LoadingKey | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const shownRef = useRef<LoadingKey | null>(null);
-  useEffect(() => {
-    shownRef.current = shown;
-  }, [shown]);
-
   const end = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     running.current = false;
     due.current = false;
     setTarget(null);
-    // Shown: fade out over the committed page. Never shown: nothing to undo.
-    if (shownRef.current) setLeaving(true);
+    // Shown: fade out over the committed page. Never shown: nothing to undo, and `leaving` with no screen
+    // draws nothing. Not decided from a ref of `shown`: a mirror that lags the state is how a screen is left up.
+    setLeaving(true);
   }, []);
 
   // Reports only record; the provider decides once per commit, in its own effect. A press that
@@ -215,6 +212,11 @@ export function NavigationPendingProvider({ children, stall = null }: { children
   useEffect(() => {
     leftFrom.current = pathname;
   }, [pathname]);
+
+  // A screen up with no navigation pending and not already leaving is an orphan: it leaves now and says so once
+  // (`useOrphanGuard`).
+  const takeDown = useCallback(() => setLeaving(true), []);
+  useOrphanGuard(shown !== null && target === null && !leaving, pathname, stall, takeDown);
 
   const lastRoute = target ? pendingRouteFor(target) : null;
   const screen = shown && lastRoute?.kind === "overlay" ? lastRoute.key : shown;

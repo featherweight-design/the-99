@@ -17,6 +17,18 @@ vi.mock("next/link", async () => {
   };
 });
 
+// The orphan guard's inputs, as the provider hands them: a spy over the real hook.
+const guard = vi.hoisted(() => ({ orphaned: [] as boolean[] }));
+vi.mock("./orphan-guard", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./orphan-guard")>();
+  return {
+    useOrphanGuard: (...args: Parameters<typeof real.useOrphanGuard>) => {
+      guard.orphaned.push(args[0]);
+      return real.useOrphanGuard(...args);
+    },
+  };
+});
+
 const { default: Link } = await import("next/link");
 const { NavigationPendingProvider, OVERLAY_AFTER_MS, ShellMain } = await import("./navigation-pending");
 const { usePendingReport, usePendingContentScope } = await import("./pending-report");
@@ -146,6 +158,31 @@ describe("NavigationPendingProvider", () => {
     expect(main().inert).toBe(false);
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
+  });
+
+  it("leaves no screen up when the run ends in the same tick the 400ms timer fires", () => {
+    press("/commanders");
+    // The 400ms timer and the link's pending state clearing land in one batch: the screen is drawn and its run is over.
+    act(() => {
+      vi.advanceTimersByTime(OVERLAY_AFTER_MS);
+      state.pending.set("/commanders", false);
+      rerender(<App links={LINKS} />);
+    });
+    act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS + 50));
+    expect(overlay()).toBeNull();
+    expect(main().inert).toBe(false);
+  });
+
+  it("hands the orphan guard its state on every render, and never calls a run's own screen an orphan", () => {
+    guard.orphaned.length = 0;
+    press("/commanders");
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).not.toBeNull();
+    press("/commanders", false);
+    act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS + 50));
+    expect(overlay()).toBeNull();
+    expect(guard.orphaned.length).toBeGreaterThan(3);
+    expect(guard.orphaned).not.toContain(true);
   });
 
   it("ends a run when the page lands, even while the pressed link still reads pending", () => {

@@ -10,9 +10,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   carries no reader id and no deployment id. Two watchers send it: the navigation provider, for a press still
   pending (`kind=pending`), and `StallWatch` inside every in-page loading screen (`LoadingScreen`, and Help me
   choose's results skeleton, but not while it stands in for a model read), for a page that committed into its
-  fallback (`kind=fallback`). A press that hangs pending and then in its own fallback reports once; any other
+  fallback (`kind=fallback`). A third, `kind=orphan`, is the provider finding its overlay up with no navigation
+  running (`useOrphanGuard`): it is sent at once, not after 8s, because nothing is left to wait on, and the same
+  check takes the overlay down. An `orphan` line is a defect in the provider, and its `at`/`elapsed` say where and
+  how long. A press that hangs pending and then in its own fallback reports once; any other
   loading screen (a route that commits its loading boundary at once, a change of query, a Back) is a navigation of
-  its own. Find them with `vercel logs -p the-99 -q "nav-stall"`, and read a line by field:
+  its own. Find them with `vercel logs -p the-99-staging -q "nav-stall"` (staging, where the switch is on; `-p the-99` is production, where it is off), and read a line by field:
 
   - `moved=true` means the address bar already shows the target: the router committed and the PAGE is what never
     arrived. `moved=false`: the press itself never committed.

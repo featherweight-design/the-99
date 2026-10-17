@@ -2943,6 +2943,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   script and shown by the slot once it mounts; with an iPhone Safari user agent the slot must show with no event, open the how-to sheet, close
   it on Got it, and stay away after its ✕ across a reload. At 1300 no slot is drawn. Read-only (it writes only the
   browser's own localStorage).
+- `pnpm probe:stuck-overlay` presses real links (`/credits` to `/about#credits`, Home to a deck, `/decks` to
+  `/collection`) at 1300 and 390 and samples the page every 500ms for 15s: the pathname, the pending overlay and its
+  `data-leaving`, `<main>` inert, nav-stall beacons, and whether the page still answers. The overlay must show and
+  then leave; one left up is the stuck loader, and an up overlay with no beacon is the unwatched half of it. Options
+  (`PROBE_QUICK`, `PROBE_SLOW`, `PROBE_REFRESH`, `PROBE_CHECKOUT`, `PROBE_HIDDEN`) put the app's own background work
+  in flight first; they are listed in the script's header. Needs `next start` with `NAV_STALL_LOG_ENABLED`,
+  `MOMENTS_ENABLED` and `PAYMENTS_ENABLED` on, on local-dev or a scratch branch (it writes the audit account's About
+  row and puts it back). When it was written it did NOT reproduce the staging report in any variant (70s sit, Slow 4G,
+  `router.refresh()` while pending, a Checkout return, a backgrounded tab): it is the instrument for the next one.
 - `pnpm probe:pwa-offline` proves the service worker's offline fallback and the offline pill, at 390 and 1300,
   against a local `next start` (`PROBE_BASE`; the worker registers in production builds only). Signed in, it checks
   that the worker controls the page and keeps `/offline`, and that the kept page names nothing of the reader's (their
