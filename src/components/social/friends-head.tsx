@@ -11,6 +11,8 @@
 // At desktop the field sits in the title column under the h1; at phone it runs the page's width under the row. The cap is counted in code points (`capName`, E14), never `maxLength`.
 
 import { useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useTarget } from "../discovery/targets-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 import { socialCopy } from "../../lib/copy/social";
 import { capName, DISPLAY_NAME_MAX } from "../../lib/social/client-rules";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -64,6 +66,9 @@ export function FriendsHead({
   // Set once the field has been answered, so a blur fired as it leaves (Escape, then removal) is not a second answer.
   const settled = useRef(false);
   const id = useId();
+  // Add a friend is Friends and pods' target: Try it lands on `/friends` and haloes it.
+  const friendsTarget = useTarget("friends");
+  const inviteTargetRef = useMergedRef(inviteRef, friendsTarget);
 
   function open() {
     setDraft(name);
@@ -216,7 +221,7 @@ export function FriendsHead({
           onClick={() => {
             if (!pressPending && !pressHeld) onInvite();
           }}
-          ref={inviteRef}
+          ref={inviteTargetRef}
           aria-disabled={pressPending || pressHeld || undefined}
           aria-describedby={pressHeld ? `${id}-held` : undefined}
           className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${pressHeld ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : pressPending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}

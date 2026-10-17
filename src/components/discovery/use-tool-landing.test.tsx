@@ -347,3 +347,71 @@ describe("useToolLanding", () => {
     expect(spendMomentAction).not.toHaveBeenCalled();
   });
 });
+
+describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
+  function Deferred({ children }: { children?: React.ReactNode }) {
+    useToolLanding(toolLanding("find-a-deck", () => true), "r1", { deferred: true });
+    return <>{children}</>;
+  }
+  function Later() {
+    const [on, setOn] = useState(false);
+    return on ? <Anchor id="find-a-deck" name="Find a deck for it" /> : <button type="button" onClick={() => setOn(true)}>open a card</button>;
+  }
+  const mountDeferred = (children: React.ReactNode) =>
+    render(
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <Deferred>{children}</Deferred>
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+
+  it("strips the parameter at once, then haloes the next card's door once, however long the reader takes", async () => {
+    at("?avail=free&tool=find-a-deck");
+    mountDeferred(<Later />);
+    await flush();
+    expect(window.location.search).toBe("?avail=free");
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS * 10));
+    await flush();
+    expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    const door = screen.getByRole("button", { name: "Find a deck for it" });
+    expect(door.hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
+    expect(window.location.search).toBe("?avail=free");
+  });
+
+  it("haloes nothing and spends nothing when the reader leaves the page before opening a card", async () => {
+    at("?tool=find-a-deck");
+    const { unmount } = mountDeferred(<Later />);
+    await flush();
+    unmount();
+    act(() => vi.advanceTimersByTime(LANDING_WAIT_MS * 2));
+    await flush();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("");
+  });
+
+  it("strips a stale id at once and waits for nothing", async () => {
+    at("?tool=nope");
+    render(
+      <TargetsProvider>
+        <MomentsProvider live={["find-a-deck"]} spent={[]}>
+          <StaleDeferred />
+          <Anchor id="find-a-deck" name="Find a deck for it" />
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+    await flush();
+    expect(window.location.search).toBe("");
+    expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+  function StaleDeferred() {
+    useToolLanding(null, "r1", { deferred: true });
+    return null;
+  }
+});

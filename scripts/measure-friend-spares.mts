@@ -4,10 +4,88 @@
 // friend's (Hugh's, on a staging copy); `MEASURE_ASKED` sets how many asked cards (default 60).
 //
 //   MEASURE_FRIEND_USER_ID=user_… pnpm measure:friend-spares
+//
+// FITS MODE (discovery plan R2·3, R2 gap 3): `MEASURE_FITS=1` times what About's Try it would pay for Friends' spares,
+// `loadFriendSpares` once over the UNION of every deck's missing cards with no cap, and `loadToolFits` for every deck
+// tool, for the account with the most decks among those holding a friend (named by `MEASURE_VIEWER_ID` instead, if
+// set). The account is never printed. READ-ONLY and refusing: it runs against `MEASURE_TARGET_URL` (not
+// `DATABASE_URL`, which `env.mjs` overrides from `.env`) on the branch's direct host, every connection is set `read
+// only` before its first statement, every statement is checked before it is sent and anything but a read stops the
+// run, and `MEASURE_TARGET_BRANCH` must equal the `neon.branch_id` the database reports.
+//
+//   MEASURE_FITS=1 MEASURE_TARGET_URL=<staging> MEASURE_TARGET_BRANCH=br-… pnpm measure:friend-spares
 import "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+import { isReadStatement } from "./lib/read-statement";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
+async function fits() {
+  const url = process.env.MEASURE_TARGET_URL;
+  const branch = process.env.MEASURE_TARGET_BRANCH;
+  if (!url || !branch) throw new Error("measure:friend-spares (fits): set MEASURE_TARGET_URL and MEASURE_TARGET_BRANCH");
+  const direct = new URL(url);
+  direct.hostname = direct.hostname.replace("-pooler.", ".");
+  neonConfig.webSocketConstructor = ws;
+  const pool = new Pool({ connectionString: direct.toString() });
+  pool.on("connect", (client: { query: (...a: unknown[]) => unknown }) => {
+    const send = client.query.bind(client) as (...a: unknown[]) => unknown;
+    // Queued first on the connection, so it runs before any statement the code under measure sends.
+    void send("set session characteristics as transaction read only");
+    (client as unknown as { query: (...a: unknown[]) => unknown }).query = (...a: unknown[]) => {
+      const q = a[0] as string | { text?: string };
+      const text = typeof q === "string" ? q : q?.text ?? "";
+      if (!isReadStatement(text)) throw new Error(`refusing a statement that is not a read: ${text.slice(0, 40)}`);
+      return send(...a);
+    };
+  });
+  // `src/db` keeps its pool on `globalThis` (one per process): this one, so every read the measured code makes goes
+  // through the guard above. Set before `src/db` is imported.
+  (globalThis as { __the99Pool?: Pool }).__the99Pool = pool;
+  process.env.DATABASE_URL = direct.toString();
+  const { db } = await import("../src/db");
+  const { sql } = await import("drizzle-orm");
+  const ro = await db.execute<{ ro: string; id: string }>(sql`select current_setting('transaction_read_only') as ro, current_setting('neon.branch_id', true) as id`);
+  if (ro.rows[0]?.ro !== "on") throw new Error("the connection is not read-only; stopping before any read");
+  if (ro.rows[0]?.id !== branch) throw new Error("MEASURE_TARGET_BRANCH is not the branch this database reports; stopping");
+  const named = process.env.MEASURE_VIEWER_ID;
+  const busiest = await db.execute<{ id: string; decks: number; friends: number }>(sql`
+    select d.user_id as id, count(*)::int as decks,
+      (select count(distinct f.friend_user_id)::int from friend_links f where f.user_id = d.user_id) as friends
+    from decks d
+    where ${named ?? null}::text is null or d.user_id = ${named ?? null}
+    group by d.user_id
+    having exists (select 1 from friend_links f where f.user_id = d.user_id)
+    order by count(*) desc, d.user_id limit 1`);
+  const viewer = busiest.rows[0];
+  if (!viewer) throw new Error("no account with a friend");
+  const { loadDeckBuyRows } = await import("../src/lib/decks/availability-query");
+  const { loadFriendSpares } = await import("../src/lib/social/spares");
+  const { DECK_TOOLS, loadToolFits } = await import("../src/lib/discovery/fits");
+  const env = process.env;
+  const rows = await loadDeckBuyRows(viewer.id, undefined, undefined, env);
+  const union = [...new Set(rows.map((r) => r.oracleId))];
+  const time = async (fn: () => Promise<unknown>, runs = 9) => {
+    const ms: number[] = [];
+    for (let i = 0; i < runs; i++) {
+      const t = performance.now();
+      await fn();
+      ms.push(performance.now() - t);
+    }
+    ms.sort((a, b) => a - b);
+    return `median ${Math.round(ms[Math.floor(runs / 2)])}ms (${Math.round(ms[0])} to ${Math.round(ms[runs - 1])}, ${runs} runs)`;
+  };
+  console.log(`branch ${branch}, read-only · the ${named ? "named account" : "busiest account with a friend"}: ${viewer.decks} decks, ${viewer.friends} friend(s), ${union.length} missing cards across them`);
+  const spares = await loadFriendSpares(viewer.id, union);
+  console.log(`spared cards among them: ${spares.filter((x) => x.spare > 0).length}`);
+  console.log(`loadFriendSpares over the union, no cap: ${await time(() => loadFriendSpares(viewer.id, union))}`);
+  console.log(`loadToolFits, Friends' spares alone: ${await time(() => loadToolFits(viewer.id, env, ["friend-spares"]))}`);
+  console.log(`loadToolFits, every deck tool: ${await time(() => loadToolFits(viewer.id, env, DECK_TOOLS))}`);
+  await pool.end();
+}
+
 async function main() {
+  if (process.env.MEASURE_FITS === "1") return fits().then(() => process.exit(0));
   const friend = process.env.MEASURE_FRIEND_USER_ID;
   if (!friend) throw new Error("measure:friend-spares: set MEASURE_FRIEND_USER_ID");
   const askedCount = Number(process.env.MEASURE_ASKED ?? 60);

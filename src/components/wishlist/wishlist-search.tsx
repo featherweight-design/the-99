@@ -13,6 +13,8 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { useSearchDismiss } from "../../lib/ui/search-dismiss";
 import { SearchField } from "../ui/text-field";
 import { WantStepper } from "./want-stepper";
+import { useTarget } from "../discovery/targets-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 
 const copy = wishlistCopy;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -100,6 +102,9 @@ export function WishlistSearch({
     setFresh(new Set());
   };
   const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(trimmed !== "", () => changeQuery(""));
+  // The search is the Wishlist's target on its own page: Try it lands on `/collection/wishlist` and haloes it.
+  const wishTarget = useTarget("wishlist");
+  const ref = useMergedRef(rootRef, wishTarget);
 
   // A step that answers `held` takes its row's stepper away, focused press and all. When that left focus nowhere, it
   // goes back to the field; a reader who has already moved on is left where they are.
@@ -170,7 +175,7 @@ export function WishlistSearch({
     onEscape(e);
   }
   return (
-    <div ref={rootRef} onKeyDown={onKeyDown} className="relative w-full md:w-[560px]">
+    <div ref={ref} onKeyDown={onKeyDown} className="relative w-full md:w-[560px]">
       <SearchField
         aria-label={collectionEditCopy.add.searchAria}
         placeholder={copy.page.search.placeholder}

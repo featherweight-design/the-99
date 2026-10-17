@@ -594,6 +594,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
   staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
   switches on, then off, and with the probe's own `MOMENTS_ENABLED` matching the server's.
+  Since R2·3 it also lands each tool that has a page of its own, at both widths: Help me choose (the form's first
+  answer), Precons and Wishlist (each page's search), Collection Sync (the drop zone, G14), Stats for your decks (the
+  Tiles · Stats switch on `/decks?view=stats`) and Friends and pods (Add a friend), each by its `?tool=` on that page,
+  with the same halo, strip, spend and no-bubble checks. Find a deck's landing is deferred: `?tool=find-a-deck` on
+  `/collection?avail=free` is stripped at once, nothing haloes, and the probe then presses the first row open so the
+  card details' `Find a deck for it` is haloed once. A control the page does not draw even without `?tool=` is SKIP;
+  one it draws without the landing but not with it is FAIL. Stale ids on a page (unknown, another page's tool, a deck
+  tool) strip with no halo and write nothing. Run with `PROBE_SWITCHES=off` against a server with the page tools'
+  switches off too, where every page landing must draw no halo and write nothing (a route gone for the reader is its
+  not-found page).
 
 - `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its

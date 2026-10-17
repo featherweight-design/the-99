@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
@@ -65,8 +66,13 @@ import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 import { PreconListView } from "../../../../components/decks/precons/precon-list-view";
 import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
 
-const visit = async (query: Record<string, string> = {}) =>
-  (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
+// The list draws the landing's mount beside its view (discovery R2·3): the view is the fragment's last child.
+const visit = async (query: Record<string, string> = {}) => {
+  const el = (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
+  if (el.type !== Fragment) return el;
+  const children = el.props.children as ReactElement<Record<string, unknown>>[];
+  return children[children.length - 1];
+};
 const runAfters = async () => { for (const fn of h.afters.splice(0)) await fn(); };
 
 describe("/decks/precons, upcoming precons", () => {

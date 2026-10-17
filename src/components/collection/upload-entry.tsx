@@ -11,6 +11,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { useTarget } from "../discovery/targets-provider";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
@@ -53,6 +54,9 @@ export function UploadEntry({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The page's drop zone is Collection Sync's target (G14): Try it lands on `/collection/replace` and haloes it. Only
+  // the drop zone carries it, so the buttons entry (first run's step-1 card) registers nothing.
+  const syncTarget = useTarget("collection-sync");
 
   function handleFile(file: File) {
     if (pending) return;
@@ -242,6 +246,7 @@ export function UploadEntry({
       {mode === "dropzone" ? (
         // Upload Drop Zone — §Upload Drop Zone: border 1.5px dashed --border-dashed, radius 12px, bg --surface-sunken, padding 30px 18px mobile / 40px desktop, mobile centered / desktop flex row (icon left)
         <label
+          ref={syncTarget}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => {

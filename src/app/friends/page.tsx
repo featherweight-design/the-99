@@ -23,13 +23,19 @@ import { PodsPane } from "../../components/social/pods-pane";
 import { MAX_OPEN_INVITES } from "../../lib/social/rules";
 import { ACCEPTED_PARAM, originFrom } from "../../lib/social/client-rules";
 import { FriendsView } from "../../components/social/friends-view";
+import { pageLanding } from "../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
-  const accepted = (await searchParams)[ACCEPTED_PARAM];
+  const query = await searchParams;
+  const accepted = query[ACCEPTED_PARAM];
+  // Try it's landing (discovery R2·3): `?tool=friends` haloes Add a friend; anything else is stripped.
+  const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
   const user = await currentUser();
@@ -62,6 +68,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
   const invites = await invitesRead;
   return (
+    <>
+    <ToolLandingMount landing={landing} request={request} />
     <FriendsView
       profile={profile}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} />}
@@ -78,5 +86,6 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       friendPages={wishlistEnabled(env)}
       invites={invites}
     />
+    </>
   );
 }

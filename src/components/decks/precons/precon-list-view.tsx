@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useTarget } from "../../discovery/targets-provider";
 import { acknowledgeArrivals } from "../../home/arrivals-seen";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
@@ -89,6 +90,9 @@ export function PreconListView({
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");
   const [q, setQ] = useState(initial.q);
+  // The list's search is Precons' target on its own page: Try it lands on `/decks/precons` and haloes it. One of the
+  // two fields mounts at a width.
+  const searchTarget = useTarget("precons");
   const [colours, setColours] = useState<string[]>(initial.colours);
   const [urlOrder, setUrlOrder] = useState<PreconOrder | null>(initial.order);
   const [storedOrder, storeOrder] = useStoredView(PRECON_ORDER_KEY, isOrder);
@@ -238,7 +242,7 @@ export function PreconListView({
       <div className="px-[16px] pt-[12px] md:px-[22px]">
         {!wide && (
           <div className="mb-[8px] flex items-center gap-[8px]">
-            <div className="min-w-0 flex-1">
+            <div ref={searchTarget} className="min-w-0 flex-1 rounded-[9px]">
               <DeckSearchField value={q} onChange={onSearch} size="sheet" placeholder={copy.list.search} />
             </div>
             {toggle}
@@ -249,7 +253,7 @@ export function PreconListView({
           controls={
             wide ? (
               <>
-                <div className="min-w-0 flex-auto">
+                <div ref={searchTarget} className="min-w-0 flex-auto rounded-[9px]">
                   <DeckSearchField value={q} onChange={onSearch} size="column" placeholder={copy.list.search} />
                 </div>
                 {pips}

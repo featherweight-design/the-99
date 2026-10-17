@@ -24,6 +24,9 @@ import { PreconsDown } from "../../../../components/decks/precons/precons-down";
 import { PreconPickView } from "../../../../components/decks/precons/precon-pick-view";
 import { noCollectionEntryEnabled } from "../../../../lib/collection/edit-flag";
 import { PICK_PARAM, PICK_VALUE, pickEntry } from "../../../../lib/precons/pick";
+import { pageLanding } from "../../../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 import {
   parsePreconsAnnouncedCookie, parsePreconsViewCookie, PRECONS_ANNOUNCED_COOKIE, PRECONS_VIEW_COOKIE,
 } from "../../../../components/ui/view-cookie";
@@ -36,6 +39,8 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
   const env = await requestSwitchEnv(userId);
   if (!preconsEnabled(env)) notFound();
   const raw = await searchParams;
+  // Try it's landing (discovery R2·3): `?tool=precons` haloes the list's search; anything else is stripped.
+  const { landing, request } = pageLanding(raw[TOOL_PARAM], env, "precons");
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(raw)) if (typeof v === "string") params.set(k, v);
 
@@ -124,6 +129,8 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
   const storedAnnounced = upcoming ? parsePreconsAnnouncedCookie(jar.get(PRECONS_ANNOUNCED_COOKIE)?.value) : null;
 
   return (
+    <>
+    <ToolLandingMount landing={landing} request={request} />
     <PreconListView
       rows={list.rows}
       hasCollection={list.hasCollection}
@@ -136,5 +143,6 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
       newFileNames={upcoming ? newPreconFiles(upcoming.arrivals, now) : []}
       acknowledgesArrivals={acknowledges}
     />
+    </>
   );
 }

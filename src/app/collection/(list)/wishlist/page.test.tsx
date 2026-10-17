@@ -38,12 +38,18 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
-const props = async () => ((await WishlistPage()) as ReactElement<Record<string, unknown>>).props;
+const page = (query: Record<string, string> = {}) => WishlistPage({ searchParams: Promise.resolve(query) });
+// The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
+const view = async (query: Record<string, string> = {}) => {
+  const children = ((await page(query)) as ReactElement<{ children: ReactElement<Record<string, unknown>>[] }>).props.children;
+  return children[children.length - 1];
+};
+const props = async () => (await view()).props;
 
 describe("/collection/wishlist", () => {
   it("does not exist with the reader's switch off, and reads nothing", async () => {
     vi.stubEnv("SOCIAL_WISHLIST_ENABLED", "");
-    await expect(WishlistPage()).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(page()).rejects.toThrow("NEXT_NOT_FOUND");
     expect(m.loadWishlistTiles).not.toHaveBeenCalled();
   });
 

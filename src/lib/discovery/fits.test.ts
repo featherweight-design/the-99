@@ -128,6 +128,30 @@ describe("loadToolFits", () => {
     expect(ids((await loadToolFits("u", env, ["matchups"])).matchups)).toEqual(["a"]);
   });
 
+  it("judges a partner deck at 99 body cards as one over, for Proposed cuts, and never full", async () => {
+    stub.decks = [listed("pair", "2026-10-02", { built: 99, partnerName: "Tymna" }), listed("solo", "2026-10-01", { built: 99 })];
+    const fit = await loadToolFits("u", env, ["proposed-cuts", "mana-balance", "top-off"]);
+    expect(ids(fit["proposed-cuts"])).toEqual(["pair"]);
+    expect(ids(fit["mana-balance"])).toEqual(["solo"]);
+    expect(ids(fit["top-off"])).toEqual([]);
+  });
+
+  it("never fits a deck gone since its rows were read: only the reader's listed decks are judged", async () => {
+    stub.decks = [listed("kept", "2026-10-02")];
+    stub.rows = [
+      { deckId: "gone", oracleId: "spared", quantity: 1 },
+      { deckId: "gone", oracleId: "dear", quantity: 1 },
+    ];
+    stub.limits = [{ id: "kept", limit: null, commander: "k", partner: null }];
+    stub.prices = new Map([["gone:dear", { cents: 9900, foilCents: null, etchedCents: null, asOf: new Date("2026-10-16") }]]);
+    stub.spares = [{ oracleId: "spared", spare: 1 }];
+    stub.played = [{ deckId: "gone" }];
+    const fit = await loadToolFits("u", env, ["stand-ins", "friend-spares", "matchups"]);
+    expect(ids(fit["stand-ins"])).toEqual([]);
+    expect(ids(fit["friend-spares"])).toEqual([]);
+    expect(ids(fit.matchups)).toEqual([]);
+  });
+
   it("asks nothing with no tools", async () => {
     expect(await loadToolFits("u", env, [])).toEqual({});
   });

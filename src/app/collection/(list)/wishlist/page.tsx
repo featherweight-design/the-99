@@ -14,18 +14,25 @@ import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { listFriends } from "../../../../lib/social/access";
 import { WishlistView } from "../../../../components/wishlist/wishlist-view";
+import { pageLanding } from "../../../../lib/discovery/page-landing";
+import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
+import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
-export default async function CollectionWishlistPage() {
+export default async function CollectionWishlistPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // The reader first: the switch is theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!wishlistEnabled(env)) notFound();
+  // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
+  const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "wishlist");
   const [{ tiles }, notices, hasFriend] = await Promise.all([
     loadWishlistTiles(userId),
     loadCollectedNotices(userId),
     socialFriendsEnabled(env) ? listFriends(userId).then((f) => f.length > 0) : Promise.resolve(false),
   ]);
   return (
+    <>
+    <ToolLandingMount landing={landing} request={request} />
     <WishlistView
       tiles={tiles.map((t) => ({
         oracleId: t.oracleId,
@@ -38,5 +45,6 @@ export default async function CollectionWishlistPage() {
       notices={notices.map((n) => ({ oracleId: n.oracleId, name: n.name, collectedAt: n.collectedAt.toISOString() }))}
       hasFriend={hasFriend}
     />
+    </>
   );
 }

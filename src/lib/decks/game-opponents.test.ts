@@ -132,9 +132,12 @@ describe("assembleOpponents", () => {
 // a prompt builder that started reading it would have to join this list in a reviewed diff, and with it
 // take on `playerText` for every name it sends.
 describe("who reads the opponents table", () => {
+  // `discovery/fits.ts` (discovery R2·3) asks only WHETHER a deck has a game with an opponent recorded, for Matchups'
+  // Try it: it selects the deck id alone, never a label, a name or a friend link, and sends nothing to a model.
   const ALLOWED = new Set([
     "src/db/schema.ts",
     "src/lib/decks/game-opponents.ts",
+    "src/lib/discovery/fits.ts",
     "src/lib/social/purge.ts",
   ]);
   // Dot directories are skipped: other guards write short-lived fixtures under `src/lib/.name-*` and remove
