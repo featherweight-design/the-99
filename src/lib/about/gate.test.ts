@@ -134,7 +134,7 @@ describe("gateDecision", () => {
     const d = gateDecision({ ...base, seen: 1 });
     expect(d).toEqual({
       kind: "redirect",
-      to: "/about?next=%2Fdecks",
+      to: "/about?tab=reference&next=%2Fdecks",
       cookie: cookieValue("user_1", 2),
     });
   });
@@ -146,12 +146,14 @@ describe("gateDecision", () => {
     const d = gateDecision({ ...base, pathname: "/decks", search: "?a=1&b=2", seen: 0 });
     expect(d).toEqual({
       kind: "redirect",
-      to: `/about?next=${encodeURIComponent("/decks?a=1&b=2")}`,
+      to: `/about?tab=reference&next=${encodeURIComponent("/decks?a=1&b=2")}`,
       cookie: cookieValue("user_1", 2),
     });
     // And the round trip is lossless.
     const back = new URL(`https://x.invalid${(d as { to: string }).to}`);
     expect(safeNext(back.searchParams.get("next"))).toBe("/decks?a=1&b=2");
+    // In the address, not only the server render: the tabs read the live URL after hydration.
+    expect(back.searchParams.get("tab")).toBe("reference");
   });
 
   it("treats a reader ahead of the version as current", () => {

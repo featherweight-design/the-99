@@ -4,7 +4,7 @@ import type { SQL } from "drizzle-orm";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { anchorQuery, earlierQuery, hasFullKeys, readSyncBase } from "./sync-base";
+import { anchorQuery, earlierQuery, hasFullKeys, hasSyncAnchor, readSyncBase } from "./sync-base";
 
 const dialect = new PgDialect();
 const render = (q: SQL) => {
@@ -152,6 +152,17 @@ describe("readSyncBase", () => {
       expect(base.anchor.tokens).toEqual(want);
       expect("tokens" in base.anchor).toBe(want !== undefined);
     }
+  });
+
+  it("hasSyncAnchor answers from the anchor query alone: never the earlier uploads", async () => {
+    const anchored = runner([{ uploaded: true, id: "a", confirmed_at: "2026-10-01T00:00:00Z", items: [full(1)] }], [{ id: "e1", confirmed_at: "2026-09-01T00:00:00Z", items: [full(1)] }]);
+    expect(await hasSyncAnchor("u", anchored.q)).toBe(true);
+    expect(anchored.calls).toHaveLength(1);
+    expect(await hasSyncAnchor("u", runner([{ uploaded: false, id: null, confirmed_at: null, items: null }]).q)).toBe(false);
+    expect(await hasSyncAnchor("u", runner([{ uploaded: true, id: null, confirmed_at: null, items: null }]).q)).toBe(false);
+    // A pre-0008 anchor is no base, exactly as readSyncBase has it.
+    const legacy = [{ uploaded: true, id: "a", confirmed_at: new Date(0), items: [{ oracleId: "o1", setCode: "lea", condition: null, quantity: 1 }] }];
+    expect(await hasSyncAnchor("u", runner(legacy).q)).toBe(false);
   });
 
   it("hasFullKeys accepts an empty collector number (a bare Name,Qty export) and refuses a missing one", () => {

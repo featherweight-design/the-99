@@ -1,6 +1,6 @@
 // The legacy gate's way back, on About's new shape (discovery R2·6b). The discovery handoff is silent on it, so the
 // shipped behavior is kept: with `ABOUT_SHEET_ENABLED` off the proxy redirects a behind reader to
-// `/about?next=<where they were going>`, and the page they land on owes them `Got it` and a way back. The words, the
+// `/about?tab=reference&next=<where they were going>`, and the page they land on owes them `Got it` and a way back. The words, the
 // form and the action are the shipped page's (`DismissForm`, `dismissAbout`); only the placement moves, because the
 // new shape has no contents rail to carry the desktop copy. Below `md` it is the shipped bar pinned on the tab bar;
 // from `md` it sits in the page's flow above the tabs. One element at every width, so it is announced once.

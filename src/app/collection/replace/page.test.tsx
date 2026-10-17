@@ -13,8 +13,8 @@ vi.mock("../../../lib/switches/request", async () => {
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
 const syncOn = vi.hoisted(() => ({ value: false }));
 vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => true, collectionSyncEnabled: () => syncOn.value }));
-const readSyncBase = vi.hoisted(() => vi.fn<(userId: string) => Promise<unknown>>(async () => ({ unavailable: "neverUploaded" })));
-vi.mock("../../../lib/collection/sync-base", () => ({ readSyncBase: (userId: string) => readSyncBase(userId) }));
+const hasSyncAnchor = vi.hoisted(() => vi.fn<(userId: string) => Promise<boolean>>(async () => false));
+vi.mock("../../../lib/collection/sync-base", () => ({ hasSyncAnchor: (userId: string) => hasSyncAnchor(userId) }));
 vi.mock("../../../components/collection/replace-flow", () => ({
   ReplaceFlow: ({ sync, syncAnchored }: { sync?: boolean; syncAnchored?: boolean }) => (
     <div data-testid="flow" data-sync={String(sync)} data-anchored={String(syncAnchored)} />
@@ -51,16 +51,16 @@ describe("/collection/replace", () => {
       unmount();
       return v;
     };
-    readSyncBase.mockReset();
+    hasSyncAnchor.mockReset();
     syncOn.value = true;
-    readSyncBase.mockResolvedValueOnce({ anchor: { uploadId: "a" }, earlier: [] });
+    hasSyncAnchor.mockResolvedValueOnce(true);
     expect(await anchored()).toBe("true");
-    readSyncBase.mockResolvedValueOnce({ unavailable: "noRecord" });
+    hasSyncAnchor.mockResolvedValueOnce(false);
     expect(await anchored()).toBe("false");
     // Off, no read: the first-import shortcut stands.
     syncOn.value = false;
-    readSyncBase.mockClear();
+    hasSyncAnchor.mockClear();
     expect(await anchored()).toBe("false");
-    expect(readSyncBase).not.toHaveBeenCalled();
+    expect(hasSyncAnchor).not.toHaveBeenCalled();
   });
 });

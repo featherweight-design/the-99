@@ -6,7 +6,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 // back kept for a reader it sent.
 const m = vi.hoisted(() => ({
   loadToolFits: vi.fn<(userId: string, env: NodeJS.ProcessEnv, tools: readonly string[]) => Promise<object>>(async () => ({})),
-  readSyncBase: vi.fn(async () => ({ unavailable: "neverUploaded" })),
+  hasSyncAnchor: vi.fn(async () => false),
   seen: { version: 14, ids: [] as string[] },
   everyEntry: false,
 }));
@@ -18,7 +18,7 @@ vi.mock("../../lib/switches/request", async () => {
 vi.mock("../../lib/about/read", () => ({ aboutSeen: async () => m.seen, markAboutVisited: async () => {} }));
 vi.mock("../../lib/model/allowance", () => ({ dailyLimitFor: async () => 5 }));
 vi.mock("../../lib/theme/server", () => ({ resolveTheme: async () => "amonkhet" }));
-vi.mock("../../lib/collection/sync-base", () => ({ readSyncBase: m.readSyncBase }));
+vi.mock("../../lib/collection/sync-base", () => ({ hasSyncAnchor: m.hasSyncAnchor }));
 vi.mock("../../lib/discovery/fits", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/discovery/fits")>()),
   loadToolFits: m.loadToolFits,
@@ -128,11 +128,11 @@ describe("/about, the fits (E10)", () => {
   it("reads the sync base only with Collection Sync on", async () => {
     vi.stubEnv("COLLECTION_SYNC_ENABLED", "");
     await draw();
-    expect(m.readSyncBase).not.toHaveBeenCalled();
+    expect(m.hasSyncAnchor).not.toHaveBeenCalled();
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
     vi.stubEnv("COLLECTION_SYNC_ENABLED", "true");
     await draw();
-    expect(m.readSyncBase).toHaveBeenCalledWith("u1");
+    expect(m.hasSyncAnchor).toHaveBeenCalledWith("u1");
   });
 
   it("every tool it asks for is a deck tool", async () => {

@@ -10,7 +10,7 @@ import { safeNext } from "../../lib/about/gate";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
-import { readSyncBase } from "../../lib/collection/sync-base";
+import { hasSyncAnchor } from "../../lib/collection/sync-base";
 import { ABOUT_VERSION, ALLOWANCE_SLOT, fillAllowance } from "../../lib/copy/about";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
@@ -70,14 +70,14 @@ export default async function AboutRoute({
   const visible = visibleEntries(env);
   const visibleIds = new Set(visible.map((e) => e.id));
   const syncOn = isOn("COLLECTION_SYNC_ENABLED");
-  const [seen, creditLimit, theme, fits, decksHeld, syncBase] = await Promise.all([
+  const [seen, creditLimit, theme, fits, decksHeld, syncAnchored] = await Promise.all([
     aboutSeen(userId),
     // The reader's own daily credit limit, read once: the credits entry, Written for you and How it works state it.
     dailyLimitFor(db, userId),
     resolveTheme(),
     perf.timed("toolFits", () => loadToolFits(userId, env, deckToolsFor(isOn))),
     deckCount(userId),
-    syncOn ? readSyncBase(userId) : null,
+    syncOn ? hasSyncAnchor(userId) : false,
   ]);
 
   const groups = showcaseGroups({
@@ -85,7 +85,7 @@ export default async function AboutRoute({
     visibleEntryIds: visibleIds,
     fits,
     deckCount: decksHeld,
-    hasSyncBase: syncBase !== null && "anchor" in syncBase,
+    hasSyncBase: syncAnchored,
   });
   const filled = visible.map((e) => ({ ...e, caption: fillAllowance(e.caption, creditLimit) }));
   const screens = referenceScreens(filled, groups, theme);
