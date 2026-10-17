@@ -261,7 +261,7 @@ export function HelpPanel({
             placeholder={helpPanelCopy.search}
             aria-label={helpPanelCopy.search}
             containerClassName={`box-border h-[44px] rounded-[10px] bg-[color:var(--surface-sunken)] px-[12px] ${q ? "border-[color:var(--accent)]" : ""}`}
-            className="text-[15px]"
+            className="text-[15px] touch:text-base"
           />
         </div>
         <div data-help-body className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${pad}`}>
