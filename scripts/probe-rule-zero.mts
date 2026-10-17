@@ -38,6 +38,7 @@ async function main() {
   const { loadTable, readOnTheSpot } = await import("../src/lib/social/rule-zero-table");
   const { readCatalogGeneration } = await import("../src/lib/cache/catalog-generation");
   const { loadDeckProfile } = await import("../src/lib/profile/load");
+  const { computeAndStoreProfile } = await import("../src/lib/profile/stored");
   // The uncached builds (`unstable_cache` raises outside a request), under the owner's resolved switches.
   const ownerDeps = (env: NodeJS.ProcessEnv) => ({
     generation: readCatalogGeneration,
@@ -262,6 +263,23 @@ async function main() {
     await rz.setSeatDeck(B, T7, legalB2);
     const both = await Promise.all([readOnTheSpot(A, T7, bSeat, ownerDeps), readOnTheSpot(C, T7, bSeat, ownerDeps)]);
     check("two polls at once compute once", both.filter((r) => r === "read").length === 1 && both.every((r) => r === "read" || r === "busy" || r === "skipped"), both.join());
+    // The owner presses Analyze, then edits, while another player's on-the-spot build runs: the owner's row stands.
+    const legalB3 = await legal(B, "Bo's raced deck");
+    await rz.setSeatDeck(B, T7, legalB3);
+    const racing = (env: NodeJS.ProcessEnv) => {
+      const deps = ownerDeps(env);
+      return {
+        ...deps,
+        compute: async (deckId: string, userId: string) => {
+          const built = await deps.compute(deckId, userId);
+          await computeAndStoreProfile(legalB3, B, ownerDeps(env));
+          await db.execute(sql`update deck_profiles set dirty = true where deck_id = ${legalB3}`);
+          return built;
+        },
+      };
+    };
+    check("a first reading that loses to the owner's press stores nothing", (await readOnTheSpot(A, T7, bSeat, racing)) === "skipped");
+    check("the owner's edited reading stands, still dirty", (await count(sql`select count(*)::int as n from deck_profiles where deck_id = ${legalB3} and dirty`)) === 1);
     // A member who leaves the pod loses the table; an expired table reads null.
     await pods.leavePod(C, P7);
     check("a member who left reads null", (await loadTable(C, T7)) === null);

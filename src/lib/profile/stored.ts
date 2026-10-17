@@ -324,8 +324,13 @@ export async function computeAndStoreProfile(
   {
     pinTo,
     rebuildOf,
+    firstReading,
   }: {
     pinTo?: CommitPin;
+    /** Rule 0's on-the-spot read (`readOnTheSpot`): the deck's FIRST reading, by a player who is not its owner.
+     *  It writes nothing over a row of any kind, one in this snapshot or one landing before the write: a reading
+     *  the owner pressed, and edited away from, is the owner's to recompute and never another player's. */
+    firstReading?: boolean;
     /** A quiet rebuild of a row an older PROFILE_VERSION wrote: the list the reader's read saw, and
      *  the pin it held. Written only over that list, and the pin is kept. So are the deck notices
      *  marks and the analysis date (`marks`): a rebuild is a deploy's, not the player's, and must
@@ -340,6 +345,7 @@ export async function computeAndStoreProfile(
   if (!head) return null;
   const legality = deckLegality(head);
   if (!legality.legal) return { kind: "illegal", built: legality.built, size: legality.size };
+  if (firstReading && row) return null;
 
   const list = listFingerprint(head);
   // A PIN IS FOR THE LIST THE COMMIT WROTE. An edit landing between the commit and this read has
@@ -547,6 +553,8 @@ export async function computeAndStoreProfile(
           // wrote the current version, and a rebuild finishing after it would put the old marks
           // and date back over a reading the player asked for. Matching nothing, it stores nothing.
           ...(kept ? { setWhere: sql`${deckProfiles.profileVersion} < ${PROFILE_VERSION}` } : {}),
+          // A FIRST READING replaces nothing: a row the owner's press wrote while this computed stands.
+          ...(firstReading ? { setWhere: sql`false` } : {}),
         })
         .returning({ computedAt: deckProfiles.computedAt, dirty: deckProfiles.dirty });
       if (written) {
@@ -564,6 +572,8 @@ export async function computeAndStoreProfile(
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
+  // A first reading that stored nothing is no reading: the row the owner's press wrote is the one that stands.
+  if (firstReading && !stored) return null;
   // THE PRESS WON (review round 5): answer with the reading the store holds, never the computation
   // the guard just discarded. The row is at the current version now, so this read cannot rebuild.
   if (superseded) {

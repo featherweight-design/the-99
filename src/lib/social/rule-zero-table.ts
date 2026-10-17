@@ -26,6 +26,7 @@ import {
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
+import { SEATS_MAX } from "./rule-zero";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -242,6 +243,15 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
 
 export type ReadOnTheSpot = "read" | "busy" | "skipped" | "refused";
 
+/**
+ * At most this many on-the-spot reads run at once in this process. Each holds one connection of the process's ONE
+ * pool (`src/db/index.ts`, ten by default) for its advisory lock while the build borrows more from the same pool, so
+ * an unbounded number of them reading different decks could hold every connection and leave each build waiting on a
+ * connection its own caller holds. A read past the bound answers `busy`, which the poll retries.
+ */
+export const ON_THE_SPOT_MAX = 2;
+let onTheSpot = 0;
+
 /** The poll route's deps for the owner's resolved switches; a probe passes uncached readers. */
 export type OwnerDeps = (env: NodeJS.ProcessEnv) => StoredProfileDeps;
 
@@ -259,7 +269,17 @@ export async function readOnTheSpot(
   seat: unknown,
   ownerDeps: OwnerDeps = requestProfileDeps,
 ): Promise<ReadOnTheSpot> {
-  if (!isUuid(tableId) || typeof seat !== "number" || !Number.isInteger(seat)) return "refused";
+  if (!isUuid(tableId) || typeof seat !== "number" || !Number.isInteger(seat) || seat < 1 || seat > SEATS_MAX) return "refused";
+  if (onTheSpot >= ON_THE_SPOT_MAX) return "busy";
+  onTheSpot += 1;
+  try {
+    return await readUnderLock(viewerId, tableId, seat, ownerDeps);
+  } finally {
+    onTheSpot -= 1;
+  }
+}
+
+function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDeps: OwnerDeps): Promise<ReadOnTheSpot> {
   return db.transaction(async (tx: Tx) => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx);
     if (!table) return "refused";
@@ -281,7 +301,7 @@ export async function readOnTheSpot(
     const deps = ownerDeps(await resolveSwitchEnv(target.userId));
     // The lock is held by this transaction while the build runs on its own connections.
     if (stored.reading === "none") {
-      const result = await computeAndStoreProfile(target.deckId, target.userId, deps);
+      const result = await computeAndStoreProfile(target.deckId, target.userId, deps, { firstReading: true });
       return result?.kind === "ok" ? "read" : "skipped";
     }
     return (await readStoredReading(target.deckId, target.userId, deps)) ? "read" : "skipped";

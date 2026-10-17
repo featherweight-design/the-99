@@ -1,7 +1,8 @@
 // The table is read only through the viewer's grant: their own seat, the table open on the database's clock, and
 // their own pod membership, in one statement. Only the emitted SQL shows that; `probe:rule-zero` proves the answers.
-import { describe, expect, it } from "vitest";
-import { loadTable, readOnTheSpot, tableGrantQuery } from "./rule-zero-table";
+import { describe, expect, it, vi } from "vitest";
+import { db } from "../../db";
+import { ON_THE_SPOT_MAX, loadTable, readOnTheSpot, tableGrantQuery } from "./rule-zero-table";
 
 const VIEWER = "user_viewer";
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -32,5 +33,31 @@ describe("the reads refuse a malformed ask before reading anything", () => {
     expect(await readOnTheSpot(VIEWER, "x", 1)).toBe("refused");
     expect(await readOnTheSpot(VIEWER, TABLE, 1.5)).toBe("refused");
     expect(await readOnTheSpot(VIEWER, TABLE, "1")).toBe("refused");
+  });
+
+  it("takes only a seat the table can have, so nothing out of the column's range reaches the database", async () => {
+    for (const seat of [0, 9, 32768, -1]) expect(await readOnTheSpot(VIEWER, TABLE, seat)).toBe("refused");
+  });
+});
+
+describe("readOnTheSpot holds at most ON_THE_SPOT_MAX of the pool's connections", () => {
+  it("answers busy past the bound without opening a transaction, and frees its place when one finishes", async () => {
+    const release: (() => void)[] = [];
+    const spy = vi.spyOn(db, "transaction").mockImplementation(
+      () => new Promise((resolve) => release.push(() => resolve("skipped" as never))) as never,
+    );
+    try {
+      const held = Array.from({ length: ON_THE_SPOT_MAX }, () => readOnTheSpot(VIEWER, TABLE, 1));
+      expect(await readOnTheSpot(VIEWER, TABLE, 2)).toBe("busy");
+      expect(spy).toHaveBeenCalledTimes(ON_THE_SPOT_MAX);
+      release.shift()!();
+      expect(await held[0]).toBe("skipped");
+      const next = readOnTheSpot(VIEWER, TABLE, 2);
+      expect(spy).toHaveBeenCalledTimes(ON_THE_SPOT_MAX + 1);
+      release.forEach((r) => r());
+      await Promise.all([...held, next]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
