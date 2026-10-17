@@ -2461,7 +2461,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   unknown reservation spending and forming nothing, the sweep (returns after the invitation is ended, a failed revoke
   kept with its id and returned next run, an indeterminate send reconciled) and the purge's Clerk half with the tree
   kept. Mutation-checked: drop the `held` decrement, the receipt's null check or the sweep's keep-on-failed-revoke and
-  the matching checks fail.
+  the matching checks fail. Every sweep call is scoped to the probe's own sender ids (`sweepInvites`' `senderIds`),
+  so a populated database's other rows are never returned or erased, and a check pins it with a lapsed row of an
+  outside sender. Clerk is always passed as the stub, including on address-changing resends and the fifth wrong try.
 - `pnpm probe:scan-auto` proves Auto's optimistic add in Chromium at 390 and 1300, with the fake camera and a stubbed
   match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card

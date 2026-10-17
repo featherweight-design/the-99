@@ -357,12 +357,36 @@ async function main() {
       wrong.push(w.ok ? "ok" : w.reason === "wrong" ? `wrong:${w.triesLeft}` : w.reason);
     }
     check("four wrong codes count down the tries", wrong.join(",") === "wrong:4,wrong:3,wrong:2,wrong:1", wrong.join(","));
-    const fifth = await confirmCode(q1.token, "000000" === lastCode() ? "111111" : "000000", cookie1, { env, now: later });
+    const fifthClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    const fifth = await confirmCode(q1.token, "000000" === lastCode() ? "111111" : "000000", cookie1, { env, now: later, clerk: fifthClerk.clerk });
     check("the fifth ends the row (N12)", !fifth.ok && fifth.reason === "ended");
     const ended1 = await stateOf(r1);
     check("…revoked, the address erased, the invite back", ended1.state === "revoked" && ended1.email === null && (await left(P)) === 6);
+    check("the fifth try ends Clerk's pending invitations by address and reservation BEFORE the address is erased",
+      fifthClerk.revokedFor.some((r) => r.reservationId === r1 && r.email === "n1c@x.dev"));
     check("a right code afterwards proves nothing", (await confirmCode(q1.token, lastCode(), cookie1, { env, now: later })).ok === false);
     await invariant(P, "five wrong tries");
+
+    // The fifth try when Clerk cannot end the invitation: the row keeps its address and id (ended for every step,
+    // spent tries) and the sweep finishes it once Clerk answers.
+    const q5 = await showInviteQr(P, SECRET);
+    if (!q5.ok) throw new Error("no QR 5");
+    const r5 = await idOfToken(q5.token);
+    const c5 = await claimInvite(q5.token, "tries@x.dev", null, { env, mail });
+    if (!c5.ok) throw new Error("claim 5 failed");
+    await db.execute(sql`update invite_reservations set code_tries = 4, clerk_invitation_id = 'inv_tries' where id = ${r5}`);
+    const downClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    downClerk.clerk.revokeFor = async () => false;
+    const fifthDown = await confirmCode(q5.token, lastCode() === "000000" ? "111111" : "000000", c5.claimSecret, { env, clerk: downClerk.clerk });
+    const kept5 = await stateOf(r5);
+    check("a fifth try whose Clerk cleanup fails keeps the address and id for the sweep, and every step reads it as ended",
+      !fifthDown.ok && fifthDown.reason === "ended" && kept5.state === "claimed" && kept5.email === "tries@x.dev" && kept5.clerk === "inv_tries"
+      && (await handOver(q5.token, c5.claimSecret, { clerk: downClerk.clerk })).ok === false);
+    const finishClerk = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    await sweepInvites(new Date(), finishClerk.clerk, { senderIds: [P] });
+    const done5 = await stateOf(r5);
+    check("the sweep ends it: invitations revoked, row returned, address and id erased", done5.state === "returned" && done5.email === null && done5.clerk === null
+      && finishClerk.revoked.includes("inv_tries") && finishClerk.revokedFor.some((r) => r.reservationId === r5));
 
     // A proven claim, handed over: the ticket is made quietly, ignoring an existing one, with the reservation id.
     const q2 = await showInviteQr(P, SECRET);
@@ -484,7 +508,12 @@ async function main() {
     found.set(eUnknown, "inv_found");
     found.set(eFresh, "inv_should_not_be_looked_up");
     failIds.add("inv_fail");
-    const rep1 = await sweepInvites(new Date(), sw.clerk);
+    // A lapsed row of a sender OUTSIDE the scope: the sweep must neither return it nor touch it.
+    const outside = (await db.execute<{ id: string }>(sql`
+      insert into invite_reservations (user_id, kind, state, qr_token_hash, qr_expires_at, created_at)
+      values (${Q}, 'qr', 'qr_open', ${`probe_h_${run}_out`}, now() - interval '1 minute', now() - interval '20 minutes') returning id`)).rows[0].id;
+    const rep1 = await sweepInvites(new Date(), sw.clerk, { senderIds: [P] });
+    check("a sweep scoped to this run's senders leaves another sender's lapsed row alone", (await stateOf(outside)).state === "qr_open");
     check("the sweep returns the lapsed QR, the claim and the unreferenced email", (await stateOf(qOld)).state === "returned"
       && (await stateOf(cOld)).state === "returned" && (await stateOf(eNoId)).state === "returned", JSON.stringify(rep1));
     check("…each address erased, the invitation id cleared", (await stateOf(cOld)).email === null && (await stateOf(cOld)).clerk === null);
@@ -496,10 +525,10 @@ async function main() {
     check("an indeterminate send is reconciled: Clerk's id recorded", (await stateOf(eUnknown)).clerk === "inv_found", JSON.stringify([await stateOf(eUnknown), rep1]));
     check("a send younger than two minutes is not looked up", (await stateOf(eFresh)).clerk === null);
     failIds.clear();
-    const rep2 = await sweepInvites(new Date(), sw.clerk);
+    const rep2 = await sweepInvites(new Date(), sw.clerk, { senderIds: [P] });
     check("the next run returns the one whose revoke failed", (await stateOf(eOldFail)).state === "returned" && (await stateOf(eOldFail)).clerk === null, JSON.stringify(rep2));
     check("a holding reservation is never returned", (await stateOf(eUnknown)).state === "reserved" && (await stateOf(eFresh)).state === "reserved");
-    const rep3 = await sweepInvites(new Date(), sw.clerk);
+    const rep3 = await sweepInvites(new Date(), sw.clerk, { senderIds: [P] });
     check("a run with nothing to do returns nothing", rep3.returned === 0 && rep3.revoked === 0, JSON.stringify(rep3));
     await invariant(P, "the sweep");
 
@@ -534,6 +563,23 @@ async function main() {
     check("an overlapped hand-over loses: ended, its own invitation revoked, the winner's id kept",
       !overlapped.ok && raceClerk.revoked.includes("inv_loser") && (await stateOf(r4)).clerk === "inv_winner");
 
+    // An indeterminate create whose claim changed meanwhile is ended by the address captured at the time.
+    const q6 = await showInviteQr(P, SECRET);
+    if (!q6.ok) throw new Error("no QR 6");
+    const r6 = await idOfToken(q6.token);
+    const c6 = await claimInvite(q6.token, "late-a@x.dev", null, { env, mail });
+    if (!c6.ok) throw new Error("claim 6 failed");
+    await confirmCode(q6.token, lastCode(), c6.claimSecret, { env });
+    const lateClerk = stubClerk(() => ({ ok: false, reason: "indeterminate" }));
+    lateClerk.clerk.create = async (i) => {
+      lateClerk.created.push(i);
+      await db.execute(sql`update invite_reservations set state = 'revoked', email = null, resolved_at = now() where id = ${r6}`);
+      return { ok: false, reason: "indeterminate" };
+    };
+    const lateOut = await handOver(q6.token, c6.claimSecret, { clerk: lateClerk.clerk });
+    check("an indeterminate create on a claim that ended meanwhile is reconciled by the captured address",
+      !lateOut.ok && lateClerk.revokedFor.filter((r) => r.reservationId === r6 && r.email === "late-a@x.dev").length >= 2);
+
     // A backlog of refused sends cannot starve a reconcile: each run draws its batch at random.
     const bulk = Array.from({ length: 60 }, (_, i) => `('${Q}', 'email', 'reserved', 'bulk${i}@x.dev', now() + interval '6 days', now() - interval '10 minutes')`).join(", ");
     await db.execute(sql.raw(`insert into invite_reservations (user_id, kind, state, email, holds_until, created_at) values ${bulk}`));
@@ -545,7 +591,7 @@ async function main() {
     bl.clerk.findFor = async (_e, rid) => ({ ok: true, id: rid === target ? "inv_target" : null });
     let reconciledAt = -1;
     for (let run = 0; run < 25 && reconciledAt < 0; run += 1) {
-      await sweepInvites(new Date(), bl.clerk);
+      await sweepInvites(new Date(), bl.clerk, { senderIds: [Q] });
       if ((await stateOf(target)).clerk === "inv_target") reconciledAt = run + 1;
     }
     check("a backlog over the batch still reaches an indeterminate send", reconciledAt > 0, `after ${reconciledAt} runs`);
