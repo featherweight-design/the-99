@@ -15,7 +15,7 @@ export const inviteCopy = {
     out: "Out of invites",
     /** Appended after the count: "2 invites left · 1 waiting". (new, for /copy-review) */
     waiting: (n: number) => ` · ${n} waiting`,
-    /** /friends and path 2, while a QR the sender closed is still live. (new, for /copy-review) */
+    /** /friends and card 2, while a QR the sender closed is still live. (new, for /copy-review) */
     heldByQr: " · 1 held by an open QR",
     /** The QR's own screen, and path 2 while its QR is live. (new, for /copy-review) */
     heldByThisQr: " · 1 held by this QR",

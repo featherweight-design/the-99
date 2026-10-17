@@ -62,7 +62,8 @@ export function InviteSheet({
   const [qrPending, setQrPending] = useState(false);
 
   const showQr = useCallback(async function show(fresh: boolean) {
-    // The live QR again needs no call: closing kept it live, and the server would answer the same token.
+    // Back from the QR screen to path 2 keeps the live QR here, so showing it again needs no call. Once the sheet
+    // closes this state goes with it; the action then re-shows the same token, which the server keeps live (R3).
     if (!fresh && qr && ended === null && qr.expiresAt.getTime() > Date.now()) {
       onScreen("qr");
       return;
