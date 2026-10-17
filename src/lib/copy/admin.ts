@@ -584,6 +584,15 @@ export const adminCopy = {
 } as const;
 
 /**
+ * Admin R3, masking personal data (handoff `design_handoff_the99_admin/README-R3.md`). Names in these strings are
+ * always the masked name (D1). Placeholder wording from the handoff, through /copy-review as each PR lands it.
+ */
+export const adminMaskCopy = {
+  /** D1: an account Clerk holds no name or username for. */
+  noName: (idTail: string) => `Account ·${idTail}`,
+} as const;
+
+/**
  * Each switch's name and one plain line (admin STATES L1; READINESS G9). The canvas drew 21 of them
  * (`n:` and `d:` in `Admin R2.dc.html`); the rest, and the canvas lines the code has since moved
  * past, are new here and owed to /copy-review. A parent's line names what needs it; a child's tag

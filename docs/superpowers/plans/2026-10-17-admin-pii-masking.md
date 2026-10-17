@@ -82,7 +82,7 @@ The existing `admin.json` and `invites-admin.json` rows keep running; PR 2 updat
 - Produces: `maskName(u: { id: string; firstName: string | null; lastName: string | null; username: string | null }): { name: string; named: boolean }`, `maskEmail(email: string): string`, `maskInitials(name: string, named: boolean): string | null` (null means draw the diamond).
 
 - [ ] **Step 1: Write the failing tests** in `mask.test.ts`:
-  - `maskName({ firstName: "Colin", lastName: "Reyes" })` → `{ name: "Colin R.", named: true }`; `"Cher", null` → `"Cher"`; `"José", "Ñúñez"` → `"José Ñ."`; `"Ana", "de la Cruz"` → `"Ana d."`; `null, "Reyes", username "chrisplays"` → `"chrisplays"`; all null with id `user_2abc9xQe` → `{ name: "Account ·9xQe", named: false }`; whitespace-only names count as null.
+  - `maskName({ firstName: "Colin", lastName: "Reyes" })` → `{ name: "Colin R.", named: true }`; `"Cher", null` → `"Cher"`; `"José", "Ñúñez"` → `"José Ñ."`; `"Ana", "de la Cruz"` → `"Ana D."`; `null, "Reyes", username "chrisplays"` → `"chrisplays"`; all null with id `user_2abc9xQe` → `{ name: "Account ·9xQe", named: false }`; whitespace-only names count as null.
   - `maskEmail`: `colin@gmail.com` → `c•••@g•••.com`; `m@p.me` → `m•••@p•••.me`; `a+x@mail.co.uk` → `a•••@m•••.uk`; `Colin@Gmail.COM` → `c•••@g•••.com`; `root@localhost` → `r•••@l•••`.
   - `maskInitials("Colin R.", true)` → `"CR"`; `("chrisplays", true)` → `"CH"`; `("Account ·9xQe", false)` → `null`.
 - [ ] **Step 2: Run** `pnpm vitest run src/lib/admin/mask.test.ts`. Expected: FAIL, module not found.
