@@ -1,0 +1,107 @@
+"use client";
+
+// About's two tabs (discovery R2·5; README-r2 C1, property table "About's tabs"). Tools is the default and the
+// absence of `?tab`; Reference is `?tab=reference`, mirrored through `mirrorUrl` when the tab changes (R2 gap 12), so
+// no navigation runs. Unmounted until R2·6b swaps `/about`, which hands it both panels and the tab the URL asked for.
+
+import { useState, type ReactNode } from "react";
+import { aboutShapeCopy } from "../../../lib/copy/discovery";
+import { mirrorUrl } from "../../../lib/url/mirror";
+import { onSegmentKeys } from "../../ui/segment-keys";
+
+export const ABOUT_TABS = ["tools", "reference"] as const;
+export type AboutTab = (typeof ABOUT_TABS)[number];
+export const TAB_PARAM = "tab";
+
+/** `?tab=` as the page reads it: anything but `reference` is Tools. */
+export function aboutTabOf(value: unknown): AboutTab {
+  return value === "reference" ? "reference" : "tools";
+}
+
+const tabId = (t: AboutTab) => `about-tab-${t}`;
+const panelId = (t: AboutTab) => `about-panel-${t}`;
+
+export type AboutTabsProps = {
+  initial: AboutTab;
+  counts: Record<AboutTab, number>;
+  panels: Record<AboutTab, ReactNode>;
+  /** The ? is drawn (`HELP_PANEL_ENABLED`): from `md`, a hint beside the tabs points at it. */
+  helpHint: boolean;
+};
+
+export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps) {
+  const [tab, setTab] = useState<AboutTab>(initial);
+  const select = (next: AboutTab) => {
+    if (next === tab) return;
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "tools") url.searchParams.delete(TAB_PARAM);
+    else url.searchParams.set(TAB_PARAM, next);
+    mirrorUrl(url, window.history.state);
+  };
+  return (
+    <div data-about-tabs={tab}>
+      <div className="px-[16px] md:px-0">
+        <h1 className="m-0 font-display text-[27px] font-semibold tracking-[0.01em] text-[color:var(--fg)] md:text-[34px]">
+          {aboutShapeCopy.title}
+        </h1>
+        <p className="m-0 mt-[6px] text-[14.5px] leading-[1.5] text-[color:var(--fg-body)] md:mt-[8px] md:text-[15px]">
+          {tab === "tools" ? aboutShapeCopy.toolsSub : aboutShapeCopy.referenceSub}
+        </p>
+      </div>
+      <div className="mt-[10px] flex items-center justify-between border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0">
+        <div
+          role="tablist"
+          aria-label={aboutShapeCopy.tabs.label}
+          className="flex gap-[26px] md:gap-[28px]"
+          onKeyDown={(e) => onSegmentKeys(e, ABOUT_TABS, tabId, select)}
+        >
+          {ABOUT_TABS.map((t) => {
+            const on = t === tab;
+            return (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                id={tabId(t)}
+                aria-selected={on}
+                aria-controls={panelId(t)}
+                tabIndex={on ? 0 : -1}
+                onClick={() => select(t)}
+                className={`-mb-px border-b-2 bg-transparent px-[2px] pb-[12px] pt-[10px] text-[16px] md:pt-0 ${
+                  on
+                    ? "border-b-[color:var(--accent)] font-semibold text-[color:var(--fg)]"
+                    : "border-b-transparent font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                }`}
+              >
+                {aboutShapeCopy.tabs[t]}{" "}
+                <span
+                  className={`font-mono text-[12px] font-medium ${on ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}
+                >
+                  {counts[t]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {helpHint && (
+          <span className="hidden pb-[12px] font-mono text-[12px] text-[color:var(--fg-faint)] md:inline">
+            {aboutShapeCopy.helpHint.before}{" "}
+            <span
+              aria-hidden
+              className="inline-flex h-[20px] w-[20px] items-center justify-center rounded-[6px] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+            >
+              ?
+            </span>
+            <span className="sr-only">?</span> {aboutShapeCopy.helpHint.after}
+          </span>
+        )}
+      </div>
+      {ABOUT_TABS.map((t) => (
+        <div key={t} role="tabpanel" id={panelId(t)} aria-labelledby={tabId(t)} hidden={t !== tab}>
+          {panels[t]}
+        </div>
+      ))}
+    </div>
+  );
+}
