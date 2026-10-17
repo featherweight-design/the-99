@@ -931,6 +931,8 @@ function routesFor(deckId) {
     { label: "commanders", path: "/commanders" },
     { label: "discover", path: "/discover" },
   ];
+  // Named only: /friends is a 404 where the social switch is off, so a default run must not carry it.
+  if (ONLY?.has("friends")) routes.push({ label: "friends", path: "/friends", pattern: "/friends" });
   if (ONLY) {
     const unknown = [...ONLY].filter((l) => !routes.some((r) => r.label === l));
     if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);
