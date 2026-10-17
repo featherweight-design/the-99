@@ -70,7 +70,7 @@ describe("useCardScan", () => {
     hook.rerender();
     hook.rerender();
     expect(onProblem).toHaveBeenCalledTimes(1);
-    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } });
   });
 
   it("starts at Auto, and a mode change is kept for this device", () => {
