@@ -27,7 +27,7 @@ const CPU = Number(process.env.MEASURE_CPU ?? 4);
 const MATCH_MS = Number(process.env.MEASURE_MATCH_MS ?? 100);
 const RUNS = Number(process.env.MEASURE_RUNS ?? 1);
 
-// Sol Ring, as the catalog holds it: Fast reads its printings for real, so the id must be the catalog's own.
+// Sol Ring, as the catalog holds it: Auto reads its printings for real, so the id must be the catalog's own.
 const CARD = { oracleId: "6ad8011d-3471-4369-9d68-b264cc027487", name: "Sol Ring", scryfallId: "04002706-2236-4b79-bdea-4f263e43cb9c" };
 const MATCH = {
   index: "measure",

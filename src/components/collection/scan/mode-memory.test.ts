@@ -7,7 +7,7 @@ const store = () => {
 };
 
 describe("scan mode memory", () => {
-  it("starts at Fast and remembers Normal", () => {
+  it("starts at Auto and remembers Normal", () => {
     const s = store();
     expect(readScanMode(s)).toBe("fast");
     writeScanMode(s, "normal");
@@ -15,7 +15,7 @@ describe("scan mode memory", () => {
     expect(readScanMode(s)).toBe("normal");
   });
 
-  it("reads Fast from storage that throws or is missing, and a write that throws is swallowed", () => {
+  it("reads Auto from storage that throws or is missing, and a write that throws is swallowed", () => {
     const broken = { getItem: () => { throw new Error("denied"); }, setItem: () => { throw new Error("denied"); } };
     expect(readScanMode(broken)).toBe("fast");
     expect(() => writeScanMode(broken, "normal")).not.toThrow();

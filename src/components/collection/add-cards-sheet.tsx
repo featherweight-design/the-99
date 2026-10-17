@@ -158,7 +158,7 @@ function AddMode({
   // The line whose printing is being asked for: the one opened, else (Normal mode's scanned lines wait for theirs)
   // the first still without one, once the scanner is closed and every scanned add has landed.
   const pickerFor =
-    pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null)?.id ?? null) : null);
+    pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null && !l.pending)?.id ?? null) : null);
 
   // The fix is open only while its line is on the list with its scan and nothing else is being asked: a line folded
   // into a twin (by a swap, a printing or a finish) takes its fix with it, a line a search pick joined keeps no scan,
@@ -193,7 +193,8 @@ function AddMode({
   const [retry, setRetry] = useState(0);
   const ticket = useRef(0);
 
-  const choosing = lines.find((l) => l.printing === null) ?? null;
+  // A pending line (Auto's scan, its printings still being read) asks nothing: it gets its printing or leaves the list.
+  const choosing = lines.find((l) => l.printing === null && !l.pending) ?? null;
   const blocked = choosing !== null || loadingCard !== null;
   const saving = phase === "saving";
   // A scanned card still loading its printings lands on the list later: a search pick in the meantime would build

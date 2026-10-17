@@ -66,7 +66,7 @@ describe("useCardScan", () => {
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } });
   });
 
-  it("starts at Fast, and a mode change is kept for this device", () => {
+  it("starts at Auto, and a mode change is kept for this device", () => {
     const store = new Map<string, string>();
     const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) } as unknown as Storage;
     const { hook } = setup({ storage });
@@ -224,8 +224,8 @@ describe("useCardScan", () => {
   });
 
 
-  // Fast adds with no press, and Normal picks the printing in the camera (Hugh, 2026-10-16).
-  describe("Fast", () => {
+  // Auto adds with no press, and Normal picks the printing in the camera (Hugh, 2026-10-16).
+  describe("Auto", () => {
     it("puts a sure card on the list by itself, once, with its photo and closest cards", async () => {
       const crop = new Float32Array(4);
       const photo = vi.fn(() => "data:scan");
@@ -471,7 +471,7 @@ describe("useCardScan", () => {
       expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } });
     });
 
-    it("leaves the step when Fast is chosen", async () => {
+    it("leaves the step when Auto is chosen", async () => {
       const { hook } = setup({ storage: normal, loadChoices: () => new Promise(() => {}) });
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } }), { timeout: 4000 });
       act(() => hook.result.current.setMode("fast"));

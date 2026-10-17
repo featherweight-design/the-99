@@ -146,8 +146,9 @@ try {
     const after = await onList();
     if (label === "phone") check("the taken-back copy is off the count", after === first + (actions.kept - keptAtFail), `${first} then ${after}, ${actions.kept - keptAtFail} kept since`);
     else check("the taken-back line is off the list: one row, one copy", (await rows()) === 1 && after === 1, `${await rows()} rows, ${after} copies`);
-    await page.waitForTimeout(6000);
-    check("a taken-back card is not taken again while it stays in view", actions.failed <= 2 + Math.ceil(6000 / 8000), `${actions.failed} failed reads`);
+    // The clip holds the card in view 6s at a time: 1.5s after the toast it is still there, and nothing has re-taken it.
+    await page.waitForTimeout(1500);
+    check("a taken-back card is not taken again while it stays in view", actions.failed === 1, `${actions.failed} failed reads`);
     await page.screenshot({ path: path.resolve(`contact-sheets/probe-scan-auto/${label}.png`) });
     await context.close();
   }

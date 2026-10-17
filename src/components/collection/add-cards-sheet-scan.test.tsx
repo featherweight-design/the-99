@@ -72,6 +72,8 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "fast add" }));
     await waitFor(() => expect(screen.getByTestId("tray").textContent).toBe("1"));
     await waitFor(() => expect(outcomes).toHaveLength(1));
+    // Pending, it asks for nothing: the footer does not call for its printing.
+    expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
     const out = outcomes[0] as { settled: Promise<boolean> };
     expect(out.settled).toBeInstanceOf(Promise);
     land(TWO);

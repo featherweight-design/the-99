@@ -145,10 +145,10 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "normal add" }));
     await waitFor(() => expect(choices).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
-    // The Normal line asks for its printing: Secret Lair. The Fast line holds Commander 2021.
+    // The Normal line asks for its printing: Secret Lair. The Auto line holds Commander 2021.
     fireEvent.click((await screen.findAllByRole("radio"))[1]);
     await waitFor(() => expect(screen.getAllByRole("button", { name: copy.removeLineAria("Sol Ring") })).toHaveLength(2));
-    // Open the Fast line's fix, then move that line to Secret Lair: it folds into the other.
+    // Open the Auto line's fix, then move that line to Secret Lair: it folds into the other.
     const names = screen.getAllByRole("button", { name: "Sol Ring", expanded: false });
     fireEvent.click(names[names.length - 1]);
     const chip = screen.getByRole("button", { name: copy.printingChipAria("Sol Ring", "C21 · #263") });
