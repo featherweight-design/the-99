@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First-run checklist at 1280: C1 to C3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:4080px;height:960px;box-sizing:border-box;padding:40px;background:#0B0B0D;font-family:'IBM Plex Sans',sans-serif;display:flex;gap:80px;align-items:flex-start">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:14px;height:34px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.08em;color:#E8E8EC">{{ f.id }}</span>
+        <span style="font-size:15px;color:#E8E8EC">{{ f.title }}</span>
+        <span style="font-size:13.5px;color:#8E8E98">{{ f.note }}</span>
+      </div>
+      <div style="width:1280px;height:800px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #2A2A30">
+        <dc-import name="FirstRunDesk" theme="{{ theme }}" row="{{ f.row }}" hint-size="1280px,800px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"$preview":{"width":4080,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme || 'amonkhet',
+      frames: [
+        { id: 'C1', title: 'Not done', note: 'Last, under step 3, and never numbered: live from the first visit. The row opens Add a friend.', row: 'todo' },
+        { id: 'C2', title: 'Not done, a link open', note: 'The row reads the open link’s time left, and its press is Show.', row: 'link' },
+        { id: 'C3', title: 'Done', note: 'One friend is enough. The row stays, quiet, with their face; its press opens /friends.', row: 'done' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
