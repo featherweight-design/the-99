@@ -112,22 +112,22 @@ export function SocialModal({
         tabIndex={-1}
         className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--social-vv-h,100vh)*0.86)] md:max-h-[80vh]" : "max-md:max-h-[calc(var(--social-vv-h,100vh)*0.92)] md:max-h-[92vh]"} ${width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
       >
-        <div aria-hidden className="flex justify-center pt-[9px] pb-[2px] md:hidden">
-          <span className="h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
+        <div aria-hidden className="flex justify-center pt-[9px] md:hidden">
+          <span className="mb-[4px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
         </div>
-        <div className="flex items-start gap-[12px] px-[18px] pt-[8px] md:px-[20px] md:pt-[12px]">
+        <div className="flex items-center gap-[4px] px-[18px] md:px-[20px] md:pt-[12px]">
           {onBack ? (
             <button
               ref={back}
               type="button"
               aria-label={backLabel}
               onClick={onBack}
-              className="-ml-[12px] -mr-[8px] flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 pb-[3px] text-[22px] leading-none text-[color:var(--fg)] md:-ml-[10px] md:w-[36px]"
+              className="-ml-[12px] flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 pb-[3px] text-[22px] leading-none text-[color:var(--fg)] md:-ml-[10px] md:w-[36px]"
             >
               {"‹"}
             </button>
           ) : null}
-          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 pt-[10px] font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
+          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
             {title}
           </h2>
           <button
@@ -143,7 +143,7 @@ export function SocialModal({
         {sub ? (
           <p className="mx-[18px] mb-[14px] mt-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)] md:mx-[20px]">{sub}</p>
         ) : null}
-        <div data-social-modal-body="" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] pb-[22px] md:px-[20px] md:pb-[18px]">{children}</div>
+        <div data-social-modal-body="" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] pb-[24px] md:px-[20px] md:pb-[18px]">{children}</div>
         {overlay}
       </div>
     </div>

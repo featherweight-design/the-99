@@ -103,11 +103,11 @@ VERDICT: 23 visual gaps, 2 state gaps
 
 Visual gaps:
 1. FIXED — `friends-head.tsx`: with invites on and the hold line drawn, press → 6px → held → 8px → count (outer gap 6 only then; 8 otherwise).
-2. RULED (d9, 2026-10-17) — accepted at 24: `social-r1-pods.md` owns `friends-list.tsx`.
-3. RULED (d9, 2026-10-17) — accepted as shipped: `SocialModal` is a shared shell and `social-r1-pods` governs it, so all four surfaces stay alike.
-4. RULED (d9, 2026-10-17) — accepted as shipped: `SocialModal` is a shared shell and `social-r1-pods` governs it, so all four surfaces stay alike.
-5. RULED (d9, 2026-10-17) — accepted as shipped: `SocialModal` is a shared shell and `social-r1-pods` governs it, so all four surfaces stay alike.
-6. RULED (d9, 2026-10-17) — accepted as shipped: `SocialModal` is a shared shell and `social-r1-pods` governs it, so all four surfaces stay alike.
+2. FIXED (2026-10-17, reversing the earlier ruling: always match the mock) — `friends-list.tsx` section head margin-top phone 26. The invites handoff wins over `social-r1-pods.md`:258, and all four surfaces on the shell move together.
+3. FIXED (2026-10-17, reversing the earlier ruling: always match the mock) — `social-modal.tsx` header gap 4. The invites handoff wins over `social-r1-pods.md`:258, and all four surfaces on the shell move together.
+4. FIXED (2026-10-17, reversing the earlier ruling: always match the mock) — `social-modal.tsx` header `items-center`, the h2 `pt-10` dropped. The invites handoff wins over `social-r1-pods.md`:258, and all four surfaces on the shell move together.
+5. FIXED (2026-10-17, reversing the earlier ruling: always match the mock) — `social-modal.tsx` handle `mb-4`, the header `pt-8` and the handle `pb-2` dropped (gap 4). The invites handoff wins over `social-r1-pods.md`:258, and all four surfaces on the shell move together.
+6. FIXED (2026-10-17, reversing the earlier ruling: always match the mock) — `social-modal.tsx` phone body `pb-24`. The invites handoff wins over `social-r1-pods.md`:258, and all four surfaces on the shell move together.
 7. FIXED (follow-up PR) — `add-friend-dialog.tsx`: QR wrap margin-top 4px at every width.
 8. FIXED (follow-up PR) — Share link carries the 18×18 share icon, gap 8.
 9. FIXED (follow-up PR) — both QRs fill the dark module with `--bg` (`fill-[color:var(--bg)]`); every theme's `--bg` is near-black, so the code stays scannable.
@@ -117,7 +117,7 @@ Visual gaps:
 13. FIXED — error line sits inside the field row: phone order field, error, Send; desktop wraps it to its own line under the field+Send row (`md:basis-full`, row gap 0), above the hint.
 14. FIXED — Invite someone else padding 0 2px.
 15. FIXED — last-invite line `md:pb-[10px]`.
-16. RULED (d9, 2026-10-17) — accepted as shipped: `--fg-placeholder`'s 4.5:1 contrast (#1763) beats the handoff.
+16. SETTLED — `text-field.tsx` keeps `--fg-placeholder` as shipped: its 4.5:1 contrast was ruled by Design in #1763.
 17. FIXED — both QR count subs margin-bottom 14px.
 18. FIXED — EXPIRED chip padding 0 16px phone, 0 14px desktop.
 19. FIXED — timer `left` in `font-mono`.
