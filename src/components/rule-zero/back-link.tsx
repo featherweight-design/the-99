@@ -4,6 +4,7 @@
 import Link from "next/link";
 
 import { socialCopy } from "../../lib/copy/social";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const back = socialCopy.friendPage.back; // "‹ Friends"
 
@@ -19,6 +20,7 @@ export function BackLink({ className, glyph = false }: { className: string; glyp
       ) : (
         back
       )}
+      <PendingReporter href="/friends" />
     </Link>
   );
 }
