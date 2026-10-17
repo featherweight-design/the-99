@@ -140,12 +140,12 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(await retried("?w=scary", "bogus")).toContain("rf=1");
   });
 
-  it("lands a repeat on its stored read, and a refusal (no credit, paused, in flight) on the free results", async () => {
+  it("lands a repeat on its stored read, and a refusal (no credit, the owner's share, in flight) on the free results", async () => {
     stub.begin.mockResolvedValue({ kind: "read", readId: "old", result: { picks: [], pool: 1, weighed: 0 }, repeat: true });
     expect(await landed("?w=scary")).toContain("r=old");
     // Marked as a repeat, so its line says no credit was used (7m).
     expect(await landed("?w=scary")).toContain("rr=1");
-    for (const kind of ["allowance", "paused", "ownerShare", "in_flight"]) {
+    for (const kind of ["allowance", "ownerShare", "in_flight"]) {
       stub.begin.mockResolvedValue({ kind });
       const to = await landed("?w=scary");
       expect(to).not.toContain("r=");

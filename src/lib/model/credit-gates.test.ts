@@ -66,7 +66,7 @@ describe("out of credits is decided by allowance-rule.ts alone", () => {
       "const left = Math.max(0, allowance.limit - allowance.used);",
       "default: return creditsCopy.first(s.limit - s.used, s.limit, next);",
       "const left = freeCount(allowance);\nif (left > 0) return {",
-      "const spent = !freeLeft && (left === 0 || !!allowance.paused);\nconst left = freeCount(a);",
+      "const spent = !freeLeft && (left === 0 || !!allowance.ownerShare);\nconst left = freeCount(a);",
       "if (freeCount(a) > 0) return",
       "if (a.paidUsedToday >= a.paidLimit) return",
       "return paidLimit > paidUsed;",

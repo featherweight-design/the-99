@@ -15,7 +15,7 @@
 // with the rolling form and is undrawn; a reader with every credit in hand is undrawn too, and
 // the line then gives the count alone, since no credit is out to come back.
 //
-// LINK, NEVER LIST (Hugh, 2026-10-12, Find a deck read R2 item 4, app-wide). `spent` and the pause's
+// LINK, NEVER LIST (Hugh, 2026-10-12, Find a deck read R2 item 4, app-wide). `spent` and the old pause's
 // reason used to name the features that share credits, and a table of switches decided which; every
 // new spender widened the table and every caller passed its flags. They now end in `What uses
 // credits?`, a link to the About `credits` entry, which says how credits work and lists what spends
@@ -61,8 +61,6 @@ export const creditsCopy = {
   spent: (total: number, next: Date | null) => `${standing(0, total, next)} · ${link}`,
   /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,
-  /** The same refusal from the server, where no date is formatted in the reader's clock. */
-  pausedServer: "Paused until the 1st of next month. Nothing you did caused this.",
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
   ownerShare: (month: Date) => `You’ve used your testing share for ${monthName(month)}. Friends aren’t affected.`,
 } as const;

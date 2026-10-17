@@ -2426,7 +2426,7 @@ export const modelCalls = pgTable("model_calls", {
   origin: text("origin").notNull().default("player"),
   status: text("status").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  // THE SPEND CAP'S METERS (migration 0057). `model` is written at reserve, so a reservation in
+  // THE LEDGER'S METERS (migration 0057). `model` is written at reserve, so a reservation in
   // flight can be priced at its worst case; the rest by `recordModelUsage` whenever the call
   // returned usage, spent or refunded, including an outcome landing after the reaper.
   // Null on every row from before the cap, and on a call that got no response. `cost_micro_usd`

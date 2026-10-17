@@ -123,7 +123,7 @@ export async function runProposedCuts(
   }
   const { system, user } = buildCutsPrompt(pack);
   // The reservation prices a request at the feature's input ceiling, so a prompt past it is refused
-  // here, before a credit is held, rather than sent at a cost the spend cap never counted. Three
+  // here, before a credit is held, rather than sent at a cost the reservation never counted. Three
   // characters a token over-counts English and card text alike.
   if (Math.ceil((system.length + user.length) / 3) > FEATURE_CALLS.proposed_cuts.inputCeilingTokens) {
     return { ok: false, message: deckCutsCopy.run.tooBig };
@@ -133,7 +133,6 @@ export async function runProposedCuts(
   // opened the panel.
   await reapCutsRuns(deckId, userId);
   const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
-  if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };

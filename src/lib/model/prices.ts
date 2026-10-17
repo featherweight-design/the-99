@@ -25,7 +25,7 @@ import type { ModelUsage } from "./client";
  * table, 2026-10-11). The prompt is every input token, cached or not.
  *
  * A model with no row here is a HARD ERROR, never a zero: a ledger that priced an unknown model
- * at nothing would let the spend cap wave every call through.
+ * at nothing would let the owner's share wave every call through.
  */
 type Rate = { input: number; output: number };
 export const RATES: Readonly<Record<string, Rate & { above?: Rate & { promptTokens: number } }>> = {
@@ -136,11 +136,11 @@ export function worstCaseMicroUsd(model: string, inputCeilingTokens: number, max
   return Math.ceil(2 * (input * r.input + maxTokens * r.output));
 }
 
-/** One call a feature's reservation can make, as the spend cap prices it. */
+/** One call a feature's reservation can make, as the reservation prices it. */
 export type FeatureStep = { model: string; inputCeilingTokens: number; maxTokens: number; cacheWrite?: boolean };
 
 /**
- * Each feature's call, as the spend cap prices it before it is made. ONE definition each.
+ * Each feature's call, as a reservation prices it before it is made. ONE definition each.
  *
  * INPUT CEILINGS, measured on staging read-only 2026-09-24 with the count_tokens API over all 19
  * staging decks: the tuning prompt ran 3,748 to 5,116 tokens; the synopsis prompt 6,551 to 10,342,
@@ -184,7 +184,7 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // request with type, mana value and card text was 15,266 input tokens, and the largest reply 4,049
   // output tokens against the 8,000 ceiling.
   // TWO calls since 2026-10-13: a press that leaves no card to cut asks once more (`runProposedCuts`), and the
-  // second ask can cost a whole call, so a reservation for one would let the pair outrun what the spend cap admitted.
+  // second ask can cost a whole call, so a reservation for one would let the pair outrun what the reservation admitted.
   proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 2 },
   // Find a deck read (eval 2026-10-12, `docs/superpowers/eval/metrics-find-a-deck-read.md`): one
   // call. MEASURED 63,360 input tokens at most on the eval (21 candidates) and 4,257 output; the

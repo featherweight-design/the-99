@@ -38,7 +38,7 @@ import { HISTORY_LIMIT } from "./switches";
  * memberships are read fresh, never through the 30-second memo, so a page drawn after a move shows it.
  */
 
-/** This UTC calendar month, as the Costs page and the spend cap count it. */
+/** This UTC calendar month, as the Costs page and the owner's share count it. */
 function monthBounds(now: Date) {
   const month = monthOf(now);
   return { start: monthStart(month), end: monthStart(shiftMonth(month, 1)) };

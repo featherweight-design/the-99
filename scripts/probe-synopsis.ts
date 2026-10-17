@@ -85,7 +85,7 @@ let seen: { user: string; deadlineMs: number; reply: SynopsisReply | null }[] = 
 /** The facts the fake model was last handed: what `factsFor` built. */
 let lastFacts: SynopsisFacts | null = null;
 const deps: GenerateDeps = {
-  // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
+  // The stub's own name, which the reservation knows makes no request: a made-up name has no price,
   // and pricing refuses to guess one.
   modelName: STUB_MODEL,
   model: async (req, facts): Promise<ModelOutcome<SynopsisReply>> => {

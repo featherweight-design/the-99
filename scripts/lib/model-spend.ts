@@ -4,7 +4,7 @@ export type SpendGroup = { origin: string; feature: string; calls: number; unpri
 
 /**
  * Dollars by origin and feature. Every recorded cost counts, refunded or not (credits count
- * successes, dollars count everything billed: the same rule as the spend cap). A row with no
+ * successes, dollars count everything billed: the same rule as the owner's share). A row with no
  * recorded cost is counted in `unpriced`, never as zero dollars silently.
  */
 export function groupSpend(rows: readonly SpendRow[]): SpendGroup[] {

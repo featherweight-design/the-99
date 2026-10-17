@@ -196,7 +196,7 @@ describe("runTheRead", () => {
 
     it("leaves a fresh ask from a closed allowance to the reservation, which refuses it", async () => {
       allowance.read.mockResolvedValue({ ...OPEN, used: 5 });
-      for (const kind of ["allowance", "paused", "ownerShare"] as const) {
+      for (const kind of ["allowance", "ownerShare"] as const) {
         store.startRead.mockResolvedValueOnce({ kind });
         expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), counted()), kind).toEqual({ kind });
       }

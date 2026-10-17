@@ -99,7 +99,7 @@ export async function startRun(
    * and never another tab's (the row's default makes one when absent).
    */
   opts: { runId?: string; now?: Date; env: NodeJS.ProcessEnv },
-): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
