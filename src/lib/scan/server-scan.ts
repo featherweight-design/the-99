@@ -4,9 +4,9 @@
 // back on every frame until another card settles. Pure apart from the lookup it starts; the caller owns the clock.
 //
 // The card is asked about EARLY, once it has held for `EARLY_DWELL_MS` (its second agreeing frame on a phone), and an
-// early answer is shown only when it is CONFIDENT (`CONFIDENT_MARGIN`). One that is not is a card still being put
+// early answer is shown only when it is sure (`SURE_MARGIN`, `lookup.ts`). One that is not is a card still being put
 // down, or a hard one: it is asked about again once the card has held the full `DWELL_MS`, and that answer is shown
-// as an answer always was. Measured on the lab's phone runs (staging, 2026-10-16): the frames read while a card was
+// whatever it is (Not sure, with the guesses to pick from, when it is under the gate). Measured on the lab's phone runs (staging, 2026-10-16): the frames read while a card was
 // being placed named the wrong card at margins under 0.07, and every frame at 0.10 or more named the run's own card.
 import { lookupCard, type LookupResult } from "./lookup";
 import { nextStableScan, sameCard, startStableScan, type ScanFrame } from "./stable-card";
@@ -14,8 +14,6 @@ import { DWELL_MS } from "./track";
 
 /** How long a card must hold before it is first asked about. */
 export const EARLY_DWELL_MS = 300;
-/** The margin an early answer must clear to be shown; under it the card is asked about again at the full dwell. */
-export const CONFIDENT_MARGIN = 0.1;
 
 export type ServerState =
   | { kind: "idle" }
@@ -68,7 +66,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       if (inFlight !== mine) return;
       inFlight = null;
       const end = deps.now();
-      if (r.kind === "match" && early && confirm && r.margin !== null && r.margin < CONFIDENT_MARGIN) {
+      if (r.kind === "match" && early && confirm && !r.sure) {
         // Not sure enough yet: the screen keeps looking, and the card is asked about again once its run has held the
         // full dwell.
         confirm.asked = true;

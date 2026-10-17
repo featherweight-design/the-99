@@ -1,7 +1,6 @@
 import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
-import { encodeEmbedding, LOOKUP_BACKOFF_MS, lookupCard, marginClears } from "./lookup";
-import { AGREE_MARGIN } from "./models";
+import { encodeEmbedding, LOOKUP_BACKOFF_MS, lookupCard, marginClears, SURE_MARGIN } from "./lookup";
 
 const MODEL = SCAN_MODEL;
 const emb = new Float32Array(256).fill(1 / 16);
@@ -26,9 +25,10 @@ describe("encodeEmbedding", () => {
 });
 
 describe("marginClears", () => {
-  it("takes the top guess only when it clears the runner-up by the lab's margin", () => {
-    expect(marginClears(AGREE_MARGIN)).toBe(true);
-    expect(marginClears(AGREE_MARGIN - 0.001)).toBe(false);
+  it("takes the top guess only when it clears the runner-up by the sure margin", () => {
+    expect(marginClears(SURE_MARGIN)).toBe(true);
+    expect(marginClears(SURE_MARGIN - 0.001)).toBe(false);
+    expect(marginClears(0.05)).toBe(false);
     expect(marginClears(null)).toBe(true);
   });
 });

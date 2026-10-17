@@ -4,7 +4,6 @@
 // says it is unsure and retrying; one that will not pass (signed out, the switch off, a model the server does not
 // hold, a body it cannot read) is not.
 import type { Guess as ServerGuess } from "../card-scan/match";
-import { AGREE_MARGIN } from "./models";
 
 export type LookupResult =
   | { kind: "match"; index: string; guesses: ServerGuess[]; margin: number | null; sure: boolean }
@@ -25,11 +24,16 @@ export function encodeEmbedding(v: Float32Array): string {
 }
 
 /**
- * The margin gate: the top guess is the card only when it clears the runner-up by `AGREE_MARGIN`, the lab's own
- * margin. Under it the scanner shows the guesses as unsure. A lone guess (an index of one card) is sure.
+ * The sure gate (d9 for Hugh, 2026-10-16): the top guess is the card only when it clears the runner-up by
+ * `SURE_MARGIN`. Under it the scanner never adds by itself and shows the guesses to pick from (Not sure). Measured on
+ * the lab's 360 real phone photos with a known card: at 0.02, 94% were sure and 2.4% of those named the wrong card; at
+ * 0.10, 83% were sure and none was wrong. On its cadence logs, 26 of 80 frames between 0.02 and 0.10 were wrong. A lone
+ * guess (an index of one card) is sure.
  */
+export const SURE_MARGIN = 0.1;
+
 export function marginClears(margin: number | null): boolean {
-  return margin === null || margin >= AGREE_MARGIN;
+  return margin === null || margin >= SURE_MARGIN;
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
