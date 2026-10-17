@@ -4,27 +4,39 @@
 //
 // It builds ON the account's own snapshot (a `pull:staging` copy on a branch off local-dev: its collection, its uploads,
 // its decks and their versions), and adds what E9 asks for that the snapshot does not reliably hold:
-//   - `About · Under 99`: twelve cards short (Top off's door);
-//   - `About · Over 99`: six cards over (Proposed cuts);
-//   - `About · Played`: whole, carrying an unowned card over the stand-in limit, the card a friend has spare, five
-//     games with opponents (Matchups) and two notes.
+//   - Under 99: twelve cards short (Top off's door);
+//   - Over 99: six cards over (Proposed cuts);
+//   - Played: whole and COMMITTED (version 1, through `commitVersion`), carrying an unowned card over the stand-in
+//     limit, the card a friend has spare, five games with opponents (Matchups) played on that version, and two notes.
+// Each deck is named after its commander, as a reader names a deck (`deckNames`), never after its role.
 // Each is built from cards the account owns that no other deck claims, under its own commander (three of disjoint
 // colors), so no row is contested and no list matches a precon: the frames look like an ordinary player's decks.
 // The reader's own social name is `Sam` (its face the Played deck's commander, three invites in hand); the capture puts a neutral name and email over Clerk's in the page.
-//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card `About · Played` buys;
+//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys;
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
 //
-// A rerun starts clean: the account's decks named `About · …` and ITS fixture friends (purged with all they hold) go
+// A rerun starts clean: the decks an earlier run RECORDED (marks on its fixture friend's own `user_prefs` row, which no
+// surface draws; `deckMark` in `scripts/lib/about-fixture-ids.mjs`), any deck still named `About · …` from a run
+// before the decks were recorded, and ITS fixture friends (purged with all they hold) go
 // first. A fixture friend's id is namespaced by the account it was made for (`scripts/lib/about-fixture-ids.mjs`), so a
 // run for one account never purges another's; an older run's friend, whose id names no account, is left and reported.
 // It prints the three decks' ids.
 //
 //   pnpm tsx scripts/about-fixtures.mts            (the account is E2E_AUDIT_USER_EMAIL, read through Clerk)
 //   ABOUT_FIXTURE_USER=user_... pnpm tsx scripts/about-fixtures.mts
+import { randomUUID } from "node:crypto";
 import { requireEnv } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
-import { FIXTURE_PREFIX, fixtureFriendId, ownedFixturePattern, sortFixtures } from "./lib/about-fixture-ids.mjs";
+import {
+  FIXTURE_PREFIX,
+  deckMark,
+  deckNames,
+  fixtureFriendId,
+  ownedFixturePattern,
+  readDeckMarks,
+  sortFixtures,
+} from "./lib/about-fixture-ids.mjs";
 
 const { DATABASE_URL, CLERK_SECRET_KEY } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
 void DATABASE_URL;
@@ -59,7 +71,18 @@ const { purgeAccount } = await import("../src/lib/account/purge");
 const owned = (await sql`select user_id from social_profiles where user_id like ${ownedFixturePattern(viewer)}`) as {
   user_id: string;
 }[];
-for (const id of sortFixtures(viewer, owned.map((o) => o.user_id)).purge) await purgeAccount(id);
+const ownedFriends = sortFixtures(viewer, owned.map((o) => o.user_id)).purge;
+// The decks an earlier run recorded on its friend's row (`deckMark`), read BEFORE that friend is purged with the row,
+// and deleted only among this account's own decks. Never by name: the decks carry their commanders' names.
+const recorded = ownedFriends.length
+  ? ((await sql`select about_seen_ids from user_prefs where user_id = any(${ownedFriends})`) as { about_seen_ids: string[] }[])
+      .flatMap((r) => r.about_seen_ids)
+  : [];
+const { ids: recordedDecks } = readDeckMarks(recorded);
+if (recordedDecks.length) await sql`delete from decks where user_id = ${viewer} and id = any(${recordedDecks}::uuid[])`;
+// LEGACY, one-time: runs before the decks were recorded named them `About · …`.
+await sql`delete from decks where user_id = ${viewer} and name like 'About · %'`;
+for (const id of ownedFriends) await purgeAccount(id);
 // Read only, to report: fixtures an older run made, whose owner the id does not name, are never purged.
 const seen = (await sql`select user_id from social_profiles where starts_with(user_id, ${FIXTURE_PREFIX})`) as {
   user_id: string;
@@ -69,7 +92,13 @@ if (unowned.length) {
   console.log(`left ${unowned.length} older fixture friend${unowned.length > 1 ? "s" : ""} whose account cannot be established (not purged; it may still show on Friends)`);
 }
 await sql`delete from pods where owner_user_id = ${viewer} and name = 'About pod'`;
-await sql`delete from decks where user_id = ${viewer} and name like 'About · %'`;
+
+// The friend first, so each deck is recorded on its row the moment it exists: a run that dies part way still leaves
+// every deck it made where the next run's cleanup reads.
+const friends = await import("../src/lib/social/friends");
+const colinId = fixtureFriendId(viewer, Date.now());
+const colin = await friends.ensureProfile(colinId, "Alex");
+await sql`insert into user_prefs (user_id) values (${colinId}) on conflict (user_id) do nothing`;
 
 // The decks are built from what the account owns and NO other deck of theirs claims, so none of them is contested and
 // none puts a copy in contention with the account's own decks: a copy of an existing list marks every row spoken for
@@ -167,12 +196,23 @@ async function buildList(commander: Commander, spells: number, size: number): Pr
   return rows;
 }
 
-async function writeDeck(name: string, commander: string, rows: Map<string, number>): Promise<string> {
-  const [{ id }] = (await sql`insert into decks (user_id, name, commander_oracle_id)
-    values (${viewer}, ${name}, ${commander}) returning id`) as { id: string }[];
-  for (const [oracle, n] of rows) {
-    await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${oracle}, ${n})`;
-  }
+async function writeDeck(
+  role: "under" | "over" | "played",
+  name: string,
+  commander: string,
+  rows: Map<string, number>,
+): Promise<string> {
+  // The id is allocated here so the deck, its mark and its cards commit together: a deck left without its mark would
+  // escape the next run's cleanup.
+  const id = randomUUID();
+  await sql.transaction([
+    sql`insert into decks (id, user_id, name, commander_oracle_id) values (${id}, ${viewer}, ${name}, ${commander})`,
+    sql`update user_prefs set about_seen_ids = array_append(about_seen_ids, ${deckMark(role, id)})
+      where user_id = ${colinId}`,
+    ...[...rows].map(
+      ([oracle, n]) => sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${id}, ${oracle}, ${n})`,
+    ),
+  ]);
   return id;
 }
 
@@ -194,19 +234,33 @@ if (buys.length < 2) throw new Error("the catalog offers no unowned priced color
 const [dear, spare] = buys.map((r) => r.oracle_id);
 
 const [forUnder, forOver, forPlayed] = picked;
+// Each deck is named after its commander, as a reader names one.
+const [nameUnder, nameOver, namePlayed] = deckNames(picked.map((c) => c.name));
 // Under 99: twelve short (Top off's door).
-const under = await writeDeck("About · Under 99", forUnder.oracle_id, await buildList(forUnder, 52, 87));
+const under = await writeDeck("under", nameUnder, forUnder.oracle_id, await buildList(forUnder, 52, 87));
 // Over 99: six over (Proposed cuts).
-const over = await writeDeck("About · Over 99", forOver.oracle_id, await buildList(forOver, 68, 105));
+const over = await writeDeck("over", nameOver, forOver.oracle_id, await buildList(forOver, 68, 105));
 // Played: whole, two of its slots the dear card and the spare card (unowned: the over-limit row and the friend's spare).
 const playedRows = await buildList(forPlayed, 60, 97);
 playedRows.set(dear, 1);
 playedRows.set(spare, 1);
-const played = await writeDeck("About · Played", forPlayed.oracle_id, playedRows);
+const played = await writeDeck("played", namePlayed, forPlayed.oracle_id, playedRows);
+// Played is COMMITTED, as a deck that gets played is: through `commitVersion`, the write the app's own commit action
+// (`commitDeckVersion`) makes. No declared bracket, so no snapshot, as the action finds for such a deck. It is then
+// dated as a deck sleeved before its five games were played: the deck made 23 days ago, the version committed 22 days
+// ago (its cards' and commander's runs start there), so each game below is credited to version 1 as `logGame` would.
+const { commitVersion } = await import("../src/lib/decks/versions");
+const { version } = await commitVersion(played, null, undefined, undefined, process.env);
+const DAY = 86_400_000;
+const committedAt = new Date(Date.now() - 22 * DAY);
+await sql`update decks set created_at = ${new Date(committedAt.getTime() - DAY)},
+  last_edited_at = ${new Date(committedAt.getTime() - DAY)} where id = ${played}`;
+await sql`update deck_versions set committed_at = ${committedAt}, commander_since = ${committedAt}
+  where id = ${version.id}`;
+await sql`update deck_version_cards set since = ${committedAt} where version_id = ${version.id}`;
 console.log(`commanders: ${picked.map((c) => `${c.name} (${c.color_identity.join("")}, ${c.support} free support cards)`).join(" · ")}`);
 
 // The friend, the pod, the spare.
-const friends = await import("../src/lib/social/friends");
 const pods = await import("../src/lib/social/pods");
 const spares = await import("../src/lib/social/spares");
 const { setCommander } = await import("../src/lib/social/commander");
@@ -219,8 +273,6 @@ if (!(await friends.setDisplayName(viewer, "Sam"))) throw new Error("setDisplayN
 await setCommander(viewer, forPlayed.oracle_id);
 await sql`insert into invite_balances (user_id, held, updated_at) values (${viewer}, 3, now())
   on conflict (user_id) do update set held = greatest(invite_balances.held, 3), updated_at = now()`;
-const colinId = fixtureFriendId(viewer, Date.now());
-const colin = await friends.ensureProfile(colinId, "Alex");
 const invite = await friends.createInvite(viewer);
 if (!invite.ok) throw new Error("createInvite refused: the account holds too many open invites");
 await friends.redeemInvite(colinId, invite.token);
@@ -238,9 +290,9 @@ if (!(await spares.shareSparesWith(colinId, pod.id, true))) throw new Error("sha
 // Five games with opponents, oldest first: enough for Matchups' finding (three or more).
 const results = ["win", "loss", "win", "loss", "win"] as const;
 for (const [i, result] of results.entries()) {
-  const playedAt = new Date(Date.now() - (results.length - i) * 4 * 86_400_000);
-  const [{ id: game }] = (await sql`insert into deck_games (deck_id, user_id, result, pod_size, played_at)
-    values (${played}, ${viewer}, ${result}, 4, ${playedAt}) returning id`) as { id: string }[];
+  const playedAt = new Date(Date.now() - (results.length - i) * 4 * DAY);
+  const [{ id: game }] = (await sql`insert into deck_games (deck_id, user_id, result, pod_size, played_at, version_id)
+    values (${played}, ${viewer}, ${result}, 4, ${playedAt}, ${version.id}) returning id`) as { id: string }[];
   await sql`insert into deck_game_opponents (game_id, seat, friend_user_id, friend_deck_id, friend_name_then, deck_name_then, commander_oracle_id, won)
     values (${game}, 1, ${colinId}, ${colinDeck}, 'Alex', 'Alex’s brew', ${faces[1].oracle_id}, ${result === "loss" && i % 2 === 1})`;
   await sql`insert into deck_game_opponents (game_id, seat, commander_oracle_id, label, won)

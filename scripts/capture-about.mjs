@@ -4,7 +4,7 @@
 // `public/about/shots/<theme>/<id>.webp`. It writes `src/lib/about/shots.generated.ts`: per image its size, and per tool
 // its control's box as fractions of its crop. Per-entry halo boxes are R2·6a's, not this script's.
 //
-// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its `About · …` decks, Alex's
+// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its three decks, Alex's
 // spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with the tools'
 // switches on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to
 // `off`, so no bubble, tour or sheet is photographed (docs/probes.md, capture:about).
@@ -36,6 +36,7 @@ import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { applyPairs, identityLeftovers, identityOf, identityPlan } from "./lib/about-identity.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { ownedFixturePattern, readDeckMarks } from "./lib/about-fixture-ids.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -107,9 +108,14 @@ async function signIn(page, email, password) {
 }
 
 async function fixture(userId) {
-  const byName = async (name) => {
-    const [row] = await sql`select id::text from decks where user_id = ${userId} and name = ${name} order by created_at desc limit 1`;
-    if (!row) throw new Error(`no deck named ${name}: run scripts/about-fixtures.mts first`);
+  // The fixture's decks carry their commanders' names, so they are found by what the fixture RECORDED on its own
+  // friend's row (`deckMark`), each re-checked as this account's own deck.
+  const marks = await sql`select about_seen_ids from user_prefs where user_id like ${ownedFixturePattern(userId)}`;
+  const { byRole } = readDeckMarks(marks.flatMap((r) => r.about_seen_ids));
+  const byRoleChecked = async (role) => {
+    const id = byRole[role];
+    const [row] = id ? await sql`select id::text from decks where user_id = ${userId} and id = ${id}` : [];
+    if (!row) throw new Error(`no fixture deck recorded for ${role}: run scripts/about-fixtures.mts first`);
     return row.id;
   };
   const [versioned] = await sql`select d.id::text from decks d join deck_versions v on v.deck_id = d.id
@@ -137,9 +143,9 @@ async function fixture(userId) {
   ].join("\n");
   return {
     collectionCsv: csv,
-    under: await byName("About · Under 99"),
-    over: await byName("About · Over 99"),
-    played: await byName("About · Played"),
+    under: await byRoleChecked("under"),
+    over: await byRoleChecked("over"),
+    played: await byRoleChecked("played"),
     versioned: versioned.id,
     freeCard: free.oracle_id,
   };

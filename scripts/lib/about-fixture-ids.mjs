@@ -42,3 +42,54 @@ export function sortFixtures(viewer, ids) {
   }
   return { purge, foreign, unowned };
 }
+
+// ── The fixture's decks ────────────────────────────────────────────────────────────────────────────────────────────
+//
+// The decks carry their commanders' names, as a reader names a deck, so nothing on a deck tells a rerun or the capture
+// which ones the fixture made. The fixture RECORDS them instead, as marks in the `about_seen_ids` of its own friend's
+// `user_prefs` row. That row is never drawn: every `user_prefs` read is the signed-in reader's own, and the friend is
+// an id no one signs in as. It is scoped to the viewer because the friend's id is (`fixtureFriendId`), and it is
+// purged with the friend, after the decks it names are deleted.
+
+const MARK = /^about-deck:(under|over|played):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+/** The mark that records deck `id` as the fixture's deck for `role`. */
+export function deckMark(role, id) {
+  const mark = `about-deck:${role}:${id}`;
+  if (!MARK.test(mark)) throw new Error(`deckMark: no role ${role}, or ${id} is not a deck id`);
+  return mark;
+}
+
+/**
+ * The decks a set of marks records, by role (anything not a mark is ignored). Two DIFFERENT ids for one role is refused:
+ * a capture must never photograph a deck it cannot tell is the fixture's. `ids` is every recorded id, for a cleanup.
+ */
+export function readDeckMarks(marks) {
+  const byRole = {};
+  const ids = [];
+  for (const m of marks ?? []) {
+    const hit = typeof m === "string" ? MARK.exec(m) : null;
+    if (!hit) continue;
+    const [, role, id] = hit;
+    if (byRole[role] && byRole[role] !== id) throw new Error(`two decks recorded as the fixture's ${role}`);
+    byRole[role] = id;
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return { byRole, ids };
+}
+
+/**
+ * The fixture decks' names: each its commander's name, in order. Two that would read alike are told apart minimally,
+ * by a number after the second and later (`Name 2`), never by renaming the first.
+ */
+export function deckNames(commanderNames) {
+  const seen = new Map();
+  return commanderNames.map((raw) => {
+    const name = String(raw).trim();
+    if (!name) throw new Error("deckNames: a commander with no name");
+    const key = name.toLowerCase();
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    return n === 1 ? name : `${name} ${n}`;
+  });
+}
