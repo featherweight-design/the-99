@@ -230,7 +230,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
                 ref={codeRef} value={digits} readOnly={busy} inputMode="numeric" autoComplete="one-time-code"
                 aria-label={copy.codeAria} aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
                 className="absolute inset-0 h-full w-full cursor-text border-0 bg-transparent text-transparent caret-transparent opacity-0 outline-none"
-                onChange={(e) => { setCode(e.target.value); setLine(null); setToast(null); }}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH)); setLine(null); setToast(null); }}
               />
             </div>
             {line && <p id="join-line" role="alert" className="m-0 text-left text-[13px] text-[color:var(--danger)]">{line}</p>}
