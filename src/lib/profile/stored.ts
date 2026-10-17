@@ -234,6 +234,39 @@ export async function readStoredReading(
   };
 }
 
+/**
+ * A deck's stored reading as ANOTHER player's read sees it (Rule 0's table, readiness gaps 2, 8 and 9), on a
+ * transaction the caller holds so every seat comes from one snapshot. Unlike `readStoredReading` it never computes:
+ * a seat at a table is drawn from what its owner has, and the one write another player's read may cause is
+ * `readOnTheSpot`'s, for a deck with no usable row. So the older-version row `readStoredReading` would quietly
+ * rebuild is reported as `rebuildable` instead, for that caller to rebuild under the owner.
+ *
+ * - `none`: no row at all.
+ * - `rebuildable`: an older PROFILE_VERSION over the list it analyzed, clean and legal: the rebuild
+ *   `readStoredReading` makes, deterministic and model-free.
+ * - `unreadable`: a row a newer deployment wrote, or an older one over a dirty or changed list.
+ * - a reading: the current version, with whether it still describes the list.
+ *
+ * Null when the deck is not that owner's.
+ */
+export type SeatReading = "none" | "rebuildable" | "unreadable" | { profile: DeckProfile; fresh: boolean };
+
+export async function seatReadingIn(
+  tx: Tx,
+  deckId: string,
+  ownerId: string,
+): Promise<{ head: ProfileHead; reading: SeatReading } | null> {
+  const { head, row } = await readHeadAndRow(tx, deckId, ownerId);
+  if (!head) return null;
+  if (!row) return { head, reading: "none" };
+  if (row.profileVersion > PROFILE_VERSION) return { head, reading: "unreadable" };
+  if (row.profileVersion < PROFILE_VERSION) {
+    const rebuildable = !row.dirty && deckLegality(head).legal && sameList(row, head);
+    return { head, reading: rebuildable ? "rebuildable" : "unreadable" };
+  }
+  return { head, reading: { profile: row.profile, fresh: sameList(row, head) && !row.dirty } };
+}
+
 /** The stored profile when it is FRESH, else null. */
 export async function readStoredProfile(
   deckId: string,

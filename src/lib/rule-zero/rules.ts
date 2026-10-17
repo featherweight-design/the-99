@@ -120,7 +120,7 @@ export type SeatState =
   | { kind: "waiting" }
   /** Not 100 cards now. Never compared, even with a stored reading: `cards` is the whole deck, commanders in. */
   | { kind: "illegal"; cards: number }
-  /** Legal, and no reading row at all: the one state read on the spot. */
+  /** Legal, and no usable reading: no row, or an older-version row over the same list (rebuilt, not re-analyzed). The one state read on the spot. */
   | { kind: "unread" }
   /** Legal, and a row exists that this deployment cannot read: its player analyzes it; nobody else computes it. */
   | { kind: "needsAnalysis" }
@@ -134,7 +134,7 @@ export type SeatDeck = {
   built: number;
   /** `deckLegality(head).size`: 99, or 98 with a partner. */
   size: number;
-  /** `none`: no `deck_profiles` row. `unreadable`: a row `readStoredReading` returns null for. */
+  /** `none`: no `deck_profiles` row, or one `readStoredReading` would quietly rebuild (`seatReadingIn`'s `rebuildable`). `unreadable`: a row it returns null for. */
   reading: "none" | "unreadable" | { fresh: boolean };
 };
 
@@ -195,7 +195,7 @@ const dedupeByRule = (vs: readonly { rule: RuleId; have: number; limit: number }
   vs.filter((v, i, all) => all.findIndex((o) => o.rule === v.rule) === i).map((v) => ({ rule: v.rule, have: v.have, limit: v.limit }));
 
 /** The distinct tutors that find any piece of the deciding combo. */
-function tutorsReaching(lean: BracketLean | null, combo: ComboRef | null): number {
+export function tutorsReaching(lean: BracketLean | null, combo: ComboRef | null): number {
   if (!lean || !combo) return 0;
   const receipt = lean.receipts.find((r) => r.combo.variantId === combo.variantId);
   if (!receipt) return 0;
