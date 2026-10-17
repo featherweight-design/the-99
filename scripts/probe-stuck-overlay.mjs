@@ -181,7 +181,7 @@ const [{ branch }] = await neon(DATABASE_URL)`select current_setting('neon.branc
 if (!branch || branch === PRODUCTION_BRANCH || branch === STAGING_BRANCH) throw new Error(`refusing branch ${branch ?? "(unknown)"}`);
 await clerkSetup();
 const browser = await chromium.launch();
-const { state, userId, aboutRow } = await signIn(browser);
+const { state, aboutRow } = await signIn(browser);
 try {
   for (const [name, viewport, mobile] of [["1300", { width: 1300, height: 900 }, false], ["390", { width: 390, height: 844 }, true]]) {
     const context = await browser.newContext({ storageState: state, viewport, isMobile: mobile, hasTouch: mobile });
