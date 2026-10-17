@@ -56,7 +56,7 @@ export const momentsCopy = {
   },
   helpMeChoose: {
     tool: "Not sure where to start?",
-    line: "Help me choose, in Discover, ranks any commander by what you want.",
+    line: "Help me choose ranks any commander by what you want.",
   },
   lineup: {
     tool: "Stats",
