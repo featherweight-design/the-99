@@ -66,11 +66,12 @@ export function decideClaim(row: Row | undefined, presentedSecret: string | null
 
 export type ClaimResult =
   | { ok: true; claimSecret: string; mailed: boolean }
-  | { ok: false; reason: "invalid" | "unconfigured" | "wait"; waitMs?: number }
+  | { ok: false; reason: "invalid" | "unconfigured" | "wait" | "failed"; waitMs?: number }
   | Ended;
 
 export type ClaimDeps = {
   now?: Date;
+  clerk?: ClerkInvites;
   env?: { RESEND_API_KEY?: string; INVITE_EMAIL_FROM?: string; INVITE_CODE_SECRET?: string };
   mail?: (config: MailConfig | null, mail: { to: string; subject: string; text: string; html: string }) => Promise<MailResult>;
 };
@@ -111,6 +112,21 @@ export async function claimInvite(
     .where(eq(inviteReservations.qrTokenHash, hash));
   if (!found) return ENDED;
 
+  // A resend to a DIFFERENT address leaves the old one's invitation pending at Clerk (and, when a hand-over's answer
+  // was lost, with no id stored): every cleanup searches the address the row holds NOW, so the old address is ended
+  // here, before it is overwritten, and a failure to end it stops the change.
+  const [cur] = await db.select().from(inviteReservations).where(eq(inviteReservations.qrTokenHash, hash));
+  if (cur && cur.state === "claimed" && cur.email !== null && cur.email !== email && cookieMatches(cur, presentedSecret)) {
+    const clerk = deps.clerk ?? clerkInvites;
+    try {
+      const byId = cur.clerkInvitationId !== null ? await clerk.revoke(cur.clerkInvitationId) : true;
+      const byAddress = await clerk.revokeFor(cur.email, cur.id);
+      if (!byId || !byAddress) return { ok: false, reason: "failed" };
+    } catch {
+      return { ok: false, reason: "failed" };
+    }
+  }
+
   const written = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, found.userId, deps.now);
     const [row] = await tx.select().from(inviteReservations).where(eq(inviteReservations.qrTokenHash, hash)).for("update");
@@ -128,8 +144,9 @@ export async function claimInvite(
       codeHmac: codeHmac(secret, row.id, code),
       codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS),
       codeSentAt: now,
-      // A different address has to be proven again.
+      // A different address has to be proven again, and its predecessor's invitation is already ended.
       provenAt: decision.kind === "again" && !decision.changed ? row.provenAt : null,
+      ...(decision.kind === "again" && decision.changed ? { clerkInvitationId: null } : {}),
     }).where(eq(inviteReservations.id, row.id));
     return { ok: true as const, claimSecret, code };
   });

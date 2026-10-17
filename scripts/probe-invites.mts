@@ -338,6 +338,18 @@ async function main() {
     check("the same browser resends to a different address, the 7 days not restarted",
       resent.ok && mailed.length === 2 && mailed[1].to === "n1b@x.dev" && (await stateOf(r1)).holds === sc1.holds);
 
+    // A resend to another address ends the old address's pending invitation first (a lost hand-over answer stores none).
+    const addr = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    await db.execute(sql`update invite_reservations set clerk_invitation_id = 'inv_prev' where id = ${r1}`);
+    const moved = await claimInvite(q1.token, "n1c@x.dev", cookie1, { env, mail, now: new Date(Date.now() + 130_000), clerk: addr.clerk });
+    check("a changed address first ends the old one's pending invitations, by id and by address", moved.ok
+      && addr.revoked.includes("inv_prev") && addr.revokedFor.some((r) => r.reservationId === r1 && r.email === "n1b@x.dev")
+      && (await stateOf(r1)).clerk === null && (await stateOf(r1)).email === "n1c@x.dev");
+    const failing = stubClerk(() => ({ ok: true, id: "x", url: null }));
+    failing.clerk.revokeFor = async () => false;
+    const refused = await claimInvite(q1.token, "n1d@x.dev", cookie1, { env, mail, now: new Date(Date.now() + 260_000), clerk: failing.clerk });
+    check("…and an address change is refused while the old one's invitation cannot be ended", !refused.ok && refused.reason === "failed" && (await stateOf(r1)).email === "n1c@x.dev");
+
     // Wrong tries to the end: four count, the fifth ends the row and its invite goes back.
     const wrong = [] as string[];
     for (let i = 0; i < 4; i += 1) {
