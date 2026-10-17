@@ -129,6 +129,41 @@ describe("TargetsProvider", () => {
     expect(screen.getByRole("button", { name: "second" }).hasAttribute(HALO_ATTR)).toBe(false);
   });
 
+  it("passes over a control a stylesheet hides in a browser without checkVisibility", () => {
+    const had = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "checkVisibility");
+    // jsdom may or may not carry it; either way, this test asks the fallback.
+    Object.defineProperty(HTMLElement.prototype, "checkVisibility", { value: undefined, configurable: true });
+    try {
+      render(
+        <TargetsProvider>
+          <Grab />
+          <div style={{ display: "none" }}>
+            <Control id="proposed-cuts" name="desktop" />
+          </div>
+          <Control id="proposed-cuts" name="phone" />
+        </TargetsProvider>,
+      );
+      api!.haloTarget("proposed-cuts");
+      expect(screen.getByRole("button", { name: "desktop", hidden: true }).hasAttribute(HALO_ATTR)).toBe(false);
+      expect(screen.getByRole("button", { name: "phone" }).hasAttribute(HALO_ATTR)).toBe(true);
+    } finally {
+      if (had) Object.defineProperty(HTMLElement.prototype, "checkVisibility", had);
+      else delete (HTMLElement.prototype as { checkVisibility?: unknown }).checkVisibility;
+    }
+  });
+
+  it("answers a wait whose signal is already aborted with nothing, even for a target already drawn", async () => {
+    render(
+      <TargetsProvider>
+        <Grab />
+        <Control id="matchups" name="Matchups" />
+      </TargetsProvider>,
+    );
+    const gone = new AbortController();
+    gone.abort();
+    await expect(api!.whenTarget("matchups", 1000, gone.signal)).resolves.toBeNull();
+  });
+
   it("passes over a control a stylesheet hides, as the desktop copy is on a phone", () => {
     render(
       <TargetsProvider>

@@ -44,9 +44,13 @@ const LOOK_AGAIN_MS = 200;
  *  both mount, and only one is displayed at a width. */
 function drawn(el: HTMLElement): boolean {
   if (el.closest("[hidden]") !== null) return false;
-  // `checkVisibility` is false for `display: none` on the control or any ancestor. Absent (an older browser, jsdom), a
-  // control is drawn unless it sits under `hidden`.
-  return typeof el.checkVisibility !== "function" || el.checkVisibility();
+  // `checkVisibility` is false for `display: none` on the control or any ancestor. Where a browser lacks it, the same
+  // question asked of the computed style, up the tree.
+  if (typeof el.checkVisibility === "function") return el.checkVisibility();
+  for (let n: Element | null = el; n !== null; n = n.parentElement) {
+    if (getComputedStyle(n).display === "none") return false;
+  }
+  return true;
 }
 
 function firstInDocument(els: Iterable<HTMLElement>): HTMLElement | null {
@@ -127,9 +131,9 @@ export function TargetsProvider({ children }: { children: ReactNode }) {
   const whenTarget = useCallback(
     (id: TargetId, timeoutMs: number, signal?: AbortSignal) =>
       new Promise<HTMLElement | null>((done) => {
+        if (signal?.aborted) return done(null);
         const now = resolve(id);
         if (now !== null) return done(now);
-        if (signal?.aborted) return done(null);
         let timer = 0;
         // A registration wakes the wait at once; the look-again catches a registered control that shows later.
         const look = window.setInterval(() => check(), LOOK_AGAIN_MS);
