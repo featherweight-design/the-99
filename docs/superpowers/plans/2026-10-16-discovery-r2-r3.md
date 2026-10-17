@@ -78,8 +78,14 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    - **What is captured, per theme:** one frame per screen of README-r2's table (a deck's tabs and views each count as a
      screen), the 14 tool crops, and the tour's three pictures (steps 2 to 4). At 390, 2x, as WebP, in
      `public/about/shots/<theme>/<id>.webp`, with the theme set by the theme cookie the picker writes.
-   - **The manifest**, `src/lib/about/shots.generated.ts`, is written by the script: per image its size, and per entry
-     and per tool its halo box as fractions of its frame.
+   - **The manifest**, `src/lib/about/shots.generated.ts`, is written by the script: per image its size, and per tool
+     its halo box as fractions of its crop. Per-entry halo boxes are R2·6a's (amendment below).
+   - **Amended 2026-10-17 (d9, as Hugh's proxy):** R2·4 captures one frame per screen, `ABOUT_SCREENS` with `deck`
+     expanded into each of `DECK_VIEWS` (14 + 7 = 21 frames a theme, where the estimate below says 28), the 14 tool
+     crops and the 3 tour pictures: 38 images a theme, 228 in all. It writes the TOOL halo boxes only, each tool's
+     control found through its registered target (a deck tool through its `?tool=` landing; a route tool through the
+     control its moment anchors). Per-entry halo boxes move to R2·6a, which builds them from a locator map (entry id
+     to its control on its screen's frame).
    - **Budget:** a test fails when one image exceeds 90KB or the set exceeds 18MB, so the six-theme cost is held, not
      discovered. About 46 images a theme (28 screen frames, 14 tool crops, 3 tour pictures), so 276 in all. The bar
      for the set is an average of 65KB at most. The expected sizes:
@@ -199,9 +205,9 @@ copy gaps (R2 gaps 2 and 14, R3 gaps 9, 10 and 16).
 | R2·1b · Entries | the two switches in the registry; `screen` and `view` on all 71 entries, with a test that each has one; text search; `GET /api/about/entries`; the client-graph rule; E16 (`1 credit per run`); `src/lib/copy/discovery.ts` | R2·1a | ~12 |
 | R2·2 · Targets and the landing on a deck | `targets.ts`, `TargetsProvider`, `useTarget` inside `useMomentAnchor`; `tools.ts`; `useToolLanding` on the deck page; targets for Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper stand-ins, Friends' spares and Matchups; the panel targets with the hub off; `suppressMoment`; `pnpm probe:tool-landing` (below) for the deck tools | R2·1b | ~16 |
 | R2·3 · The landing on pages, and fits | the landing on Help me choose, Precons, Wishlist, Upload, Friends, `/collection` (Find a deck) and `/decks?view=stats` (Stats for your decks, which lives in `DecksView`); `loadToolFits` and each tool's `fits`, with partner-deck and deck-gone tests; `pnpm measure:friend-spares` run read-only on staging, its figure in the PR body; `probe:tool-landing` extended to these pages | R2·2 | ~16 |
-| R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture, `shots.generated.ts`, the budget and coverage tests | R2·1b | ~6 plus images |
+| R2·4 · The screenshot set | `about-fixtures.mts`, `pnpm capture:about`, the six-theme capture (21 screen frames, 14 tool crops, 3 tour pictures a theme), `shots.generated.ts` with the tool halo boxes, the budget and coverage tests (amended 2026-10-17: no per-entry halo boxes) | R2·1b | ~6 plus images |
 | R2·5 · Tools, unmounted | About's tabs; `ToolCard` in its five states, widths as drawn and heights a target, not fixed (R2 gap 13); the five groups at 1280 and the phone's sideways rows; Written for you, with the Overview line's switch edit (decision 3). No route renders any of it | R2·3, R2·4 | ~14 |
-| R2·6a · Reference, unmounted | entries by screen with the screens index; an opened entry with its frame; what's new; search over text; How it works last; the note as the Reference's last row, its dialog at `md` and up and its sheet below (E17). No route renders any of it | R2·5 | ~14 |
+| R2·6a · Reference, unmounted | entries by screen with the screens index; an opened entry with its frame and its halo box, from a locator map (entry id to its control on the screen's frame) that writes the per-entry boxes into the manifest (moved here from R2·4, d9 2026-10-17); what's new; search over text; How it works last; the note as the Reference's last row, its dialog at `md` and up and its sheet below (E17). No route renders any of it | R2·5 | ~14 |
 | R2·6b · The swap | `/about` renders the new shape (Tools by default, `?tab=reference`) in place of the shipped page; `loadToolFits` called; the visit recorded on the Reference only; the banner's new target (E14) | R2·6a | ~7 |
 | R2·7 · Retire the old About | the shipped page, the specimen figures and `src/lib/about/fixtures.ts` go, with their tests (R2 gap 9) | R2·6b | deletions |
 | R2·8 · The ? | the rail item and the header press; `BuilderScreenContext`; the panel and the sheet; Elsewhere chips; Show me; search, none and `Nothing in About is about this screen yet.`; `pnpm probe:help-panel` (below) | R2·6b | ~14 |
