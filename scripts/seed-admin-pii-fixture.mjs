@@ -43,8 +43,11 @@ await sql.transaction((tx) => [
   tx`insert into admin_events (actor_id, kind, switch, scope, user_id, new_value) values (${ACTOR}, 'override_set', ${SWITCH}, 'user', ${other}, 'on')`,
   tx`insert into invite_reservations (user_id, kind, state, holds_until, email)
      values (${OWNER_ID}, 'email', 'reserved', now() + interval '7 days', ${WAITING})`,
-  // A sender's balance is never below the invites holding it.
-  tx`insert into invite_balances (user_id, held) values (${OWNER_ID}, 1)
-     on conflict (user_id) do update set held = greatest(invite_balances.held, 1), updated_at = now()`,
+  // A sender's balance is never below the invites holding it (`holdsInvite`'s rules): the copied branch may hold some already.
+  tx`insert into invite_balances (user_id, held)
+     select ${OWNER_ID}, count(*)::int from invite_reservations
+     where user_id = ${OWNER_ID}
+       and ((state = 'qr_open' and qr_expires_at > now()) or (state in ('claimed', 'reserved') and holds_until > now()))
+     on conflict (user_id) do update set held = greatest(invite_balances.held, excluded.held), updated_at = now()`,
 ]);
 console.log(`seed:admin-pii-fixture: group ${GROUP} with ${ids.length} accounts, a ${SWITCH} override, a waiting invite, on ${branch}`);

@@ -29,6 +29,25 @@ function report(label, ok, detail = "") {
   return ok;
 }
 
+/**
+ * Whether `text` holds the value `n` as a whole word: a last name inside markup (`king` in `tracking-[0.16em]`,
+ * `white` in `whitespace-nowrap`) is not a leak, and a letter on either side means it is part of another word.
+ */
+function holds(text, n) {
+  const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}_-])${escaped}(?![\\p{L}\\p{N}_-])`, "u").test(text);
+}
+// The matcher's own regression cases, checked before anything is trusted to it.
+for (const [text, n, want] of [
+  ["class=\"tracking-[0.16em]\"", "king", false],
+  ["whitespace-nowrap", "white", false],
+  ["\"name\":\"colin king\"", "king", true],
+  ["mailto:colin@gmail.com\"", "colin@gmail.com", true],
+  ["xcolin@gmail.com", "colin@gmail.com", false],
+]) {
+  if (holds(text, n) !== want) throw new Error(`probe:admin-pii: the matcher answers ${!want} for ${n} in ${text}`);
+}
+
 /** What must never reach a page before a Show: every Clerk user's whole email and last name, and every waiting invite's address. */
 async function needles() {
   const out = new Set();
@@ -128,7 +147,8 @@ try {
   }
   await visit("/admin/switches");
   // The switch carrying an account override, so its override row, sub and history are drawn.
-  const [held] = await sql`select switch from flag_overrides where scope = 'user' order by switch limit 1`;
+  // ALL_FEATURES is an account override but not a switch page (its route is a 404), so it is never the one opened.
+  const [held] = await sql`select switch from flag_overrides where scope = 'user' and switch <> 'ALL_FEATURES' order by switch limit 1`;
   report("a switch carries an account override (seed:admin-pii-fixture)", Boolean(held));
   const sw = held ? `/admin/switches/${held.switch}` : await onPage(page, "a[href^='/admin/switches/']").first().getAttribute("href");
   if (report("a switch to open", Boolean(sw))) {
@@ -149,7 +169,7 @@ try {
     // The shell's account menu names the signed-in reader to themself on every page (`shell.ts` triggerLabel). That
     // one label is the reader's own identity, not a listed account; anywhere else, the owner row included, it counts.
     const own = `account: ${EMAIL.toLowerCase()}`;
-    const hits = bodies.filter((b) => (n === EMAIL.toLowerCase() ? b.text.replaceAll(own, "") : b.text).includes(n));
+    const hits = bodies.filter((b) => holds(n === EMAIL.toLowerCase() ? b.text.replaceAll(own, "") : b.text, n));
     report(`no response carries ${n.includes("@") ? "an email" : "a last name"} (${n.slice(0, 2)}…)`, hits.length === 0,
       hits.map((h) => `${h.route} ${new URL(h.url).pathname}`).slice(0, 3).join(", "));
     // Where the first hit sits, the value itself blanked, so a failure says what drew it without printing it.
