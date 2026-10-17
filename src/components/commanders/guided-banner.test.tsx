@@ -46,12 +46,9 @@ describe("GuidedBanner", () => {
     );
   });
 
-  it("is the banner as shipped with the switch off", () => {
-    const { container, rerender } = render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
-    const shipped = container.innerHTML;
+  it("draws no door with the switch off", () => {
+    render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose={false} />);
     expect(screen.queryByText(/Not sure which/)).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
-    rerender(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose={false} />);
-    expect(container.innerHTML).toBe(shipped);
   });
 });

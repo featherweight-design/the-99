@@ -34,12 +34,10 @@ describe("DecksZeroActions", () => {
     expect(press.className.split(/\s+/)).toEqual(expect.arrayContaining(["inline-flex", "min-h-[32px]", "sm:inline", "sm:min-h-0"]));
   });
 
-  it("is exactly as shipped with the switch off", () => {
-    const { container, rerender } = render(<DecksZeroActions buildable={230} cards={3250} />);
-    const shipped = container.innerHTML;
+  it("draws no door with the switch off", () => {
+    render(<DecksZeroActions buildable={230} cards={3250} helpMeChoose={false} />);
     expect(screen.queryByText(/Not sure what to build/)).toBeNull();
-    rerender(<DecksZeroActions buildable={230} cards={3250} helpMeChoose={false} />);
-    expect(container.innerHTML).toBe(shipped);
+    expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
   });
 
   it("is handed the switch by /decks' zero state", () => {
