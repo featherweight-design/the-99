@@ -1501,6 +1501,7 @@ export function BuilderShell({
     suggestedMoment["aria-describedby"] ?? cutsTabMoment["aria-describedby"] ?? manaTabMoment["aria-describedby"];
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
+      landingTarget={!tuningHubEnabled}
       freshEachVisit={freshEachVisit}
       deckId={deck.id}
       permits={permits}

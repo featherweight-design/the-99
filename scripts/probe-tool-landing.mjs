@@ -69,17 +69,18 @@ const WIDTHS = [
 // glyph, so each tool's selector names its own glyph.
 const TOOLS = [
   // The strip's door, by its shipped accessible name (`topOffCopy.strip.openAria`).
-  { id: "top-off", name: "Top off", targets: [["button[aria-label^='Choose the cards for the last']"]] },
-  { id: "proposed-cuts", name: "Proposed cuts", targets: [["[data-tool-tile='cuts']"], ["#cuts-heading"]] },
+  { id: "top-off", name: "Top off", tab: "deck", targets: [["button[aria-label^='Choose the cards for the last']"]] },
+  { id: "proposed-cuts", name: "Proposed cuts", tab: "analysis", targets: [["[data-tool-tile='cuts']"], ["#cuts-heading"]] },
   {
     id: "suggested-changes",
     name: "Suggested changes",
+    tab: "analysis",
     targets: [["[data-tool-tile='suggested']"], ["div:has(> [data-testid='analysis-empty'])", "div:has(> section[aria-labelledby='tuning-heading'])"]],
   },
-  { id: "mana-balance", name: "Mana Balance", targets: [["[data-tool-tile='mana']"], ["#mana-heading"]] },
-  { id: "stand-ins", name: "Cheaper stand-ins", targets: [["[data-testid='other-ways']:has([data-testid='standin-glyph'])"]] },
-  { id: "friend-spares", name: "A friend has a spare", targets: [["[data-testid='other-ways']:has([data-testid='spare-glyph'])"]] },
-  { id: "matchups", name: "Matchups", targets: [["section[aria-labelledby='game-matchups-heading'] [role='radiogroup']"]] },
+  { id: "mana-balance", name: "Mana Balance", tab: "analysis", targets: [["[data-tool-tile='mana']"], ["#mana-heading"]] },
+  { id: "stand-ins", name: "Cheaper stand-ins", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='standin-glyph'])"]] },
+  { id: "friend-spares", name: "A friend has a spare", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='spare-glyph'])"]] },
+  { id: "matchups", name: "Matchups", tab: "games", targets: [["section[aria-labelledby='game-matchups-heading'] [role='radiogroup']"]] },
 ];
 /** How long after the landing the probe looks again for the landed tool's bubble: inside the 2.4s halo, past the
  *  moments' own arrival delay. */
@@ -200,6 +201,23 @@ async function land(page, path, targets, noteName) {
   return read(page, targets, noteName);
 }
 
+/**
+ * Whether the tool's target draws on this deck through the deck's OWN controls, with no `?tool=`: its tab by `?tab=`,
+ * and Shopping by its filter press. An undrawn landing on a deck where this is true is a missed landing, never a SKIP.
+ */
+async function drawsWithoutLanding(page, deck, tool) {
+  await page.goto(`${BASE}/decks/${deck}?tab=${tool.tab}`, { waitUntil: "domcontentloaded" });
+  if (tool.shopping) {
+    const shopping = page.locator(PAGE).getByRole("tab", { name: /^Shopping/ }).first();
+    await shopping.click({ timeout: 10_000 }).catch(() => {});
+  }
+  await new Promise((done) => setTimeout(done, 2500));
+  return page.evaluate(
+    (groups) => groups.flat().some((sel) => [...document.querySelectorAll(sel)].some((el) => el.getClientRects().length > 0)),
+    tool.targets,
+  );
+}
+
 async function walk(browser, w, userId, decks, spentAtStart) {
   console.log(`\n── ${w.name}`);
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
@@ -226,6 +244,10 @@ async function walk(browser, w, userId, decks, spentAtStart) {
           check(r.haloed === 0, `${label}: an undrawn target draws no halo`, `${r.haloed} haloed`);
           check(!spent, `${label}: an undrawn target spends nothing`, `${spent}`);
           check(!r.visitTaken || r.bubbles.length > 0, `${label}: an unhaloed landing leaves the visit untouched`, `taken ${r.visitTaken}, bubbles ${JSON.stringify(r.bubbles)}`);
+          // Independent of the landing: the deck's own controls do not draw it either, so this deck is truly not a
+          // fixture for the tool. Were they to draw it, the landing missed a target it should have reached.
+          const own = await drawsWithoutLanding(page, deck, tool);
+          check(!own, `${label}: the deck's own controls do not draw it either (else the landing missed it)`, `${own}`);
           continue;
         }
         check(r.onTarget, `${label}: the halo is on the tool's target, and only there`, `${r.haloed} haloed`);

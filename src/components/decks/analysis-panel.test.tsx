@@ -270,8 +270,9 @@ describe("AnalysisPanel", () => {
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
-  // Discovery R2, E11: with the hub off there are no tiles, so Suggested changes' landing target is its frame, or
-  // with no reading held the empty state that asks for one; with the hub on, the tile is (tuning-hub.test.tsx).
+  // Discovery R2, E11: with the hub off there are no tiles, so Suggested changes' landing target is the drawn panel
+  // (its own `landingTarget`), or with no reading held the empty state that asks for one; with the hub on, the tile is
+  // (tuning-hub.test.tsx).
   describe("Suggested changes' landing target with the hub off", () => {
     let targets: Targets | null = null;
     function Grab() {
@@ -292,10 +293,9 @@ describe("AnalysisPanel", () => {
         </TargetsProvider>,
       );
 
-    it("is the tool's frame over a reading", () => {
+    it("is not the frame over a reading: the drawn panel registers itself (tuning-panel.test.tsx)", () => {
       drawWith(ready());
-      expect(targets!.haloTarget("suggested-changes")).toBe(true);
-      expect(screen.getByText("tuning").parentElement!.hasAttribute("data-target-halo")).toBe(true);
+      expect(targets!.haloTarget("suggested-changes")).toBe(false);
     });
 
     it("is the empty state before a first reading", () => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTarget } from "../discovery/targets-provider";
+import { useMergedRef } from "../ui/use-merged-ref";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -122,6 +124,7 @@ function limitWire(key: LimitField, patch: { capDollars?: number | null; sets?: 
 }
 
 export function TuningPanel({
+  landingTarget = false,
   deckId,
   permits,
   facts,
@@ -132,6 +135,8 @@ export function TuningPanel({
   onSaveDescription,
   freshEachVisit = false,
 }: {
+  /** With the Tuning hub off: this panel, once drawn, is Suggested changes' landing target. */
+  landingTarget?: boolean;
   deckId: string;
   permits: readonly Bracket[];
   facts: TuningFacts;
@@ -615,6 +620,10 @@ export function TuningPanel({
 
   // The firefly border's start point, measured off this panel's own box (`useAiSweepRef`).
   const sweepRef = useAiSweepRef();
+  // With the hub off there are no tiles: the drawn panel itself is Suggested changes' landing target (discovery R2,
+  // E11). Registered from the panel's own root, so a first read that draws nothing registers nothing.
+  const landingRef = useTarget(landingTarget ? "suggested-changes" : null);
+  const rootRef = useMergedRef(sweepRef, landingRef);
 
   if (state === null) {
     return reviewFailed ? (
@@ -1063,7 +1072,7 @@ export function TuningPanel({
   return (
     <VerdictOverridesProvider value={overrides.value}>
     <section
-      ref={sweepRef}
+      ref={rootRef}
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}
       className={`rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]${reading ? " ai-sweep" : ""}`}

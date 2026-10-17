@@ -170,11 +170,10 @@ export function AnalysisPanel({
   // staging walk, 2026-09-25: nothing may pop in once the tab has painted). One tree in both
   // phases, so revealing it keeps every read that already landed rather than remounting.
   const gated = opening !== "off";
-  // WITH THE HUB OFF there are no tiles, so Suggested changes' landing target (discovery R2, E11) is its frame here,
-  // and with no reading held, the empty state that asks for one. Proposed cuts and Mana Balance need no reading and
+  // WITH THE HUB OFF there are no tiles, so Suggested changes' landing target (discovery R2, E11) is the panel itself
+  // once it draws (`TuningPanel`'s `landingTarget`), and with no reading held, the empty state that asks for one. Proposed cuts and Mana Balance need no reading and
   // register their own heads. A frame under `hidden` (the opening, the overview being written) is passed over by the
   // registry until it shows.
-  const tuningTarget = useTarget(!hub && tuning ? "suggested-changes" : null);
   const emptyTarget = useTarget(!hub && tuning ? "suggested-changes" : null);
   return (
     <>
@@ -243,7 +242,7 @@ export function AnalysisPanel({
           reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
       {hub ? hub(held && !behind ? slotDeck(held.profile).permits : null) : null}
       {!hub && held && tuning ? (
-        <div ref={tuningTarget} hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+        <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}
         </div>
       ) : null}
