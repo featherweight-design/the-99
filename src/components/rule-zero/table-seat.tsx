@@ -33,12 +33,12 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
   const deck = seat.deck;
   const kind = read?.flag ? flagKind(read.flag) : null;
   const name = seatName(draw);
-  const why = driversSentence(draw.drivers);
+  const why = driversSentence(draw);
   const art = deck?.artCropUri ?? null;
 
   return (
     <article
-      aria-label={seat.you ? name : `${seat.displayName}’s seat`}
+      aria-label={copy.label(seat.you ? null : seat.displayName)}
       data-testid="table-seat"
       data-state={state.kind}
       data-you={seat.you ? "" : undefined}
@@ -99,6 +99,10 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
               <span className="truncate text-[13.5px] text-[color:var(--fg-body)] md:text-[14px]">{deck.deckName}</span>
               <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.commanderName}</span>
             </>
+          ) : state.kind === "waiting" ? (
+            <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
+              {seat.you ? copy.pickingOwn : copy.picking}
+            </span>
           ) : null}
         </span>
 
@@ -186,8 +190,16 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
       </div>
     );
   }
-  // The viewer's own waiting seat has no sentence of its own in the reviewed copy: `waiting` names a player picking
-  // "on their phone", which is not the viewer's case. Its control arrives with Change deck (PR 7).
+  if (state.kind === "needsAnalysis") {
+    return (
+      <div data-testid="seat-wait" className={WAIT}>
+        <b className="font-semibold text-[color:var(--fg-body)]">{copy.needsAnalysis}</b>{" "}
+        {copy.needsAnalysisBody(seat.you ? null : seat.displayName)}
+      </div>
+    );
+  }
+  // The viewer's own waiting seat says only `Picking your deck` on its deck line: a sentence telling them to pick
+  // would have no control under it until Change deck arrives (PR 7).
   if (state.kind === "waiting" && !seat.you) {
     return (
       <div data-testid="seat-wait" className={WAIT}>
@@ -255,8 +267,18 @@ function rangeLineText(line: RangeLine): string {
  * names its two cards and the tutors that reach it; a low seat says nothing counted passes its bracket, and that
  * counts can miss cards.
  */
-export function driversSentence(d: Drivers): string | null {
-  if (d.kind === "low") return copy.whyLow(BRACKET_NAMES[d.bracket]);
+export function driversSentence(draw: SeatDraw): string | null {
+  const d: Drivers = draw.drivers;
+  if (d.kind === "low") {
+    // T6: a low range nobody answered says the rules leave its two ends to the player.
+    const chip = draw.chip;
+    if (chip && chip.answered === null && chip.permits.length > 1 && draw.rangeLine?.kind === "undeclared") {
+      const lo = chip.permits[0];
+      const hi = chip.permits[chip.permits.length - 1];
+      return copy.whyLowRange(BRACKET_NAMES[lo], BRACKET_NAMES[hi], draw.seat.you ? null : draw.seat.displayName);
+    }
+    return copy.whyLow(BRACKET_NAMES[d.bracket]);
+  }
   if (d.kind === "ruledOut") {
     const nouns = deckAnalysisCopy.verdict.ruleNouns;
     return d.reasons

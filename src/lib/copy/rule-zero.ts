@@ -66,10 +66,25 @@ export const ruleZeroCopy = {
     balancedBody: "No deck sits a bracket or more from the rest. It’s a read of each list, so still say what you brought.",
     high: (whose: string, deck: string) => `${whose} ${deck} reads above the table.`, // "Colin’s Zimone Combo", "Your Zimone Combo"
     low: (whose: string, deck: string) => `${whose} ${deck} reads below the table.`,
+    sitsAt: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}.`,
     oneBody: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}. Worth a word before you shuffle.`,
+    // T3: a low seat's sentence ends on why low is worth raising, where a high one's ends on the shuffle.
+    lowBody: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}. Low is worth the same word as high.`,
+    // T7: a flagged seat whose declaration drifted says so in place of the closing line.
+    driftNote: (whose: string, declared: string) => `${whose} declared ${declared} is from before its last reading, so it settles nothing.`,
     oneBodyOwn: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}. You have decks that sit closer.`,
     two: "Two decks sit off the table, one each way.",
     many: (n: number) => `${n} decks sit off the table.`,
+    // T4, T6: the middle, then each flagged seat. T5: each seat after `splitBody`. Parts join with `readsList`.
+    middleIs: (middle: string) => `The middle is ${middle}.`,
+    seatReads: (whose: string, deck: string, reads: string) => `${whose} ${deck} reads ${reads}`,
+    seatReadsRange: (whose: string, deck: string, range: string, from: string) => `${whose} ${deck} reads ${range}, measured from ${from}`,
+    seatDeclared: (name: string, answer: string) => `${name} declared ${answer}`, // "Colin declared Optimized", "You declared Optimized"
+    // T8, T9: who the read compares while seats are left out. `names` comes from `seatNames`.
+    comparing: (names: string, both: boolean, reads: string) => `Comparing ${names}: ${both ? "both" : "all"} read ${reads}.`,
+    readingBody: (names: string, both: boolean, reads: string, name: string) =>
+      `${names.charAt(0).toUpperCase()}${names.slice(1)} ${both ? "both" : "all"} read ${reads}. ${name}’s joins in a second.`,
+    band: "TABLE", // the rail's dashed middle; the rail is hidden from assistive tech
     split: "A split: these two decks are a bracket apart.",
     splitBody: "With two seats there’s no rest of the table, so both are marked.",
     leftOut: (n: number) => (n === 1 ? "One seat isn’t in the read yet." : `${n} seats aren’t in the read yet.`),
@@ -95,6 +110,9 @@ export const ruleZeroCopy = {
       `it can find a two-card combo, ${a} + ${b}, with ${tutors} tutors to reach it. Upgraded allows a combo only as a draw away.`,
     whyLimit: (have: number, label: string, below: string, limit: number) => `${have} ${label}, where ${below} allows ${limit}.`,
     whyLow: (bracket: string) => `nothing we counted passes ${bracket}’s limits, and the rest of the table reads higher. Counts can miss cards, so ask what it’s built to do.`,
+    // T6: a low range nobody answered. `name` is null for the viewer's own seat.
+    whyLowRange: (lo: string, hi: string, name: string | null) =>
+      `the rules leave ${lo} against ${hi} to the player, and ${name === null ? "you haven’t" : `${name} hasn’t`} said. Even at ${hi} it sits below the table.`,
     undeclared: (from: string) => `not declared · measured from ${from}`,
     declared: (answer: string, range: string) => `declared ${answer} · reads ${range}`,
     drifted: (declared: string, from: string) => `declared ${declared}, outside this reading · measured from ${from}`,
@@ -106,6 +124,14 @@ export const ruleZeroCopy = {
     readingNow: "Reading this deck.",
     readingNowBody: "It’s at 100 and hasn’t been read before; this takes a second or two.",
     waiting: (name: string) => `${name} picks their own deck on their phone. Until then this seat is left out of the read.`,
+    picking: "Picking their deck", // T10: the deck line of a seat that waits
+    pickingOwn: "Picking your deck",
+    needsAnalysis: "Needs a fresh analysis.",
+    needsAnalysisBody: (name: string | null) =>
+      name === null
+        ? "Analyze it again from its deck page. Until then your seat is left out of the read."
+        : `${name} can analyze it again from the deck page. Until then this seat is left out of the read.`,
+    label: (name: string | null) => (name === null ? "Your seat" : `${name}’s seat`),
     changeDeck: "Change deck",
     changedNow: "changed just now",
     changedAgo: (ago: string) => `changed ${ago}`, // "changed 1 min ago"
@@ -141,3 +167,30 @@ export const ruleZeroCopy = {
  * new string: the headline opens on it, so the viewer's form is capitalized.
  */
 export const whose = (name: string | null): string => (name === null ? "Your" : `${name}’s`);
+
+/** Parts of a read sentence (`seatReads`, `seatDeclared`, ...) as one sentence: `A, B.` */
+export const readsList = (parts: readonly string[]): string =>
+  // A part with its own comma (`reads Exhibition or Core, measured from Core`) takes semicolons between parts (T6).
+  `${parts.join(parts.some((p) => p.includes(",")) ? "; " : ", ")}.`;
+
+/**
+ * T8's count of the seats left out for their size: `Peter’s deck has 87 of 100 cards; Max’s has 101.` Null is the
+ * viewer. The first names the deck; the rest take the possessive alone.
+ */
+export function leftOutCards(seats: readonly { name: string | null; cards: number }[]): string {
+  const parts = seats.map(({ name, cards }, i) => {
+    const who = name === null ? (i === 0 ? "Your deck" : "yours") : i === 0 ? `${name}’s deck` : `${name}’s`;
+    const n = cards < 100 ? `${cards} of 100 cards` : i === 0 ? `${cards} cards` : `${cards}`;
+    return `${who} has ${n}`;
+  });
+  return parts.length === 0 ? "" : `${parts.join("; ")}.`;
+}
+
+/**
+ * The seats a read compares, as T8 and T9 name them: `your seat and Colin’s`, `your seat, Colin’s and Max’s`. Null
+ * is the viewer. The first names the seat; the rest take the possessive alone.
+ */
+export function seatNames(names: readonly (string | null)[]): string {
+  const words = names.map((n, i) => (i === 0 ? (n === null ? "your seat" : `${n}’s seat`) : n === null ? "yours" : `${n}’s`));
+  return words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}

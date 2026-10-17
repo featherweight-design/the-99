@@ -13,7 +13,7 @@ import { TableClosed } from "./table-closed";
 const draw = (view: TableView, gamesEnabled = true) =>
   render(<TableBody view={view} gamesEnabled={gamesEnabled} closes="9:40 pm tomorrow" />);
 
-const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "You" : `${name}’s seat` });
+const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
 const headline = () => within(screen.getByTestId("read-card")).getByRole("heading", { level: 2 });
 
 describe("TableBody", () => {
@@ -170,15 +170,18 @@ describe("TableBody", () => {
     draw(TABLES.needsAnalysis);
     const peter = seatOf("Peter");
     expect(peter.dataset.state).toBe("needsAnalysis");
-    expect(within(peter).queryByTestId("seat-wait")).toBeNull();
+    expect(within(peter).getByTestId("seat-wait")).toHaveTextContent(
+      "Needs a fresh analysis. Peter can analyze it again from the deck page. Until then this seat is left out of the read.",
+    );
     expect(within(peter).queryByTestId("bracket-chip")).toBeNull();
+    expect(peter.querySelector(".animate-spin")).toBeNull();
   });
 });
 
 describe("TableClosed", () => {
   it("says the table closed, why, and that logged games stay, with Back to Friends", () => {
     render(<TableClosed podName="Thursday night" setBy="Colin" faces={[{ name: "Hugh", artCropUri: null }, { name: "Colin", artCropUri: "https://cards.example/a.jpg" }]} />);
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("This table has closed");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(copy.expired.body("Thursday night", "Colin"))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Friends" })).toHaveAttribute("href", "/friends");
   });

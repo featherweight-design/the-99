@@ -9,7 +9,7 @@ import type { CSSProperties } from "react";
 import { FINDING_ORDER } from "../../lib/bracket/findings";
 import type { Bracket } from "../../lib/bracket/types";
 import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import { ruleZeroCopy, whose } from "../../lib/copy/rule-zero";
+import { leftOutCards, readsList, ruleZeroCopy, seatNames, whose } from "../../lib/copy/rule-zero";
 import { middleBrackets, type Headline, type SeatDraw, type TableDraw } from "../../lib/rule-zero/table-view";
 import { BracketMark } from "../decks/bracket-mark";
 import { FindingMark } from "../decks/finding-mark";
@@ -70,6 +70,34 @@ function readsPhrase(s: SeatDraw): string {
   return bracketPhrase(s.chip.permits);
 }
 
+/** Who owns a seat in a sentence: `Colin’s`, or `Your` for the viewer. */
+const whoseSeat = (s: SeatDraw): string => whose(s.seat.you ? null : s.seat.displayName);
+
+/** One seat's part of a read sentence (T4 to T6): what it declared, the range it is measured from, or its bracket. */
+function seatPart(s: SeatDraw): string {
+  const r = copy.read;
+  const deck = s.seat.deck?.deckName ?? "";
+  if (!s.chip || !s.read) return "";
+  if (s.chip.answered !== null && s.chip.permits.length > 1) {
+    return r.seatDeclared(s.seat.you ? "You" : s.seat.displayName, BRACKET_NAMES[s.chip.answered]);
+  }
+  if (s.chip.answered === null && s.chip.permits.length > 1) {
+    return r.seatReadsRange(whoseSeat(s), deck, bracketPhrase(s.chip.permits), BRACKET_NAMES[s.read.face]);
+  }
+  return r.seatReads(whoseSeat(s), deck, readsPhrase(s));
+}
+
+/** The read seats, the viewer's first, as T8 and T9 name them, and the brackets they read. */
+function compared(draw: TableDraw): { names: string; both: boolean; reads: string } {
+  const read = draw.seats.filter((s) => s.read).sort((a, b) => Number(b.seat.you) - Number(a.seat.you));
+  const faces = [...new Set(read.map((s) => s.read!.face))].sort((a, b) => a - b);
+  return {
+    names: seatNames(read.map((s) => (s.seat.you ? null : s.seat.displayName))),
+    both: read.length === 2,
+    reads: bracketPhrase(faces),
+  };
+}
+
 function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: FlagKind } | null; body: string | null } {
   const h: Headline = draw.headline;
   const r = copy.read;
@@ -78,7 +106,11 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
     case "nothing":
       return { title: r.nothing, ink: null, body: r.nothingBody };
     case "split":
-      out = { title: r.split, ink: { phrase: copy.seat.split, kind: "split" }, body: r.splitBody };
+      out = {
+        title: r.split,
+        ink: { phrase: copy.seat.split, kind: "split" },
+        body: `${r.splitBody} ${readsList(draw.seats.filter((s) => s.read).map(seatPart))}`,
+      };
       break;
     case "balanced":
       out = { title: r.balanced(bracketPhrase(h.reads)), ink: null, body: r.balancedBody };
@@ -87,22 +119,37 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       const deck = h.seat.seat.deck?.deckName ?? "";
       const who = whose(h.seat.seat.you ? null : h.seat.seat.displayName);
       const middle = draw.read.kind === "read" ? bracketPhrase(middleBrackets(draw.read.middle)) : "";
+      const reads = readsPhrase(h.seat);
+      const line = h.seat.rangeLine;
+      // T7: a drifted declaration replaces the closing line; T3: a low seat closes on its own line.
+      const body = line?.kind === "drifted"
+        ? `${r.sitsAt(middle, deck, reads)} ${r.driftNote(who, BRACKET_NAMES[line.declared])}`
+        : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
       out = h.dir === "high"
-        ? { title: r.high(who, deck), ink: { phrase: copy.seat.above, kind: "high" }, body: r.oneBody(middle, deck, readsPhrase(h.seat)) }
-        : { title: r.low(who, deck), ink: { phrase: copy.seat.below, kind: "low" }, body: r.oneBody(middle, deck, readsPhrase(h.seat)) };
+        ? { title: r.high(who, deck), ink: { phrase: copy.seat.above, kind: "high" }, body }
+        : { title: r.low(who, deck), ink: { phrase: copy.seat.below, kind: "low" }, body };
       break;
     }
     case "two":
-      out = { title: r.two, ink: null, body: null };
+    case "many": {
+      const middle = draw.read.kind === "read" ? bracketPhrase(middleBrackets(draw.read.middle)) : "";
+      const parts = readsList(draw.seats.filter((s) => s.read?.flag).map(seatPart));
+      out = { title: h.kind === "two" ? r.two : r.many(h.n), ink: null, body: `${r.middleIs(middle)} ${parts}` };
       break;
-    case "many":
-      out = { title: r.many(h.n), ink: null, body: null };
-      break;
-    case "reading":
-      out = { title: r.reading(h.seat.seat.displayName), ink: null, body: null };
-      break;
-    case "leftOut":
-      return { title: r.leftOut(h.n), ink: null, body: null };
+    }
+    case "reading": {
+      // The seat being read is left out until it lands, and the sentence already says it joins.
+      const c = compared(draw);
+      return { title: r.reading(h.seat.seat.displayName), ink: null, body: r.readingBody(c.names, c.both, c.reads, h.seat.seat.displayName) };
+    }
+    case "leftOut": {
+      const c = compared(draw);
+      const sized = draw.seats.flatMap((s) =>
+        s.state.kind === "illegal" ? [{ name: s.seat.you ? null : s.seat.displayName, cards: s.state.cards }] : [],
+      );
+      const body = [r.comparing(c.names, c.both, c.reads), leftOutCards(sized)].filter(Boolean).join(" ");
+      return { title: r.leftOut(h.n), ink: null, body };
+    }
   }
   // The headline says it leaves seats out (decision 3): the sentence that follows says so whenever the headline
   // itself does not.
@@ -130,7 +177,7 @@ function Rail({ draw }: { draw: TableDraw }) {
           style={{ left: `calc(${(middle - 1) * 20}% + 6px)`, width: "calc(20% - 4px)" }}
         >
           <span className="absolute inset-x-0 top-[5px] text-center font-mono text-[8.5px] font-medium tracking-[0.14em] text-[color:var(--accent)]">
-            TABLE
+            {copy.read.band}
           </span>
         </span>
       ) : null}

@@ -40,7 +40,7 @@ export function TableClosed({
           );
         })}
       </div>
-      <h2 className="m-0 font-display text-[22px] font-bold">{copy.title}</h2>
+      <h1 className="m-0 font-display text-[22px] font-bold">{copy.title}</h1>
       <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
         {copy.body(podName, setBy ?? "you")}
       </p>
