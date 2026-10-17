@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
 import { scanTimer } from "../../../lib/scan/timing";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
-import { ADDED_MS, DARK_HOLD_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
+import { ADDED_MS, DARK_HOLD_MS, useCardScan, type AddOutcome, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
 const unit = () => {
@@ -39,13 +39,13 @@ function setup(
   };
   // The sheet's list, as the sheet would keep it: an add puts the card on it.
   const list = { current: listed };
-  const onAdd = vi.fn(async (g: { oracleId: string }) => {
+  const onAdd = vi.fn(async (g: { oracleId: string }): Promise<AddOutcome> => {
     list.current = new Map(list.current).set(g.oracleId, (list.current.get(g.oracleId) ?? 0) + 1);
     return true;
   });
   const onProblem = vi.fn();
   // A fresh callback every render, as an inline caller passes: the problem must still be said once.
-  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k) => onProblem(k), list.current));
+  const hook = renderHook(() => useCardScan(true, deps, onAdd, (k, name) => (name === undefined ? onProblem(k) : onProblem(k, name)), list.current));
   act(() => hook.result.current.attachVideo(document.createElement("video")));
   return { hook, onAdd, onProblem, fetch, list };
 }
@@ -66,7 +66,7 @@ describe("useCardScan", () => {
     expect(hook.result.current.screen).toMatchObject({ panel: { kind: "looking" } });
   });
 
-  it("starts at Fast, and a mode change is kept for this device", () => {
+  it("starts at Auto, and a mode change is kept for this device", () => {
     const store = new Map<string, string>();
     const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) } as unknown as Storage;
     const { hook } = setup({ storage });
@@ -224,8 +224,8 @@ describe("useCardScan", () => {
   });
 
 
-  // Fast adds with no press, and Normal picks the printing in the camera (Hugh, 2026-10-16).
-  describe("Fast", () => {
+  // Auto adds with no press, and Normal picks the printing in the camera (Hugh, 2026-10-16).
+  describe("Auto", () => {
     it("puts a sure card on the list by itself, once, with its photo and closest cards", async () => {
       const crop = new Float32Array(4);
       const photo = vi.fn(() => "data:scan");
@@ -298,6 +298,63 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(hook.result.current.count).toBe(0);
       expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+    });
+
+    // Auto is optimistic (Hugh, 2026-10-16): the sheet lists the card at once and settles the add later.
+    it("shows a card added before its add settles, and keeps the camera reading meanwhile", async () => {
+      let frames = 0;
+      const frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      const { hook, onAdd, onProblem } = setup({ readFrame: async () => { frames++; await new Promise((r) => setTimeout(r, 5)); return frame; } });
+      let settle!: (kept: boolean) => void;
+      onAdd.mockImplementation(async () => ({ settled: new Promise<boolean>((r) => { settle = r; }) }));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added", name: "Sol Ring" } }), { timeout: 4000 });
+      const at = frames;
+      await act(async () => new Promise((r) => setTimeout(r, 300)));
+      expect(frames).toBeGreaterThan(at + 3);
+      await act(async () => settle(true));
+      expect(onProblem).not.toHaveBeenCalledWith("removed", expect.anything());
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes back a card whose add did not hold: says so, and does not take it again while it stays in view", async () => {
+      const { hook, onAdd, onProblem, list } = setup();
+      let settle!: (kept: boolean) => void;
+      onAdd.mockImplementation(async (g: { oracleId: string }) => {
+        list.current = new Map(list.current).set(g.oracleId, 1);
+        return { settled: new Promise<boolean>((r) => { settle = r; }) };
+      });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
+      list.current = new Map();
+      await act(async () => settle(false));
+      hook.rerender();
+      expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring");
+      expect(hook.result.current.screen).toMatchObject({ panel: { kind: "unsure" } });
+      expect(hook.result.current.count).toBe(0);
+      await act(async () => new Promise((r) => setTimeout(r, 300)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("turns down an answer whose add is taken back during a missed frame, so it does not read Added when it returns", async () => {
+      const card: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+      let gap = false;
+      const { hook, onAdd, onProblem } = setup({
+        readFrame: async () => {
+          await new Promise((r) => setTimeout(r, 5));
+          return gap ? { frame: { kind: "none" }, cardInView: false, dark: false } : card;
+        },
+      });
+      let settle!: (kept: boolean) => void;
+      onAdd.mockImplementation(async () => ({ settled: new Promise<boolean>((r) => { settle = r; }) }));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "added" } }), { timeout: 4000 });
+      gap = true;
+      await act(async () => new Promise((r) => setTimeout(r, 40)));
+      await act(async () => settle(false));
+      gap = false;
+      await act(async () => new Promise((r) => setTimeout(r, ADDED_MS + 300)));
+      expect(onProblem).toHaveBeenCalledWith("removed", "Sol Ring");
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "added" } });
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "sure" } });
+      expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
     it("counts a card the sheet already lists as a second copy, and a line removed while scanning as none", async () => {
@@ -437,7 +494,7 @@ describe("useCardScan", () => {
       expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } });
     });
 
-    it("leaves the step when Fast is chosen", async () => {
+    it("leaves the step when Auto is chosen", async () => {
       const { hook } = setup({ storage: normal, loadChoices: () => new Promise(() => {}) });
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } }), { timeout: 4000 });
       act(() => hook.result.current.setMode("fast"));

@@ -36,7 +36,7 @@ import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
-import type { ScanCapture, ScanPicked } from "./scan/use-card-scan";
+import type { AddOutcome, ScanCapture, ScanPicked } from "./scan/use-card-scan";
 import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
@@ -158,7 +158,7 @@ function AddMode({
   // The line whose printing is being asked for: the one opened, else (Normal mode's scanned lines wait for theirs)
   // the first still without one, once the scanner is closed and every scanned add has landed.
   const pickerFor =
-    pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null)?.id ?? null) : null);
+    pickerChosen ?? (!scanning && scanPending === 0 ? (lines.find((l) => l.printing === null && !l.pending)?.id ?? null) : null);
 
   // The fix is open only while its line is on the list with its scan and nothing else is being asked: a line folded
   // into a twin (by a swap, a printing or a finish) takes its fix with it, a line a search pick joined keeps no scan,
@@ -193,7 +193,8 @@ function AddMode({
   const [retry, setRetry] = useState(0);
   const ticket = useRef(0);
 
-  const choosing = lines.find((l) => l.printing === null) ?? null;
+  // A pending line (Auto's scan, its printings still being read) asks nothing: it gets its printing or leaves the list.
+  const choosing = lines.find((l) => l.printing === null && !l.pending) ?? null;
   const blocked = choosing !== null || loadingCard !== null;
   const saving = phase === "saving";
   // A scanned card still loading its printings lands on the list later: a search pick in the meantime would build
@@ -314,15 +315,21 @@ function AddMode({
   }
 
   /**
-   * A scanned card onto the list, as a search pick lands (card-scan PR 3). Fast takes its first printing at once;
-   * Normal leaves the line without one, and the sheet's own printing step asks for it once the scanner closes. The
-   * update is functional, because adds arrive faster than this component re-renders.
+   * A scanned card onto the list, as a search pick lands (card-scan PR 3). Auto takes its first printing; Normal's pick
+   * in the camera brings the printing it chose. The update is functional, because adds arrive faster than this
+   * component re-renders.
+   *
+   * Auto is OPTIMISTIC (Hugh, 2026-10-16): the card goes on the list at once as a pending line, and its printings are
+   * read behind the camera. The scanner says Added straight away and reads on; once the printings land the line takes
+   * the first, and when they cannot be read the line comes back off and `settled` answers false, so the scanner says
+   * so. `scanPending` holds the save, the search and the printing step while a line is pending.
    */
   const listRead = () => phaseRef.current === "saving" || phaseRef.current === "saved";
 
-  async function addScanned(guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked): Promise<boolean> {
+  async function addScanned(guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked): Promise<AddOutcome> {
     // A save in flight (or done) has already read the list: a card scanned now would land behind it, unsaved.
     if (listRead()) return false;
+    if (!picked && mode === "fast") return { settled: addPending(guess, scan) };
     let choices: PrintingChoice[] = picked?.choices ?? [];
     // Normal's pick in the camera brings the printings it chose from; anything else reads them now.
     if (!picked) {
@@ -351,6 +358,38 @@ function AddMode({
     return true;
   }
 
+
+  /** Auto's optimistic add: the line now, its printing when the printings land, or the line off again. */
+  function addPending(guess: ScanGuess, scan: ScanCapture): Promise<boolean> {
+    const id = crypto.randomUUID();
+    setQuery("");
+    setResults([]);
+    setSearched(null);
+    setScanPending((n) => n + 1);
+    writeLines((ls) => openLine(ls, { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices: [], scan, pending: true }));
+    return (async () => {
+      let choices: PrintingChoice[] = [];
+      try {
+        choices = await loadPrintingChoices(guess.oracleId);
+      } catch {
+        choices = [];
+      }
+      try {
+        // The player took the line off meanwhile: nothing is left to fill or to take back.
+        if (!linesRef.current.some((l) => l.id === id)) return true;
+        if (choices.length === 0) {
+          writeLines((ls) => removeLine(ls, id));
+          // The scanner says this one over its feed while it is up; once it has closed the sheet says it.
+          if (!scanningRef.current) setNotice({ text: copy.printingsFailed, kind: "error" });
+          return false;
+        }
+        writeLines((ls) => choosePrinting(ls.map((l) => (l.id === id ? { ...l, choices, pending: undefined } : l)), id, choices[0]).lines);
+        return true;
+      } finally {
+        setScanPending((n) => n - 1);
+      }
+    })();
+  }
 
   /** L2: the scanned line becomes another of the cards its scan named, at that card's first printing. */
   async function swapCard(lineId: string, oracleId: string, name: string) {

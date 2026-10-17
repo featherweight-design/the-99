@@ -556,9 +556,10 @@ export const collectionEditCopy = {
     },
     mode: {
       label: "Printing",
-      fast: "Fast",
+      /** (renamed, for /copy-review) Hugh, 2026-10-16: Fast is Auto. */
+      fast: "Auto",
       normal: "Normal",
-      /** (reworded, for /copy-review) Fast adds with no press (Hugh, 2026-10-16). */
+      /** (reworded, for /copy-review) Auto adds with no press (Hugh, 2026-10-16). */
       fastLine: "each card goes on the list as soon as it reads, at its first printing. You can change any of them on the list.",
       /** (reworded, for /copy-review) Normal picks the printing in the camera (Hugh, 2026-10-16). */
       normalLine: "you choose each card’s printing here, as you scan it.",
@@ -578,14 +579,14 @@ export const collectionEditCopy = {
       notThis: "Not this card",
       /** (new, for /copy-review) Normal's printing step while the card's printings load. */
       loadingPrintings: "Loading its printings…",
-      /** (new, for /copy-review) Fast: the card is going on the list, no press needed. */
-      adding: "Adding to the list…",
-      /** (new, for /copy-review) Fast: a card just added that never left the frame; a second copy needs it out first. */
+      /** (new, for /copy-review) Auto: a card just added that never left the frame; a second copy needs it out first. */
       takeOut: "To add another copy, take this one out of the frame first.",
       darkTorch: "It’s dark, so cards read slowly. Turn on the light, top right.",
       darkNoTorch: "It’s dark, so cards read slowly. Move closer to a lamp.",
       light: "Light",
       added: (name: string) => `${name} is on the list`,
+      /** (new, for /copy-review) Auto: a card shown as added came back off the list, its printings unread (Hugh, 2026-10-16). */
+      removed: (name: string) => `${name} came off the list: we couldn’t load its printings. Show it again to retry.`,
       next: "Next card.",
       /** The tray's count, the figure bold as drawn. */
       onList: (x: number): CopyPart[] => [{ text: n(x), strong: true }, { text: " on the list" }],

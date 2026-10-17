@@ -97,7 +97,7 @@ describe("PhotoList", () => {
     expect((screen.getByRole("button", { name: copy.photos.more }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("stops from the desktop's head, and closes from the phone's ✕ beside Fast/Normal", () => {
+  it("stops from the desktop's head, and closes from the phone's ✕ beside Auto/Normal", () => {
     const desk = draw();
     fireEvent.click(screen.getByRole("button", { name: copy.camera.stop }));
     expect(desk.onClose).toHaveBeenCalled();

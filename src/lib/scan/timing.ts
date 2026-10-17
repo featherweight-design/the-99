@@ -6,7 +6,7 @@
  *
  * - `guess`: from the first frame that held a card to the scanner's answer for it (the frame's own read included).
  * - `add`: from an add starting (by itself, or a press) to the card being on the list.
- * - `mode`: from a Fast/Normal press to the next frame the scanner read.
+ * - `mode`: from an Auto/Normal press to the next frame the scanner read.
  * - `review`: from the Review press to the frame after the sheet's list was drawn.
  * - `read`: one frame's detector and embedder, the median of the session's frames.
  */

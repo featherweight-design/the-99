@@ -9,7 +9,7 @@ import { createOutlineStore } from "../../../lib/scan/outline";
 import { useFrameReader } from "./frame-reader";
 import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
-import { nextFrame, useCardScan, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
+import { nextFrame, useCardScan, type AddOutcome, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
 
 const copy = collectionEditCopy.scan;
@@ -36,14 +36,15 @@ export function CardScanner({
   listed: ReadonlyMap<string, number>;
   /** Test seams; the detector and embedder are the scanner's own, loaded and released with it. */
   deps?: Partial<CardScanDeps> & Pick<PhotoReaderDeps, "decode" | "thumb">;
-  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => Promise<boolean>;
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => AddOutcome | Promise<AddOutcome>;
   onClose: () => void;
   /** None of these (V6): the scan is turned down and the sheet's search by name takes over. */
   onNoneOfThese: () => void;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
-  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded" | "noStart" | "photoFailed") => {
+  const onProblem = useCallback((kind: "failed" | "refused" | "notAdded" | "noStart" | "photoFailed" | "removed", name?: string) => {
     if (kind === "notAdded") return setNotice(collectionEditCopy.add.printingsFailed);
+    if (kind === "removed") return setNotice(copy.view.removed(name ?? ""));
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     if (kind === "noStart") return setNotice(offline ? copy.offlineBody : copy.noStart);
     if (kind === "photoFailed") return setNotice(offline ? copy.offlineBody : copy.photos.lookupFailed);

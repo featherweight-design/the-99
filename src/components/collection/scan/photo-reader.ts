@@ -6,11 +6,11 @@ import { lookupCard } from "../../../lib/scan/lookup";
 import type { Source } from "../../../lib/scan/pipeline";
 import type { ScanSource } from "../../../lib/collection/add-lines";
 import type { ScanGuess, ScanMode } from "./scan-view";
-import { nextFrame, type FrameRead } from "./use-card-scan";
+import { addKept, nextFrame, type AddOutcome, type FrameRead } from "./use-card-scan";
 
 /**
  * What one chosen photo became. No printing is named: the index matches the card, not the printing, and the printing
- * added is the sheet's (Fast takes the card's first, Normal asks), shown on the list line itself.
+ * added is the sheet's (Auto takes the card's first, Normal asks), shown on the list line itself.
  */
 export type PhotoState =
   | { kind: "pending" }
@@ -57,7 +57,7 @@ const objectUrls = { create: (f: File) => URL.createObjectURL(f), revoke: (u: st
  */
 export function usePhotoReader(
   deps: PhotoReaderDeps,
-  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanSource) => Promise<boolean>,
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanSource) => AddOutcome | Promise<AddOutcome>,
   mode: ScanMode,
   onProblem: (kind: "photoFailed" | "notAdded" | "noStart") => void,
 ): PhotoReader {
@@ -180,7 +180,8 @@ export function usePhotoReader(
       // A photo's line carries its closest cards for the fix, the added one first. No photo: a thumbnail's object URL
       // is released with the scanner, before the review the fix is read in.
       const guesses = [guess, ...named.filter((g) => g.oracleId !== guess.oracleId)].map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri }));
-      if (!(await onAdd(guess, modeRef.current, { photo: null, guesses }))) {
+      // A photo's row waits for the add to settle: it has no feed to keep live, and its row says Added only once kept.
+      if (!(await addKept(await onAdd(guess, modeRef.current, { photo: null, guesses })))) {
         onProblemRef.current("notAdded");
         return false;
       }

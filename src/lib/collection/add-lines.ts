@@ -28,6 +28,9 @@ export type AddLineState = {
   /** A line the scanner added (card-scan PR 4): its own frame and the closest cards it named, so the name can be
    * pressed to put it right. A search pick has none. */
   scan?: ScanSource;
+  /** Auto's optimistic scan (Hugh, 2026-10-16): on the list while its printings are read, then given the first, or
+   * taken back off when they cannot be. Never saved: a pending line has no printing. */
+  pending?: true;
 };
 
 /** What a scan saw: the card's photo as it was read, and the closest cards, the one on the line first. */

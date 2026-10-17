@@ -35,7 +35,7 @@ where W4 draws it differently (the list head and footer while empty).
 | gap | — | 8px |
 | padding | — | 8px 8px 8px 14px |
 | border-bottom | — | 1px solid #181C26 |
-| Children, in order | — | count label · Fast/Normal segment · Stop |
+| Children, in order | — | count label · Auto/Normal segment · Stop |
 
 ### Count label (`.dsh-h .k`)
 | Property | Mobile | Desktop |
@@ -77,7 +77,7 @@ where W4 draws it differently (the list head and footer while empty).
 | Selected (`.on`) background | — | #20222A |
 | Selected color | — | #E6E8F0 |
 | Selected box-shadow | — | inset 0 -2px 0 #FF4D9A |
-| Drawn state | — | Fast selected |
+| Drawn state | — | Auto selected |
 | Hover / focus | — | not drawn |
 
 ### Stop (`.gb`, inline padding)

@@ -5,7 +5,7 @@ Source: `design/design_handoff_the99_card_scan/` (R1, READINESS 🟢 2026-10-16)
 the again / second-copy panel, which is a viewfinder state) and `R1 - Desktop.dc.html` (W2, W3, W6 webcam panel only).
 Where the handoff's own `design-tables/card-scan.md` disagrees with the JSX, the JSX wins and the row says so.
 
-Scope: D6, D7, V1–V9, R1–R2, Fast/Normal, ✕, light toggle, the tray. Out: D1–D5 (index download, dropped under
+Scope: D6, D7, V1–V9, R1–R2, Auto/Normal, ✕, light toggle, the tray. Out: D1–D5 (index download, dropped under
 server matching), L1–L4, R3–R4 (list folding), W1, W4, W5, E1.
 
 Mobile = phone 390×844, scanner full screen. Desktop = 1300, the webcam panel inside the 480px Add cards side sheet.
@@ -104,7 +104,7 @@ The rows below that say "guide" mean this outline in the same state; their box, 
 | display | flex, align-items center, gap 10 | flex, align-items center, gap 8 |
 | padding | 12px 12px 0 | 8px 8px 8px 14px |
 | left | ✕ close | kicker `Webcam` (`camera.webcam`), `.k`: Plex Mono 10.5px/500, .14em, uppercase, `#6F7486`, flex 1 |
-| centre | Fast/Normal segment (margin 0 auto) | segment (margin 0) |
+| centre | Auto/Normal segment (margin 0 auto) | segment (margin 0) |
 | right | light toggle | `Stop` (`camera.stop`) |
 
 ### Close ✕ (mobile)
@@ -130,7 +130,7 @@ The rows below that say "guide" mean this outline in the same state; their box, 
 | background / color | — | transparent / `#E6E8F0` |
 | behavior | — | turns the panel back into the search |
 
-### Fast/Normal segment
+### Auto/Normal segment
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -149,7 +149,7 @@ The rows below that say "guide" mean this outline in the same state; their box, 
 | button on | bg `#20222A`, color `#E6E8F0`, `box-shadow: inset 0 -2px 0 #FF4D9A` | same |
 | aria | each button `aria-pressed` true/false | same |
 | labels | `mode.fast`, `mode.normal` | same |
-| default / memory | Fast; remembered per device (localStorage) | same |
+| default / memory | Auto; remembered per device (localStorage) | same |
 | mid-batch change | affects only cards added after | same |
 
 ### Light toggle (mobile only)
@@ -204,7 +204,7 @@ The rows below that say "guide" mean this outline in the same state; their box, 
 | Property | Mobile | Desktop |
 |---|---|---|
 | heading | `view.looking` | not drawn |
-| mode line | `<b>` "Fast:" / "Normal:" (`#E6E8F0` 600) + `mode.fastLine` / `mode.normalLine` | — |
+| mode line | `<b>` "Auto:" / "Normal:" (`#E6E8F0` 600) + `mode.fastLine` / `mode.normalLine` | — |
 | guide | dashed | — |
 
 ### Unsure (V2, also V7/V8 body)
@@ -343,7 +343,7 @@ Display-state names are the scanner's (PR 2 hook / `steady.ts`) as described by 
 | D6 Camera blocked (phone) | `getUserMedia` rejected (permission denied) | CameraBlocked | `close`, `camera.blockedTitle`, `camera.blockedBody`, `camera.photosLine`, `camera.choosePhotos` |
 | W6 No webcam / blocked (desktop) | no video device, or denied | CameraBlocked in panel | `camera.webcam`, `camera.stop`, `camera.noWebcamTitle`, `camera.noWebcamBody`, `camera.choosePhotos` |
 | D7 Looking, empty batch | camera on, no card, list count 0 | TopBar + Looking panel + Tray (no count card, Review held) | `close`, `mode.label/fast/normal`, `view.light`, `view.looking`, `mode.fastLine`, "Nothing on the list yet" (no key), "Review" (no key) |
-| V1 Looking, Fast | no card in frame, count > 0, mode fast | Looking panel, guide dashed | `view.looking`, `mode.fastLine`, `view.onList(n)`, `view.review(n)` |
+| V1 Looking, Auto | no card in frame, count > 0, mode Auto | Looking panel, guide dashed | `view.looking`, `mode.fastLine`, `view.onList(n)`, `view.review(n)` |
 | V1n Looking, Normal | as V1, mode normal | Looking panel | `view.looking`, `mode.normalLine` |
 | V2 Unsure | card in frame, fewer than 3 agreeing frames | Unsure panel + dots, guide lit | `view.unsure` (+ unkeyed body line) |
 | V3 Sure | 3 agreeing frames, margin above gate | Sure guess + `.big`, guide ok | `view.add` |
@@ -358,20 +358,21 @@ Display-state names are the scanner's (PR 2 hook / `steady.ts`) as described by 
 | W2 Webcam sure (desktop) | as V3 | panel head + feed + guess row with `.bigd` | `camera.webcam`, `mode.*`, `camera.stop`, `view.add` |
 | W3 Webcam not sure (desktop) | as V6 | pick3 (270 wide) + side column | `view.notSure`, `view.sleeves`, `view.noneOfThese` |
 
-**Fast adds with no press, and Normal picks the printing in the camera** (Hugh, 2026-10-16, overriding the handoff's call 1,
+**Auto adds with no press, and Normal picks the printing in the camera** (Hugh, 2026-10-16, overriding the handoff's call 1,
 "nothing without a press"; no design round, the panels reuse shipped parts):
 
 | State | Triggering condition | Component rendered | Copy keys |
 |---|---|---|---|
-| V3f Sure, Fast | as V3, mode fast, not R1 | Sure guess, no press: a status line while the add lands, then V5 | `view.adding` |
-| R1f Duplicate, Fast | as R1, mode fast | Sure guess + `.okk` line, no press | `again.stillOn(x)`, `view.takeOut` |
-| R2f Second copy, Fast | as R2, mode fast | added by itself, as V3f | `view.adding` |
+| V3f Sure, Auto | as V3, mode Auto, not R1 | V5's Added panel from the answer's own frame, no press and no wait (Hugh, 2026-10-16: optimistic); the camera reads on | `view.added(name)`, `view.next` |
+| R1f Duplicate, Auto | as R1, mode Auto | Sure guess + `.okk` line, no press | `again.stillOn(x)`, `view.takeOut` |
+| R2f Second copy, Auto | as R2, mode Auto | added by itself, as V3f | `view.added(name)`, `view.next` |
+| V5r Taken back, Auto | an Auto add whose printings could not be read | the line comes back off the list, the tray's count drops, a toast says so; the card is not taken again while it stays in view | `view.removed(name)` |
 | N1 Printing step, Normal | as V3 or R2 in mode normal, a Not sure pick, or Add another copy (R1) | card name + the shipped `PrintingRegion` (`role="choose"`, `row` on the phone, `grid` on the desktop) + Not this card; a pick goes to V5 at that printing | `view.loadingPrintings` while they load, `add.choose.intro(k)` / `introPhone(k)`, `view.notThis` |
 
 ## Ambiguities found
 
 1. Copy not in the copy file: V2 body "The name shows once the card stays the same for a moment.", V5 "{name} is on the list" / "Next card.", D7 "Nothing on the list yet" (may reuse shipped add copy) and the bare "Review" at 0. Need keys via /copy-review.
-2. Mode line bolds "Fast:"/"Normal:" but `mode.fastLine`/`normalLine` carry no prefix; `view.onList(n)` returns one string but the tray bolds the count.
+2. Mode line bolds "Auto:"/"Normal:" but `mode.fastLine`/`normalLine` carry no prefix; `view.onList(n)` returns one string but the tray bolds the count.
 3. Light ring is accent pink in the JSX, `warning` in the handoff table; corner sizes 34/24 in JSX vs 28/22 in the table; desktop top-three 83 vs 86; desktop feed 250px tall vs "16:10".
 4. V8 "no control": drawn as `visibility:hidden` (space kept) vs the brief's "absent"; either satisfies "never greyed".
 5. V6 None of these drawn at min-height 40, below READINESS's ≥44 hit target.

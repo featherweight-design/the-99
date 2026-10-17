@@ -24,6 +24,32 @@ export type ScanCapture = ScanSource;
 /** Normal mode's pick, made in the camera: the card's printings as loaded, and the one chosen. */
 export type ScanPicked = { choices: PrintingChoice[]; printing: PrintingChoice };
 
+/**
+ * What putting a card on the list answered. `false`: it is not on the list. `true`: it is, for good. `settled`: it is
+ * on the list NOW, provisionally (Auto's optimistic add, Hugh 2026-10-16): the promise answers true when the line is
+ * kept and false when it was rolled back (its printings could not be read).
+ */
+export type AddOutcome = boolean | { settled: Promise<boolean> };
+
+/**
+ * The duplicate rule's mark after an optimistic add is taken back: when the mark is still this add's, the one it
+ * replaced comes back, unless that one was taken back too; any other mark (a newer add's) is left alone.
+ */
+export function markAfterTakeBack<M extends object>(current: M | null, mark: M, before: M | null, takenBack: WeakSet<object>): M | null {
+  if (current !== mark) return current;
+  return before && !takenBack.has(before) ? before : null;
+}
+
+/** The answer turned down after a take-back: its own, only while it is still the answer on screen. */
+export function dismissedAfterTakeBack(current: object | null, from: object | null, live: object | null): object | null {
+  return from !== null && from === live ? from : current;
+}
+
+/** Whether an add is kept, waiting for an optimistic one to settle. */
+export async function addKept(out: AddOutcome): Promise<boolean> {
+  return typeof out === "boolean" ? out : out.settled;
+}
+
 /** What the scanner saw when a card was taken: its closest cards and its photo. */
 /** `empties` is how many empty frames had been read when the card was taken: an add that lands after the frame
  * emptied is a card already out of view, so the next one in is a new copy (R2), not a duplicate (R1). */
@@ -87,8 +113,9 @@ export function useCardScan(
   active: boolean,
   deps: CardScanDeps,
   /** Puts the card on the list (at `picked`'s printing when Normal chose one); answers false when it could not. */
-  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => Promise<boolean>,
-  onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart") => void,
+  onAdd: (guess: ScanGuess, mode: ScanMode, scan: ScanCapture, picked?: ScanPicked) => AddOutcome | Promise<AddOutcome>,
+  /** `removed` names the card an optimistic add took back off the list. */
+  onProblem: (kind: "failed" | "refused" | "notAdded" | "noStart" | "removed", name?: string) => void,
   /** Copies on the sheet's list, by oracle id, live: the tray and "again" read the list, which the desktop sheet can
    * still edit while the scanner is open. */
   listed: ReadonlyMap<string, number> = NO_LIST,
@@ -278,6 +305,14 @@ export function useCardScan(
   const reading = scanScreen(inputs);
   const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
   const answer = server.kind === "match" ? server.result : null;
+  // The answer last on screen, for a rollback that lands later: only that answer is turned down. Kept across a missed
+  // frame or two (the server keeps its match through them, so the same answer comes back), replaced by the next one.
+  const liveAnswer = useRef<object | null>(null);
+  useEffect(() => {
+    if (answer) liveAnswer.current = answer;
+  });
+  // Marks of optimistic adds that were taken back: a later rollback never restores one of them.
+  const takenBack = useRef(new WeakSet<object>());
   // The answer is drawn: the timing row's frame-to-guess ends at the commit that puts it on the panel (a sure card or
   // Not sure), which the next paint shows. A panel over it (a printing step, Added, a hold) is not the answer drawn.
   const answerShown = answer !== null && screen.kind === "scanning" && ((screen.panel.kind === "sure" && !screen.panel.held) || screen.panel.kind === "notSure");
@@ -290,9 +325,10 @@ export function useCardScan(
   );
 
 
-  // The screen says a card is on the list only once the list has it: a printings read that failed says so instead.
+  // The screen says a card is on the list the moment the list has it. In Auto that is at once (the sheet lists the
+  // card, then reads its printings behind the camera); an add the sheet later takes back is undone here and said.
   const commit = useCallback(
-    async (g: ScanGuess, given?: Snap, picked?: ScanPicked): Promise<boolean> => {
+    async (g: ScanGuess, given?: Snap, picked?: ScanPicked, from: object | null = null): Promise<boolean> => {
       // A press during an add in flight still let go of its hold: clear it before the one-at-a-time guard, or the
       // scanner would show Held, with the feed frozen, once the first add's panel goes.
       setHeld(null);
@@ -303,30 +339,58 @@ export function useCardScan(
       }
       committing.current = true;
       const startedAt = now();
+      let out: AddOutcome;
+      let snap: Snap;
       try {
         // A held card adds what the scanner saw when the press went down; frames read since are another moment.
-        const snap = given ?? (heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow());
+        snap = given ?? (heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow());
         heldSnap.current = null;
         const capture: ScanCapture = {
           photo: snap.crop ? (depsRef.current.photo ?? photoOf)(snap.crop) : null,
           guesses: [g, ...snap.named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
         };
-        if (!(await onAdd(g, mode, capture, picked))) {
-          onProblem("notAdded");
-          return false;
-        }
-        // A press made while this add waited is over with it: the Added panel replaces its button, so no release
-        // would ever clear that hold, or its snapshot.
-        setHeld(null);
-        heldSnap.current = null;
-        setChoosing(null);
-        depsRef.current.timer?.added(startedAt, now());
-        setLastAdded({ oracleId: g.oracleId, emptiedSince: empties.current !== snap.empties });
-        setAdded({ name: g.name, imageUri: g.imageUri });
-        return true;
+        out = await onAdd(g, mode, capture, picked);
       } finally {
+        // Released as soon as the card is on the list, so the camera reads on while an optimistic add settles: a
+        // second take of this card is held off by `lastAdded` and the take's own guard, not by this.
         committing.current = false;
       }
+      if (out === false) {
+        onProblem("notAdded");
+        return false;
+      }
+      // A press made while this add waited is over with it: the Added panel replaces its button, so no release
+      // would ever clear that hold, or its snapshot.
+      setHeld(null);
+      heldSnap.current = null;
+      setChoosing(null);
+      depsRef.current.timer?.added(startedAt, now());
+      const mark = { oracleId: g.oracleId, emptiedSince: empties.current !== snap.empties };
+      const shown = { name: g.name, imageUri: g.imageUri };
+      // The mark this add replaced: a take-back puts it back, so the copy added before it is still the duplicate
+      // (R1) and the card in view is not taken again and again.
+      let before: typeof lastAdded = null;
+      setLastAdded((prev) => {
+        before = prev;
+        return mark;
+      });
+      setAdded(shown);
+      if (out !== true) {
+        void out.settled.then((kept) => {
+          if (kept) return;
+          // Taken back: the panel, the flip and the duplicate rule let go of it, and the answer it came from is not
+          // taken again while it stays in view (a failed take never was). The tray's count follows the list.
+          takenBack.current.add(mark);
+          setAdded((a) => (a === shown ? null : a));
+          // Two adds in flight can fail in either order: the mark this one replaced is put back only while it still
+          // stands for a card on the list, and a newer card's mark is never touched.
+          setLastAdded((l) => markAfterTakeBack(l, mark, before, takenBack.current));
+          // Only the answer still on screen is turned down, so an older take-back never replaces a newer one's.
+          setDismissed((d) => dismissedAfterTakeBack(d, from, liveAnswer.current));
+          onProblemRef.current("removed", g.name);
+        });
+      }
+      return true;
     },
     [onAdd, mode, onProblem, snapNow, now],
   );
@@ -357,7 +421,7 @@ export function useCardScan(
     setChoosing(null);
   }, []);
 
-  // A sure answer goes on by itself (Hugh, 2026-10-16): in Fast straight onto the list at its first printing, in
+  // A sure answer goes on by itself (Hugh, 2026-10-16): in Auto straight onto the list at its first printing, in
   // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
   // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
   const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
@@ -375,7 +439,7 @@ export function useCardScan(
     void Promise.resolve().then(async () => {
       if (mode === "normal") return choose(g, snap, from);
       // A card that could not be added is not tried again while it stays in view: the toast said so once.
-      if (!(await commit(g, snap))) setDismissed(from);
+      if (!(await commit(g, snap, undefined, from))) setDismissed(from);
     });
   });
 
@@ -383,7 +447,7 @@ export function useCardScan(
   const setMode = useCallback((m: ScanMode) => {
     // The mode already on changes nothing, and leaves an open printing step alone.
     if (m === modeRef.current) return;
-    // A printing step open when Fast is chosen is left: the card is read again under the new mode.
+    // A printing step open when Auto is chosen is left: the card is read again under the new mode.
     stopChoosing();
     depsRef.current.timer?.modePressed(now());
     setModeState(m);

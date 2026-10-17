@@ -142,11 +142,15 @@ describe("ScannerView", () => {
     expect(box.contains(screen.getByRole("button", { name: copy.view.notThis }))).toBe(false);
   });
 
-  it("in Fast draws no press: a sure card says it is going on, and one never out of the frame says how to add another", () => {
-    draw({ panel: { kind: "sure", guess: SOL, held: false, again: null } });
-    expect(within(panel()).queryByRole("button")).toBeNull();
-    expect(within(panel()).getByRole("status").textContent).toBe(copy.view.adding);
-    cleanup();
+  it("in Auto draws no press and no wait: a sure card reads as added from its own frame, and one never out of the frame says how to add another", () => {
+    for (const again of [null, { kind: "second" as const, count: 1 }]) {
+      draw({ panel: { kind: "sure", guess: SOL, held: false, again } });
+      expect(panel().dataset.state).toBe("added");
+      expect(within(panel()).queryByRole("button")).toBeNull();
+      expect(panel().textContent).toContain(copy.view.added(SOL.name));
+      expect(screen.queryByText(/Adding/)).toBeNull();
+      cleanup();
+    }
     draw({ panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 1 } } });
     expect(within(panel()).queryByRole("button")).toBeNull();
     expect(within(panel()).getByText(copy.again.stillOn(1))).toBeTruthy();

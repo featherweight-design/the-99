@@ -5,7 +5,7 @@
 // The camera is Chromium's fake one playing a clip that puts a card down and takes it away again, over and over
 // (`lib/fake-camera.mjs`). The server's match is answered here after `MEASURE_MATCH_MS` (default 100, about the lab's
 // 97ms median) with a fixed answer for the card shown, so the figure measures the device's half and a local database
-// needs no scan index. Fast mode adds each card to the sheet's list, which is never saved: the script writes nothing.
+// needs no scan index. Auto mode adds each card to the sheet's list, which is never saved: the script writes nothing.
 //
 //   PROBE_BASE=http://localhost:3417 pnpm measure:scan
 //
@@ -27,7 +27,7 @@ const CPU = Number(process.env.MEASURE_CPU ?? 4);
 const MATCH_MS = Number(process.env.MEASURE_MATCH_MS ?? 100);
 const RUNS = Number(process.env.MEASURE_RUNS ?? 1);
 
-// Sol Ring, as the catalog holds it: Fast reads its printings for real, so the id must be the catalog's own.
+// Sol Ring, as the catalog holds it: Auto reads its printings for real, so the id must be the catalog's own.
 const CARD = { oracleId: "6ad8011d-3471-4369-9d68-b264cc027487", name: "Sol Ring", scryfallId: "04002706-2236-4b79-bdea-4f263e43cb9c" };
 const MATCH = {
   index: "measure",
@@ -108,7 +108,7 @@ try {
     await page.locator("[data-testid=scanner]").waitFor();
     await page.waitForTimeout(SECONDS * 1000);
     // Two mode presses, then Review: each times itself in the row.
-    for (const name of [/^Normal$/, /^Fast$/]) {
+    for (const name of [/^Normal$/, /^Auto$/]) {
       await page.locator("[data-testid=scanner]").getByRole("button", { name }).first().click();
       await page.waitForTimeout(4000);
     }

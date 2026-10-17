@@ -12,7 +12,7 @@ const chooseCopy = collectionEditCopy.add.choose;
 
 /**
  * The scanner's screen (card-scan PR 3, `docs/superpowers/design-tables/card-scan-viewfinder.md`): the camera's feed
- * behind the detected card's outline, the top bar (✕, Fast/Normal, the light), the dark line, the result panel and, on the phone,
+ * behind the detected card's outline, the top bar (✕, Auto/Normal, the light), the dark line, the result panel and, on the phone,
  * the tray. Drawn from `screen` alone: what the camera sees and what the server said arrive as data, and every press
  * is a callback, so the hook that runs the camera owns all state but the press.
  *
@@ -220,7 +220,7 @@ function DeskHead(p: ScannerViewProps & { withMode: boolean }) {
   return <DeskBar label={copy.camera.webcam} mode={p.withMode ? p.mode : null} onMode={p.onMode} onStop={p.onClose} />;
 }
 
-/** The desktop panel's head: its label, Fast/Normal when it reads cards, and Stop. Shared by the webcam and photos (W4). */
+/** The desktop panel's head: its label, Auto/Normal when it reads cards, and Stop. Shared by the webcam and photos (W4). */
 export function DeskBar(p: { label: string; mode: ScanMode | null; onMode: (m: ScanMode) => void; onStop: () => void }) {
   return (
     <div className="flex items-center gap-[8px] border-b-[1px] border-b-[color:var(--border)] py-[8px] pl-[14px] pr-[8px]">
@@ -304,6 +304,12 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
         </div>
       );
     case "sure":
+      // Auto never says it is adding (Hugh, 2026-10-16): a sure card is on the list the moment it reads, so the panel
+      // says so from the answer's own frame, before the add has even been handed over. A card that never left the
+      // frame since it was added is the one sure card Auto does not take, and says how to add another.
+      if (p.mode === "fast" && !panel.held && panel.again?.kind !== "duplicate") {
+        return <AddedPanel name={panel.guess.name} box={phone ? `${PANEL_PHONE} gap-[6px]` : PANEL_DESK} head={H} />;
+      }
       return <SurePanel {...p} panel={panel} box={box} />;
     case "choose":
       return (
@@ -341,15 +347,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
         </div>
       );
     case "added":
-      return (
-        <div data-testid="scan-panel" data-state="added" className={box}>
-          <p className={H}>
-            <span aria-hidden="true" className="text-[color:var(--success)]">✓ </span>
-            {copy.view.added(panel.name)}
-          </p>
-          <p className={BODY}>{copy.view.next}</p>
-        </div>
-      );
+      return <AddedPanel name={panel.name} box={box} head={H} />;
     case "notSure":
       return (
         <div data-testid="scan-panel" data-state="notSure" className={box}>
@@ -394,17 +392,29 @@ export function Thumb({ guess, className }: { guess: ScanGuess; className: strin
   );
 }
 
+function AddedPanel({ name, box, head }: { name: string; box: string; head: string }) {
+  return (
+    <div data-testid="scan-panel" data-state="added" className={box}>
+      <p className={head}>
+        <span aria-hidden="true" className="text-[color:var(--success)]">✓ </span>
+        {copy.view.added(name)}
+      </p>
+      <p className={BODY}>{copy.view.next}</p>
+    </div>
+  );
+}
+
 function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "sure" }>; box: string }) {
   const phone = p.layout === "phone";
   const { guess, held, again } = p.panel;
   const label = again?.kind === "duplicate" ? copy.again.addAnother : again?.kind === "second" ? copy.again.addSecond : copy.view.add;
   // This press is down: a release adds only the press it ends, never one that began elsewhere or slid off.
   const down = useRef(false);
-  // Fast has no press (Hugh, 2026-10-16): a sure card goes on by itself, and one that never left the frame is not
-  // taken again, so the panel says what is happening instead.
+  // Auto has no press (Hugh, 2026-10-16): a sure card goes on by itself (the Panel draws it added), and one that never
+  // left the frame is not taken again, so the panel says how to add another.
   const press = p.mode === "fast" ? (
     <p role="status" className={`m-0 leading-[1.5] ${phone ? "text-[14px]" : "max-w-[220px] text-[13px]"} text-[color:var(--fg-body)]`}>
-      {again?.kind === "duplicate" ? copy.view.takeOut : copy.view.adding}
+      {copy.view.takeOut}
     </p>
   ) : (
     <button
