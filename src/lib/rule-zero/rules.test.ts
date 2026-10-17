@@ -176,6 +176,12 @@ describe("driversFor", () => {
     expect(d).toEqual({ kind: "ruledOut", below: 3, reasons: [{ rule: "gameChangers", have: 5, limit: 3 }] });
   });
 
+  it("names each rule once on a range's reasons, however many violations carry it", () => {
+    const twice = { rule: "gameChangers" as const, bracket: 3 as const, have: 5, limit: 3 };
+    const d = driversFor({ permits: [4, 5], violations: [twice, twice], lean: null }, high, 4);
+    expect(d).toEqual({ kind: "ruledOut", below: 3, reasons: [{ rule: "gameChangers", have: 5, limit: 3 }] });
+  });
+
   it("speaks a low seat by its own bracket", () => {
     expect(driversFor({ permits: [2], violations: [], lean: null }, { dir: "low", split: false }, 2)).toEqual({ kind: "low", bracket: 2 });
   });
@@ -183,6 +189,18 @@ describe("driversFor", () => {
 
 describe("suggestionsFor", () => {
   const at = (day: number) => new Date(Date.UTC(2026, 9, day));
+
+  it("offers no single-bracket deck at a two-seat split of adjacent brackets, whose middle is a half-bracket (open for PR 7)", () => {
+    // [2] and [3]: middle 2.5, each seat 0.5 from it. Another 3 is also 0.5 from it, so it is not strictly nearer;
+    // only an open [2,3] range (0 from the middle) is. PR 7, the suggestion's first caller, decides whether a split
+    // should instead offer decks nearer the OTHER seat.
+    const own = [
+      { deckId: "seated", value: one(2), lastPlayedAt: at(10) },
+      { deckId: "three", value: one(3), lastPlayedAt: at(9) },
+      { deckId: "range", value: range(2, 3), lastPlayedAt: at(8) },
+    ];
+    expect(suggestionsFor("seated", 0.5, own, 2.5).map((d) => d.deckId)).toEqual(["range"]);
+  });
 
   it("offers at most three of the player's decks strictly nearer the middle, nearest first, then most recently played", () => {
     const own = [

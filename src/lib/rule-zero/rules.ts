@@ -4,7 +4,9 @@
  * A table compares the decks seated at it by the bracket the app already reads (`slotDeck`), never by a
  * power number and never by a model. Each seat is one bracket, a declared answer to a range, or a range
  * left open; the table measures every read seat from one middle and flags a seat a bracket or more from
- * it. The strings that speak these results live in the copy module, not here.
+ * it. Two read seats are the exception: they are judged on the gap BETWEEN them, and a bracket or more apart
+ * flags both as `split`, though each then sits half that gap from the middle. The strings that speak these
+ * results live in the copy module, not here.
  */
 import { declarationAsk } from "../bracket/declaration-ask";
 import type { Bracket, BracketLean, ComboRef, RuleId } from "../bracket/types";
@@ -49,7 +51,7 @@ export function faceAt(v: SeatValue, middle: number): Bracket {
   return Math.abs(v.hi - middle) < Math.abs(v.lo - middle) ? v.hi : v.lo;
 }
 
-/** A seat is flagged a bracket or more from the middle (brief lock 2). */
+/** A seat is flagged a bracket or more from the middle (brief lock 2); at a two-seat table, the gap between the two. */
 export const FLAG_DISTANCE = 1;
 
 export type SeatFlag = { dir: "high" | "low"; split: boolean };
