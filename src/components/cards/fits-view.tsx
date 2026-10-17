@@ -340,15 +340,13 @@ export function FitsView({
   const allowance = panel?.allowance;
   const left = allowance ? freeCount(allowance) : 0;
   const spent = allowance ? !hasCredit(allowance) : false;
-  const closed = !!allowance?.paused || allowance?.ownerShare === true;
+  const closed = allowance?.ownerShare === true;
   const blocked = !allowance || spent || closed || running !== null;
-  const standing = !allowance ? "" : allowance.paused
-    ? creditsCopy.paused(allowance.paused.until)
-    : allowance.ownerShare
-      ? creditsCopy.ownerShare(new Date())
-      : spent
-        ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
-        : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
+  const standing = !allowance ? "" : allowance.ownerShare
+    ? creditsCopy.ownerShare(new Date())
+    : spent
+      ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
+      : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
   const stored = panel?.view.stored ?? null;
   // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
   // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.

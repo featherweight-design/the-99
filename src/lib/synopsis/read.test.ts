@@ -53,12 +53,8 @@ describe("synopsisStatus", () => {
   });
 });
 
-describe("synopsisStatus under the spend cap", () => {
+describe("synopsisStatus under the owner's share", () => {
   const reading = { fresh: true, list: "list-b" };
-  it("would not spend while the app-wide cap has paused every call", () => {
-    const allowance = { ...left, paused: { until: new Date() } };
-    expect(synopsisStatus({ reading, synopsis: null, allowance, pending: false }).wouldSpend).toBe(false);
-  });
   it("would not spend once the owner's share is used", () => {
     const allowance = { ...left, ownerShare: true };
     expect(synopsisStatus({ reading, synopsis: null, allowance, pending: false }).wouldSpend).toBe(false);

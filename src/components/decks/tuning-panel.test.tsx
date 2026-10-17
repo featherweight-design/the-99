@@ -379,16 +379,6 @@ describe("TuningPanel", () => {
     expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
   });
 
-  it("disables the primary while the app is paused, and says until when, credits in hand or not", async () => {
-    const until = new Date("2026-10-01T00:00:00Z");
-    const d = deps([{ ...results, stale: true, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null, paused: { until } } }]);
-    await draw(d);
-    expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText(creditLine(creditsCopy.paused(until)))).toBeInTheDocument();
-    await press(copy.again);
-    expect(d.run).not.toHaveBeenCalled();
-  });
-
   it("disables the owner's press once their testing share is used, with its own note", async () => {
     const d = deps([{ ...results, stale: true, allowance: { used: 1, limit: 10, reopensAt: null, nextAt: null, ownerShare: true } }]);
     await draw(d);
@@ -398,25 +388,16 @@ describe("TuningPanel", () => {
     expect(d.run).not.toHaveBeenCalled();
   });
 
-  it("names no feature in the spent or paused line, and links to what uses credits", async () => {
+  it("names no feature in the spent line, and links to what uses credits", async () => {
     const out = { used: 5, limit: 5, reopensAt: null, nextAt: null };
     await draw(deps([{ ...results, stale: true, allowance: out }]));
     expect(screen.getByText(creditLine("0 of 5 left · What uses credits?"))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "What uses credits?" })).toHaveAttribute("href", "/about?tab=reference#credits");
-    cleanup();
-    const until = new Date("2026-10-01T00:00:00Z");
-    await draw(deps([{ ...results, stale: true, allowance: { ...out, paused: { until } } }]));
-    expect(screen.getByText(creditLine("Paused until October 1. The app has reached its monthly limit. Nothing you did caused this. What uses credits?"))).toBeInTheDocument();
   });
 
-  it("names the pause over the owner's share, and the share over spent credits", async () => {
-    const until = new Date("2026-10-01T00:00:00Z");
+  it("names the owner's share over spent credits", async () => {
     const next = new Date("2026-09-24T14:20:00Z");
     const spentOut = { used: 5, limit: 5, reopensAt: next, nextAt: next };
-    await draw(deps([{ ...results, stale: true, allowance: { ...spentOut, paused: { until }, ownerShare: true } }]));
-    expect(screen.getByText(creditLine(creditsCopy.paused(until)))).toBeInTheDocument();
-    expect(screen.queryByText(creditsCopy.ownerShare(new Date()))).toBeNull();
-    cleanup();
     await draw(deps([{ ...results, stale: true, allowance: { ...spentOut, ownerShare: true } }]));
     expect(screen.getByText(creditsCopy.ownerShare(new Date()))).toBeInTheDocument();
     expect(screen.queryByText(creditLine(creditsCopy.spent(5, next)))).toBeNull();

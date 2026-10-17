@@ -30,7 +30,7 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
   if (!view.state.pressWrites) return null;
   // THE METHOD-CHANGE REWRITE IS FREE (addendum_method_notice, build rule 2): while a free try is
   // left the overview this press writes spends no credit, so it writes whatever the allowance says
-  // (paused, owner share and used-up included) and the note says so instead of any credit form.
+  // (owner share and used-up included) and the note says so instead of any credit form.
   // The server decides the same from eligibility, so the two cannot disagree about the cost.
   if (view.state.methodNotice && view.state.methodNotice.attemptsLeft > 0) {
     return { text: synopsisCopy.pressNote.free, writes: true };
@@ -39,12 +39,7 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
   const left = freeCount(allowance);
   // The press still reads the bracket, which is free; only the overview is withheld. So every form
   // that writes nothing opens with "Reads the bracket only;" and says why in its own words: the
-  // app is paused (the player has credits, so "waits for a credit" would be false), the owner's
-  // share is used, or every credit is out. Bare, the cap's line beside a working Analyze read as
-  // the analysis itself being paused (the-99-d9's ruling, 2026-09-24).
-  if (allowance.paused) {
-    return { text: `${synopsisCopy.pressNote.paused(monthName(allowance.paused.until))} ${creditsCopy.pausedReason}`, writes: false };
-  }
+  // owner's share is used, or every credit is out (the-99-d9's ruling, 2026-09-24).
   if (allowance.ownerShare) return { text: synopsisCopy.pressNote.ownerShare(monthName(new Date())), writes: false };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
   if (hasCredit(allowance)) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };

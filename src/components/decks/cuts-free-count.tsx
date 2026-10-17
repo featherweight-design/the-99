@@ -32,15 +32,14 @@ export const overWords = (n: number) => overCopy.trim.words[n] ?? String(n);
 /** The credit line under the offer, from the reader's allowance. */
 export function cutsStanding(panel: CutsPanel): string {
   const a = panel.allowance;
-  if (a.paused) return creditsCopy.paused(a.paused.until);
   if (a.ownerShare) return creditsCopy.ownerShare(new Date());
   if (!hasCredit(a)) return creditsCopy.spent(a.limit, a.reopensAt ?? a.nextAt);
   return creditsCopy.standing(freeCount(a), a.limit, a.nextAt);
 }
 
-/** Look deeper cannot be pressed: no credit, the cap paused, the owner's share spent, or nothing it may name. */
+/** Look deeper cannot be pressed: no credit, the owner's share spent, or nothing it may name. */
 export function cutsBlocked(panel: CutsPanel): boolean {
-  return !hasCredit(panel.allowance) || !!panel.allowance.paused || panel.allowance.ownerShare === true || panel.allLocked;
+  return !hasCredit(panel.allowance) || panel.allowance.ownerShare === true || panel.allLocked;
 }
 
 export function CutsFreeCount({

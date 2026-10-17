@@ -66,8 +66,7 @@ import { ArrivalOrder } from "../ui/arrival-queue";
  *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
  *    again anyway;
  *  - the five failures (6a-6e), and credits spent (C6, E4), which disables the primary and keeps
- *    the body; the spend cap's pause and the owner's share disable it the same way, with their
- *    own note.
+ *    the body; the owner's share disables it the same way, with its own note.
  * The action row is one band across every state, so the panel does not jump as it changes.
  *
  * The server actions are injectable, so every state is testable without a request.
@@ -650,13 +649,12 @@ export function TuningPanel({
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = !hasCredit(state.allowance);
   const left = freeCount(state.allowance);
-  // The spend cap's two states disable the press exactly as a spent allowance does, and only the
-  // note under it changes. Paused wins (it is the whole app), then the owner's share, then spent.
-  const paused = state.allowance.paused;
+  // The owner's share disables the press exactly as a spent allowance does, and only the note
+  // under it changes: the share first, then spent.
   // Every card but the commander locked (Locked, never cut): nothing to cut, so the press is
   // disabled and the server refuses it before a credit is reserved (the gate's `allLocked`).
   const allLocked = !reading && state.allLocked ? state.allLocked : null;
-  const blocked = spent || !!paused || state.allowance.ownerShare === true || allLocked !== null;
+  const blocked = spent || state.allowance.ownerShare === true || allLocked !== null;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -1047,17 +1045,15 @@ export function TuningPanel({
   // A failure's own note rides in the action row beside Try again, ahead of the credit line.
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
-  const credit = paused
-    ? creditsCopy.paused(paused.until)
-    : state.allowance.ownerShare
-      ? creditsCopy.ownerShare(new Date())
-      : spent
-        // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
-        // more counted than the limit the reader still has none left at that time.
-        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
-        : primary.again
-          ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
-          : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
+  const credit = state.allowance.ownerShare
+    ? creditsCopy.ownerShare(new Date())
+    : spent
+      // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
+      // more counted than the limit the reader still has none left at that time.
+      ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
+      : primary.again
+        ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
+        : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
   // With every card locked, the CREDIT line gives way to the one fact that matters: nothing is spent.
   // The state's own note (a set's tally, a failure's note) stays. Outside the never-run lead, where
   // the sentence is the lead, it joins the note so every state says why the press is disabled.

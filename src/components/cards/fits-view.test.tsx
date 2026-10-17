@@ -314,9 +314,9 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.queryByTestId("read-stale")).toBeNull();
   });
 
-  it("paused, Read again is off and named alone, never as out of credits", async () => {
-    const paused = { ...allowance, paused: { until: new Date("2026-11-01T00:00:00Z") } } as unknown as FitsReadPanel["allowance"];
-    await draw(panel({ allowance: paused }, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+  it("the owner's share used, Read again is off and named alone, never as out of credits", async () => {
+    const owner = { ...allowance, ownerShare: true } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: owner }, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
     const press = within(screen.getByTestId("read-stale")).getByRole("button", { name: r.readAgain });
     expect(press).toBeDisabled();
   });

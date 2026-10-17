@@ -13,8 +13,6 @@ export type Standing = {
   limit: number;
   nextAt: string | null;
   reopensAt: string | null;
-  /** The 1st of next month, while the app-wide spend cap refuses every call. */
-  paused: string | null;
   ownerShare: boolean;
   /** Paid credits left, as the `Allowance` carries them: absent while the player holds no lot. */
   plan?: number;
@@ -31,7 +29,6 @@ export function toStanding(a: Allowance, now: Date): Standing {
     limit: a.limit,
     nextAt: a.nextAt?.toISOString() ?? null,
     reopensAt: a.reopensAt?.toISOString() ?? null,
-    paused: a.paused?.until.toISOString() ?? null,
     ownerShare: a.ownerShare === true,
     ...(a.plan !== undefined ? { plan: a.plan } : {}),
     ...(a.pack !== undefined ? { pack: a.pack } : {}),
@@ -41,11 +38,10 @@ export function toStanding(a: Allowance, now: Date): Standing {
   };
 }
 
-/** Why a press is closed, in the tuning panel's precedence: paused, the owner's share, spent. */
-export type Closed = "paused" | "ownerShare" | "spent" | null;
+/** Why a press is closed, in the tuning panel's precedence: the owner's share, then spent. */
+export type Closed = "ownerShare" | "spent" | null;
 
 export function closedBy(s: Standing): Closed {
-  if (s.paused) return "paused";
   if (s.ownerShare) return "ownerShare";
   return hasCredit(s) ? null : "spent";
 }
@@ -54,7 +50,6 @@ export function closedBy(s: Standing): Closed {
 export function standingLine(s: Standing): string {
   const next = s.nextAt ? new Date(s.nextAt) : null;
   switch (closedBy(s)) {
-    case "paused": return creditsCopy.paused(new Date(s.paused!));
     case "ownerShare": return creditsCopy.ownerShare(new Date(s.now));
     case "spent": return creditsCopy.spent(s.limit, s.reopensAt ? new Date(s.reopensAt) : next);
     default: return creditsCopy.first(freeCount(s), s.limit, next);
@@ -76,7 +71,7 @@ export function bareStanding(s: Standing): string {
 /**
  * The line under the FORM's press (states 7b, 7c, 7n): what pressing will do with the words. A credit
  * free is the shared first-use line; none left says the words will not be read and when one comes
- * back; paused and the owner's share say why, as the results panel does.
+ * back; the owner's share says why, as the results panel does.
  */
 export function formLine(s: Standing): string {
   if (closedBy(s) !== "spent") return standingLine(s);
