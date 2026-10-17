@@ -130,6 +130,13 @@ async function main() {
       where s.table_id = ${T1} and s.user_id = ${B}`);
     check("B's swap keeps its dot for A", seen[0]?.dot === true);
     check("an unseated member marks nothing", !(await rz.markSeen(D, T1, new Date())));
+    // Acknowledging the table as it now stands clears every dot: the stamps round-trip through a Date exactly.
+    const latest = new Date(Math.max(...(await seatsOf(T1)).map((s) => new Date(s.changed_at).getTime())));
+    await rz.markSeen(A, T1, latest);
+    const { rows: dots } = await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from rule_zero_seats s join rule_zero_seen n on n.table_id = s.table_id and n.user_id = ${A}
+      where s.table_id = ${T1} and s.changed_at > n.seen_at`);
+    check("acknowledging the latest revision clears every dot", dots[0].n === 0, `${dots[0].n} left`);
 
     // A deleted deck leaves its seat waiting.
     await db.execute(sql`delete from decks where id = ${deckB2}`);
@@ -148,6 +155,17 @@ async function main() {
     check("the new order is written", s2.map((s) => s.user_id).join() === [B, A, D].join());
     check("a player off the table loses their seen row", (await count(sql`select count(*)::int as n from rule_zero_seen where table_id = ${T1} and user_id = ${C}`)) === 0);
     check("a player off the table reads nothing", (await rz.openTablesFor(C)).length === 0);
+
+    // A swap racing the setter's reseat: the table row serializes them, so the swap is never undone by the reseat.
+    const deckB3 = await deck(B, "Bo's third deck");
+    const [raceReseat, raceSwap] = await Promise.all([
+      rz.reseatTable(A, T1, [seat(pub[B]), seat(pub[A], deckA), seat(pub[D])]),
+      rz.setSeatDeck(B, T1, deckB3),
+    ]);
+    const afterRace = (await seatsOf(T1)).find((s) => s.user_id === B);
+    check("a swap racing a reseat survives it", raceReseat.kind === "reseated" && raceSwap === "set" && afterRace?.deck_id === deckB3, `${raceReseat.kind} ${raceSwap} ${afterRace?.deck_id}`);
+    const stamps = (await seatsOf(T1)).map((s) => new Date(s.changed_at).getTime());
+    check("every seat's stamp is distinct", new Set(stamps).size === stamps.length);
 
     // A member who leaves the pod loses the table, and the others stop seeing their seat.
     await pods.leavePod(D, P1);

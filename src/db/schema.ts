@@ -3416,7 +3416,9 @@ export const ruleZeroSeats = pgTable("rule_zero_seats", {
   userId: text("user_id").notNull(),
   seat: smallint("seat").notNull(),
   deckId: uuid("deck_id").references(() => decks.id, { onDelete: "set null" }),
-  changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+  // Millisecond precision, the precision a JavaScript Date carries: a revision handed to a client and back to
+  // `markSeen` must compare equal to the stamp it came from, and a reseat re-writes a staying seat's stamp exactly.
+  changedAt: timestamp("changed_at", { withTimezone: true, precision: 3 }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.tableId, t.userId] }),
   unique("rule_zero_seats_seat_unique").on(t.tableId, t.seat),
@@ -3430,7 +3432,7 @@ export const ruleZeroSeats = pgTable("rule_zero_seats", {
 export const ruleZeroSeen = pgTable("rule_zero_seen", {
   tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull(),
-  seenAt: timestamp("seen_at", { withTimezone: true }).notNull(),
+  seenAt: timestamp("seen_at", { withTimezone: true, precision: 3 }).notNull(),
 }, (t) => [
   primaryKey({ columns: [t.tableId, t.userId] }),
   index("rule_zero_seen_user_idx").on(t.userId),

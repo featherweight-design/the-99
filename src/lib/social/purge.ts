@@ -10,7 +10,7 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { deckGameOpponents, friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { deckGameOpponents, friendInvites, friendLinks, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
 import { leavePodIn } from "./pods";
 import { purgeRuleZeroIn } from "./rule-zero";
 
@@ -58,9 +58,16 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // The pods it owns or is in. A friend ADDING it to a pod holds that pod and then the friendship row
   // (`addMember`), so the friendship lock below waits out an add under way, which then shows as a membership
   // to leave; an add that starts after finds the friendship gone.
+  // Also every pod with a Rule 0 table the account set or sits at, which a player keeps after leaving the pod: those
+  // tables are closed below, and setup and reseat take the pod row first, so two purges (or a purge and a reseat) on
+  // one table queue here rather than each counting the other's seat.
   await tx.execute(sql`
     select p.id from ${pods} p
-    where p.owner_user_id = ${userId} or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
+    where p.owner_user_id = ${userId}
+      or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
+      or p.id in (
+        select t.pod_id from ${ruleZeroTables} t
+        where t.set_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId}))
     order by p.id for update`);
   const links = await tx.execute<{ user_id: string; friend_user_id: string }>(sql`
     select l.user_id, l.friend_user_id from ${friendLinks} l

@@ -3,7 +3,7 @@ CREATE TABLE "rule_zero_seats" (
 	"user_id" text NOT NULL,
 	"seat" smallint NOT NULL,
 	"deck_id" uuid,
-	"changed_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"changed_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "rule_zero_seats_table_id_user_id_pk" PRIMARY KEY("table_id","user_id"),
 	CONSTRAINT "rule_zero_seats_seat_unique" UNIQUE("table_id","seat"),
 	CONSTRAINT "rule_zero_seats_seat_check" CHECK ("rule_zero_seats"."seat" between 1 and 8)
@@ -12,7 +12,7 @@ CREATE TABLE "rule_zero_seats" (
 CREATE TABLE "rule_zero_seen" (
 	"table_id" uuid NOT NULL,
 	"user_id" text NOT NULL,
-	"seen_at" timestamp with time zone NOT NULL,
+	"seen_at" timestamp (3) with time zone NOT NULL,
 	CONSTRAINT "rule_zero_seen_table_id_user_id_pk" PRIMARY KEY("table_id","user_id")
 );
 --> statement-breakpoint

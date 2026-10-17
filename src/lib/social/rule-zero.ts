@@ -159,7 +159,9 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
   return db.transaction(async (tx) => {
     const [found] = await tx.select({ podId: ruleZeroTables.podId }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId));
     if (!found) return { kind: "refused", reason: "notFound" } as const;
-    // The pod row first, as `setTable` takes it, then the table, re-read under the lock.
+    // The pod row first, as `setTable` takes it, then the table, re-read under the lock. The table row is the lock
+    // every seat writer takes (`setSeatDeck` too), so no swap lands between the read of the seats below and their
+    // re-write.
     await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, found.podId)).for("update");
     const [table] = await tx
       .select({ id: ruleZeroTables.id })
@@ -188,12 +190,15 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
     const checked = asks.map((a) => (kept.has(userOf.get(a.member) ?? "") ? { ...a, deck: null } : a));
     const seats = await resolveSeatsIn(tx, viewerId, found.podId, checked);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
+    // A new seat's stamp, read BEFORE the delete below empties the table it is measured against.
+    const { rows: stamp } = await tx.execute<{ ms: string }>(sql`select round(extract(epoch from ${nextChange(tableId)}) * 1000)::bigint::text as ms`);
+    const joinedAt = new Date(Number(stamp[0].ms));
     await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
     await tx.insert(ruleZeroSeats).values(seats.map((s, i) => {
       const stay = kept.get(s.userId);
       return stay
         ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt }
-        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId };
+        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt };
     }));
     const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
     if (gone.length > 0) await tx.delete(ruleZeroSeen).where(and(eq(ruleZeroSeen.tableId, tableId), inArray(ruleZeroSeen.userId, gone)));
@@ -212,6 +217,16 @@ const seatedAt = (viewerId: string, tableId: string) => sql`exists (
   where gs.table_id = ${tableId} and gs.user_id = ${viewerId} and gt.expires_at > now()
 )`;
 
+/**
+ * A seat's new change stamp, taken under the table row's lock: the wall clock NOW (not the transaction's start, which
+ * may precede a wait on the lock), and strictly after every stamp the table already holds. Every seat writer takes
+ * that lock first, so stamps follow commit order and a swap can never land behind a revision already acknowledged.
+ */
+const nextChange = (tableId: string) => sql`greatest(
+  clock_timestamp(),
+  (select max(nc.changed_at) from ${ruleZeroSeats} nc where nc.table_id = ${tableId}) + interval '1 millisecond'
+)`;
+
 export type SetSeatDeckResult = "set" | "unchanged" | "refused";
 
 /**
@@ -221,13 +236,16 @@ export type SetSeatDeckResult = "set" | "unchanged" | "refused";
 export async function setSeatDeck(viewerId: string, tableId: unknown, deckId: unknown): Promise<SetSeatDeckResult> {
   if (!isUuid(tableId) || (deckId !== null && !isUuid(deckId))) return "refused";
   return db.transaction(async (tx) => {
+    // The table row first, the lock every seat writer takes, then the deck (the order a reseat takes them).
+    const [table] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId)).for("update");
+    if (!table) return "refused";
     if (deckId !== null) {
       const [own] = await tx.select({ id: decks.id }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, viewerId))).for("key share");
       if (!own) return "refused";
     }
     const written = await tx
       .update(ruleZeroSeats)
-      .set({ deckId, changedAt: sql`now()` })
+      .set({ deckId, changedAt: nextChange(tableId) })
       .where(and(
         eq(ruleZeroSeats.tableId, tableId),
         eq(ruleZeroSeats.userId, viewerId),
@@ -365,6 +383,12 @@ export type RuleZeroPurge = { seats: number; tables: number };
  * goes (its seats and seen rows cascade), and so does any table it leaves with fewer than two seats (decision 7).
  */
 export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroPurge> {
+  // The caller already holds these tables' pods (`purgeSocialIn`); the table rows next, in id order, the lock every
+  // seat writer takes, so a seat count below is never read past a seat write still in flight.
+  await tx.execute(sql`
+    select t.id from ${ruleZeroTables} t
+    where t.set_by = ${userId} or t.id in (select s.table_id from ${ruleZeroSeats} s where s.user_id = ${userId})
+    order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
   const set = await tx.delete(ruleZeroTables).where(eq(ruleZeroTables.setBy, userId)).returning({ id: ruleZeroTables.id });

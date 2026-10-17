@@ -1,5 +1,5 @@
 {
-  "id": "25691d80-f468-42d4-a5b7-e10af56ecceb",
+  "id": "77ed88e0-cd27-4565-a9d9-ee8ec35bcf2c",
   "prevId": "f4d190f0-de92-4f68-8602-7be5e2c908a3",
   "version": "7",
   "dialect": "postgresql",
@@ -8727,7 +8727,7 @@
         },
         "changed_at": {
           "name": "changed_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -8840,7 +8840,7 @@
         },
         "seen_at": {
           "name": "seen_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true
         }
