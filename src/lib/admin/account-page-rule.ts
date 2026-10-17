@@ -92,7 +92,7 @@ export function accountRows(input: {
       initials: a.id === input.ownerId ? null : initials(a),
       // A membership whose group's name did not load (a failed or racing read) keeps the id as its name.
       group: groupId ? { id: groupId, name: groupName ?? groupId } : null,
-      credits: c ? copy.creditsLeft(c.left, c.limit) : "",
+      credits: c ? copy.creditsRow(c.left, c.limit) : "",
       spend: usd(input.spend.get(a.id) ?? 0),
       invites: input.invites.get(a.id) ?? { left: 0, waiting: 0, invitedBy: { kind: "founder" } },
     };

@@ -59,9 +59,9 @@ describe("the list (A1)", () => {
     expect(rows.map((r) => r.invites.left)).toEqual([0, 2, 0]);
     expect(rows[0].invites.invitedBy).toEqual({ kind: "founder" });
     expect(rows.map((r) => [r.name, r.group?.name ?? null, r.credits, r.spend])).toEqual([
-      ["Hugh H.", null, "7 of 10 left", "$2.10"],
-      ["Mara Q.", "friends", "0 of 5 left", "$1.420"],
-      ["Account ·bare", null, "5 of 5 left", "$0"],
+      ["Hugh H.", null, "7 of 10", "$2.10"],
+      ["Mara Q.", "friends", "0 of 5", "$1.420"],
+      ["Account ·bare", null, "5 of 5", "$0"],
     ]);
     // D4: the owner and an account with no name are marked with the diamond (null), the rest lettered.
     expect(rows.map((r) => [r.owner, r.initials])).toEqual([[true, null], [false, "MQ"], [false, null]]);

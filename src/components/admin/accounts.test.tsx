@@ -23,9 +23,9 @@ const { AdminHead } = await import("./admin-head");
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
-  { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", owner: true, initials: null, group: null, credits: "7 of 10 left", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
-  { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", owner: false, initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh H.", joinedAt: new Date(0) } } },
-  { id: "user_4theo", name: "Theo", email: null, owner: false, initials: "TH", group: null, credits: "5 of 5 left", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
+  { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", owner: true, initials: null, group: null, credits: "7 of 10", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
+  { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", owner: false, initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh H.", joinedAt: new Date(0) } } },
+  { id: "user_4theo", name: "Theo", email: null, owner: false, initials: "TH", group: null, credits: "5 of 5", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
 ];
 
 const PAGE: AccountPage = {
@@ -78,11 +78,13 @@ describe("AccountsList (A1 to A3)", () => {
     // D3: the Clerk id is the link, never drawn.
     expect(rows[1]).not.toHaveTextContent("user_9mara");
     expect(rows[1]).toHaveTextContent("friends");
-    expect(rows[1]).toHaveTextContent("3 of 5 left");
+    expect(rows[1]).toHaveTextContent("3 of 5");
+    // Under the `Credits now` head the row says `3 of 5`, not `3 of 5 left` (R3, A1).
+    expect(rows[1]).not.toHaveTextContent("3 of 5 left");
     expect(rows[0]).toHaveTextContent("No group");
     // The phone's meta line names the group as the desktop column does, `No group` included.
-    expect(rows[0]).toHaveTextContent("No group · 7 of 10 left");
-    expect(rows[1]).toHaveTextContent("friends · 3 of 5 left");
+    expect(rows[0]).toHaveTextContent("No group · 7 of 10");
+    expect(rows[1]).toHaveTextContent("friends · 3 of 5");
     expect(within(rows[0]).getByTestId("account-spend-phone")).toHaveTextContent("$2.10");
   });
 
@@ -98,9 +100,9 @@ describe("AccountsList (A1 to A3)", () => {
     expect(within(mara).getByTestId("account-invites-cell").className).not.toContain("--fg-faint");
     expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh H.$/);
     expect(within(theo).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by deleted account$/);
-    expect(hugh).toHaveTextContent("No group · 7 of 10 left · 0 invites · founder");
-    expect(mara).toHaveTextContent("friends · 3 of 5 left · 2 · 1 waiting · by Hugh H.");
-    expect(theo).toHaveTextContent("No group · 5 of 5 left · 3 invites · by deleted account");
+    expect(hugh).toHaveTextContent("No group · 7 of 10 · 0 invites · founder");
+    expect(mara).toHaveTextContent("friends · 3 of 5 · 2 · 1 waiting · by Hugh H.");
+    expect(theo).toHaveTextContent("No group · 5 of 5 · 3 invites · by deleted account");
     expect(screen.getAllByText("Invited by", { selector: "[aria-hidden] span" })).toHaveLength(1);
   });
 

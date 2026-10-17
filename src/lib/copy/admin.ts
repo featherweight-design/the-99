@@ -274,6 +274,8 @@ export const adminCopy = {
     },
     tiles: { credits: "Credits now", spent: (m: string) => `Spent in ${m}`, presses: "Runs", hub: "Tuning hub" },
     creditsLeft: (left: number, limit: number) => `${left} of ${limit} left`,
+    /** A list row's credits, under the `Credits now` head (Admin R3 boards, A1). */
+    creditsRow: (left: number, limit: number) => `${left} of ${limit}`,
     resetAt: (time: string) => `reset at ${time} UTC`,
     ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
     hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },
