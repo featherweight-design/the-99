@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 const mirrorUrl = vi.fn();
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl }));
@@ -45,15 +45,19 @@ describe("AboutTabs (C1, R2 gap 12)", () => {
     expect(container.textContent).toContain("for its own entries");
   });
 
-  it("follows a navigation that asks for another tab, as a link to ?tab=reference does", () => {
-    const { rerender } = render(<AboutTabs initial="tools" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
-    rerender(<AboutTabs initial="reference" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
-    expect(screen.getByRole("tab", { name: "Reference 71" }).getAttribute("aria-selected")).toBe("true");
+  it("follows a navigation that asks for another tab, as a link to ?tab=reference does, every time", () => {
+    render(<AboutTabs initial="tools" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
+    const selected = () => screen.getAllByRole("tab").find((t) => t.getAttribute("aria-selected") === "true")!.textContent;
+    act(() => window.history.pushState(null, "", "/about?tab=reference#cut-list"));
+    expect(selected()).toBe("Reference 71");
     expect((screen.getByText("reference panel").closest("[role=tabpanel]") as HTMLElement).hidden).toBe(false);
-    // A re-render with the same ask leaves the reader's own choice alone.
+    // The reader goes back to Tools: the mirror takes the URL back to /about, and the page keeps its first `initial`.
     fireEvent.click(screen.getByRole("tab", { name: "Tools 14" }));
-    rerender(<AboutTabs initial="reference" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
-    expect(screen.getByRole("tab", { name: "Tools 14" }).getAttribute("aria-selected")).toBe("true");
+    act(() => window.history.replaceState(null, "", String(mirrorUrl.mock.calls.at(-1)![0])));
+    expect(selected()).toBe("Tools 14");
+    // A second link to the Reference is followed too.
+    act(() => window.history.pushState(null, "", "/about?tab=reference#proposed-cuts"));
+    expect(selected()).toBe("Reference 71");
   });
 
   it("reads anything but reference as Tools", () => {

@@ -101,7 +101,9 @@ describe("ToolsTab", () => {
     expect(container.querySelector('[data-tool-card="top-off"] img')!.getAttribute("src")).toBe("/about/shots/amonkhet/tool-top-off.webp");
   });
 
-  it("with a group's switches off, draws no section for it, and no Written for you when nothing spends", () => {
+  // Which switches leave Written for you empty is `writtenForYou`'s rule, tested in showcase.test.ts; here the tab only
+  // has to draw nothing for the null it is handed.
+  it("with a group's switches off, draws no section for it, and no Written for you when handed none", () => {
     const off = new Set(["SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED"]);
     const { container } = render(
       <ToolsTab groups={showcaseGroups(input({ isOn: (n) => !off.has(n) }))} written={null} allowance="five" theme={undefined} />,

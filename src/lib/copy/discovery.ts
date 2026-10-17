@@ -48,7 +48,7 @@ export const aboutShapeCopy = {
   toolsSub: 'What each tool is for, shown on the screen it lives on.',
   referenceSub: 'Every entry, by the screen it lives on.',
   tabs: { label: 'About', tools: 'Tools', reference: 'Reference' },
-  /** 1280 only, beside the tabs, and only with the ? drawn (`HELP_PANEL_ENABLED`). Split around the ? glyph. */
+  /** From `md`, beside the tabs, and only with the ? drawn (`HELP_PANEL_ENABLED`). Split around the ? glyph. */
   helpHint: { before: 'Every screen has a', after: 'for its own entries' },
   toReference: 'Everything else the app does is in the Reference, by screen.',
   toReferencePress: 'Open the Reference →',

@@ -6,6 +6,7 @@
 
 import { useState, type ReactNode } from "react";
 import { aboutShapeCopy } from "../../../lib/copy/discovery";
+import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { onSegmentKeys } from "../../ui/segment-keys";
 
@@ -31,13 +32,16 @@ export type AboutTabsProps = {
 
 export function AboutTabs({ initial, counts, panels, helpHint }: AboutTabsProps) {
   const [tab, setTab] = useState<AboutTab>(initial);
-  // A link on the page to `?tab=reference` (How it works, Open the Reference) is a soft navigation to this same route,
-  // which re-renders it with a new `initial` and keeps this state. Follow it during render, not in an effect, so the
-  // Reference panel is drawn before the router scrolls to the link's `#entry`.
-  const [asked, setAsked] = useState<AboutTab>(initial);
-  if (initial !== asked) {
-    setAsked(initial);
-    setTab(initial);
+  // A link on the page to `?tab=reference` (How it works, Open the Reference) is a soft navigation to this same route.
+  // It keeps this state, and after the reader's own flip back to Tools it arrives with the same `initial` the page was
+  // first rendered with, so the prop cannot tell it. The live URL can: `useLiveQuery` reports every move, the tab
+  // mirror's own writes included, and a URL asking for another tab than it last asked for is followed. Followed during
+  // render, not in an effect, so the Reference panel is drawn before the router scrolls to the link's `#entry`.
+  const urlTab = aboutTabOf(new URLSearchParams(useLiveQuery(initial === "reference" ? `${TAB_PARAM}=reference` : "")).get(TAB_PARAM));
+  const [asked, setAsked] = useState<AboutTab>(urlTab);
+  if (urlTab !== asked) {
+    setAsked(urlTab);
+    setTab(urlTab);
   }
   const select = (next: AboutTab) => {
     if (next === tab) return;
