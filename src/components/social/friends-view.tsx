@@ -327,8 +327,12 @@ export function FriendsView({
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
       if (addingNow.current === "choose") setAdding("link");
     }
-    else if (out && !out.ok && out.reason === "tooMany") say(socialCopy.invites.tooMany);
-    else say(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    // A press made in the chooser raises the sheet's own toast, so leaving that screen puts it away like the others.
+    else {
+      const tell = began !== null ? sheetSay : say;
+      if (out && !out.ok && out.reason === "tooMany") tell(socialCopy.invites.tooMany);
+      else tell(socialCopy.invites.createFailed, { label: socialCopy.invites.retry, run: () => void makeLink() });
+    }
   }
 
   async function revoke(link: OpenInvite) {

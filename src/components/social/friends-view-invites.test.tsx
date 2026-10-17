@@ -154,6 +154,17 @@ describe("Add a friend, invites on, answers that land after the reader moved on"
     expect(inv.showInviteQrAction).toHaveBeenCalledTimes(1);
   });
 
+  it("puts card 1's failed Try again away when the reader goes on to path 2", async () => {
+    a.createInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
+    draw({ invites });
+    fireEvent.click(press());
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) })));
+    expect(screen.getByRole("button", { name: socialCopy.invites.retry })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    expect(screen.queryByRole("button", { name: socialCopy.invites.retry })).toBeNull();
+    expect(a.createInviteAction).toHaveBeenCalledTimes(1);
+  });
+
   it("puts an email failure's Try again away on ‹ back, so it cannot send from a form no longer drawn", async () => {
     inv.sendEmailInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
     draw({ invites });
