@@ -49,7 +49,8 @@ describe("the page", () => {
     expect(screen.queryByText("Get more credits")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
     expect(screen.getByText("Purchase history")).toBeTruthy();
-    expect(screen.getByText(/Refunds: email support@the-99.dev/)).toBeTruthy();
+    expect(screen.getByText(/^Refunds: email/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "support@the-99.dev" }).getAttribute("href")).toBe("mailto:support@the-99.dev");
   });
 
   it("P8: a second pack is one more card in the same column under one heading", () => {
@@ -57,7 +58,9 @@ describe("the page", () => {
     const { container } = render(<CreditsView model={model({ offers })} ret={null} />);
     expect(screen.getAllByText("Get more credits")).toHaveLength(1);
     const buys = screen.getAllByRole("button", { name: /^Buy / });
-    expect(buys.map((b) => b.textContent)).toEqual(["Buy 40 credits · $5", "Buy 100 credits · $10"]);
+    expect(buys.map((b) => b.getAttribute("aria-label"))).toEqual(["Buy 40 credits · $5", "Buy 100 credits · $10"]);
+    // The card says the count and the price; the button does not say them again.
+    expect(buys.map((b) => b.textContent)).toEqual(["Buy pack", "Buy pack"]);
     expect(buys[0].closest("section")).toBe(buys[1].closest("section"));
     expect(container.querySelector("#credits-offers + div")?.className).toContain("flex-col");
   });
@@ -69,9 +72,15 @@ describe("the page", () => {
     expect(screen.queryByText(/Checkout closed/)).toBeNull();
   });
 
-  it("R2: an added return marks the Packs cell +40", () => {
-    render(<CreditsView model={model({ allowance: allowance({ pack: 40 }), history: [row] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 40 } }} />);
+  it("R2: an added return marks the Packs cell +40 when it held credits before", () => {
+    render(<CreditsView model={model({ allowance: allowance({ pack: 80 }), history: [row] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 40 } }} />);
     expect(screen.getByText("+40")).toBeTruthy();
+    expect(screen.getByText("40 pack credits added")).toBeTruthy();
+  });
+
+  it("a first purchase draws no +40: the delta would be the whole balance and the band says it", () => {
+    render(<CreditsView model={model({ allowance: allowance({ pack: 40 }), history: [row] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 40 } }} />);
+    expect(screen.queryByText("+40")).toBeNull();
     expect(screen.getByText("40 pack credits added")).toBeTruthy();
   });
 });

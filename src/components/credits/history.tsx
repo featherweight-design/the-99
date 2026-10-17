@@ -37,7 +37,7 @@ export function History({ items, onReceiptFailed }: { items: readonly HistoryIte
           ))}
         </ul>
       )}
-      <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">{c.refunds}</p>
+      <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">{c.refunds.before}<a href={`mailto:${c.refunds.email}`} className="text-[color:var(--accent)] underline">{c.refunds.email}</a>{c.refunds.after}</p>
     </section>
   );
 }

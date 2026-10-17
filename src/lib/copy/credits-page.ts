@@ -34,8 +34,12 @@ export const creditsPageCopy = {
   sub: "1 credit is 1 run of any tool",
   /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
   subLink: creditsCopy.link,
-  refunds:
-    "Refunds: email support@the-99.dev within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
+  /** The refunds line in three parts, so the address between them can be drawn as a mailto link. */
+  refunds: {
+    before: "Refunds: email ",
+    email: "support@the-99.dev",
+    after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
+  },
   bal: {
     total: "credits to spend",
     order: "Spent in this order",
@@ -54,7 +58,10 @@ export const creditsPageCopy = {
     heading: "Get more credits",
     title: (units: number) => `${units} credits`,
     fine: "Pack credits never expire. They’re forfeited if you delete your account.",
-    buy: (units: number, price: string) => `Buy ${units} credits · ${price}`,
+    /** The card already says the count and the price, so the button does not (Hugh, 2026-10-17). */
+    buy: "Buy pack",
+    /** The button's accessible name: with more than one pack on sale, "Buy pack" alone names none of them. */
+    buyAria: (units: number, price: string) => `Buy ${units} credits · ${price}`,
     via: "Checkout on Stripe · US cards",
   },
   /** Why a Buy press did nothing, one line each. Placeholders: not in the handoff's strings file. */

@@ -23,7 +23,8 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
   cells: readonly BalanceCell[];
   freeLimit: number;
   nextAtMs: number | null;
-  /** Credits the return just added to the Packs cell, drawn as `+40` in `--success` (R2). */
+  /** Credits the return just added to the Packs cell, drawn as `+40` in `--success` (R2) once the cell held
+   *  some before: on a first purchase the delta is the whole balance, and the band already says it (Hugh, 2026-10-17). */
   added?: number | null;
 }) {
   const hydrated = useHydrated();
@@ -50,7 +51,7 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
             <span className="flex items-baseline gap-[4px] font-mono text-[24px] font-semibold leading-[1.05] text-[color:var(--fg)] md:text-[30px]">
               {cell.value}
               {cell.key === "free" ? <small className="text-[12px] font-normal leading-[normal] text-[color:var(--fg-faint)]">{c.freeOf(freeLimit)}</small> : null}
-              {cell.key === "pack" && added ? <small className="text-[11px] font-semibold leading-[normal] text-[color:var(--success)]">{c.added(added)}</small> : null}
+              {cell.key === "pack" && added && cell.value > added ? <small className="text-[11px] font-semibold leading-[normal] text-[color:var(--success)]">{c.added(added)}</small> : null}
             </span>
             <span className="min-h-[14.7px] font-mono text-[10.5px] leading-[14.7px] text-[color:var(--fg-muted)]">
               {cell.key === "free"
