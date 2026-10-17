@@ -435,7 +435,9 @@ export function MomentsProvider({
       // Then the window decides again whenever the spent set or the bubble moved: a closed bubble frees the window, and
       // a new spend can free a moment that waits on it (`after`: Mana Balance on Suggested changes). A control already
       // on screen fires no new intersection to wake it.
-      if (added || closed) decideRef.current();
+      // Through the arrival window, as another tab's spend is: one already open is left to run (its callback reads the
+      // new spent set, and a control arriving inside it still takes part in the tie), else a new one opens.
+      if (added || closed) armRef.current();
     },
     [liveSet, close, persist, broadcast],
   );

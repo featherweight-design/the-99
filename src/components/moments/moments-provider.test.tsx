@@ -592,7 +592,7 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     await advance(ARRIVE_MS);
     expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
     act(() => suppressNow!("top-off"));
-    await advance(0);
+    await advance(ARRIVE_MS);
     await advance(0);
     expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
   });
@@ -665,6 +665,26 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     }
   });
 
+  it("leaves an arrival window already open to run, so a control arriving inside it still takes part in the tie", async () => {
+    render(
+      <MomentsProvider live={LIVE} spent={[]}>
+        <Control id="top-off" name="Top off" />
+        <Control id="wishlist" name="Wish" />
+        <Suppress id="lineup" />
+      </MomentsProvider>,
+    );
+    onScreen("Wish");
+    await advance(100);
+    act(() => suppressNow!("lineup"));
+    await advance(0);
+    expect(screen.queryByRole("note")).toBeNull();
+    await advance(100);
+    onScreen("Top off");
+    await advance(ARRIVE_MS - 200);
+    // Top off is first in the registry's order, and it arrived inside the window.
+    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+  });
+
   // Mana Balance waits on Suggested changes (`after`): on screen alone, its window passes and shows nothing.
   const MANA_LIVE: MomentId[] = ["suggested-changes", "mana-balance"];
 
@@ -679,7 +699,7 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     await advance(ARRIVE_MS * 2);
     expect(screen.queryByRole("note")).toBeNull();
     act(() => suppressNow!("suggested-changes"));
-    await advance(0);
+    await advance(ARRIVE_MS);
     await advance(0);
     expect(screen.getByRole("note", { name: "Mana, a tip" })).toBeTruthy();
   });
