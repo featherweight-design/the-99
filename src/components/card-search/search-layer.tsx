@@ -7,8 +7,8 @@
 // The provider is the search's own (resolution 2): a sibling of any page's provider, with no deck and no sheet
 // under it, so a card opened from search is a first layer and keeps Find a deck, on the deck page too.
 
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
@@ -16,6 +16,9 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { CardDetailProvider, useCardDetail, type SiblingCard } from "../cards/card-detail-provider";
 import type { SearchPhase } from "./card-search";
 import { SearchRow } from "./search-row";
+
+/** Collection › Wishlist: the one route whose tiles a wishlist write moves. */
+const WISHLIST_PATH = "/collection/wishlist";
 
 /** The read's limit (`SEARCH_LIMIT`, which lives beside the database and is held equal by the test). */
 export const RESULTS_LIMIT = 20;
@@ -45,6 +48,8 @@ export type SearchLayerProps = {
   onCardDismissed: () => void;
   /** A card the search opened never came up (its read failed). */
   onCardFailed: () => void;
+  /** The card the search opened is drawn. */
+  onCardShown: () => void;
   /** The recent cards' signals could not be read. */
   recentsFailed: boolean;
   /** The sheet is up; nothing is announced while it is not. */
@@ -56,16 +61,31 @@ export function SearchLayer(props: SearchLayerProps) {
   // A fresh provider for each route: a navigation drops a read still in flight and any card or sheet stacked over
   // the search's card, all of which would otherwise outlive the page that opened them (the shell outlives every page).
   const pathname = usePathname();
+  const router = useRouter();
+  // A wishlist write made in a card opened from here: the tiles behind are the server's, and the write's own deferred
+  // revalidation never reaches the page that is showing, so on the Wishlist tab the page is asked for again (as that
+  // tab's own provider does).
+  const onWishlistWrite = useCallback(() => {
+    if (pathname === WISHLIST_PATH) router.refresh();
+  }, [pathname, router]);
   return (
-    <CardDetailProvider key={pathname} onDismiss={props.onCardDismissed}>
-      <Bridge openCardRef={props.openCardRef} onCardFailed={props.onCardFailed} />
+    <CardDetailProvider key={pathname} onDismiss={props.onCardDismissed} onWishlistWrite={onWishlistWrite}>
+      <Bridge openCardRef={props.openCardRef} onCardFailed={props.onCardFailed} onCardShown={props.onCardShown} />
       {props.bodyEl ? createPortal(<SearchBody {...props} />, props.bodyEl) : null}
     </CardDetailProvider>
   );
 }
 
 /** Hands the provider's `open` to the shell's half, and closes the card on a navigation, never as a dismissal. */
-function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<OpenCard | null>; onCardFailed: () => void }) {
+function Bridge({
+  openCardRef,
+  onCardFailed,
+  onCardShown,
+}: {
+  openCardRef: MutableRefObject<OpenCard | null>;
+  onCardFailed: () => void;
+  onCardShown: () => void;
+}) {
   const { open, pendingOracleId, openOracleId } = useCardDetail();
   // The card asked for, and whether its read was seen in flight: a read that ends with no card drawn failed, and the
   // provider says so only in its own live region, with no dialog and no dismissal to bring the search back.
@@ -82,13 +102,17 @@ function Bridge({ openCardRef, onCardFailed }: { openCardRef: MutableRefObject<O
   useEffect(() => {
     const a = asked.current;
     if (!a) return;
-    if (openOracleId === a.id) asked.current = null;
-    else if (pendingOracleId === a.id) a.pending = true;
+    // The card's data arrives before its dialog does (the modal's code may still be loading, and the provider keeps the
+    // card pending until it is drawn), so the veil lifts only once nothing is pending for it.
+    if (openOracleId === a.id && pendingOracleId === null) {
+      asked.current = null;
+      onCardShown();
+    } else if (pendingOracleId === a.id) a.pending = true;
     else if (a.pending && pendingOracleId === null) {
       asked.current = null;
       onCardFailed();
     }
-  }, [pendingOracleId, openOracleId, onCardFailed]);
+  }, [pendingOracleId, openOracleId, onCardFailed, onCardShown]);
   return null;
 }
 

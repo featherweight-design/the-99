@@ -41,7 +41,7 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
+  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
@@ -80,6 +80,8 @@ function DesktopFrame() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isSearchShortcut(e, mac)) return;
+      // A picked card is on its way up: nothing opens under the veil, and the card's dismissal brings the search back.
+      if (veiled) return;
       // Also while open: Tab can leave this non-modal frame into the account menu or a page dialog.
       if (dialogIsUp(document, frameRef.current)) return;
       e.preventDefault();
@@ -94,7 +96,7 @@ function DesktopFrame() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mac, isOpen, openSearch, warmSearch, inputRef]);
+  }, [mac, isOpen, veiled, openSearch, warmSearch, inputRef]);
 
   // The foot line is D4's alone: results are up (D2, D2n and DD2 draw none).
   const showFoot = searching && list.length > 0;
@@ -108,7 +110,8 @@ function DesktopFrame() {
         // A dialog only while it is up: a closed one still matches `[role="dialog"]`, which the swap receipt waits out.
         role={isOpen ? "dialog" : undefined}
         aria-labelledby="card-search-heading-desktop"
-        hidden={!isOpen}
+        hidden={!isOpen && !veiled}
+        inert={!isOpen && veiled}
         // Focusable like the phone frame: the shared lowerKeyboard() and a card dismissal put focus here.
         tabIndex={-1}
         data-card-search-sheet=""

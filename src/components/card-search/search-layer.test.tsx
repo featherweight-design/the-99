@@ -5,7 +5,7 @@ import type { CardSearchRow } from "../../lib/card-search/search";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 const { SearchLayer } = await import("./search-layer");
 type Props = React.ComponentProps<typeof SearchLayer>;
 
@@ -17,7 +17,8 @@ function draw(over: Partial<Props>) {
   const props: Props = {
     bodyEl: host, query: "sol", searching: true, phase: "results", rows: [row], rowsFor: "sol", recentRows: [],
     recentsHeld: false, online: true, active: -1, returned: null, listboxId: "l", onPick: vi.fn(), onClear: vi.fn(),
-    onRetry: vi.fn(), onAnnounce: vi.fn(), onCardDismissed: vi.fn(), onCardFailed: vi.fn(), recentsFailed: false, open: true, openCardRef: { current: null },
+    onRetry: vi.fn(), onAnnounce: vi.fn(), onCardDismissed: vi.fn(), onCardFailed: vi.fn(),
+    onCardShown: vi.fn(), recentsFailed: false, open: true, openCardRef: { current: null },
     ...over,
   };
   render(<SearchLayer {...props} />);

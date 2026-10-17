@@ -6,7 +6,7 @@ vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: async () => [],
   cardSignalsAction: async () => ({}),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 // md and up: the desktop's frame, not the phone's.
 vi.mock("../ui/use-min-width", () => ({ useMinWidth: () => true }));
@@ -156,6 +156,18 @@ describe("the search on the desktop", () => {
     expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-0");
     await act(async () => void fireEvent.keyDown(combobox(), { key: "ArrowDown" }));
     expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-1");
+  });
+
+  it("does not open under the veil while a picked card is on its way up", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("Win32");
+    await press({ ctrlKey: true });
+    await act(async () => {});
+    await act(async () => void fireEvent.keyDown(combobox(), { key: "Enter" }));
+    expect(document.querySelector("[data-card-search-veil]")).not.toBeNull();
+    expect(frame()).toBeNull();
+    await press({ ctrlKey: true });
+    expect(frame()).toBeNull();
   });
 
   it("D2: nothing is active once a query is typed", async () => {

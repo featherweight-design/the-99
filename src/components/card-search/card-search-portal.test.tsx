@@ -9,7 +9,7 @@ vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: vi.fn(async () => [row]),
   cardSignalsAction: vi.fn(async () => ({})),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ refresh: () => {} }) }));
 
 const { CardSearchRoot, CardSearchIcon } = await import("./card-search");
 
@@ -56,5 +56,26 @@ describe("a row focus came back to keeps the list's keys", () => {
     option.focus();
     await act(async () => fireEvent.keyDown(option, { key: "Enter" }));
     expect(screen.queryByRole("dialog", { name: "Search all cards" })).toBeNull();
+  });
+
+  it("keeps the frame drawn, inert and no dialog, while the picked card is on its way up", async () => {
+    const option = await openWithResults();
+    option.focus();
+    await act(async () => fireEvent.keyDown(option, { key: "Enter" }));
+    const sheet = document.querySelector<HTMLElement>("[data-card-search-sheet]")!;
+    expect(sheet.hidden).toBe(false);
+    expect(sheet.hasAttribute("inert")).toBe(true);
+    expect(sheet.getAttribute("role")).toBeNull();
+    // The inert frame is out of hit testing, so a plain wrapper keeps the page from taking a press meanwhile, and the
+    // phone's scroll lock stays on; neither is a dialog.
+    const veil = document.querySelector<HTMLElement>("[data-card-search-veil]");
+    expect(veil).not.toBeNull();
+    expect(veil!.getAttribute("role")).toBeNull();
+    expect(document.body.style.overflow).toBe("hidden");
+    // Focus is held on the veil, and Tab goes nowhere while it stands.
+    expect(document.activeElement).toBe(veil);
+    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    await act(async () => void veil!.dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(true);
   });
 });

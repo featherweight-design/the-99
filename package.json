@@ -60,6 +60,7 @@
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:card-search": "tsx scripts/probe-card-search.mts",
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
+    "probe:card-search-followups": "node scripts/probe-card-search-followups.mjs",
     "probe:card-scan-match": "tsx scripts/probe-card-scan-match.mts",
     "probe:upcoming-precons": "tsx scripts/probe-upcoming-precons.mts",
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",
