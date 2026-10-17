@@ -167,4 +167,16 @@ describe("JoinFlow", () => {
     await screen.findByText(joinCopy.codeBody("new@x.dev"));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(joinCopy.codeAria)));
   });
+  it("keeps Continue disabled after a successful hand-over, while the page navigates", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    m.hand.mockResolvedValue({ ok: true, url: "https://clerk.example/ticket" });
+    start({ kind: "proven", sender, email: "a@x.dev" });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.toSignUp }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://clerk.example/ticket"));
+    const button = screen.getByRole("button", { name: joinCopy.continuing }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(m.hand).toHaveBeenCalledTimes(1);
+  });
 });

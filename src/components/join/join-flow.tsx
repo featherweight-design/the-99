@@ -39,6 +39,8 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
   const [code, setCode] = useState("");
   const [line, setLine] = useState<string | null>(start.kind === "code" && start.expired ? copy.codeExpired : null);
   const [busy, setBusy] = useState(false);
+  // Set once the hand-over succeeded: the page is leaving, and a second press would revoke the ticket it is using.
+  const [leaving, setLeaving] = useState(false);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const [up, setUp] = useState(false);
   const [waitUntil, setWaitUntil] = useState(() => Date.now() + (start.kind === "code" ? start.resendWaitMs : 0));
@@ -147,7 +149,10 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
 
   function toSignUp() {
     void run(() => handOverAction(token), (r) => {
-      if (r.ok) window.location.assign(r.url);
+      if (r.ok) {
+        setLeaving(true);
+        window.location.assign(r.url);
+      }
       else if (r.reason === "account") setStep("account");
       else if (r.reason === "ended") end();
       else say(() => toSignUp());
@@ -239,7 +244,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         title={copy.okTitle}
         body={copy.okBody(name)}
         landing="go"
-        actions={<button type="button" disabled={busy} className={PRIMARY_BUTTON} onClick={toSignUp}>{busy ? copy.continuing : copy.toSignUp}</button>}
+        actions={<button type="button" disabled={busy || leaving} className={PRIMARY_BUTTON} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button>}
       />
     );
   } else if (step === "account" && sender) {

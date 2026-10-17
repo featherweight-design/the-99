@@ -201,11 +201,9 @@ export async function confirmCode(
     switch (decision.kind) {
       case "proven":
         // Used once: the code is cleared, so the same six digits prove nothing a second time.
-        // The stamp and the code's clearing happen once: a replay of an already-proven claim writes nothing.
-        if (row.provenAt === null) {
-          await tx.update(inviteReservations).set({ provenAt: now, codeHmac: null, codeExpiresAt: null })
-            .where(eq(inviteReservations.id, row.id));
-        }
+        // The proof keeps its first timestamp; a code installed by a same-address resend after it is cleared too.
+        await tx.update(inviteReservations).set({ provenAt: row.provenAt ?? now, codeHmac: null, codeExpiresAt: null })
+          .where(eq(inviteReservations.id, row.id));
         return { ok: true };
       case "wrong":
         await tx.update(inviteReservations).set({ codeTries: row.codeTries + 1 }).where(eq(inviteReservations.id, row.id));
