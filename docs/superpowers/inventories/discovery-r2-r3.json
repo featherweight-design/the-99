@@ -1,0 +1,218 @@
+{
+  "feature": "Discovery R2 and R3 — the landing on a deck, the doors, and (as each mounts) Tools, Reference, the ?, the tour",
+  "clearAbout": true,
+  "note": "Plan `2026-10-16-discovery-r2-r3.md`. `rows` are what is MERGED and drawn on a route today (R2·2b #1975, R3·4 #1984); `unmounted` lists every surface the plan claims that no route renders yet, each with the PR that mounts it and the row it adds, so a close-out cannot pass while one has no photograph. Move an entry from `unmounted` into `rows` in the PR that mounts it.\n\nPRECONDITIONS. Env: `DISCOVERY_DECK` is a deck id of the signed-in account with a legal 100-card list (the landing rows expand it). Switches on for that account: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, SWAP_TOOLS_ENABLED, MOMENTS_ENABLED, SOCIAL_GAMES_ENABLED (with SOCIAL_FRIENDS_ENABLED), HELP_ME_CHOOSE_ENABLED. The two `door-*-zero` rows need an account holding NO decks; every other row needs one that does, so run those two as their own pass on a deckless account (`--only` is not a runner option: split the inventory or use a second account). `door-commanders-*` needs the guided banner's state (a collection read, no decks). A landing whose target is not drawn on that deck strips `?tool=` with no halo, so its `wait` times out: that is the honest failure, not a skip. The four landings the fixture decides (Top off, Matchups, Cheaper stand-ins, A friend has a spare) are in `needsFixture` for that reason: move one into `rows` with a deck that draws it.\n\nNothing here writes except the About gate `clearAbout` marks seen.\n\nNo `shares` block: `check:shared` requires every row to share one component and these rows are different surfaces. The one real share, the door group, is `DecksZeroActions` (`decks-zero.tsx`), drawn by `/decks` through `DecksZero` and by Home through `HomeDecksZero` (both import it; the `/commanders` banner draws its own line).",
+  "rows": [
+    {
+      "id": "landing-proposed-cuts",
+      "label": "/decks/[id]?tool=proposed-cuts — Try it's landing: Proposed cuts's halo on its target (R2·2b)",
+      "view": "src/components/decks/landing-keyed.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DISCOVERY_DECK}?tool=proposed-cuts",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-suggested-changes",
+      "label": "/decks/[id]?tool=suggested-changes — Try it's landing: Suggested changes's halo on its target (R2·2b)",
+      "view": "src/components/decks/landing-keyed.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DISCOVERY_DECK}?tool=suggested-changes",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-mana-balance",
+      "label": "/decks/[id]?tool=mana-balance — Try it's landing: Mana Balance's halo on its target (R2·2b)",
+      "view": "src/components/decks/landing-keyed.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DISCOVERY_DECK}?tool=mana-balance",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "door-decks-zero",
+      "label": "/decks with no decks — Help me choose's door in the actions group (R3·4 E1)",
+      "view": "src/components/decks/decks-zero.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-testid='decks-zero-choose']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "door-home-zero",
+      "label": "/ with no decks — the same door through HomeDecksZero (R3·4 E1)",
+      "view": "src/components/home/home-decks-zero.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-testid='decks-zero-choose']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "door-commanders-phone",
+      "label": "/commanders — the guided banner's line ends in Help me choose, 390 (R3·4 E2)",
+      "view": "src/components/commanders/guided-banner.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "[data-testid='guided-choose-phone']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "door-commanders-desktop",
+      "label": "/commanders — the same door in the banner's wide form, 1300 (R3·4 E2)",
+      "view": "src/components/commanders/guided-banner.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "[data-testid='guided-choose-desk']",
+          "settle": 600
+        }
+      ]
+    }
+  ],
+  "needsFixture": [
+    {
+      "id": "landing-top-off",
+      "tool": "top-off",
+      "goto": "/decks/${DISCOVERY_DECK}?tool=top-off",
+      "wait": "[data-target-halo]",
+      "why": "the target draws only on a deck in the right state (Top off: a deck short of 100 with the strip drawn; Matchups: a deck with the Games tab's split), and the audit deck tried here drew neither; `pnpm probe:tool-landing` tries each of the account's decks until one does"
+    },
+    {
+      "id": "landing-matchups",
+      "tool": "matchups",
+      "goto": "/decks/${DISCOVERY_DECK}?tool=matchups",
+      "wait": "[data-target-halo]",
+      "why": "the target draws only on a deck in the right state (Top off: a deck short of 100 with the strip drawn; Matchups: a deck with the Games tab's split), and the audit deck tried here drew neither; `pnpm probe:tool-landing` tries each of the account's decks until one does"
+    },
+    {
+      "id": "landing-stand-ins",
+      "tool": "stand-ins",
+      "goto": "/decks/${DISCOVERY_DECK}?tool=stand-ins",
+      "wait": "[data-testid='other-ways']:has([data-testid='standin-glyph'])",
+      "why": "drawn only on a deck with a shopping list that holds a stand-in"
+    },
+    {
+      "id": "landing-friend-spares",
+      "tool": "friend-spares",
+      "goto": "/decks/${DISCOVERY_DECK}?tool=friend-spares",
+      "wait": "[data-testid='other-ways']:has([data-testid='spare-glyph'])",
+      "why": "drawn only when a friend's spare covers a card the deck is short"
+    }
+  ],
+  "unmounted": [
+    {
+      "id": "tools-tab",
+      "mountedBy": "R2·5 (unmounted) then R2·6b (the route)",
+      "goto": "/about",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "Tools, the five groups at 1280 and the phone's sideways rows; ToolCard in its five states; Written for you"
+    },
+    {
+      "id": "reference-tab",
+      "mountedBy": "R2·6a (unmounted) then R2·6b (the route)",
+      "goto": "/about?tab=reference",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "entries by screen with the screens index; an opened entry with its frame and halo box; what's new; text search; How it works last"
+    },
+    {
+      "id": "about-banner-target",
+      "mountedBy": "R2·6b",
+      "goto": "/",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "the banner's new target (E14)"
+    },
+    {
+      "id": "help-panel",
+      "mountedBy": "R2·8",
+      "goto": "any screen with HELP_PANEL_ENABLED",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "the ? in the rail and header; the panel (1300) and the sheet (390); Elsewhere chips; Show me; search; the none state"
+    },
+    {
+      "id": "help-over-card-details",
+      "mountedBy": "R2·9",
+      "goto": "a card's details at md and up",
+      "widths": [
+        "desktop"
+      ],
+      "shows": "the ? over card details: inert exemption, layering, Tab stop, focus hand-off, Escape"
+    },
+    {
+      "id": "tour",
+      "mountedBy": "R3·1b",
+      "goto": "/ on a first-run account (FIRST_RUN_TOUR_ENABLED)",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "steps 1 to 6 on first-run Home, the overlay and TourCard, step 6's fallback, the theme picker in the tour"
+    },
+    {
+      "id": "tour-again",
+      "mountedBy": "R3·2",
+      "goto": "/?tour=1",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "the replay on an account with data; the Take the tour presses at /about's head and in the account menu"
+    },
+    {
+      "id": "friends-on-checklist",
+      "mountedBy": "R3·3",
+      "goto": "/ on a first-run account",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "the Friends row last, under step 3 and unnumbered (addendum-friends-home README §3, line 110); step 6 keeps its one light per Design's G1"
+    },
+    {
+      "id": "nudges",
+      "mountedBy": "R3·5",
+      "goto": "the screens N1, N2, N2b, N3 draw on",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "each nudge on its own switch; N3 at 390 with its no-wrap test"
+    }
+  ]
+}
