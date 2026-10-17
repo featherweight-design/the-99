@@ -8,7 +8,7 @@ import type { Shot } from "../../../lib/about/shots";
 export function EntryFrame({ shot, alt }: { shot: Shot; alt: string }) {
   const w = frameWindow(shot);
   return (
-    <div className="relative aspect-[3/2] w-full flex-none overflow-hidden rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] md:w-[330px]">
+    <div className="relative aspect-[3/2] w-full flex-none overflow-hidden rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] lg:w-[330px] lg:self-start">
       {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size capture served as-is from public/ */}
       <img
         src={shot.src}

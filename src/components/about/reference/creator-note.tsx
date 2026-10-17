@@ -42,7 +42,8 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
             ✕
           </button>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-y-auto px-[16px] pb-[70px] pt-[4px] text-[14.5px] leading-[1.65] text-[color:var(--fg-body)] md:px-[28px] md:text-[15px]">
+        {/* In the dialog's Tab order, so a keyboard reader can reach the letter and scroll it. */}
+        <div tabIndex={0} className="relative min-h-0 flex-1 overflow-y-auto px-[16px] pb-[70px] pt-[4px] text-[14.5px] leading-[1.65] text-[color:var(--fg-body)] md:px-[28px] md:text-[15px]">
           {body.map((p, i) => (
             <p key={i} className="m-0 mb-[14px]">
               {p}

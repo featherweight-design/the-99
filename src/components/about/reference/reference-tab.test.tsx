@@ -308,6 +308,14 @@ describe("CreatorNote", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("puts the scrolling letter in the dialog's Tab order", () => {
+    render(<CreatorNote />);
+    fireEvent.click(screen.getByRole("link", { name: new RegExp(creatorNoteCopy.title) }));
+    const dialog = screen.getByRole("dialog", { name: creatorNoteCopy.title });
+    const letter = [...dialog.querySelectorAll("p")].find((p) => p.textContent === aboutCopy.pageIntro.split("\n\n")[0])!.parentElement!;
+    expect(letter.getAttribute("tabindex")).toBe("0");
+  });
+
   it("closes from its ✕ and from the scrim", () => {
     render(<CreatorNote />);
     const row = screen.getByRole("link", { name: new RegExp(creatorNoteCopy.title) });

@@ -35,7 +35,7 @@ function around(before: string, after: string): [string, string] {
 
 function OpenEntry({ entry }: { entry: ReferenceEntry }) {
   return (
-    <div data-entry-open={entry.id} className="flex flex-col gap-[18px] pb-[18px] pt-[4px] md:flex-row">
+    <div data-entry-open={entry.id} className="flex flex-col gap-[18px] pb-[18px] pt-[4px] lg:flex-row">
       {entry.shot && <EntryFrame shot={entry.shot} alt={referenceCopy.frameAlt(entry.title, entry.screen)} />}
       <div className="flex min-w-0 flex-col gap-[10px]">
         <EntryCaption caption={entry.caption} className="!text-[14px] !leading-[1.6]" />
