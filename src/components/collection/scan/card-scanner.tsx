@@ -58,6 +58,8 @@ export function CardScanner({
   const readFrame = useFrameReader(outline);
   // The session's timing row: kept from open to close, and posted once the sheet's list is drawn behind it.
   const [timer] = useState(() => scanTimer(layout));
+  // One mount follows the 768px line (the sheet keeps it across a turn), so a session can span both layouts.
+  useEffect(() => timer.relayout(layout), [timer, layout]);
   const reviewAt = useRef<number | null>(null);
   const post = deps?.fetch ?? (typeof fetch === "function" ? fetch : null);
   const postRef = useRef(post);
@@ -105,6 +107,15 @@ export function CardScanner({
     document.addEventListener("focusin", track);
     return () => document.removeEventListener("focusin", track);
   }, []);
+  // Turned onto a phone, the scanner covers the sheet and every control beneath it goes inert: focus held there
+  // (a desktop sheet control beside the scanner) would be lost, so it moves to the ✕.
+  const drawnAs = useRef(layout);
+  useEffect(() => {
+    const turned = drawnAs.current !== layout;
+    drawnAs.current = layout;
+    if (!turned || layout !== "phone" || focusInside.current) return;
+    document.querySelector<HTMLElement>("[data-testid=scanner] [data-scan-close]")?.focus();
+  }, [layout]);
   const opened = useRef(false);
   useEffect(() => {
     const active = document.activeElement;

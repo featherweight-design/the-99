@@ -19,7 +19,8 @@ export const MAX_SAMPLES = 40;
 export const MAX_MS = 60_000;
 const MAX_FRAMES = 100_000;
 
-export const LAYOUTS = ["phone", "desk"] as const;
+/** `mixed`: the scanner was turned across the 768px line while open, so its figures span both layouts. */
+export const LAYOUTS = ["phone", "desk", "mixed"] as const;
 
 export type ScanTimingRow = {
   layout: (typeof LAYOUTS)[number];
@@ -73,7 +74,8 @@ export function median(v: number[]): number | null {
 export const READ_BUCKET_MS = 10;
 const READ_BUCKETS = 500;
 
-export function scanTimer(layout: ScanTimingRow["layout"]) {
+export function scanTimer(opened: "phone" | "desk") {
+  let layout: ScanTimingRow["layout"] = opened;
   const reads = new Array<number>(READ_BUCKETS).fill(0);
   const guess: number[] = [];
   const add: number[] = [];
@@ -115,6 +117,10 @@ export function scanTimer(layout: ScanTimingRow["layout"]) {
     },
     modePressed(at: number) {
       modeAt = at;
+    },
+    /** The scanner is now drawn in `now`'s layout; a session that has been drawn in both is `mixed`. */
+    relayout(now: "phone" | "desk") {
+      if (now !== layout) layout = "mixed";
     },
     reviewed(ms: number) {
       review = Math.min(MAX_MS, Math.max(0, Math.round(ms)));

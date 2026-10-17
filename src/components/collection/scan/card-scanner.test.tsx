@@ -40,6 +40,22 @@ describe("CardScanner", () => {
     scan.remove();
   });
 
+  it("takes focus back from a sheet control when it is turned onto a phone, where that control goes inert", () => {
+    const deps = { getUserMedia: () => new Promise<MediaStream>(() => {}), storage: null };
+    const el = (layout: "phone" | "desk") => (
+      <CardScanner layout={layout} listed={new Map()} deps={deps} onAdd={vi.fn(async () => true)} onClose={vi.fn()} onNoneOfThese={vi.fn()} />
+    );
+    const { rerender } = render(el("desk"));
+    const save = document.createElement("button");
+    document.body.append(save);
+    save.focus();
+    rerender(el("desk"));
+    expect(document.activeElement).toBe(save);
+    rerender(el("phone"));
+    expect(document.activeElement?.hasAttribute("data-scan-close")).toBe(true);
+    save.remove();
+  });
+
   it("leaves focus alone once it went outside the scanner, even onto nothing focusable", () => {
     const deps = { getUserMedia: () => new Promise<MediaStream>(() => {}), storage: null };
     // A new list each time, as the sheet passes one, so the scanner renders again.
