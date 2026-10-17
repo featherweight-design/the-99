@@ -165,6 +165,23 @@ describe("serverScanner's early lookup", () => {
     await at(card(0), 1500);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+  it("counts a break in the card's run while the early answer is still on its way", async () => {
+    let clock = 0;
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise((r) => (land = r))).mockImplementation(async () => answer(0.05));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    const at = async (f: ScanFrame, t: number) => { clock = t; s.frame(f, t); await flush(); };
+    for (const t of [0, 150, 300]) await at(card(0), t);
+    await at(none, 1400);
+    land(answer(0.09));
+    await flush();
+    await at(card(0), 1600);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    for (const t of [1750, 1900, 2050, 2200]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(card(0), 2300);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it("does not ask again once the card is gone", async () => {
     const fetch = vi.fn(async () => answer(0.01));
     const { states } = await play([...hold(card(0), 4), ...hold(none, 20)], fetch);

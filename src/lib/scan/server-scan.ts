@@ -41,9 +41,11 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   let scan = startStableScan(deps.now());
   let inFlight: AbortController | null = null;
   let state: ServerState = { kind: "idle" };
-  // An early answer that was not confident: the card is asked about again once it has held, UNBROKEN, for the full
-  // dwell. `since` is when its current unbroken run began, null while a frame breaks it (an empty frame, another card).
-  let confirm: { since: number | null } | null = null;
+  // The card's run from the moment its early lookup is asked: if that answer is not confident, the card is asked about
+  // again once it has held, UNBROKEN, for the full dwell. `since` is when its current unbroken run began, null while a
+  // frame breaks it (an empty frame, another card), counted while the early answer is still on its way too; `asked` is
+  // false until that answer has come back not confident.
+  let confirm: { since: number | null; asked: boolean } | null = null;
   const set = (s: ServerState) => {
     state = s;
     onState(s);
@@ -53,7 +55,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     inFlight = null;
     confirm = null;
   };
-  const ask = (embedding: Float32Array, origin: number, early: boolean, runStart: number) => {
+  const ask = (embedding: Float32Array, origin: number, early: boolean) => {
     const mine = new AbortController();
     inFlight = mine;
     const t0 = deps.now();
@@ -66,13 +68,14 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       if (inFlight !== mine) return;
       inFlight = null;
       const end = deps.now();
-      if (r.kind === "match" && early && r.margin !== null && r.margin < CONFIDENT_MARGIN) {
-        // Not sure enough yet: the screen keeps looking, and the card is asked about again once it has held the full
-        // dwell from the start of its run.
-        confirm = { since: runStart };
+      if (r.kind === "match" && early && confirm && r.margin !== null && r.margin < CONFIDENT_MARGIN) {
+        // Not sure enough yet: the screen keeps looking, and the card is asked about again once its run has held the
+        // full dwell.
+        confirm.asked = true;
         set({ kind: "looking" });
         return;
       }
+      confirm = null;
       if (r.kind === "match") set({ kind: "match", result: r, ms: Math.round(end - t0), totalMs: Math.round(end - origin) });
       else if (r.kind === "refused") set({ kind: "refused", reason: r.reason });
       else set({ kind: "failed" });
@@ -91,14 +94,15 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
         set({ kind: "idle" });
       } else if (out.event?.kind === "lookup") {
         forget();
-        ask(out.event.embedding, origin, true, runStart);
+        confirm = { since: runStart, asked: false };
+        ask(out.event.embedding, origin, true);
       } else if (confirm !== null) {
         if (f.kind !== "card" || !scan.value || !sameCard(scan.value, f)) confirm.since = null;
         else if (confirm.since === null) confirm.since = now;
-        else if (now - confirm.since >= DWELL_MS) {
+        else if (confirm.asked && now - confirm.since >= DWELL_MS) {
           // The card has held the full dwell: this frame's own reading is asked about, and its answer is shown.
           confirm = null;
-          ask(f.embedding, origin, false, now);
+          ask(f.embedding, origin, false);
         }
       }
       // A match answers for the card that settled, as the tracker still holds it (it follows the card's own slow
