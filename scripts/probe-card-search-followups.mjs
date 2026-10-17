@@ -49,7 +49,8 @@ async function signIn(page) {
 }
 
 const sheet = (page) => page.getByRole("dialog", { name: "Search all cards" });
-const card = (page) => page.locator('[role="dialog"]').filter({ hasText: /\d+ of \d+/ });
+// By the sheet it holds: the position counter ("2 of 9") is absent when the results are one card.
+const card = (page) => page.locator('[role="dialog"]').filter({ has: page.getByTestId("card-sheet") });
 // Card details fold in rungs on the phone ("All details"), so leaving it is Escape until the search is back.
 async function backToSearch(page) {
   for (let i = 0; i < 4 && !(await sheet(page).isVisible()); i += 1) {
