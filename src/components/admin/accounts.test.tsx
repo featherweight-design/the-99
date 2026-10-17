@@ -23,8 +23,9 @@ const { AdminHead } = await import("./admin-head");
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
-  { id: "user_2hugh", name: "Hugh Hartigan", clerkName: "Hugh Hartigan", email: "hugh@example.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10" },
-  { id: "user_9mara", name: "Mara Quinn", clerkName: "Mara Quinn", email: "mara@example.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420" },
+  { id: "user_2hugh", name: "Hugh Hartigan", clerkName: "Hugh Hartigan", email: "hugh@example.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
+  { id: "user_9mara", name: "Mara Quinn", clerkName: "Mara Quinn", email: "mara@example.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh Hartigan", joinedAt: new Date(0) } } },
+  { id: "user_4theo", name: "Theo", clerkName: "Theo", email: null, initials: "T", group: null, credits: "5 of 5 left", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
 ];
 
 const PAGE: AccountPage = {
@@ -38,6 +39,7 @@ const PAGE: AccountPage = {
     { key: "spent", label: "Spent in October", figure: "$1.420", sub: null },
     { key: "presses", label: "Runs", figure: "34", sub: null },
     { key: "hub", label: "Tuning hub", figure: "Drawn", sub: "2 of its tools on" },
+    { key: "invites", label: "Invites", figure: "2", sub: "0 waiting · 0 spent" },
   ],
   group: { id: F, name: "friends" },
   groups: [{ id: F, name: "friends" }, { id: T, name: "testers" }],
@@ -53,6 +55,7 @@ const PAGE: AccountPage = {
   },
   features: [{ feature: "synopsis", name: "Overview", presses: 12, spent: "$0.640" }],
   featureTotal: { presses: 12, spent: "$0.640" },
+  invites: { left: 2, waiting: 0, spent: 0, invitedBy: { kind: "founder" }, invited: [], waitingLines: [], history: [], historyCut: false },
   month: "October",
   clerk: "ok",
   allFeatures: null,
@@ -67,9 +70,9 @@ beforeEach(() => {
 describe("AccountsList (A1 to A3)", () => {
   it("draws a row per account linking to its page, with group, credits and spend, under the tab's sub", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
-    expect(screen.getByText("2 accounts on production. Names and emails from Clerk; the app stores only the id.")).toBeInTheDocument();
+    expect(screen.getByText("3 accounts on production. Names and emails from Clerk; the app stores only the id.")).toBeInTheDocument();
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("href", "/admin/accounts/user_9mara");
     expect(rows[1]).toHaveTextContent("mara@example.com");
     expect(rows[1]).toHaveTextContent("user_9mara");
@@ -80,6 +83,24 @@ describe("AccountsList (A1 to A3)", () => {
     expect(rows[0]).toHaveTextContent("No group · 7 of 10 left");
     expect(rows[1]).toHaveTextContent("friends · 3 of 5 left");
     expect(within(rows[0]).getByTestId("account-spend-phone")).toHaveTextContent("$2.10");
+  });
+
+  it("draws Invites (with what is waiting) and Invited by (M1), and the same on the phone's meta line", () => {
+    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
+    const [hugh, mara, theo] = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
+    // The column cells, each with its sr-only label; a 0 with nothing waiting and a founder are faint.
+    expect(within(hugh).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 0$/);
+    expect(within(hugh).getByTestId("account-invites-cell").className).toContain("--fg-faint");
+    expect(within(hugh).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by founder$/);
+    expect(within(hugh).getByTestId("account-invited-by").className).toContain("--fg-faint");
+    expect(within(mara).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 2 · 1 waiting$/);
+    expect(within(mara).getByTestId("account-invites-cell").className).not.toContain("--fg-faint");
+    expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh Hartigan$/);
+    expect(within(theo).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by deleted account$/);
+    expect(hugh).toHaveTextContent("No group · 7 of 10 left · 0 invites · founder");
+    expect(mara).toHaveTextContent("friends · 3 of 5 left · 2 · 1 waiting · by Hugh Hartigan");
+    expect(theo).toHaveTextContent("No group · 5 of 5 left · 3 invites · by deleted account");
+    expect(screen.getAllByText("Invited by", { selector: "[aria-hidden] span" })).toHaveLength(1);
   });
 
   it("searches by name, email or id prefix through the shared search field, and says when nothing matches", () => {
@@ -93,7 +114,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   it("matches an account with no Clerk name by its id's start only, not the id it draws in the name's place", () => {
-    const bare: AccountRow = { id: "user_7bare", name: "user_7bare", clerkName: null, email: null, initials: "U", group: null, credits: "", spend: "$0" };
+    const bare: AccountRow = { id: "user_7bare", name: "user_7bare", clerkName: null, email: null, initials: "U", group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
     fireEvent.change(search, { target: { value: "7bare" } });
@@ -140,6 +161,17 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(credits).toHaveTextContent("0 of 5 left");
     expect(credits).toHaveTextContent("reset at 9:05 PM UTC");
     expect(within(screen.getByTestId("account-group")).getByRole("link", { name: "friends" })).toHaveAttribute("href", `/admin/groups/${F}`);
+  });
+
+  it("draws the Invites tile fifth and the Invites section after the tiles, before the group (M2)", () => {
+    render(<AccountPageView page={PAGE} />);
+    const tiles = screen.getByTestId("account-tiles");
+    expect([...tiles.querySelectorAll("[data-tile]")].map((t) => t.getAttribute("data-tile"))).toEqual(["credits", "spent", "presses", "hub", "invites"]);
+    expect(tiles.className).toContain("xl:grid-cols-5");
+    const section = screen.getByTestId("account-invites");
+    expect(within(section).getByRole("textbox", { name: /^Invites left/ })).toHaveValue("2");
+    expect(tiles.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(section.compareDocumentPosition(screen.getByTestId("account-group")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("groups the switches, inking only the kill in danger, and lists the environment's on and off", () => {

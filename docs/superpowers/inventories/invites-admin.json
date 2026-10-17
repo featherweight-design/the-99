@@ -1,0 +1,45 @@
+{
+  "feature": "invites-admin",
+  "note": "Plan `2026-10-16-invites.md`, PR 6 (Admin M1 to M4). Kept apart from `invites.json` because that inventory's `shares` block holds every row to the player's count line, which no admin surface draws.\n\nThe /admin rows (PR 6a, Admin M1 to M3) need the signed-in account to be an admin. They write nothing: the account and group rows reach their page by pressing a row or a card's Edit and photograph the field at rest, so no Save or Top up is pressed. Each `wait` names what only the invite surfaces draw (`account-invited-by` from `md`, the phone's `data-invite-meta`, `account-invites`, `group-top-up`).",
+  "rows": [
+    {
+      "id": "admin-accounts-invites",
+      "label": "/admin/accounts — the Invites and Invited by columns (M1)",
+      "view": "src/components/admin/accounts-list.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/admin/accounts", "wait": "[data-testid='account-invited-by']", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "admin-accounts-invites-phone",
+      "label": "/admin/accounts — the invite figures and inviter on each row's meta line (Admin-Phone M1)",
+      "view": "src/components/admin/accounts-list.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/admin/accounts", "wait": "[data-invite-meta]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "admin-account-invites",
+      "label": "/admin/accounts/<id>, reached by pressing a row — the Invites tile and the Invites section (M2)",
+      "view": "src/components/admin/invites-section.tsx",
+      "steps": [
+        { "goto": "/admin/accounts", "wait": "[data-testid='account-rows']", "settle": 1500 },
+        { "click": "[data-testid='account-rows'] li a" },
+        { "wait": "[data-testid='account-invites']", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "admin-group-top-up",
+      "label": "/admin/groups/<id>, reached from a card's Edit — Top up invites (M3)",
+      "view": "src/components/admin/invites-section.tsx",
+      "steps": [
+        { "goto": "/admin/groups", "wait": "[data-testid='group-cards']", "settle": 1500 },
+        { "clickRole": "link", "name": "^Edit " },
+        { "wait": "[data-testid='group-top-up']", "settle": 1500 },
+        { "scrollTo": "[data-testid='group-top-up']", "settle": 500 }
+      ]
+    }
+  ]
+}

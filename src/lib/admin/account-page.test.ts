@@ -34,6 +34,10 @@ vi.mock("../../db", () => ({ db: { select: (p: Record<string, unknown>) => selec
 vi.mock("./accounts", async (orig) => ({ ...(await orig<typeof import("./accounts")>()), listAccounts: () => listAccounts() }));
 vi.mock("../switches/snapshot", () => ({ readSwitchSnapshot: () => readSwitchSnapshot() }));
 vi.mock("./groups", () => ({ loadGroupHeads: () => loadGroupHeads() }));
+// The invite reads have their own statement (`invites.ts`); here each answers an account with no invites at all.
+const readEveryInvite = vi.fn();
+const readAccountInvites = vi.fn();
+vi.mock("./invites", () => ({ readEveryInvite: () => readEveryInvite(), readAccountInvites: (...a: unknown[]) => readAccountInvites(...a) }));
 vi.mock("../model/allowance", () => ({
   readAllowance: (...a: unknown[]) => readAllowance(...a),
   dailyLimitsFor: async (_q: unknown, ids: string[]) => new Map(ids.map((id) => [id, 5])),
@@ -57,6 +61,35 @@ beforeEach(() => {
   loadGroupHeads.mockReset().mockResolvedValue([{ id: G, name: "friends", description: null }]);
   readAllowance.mockReset().mockResolvedValue({ used: 0, limit: 5, reopensAt: null, nextAt: null });
   execute.mockReset().mockResolvedValue({ rows: [] });
+  readEveryInvite.mockReset().mockResolvedValue({ balances: new Map(), open: [], edges: [] });
+  readAccountInvites.mockReset().mockResolvedValue({ held: undefined, open: [], edges: [], events: [], holdsUntil: [] });
+});
+
+describe("the invite figures (M1, M2)", () => {
+  const now = new Date("2026-10-13T12:00:00Z");
+  const later = new Date("2026-10-15T12:00:00Z");
+  it("gives each listed row its invites left and waiting, and names its inviter from Clerk", async () => {
+    listAccounts.mockResolvedValue({ accounts: [HUGH, ADAM], clerk: "ok" });
+    readEveryInvite.mockResolvedValue({
+      balances: new Map([[ADAM.id, 3]]),
+      open: [{ userId: ADAM.id, kind: "email", state: "reserved", qrExpiresAt: null, holdsUntil: later }],
+      edges: [{ inviter: HUGH.id, invitee: ADAM.id, kind: "email", joinedAt: now }],
+    });
+    const rows = (await loadAccountsList(now)).rows;
+    expect(rows.find((r) => r.id === ADAM.id)!.invites).toEqual({ left: 2, waiting: 1, invitedBy: { kind: "account", id: HUGH.id, name: "Hugh", joinedAt: now } });
+    expect(rows.find((r) => r.id === HUGH.id)!.invites).toEqual({ left: 0, waiting: 0, invitedBy: { kind: "founder" } });
+  });
+
+  it("draws the Invites tile fifth, and reads the account's history at the page's limit for the viewer", async () => {
+    readAccountInvites.mockResolvedValue({
+      held: 4, open: [], edges: [{ inviter: HUGH.id, invitee: null, kind: "qr", joinedAt: new Date(now.getTime() + 3_600_000) }],
+      events: [{ at: now, actorId: "user_viewer", kind: "invites_set", userId: HUGH.id, oldValue: "1", newValue: "4" }], holdsUntil: [],
+    });
+    const page = (await loadAccountPage(HUGH.id, "user_viewer", later))!;
+    expect(page.tiles.at(-1)).toEqual({ key: "invites", label: "Invites", figure: "4", sub: "0 waiting · 1 spent" });
+    expect(readAccountInvites).toHaveBeenCalledWith(HUGH.id, 100);
+    expect(page.invites.history.map((h) => h.what)).toEqual(["deleted account joined on Hugh’s invite", "You set Hugh’s invites: 1 → 4"]);
+  });
 });
 
 describe("loadAccountsList", () => {
@@ -83,19 +116,19 @@ describe("loadAccountsList", () => {
 
 describe("loadAccountPage", () => {
   it("answers null for the system sentinel, reading nothing", async () => {
-    expect(await loadAccountPage("system")).toBeNull();
+    expect(await loadAccountPage("system", "user_viewer")).toBeNull();
     expect(listAccounts).not.toHaveBeenCalled();
     expect(readSwitchSnapshot).not.toHaveBeenCalled();
   });
 
   it("draws a listed account by its Clerk name", async () => {
-    const page = await loadAccountPage(HUGH.id);
+    const page = await loadAccountPage(HUGH.id, "user_viewer");
     expect(page).toMatchObject({ id: HUGH.id, name: "Hugh", email: "hugh@example.com", overridesRead: true, group: null });
   });
 
   it("draws an account known only by a membership, with its group", async () => {
     readSwitchSnapshot.mockResolvedValue({ overrides: [], groupOf: new Map([["user_ghost", G]]) });
-    expect(await loadAccountPage("user_ghost")).toMatchObject({ name: "user_ghost", group: { id: G, name: "friends" } });
+    expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ name: "user_ghost", group: { id: G, name: "friends" } });
   });
 
   it("draws an account known only by an account override", async () => {
@@ -103,17 +136,17 @@ describe("loadAccountPage", () => {
       overrides: [{ switchName: "SWAP_TOOLS_ENABLED", scope: "user", groupId: null, userId: "user_ghost", value: "on" }],
       groupOf: new Map(),
     });
-    expect(await loadAccountPage("user_ghost")).toMatchObject({ id: "user_ghost" });
+    expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ id: "user_ghost" });
   });
 
   it("draws an account known only by its model_calls rows", async () => {
     called = [{ one: 1 }];
-    expect(await loadAccountPage("user_ghost")).toMatchObject({ id: "user_ghost" });
+    expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ id: "user_ghost" });
     expect(execute).not.toHaveBeenCalled();
   });
 
   it("answers null for an id nothing names", async () => {
-    expect(await loadAccountPage("user_stranger")).toBeNull();
+    expect(await loadAccountPage("user_stranger", "user_viewer")).toBeNull();
   });
 
   it("with the snapshot unread, still finds a membership and its group through their own reads, and says the overrides did not load", async () => {
@@ -123,10 +156,10 @@ describe("loadAccountPage", () => {
       if (text.includes("union all")) return { rows: [{ "?column?": 1 }] };
       return { rows: [{ user_id: "user_ghost", group_id: G }] };
     });
-    const page = await loadAccountPage("user_ghost");
+    const page = await loadAccountPage("user_ghost", "user_viewer");
     expect(page).toMatchObject({ id: "user_ghost", overridesRead: false, group: { id: G } });
     execute.mockResolvedValue({ rows: [] });
-    expect(await loadAccountPage("user_stranger")).toBeNull();
+    expect(await loadAccountPage("user_stranger", "user_viewer")).toBeNull();
   });
 });
 

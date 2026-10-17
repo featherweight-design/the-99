@@ -24,7 +24,10 @@ import {
 } from "./account-page-rule";
 import { monthOf, monthStart, shiftMonth } from "./costs-rule";
 import { loadGroupHeads } from "./groups";
+import { readAccountInvites, readEveryInvite } from "./invites";
+import { accountInvites, invitesTile, rowInvites, type AccountInvites } from "./invites-rule";
 import { accountName } from "./names";
+import { HISTORY_LIMIT } from "./switches";
 
 /**
  * The Accounts pages' reads (admin STATES A1 to A7, plan 9b). SERVER-ONLY. Every read is independent,
@@ -76,7 +79,7 @@ export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; month
 /** `/admin/accounts` (A1 to A3). */
 export async function loadAccountsList(now: Date = new Date()): Promise<AccountsListData> {
   const { start, end } = monthBounds(now);
-  const [{ accounts: listed, clerk }, snapshot, heads, spendRows, ledger] = await Promise.all([
+  const [{ accounts: listed, clerk }, snapshot, heads, spendRows, ledger, invites] = await Promise.all([
     listAccounts(),
     readSwitchSnapshot(),
     loadGroupHeads(),
@@ -86,6 +89,7 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       .where(playerInMonth(start, end))
       .groupBy(modelCalls.userId),
     windowRows(now),
+    readEveryInvite(),
   ]);
   const accounts = inListOrder(listed);
   const ids = accounts.map((a) => a.id);
@@ -97,6 +101,8 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       groupNames: new Map(heads.map((g) => [g.id, g.name])),
       credits: creditsNow(ids, ledger, limits, now),
       spend: new Map(spendRows.map((r) => [r.userId, Number(r.micro)])),
+      // An inviter is named from the whole Clerk list, so a row names one even when the search hides it.
+      invites: rowInvites({ ids, ...invites, accounts: listed, now }),
     }),
     clerk,
     month: utcMonthName(now),
@@ -116,6 +122,8 @@ export type AccountPage = {
   /** Whether the account holds All features; null when the overrides could not be read. */
   allFeatures: boolean | null;
   features: FeatureSpend[];
+  /** M2: the Invites section. */
+  invites: AccountInvites;
   featureTotal: { presses: number; spent: string };
   month: string;
   clerk: "ok" | "down";
@@ -144,12 +152,12 @@ async function namedByRows(userId: string): Promise<boolean> {
  * `/admin/accounts/<clerkId>` (A4 to A7). Null when the id is no account this environment knows: not
  * in the universe, and named by no membership, override or `model_calls` row.
  */
-export async function loadAccountPage(userId: string, now: Date = new Date()): Promise<AccountPage | null> {
+export async function loadAccountPage(userId: string, viewerId: string, now: Date = new Date()): Promise<AccountPage | null> {
   // `system` is the batch spend's sentinel (`scripts/lib/system-spend.ts`), never an account, though
   // it has `model_calls` rows; the list leaves it out too (`accounts.ts`).
   if (userId === "system") return null;
   const { start, end } = monthBounds(now);
-  const [{ accounts, clerk }, snapshot, heads, allowance, featureRows, called] = await Promise.all([
+  const [{ accounts, clerk }, snapshot, heads, allowance, featureRows, called, inviteRows] = await Promise.all([
     listAccounts(),
     readSwitchSnapshot(),
     loadGroupHeads(),
@@ -160,6 +168,7 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
       .where(and(eq(modelCalls.userId, userId), playerInMonth(start, end)))
       .groupBy(modelCalls.feature),
     db.select({ one: sql<number>`1` }).from(modelCalls).where(eq(modelCalls.userId, userId)).limit(1),
+    readAccountInvites(userId, HISTORY_LIMIT),
   ]);
   const listed: Account | undefined = accounts.find((a) => a.id === userId);
   // With the snapshot unread, a membership or an override still makes the account known: read the two
@@ -176,6 +185,7 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
   const shareMicro = ownerShareMicro();
   const features = featureRows.map((r) => ({ feature: r.feature, presses: Number(r.presses), micro: Number(r.micro) }));
   const month = utcMonthName(now);
+  const invites = accountInvites({ userId, ...inviteRows, accounts, viewerId, limit: HISTORY_LIMIT, now });
   return {
     id: userId,
     name: accountName(account),
@@ -190,13 +200,14 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
       presses: features.reduce((n, f) => n + f.presses, 0),
       hub: hubForAccount(snapshot, userId),
       month,
-    }),
+    }).concat(invitesTile(invites.left, invites.waiting, invites.spent)),
     group: groupId ? { id: groupId, name: groupNames.get(groupId) ?? groupId } : null,
     groups: heads.map((g) => ({ id: g.id, name: g.name })).sort((a, b) => a.name.localeCompare(b.name, "en-US")),
     switches: switchGroups(explainForAccounts(snapshot, [userId]).get(userId)!, (id) => groupNames.get(id) ?? id),
     allFeatures: snapshot ? hasAllFeatures(snapshot, userId) : null,
     features: featureSpend(features),
     featureTotal: featureTotal(features),
+    invites,
     month,
     clerk,
     overridesRead: snapshot !== null,

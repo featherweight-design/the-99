@@ -311,6 +311,68 @@ export const adminCopy = {
     },
   },
 
+  // Invites in the admin (plan `2026-10-16-invites.md` PR 6; handoff `invites · copy strings.ts`, `admin`): the
+  // Accounts list's two columns (M1), an account's tile and section (M2) and a group's top-up (M3). The handoff's
+  // strings, exact; keys it did not write are marked. Every key is owed to /copy-review with the admin's other new lines.
+  invites: {
+    /** M1's column heads. (new, for /copy-review) */
+    colInvites: "Invites",
+    colInvitedBy: "Invited by",
+    /** An account no invite brought in: from before launch. (new, for /copy-review) */
+    founder: "founder",
+    /** The phone row's meta pieces (Admin-Phone M1): `5 invites`, `by Hugh`. (new, for /copy-review) */
+    phoneInvites: " invites",
+    phoneBy: (name: string) => `by ${name}`,
+    /** M2's fifth tile. (new, for /copy-review) */
+    tile: "Invites",
+    tileSub: (waiting: number, spent: number) => `${waiting} waiting · ${spent} spent`,
+    /** M2's section. (new, for /copy-review) */
+    section: "Invites",
+    field: "Invites left",
+    fieldHelp: (name: string) => `How many ${name} holds now. Only a new account spends one, and nothing but this field refills it.`,
+    /** What Save will do; the waiting ones stay waiting on top of what is set. (new, for /copy-review) */
+    pendingSet: (name: string, from: number, to: number, waiting: number) =>
+      `Saving sets ${name}’s invites from ${from} to ${to}.` +
+      (waiting === 0 ? "" : waiting === 1 ? " The one waiting stays waiting." : ` The ${waiting} waiting stay waiting.`),
+    /** A draft that is not a whole number from 0 to 1,000 (`INVITES_MAX`). (new, for /copy-review) */
+    invalid: "Enter a whole number from 0 to 1,000.",
+    /** M2's lines: who invited this account, whom it invited, and each invite still waiting. (new, for /copy-review) */
+    invitedBy: "Invited by",
+    invited: "Invited",
+    joined: (day: string) => `joined ${day}`,
+    waiting: (how: string, email: string) => `Waiting · ${how} · ${email}`,
+    /** The phone's waiting line, which drops how it was sent. (new, for /copy-review) */
+    waitingPhone: "Waiting · ",
+    byEmail: "by email",
+    inPerson: "in person",
+    sentReturns: (sent: string, returns: string) => `sent ${sent} · returns ${returns}`,
+    revoke: "Revoke",
+    open: "Open ›",
+    /** An invite edge whose account was deleted. (new, for /copy-review) */
+    deleted: "deleted account",
+    /** M3, a group's top-up. (new, for /copy-review) */
+    groupSection: "Top up invites",
+    groupField: "Top up each member to",
+    groupHelp: "Raises every member holding fewer to this many. Nobody is lowered, and the group keeps no count: a member who joins later gets nothing until the next top-up.",
+    /** The phone's shorter help line. (new, for /copy-review) */
+    groupHelpPhone: "Raises every member holding fewer. Nobody is lowered.",
+    /** What Top up will do: who rises, with what they hold now, and how many already hold that many. (new, for /copy-review) */
+    groupPending: (raised: number, of: number, n: number, who: string, held: number) =>
+      raised === 0
+        ? `Nobody holds fewer than ${n}: topping up changes nothing.`
+        : `Topping up raises ${raised} of ${of} members to ${n} invites left: ${who}.` +
+          (held === 0 ? "" : held === 1 ? ` 1 already holds ${n}.` : ` ${held} already hold ${n}.`),
+    topUp: "Top up",
+    /** History lines, on an account's page and a group's. (new, for /copy-review) */
+    history: {
+      set: (who: string, name: string, from: string, to: string) => `${who} set ${name}’s invites: ${from} → ${to}`,
+      topUp: (who: string, group: string, n: string, raised: string) => `${who} topped up ${group} to ${n}: ${raised} raised`,
+      revoked: (who: string, name: string) => `${who} revoked a waiting invite of ${name}’s`,
+      joined: (name: string, inviter: string) => `${name} joined on ${inviter}’s invite`,
+      sent: (name: string) => `${name} sent an invitation: 1 waiting`,
+    },
+  },
+
   // The Models page (admin STATES M1, M2), from the handoff's `models` keys. The column heads, the
   // section head `Features and jobs` and its meta, and the footnote are the canvas's own (`models`
   // scene in `Admin R2.dc.html`).
