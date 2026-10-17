@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R2 and R3 — the landing on a deck, the doors, and (as each mounts) Tools, Reference, the ?, the tour",
   "clearAbout": true,
-  "note": "Plan `2026-10-16-discovery-r2-r3.md`. `rows` are what is MERGED and drawn on a route today (R2·2b #1975, R3·4 #1984); `unmounted` lists every surface the plan claims that no route renders yet, each with the PR that mounts it and the row it adds, so a close-out cannot pass while one has no photograph. Move an entry from `unmounted` into `rows` in the PR that mounts it.\n\nPRECONDITIONS. Env: `DISCOVERY_DECK` is a deck id of the signed-in account with a legal 100-card list (the landing rows expand it). Switches on for that account: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, SWAP_TOOLS_ENABLED, MOMENTS_ENABLED, SOCIAL_GAMES_ENABLED (with SOCIAL_FRIENDS_ENABLED), HELP_ME_CHOOSE_ENABLED. The two `door-*-zero` rows need an account holding NO decks; every other row needs one that does, so run those two as their own pass on a deckless account (`--only` is not a runner option: split the inventory or use a second account). `door-commanders-*` needs the guided banner's state (a collection read, no decks). A landing whose target is not drawn on that deck strips `?tool=` with no halo, so its `wait` times out: that is the honest failure, not a skip. The four landings the fixture decides (Top off, Matchups, Cheaper stand-ins, A friend has a spare) are in `needsFixture` for that reason: move one into `rows` with a deck that draws it.\n\nNothing here writes except the About gate `clearAbout` marks seen.\n\nNo `shares` block: `check:shared` requires every row to share one component and these rows are different surfaces. The one real share, the door group, is `DecksZeroActions` (`decks-zero.tsx`), drawn by `/decks` through `DecksZero` and by Home through `HomeDecksZero` (both import it; the `/commanders` banner draws its own line).",
+  "note": "Plan `2026-10-16-discovery-r2-r3.md`. `rows` are what is MERGED and drawn on a route today (R2·2b #1975, R3·4 #1984; R3·5 #1988 is merged but fixture-bound, so it sits in `needsFixture`); `unmounted` lists every surface the plan claims that no route renders yet, each with the PR that mounts it and the row it adds, so a close-out cannot pass while one has no photograph. Move an entry from `unmounted` into `rows` in the PR that mounts it.\n\nPRECONDITIONS. Env: `DISCOVERY_DECK` is a deck id of the signed-in account with a legal 100-card list (the landing rows expand it). Switches on for that account: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, SWAP_TOOLS_ENABLED, MOMENTS_ENABLED, SOCIAL_GAMES_ENABLED (with SOCIAL_FRIENDS_ENABLED), HELP_ME_CHOOSE_ENABLED. The two `door-*-zero` rows need an account holding NO decks; every other row needs one that does, so run those two as their own pass on a deckless account (`--only` is not a runner option: split the inventory or use a second account). `door-commanders-*` needs the guided banner's state (a collection read, no decks). A landing whose target is not drawn on that deck strips `?tool=` with no halo, so its `wait` times out: that is the honest failure, not a skip. The four landings the fixture decides (Top off, Matchups, Cheaper stand-ins, A friend has a spare) are in `needsFixture` for that reason: move one into `rows` with a deck that draws it.\n\nNothing here writes except the About gate `clearAbout` marks seen.\n\nNo `shares` block: `check:shared` requires every row to share one component and these rows are different surfaces. The one real share, the door group, is `DecksZeroActions` (`decks-zero.tsx`), drawn by `/decks` through `DecksZero` and by Home through `HomeDecksZero` (both import it; the `/commanders` banner draws its own line).",
   "rows": [
     {
       "id": "landing-proposed-cuts",
@@ -122,9 +122,29 @@
       "goto": "/decks/${DISCOVERY_DECK}?tool=friend-spares",
       "wait": "[data-testid='other-ways']:has([data-testid='spare-glyph'])",
       "why": "drawn only when a friend's spare covers a card the deck is short"
+    },
+    {
+      "id": "nudges",
+      "mergedIn": "R3·5 #1988",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "N1 `suggest swaps →`, N2 `balance mana →` and N2b `Proposed cuts →` on their own switches (builder-shell.tsx, tuning-hub.tsx, analysis-panel.tsx, role-counter-cell.tsx), and N3 the over count on Money's Shopping line at 390 (deck-stats-money.tsx, with its no-wrap test)",
+      "why": "each draws only in a deck state (a deck over budget, a mana imbalance, a held reading); no row yet, because none of the audit account's decks was checked for them. Add rows with the selectors from the PR's tests (`builder-shell-nudges.test.tsx`) once a fixture deck is named."
     }
   ],
   "unmounted": [
+    {
+      "id": "landing-on-pages",
+      "mountedBy": "R2·3 (not merged)",
+      "goto": "/discover or the page each tool lives on, with ?tool=",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "shows": "the landing on Help me choose, Precons, Wishlist, Upload, Friends, /collection (Find a deck) and /decks?view=stats (Stats for your decks); loadToolFits and each tool's fits"
+    },
     {
       "id": "tools-tab",
       "mountedBy": "R2·5 (unmounted) then R2·6b (the route)",
@@ -203,16 +223,6 @@
         "desktop"
       ],
       "shows": "the Friends row last, under step 3 and unnumbered (addendum-friends-home README §3, line 110); step 6 keeps its one light per Design's G1"
-    },
-    {
-      "id": "nudges",
-      "mountedBy": "R3·5",
-      "goto": "the screens N1, N2, N2b, N3 draw on",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "each nudge on its own switch; N3 at 390 with its no-wrap test"
     }
   ]
 }
