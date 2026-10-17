@@ -1,0 +1,198 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { aboutCopy } from "../../../lib/copy/about";
+import { aboutEntries } from "../../../lib/copy/about-entries";
+import { creatorNoteCopy, referenceCopy } from "../../../lib/copy/discovery";
+import { referenceScreens, type ReferenceScreen } from "../../../lib/about/reference";
+import { CreatorNote } from "./creator-note";
+import { ReferenceTab } from "./reference-tab";
+
+afterEach(() => {
+  cleanup();
+  window.location.hash = "";
+});
+
+const screens: ReferenceScreen[] = referenceScreens(aboutEntries, [], undefined);
+const first = screens[0].entries[0];
+
+const draw = (over: Partial<Parameters<typeof ReferenceTab>[0]> = {}) =>
+  render(<ReferenceTab screens={screens} whatsNew={[]} how={null} howCount={0} {...over} />);
+
+const field = () => screen.getByRole("searchbox", { name: referenceCopy.search }) as HTMLInputElement;
+const type = (text: string) => fireEvent.change(field(), { target: { value: text } });
+const openEntry = (container: HTMLElement) => container.querySelector("[data-entry-open]")?.getAttribute("data-entry-open") ?? null;
+
+describe("ReferenceTab, the list", () => {
+  it("draws every entry under its screen, closed, each row its title and first sentence", () => {
+    const { container } = draw();
+    expect(container.querySelectorAll("[data-reference-screen]")).toHaveLength(screens.length);
+    const ids = screens.flatMap((s) => s.entries.map((e) => e.id));
+    for (const id of ids) expect(container.querySelector(`[id="${id}"]`), id).not.toBeNull();
+    expect(openEntry(container)).toBeNull();
+    const row = container.querySelector(`[id="${first.id}"]`) as HTMLElement;
+    expect(row.textContent).toContain(first.title);
+    expect(row.textContent).toContain(first.first);
+  });
+
+  it("opens one entry at a time, and a second press closes it", () => {
+    const { container } = draw();
+    const [a, b] = screens.flatMap((s) => s.entries);
+    const press = (id: string) => fireEvent.click(within(container.querySelector(`[id="${id}"]`) as HTMLElement).getAllByRole("button")[0]);
+    press(a.id);
+    expect(openEntry(container)).toBe(a.id);
+    press(b.id);
+    expect(openEntry(container)).toBe(b.id);
+    press(b.id);
+    expect(openEntry(container)).toBeNull();
+  });
+
+  it("on the phone, a screen's row toggles its entries open and closed", () => {
+    const { container } = draw();
+    const section = container.querySelector(`[data-reference-screen="${screens[0].key}"]`) as HTMLElement;
+    const toggle = within(section).getAllByRole("button")[0];
+    const list = toggle.parentElement!.lastElementChild as HTMLElement;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(list.className).toMatch(/(^|\s)hidden(\s|$)/);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(list.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens the entry a #hash names, and its screen with it", () => {
+    const target = screens[2].entries[0];
+    window.location.hash = `#${target.id}`;
+    const { container } = draw();
+    expect(openEntry(container)).toBe(target.id);
+    const section = container.querySelector(`[data-reference-screen="${screens[2].key}"]`) as HTMLElement;
+    expect(within(section).getAllByRole("button")[0].getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("follows a later hashchange to another entry", () => {
+    const { container } = draw();
+    const target = screens[1].entries[0];
+    act(() => {
+      window.location.hash = `#${target.id}`;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(openEntry(container)).toBe(target.id);
+  });
+
+  it("ignores a hash that names no entry", () => {
+    window.location.hash = "#no-such-entry";
+    const { container } = draw();
+    expect(openEntry(container)).toBeNull();
+  });
+});
+
+describe("ReferenceTab, what's new", () => {
+  const whatsNew = [{ id: first.id, title: first.title }];
+
+  it("lists what's new, each a link that opens its entry", () => {
+    const { container } = draw({ whatsNew });
+    const box = container.querySelector("#new") as HTMLElement;
+    expect(box.textContent).toContain(aboutCopy.newSinceEyebrow(1));
+    fireEvent.click(within(box).getByRole("link", { name: first.title }));
+    expect(openEntry(container)).toBe(first.id);
+  });
+
+  it("draws nothing when nothing is new", () => {
+    const { container } = draw();
+    expect(container.querySelector("#new")).toBeNull();
+  });
+
+  it("gives way to search while the field holds text", () => {
+    const { container } = draw({ whatsNew });
+    type(first.title);
+    expect(container.querySelector("#new")).toBeNull();
+  });
+});
+
+describe("ReferenceTab, search", () => {
+  it("reads titles, captions and keys, names each hit's screen, and hides the list", () => {
+    const { container } = draw();
+    type(first.title);
+    const hits = container.querySelector("[data-reference-hits]") as HTMLElement;
+    expect(within(hits).getByRole("status").textContent).toMatch(/entr(y|ies) mention/);
+    const link = within(hits).getAllByRole("link").find((a) => a.getAttribute("href") === `#${first.id}`)!;
+    expect(link.textContent).toContain(first.screen);
+    expect(link.querySelector("mark")).not.toBeNull();
+    const list = container.querySelector("[data-reference-screen]")!.parentElement!;
+    expect(list.hidden).toBe(true);
+  });
+
+  it("finds an entry by a word only its caption holds", () => {
+    const e = screens.flatMap((s) => s.entries).find((x) => x.caption.includes("Mana Pool")) ?? first;
+    const word = e === first ? first.caption.split(" ")[1] : "Mana Pool";
+    const { container } = draw();
+    type(word);
+    const hits = container.querySelector("[data-reference-hits]") as HTMLElement;
+    expect(within(hits).getAllByRole("link").some((a) => a.getAttribute("href") === `#${e.id}`)).toBe(true);
+  });
+
+  it("a hit clears the search and opens its entry", () => {
+    const { container } = draw();
+    type(first.title);
+    const hits = container.querySelector("[data-reference-hits]") as HTMLElement;
+    fireEvent.click(within(hits).getAllByRole("link").find((a) => a.getAttribute("href") === `#${first.id}`)!);
+    expect(field().value).toBe("");
+    expect(openEntry(container)).toBe(first.id);
+  });
+
+  it("says when nothing matches, and offers the way back to every entry", () => {
+    const { container } = draw();
+    const q = "zzqx-nothing-holds-this";
+    type(q);
+    expect(container.querySelector("[data-reference-hits]")).toBeNull();
+    expect(screen.getByText(referenceCopy.none(q))).toBeTruthy();
+    expect(screen.getByText(referenceCopy.noneNote)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: referenceCopy.noneOut }));
+    expect(field().value).toBe("");
+    expect((container.querySelector("[data-reference-screen]")!.parentElement as HTMLElement).hidden).toBe(false);
+  });
+});
+
+describe("ReferenceTab, the screens index", () => {
+  it("lists each screen with its count, and How it works only when it draws", () => {
+    const { rerender } = draw();
+    const nav = screen.getByRole("navigation", { name: referenceCopy.screensLabel });
+    const links = within(nav).getAllByRole("link");
+    expect(links).toHaveLength(screens.length);
+    expect(links[0].getAttribute("href")).toBe(`#screen-${screens[0].key}`);
+    expect(links[0].textContent).toBe(`${screens[0].name}${screens[0].entries.length}`);
+    rerender(<ReferenceTab screens={screens} whatsNew={[]} how={<section id="how" />} howCount={9} />);
+    const withHow = within(screen.getByRole("navigation", { name: referenceCopy.screensLabel })).getAllByRole("link");
+    expect(withHow).toHaveLength(screens.length + 1);
+    expect(withHow.at(-1)!.textContent).toBe(`${referenceCopy.howIndex}9`);
+  });
+});
+
+describe("CreatorNote", () => {
+  it("is the last row, opening the note as a dialog that Escape closes", () => {
+    render(<CreatorNote />);
+    const row = screen.getByRole("button", { name: new RegExp(creatorNoteCopy.title) });
+    expect(row.getAttribute("aria-haspopup")).toBe("dialog");
+    fireEvent.click(row);
+    const dialog = screen.getByRole("dialog", { name: creatorNoteCopy.title });
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    const paragraphs = aboutCopy.pageIntro.split("\n\n");
+    expect(dialog.textContent).toContain(paragraphs[0]);
+    expect(dialog.textContent).toContain(paragraphs.at(-1));
+    // Focus moves to the first VISIBLE focusable, which jsdom cannot lay out: `dialog.ts`'s own tests hold that half.
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes from its ✕ and from the scrim", () => {
+    render(<CreatorNote />);
+    const row = screen.getByRole("button", { name: new RegExp(creatorNoteCopy.title) });
+    fireEvent.click(row);
+    fireEvent.click(screen.getByRole("button", { name: creatorNoteCopy.close }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(row);
+    const scrim = screen.getByRole("dialog").previousElementSibling as HTMLElement;
+    fireEvent.click(scrim);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});

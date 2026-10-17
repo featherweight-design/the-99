@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_SCREENS, DECK_VIEWS } from "../copy/about";
 import { TOOLS } from "../discovery/tools";
 import { DEFAULT_THEME, THEMES } from "../theme/themes";
-import { REQUIRED_SHOTS, TOUR_SHOTS, shotFor, toolShotId, type ShotSet } from "./shots";
+import { REQUIRED_SHOTS, TOUR_SHOTS, entryShotFor, shotFor, toolShotId, type ShotSet } from "./shots";
 import { SHOTS } from "./shots.generated";
 
 /** The budget (plan `2026-10-16-discovery-r2-r3.md`, decision 4): an image over it is re-encoded lower, never the cap raised. */
@@ -119,5 +119,49 @@ describe("shotFor", () => {
 
   it("is null for an id nothing captured", () => {
     expect(shotFor(DEFAULT_THEME, "no-such-screen")).toBeNull();
+  });
+});
+
+describe("entryShotFor", () => {
+  const frame = { width: 780, height: 1688, bytes: 1, quality: 75 };
+  const set: ShotSet = {
+    [DEFAULT_THEME]: {
+      home: { ...frame, entries: { "home-entry": [0.1, 0.2, 0.3, 0.05] } },
+      "deck-shopping": { ...frame, entries: { "buy-tag": [0.5, 0.6, 0.2, 0.04] } },
+    },
+    kaldheim: { home: { ...frame, entries: { "home-entry": [0.15, 0.25, 0.3, 0.05] } } },
+  };
+
+  it("reads the entry's screen's frame, its control as the halo", () => {
+    expect(entryShotFor(DEFAULT_THEME, { id: "home-entry", screen: "home" }, set)).toEqual({
+      src: `/about/shots/${DEFAULT_THEME}/home.webp`,
+      width: 780,
+      height: 1688,
+      halo: { x: 0.1, y: 0.2, w: 0.3, h: 0.05 },
+    });
+  });
+
+  it("reads a deck entry's view's frame", () => {
+    const s = entryShotFor(DEFAULT_THEME, { id: "buy-tag", screen: "deck", view: "shopping" }, set);
+    expect(s?.src).toBe(`/about/shots/${DEFAULT_THEME}/deck-shopping.webp`);
+    expect(s?.halo).toEqual({ x: 0.5, y: 0.6, w: 0.2, h: 0.04 });
+  });
+
+  it("takes the halo from the same theme's frame it shows", () => {
+    expect(entryShotFor("kaldheim", { id: "home-entry", screen: "home" }, set)?.halo?.x).toBe(0.15);
+    // kaldheim has no deck-shopping: both the image and the box are the default's.
+    const s = entryShotFor("kaldheim", { id: "buy-tag", screen: "deck", view: "shopping" }, set);
+    expect(s?.src).toBe(`/about/shots/${DEFAULT_THEME}/deck-shopping.webp`);
+    expect(s?.halo?.x).toBe(0.5);
+  });
+
+  it("draws the frame with no halo for an entry the locator map does not place, or an own-property miss", () => {
+    expect(entryShotFor(DEFAULT_THEME, { id: "unplaced", screen: "home" }, set)?.halo).toBeNull();
+    expect(entryShotFor(DEFAULT_THEME, { id: "toString", screen: "home" }, set)?.halo).toBeNull();
+  });
+
+  it("is null for a screen with no frame, and for a deck entry with no view", () => {
+    expect(entryShotFor(DEFAULT_THEME, { id: "x", screen: "friends" }, set)).toBeNull();
+    expect(entryShotFor(DEFAULT_THEME, { id: "x", screen: "deck" }, set)).toBeNull();
   });
 });
