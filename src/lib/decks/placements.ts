@@ -59,7 +59,7 @@ export function placementsOf(before: Snap, after: Snap): Placement {
 }
 
 /**
- * How many claimants the chooser folds into one `Show` row (G7): the committed decks, from the head
+ * How many claimants the chooser folds into one line that is never an option (G7, and Hugh 2026-10-16): the committed decks, from the head
  * of the queue, that keep their copies whatever this pick does. Re-running the queue with the copies
  * in play taken out answers it: a deck still fully held then holds a copy no pick here can move.
  *
