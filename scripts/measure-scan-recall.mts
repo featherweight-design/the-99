@@ -7,14 +7,15 @@
 //
 // The branch is NAMED and checked against `neon.branch_id` first, the `pull:staging` rule. The queries are the
 // probe's hard cases: blends of two stored rows (a fingerprint between two cards, where the margin is small) and
-// rows nudged toward a third, chosen deterministically. Each is asked as the route asks (`lookupGuesses`): the nearest
-// row, then the nearest row of any other card, so the margin is first minus second. For each `ef_search` it prints how
+// rows nudged toward a third, chosen deterministically. Each is asked as the route asks (`lookupGuesses`): up to
+// three reads, each the nearest row of a card not found yet, sorted best first; the margin is first minus second. For each `ef_search` it prints how
 // many first cards differ from the exact scan, how many answers land on the other side of the sure gate, the worst
 // score and margin gaps, and the median time per guess.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig, type PoolClient } from "@neondatabase/serverless";
 import ws from "ws";
 import { SURE_MARGIN } from "../src/lib/scan/lookup";
+import { MAX_GUESSES } from "../src/lib/card-scan/match";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -33,21 +34,28 @@ function mix(parts: [Float32Array, number][]): Float32Array {
   return out.map((x) => x / n);
 }
 
-async function nearest(c: PoolClient, q: string, not: string | null) {
+async function nearest(c: PoolClient, q: string, not: string[]) {
   const r = await c.query<{ oracle_id: string; d: number }>(
     `select s.oracle_id::text, (s.embedding <=> $1::halfvec(256))::float8 as d from scan_index s
-     ${not ? "where s.oracle_id <> $2::uuid" : ""} order by s.embedding <=> $1::halfvec(256) limit 1`,
-    not ? [q, not] : [q],
+     ${not.length ? "where s.oracle_id <> all($2::uuid[])" : ""} order by s.embedding <=> $1::halfvec(256) limit 1`,
+    not.length ? [q, `{${not.join(",")}}`] : [q],
   );
   return r.rows[0];
 }
 
+/** As `lookupGuesses` asks: up to `MAX_GUESSES` reads, each excluding the cards found so far, then best first. */
 async function ask(c: PoolClient, q: string): Promise<Answer> {
   const t0 = performance.now();
-  const a = await nearest(c, q, null);
-  const b = await nearest(c, q, a.oracle_id);
-  const ms = (performance.now() - t0) / 2;
-  return { first: a.oracle_id, s1: 1 - a.d, margin: b ? 1 - a.d - (1 - b.d) : null, ms };
+  const found: { oracle_id: string; d: number }[] = [];
+  for (let k = 0; k < MAX_GUESSES; k++) {
+    const hit = await nearest(c, q, found.map((f) => f.oracle_id));
+    if (!hit) break;
+    found.push(hit);
+  }
+  const ms = (performance.now() - t0) / Math.max(1, found.length);
+  found.sort((x, y) => x.d - y.d);
+  const [a, b] = found;
+  return { first: a.oracle_id, s1: 1 - a.d, margin: b ? b.d - a.d : null, ms };
 }
 
 void (async () => {

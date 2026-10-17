@@ -82,7 +82,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   sure with none wrong (`~/the-99-research/card-scan/lab-rescore/rescore-full.json`, the shipped fp32 embedder).
   **Each read runs HNSW at `hnsw.ef_search` 1000** (pgvector's ceiling, transaction-local in `lookupGuesses`), because
   an index's recall depends on its build: at 400 a scratch build failed `probe:card-scan-match` and staging's own build
-  put 3 of 400 hard answers across the sure gate; at 1000 neither staging nor production put one across. `pnpm
+  put 3 of 400 hard answers across the sure gate (production 1); at 1000 neither put one across. `pnpm
   measure:scan-recall` (read-only; `MEASURE_URL`, a NAMED `MEASURE_BRANCH` checked by `neon.branch_id`) compares a
   database's own build against an exact scan per `ef_search`. A build that still misses at 1000 needs a rebuild with
   larger `m` / `ef_construction`, which is Hugh's to run on production.

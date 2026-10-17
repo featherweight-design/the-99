@@ -4,11 +4,11 @@ import { MAX_GUESSES, MAX_PRINTINGS, poolGuesses, vectorLiteral, type MatchAnswe
 
 /**
  * HNSW's candidate list per read, at pgvector's ceiling (1,000). `pnpm measure:scan-recall` measured both databases'
- * own builds against an exact scan (read-only, 2026-10-17), on blends of two cards' rows and rows nudged toward a
- * third: at 400, staging put 3 of 400 answers on the other side of the 0.10 sure gate (the second guess, read past
- * the first card, is where HNSW misses), and a scratch build failed the probe outright (a first-card score 0.23 off);
- * at 1,000 neither database put an answer across the gate, and every first card that differed was a tie (a score
- * within 0.00001). It costs about 10ms a read (37 to 46ms median on staging).
+ * own builds against an exact scan (read-only, 2026-10-17), asked as this function asks, on 400 blends of two cards'
+ * rows and rows nudged toward a third: at 400, 3 answers on staging and 1 on production landed on the other side of
+ * the 0.10 sure gate (the guesses read past the first card, under the exclusion, are where HNSW misses), and a scratch
+ * build failed the probe outright (a first-card score 0.23 off); at 1,000 neither database put an answer across the
+ * gate or named a different first card. It costs about 9ms a read (37 to 46ms median on staging).
  */
 const EF_SEARCH = 1000;
 
