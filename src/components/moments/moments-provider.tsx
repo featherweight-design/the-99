@@ -27,6 +27,9 @@ import { useMergedRef } from "../ui/use-merged-ref";
  * screen for `SPENT_AFTER_MS`. Spending takes the visit in every tab (`lib/moments/visit.ts`) and writes the id to the
  * account through `spendMomentAction`.
  */
+/** The channel every tab hears a spend on. */
+const SPENT_CHANNEL = "the99.moments.spent";
+
 export const ARRIVE_MS = 600;
 export const SPENT_AFTER_MS = 1000;
 /** How long a failed spend waits before it is written again. */
@@ -156,13 +159,23 @@ export function MomentsProvider({
   }, []);
 
 
+  // Tells every other tab a moment is spent. Before the provider's own channel is open (a descendant's mount effect
+  // runs first), a one-off sender carries it, so an early spend is never lost to the other tabs.
+  const broadcast = useCallback((id: MomentId) => {
+    if (channel.current !== null) return channel.current.postMessage(id);
+    if (typeof BroadcastChannel === "undefined") return;
+    const once = new BroadcastChannel(SPENT_CHANNEL);
+    once.postMessage(id);
+    once.close();
+  }, []);
+
   const spend = useCallback((id: MomentId) => {
     if (spent.current.has(id)) return;
     spent.current.add(id);
     void withVisitLock(() => takeVisit());
-    channel.current?.postMessage(id);
+    broadcast(id);
     persist(id);
-  }, [persist]);
+  }, [persist, broadcast]);
 
   /** Closes the bubble. `byReader` spends it at once; a teardown spends it only past `SPENT_AFTER_MS`. */
   const close = useCallback(
@@ -255,7 +268,7 @@ export function MomentsProvider({
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("storage", onStorage);
     if (typeof BroadcastChannel !== "undefined") {
-      channel.current = new BroadcastChannel("the99.moments.spent");
+      channel.current = new BroadcastChannel(SPENT_CHANNEL);
       channel.current.onmessage = (e: MessageEvent) => {
         if (typeof e.data !== "string") return;
         spent.current.add(e.data);
@@ -380,7 +393,7 @@ export function MomentsProvider({
       // Recorded once, and never by `spend`, which takes the visit: a landing is not the reader seeing a bubble.
       if (!spent.current.has(id)) {
         spent.current.add(id);
-        channel.current?.postMessage(id);
+        broadcast(id);
         persist(id);
       }
       // Closed as a teardown, not as the reader's close: under `SPENT_AFTER_MS` the claim goes back (the id is already
@@ -388,7 +401,7 @@ export function MomentsProvider({
       // stays taken.
       if (showingRef.current?.id === id) close(false);
     },
-    [liveSet, close, persist],
+    [liveSet, close, persist, broadcast],
   );
 
   const ctx = useMemo<Ctx>(

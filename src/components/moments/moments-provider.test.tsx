@@ -614,6 +614,30 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     expect(visitTaken()).toBe(true);
   });
 
+  it("tells the other tabs when it is called from a descendant's mount effect, before the provider's channel opens", async () => {
+    vi.useRealTimers();
+    const heard: unknown[] = [];
+    const other = new BroadcastChannel("the99.moments.spent");
+    other.onmessage = (e) => heard.push(e.data);
+    function OnMount() {
+      const suppress = useSuppressMoment();
+      useEffect(() => suppress("lineup"), [suppress]);
+      return null;
+    }
+    try {
+      render(
+        <MomentsProvider live={LIVE} spent={[]}>
+          <OnMount />
+        </MomentsProvider>,
+      );
+      await new Promise((r) => setTimeout(r, 50));
+      expect(heard).toEqual(["lineup"]);
+    } finally {
+      other.close();
+      vi.useFakeTimers();
+    }
+  });
+
   it("writes nothing for a moment that is not live (MOMENTS_ENABLED off) or already spent", async () => {
     const { unmount } = render(
       <MomentsProvider live={[]} spent={[]}>
