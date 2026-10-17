@@ -71,7 +71,10 @@ export function AboutTabs({ initial, counts, panels, helpHint, onceShown }: Abou
           {tab === "tools" ? aboutShapeCopy.toolsSub : aboutShapeCopy.referenceSub}
         </p>
       </div>
-      <div className="mt-[10px] flex items-center justify-between border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0">
+      {/* 390: 10px under the Tools sub (ShowcasePhone), 14px under the Reference sub (ReferencePhone); 26px on both Desk boards. */}
+      <div
+        className={`${tab === "tools" ? "mt-[10px]" : "mt-[14px]"} flex items-center justify-between border-b border-b-[color:var(--border)] px-[16px] md:mt-[26px] md:px-0`}
+      >
         <div
           role="tablist"
           aria-label={aboutShapeCopy.tabs.label}

@@ -111,8 +111,10 @@ export default async function AboutRoute({
   const credits = visible.find((e) => e.id === "credits");
   const written = writtenForYou(credits ? credits.caption : null);
 
+  // The boards' `main` (ShowcasePhone, ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's
+  // 104px includes the 74px tab bar the shell already reserves (`--tabbar-h`), so 30px is the page's own.
   return (
-    <div className="flex flex-col pb-[16px] pt-[24px] md:px-[56px] md:pb-[64px] md:pt-[40px]">
+    <div className="flex flex-col pb-[30px] pt-[24px] md:px-[56px] md:pb-[64px] md:pt-[40px]">
       <AboutTabs
         initial={initial}
         counts={{ tools: groups.reduce((n, g) => n + g.cards.length, 0), reference: screens.reduce((n, s) => n + s.entries.length, 0) }}
