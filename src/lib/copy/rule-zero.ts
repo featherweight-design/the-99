@@ -48,6 +48,9 @@ export const ruleZeroCopy = {
     notFriendSub: "not your friend, so their decks aren’t listed",
     friendDecksTitle: (name: string) => `${name}’s deck`,
     yourDecksTitle: "Your deck", // the same screen for your own seat
+    // Not drawn: your own seat with no deck (you have none, or Seats reopens a seat you cleared). Its pick is made on
+    // the table, from your own seat.
+    yourSeatWaits: "Pick yours on the table",
     friendDecksList: (name: string) => `${name}’s decks`, // the listbox's name
     backToSeats: "Back to the seats", // the ‹ on a player's decks
     whoGroup: "Who is playing", // the tiles' group name

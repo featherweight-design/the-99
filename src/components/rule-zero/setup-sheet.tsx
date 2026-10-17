@@ -281,12 +281,15 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
 function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: SeatedNow | undefined; pick: string | null; onOpen: () => void }) {
   const name = member.kind === "you" ? pods.you : member.displayName;
   const deck = kept ? kept.deck : member.decks.find((d) => d.deckId === pick) ?? null;
-  // A seat with a control: a new seat whose player's decks are listed to the viewer.
-  const control = !kept && seatable(member);
+  // A seat with a control: a new seat whose player has decks listed to the viewer.
+  const control = !kept && seatable(member) && member.decks.length > 0;
+  const you = member.kind === "you";
   const notFriend = member.kind === "picksOwn";
   const line = deck
     ? { name: deck.name, sub: deck.commanderName, accent: false }
-    : kept
+    : you
+      ? { name: copy.yourSeatWaits, sub: "", accent: false }
+      : kept
       ? { name: copy.notFriendRow(name), sub: copy.leaveItSub, accent: false }
       : notFriend
         ? { name: copy.notFriendRow(name), sub: copy.notFriendSub, accent: false }

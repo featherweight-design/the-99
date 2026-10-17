@@ -148,6 +148,18 @@ describe("a deck for each seat (U3, U4, V2, V3)", () => {
   });
 });
 
+describe("your own seat with no deck", () => {
+  it("says where you pick it, never 'You picks their own', and has no control", () => {
+    const noDecks = { ...YOU, decks: [], start: null };
+    render(<SetupSheet setup={{ ...SETUP, members: [noDecks, COLIN] }} onClose={() => {}} onSave={vi.fn()} onDone={vi.fn()} />);
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    const row = screen.getByText(c.yourSeatWaits).closest("button")!;
+    expect(row.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.queryByText(/You picks|leave it to You/)).toBeNull();
+  });
+});
+
 describe("Seats: the setter reopens setup with the seats kept", () => {
   const KEPT: SetupData = {
     ...SETUP,
