@@ -46,7 +46,13 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
     console.error(`[credits] read failed${error instanceof Error ? ` (${error.name})` : ""}`);
     return <CreditsReadFailed />;
   }
-  if (!built.sees) notFound();
+  if (!built.sees) {
+    // A return whose read THREW is unresolved, not refused: nothing was learned about the Session, so it may well be this
+    // reader's own and the retry may yet show it. The retryable read-failed state says nothing a stranger could use; a
+    // read that SUCCEEDED as `none` (forged, foreign, unknown) is `ret === null` and stays a 404.
+    if (ret?.kind === "done" && ret.initial === null) return <CreditsReadFailed />;
+    notFound();
+  }
 
   return <CreditsView model={built.model} ret={ret} />;
 }

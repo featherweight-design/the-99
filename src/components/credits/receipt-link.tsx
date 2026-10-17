@@ -23,8 +23,9 @@ export function ReceiptLink({ sessionId, onFailed, className, children }: {
         if (win) {
           win.opener = null;
           win.location.href = out.url;
-        } else {
-          window.open(out.url, "_blank", "noopener");
+        } else if (!window.open(out.url, "_blank", "noopener")) {
+          // Both windows blocked: leave this tab for the receipt rather than do nothing (the URL is a validated https one).
+          window.location.assign(out.url);
         }
       } else {
         win?.close();

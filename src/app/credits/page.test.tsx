@@ -116,10 +116,10 @@ describe("the return", () => {
     await expect(render({ checkout: "done", session_id: SESSION })).rejects.toBeInstanceOf(NotFound);
   });
 
-  it("is not found for a switch-off reader when Stripe could not be asked (nothing was validated)", async () => {
+  it("draws the retryable read-failed state, not a 404, for a switch-off reader whose return read THREW", async () => {
     m.requestSwitchEnv.mockResolvedValue({});
     m.readReturn.mockRejectedValue(new Error("network"));
-    await expect(render({ checkout: "done", session_id: SESSION })).rejects.toBeInstanceOf(NotFound);
+    expect((await render({ checkout: "done", session_id: SESSION })).type).toBe(CreditsReadFailed);
   });
 
   // The webhook can commit between the two reads. Read the return first and the grant it observes is always in the

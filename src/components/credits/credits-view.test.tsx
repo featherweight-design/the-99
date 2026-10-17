@@ -115,6 +115,20 @@ describe("the Buy press", () => {
     expect((screen.getByRole("button", { name: "Buy 40 credits · $5" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("gives the press back when the page is restored from the back/forward cache after a successful Buy", async () => {
+    vi.stubGlobal("location", { ...window.location, assign: vi.fn() });
+    m.buy.mockResolvedValue({ ok: true, url: "https://checkout.stripe.com/c/1" });
+    render(<CreditsView model={model()} ret={null} />);
+    press();
+    const buy = () => screen.getByRole("button", { name: "Buy 40 credits · $5" }) as HTMLButtonElement;
+    await waitFor(() => expect(buy().disabled).toBe(true));
+    act(() => { window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: false })); });
+    expect(buy().disabled).toBe(true);
+    act(() => { window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true })); });
+    expect(buy().disabled).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
   it("says off, and takes the offer away rather than leaving a disabled press", async () => {
     m.buy.mockResolvedValue({ ok: false, reason: "off" });
     render(<CreditsView model={model()} ret={null} />);
@@ -147,6 +161,17 @@ describe("Receipt", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Receipt/ })); });
     expect(win.close).toHaveBeenCalled();
     expect((await screen.findByRole("alert")).textContent).toBe("Couldn’t open that receipt.");
+    vi.unstubAllGlobals();
+  });
+
+  it("leaves this tab for the receipt when both windows are blocked", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("open", vi.fn(() => null));
+    vi.stubGlobal("location", { ...window.location, assign });
+    m.receipt.mockResolvedValueOnce({ ok: true, url: "https://pay.stripe.com/receipts/x" });
+    render(<CreditsView model={model({ allowance: allowance({ pack: 40 }), history: [row] })} ret={null} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Receipt/ })); });
+    expect(assign).toHaveBeenCalledWith("https://pay.stripe.com/receipts/x");
     vi.unstubAllGlobals();
   });
 });

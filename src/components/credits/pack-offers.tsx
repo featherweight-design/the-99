@@ -4,7 +4,7 @@
 // list is the closed pack registry. The Buy press mints its own uuid per press (`buyPackAction`'s `actionId`) and
 // sends the reader to Stripe's Checkout. Nothing is granted here.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buyPackAction, type CheckoutOutcome } from "../../app/credits/actions";
 import { creditsPageCopy, type PackOffer } from "../../lib/copy/credits-page";
 import { OfferArt } from "./offer-art";
@@ -26,6 +26,15 @@ export function PackOffers({ offers, onFailure }: { offers: readonly PackOffer[]
 
 function PackCard({ offer, onFailure }: { offer: PackOffer; onFailure: (reason: BuyFailure) => void }) {
   const [busy, setBusy] = useState(false);
+  // Back from Stripe's Checkout can restore this page from the back/forward cache as it was left, Buy still busy and
+  // disabled and nothing remounted: a persisted pageshow gives the press back.
+  useEffect(() => {
+    const restored = (e: PageTransitionEvent) => {
+      if (e.persisted) setBusy(false);
+    };
+    window.addEventListener("pageshow", restored);
+    return () => window.removeEventListener("pageshow", restored);
+  }, []);
   async function buy() {
     if (busy) return;
     setBusy(true);
