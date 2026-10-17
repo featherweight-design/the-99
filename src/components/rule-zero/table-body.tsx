@@ -1,3 +1,4 @@
+"use client";
 // The table page's body (plan PR 3; boards `R1 - Read-Phone` and `R2 - Read-Desktop`): the head, the read, every
 // seat, and `Log this game`. ONE TREE AT BOTH WIDTHS: the phone stacks the read, the seats and the log in that order;
 // desktop (R2) puts one seat per row on the left and the read with `Log this game` in a 392px column on the right,
@@ -9,7 +10,9 @@
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { drawTable, logGameHref, type TableView } from "../../lib/rule-zero/table-view";
+import { closesWhen } from "../../lib/social/when";
 import { GhostButton } from "../ui/button";
+import { useHydrated } from "../ui/hydrated-art";
 import { ReadCard } from "./read-card";
 import { TableSeat } from "./table-seat";
 
@@ -18,18 +21,20 @@ const copy = ruleZeroCopy.page;
 export function TableBody({
   view,
   gamesEnabled,
-  closes,
+  now,
   updated,
 }: {
   view: TableView;
   /** `socialGamesEnabled(env)` for the reader. */
   gamesEnabled: boolean;
-  /** The closing time as the page meta draws it (`9:40 pm tomorrow`), formatted by the page. */
-  closes: string;
+  /** The server's clock at the draw: the close time is `today` or `tomorrow` against it. */
+  now: Date;
   /** `updated just now`'s when, once the poll lands (PR 4). */
   updated?: string;
 }) {
   const draw = drawTable(view);
+  // The server's draw is in UTC, the reader's own zone after hydration, so the two first renders agree (`when.ts`).
+  const closes = closesWhen(view.closesAt, now, useHydrated() ? undefined : "UTC");
   const log = gamesEnabled ? logGameHref(view) : null;
   return (
     <div data-testid="table-body" className="flex flex-col gap-[14px] md:gap-[22px]">

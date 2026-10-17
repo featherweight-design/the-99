@@ -7,11 +7,13 @@ import { describe, expect, it } from "vitest";
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
 import { TABLES, VIEWER_DECK_ID } from "../../lib/rule-zero/table-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
+import { closesWhen } from "../../lib/social/when";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
 
+const NOW = new Date("2026-10-16T21:40:00Z");
 const draw = (view: TableView, gamesEnabled = true) =>
-  render(<TableBody view={view} gamesEnabled={gamesEnabled} closes="9:40 pm tomorrow" />);
+  render(<TableBody view={view} gamesEnabled={gamesEnabled} now={NOW} />);
 
 const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
 const headline = () => within(screen.getByTestId("read-card")).getByRole("heading", { level: 2 });
@@ -25,7 +27,9 @@ describe("TableBody", () => {
     expect(screen.getByTestId("read-band")).toHaveTextContent("TABLE");
     expect(screen.getAllByTestId("rail-face")).toHaveLength(4);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Rule 0 check");
-    expect(screen.getByText("Thursday night · set by Colin · 4 seated · open until 9:40 pm tomorrow")).toBeInTheDocument();
+    // After hydration the close time is the reader's own zone's, so the expectation is too (`closesWhen`).
+    const closes = closesWhen(TABLES.T1.closesAt, NOW);
+    expect(screen.getByText(`Thursday night · set by Colin · 4 seated · open until ${closes}`)).toBeInTheDocument();
   });
 
   it("T2: the high seat carries ▲ Above the table in words, its reason, and the headline in its ink", () => {

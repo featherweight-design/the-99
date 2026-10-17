@@ -56,6 +56,7 @@ export const ruleZeroCopy = {
     title: "Rule 0 check",
     meta: (pod: string, setter: string | null, n: number, closes: string) =>
       `${pod} · set by ${setter ?? "you"} · ${seated(n)} · open until ${closes}`,
+    closesTomorrow: (time: string) => `${time} tomorrow`, // "9:40 pm tomorrow"; today's close is the time alone
     seats: "Seats", // setter only
     readKicker: "The read",
     updated: (when: string) => `updated ${when}`, // "updated just now", "updated 9:42 pm"
