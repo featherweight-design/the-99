@@ -9,24 +9,27 @@ import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
-import { LandingColumn, PRIMARY_BUTTON } from "../../components/social/friend-landing";
+import { PRIMARY_BUTTON } from "../../components/social/friend-landing";
+import { NEWCOMER_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
 import { FriendCard } from "../../components/social/friend-card";
 
 export default async function SignUpPage() {
   const { userId } = await auth();
   if (userId) redirect("/");
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-[16px] bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] md:flex-row md:gap-[56px] md:px-0 md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]">
-      <FriendCard face={null} up={false} />
-      <LandingColumn
+    <main className={NEWCOMER_MAIN}>
+      <FriendCard face={null} up={false} compact word={copy.backWord} />
+      <NewcomerColumn
+        variant="invite"
         kicker={copy.kicker}
-        brand
         title={copy.title}
         body={copy.body}
         actions={
-          <SignInButton mode="redirect">
-            <button type="button" className={PRIMARY_BUTTON}>{copy.signIn}</button>
-          </SignInButton>
+          <div className="mt-[22px] flex w-full flex-col md:mt-[10px] md:items-center">
+            <SignInButton mode="redirect">
+              <button type="button" className={PRIMARY_BUTTON}>{copy.signIn}</button>
+            </SignInButton>
+          </div>
         }
         fine={copy.fine}
       />

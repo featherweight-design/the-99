@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { joinCopy } from "../../lib/copy/join";
+import { joinCopy, type Parts } from "../../lib/copy/join";
 
 const m = vi.hoisted(() => ({ claim: vi.fn(), confirm: vi.fn(), hand: vi.fn() }));
 vi.mock("../../app/join/actions", () => ({ claimInviteAction: m.claim, confirmCodeAction: m.confirm, handOverAction: m.hand }));
@@ -12,6 +12,13 @@ vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 import { JoinFlow, type JoinStart } from "./join-flow";
 
 const sender = { displayName: "Ada", commander: null };
+// A body with an emphasized phrase is several nodes: match the paragraph whose whole text is the line.
+const line = (parts: Parts) => {
+  const want = parts.map((p) => (typeof p === "string" ? p : p.em)).join("");
+  return (_: string, el: Element | null) => el?.tagName === "P" && el.textContent === want;
+};
+// The group and the field carry the same label; the field is the textbox.
+const codeInput = () => screen.getByRole("textbox", { name: joinCopy.codeAria }) as HTMLInputElement;
 const start = (s: JoinStart) => render(<JoinFlow token={"t".repeat(43)} start={s} />);
 
 beforeEach(() => {
@@ -30,7 +37,7 @@ describe("JoinFlow", () => {
     expect(screen.getByRole("heading", { name: joinCopy.title("Ada") })).toBeTruthy();
     fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
-    await screen.findByText(joinCopy.codeBody("new@x.dev"));
+    await screen.findByText(line(joinCopy.codeBody("new@x.dev")));
     expect(m.claim).toHaveBeenCalledWith("t".repeat(43), "new@x.dev");
   });
 
@@ -55,7 +62,7 @@ describe("JoinFlow", () => {
 
   it("N4 and N5: a wrong code and an expired one each say so and stay on the code step", async () => {
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
-    const input = screen.getByLabelText(joinCopy.codeAria);
+    const input = codeInput();
     m.confirm.mockResolvedValueOnce({ ok: false, reason: "wrong", triesLeft: 3 });
     fireEvent.change(input, { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
@@ -68,7 +75,7 @@ describe("JoinFlow", () => {
   it("N12: a fifth wrong try ends the invite and names nobody", async () => {
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
     m.confirm.mockResolvedValue({ ok: false, reason: "ended" });
-    fireEvent.change(screen.getByLabelText(joinCopy.codeAria), { target: { value: "123456" } });
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
     await screen.findByText(joinCopy.endedTitle);
     expect(screen.queryByText(/Ada/)).toBeNull();
@@ -79,7 +86,7 @@ describe("JoinFlow", () => {
     start({ kind: "proven", sender, email: "a@x.dev" });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.toSignUp }));
     await waitFor(() => expect(screen.getByText(joinCopy.haveAccountTitle)).toBeTruthy());
-    expect(screen.getByText(joinCopy.haveAccountBody("a@x.dev", "Ada"))).toBeTruthy();
+    expect(screen.getByText(line(joinCopy.haveAccountBody("a@x.dev", "Ada")))).toBeTruthy();
   });
 
   it("N11 and N12 draw their cards with the quiet Sign in link", () => {
@@ -96,7 +103,7 @@ describe("JoinFlow", () => {
     fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
     await screen.findByText(joinCopy.failed);
-    expect(screen.queryByText(joinCopy.codeBody("new@x.dev"))).toBeNull();
+    expect(screen.queryByText(line(joinCopy.codeBody("new@x.dev")))).toBeNull();
     expect((screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement).value).toBe("new@x.dev");
     expect((screen.getByRole("button", { name: /Send a new code in/ }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -108,14 +115,14 @@ describe("JoinFlow", () => {
     fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "b@x.dev" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
     await screen.findByRole("button", { name: /Send a new code in 0:30/ });
-    expect(screen.queryByText(joinCopy.codeBody("b@x.dev"))).toBeNull();
+    expect(screen.queryByText(line(joinCopy.codeBody("b@x.dev")))).toBeNull();
     expect((screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement).value).toBe("b@x.dev");
   });
 
   it("a manual Confirm retires the old Try again, so it cannot resubmit a spent code", async () => {
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
     m.confirm.mockRejectedValueOnce(new Error("network"));
-    fireEvent.change(screen.getByLabelText(joinCopy.codeAria), { target: { value: "123456" } });
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
     await screen.findByText(joinCopy.failed);
     m.confirm.mockResolvedValueOnce({ ok: true });
@@ -139,13 +146,14 @@ describe("JoinFlow", () => {
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: true });
     const boxes = document.querySelectorAll("[aria-hidden] > span");
     expect(boxes[0].className).toContain("group-focus-within:shadow");
-    expect(boxes[0].className).toContain("--danger");
+    // N5: an expired code is neutral, never the danger border.
+    expect(boxes[0].className).not.toContain("--danger");
   });
   it("holds the code field read-only while Confirm is pending, so a retry cannot carry other digits", async () => {
     let release: (v: unknown) => void = () => {};
     m.confirm.mockReturnValue(new Promise((r) => { release = r; }));
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
-    const input = screen.getByLabelText(joinCopy.codeAria) as HTMLInputElement;
+    const input = codeInput();
     fireEvent.change(input, { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
     await waitFor(() => expect(input.readOnly).toBe(true));
@@ -155,7 +163,7 @@ describe("JoinFlow", () => {
   it("moves focus to the new step's heading after a confirmation, and to the code field on the code step", async () => {
     m.confirm.mockResolvedValue({ ok: true });
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
-    fireEvent.change(screen.getByLabelText(joinCopy.codeAria), { target: { value: "123456" } });
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
     await screen.findByText(joinCopy.okTitle);
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: joinCopy.okTitle })));
@@ -164,8 +172,8 @@ describe("JoinFlow", () => {
     start({ kind: "email", sender });
     fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
-    await screen.findByText(joinCopy.codeBody("new@x.dev"));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText(joinCopy.codeAria)));
+    await screen.findByText(line(joinCopy.codeBody("new@x.dev")));
+    await waitFor(() => expect(document.activeElement).toBe(codeInput()));
   });
   it("keeps Continue disabled after a successful hand-over, while the page navigates", async () => {
     const assign = vi.fn();
@@ -190,7 +198,7 @@ describe("JoinFlow", () => {
   });
   it("takes a pasted code with spaces or dashes whole, and sends the digits it draws", async () => {
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
-    const input = screen.getByLabelText(joinCopy.codeAria) as HTMLInputElement;
+    const input = codeInput();
     // A browser cuts a paste to maxLength before any handler runs, so the field must not carry one: the digits are
     // taken from the text and capped in the handler.
     expect(input.hasAttribute("maxlength")).toBe(false);
@@ -199,5 +207,137 @@ describe("JoinFlow", () => {
     fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
     // What is sent is what is drawn: the six digits, not the raw text with its dashes.
     await waitFor(() => expect(m.confirm).toHaveBeenCalledWith("t".repeat(43), "123456"));
+  });
+
+  // Newcomer design review (boards R1 - Newcomer): the pieces the property table pins.
+  it("draws the compact, tilted card with the invitation word on its back", () => {
+    start({ kind: "email", sender });
+    const card = screen.getByTestId("friend-card");
+    expect(card.dataset.variant).toBe("compact");
+    expect(card.className).toContain("w-[150px]");
+    expect(card.className).toContain("rotate-[-3deg]");
+    expect(screen.getByTestId("friend-card-word").textContent).toBe(joinCopy.cardType);
+    expect(screen.queryByTestId("friend-card-badge")).toBeNull();
+    // The face is drawn at twice the board's size, then halved: padding 4px, rules 7px, type line 7.5px after the scale.
+    const front = screen.getByTestId("friend-card-front");
+    expect(front.className).toContain("p-[8px]");
+    expect(front.className).toContain("text-left"); // the page column centres text; the card face reads left, as the table has it
+    expect(screen.getByText(joinCopy.cardRules(sender.displayName), { exact: false }).className).toContain("text-[14px]");
+  });
+
+  it("N6: the check badge sits on the card, hidden from assistive tech", () => {
+    start({ kind: "proven", sender, email: "a@x.dev" });
+    const badge = screen.getByTestId("friend-card-badge");
+    expect(badge.textContent).toBe("✓");
+    expect(badge.getAttribute("aria-hidden")).toBe("true");
+    expect(badge.className).toContain("var(--success)");
+  });
+
+  it("N9: an existing account turns the card face down and the card names nobody", async () => {
+    m.hand.mockResolvedValue({ ok: false, reason: "account" });
+    start({ kind: "proven", sender, email: "a@x.dev" });
+    expect(screen.getByTestId("friend-card-front")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.toSignUp }));
+    await screen.findByText(joinCopy.haveAccountTitle);
+    expect(screen.queryByTestId("friend-card-front")).toBeNull();
+    expect(screen.queryByTestId("friend-card-badge")).toBeNull();
+  });
+
+  it("emphasizes the email in the code and account bodies in --fg at weight 500", async () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    const b = screen.getByText("a@x.dev");
+    expect(b.tagName).toBe("B");
+    expect(b.className).toContain("font-medium");
+    expect(b.className).toContain("var(--fg)");
+  });
+
+  it("the email form: a 13px/600 label, a 48px field, accent border once typed, a full-width Send code", () => {
+    start({ kind: "email", sender });
+    const field = screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement;
+    expect(screen.getByText(joinCopy.emailLabel).closest("label")!.className).toContain("font-semibold");
+    expect(field.className).toContain("h-[48px]");
+    expect(field.className).not.toContain("md:h-");
+    expect(field.className).toContain("var(--border-strong)");
+    fireEvent.change(field, { target: { value: "a" } });
+    expect(field.className).toContain("1px_solid_var(--accent)");
+    const send = screen.getByRole("button", { name: joinCopy.sendCode });
+    expect(send.className).toContain("w-full");
+    expect(send.className).toContain("h-[48px]");
+    expect(send.className).not.toContain("md:");
+  });
+
+  it("N2: while sending, the press is --accent-strong", async () => {
+    m.claim.mockReturnValue(new Promise(() => {}));
+    start({ kind: "email", sender });
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    const sending = await screen.findByRole("button", { name: joinCopy.sendingCode });
+    expect(sending.className).toContain("var(--accent-strong)");
+  });
+
+  it("N3: a labelled group of six 44x54 boxes; empty slots draw a dot, filled ones the accent border", () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    expect(screen.getByRole("group", { name: joinCopy.codeAria })).toBeTruthy();
+    fireEvent.change(codeInput(), { target: { value: "12" } });
+    const boxes = Array.from(document.querySelectorAll("[aria-hidden] > span"));
+    expect(boxes).toHaveLength(6);
+    expect(boxes[0].className).toContain("w-[44px]");
+    expect(boxes[0].className).toContain("h-[54px]");
+    expect(boxes[0].className).toContain("1px_solid_var(--accent)");
+    expect(boxes[2].textContent).toBe("·");
+    expect(boxes[2].className).toContain("var(--fg-disabled)");
+    expect(boxes[2].className).toContain("var(--border-strong)");
+  });
+
+  it("N4: only a wrong code draws the danger border", async () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    m.confirm.mockResolvedValue({ ok: false, reason: "wrong", triesLeft: 3 });
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await screen.findByText(joinCopy.codeWrong);
+    const boxes = Array.from(document.querySelectorAll("[aria-hidden] > span"));
+    expect(boxes.every((b) => b.className.includes("var(--danger)"))).toBe(true);
+    // Confirm stays the filled press, here with six digits in the boxes.
+    expect(screen.getByRole("button", { name: joinCopy.confirm }).dataset.quiet).toBeUndefined();
+  });
+
+  it("N5: an expired code clears the boxes, stays neutral and demotes Confirm to the outline", async () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });
+    m.confirm.mockResolvedValue({ ok: false, reason: "expired" });
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.confirm }));
+    await screen.findByText(joinCopy.codeExpired);
+    expect(codeInput().value).toBe("");
+    const boxes = Array.from(document.querySelectorAll("[aria-hidden] > span"));
+    expect(boxes.some((b) => b.className.includes("var(--danger)"))).toBe(false);
+    const confirm = screen.getByRole("button", { name: joinCopy.confirm });
+    expect(confirm.dataset.quiet).toBe("true");
+    expect(confirm.className).toContain("mt-[8px]");
+    expect(confirm.className).toContain("bg-transparent");
+    expect(confirm.className).not.toContain("bg-[color:var(--accent)]");
+    // Typing a new code brings the filled press back.
+    fireEvent.change(codeInput(), { target: { value: "654321" } });
+    expect(screen.getByRole("button", { name: joinCopy.confirm }).dataset.quiet).toBeUndefined();
+  });
+
+  it("the links row: 44px targets, and the resend is --fg-locked while it cools down", () => {
+    start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 38_000, expired: false });
+    const resend = screen.getByRole("button", { name: /Send a new code in/ });
+    expect(resend.className).toContain("min-h-[44px]");
+    expect(resend.className).toContain("var(--fg-locked)");
+    const other = screen.getByRole("button", { name: joinCopy.otherEmail });
+    expect(other.className).toContain("var(--accent)");
+    expect(other.className).toContain("no-underline");
+  });
+
+  it("N11 and N12: the sign-in line is the quiet 11px mono line with an accent link", () => {
+    start({ kind: "ended" });
+    const link = screen.getByRole("button", { name: joinCopy.signIn });
+    expect(link.className).toContain("var(--accent)");
+    expect(link.className).toContain("no-underline");
+    const quiet = link.closest("p")!;
+    expect(quiet.className).toContain("mt-[22px]");
+    expect(quiet.className).toContain("var(--fg-faint)");
+    expect(quiet.className).toContain("font-mono");
   });
 });

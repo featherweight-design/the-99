@@ -42,6 +42,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
             </SignInButton>
           }
           fine={copy.signedOutFine}
+          fineMuted
         />
       </main>
     );

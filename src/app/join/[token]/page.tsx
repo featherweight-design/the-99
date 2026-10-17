@@ -10,6 +10,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { readJoin } from "../../../lib/invites/join-read";
 import { JoinFlow } from "../../../components/join/join-flow";
+import { NEWCOMER_MAIN } from "../../../components/join/newcomer-column";
 
 // The claim cookie's name and path are the actions' (`app/join/actions.ts`): scoped to this page alone.
 const COOKIE = "invite_claim";
@@ -22,7 +23,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
   const view = await readJoin(token, jar.get(COOKIE)?.value ?? null);
   return (
     // A <main> of its own: signed out, the shell draws none (`Shell`).
-    <main className="flex min-h-screen flex-col items-center justify-center gap-[16px] bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_22%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] md:flex-row md:gap-[56px] md:px-0 md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]">
+    <main className={NEWCOMER_MAIN}>
       <JoinFlow token={token} start={view} />
     </main>
   );

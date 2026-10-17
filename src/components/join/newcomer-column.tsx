@@ -1,0 +1,70 @@
+// The newcomer's column (invites R1 PR 5; boards `R1 - Newcomer` N1 to N12 and `R1 - Invite-Only` I1, I2): one
+// centred column at every width, under a 150×210 card. `/join` and `/sign-up` draw it; the friend landing keeps its
+// own `LandingColumn`. `variant` picks the type scale: the join steps are one scale at every width, the invite-only
+// page steps up at `md`.
+
+import type { ReactNode } from "react";
+import type { Parts } from "../../lib/copy/join";
+import { Emphasis } from "./emphasis";
+
+/** The page frame both pages share: top-aligned, padding 44/24/24/24, the accent wash at 50% 18%. */
+export const NEWCOMER_MAIN =
+  "flex min-h-screen flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
+
+/** The form wrapper (`.form`): full width, left-aligned, 22px under the body. */
+export const FORM = "mt-[22px] flex w-full flex-col text-left";
+
+const H1 = {
+  join: "mt-[28px] text-[22px] leading-[1.25]",
+  invite: "mt-[6px] text-[24px] leading-[1.2] md:mt-0 md:text-[30px]",
+} as const;
+const BODY = {
+  join: "mt-[8px] text-[14px] leading-[1.55]",
+  invite: "mt-[8px] text-[14px] leading-[1.6] md:text-[15px]",
+} as const;
+const FINE = {
+  join: "mt-[14px] text-[11px] leading-[1.55]",
+  invite: "mt-[16px] text-[11px] leading-[1.6] md:mt-[6px]",
+} as const;
+
+export function NewcomerColumn({
+  variant,
+  kicker,
+  title,
+  body,
+  actions,
+  fine,
+  landing,
+}: {
+  variant: "join" | "invite";
+  /** Shown from `md` up only (the invite-only page); the join steps draw none. */
+  kicker?: string;
+  title: string;
+  body?: string | Parts;
+  actions: ReactNode;
+  fine?: string;
+  landing?: "wait" | "go";
+}) {
+  // Everything under the card lands with it: the heading, the body, the actions and the fine print.
+  const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
+  return (
+    <section
+      aria-labelledby="friend-landing-title"
+      className={`flex w-full min-w-0 max-w-[380px] flex-col items-center text-center [overflow-wrap:anywhere] ${variant === "invite" ? "mt-[16px]" : ""}`}
+    >
+      {kicker && (
+        <p className="m-0 mb-[10px] font-mono text-[11px] font-medium uppercase tracking-[.2em] text-[color:var(--accent)] max-md:hidden">{kicker}</p>
+      )}
+      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land}`}>
+        {title}
+      </h1>
+      {body && (
+        <p className={`m-0 font-sans text-[color:var(--fg-body)] ${BODY[variant]} ${land}`}>
+          <Emphasis parts={body} />
+        </p>
+      )}
+      <div className={`flex w-full flex-col ${land}`}>{actions}</div>
+      {fine && <p className={`m-0 font-mono text-[color:var(--fg-faint)] ${FINE[variant]} ${land}`}>{fine}</p>}
+    </section>
+  );
+}
