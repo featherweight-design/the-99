@@ -67,7 +67,7 @@ function CardBack({ dim }: { dim: boolean }) {
       data-testid="friend-card-back"
       className={`friend-card-face friend-card-back box-border rounded-[17px] bg-[color:var(--surface-inset)] p-[12px] shadow-[0_34px_70px_rgba(0,0,0,.6),inset_0_0_0_1px_var(--border-strong)] ${dim ? "opacity-[.42] grayscale" : ""}`}
     >
-      <div className="flex h-full w-full flex-col items-center justify-center gap-[10px] rounded-[10px] [border:1px_solid_var(--border-dashed)] bg-[radial-gradient(240px_260px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px),var(--surface-sunken)]">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-[10px] rounded-[10px] [border:1px_solid_var(--border-dashed)] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(240px_260px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]">
         <div className="flex flex-col items-center">
           <span className="mb-[6px] text-[13px] tracking-[4px] text-[color:var(--accent)]">◆ ◆ ◆</span>
           <span className="font-display text-[58px] font-bold leading-none text-[color:var(--fg)]">99</span>

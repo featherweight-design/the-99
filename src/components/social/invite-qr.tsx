@@ -137,7 +137,7 @@ export function InviteQr({
               shapeRendering="crispEdges"
               className={`block h-[203px] w-[203px] md:h-[174px] md:w-[174px] ${live ? "" : "opacity-[.28] grayscale"}`}
             >
-              <path d={path.d} fill="#0E0F14" />
+              <path d={path.d} className="fill-[color:var(--bg)]" />
             </svg>
           </div>
           {live ? null : (
@@ -195,7 +195,7 @@ function Footer({ children }: { children: React.ReactNode }) {
 function InvitationBack() {
   return (
     <div aria-hidden className="mb-[6px] box-border h-[168px] w-[120px] rotate-[-4deg] rounded-[9px] bg-[color:var(--surface-inset)] p-[6px] shadow-[0_18px_40px_rgba(0,0,0,.5),inset_0_0_0_1px_var(--border-strong)]">
-      <div className="flex h-full w-full flex-col items-center justify-center gap-[6px] rounded-[6px] [border:1px_solid_var(--border-dashed)] bg-[radial-gradient(120px_130px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px),var(--surface-sunken)]">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-[6px] rounded-[6px] [border:1px_solid_var(--border-dashed)] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(120px_130px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]">
         <span className="text-[8px] tracking-[3px] text-[color:var(--accent)]">◆ ◆ ◆</span>
         <span className="font-display text-[30px] font-bold leading-none text-[color:var(--fg)]">99</span>
         <span className="font-mono text-[7px] uppercase tracking-[.3em] text-[color:var(--accent)]">{q.cardBack}</span>

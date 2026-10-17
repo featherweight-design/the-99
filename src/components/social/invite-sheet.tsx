@@ -225,7 +225,7 @@ function Chooser({
 const MINI =
   "absolute left-[16px] top-[10px] box-border flex h-[34px] w-[24px] items-center justify-center rounded-[4px] font-display text-[9px] font-bold md:left-[14px] md:top-[9px]";
 const MINI_CARD =
-  `${MINI} bg-[radial-gradient(18px_18px_at_50%_46%,color-mix(in_oklab,var(--accent)_35%,transparent),transparent_75%),var(--surface-sunken)] text-[color:var(--fg)] shadow-[0_4px_10px_rgba(0,0,0,.5)] [border:1px_solid_var(--border-dashed)]`;
+  `${MINI} bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(18px_18px_at_50%_46%,color-mix(in_oklab,var(--accent)_35%,transparent),transparent_75%)] text-[color:var(--fg)] shadow-[0_4px_10px_rgba(0,0,0,.5)] [border:1px_solid_var(--border-dashed)]`;
 const SLOT = `${MINI} bg-transparent text-[color:var(--fg-disabled)] [border:1.5px_dashed_var(--border-dashed)]`;
 const TURN = {
   a: "[transform:rotate(-14deg)_translate(-8px,2px)]",
