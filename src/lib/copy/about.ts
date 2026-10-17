@@ -86,6 +86,21 @@ export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
 
 /**
+ * Where an entry lives (discovery plan R2·1b, E8): the screens the Reference lists entries by, and the "?" reads
+ * against the page a reader stands on, in the order a reader meets them. A deck's seven are one screen, `deck`, told
+ * apart by `view`, because the builder changes its tab and panel in place rather than by route.
+ */
+export const ABOUT_SCREENS = [
+  'home', 'collection', 'card-details', 'sets', 'proxies', 'history', 'wishlist', 'upload', 'commanders', 'discover',
+  'new-deck', 'decks', 'deck', 'friends', 'account',
+] as const;
+export type AboutScreen = (typeof ABOUT_SCREENS)[number];
+
+/** A deck's views, as the "?" reads them from the builder's live state. */
+export const DECK_VIEWS = ['your-deck', 'shopping', 'stats', 'notes', 'analysis', 'games', 'versions'] as const;
+export type DeckView = (typeof DECK_VIEWS)[number];
+
+/**
  * The feature switches an entry can be tied to (Hugh, 2026-09-25). An entry that names one
  * renders only while that switch is on, and turning it on is what announces it. A closed
  * union, so a misspelled switch is a type error rather than an entry that never appears.
@@ -137,6 +152,10 @@ export interface AboutEntry {
   switch?: AboutSwitch;
   chapter: AboutChapter;
   title: string;
+  /** The screen the entry is about (E8). Every entry has exactly one. */
+  screen: AboutScreen;
+  /** Set exactly when `screen` is `deck`: which of its views. */
+  view?: DeckView;
   route: string;
   /** Appended after the route when the link does not land on the page itself. */
   opens?: string;

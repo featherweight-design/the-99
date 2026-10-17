@@ -995,6 +995,13 @@
       "when": 1792191989718,
       "tag": "0141_payments_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 142,
+      "version": "7",
+      "when": 1792198330365,
+      "tag": "0142_discovery_switches",
+      "breakpoints": true
     }
   ]
 }

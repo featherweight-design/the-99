@@ -86,3 +86,23 @@ describe("the About page's client bundle stays off the database", () => {
     expect(found.map((f) => chainTo(f, via).join(" > "))).toEqual([]);
   });
 });
+
+describe("the About entry list ships only with /about", () => {
+  // `about-entries.ts` is ~1,500 lines of copy (discovery plan R2·1b, R2 gap 6). The "?" fetches the entries it needs
+  // from `GET /api/about/entries`, so no page but `/about` may carry the list in its bundle. The rule names the entry
+  // list, not `about.ts`, whose other copy the shell's account menu and the Analysis tab import on purpose.
+  it("no page outside /about reaches about-entries.ts", { timeout: 60_000 }, () => {
+    const pages = fs.globSync("src/app/**/page.tsx").filter((p) => !p.startsWith("src/app/about/"));
+    expect(pages.length, "the guard found no pages, so it checks nothing").toBeGreaterThan(10);
+    const { files, via } = clientGraph([LAYOUT, ...pages]);
+    const found = [...files].filter((f) => importsCopy(f, "src/lib/copy/about-entries.ts"));
+    expect(found.map((f) => chainTo(f, via).join(" > "))).toEqual([]);
+  });
+
+  it("recognizes an import of the list, so a green above is not a matcher that never fires", () => {
+    // `visible.ts` is a server module that imports the list by value; the walk above is the one the deck page's rule
+    // relies on, and its failure path was run by importing the list into the shell's account menu.
+    expect(importsCopy("src/lib/about/visible.ts", "src/lib/copy/about-entries.ts")).toBe(true);
+  });
+});
+

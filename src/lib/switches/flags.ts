@@ -15,6 +15,7 @@ import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
+import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { momentsEnabled } from "../moments/flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
@@ -56,7 +57,9 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   DECK_STATS_ENABLED: deckStatsEnabled,
   DECK_TOKENS_ENABLED: deckTokensEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
+  FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
+  HELP_PANEL_ENABLED: helpPanelEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
   LABEL_SURFACES_ENABLED: labelSurfacesEnabled,

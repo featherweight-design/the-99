@@ -14,7 +14,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, ALLOWANCE_SLOT, aboutCopy, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
+import { ABOUT_SCREENS, ABOUT_VERSION, ALLOWANCE_SLOT, DECK_VIEWS, aboutCopy, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
 import { aboutEntries } from "./about-entries";
 import pin from "./about.version.json";
 
@@ -359,3 +359,20 @@ describe("the credits entry", () => {
     expect(filled).not.toContain(ALLOWANCE_SLOT);
   });
 });
+
+describe("every entry's place (discovery R2, E8)", () => {
+  it("names one screen, and a view exactly when the screen is a deck", () => {
+    for (const e of aboutEntries) {
+      expect(ABOUT_SCREENS, e.id).toContain(e.screen);
+      if (e.screen === "deck") expect(DECK_VIEWS, e.id).toContain(e.view);
+      else expect(e.view, e.id).toBeUndefined();
+    }
+  });
+
+  it("covers all 21 places the Reference lists, so no screen is drawn empty by accident", () => {
+    const places = new Set(aboutEntries.map((e) => (e.view ? `${e.screen}/${e.view}` : e.screen)));
+    expect(places.size).toBe(ABOUT_SCREENS.length - 1 + DECK_VIEWS.length);
+    expect(places.size).toBe(21);
+  });
+});
+

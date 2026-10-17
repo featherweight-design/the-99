@@ -45,3 +45,39 @@ export function filterChapters<E extends { title: string }, C extends Searchable
     .filter((c) => c.entries.length > 0);
   return { chapters: kept, count: kept.reduce((n, c) => n + c.entries.length, 0), total };
 }
+
+/** Which part of an entry a text search matched first: its title, a line of its caption, or one of its keys. */
+export type EntryField = "title" | "caption" | "key";
+
+export type EntryHit<E> = { entry: E; field: EntryField; before: string; hit: string; after: string };
+
+/**
+ * Search over every entry's text (discovery R2, E12): the title, then the caption, then the keys, each read from the
+ * RESOLVED entry `visibleEntries` returns, so a caption or key line its switch strips is never matched. An entry is
+ * hit once, by the first field that holds the query, and that field is split around the match so the word can be
+ * marked. The order of `entries` is kept. Plain substring, case-insensitive, like `matchTitle`; never a RegExp.
+ *
+ * The shipped contents search (`matchTitle`, `filterChapters`) reads titles only and stays as it is until the old
+ * page is retired (plan R2·7).
+ */
+export function searchEntries<E extends { title: string; caption: string; keys: readonly string[] }>(
+  entries: readonly E[],
+  query: string,
+): EntryHit<E>[] {
+  const out: EntryHit<E>[] = [];
+  for (const entry of entries) {
+    const fields: [EntryField, string][] = [
+      ["title", entry.title],
+      ["caption", entry.caption],
+      ...entry.keys.map((k): [EntryField, string] => ["key", k]),
+    ];
+    for (const [field, text] of fields) {
+      const m = matchTitle(text, query);
+      if (m.matched) {
+        out.push({ entry, field, before: m.before, hit: m.hit, after: m.after });
+        break;
+      }
+    }
+  }
+  return out;
+}
