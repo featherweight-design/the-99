@@ -52,13 +52,26 @@ export async function POST(req: NextRequest) {
   try {
     result = await lookupGuesses(vec, model);
   } catch (err) {
-    // A database without the migration, or with pgvector missing, reads as an index that is not there.
     console.error("[card-scan] lookup failed", err instanceof Error ? err.message : "unknown");
-    return NextResponse.json({ error: "no-index" }, { status: 503, headers: HEADERS });
+    // A database without the migration, or with pgvector missing, has no index to read: `no-index`, which the scanner
+    // says as not ready and never retries. Anything else (the lock an ingest holds while it republishes, a dropped
+    // connection) may pass, so it is `unavailable`, which the scanner retries.
+    const error = missingIndex(err) ? "no-index" : "unavailable";
+    return NextResponse.json({ error }, { status: 503, headers: HEADERS });
   }
   if (result.kind === "no-index") return NextResponse.json({ error: "no-index" }, { status: 503, headers: HEADERS });
   if (result.kind === "model") {
     return NextResponse.json({ error: "model", index: result.index.version, model: result.index.model }, { status: 409, headers: HEADERS });
   }
   return NextResponse.json({ index: result.index, guesses: result.answer.guesses, margin: result.answer.margin }, { headers: HEADERS });
+}
+
+/** Postgres's undefined table (42P01) or undefined object (42704, a `halfvec` type pgvector never installed), on the
+ * error or the cause the driver wrapped it in. */
+function missingIndex(err: unknown): boolean {
+  for (let e: unknown = err, i = 0; e && i < 3; e = (e as { cause?: unknown }).cause, i++) {
+    const code = (e as { code?: unknown }).code;
+    if (code === "42P01" || code === "42704") return true;
+  }
+  return false;
 }

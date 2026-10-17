@@ -74,9 +74,15 @@ describe("POST /api/card-scan/match", () => {
     stub.lookup.mockResolvedValueOnce({ kind: "no-index" });
     expect((await post({ model: SCAN_MODEL, embedding: unit() })).status).toBe(503);
     vi.spyOn(console, "error").mockImplementation(() => {});
-    stub.lookup.mockRejectedValueOnce(new Error("relation \"scan_index_meta\" does not exist"));
-    const failed = await post({ model: SCAN_MODEL, embedding: unit() });
-    expect(failed.status).toBe(503);
-    expect(await failed.json()).toEqual({ error: "no-index" });
+    // A database the migration has not reached (Postgres's undefined table), wrapped as the driver wraps it.
+    stub.lookup.mockRejectedValueOnce(Object.assign(new Error("query failed"), { cause: Object.assign(new Error("relation \"scan_index_meta\" does not exist"), { code: "42P01" }) }));
+    const missing = await post({ model: SCAN_MODEL, embedding: unit() });
+    expect(missing.status).toBe(503);
+    expect(await missing.json()).toEqual({ error: "no-index" });
+    // The lock an ingest holds while it republishes (lock_not_available), or any other failure: one that may pass.
+    stub.lookup.mockRejectedValueOnce(Object.assign(new Error("canceling statement due to lock timeout"), { code: "55P03" }));
+    const locked = await post({ model: SCAN_MODEL, embedding: unit() });
+    expect(locked.status).toBe(503);
+    expect(await locked.json()).toEqual({ error: "unavailable" });
   });
 });
