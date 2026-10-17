@@ -10,8 +10,13 @@ describe("scanTimer", () => {
     t.answered(1300);
     t.answered(1700);
     expect(t.row()?.guess).toEqual([1200]);
-    // the frame empties, and the next card is timed from its own first frame
-    t.frame(1700, 1800, false);
+    // a missed frame does not start a new wait; the scanner settling on an empty frame does
+    t.frame(1700, 1750, false);
+    t.frame(1750, 1800, true);
+    t.answered(1900);
+    expect(t.row()?.guess).toEqual([1200]);
+    t.frame(1800, 1850, false);
+    t.emptied();
     t.frame(1800, 2200, true);
     t.answered(2600);
     expect(t.row()?.guess).toEqual([1200, 800]);
@@ -30,7 +35,7 @@ describe("scanTimer", () => {
     t.frame(400, 700, false);
     t.added(1000, 1250);
     t.reviewed(320.4);
-    expect(t.row()).toEqual({ layout: "phone", frames: 3, read: 300, guess: [], add: [250], mode: [250], review: 320 });
+    expect(t.row()).toEqual({ layout: "phone", frames: 3, read: 305, guess: [], add: [250], mode: [250], review: 320 });
   });
   it("answers no row for a scanner that read no frame, and caps every list", () => {
     const t = scanTimer("phone");
@@ -45,6 +50,15 @@ describe("scanTimer", () => {
     t.frame(0, 250, true);
     t.answered(900);
     expect(parseScanTiming(JSON.parse(JSON.stringify(t.row())))).toEqual(t.row());
+  });
+});
+
+describe("scanTimer's read median", () => {
+  it("counts every read of a long session, not only the first ones", () => {
+    const t = scanTimer("phone");
+    for (let i = 0; i < 400; i++) t.frame(0, 100, false);
+    for (let i = 0; i < 401; i++) t.frame(0, 400, false);
+    expect(t.row()).toMatchObject({ frames: 801, read: 405 });
   });
 });
 

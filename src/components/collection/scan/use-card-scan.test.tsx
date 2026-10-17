@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
+import { scanTimer } from "../../../lib/scan/timing";
+import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { ADDED_MS, DARK_HOLD_MS, useCardScan, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97 };
@@ -512,5 +514,58 @@ describe("useCardScan's wait on the server is bounded", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1), { timeout: 4000 });
     const at = reads;
     await waitFor(() => expect(reads).toBeGreaterThan(at), { timeout: 4000 });
+  });
+});
+
+describe("useCardScan's timing row", () => {
+  const sized = () => {
+    const v = document.createElement("video");
+    Object.defineProperty(v, "videoWidth", { value: 640 });
+    return v;
+  };
+  it("counts no read while the camera has no picture yet", async () => {
+    const timer = scanTimer("phone");
+    let reads = 0;
+    setup({
+      timer,
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        reads++;
+        return { frame: { kind: "none" }, cardInView: false, dark: false };
+      },
+    });
+    await waitFor(() => expect(reads).toBeGreaterThan(3));
+    expect(timer.row()).toBeNull();
+  });
+
+  it("times only an answer that reaches the panel, not one behind Normal's printing step", async () => {
+    const timer = scanTimer("phone");
+    const other = new Float32Array(EMBED_DIM);
+    other[1] = 1;
+    let n = 0;
+    const store = new Map([["the99.scan.mode", "normal"]]);
+    const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: () => {} } as unknown as Storage;
+    let t = 0;
+    const deps: CardScanDeps = {
+      timer,
+      storage,
+      loadChoices: async () => [{ scryfallId: "p1" } as unknown as PrintingChoice],
+      readFrame: async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        n++;
+        if (n < 15) return { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
+        if (n < 30) return { frame: { kind: "none" }, cardInView: false, dark: false };
+        return { frame: { kind: "card", embedding: other }, cardInView: true, dark: false };
+      },
+      getUserMedia: async () => stream(),
+      fetch: vi.fn(() => json({ index: "all", guesses: [SOL], margin: null })) as unknown as typeof globalThis.fetch,
+      wait: async () => {},
+      now: () => (t += 200),
+    };
+    const hook = renderHook(() => useCardScan(true, deps, vi.fn(async () => true), () => {}));
+    act(() => hook.result.current.attachVideo(sized()));
+    await waitFor(() => expect(n).toBeGreaterThan(45), { timeout: 8000 });
+    expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose" } });
+    expect(timer.row()?.guess).toHaveLength(1);
   });
 });

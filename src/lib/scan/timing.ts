@@ -68,8 +68,13 @@ export function median(v: number[]): number | null {
  * One session's recorder. The scanner calls it as things happen; `row` is the session so far, null when the scanner
  * read no frame (it never got a camera). Each mark is a `performance.now()` time from the caller's own clock.
  */
+/** The read median is kept as a histogram of `READ_BUCKET_MS` buckets, the last one taking every slower read, so a
+ * session of any length is counted whole in fixed memory. */
+export const READ_BUCKET_MS = 10;
+const READ_BUCKETS = 500;
+
 export function scanTimer(layout: ScanTimingRow["layout"]) {
-  const reads: number[] = [];
+  const reads = new Array<number>(READ_BUCKETS).fill(0);
   const guess: number[] = [];
   const add: number[] = [];
   const mode: number[] = [];
@@ -85,15 +90,18 @@ export function scanTimer(layout: ScanTimingRow["layout"]) {
     /** A frame was read: it began at `start`, ended at `end`, and held a card or did not. */
     frame(start: number, end: number, card: boolean) {
       frames++;
-      if (reads.length < 400) reads.push(end - start);
+      reads[Math.min(READ_BUCKETS - 1, Math.max(0, Math.floor((end - start) / READ_BUCKET_MS)))]++;
       if (modeAt !== null) {
         keep(mode, end - modeAt);
         modeAt = null;
       }
-      if (!card) {
-        cardSince = null;
-        guessed = false;
-      } else if (cardSince === null) cardSince = start;
+      if (card && cardSince === null && !guessed) cardSince = start;
+    },
+    /** The scanner settled on an empty frame (its own tracker's empty event, never one missed frame): the next card in
+     * is a new wait. */
+    emptied() {
+      cardSince = null;
+      guessed = false;
     },
     /** The scanner's answer for the card in view is on screen. Counted once per card in view: a card that replaces
      * another without the frame emptying is not timed, since nothing marks when it came in. */
@@ -113,9 +121,21 @@ export function scanTimer(layout: ScanTimingRow["layout"]) {
     },
     row(): ScanTimingRow | null {
       if (frames === 0) return null;
-      return { layout, frames, read: median(reads.map(Math.round)), guess: [...guess], add: [...add], mode: [...mode], review };
+      return { layout, frames, read: histogramMedian(reads), guess: [...guess], add: [...add], mode: [...mode], review };
     },
   };
 }
 
 export type ScanTimer = ReturnType<typeof scanTimer>;
+
+/** The median of a read histogram, as the middle of its bucket. */
+function histogramMedian(counts: number[]): number | null {
+  const total = counts.reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  let seen = 0;
+  for (let i = 0; i < counts.length; i++) {
+    seen += counts[i];
+    if (seen * 2 >= total) return Math.min(MAX_MS, i * READ_BUCKET_MS + READ_BUCKET_MS / 2);
+  }
+  return null;
+}

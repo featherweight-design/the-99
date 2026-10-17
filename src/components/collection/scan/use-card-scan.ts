@@ -200,6 +200,7 @@ export function useCardScan(
         // empty view ends the one an answer was taken in, so the card coming back is a new copy (R2).
         if (s.kind === "idle") {
           empties.current++;
+          depsRef.current.timer?.emptied();
           taken.current = null;
           setLastAdded((l) => (l && !l.emptiedSince ? { ...l, emptiedSince: true } : l));
         }
@@ -233,7 +234,8 @@ export function useCardScan(
         if (r.crop) lastCrop.current = r.crop;
         // The scanner's own answer for this frame: a match the frame no longer shows is withdrawn here, not through
         // its callback, so a press never adds the card that was in view before this one.
-        depsRef.current.timer?.frame(t, at, r.frame.kind === "card");
+        // A frame of a camera with no picture yet runs no model, so it is not a read.
+        if (videoEl.videoWidth > 0) depsRef.current.timer?.frame(t, at, r.frame.kind === "card");
         setServer(scanner.frame(r.frame, now(), t));
         // Always hand the browser a turn: a read that answers at once (the camera has no size yet, or no card)
         // would otherwise spin this loop on resolved promises and starve the very events that give the video its size.
@@ -257,11 +259,6 @@ export function useCardScan(
     };
   }, [active, videoEl, blocked, now]);
 
-  // The answer is drawn: the timing row's frame-to-guess ends at this commit, which the next paint shows.
-  useLayoutEffect(() => {
-    if (server.kind === "match") depsRef.current.timer?.answered(now());
-  }, [server, now]);
-
   // A refusal or failure is said once, as it arrives; the screen goes back to looking.
   const lastProblem = useRef<ServerState["kind"] | null>(null);
   useEffect(() => {
@@ -281,6 +278,12 @@ export function useCardScan(
   const reading = scanScreen(inputs);
   const screen = choosing ? scanScreen({ ...inputs, choosing }) : reading;
   const answer = server.kind === "match" ? server.result : null;
+  // The answer is drawn: the timing row's frame-to-guess ends at the commit that puts it on the panel (a sure card or
+  // Not sure), which the next paint shows. A panel over it (a printing step, Added, a hold) is not the answer drawn.
+  const answerShown = answer !== null && screen.kind === "scanning" && ((screen.panel.kind === "sure" && !screen.panel.held) || screen.panel.kind === "notSure");
+  useLayoutEffect(() => {
+    if (answerShown) depsRef.current.timer?.answered(now());
+  }, [answerShown, answer, now]);
   const snapNow = useCallback(
     (): Snap => ({ named: server.kind === "match" ? server.result.guesses.slice(0, 3).map(toScanGuess) : [], crop: lastCrop.current, empties: empties.current }),
     [server],
