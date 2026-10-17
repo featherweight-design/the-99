@@ -31,14 +31,21 @@ export function takeEarlyPrompt(): BeforeInstallPromptEvent | null {
   return early;
 }
 
+export type IosDevice = "iphone" | "ipad";
+
 /**
- * Safari on an iPhone. The how-to sheet's directions are the iPhone's (Share sits in the bottom
- * toolbar; on an iPad it sits at the top), so an iPad is not counted. Chrome, Firefox and Edge on
- * iOS can also add to the home screen from their own Share menus, but their steps differ, so they
- * get no slot either rather than steps that are wrong for them.
+ * Safari on an iPhone or an iPad, which the how-to sheet answers with different steps (Share sits in
+ * the bottom toolbar on an iPhone and at the top, beside the address bar, on an iPad). An iPad in its
+ * desktop-class mode (the default since iPadOS 13) sends a Macintosh user agent, so it is told from a
+ * Mac by its touch points: a Mac has none. Chrome, Firefox and Edge on iOS can also add to the home
+ * screen from their own Share menus, but their steps differ, so they get no slot either rather than
+ * steps that are wrong for them.
  */
-export function isIphoneSafari(ua: string = navigator.userAgent): boolean {
-  return /iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+export function iosSafariDevice(ua: string = navigator.userAgent, touchPoints: number = navigator.maxTouchPoints): IosDevice | null {
+  if (!/Safari/.test(ua) || /CriOS|FxiOS|EdgiOS/.test(ua)) return null;
+  if (/iPhone|iPod/.test(ua)) return "iphone";
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1)) return "ipad";
+  return null;
 }
 
 /** Already running as the installed app. */

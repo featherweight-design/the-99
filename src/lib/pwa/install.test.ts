@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { INSTALL_PROMPT_CAPTURE, isIphoneSafari, takeEarlyPrompt, type BeforeInstallPromptEvent } from "./install-detect";
+import { INSTALL_PROMPT_CAPTURE, iosSafariDevice, takeEarlyPrompt, type BeforeInstallPromptEvent } from "./install-detect";
 import { DISMISSAL_KEY, dismissOnce, dismissalState } from "./install-dismissal";
 import { removeRaw, writeRaw } from "../../components/ui/local-store";
 
@@ -8,15 +8,22 @@ const IPAD_AS_MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit
 const CHROME_IOS = IPHONE.replace("Version/18.0", "CriOS/129.0");
 const ANDROID = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36";
 
-describe("isIphoneSafari", () => {
-  it("is Safari on an iPhone", () => {
-    expect(isIphoneSafari(IPHONE)).toBe(true);
+const IPAD = IPHONE.replace("iPhone; CPU iPhone OS", "iPad; CPU OS");
+
+describe("iosSafariDevice", () => {
+  it("is an iPhone for Safari on an iPhone", () => {
+    expect(iosSafariDevice(IPHONE, 5)).toBe("iphone");
   });
-  it("is not an iPad, Chrome on iOS, or Android: the sheet's steps are the iPhone's", () => {
-    expect(isIphoneSafari(IPAD_AS_MAC)).toBe(false);
-    expect(isIphoneSafari(IPHONE.replace("iPhone; CPU iPhone OS", "iPad; CPU OS"))).toBe(false);
-    expect(isIphoneSafari(CHROME_IOS)).toBe(false);
-    expect(isIphoneSafari(ANDROID)).toBe(false);
+  it("is an iPad for Safari on an iPad, in its mobile or its desktop-class user agent", () => {
+    expect(iosSafariDevice(IPAD, 5)).toBe("ipad");
+    expect(iosSafariDevice(IPAD_AS_MAC, 5)).toBe("ipad");
+  });
+  it("is not a Mac (no touch points), Chrome on iOS or iPadOS, or Android", () => {
+    expect(iosSafariDevice(IPAD_AS_MAC, 0)).toBeNull();
+    expect(iosSafariDevice(CHROME_IOS, 5)).toBeNull();
+    expect(iosSafariDevice(IPAD.replace("Version/18.0", "CriOS/129.0"), 5)).toBeNull();
+    expect(iosSafariDevice(IPAD_AS_MAC.replace("Version/18.0", "FxiOS/129.0"), 5)).toBeNull();
+    expect(iosSafariDevice(ANDROID, 5)).toBeNull();
   });
 });
 

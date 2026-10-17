@@ -10,6 +10,9 @@ import { removeRaw } from "../ui/local-store";
 const ANDROID = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36";
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 
+const IPAD = IPHONE.replace("iPhone; CPU iPhone OS", "iPad; CPU OS");
+const IPAD_AS_MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15";
+
 function as(ua: string, standalone = false) {
   Object.defineProperty(navigator, "userAgent", { value: ua, configurable: true });
   Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
@@ -86,6 +89,25 @@ describe("InstallSlot", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: copy.sheet.done }));
     expect(screen.queryByRole("dialog", { name: copy.sheet.ariaLabel })).toBeNull();
+  });
+
+  it("on iPad Safari, in either user agent, opens the iPad's steps: Share up top, Open as Web App", () => {
+    for (const ua of [IPAD, IPAD_AS_MAC]) {
+      as(ua);
+      render(<InstallSlot />);
+      fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
+      expect(screen.getByText(copy.sheet.ipad.eyebrow)).toBeTruthy();
+      expect(screen.queryByText(copy.sheet.iphone.eyebrow)).toBeNull();
+      expect(screen.getByText(copy.sheet.ipad.steps[2].label)).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it("draws no slot on a Mac, which sends the iPad's desktop user agent with no touch points", () => {
+    as(IPAD_AS_MAC);
+    Object.defineProperty(navigator, "maxTouchPoints", { value: 0, configurable: true });
+    render(<InstallSlot />);
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
   });
 
   it("goes for 30 days when dismissed, and stays gone on the next visit", () => {

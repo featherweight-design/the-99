@@ -7,14 +7,25 @@ export const pwaInstallCopy = {
   dismissAria: "Dismiss install prompt",
   sheet: {
     ariaLabel: "How to add The 99 to your home screen",
-    eyebrow: "Safari on iPhone",
     title: "Put The 99 on your home screen",
     sub: "Safari won’t do it for you. Here’s the 10-second version.",
-    steps: [
-      { icon: "share", num: "1", label: "Tap Share", detail: "The square with an arrow, down in Safari’s toolbar." },
-      { icon: "plus", num: "2", label: "Scroll to “Add to Home Screen”", detail: "It’s a few rows down, past AirDrop." },
-      { icon: "home", num: "3", label: "Tap Add", detail: "Top right. Now it opens full screen, with no address bar." },
-    ],
+    // Share sits in the toolbar at the bottom of an iPhone and at the top of an iPad, beside the address bar.
+    iphone: {
+      eyebrow: "Safari on iPhone",
+      steps: [
+        { icon: "share", num: "1", label: "Tap Share", detail: "The square with an arrow, down in Safari’s toolbar." },
+        { icon: "plus", num: "2", label: "Scroll to “Add to Home Screen”", detail: "It’s a few rows down, past AirDrop." },
+        { icon: "home", num: "3", label: "Tap Add", detail: "Top right. Now it opens full screen, with no address bar." },
+      ],
+    },
+    ipad: {
+      eyebrow: "Safari on iPad",
+      steps: [
+        { icon: "share", num: "1", label: "Tap Share", detail: "The square with an arrow, up top beside the address bar." },
+        { icon: "plus", num: "2", label: "Choose “Add to Home Screen”", detail: "Scroll the list if it’s not in view." },
+        { icon: "home", num: "3", label: "Leave “Open as Web App” on", detail: "Then tap Add, top right. It opens full screen, with no address bar." },
+      ],
+    },
     done: "Got it",
   },
 } as const;

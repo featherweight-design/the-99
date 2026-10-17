@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
-import { isIphoneSafari, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent } from "../../lib/pwa/install-detect";
+import { iosSafariDevice, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent, type IosDevice } from "../../lib/pwa/install-detect";
 import { IosInstallSheet } from "./ios-install-sheet";
 
 /**
@@ -21,7 +21,7 @@ export function InstallSlot() {
   const online = useOnlineStatus();
   const yieldToSearch = search !== null && !online;
   const [held, setHeld] = useState<BeforeInstallPromptEvent | null>(null);
-  const [ios, setIos] = useState(false);
+  const [ios, setIos] = useState<IosDevice | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -29,7 +29,7 @@ export function InstallSlot() {
     if (isStandalone()) return;
     // Read after mount on purpose: none of these exist on the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIos(isIphoneSafari());
+    setIos(iosSafariDevice());
     // Only when there is one: Strict Mode replays this effect, and the replay finds it taken.
     const early = takeEarlyPrompt();
     if (early) setHeld(early);
@@ -95,7 +95,7 @@ export function InstallSlot() {
           </svg>
         </button>
       </div>
-      {sheetOpen ? <IosInstallSheet onClose={() => setSheetOpen(false)} /> : null}
+      {sheetOpen ? <IosInstallSheet device={ios ?? "iphone"} onClose={() => setSheetOpen(false)} /> : null}
     </>
   );
 }
