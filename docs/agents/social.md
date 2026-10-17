@@ -69,3 +69,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   newcomer's first `/friends`, idempotent in either order, with `takeReceipt` drawing the band once from the edge);
   `sweepInvites` behind the hourly `GET /api/cron/invite-sweep`; and the purge revoking the sender's pending Clerk
   invitations after it commits. Proof: `pnpm probe:invites`.
+  PR 5 draws the newcomer's side. `/join/[token]` and `/sign-up` are public in `src/proxy.ts`; a signed-in reader goes Home
+  from either. `readJoin` (`join-read.ts`, the step itself pure as `joinStep`) reads the token's row against the claim cookie
+  once, so a reopened link redraws the code step (N3) or the hand-over (N6) for the browser that claimed it, and a claimed
+  row opened anywhere else, an expired QR (N11) or an ended one (N12) names nobody. The client flow (`components/join/`)
+  calls the three actions and keeps Clerk's sign-in a redirect. Proof, signed out at both widths: `pnpm probe:invites-join`
+  (the contact sheet cannot photograph these routes: it signs in).

@@ -321,6 +321,22 @@ describe("the sheet switch, per reader", () => {
   });
 });
 
+describe("the newcomer's pages", () => {
+  // A newcomer has no account: the invite page and the invite-only sign-up page answer to nobody signed in.
+  it("makes /join/<token> and /sign-up public, and nothing that only starts with them", async () => {
+    for (const path of ["/join/abc", "/sign-up", "/sign-up/", "/sign-up/tasks"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/join", "/sign-upx", "/joined/abc"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+});
+
 describe("the Clerk webhook", () => {
   // Clerk calls it with no session, so it must not be session-protected; its route checks the signature.
   it("is public at its exact path, with or without the trailing slash", async () => {
