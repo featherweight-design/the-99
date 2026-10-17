@@ -404,7 +404,12 @@ export function MomentsProvider({
       // Closed as a teardown, not as the reader's close: under `SPENT_AFTER_MS` the claim goes back (the id is already
       // spent, so the moment never returns); past it the timer has already spent the id and taken the visit, which
       // stays taken.
-      if (showingRef.current?.id === id) close(false);
+      // Then the window decides again: whatever this took away (a showing bubble here, a claim in flight in `decide`),
+      // a control already on screen fires no new intersection to wake it.
+      if (showingRef.current?.id === id) {
+        close(false);
+        decideRef.current();
+      }
     },
     [liveSet, close, persist, broadcast],
   );

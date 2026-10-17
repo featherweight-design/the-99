@@ -586,12 +586,14 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
         <Suppress id="top-off" />
       </MomentsProvider>,
     );
+    // Both on screen before the first bubble, so nothing after the suppression announces Wish again.
     onScreen("Top off");
+    onScreen("Wish");
     await advance(ARRIVE_MS);
     expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
     act(() => suppressNow!("top-off"));
-    onScreen("Wish");
-    await advance(ARRIVE_MS * 4);
+    await advance(0);
+    await advance(0);
     expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
   });
 
