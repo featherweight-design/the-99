@@ -595,6 +595,32 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
   switches on, then off, and with the probe's own `MOMENTS_ENABLED` matching the server's.
 
+- `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
+  the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: `About · Under 99` (twelve short),
+  `About · Over 99` (six over) and `About · Played` (whole, an unowned card over the stand-in limit, five games with
+  opponents, two notes), each built from cards the account owns and no other deck claims, under three free
+  commanders of disjoint colors, so no row is contested and no list matches a precon; a friend, Alex, in `About pod`
+  sharing a spare of a card Played buys; one wishlist want; the reader's social name `Sam`. The earlier upload is the snapshot's own, and an account with none is
+  refused. A rerun deletes the `About · …` decks and purges the `about-fixture-%` friends first. The account is
+  `ABOUT_FIXTURE_USER`, else `E2E_AUDIT_USER_EMAIL` read through Clerk's development instance. It calls
+  `assertScratchBranch` before its first write.
+
+- `pnpm capture:about` photographs About's screenshot set into `public/about/shots/<theme>/<id>.webp` and writes
+  `src/lib/about/shots.generated.ts`: a 390x844, 2x frame per screen (a deck's seven views each count as one), the
+  14 tool crops (3:2, the frame's width, centred on the control) with each tool's halo box as fractions of its crop,
+  and the tour's three pictures (3:2, from the top of the page's own content), in all six themes, set by the
+  `the99_theme` cookie. A deck tool's control is the element its `?tool=` landing haloes, photographed once the
+  halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped down by 5 for an
+  image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
+  and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
+  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with the tools' switches
+  on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to `off`
+  so no bubble, tour or sheet is photographed. It refuses any database but a scratch branch (`assertScratchBranch`)
+  before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
+  upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync
+  choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
+  not captured is listed and exits 1.
+
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
   buckets, the rows a confirm would write, staleness and the token rows it would change. READ-ONLY by
