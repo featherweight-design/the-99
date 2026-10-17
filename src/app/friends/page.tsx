@@ -14,6 +14,7 @@ import { socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/fla
 import { loadInviteCount } from "../../lib/invites/read";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { perfRoute } from "../../lib/perf/timing";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks } from "../../lib/social/friends";
 import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
@@ -24,6 +25,7 @@ import { ACCEPTED_PARAM, originFrom } from "../../lib/social/client-rules";
 import { FriendsView } from "../../components/social/friends-view";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const perf = perfRoute("/friends");
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
@@ -40,21 +42,21 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
   // never an error: the count is an extra, and Add a friend's link path works without it.
   const invitesRead = socialInvitesEnabled(env)
-    ? loadInviteCount(userId, now).catch((error: unknown) => {
+    ? perf.timed("inviteCount", () => loadInviteCount(userId, now)).catch((error: unknown) => {
         console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
         return null;
       })
     : Promise.resolve(null);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   const [profile, { friends, links }, pods, shared] = await Promise.all([
-    ensureProfile(userId, user?.firstName),
-    loadFriendsAndLinks(userId, now),
-    listPods(userId),
-    listSharedPods(userId),
+    perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
+    perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
+    perf.timed("pods", () => listPods(userId)),
+    perf.timed("sharedPods", () => listSharedPods(userId)),
   ]);
   // The inviter is resolved first and the receipt marked shown LAST, once every read the page needs has succeeded: a
   // read that throws shows the error boundary, and a receipt already marked would never be drawn on the retry.
-  const pendingInviter = await pendingReceipt(userId);
+  const pendingInviter = await perf.timed("pendingReceipt", () => pendingReceipt(userId));
   const inviterPublicId = pendingInviter === null ? null : await friendPublicId(userId, pendingInviter);
   // Drawn only when THIS request consumed it: two renders can both read the pending inviter, and one update wins.
   const consumed = pendingInviter !== null && (await takeReceipt(userId)) !== null;
