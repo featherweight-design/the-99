@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor, useSuppressMoment } from "./moments-provider";
 import { HALO_ATTR, TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { useMomentHold } from "../../lib/moments/hold";
-import { VISIT_KEY } from "../../lib/moments/visit";
+import { claimVisit, VISIT_KEY } from "../../lib/moments/visit";
 import type { MomentId } from "../../lib/moments/registry";
 
 const spendMomentAction = vi.fn(async (_id: unknown) => {});
@@ -635,6 +635,9 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     await advance(0);
     expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
     expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
+    // Wish's claim is the one standing: Top off's settled release did not clear it, so another tab is refused.
+    await advance(0);
+    expect(claimVisit("another-tab")).toBe(false);
   });
 
   it("closes a bubble another tab's landing spent, and lets the next control already on screen take the window", async () => {

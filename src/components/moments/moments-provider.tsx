@@ -216,8 +216,17 @@ export function MomentsProvider({
 
   // The retry re-enters `decide` through this, since a callback cannot name itself before it is declared.
   const decideRef = useRef<() => void>(() => {});
+  /** A claim on the visit is in flight; `again` records a decision asked for while it was. */
+  const claiming = useRef(false);
+  const again = useRef(false);
   const decide = useCallback(() => {
     windowTimer.current = null;
+    // One decision at a time: a claim in flight owns the visit for this tab until it settles, so a decision asked for
+    // meanwhile (a landing's spend, another tab's) runs when it does, never beside it.
+    if (claiming.current) {
+      again.current = true;
+      return;
+    }
     // A hidden page shows nothing: its time on screen would be counted without a reader seeing it.
     if (showingRef.current !== null || document.hidden) return;
     // A fallback gives way to the moment's own control whenever that control is drawn, on screen or not.
@@ -238,8 +247,18 @@ export function MomentsProvider({
     // An exclusive claim on the visit across tabs, made under the visit lock and held until the spend takes it or a
     // teardown releases it, so two tabs whose windows close together never both show one. Refused while another tab
     // holds it: look again, since that claim may be released or expire.
+    claiming.current = true;
+    // The claim settles: the next decision asked for meanwhile runs now (or `force` asks one itself).
+    const settle = (force = false) => {
+      claiming.current = false;
+      const run = force || again.current;
+      again.current = false;
+      if (run) decideRef.current();
+    };
     void withVisitLock(() => claimVisit(TAB_ID)).then((ok) => {
       if (!ok) {
+        if (again.current) return settle();
+        claiming.current = false;
         if (windowTimer.current === null) windowTimer.current = window.setTimeout(() => decideRef.current(), RETRY_MS);
         return;
       }
@@ -247,14 +266,15 @@ export function MomentsProvider({
       // Suppressed while the claim was in flight: the landing spent it, so it never shows, and the window decides again
       // once the claim is back, since a control already on screen fires no new intersection to wake it.
       if (spent.current.has(anchor.id)) {
-        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => decideRef.current());
+        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle(true));
         return;
       }
       if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
-        void withVisitLock(() => releaseClaim(TAB_ID));
+        void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle());
         return;
       }
       show(anchor);
+      settle();
     });
   }, [liveSet, show]);
 
