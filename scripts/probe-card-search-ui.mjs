@@ -2,6 +2,9 @@
 // sheet from the header, types, presses a result, and asserts card details shows with Find a deck; then Back three
 // times: the search with its query standing, then the page, then the route before it. Then again with two handovers
 // before the Backs, which is where an extra history stop would show. Run on a list page and on a deck page.
+// Then the desktop leg at 1300 (PR D): the rail slot, the shortcut from a page field and from nowhere, the 540px field
+// beside the rail, a result's card and Escape on it back to the field, a press outside, and the shortcut doing nothing
+// under a dialog.
 //
 //   PROBE_BASE=http://localhost:3437 pnpm probe:card-search-ui
 //
@@ -67,7 +70,7 @@ async function openAndPick(page, tag, index = 0) {
   // On the phone the details sit under "All details"; Find a deck is the footer's door there (H2).
   const more = card(page).first().getByRole("button", { name: /All details/ });
   if (await more.isVisible()) await more.click();
-  const door = card(page).first().getByText(/Find a deck for it/).first();
+  const door = card(page).first().getByText(/Find a deck for it/).locator("visible=true").first();
   await door.waitFor({ timeout: 5_000 }).catch(() => {});
   report(`${tag} Find a deck stays (a first layer)`, await door.isVisible());
   // "All details" is a rung of the card's own (Back or Escape folds it before closing the card): fold it again.
@@ -103,6 +106,87 @@ async function walk(page, tag, before, pageUrl, handovers) {
 
 let shotPage = null;
 
+// The desktop leg (PR D): the rail slot, the shortcut and the field beside the rail, at 1300.
+async function desktopLeg(browser) {
+  const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await context.newPage();
+  shotPage = page;
+  await signIn(page);
+  await page.goto(`${BASE}/collection`, { waitUntil: "networkidle" });
+  const slot = page.locator('aside button[aria-label="Search all cards"]');
+  report("desktop: the rail slot is drawn", await slot.isVisible());
+  const box = await slot.boundingBox();
+  report("desktop: …38px square", Boolean(box) && Math.round(box.width) === 38 && Math.round(box.height) === 38, JSON.stringify(box));
+  const mac = await page.evaluate(() => /mac/i.test(navigator.platform));
+  const keys = mac ? "Meta+k" : "Control+k";
+  report("desktop: …names its shortcut", (await slot.getAttribute("aria-keyshortcuts")) === (mac ? "Meta+K" : "Control+K"));
+
+  // From nowhere: the shortcut opens the field, focused, 540 wide and 12px off the rail.
+  await page.keyboard.press(keys);
+  const field = sheet(page);
+  await field.waitFor({ timeout: 5_000 }).catch(() => {});
+  report("desktop: the shortcut opens the search", await field.isVisible());
+  report("desktop: …field has focus", await field.getByRole("combobox").evaluate((el) => el === document.activeElement));
+  const fbox = await field.boundingBox();
+  const rail = await page.locator("aside").first().boundingBox();
+  report("desktop: …540 wide", Boolean(fbox) && Math.round(fbox.width) === 540, `${fbox?.width}`);
+  report("desktop: …12px out from the rail", Boolean(fbox && rail) && Math.round(fbox.x - (rail.x + rail.width)) === 12, `${fbox && rail ? fbox.x - (rail.x + rail.width) : "?"}`);
+  report("desktop: …not modal", (await field.getAttribute("aria-modal")) === null);
+  report("desktop: …the shortcut shows in the field", /⌘K|Ctrl K/.test((await field.textContent()) ?? ""));
+  report("desktop: …the page is not locked", (await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden");
+
+  // Escape closes, and focus stays where there was none to return to (the shortcut was pressed from nowhere).
+  await page.keyboard.press("Escape");
+  report("desktop: escape closes the empty field", !(await field.isVisible()));
+
+  // From inside a page field: the shortcut opens it, and closing returns focus to that page field.
+  const pageField = onPage(page, 'input[type="search"], input[placeholder*="earch"]').first();
+  await pageField.focus();
+  await page.keyboard.press(keys);
+  report("desktop: the shortcut works inside a page field", await field.isVisible());
+  await page.keyboard.press("Escape");
+  report("desktop: …focus returns to that page field", await pageField.evaluate((el) => el === document.activeElement));
+
+  // The slot opens it too, and returns focus to the slot.
+  await slot.click();
+  report("desktop: the slot opens the search", await field.isVisible());
+  await field.getByRole("combobox").fill(QUERY);
+  const options = field.getByRole("option");
+  await options.first().waitFor({ timeout: 15_000 });
+  const osize = await options.first().locator("span").first().boundingBox();
+  report("desktop: …rows draw art at 30x42", Boolean(osize) && Math.round(osize.width) === 30 && Math.round(osize.height) === 42, JSON.stringify(osize));
+  report("desktop: …the foot names the shortcut", /opens this from anywhere/.test((await field.textContent()) ?? ""));
+
+  // ↓ ↵ opens card details; Escape on the card returns to the field as it was.
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await card(page).first().waitFor({ timeout: 15_000 });
+  report("desktop: a result opens card details", await card(page).first().isVisible());
+  const door = card(page).first().getByText(/Find a deck for it/).locator("visible=true").first();
+  await door.waitFor({ timeout: 5_000 }).catch(() => {});
+  report("desktop: …Find a deck stays", await door.isVisible());
+  report("desktop: …the search stepped aside", !(await field.isVisible()));
+  await page.keyboard.press(keys);
+  report("desktop: …the shortcut does nothing under the card", !(await field.isVisible()));
+  await page.keyboard.press("Escape");
+  await field.waitFor({ timeout: 5_000 }).catch(() => {});
+  report("desktop: escape on the card returns to the field", await field.isVisible());
+  report("desktop: …the query stands", (await field.getByRole("combobox").inputValue()) === QUERY);
+  report("desktop: …focus is on the row that opened it", await page.evaluate(() => Boolean(document.activeElement?.closest("[data-card-search-row]"))));
+
+  // Escape clears, then closes, and the slot has focus again; a press outside closes too.
+  await page.keyboard.press("Escape");
+  report("desktop: escape clears the query first", (await field.getByRole("combobox").inputValue()) === "" && (await field.isVisible()));
+  await page.keyboard.press("Escape");
+  report("desktop: …then closes", !(await field.isVisible()));
+  report("desktop: …focus is back on the slot", await slot.evaluate((el) => el === document.activeElement));
+  await slot.click();
+  await page.mouse.click(900, 600);
+  report("desktop: a press outside closes it", !(await field.isVisible()));
+
+  await context.close();
+}
+
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -134,6 +218,7 @@ async function main() {
     await walk(page, "deck:", `${BASE}/decks`, `${BASE}${href}`, 1);
   }
 
+  await desktopLeg(browser);
   await browser.close();
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exit(failures === 0 ? 0 : 1);

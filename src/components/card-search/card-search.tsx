@@ -105,7 +105,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [attempt, setAttempt] = useState(0);
   const [recents, setRecents] = useState<RecentCard[]>([]);
   const [recentSignals, setRecentSignals] = useState<Record<string, CardSignals> | null>(null);
-  const [active, setActive] = useState(-1);
+  const [moved, setActive] = useState(-1);
   const [returned, setReturned] = useState<string | null>(null);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -166,7 +166,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     openerRef.current?.focus();
   }, []);
 
-  useScrollLock(open);
+  // The desktop's dropdown is not modal, and the page behind it keeps its scroll.
+  useScrollLock(open && !desktop);
   // One history entry while the sheet is up, so Back closes it in one press (resolution 3).
   useBackDismiss(open, close);
 
@@ -220,6 +221,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // What ↑ ↓ and ↵ move through: the results while searching, else the recent cards; nothing offline.
   // Only rows that are drawn: none before their chunk has arrived, none behind a failure panel.
   const list = !online || Layer === null ? [] : searching ? (phase === "failed" ? [] : rows) : recentsFailed ? [] : recentRows;
+  // D2: on the desktop the dropdown opens on recents with the first one active, so ↵ opens it and the arrows move from
+  // there. The phone keeps none: nothing on a touch sheet is keyboard-active.
+  const active = moved === -1 && desktop && !searching && list.length > 0 ? 0 : moved;
 
   const pick = useCallback(
     (from: readonly CardSearchRow[], index: number) => {
@@ -255,20 +259,16 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   // The reader closed the card: the search comes back as it was, the keyboard down and the field unfocused, with
   // the ring on the row that opened it (H3).
-  // Not past md, where no frame is drawn (a phone rotated while the card was up).
-  const desktopRef = useRef(desktop);
-  useEffect(() => {
-    desktopRef.current = desktop;
-  }, [desktop]);
+  // At md and up the desktop's frame is drawn (PR D), so the search comes back there too (D8).
   const onCardDismissed = useCallback(() => {
-    if (!desktopRef.current) setOpen(true);
+    setOpen(true);
   }, []);
 
   // The card's read failed, so no card came up: the search comes back with the failure and Try again (S6).
   const onCardFailed = useCallback(() => {
     if (searching) setPhase("failed");
     else setRecentsFailed(true);
-    if (!desktopRef.current) setOpen(true);
+    setOpen(true);
   }, [searching]);
 
   // The keyboard's place stays in view: `aria-activedescendant` moves no scroll of its own.
@@ -292,13 +292,6 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   }, [open, returned]);
 
   // A navigation takes the sheet with it; the card it opened is closed by the layer (never as a dismissal).
-  // Turned past md with the sheet up (a phone rotated to landscape), the phone frame is not drawn, so the search
-  // closes rather than hold the page's scroll and a Back entry under nothing.
-  const [wasDesktop, setWasDesktop] = useState(desktop);
-  if (wasDesktop !== desktop) {
-    setWasDesktop(desktop);
-    if (desktop) setOpen(false);
-  }
   const [shownOn, setShownOn] = useState(pathname);
   if (shownOn !== pathname) {
     setShownOn(pathname);
@@ -318,7 +311,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         if (list.length === 0) return;
         e.preventDefault();
-        setActive((i) => (e.key === "ArrowDown" ? (i + 1) % list.length : i <= 0 ? list.length - 1 : i - 1));
+        setActive(e.key === "ArrowDown" ? (active + 1) % list.length : active <= 0 ? list.length - 1 : active - 1);
       } else if (e.key === "Enter" && active >= 0) {
         e.preventDefault();
         pick(list, active);
@@ -421,6 +414,16 @@ function PhoneFrame() {
   const { isOpen, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
+  // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
+  useEffect(() => {
+    if (!isOpen) return;
+    const at = document.activeElement;
+    if (!at || at === document.body) inputRef.current?.focus();
+    // On mount only: a frame that mounts open is one the resize just swapped in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Native listeners on the sheet itself: the results are a portal owned by the layer, so their React events bubble
   // through the layer and never reach this frame, while the DOM's own events do.
@@ -581,9 +584,9 @@ function useDesktop(): boolean {
   );
 }
 
-export function SearchGlyph({ size }: { size: number }) {
+export function SearchGlyph({ size, stroke = 1.6 }: { size: number; stroke?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" aria-hidden>
       <circle cx="8.6" cy="8.6" r="5.6" />
       <path d="M12.8 12.8 17 17" />
     </svg>

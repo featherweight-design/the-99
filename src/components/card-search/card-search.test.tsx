@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
 vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 
 const { CardSearchRoot, CardSearchIcon, SEARCH_DEBOUNCE_MS } = await import("./card-search");
+const { pushRecent } = await import("../../lib/card-search/recent");
 
 function mount() {
   render(
@@ -42,6 +43,14 @@ describe("the search sheet (phone)", () => {
     expect(document.querySelector('[role="dialog"], [aria-modal="true"]')).toBeNull();
     await act(async () => fireEvent.click(icon));
     expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+  });
+
+  it("opens on recent cards with none keyboard-active (D2 is the desktop's alone)", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    const icon = mount();
+    await act(async () => fireEvent.click(icon));
+    await act(async () => {});
+    expect(field().getAttribute("aria-activedescendant")).toBeNull();
   });
 
   it("opens with the field focused in the icon's own press, and marks the icon open", async () => {

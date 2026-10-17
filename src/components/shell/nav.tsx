@@ -1,6 +1,8 @@
 "use client";
 
-import { CardSearchIcon } from "../card-search/card-search";
+import { CardSearchIcon, SearchGlyph, useCardSearch } from "../card-search/card-search";
+import { SearchDesktop, useSearchShortcutLabel } from "../card-search/search-desktop";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
@@ -523,6 +525,39 @@ function RailLabel({ label }: { label: string }) {
   );
 }
 
+// The rail's card search slot (card search PR D, R-A): a plain slot under the mark and above Home, with a short rule under
+// it. It lights like a nav slot on hover and while the search is open. The shortcut is in its name tag and nowhere at
+// rest. Drawn only where the shell mounted the search (the switch on, signed in).
+function RailSearchSlot({ bind }: { bind: ReturnType<typeof useRailTag>["bind"] }) {
+  const search = useCardSearch();
+  const shortcut = useSearchShortcutLabel();
+  if (!search) return null;
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={cardSearchCopy.label}
+        aria-haspopup="dialog"
+        aria-expanded={search.isOpen}
+        aria-keyshortcuts={shortcut.keys}
+        data-rail-search=""
+        {...bind("#card-search", `${cardSearchCopy.label} ${shortcut.label}`)}
+        onPointerDown={search.warmSearch}
+        onClick={(e) => search.openSearch(e.currentTarget)}
+        className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
+          search.isOpen
+            ? "bg-elevated text-[color:var(--fg)]"
+            : "bg-transparent text-[color:var(--fg-muted)] hover:bg-elevated hover:text-[color:var(--fg)]"
+        }`}
+      >
+        <SearchGlyph size={19} stroke={1.5} />
+        <RailLabel label={cardSearchCopy.touchRailLabel} />
+      </button>
+      <span aria-hidden className="mt-[6px] mb-[6px] h-px w-6 shrink-0 bg-[color:var(--border-strong)]" />
+    </>
+  );
+}
+
 // A live nav slot. Locked slots are not links: they are buttons that open their
 // note (RailLock, TabLockSlots above).
 type NavSlotProps = {
@@ -650,6 +685,7 @@ export function NavRail({
         className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px] touch:[scrollbar-width:none] touch:[&::-webkit-scrollbar]:hidden"
         aria-label="Primary"
       >
+        <RailSearchSlot bind={bind} />
         {liveItems(locked, openLock).map(({ href, label }) => {
           const active = isActive(pathname, href);
           return (
@@ -689,6 +725,8 @@ export function NavRail({
         <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
       </div>
       {tag}
+      {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
+      <SearchDesktop />
     </aside>
   );
 }

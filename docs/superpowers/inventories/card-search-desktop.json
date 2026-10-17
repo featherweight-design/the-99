@@ -1,0 +1,182 @@
+{
+  "feature": "Card search, PR D: the desktop (rail slot R-A, the 540 field and dropdown beside the rail, the shortcut, the handover)",
+  "note": "Photographed at 1300 against a dev server with CARD_SEARCH_ENABLED, SWAP_TOOLS_ENABLED and FIND_A_DECK_READ_ENABLED on, local-dev's audit account. CARD_SEARCH_DECK is a deck id of that account. S6 (failed) cannot be forced from a browser without breaking the server, so D6 is proved in search-layer.test.tsx.",
+  "widths": [
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "d1-rest",
+      "label": "D1 /collection: the rail slot at rest, under the mark and above Home, with its rule",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "settle": 300
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "d1h-hover",
+      "label": "D1h: a pointer on the slot draws the rail's name tag with the shortcut",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "hoverRail": "Search all cards",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "d2-focused",
+      "label": "D2: opened from the slot, recent cards or the empty sentence, the shortcut at the field's right edge",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRail": "Search all cards",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "d2k-shortcut",
+      "label": "D2 by the shortcut: the same open state from the keyboard, from nowhere",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "pressKey": "ControlOrMeta+k",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "d4-results",
+      "label": "D4: results under the field, rows at 30x42 and 14/600, the foot line and the keys hint",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "settle": 600
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "d5-none",
+      "label": "D5: no results, the Add cards words",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "zqxzq",
+          "searchWait": "No card is named “zqxzq”",
+          "settle": 400
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "d7-card",
+      "label": "D7: a result's card details, unstacked, paging through the results",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "searchPick": 0,
+          "settle": 2500
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "d8-back",
+      "label": "D8: Escape on the card brings the search back as it was, the ring on the row that opened it",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "sol",
+          "searchWait": "20 cards",
+          "searchPick": 0,
+          "settle": 2500
+        },
+        {
+          "pressKey": "Escape",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    },
+    {
+      "id": "dd1-deck",
+      "label": "DD1 /decks/[id]: the rail slot beside the page's own Add a card field",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_SEARCH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ],
+      "view": "src/components/shell/nav.tsx"
+    },
+    {
+      "id": "dd2-deck-open",
+      "label": "DD2 /decks/[id]: the search open over the deck page, the deck still visible",
+      "steps": [
+        {
+          "goto": "/decks/${CARD_SEARCH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRail": "Search all cards",
+          "settle": 900
+        }
+      ],
+      "view": "src/components/card-search/search-desktop.tsx"
+    }
+  ]
+}
