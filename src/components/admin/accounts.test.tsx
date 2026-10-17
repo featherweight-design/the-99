@@ -70,7 +70,7 @@ beforeEach(() => {
 describe("AccountsList (A1 to A3)", () => {
   it("draws a row per account linking to its page, with group, credits and spend, under the tab's sub", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
-    expect(screen.getByText("3 accounts on production. Names and emails from Clerk; the app stores only the id.")).toBeInTheDocument();
+    expect(screen.getByText("3 accounts on production. Names and emails are masked.")).toBeInTheDocument();
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("href", "/admin/accounts/user_9mara");
@@ -105,7 +105,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("searches the masked name through the shared search field, and says when nothing matches", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
+    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "ara q" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
     fireEvent.change(search, { target: { value: "zed" } });
@@ -115,7 +115,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("never matches an email or a Clerk id, which the client does not hold whole", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
+    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     for (const q of ["mara@", "example.com", "user_9", "9mara"]) {
       fireEvent.change(search, { target: { value: q } });
       expect(screen.queryByTestId("account-rows")).toBeNull();
@@ -125,7 +125,7 @@ describe("AccountsList (A1 to A3)", () => {
   it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
     const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", clerkName: null, email: null, initials: "", group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
+    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "user_7" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
     fireEvent.change(search, { target: { value: "·bare" } });

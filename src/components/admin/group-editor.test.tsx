@@ -71,7 +71,7 @@ describe("GroupEditor", () => {
 
   it("filters the list by the masked name only, never an email or an id", () => {
     render(<GroupEditor saved={SAVED} rows={ROWS} />);
-    const search = screen.getByRole("searchbox", { name: "Find an account by name, email or id" });
+    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "JU" } });
     expect(screen.getAllByRole("checkbox").map((c) => c.getAttribute("data-member"))).toEqual(["u_jun"]);
     for (const q of ["j•••@", "x.dev", "u_th"]) {

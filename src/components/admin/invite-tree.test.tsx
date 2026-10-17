@@ -102,9 +102,9 @@ describe("InviteTreeView (M4)", () => {
   it("counts accounts, invited and waiting, and cuts the tree to a search", () => {
     view();
     expect(screen.getByTestId("invite-tree-counts")).toHaveTextContent("3 accounts2 invited1 waiting");
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "col" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "col" } });
     expect(rowsIn(screen.getByTestId("invite-tree")).map((i) => i.getAttribute("data-node") ?? "waiting")).toEqual(["u_hugh", "u_colin", "u_peter", "waiting"]);
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "zzz" } });
     expect(screen.queryByTestId("invite-tree")).toBeNull();
     expect(screen.getByText("No account matches “zzz”.")).toBeTruthy();
     // The field is desktop only, so the cut tree carries its own way back at every width.
@@ -115,7 +115,7 @@ describe("InviteTreeView (M4)", () => {
 
   it("says on the phone that a search carried down from desktop is cutting the tree, and clears it", () => {
     view();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account" }), { target: { value: "pet" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "pet" } });
     const line = screen.getByTestId("invite-tree-filtered");
     expect(line.className).toContain("md:hidden");
     expect(line).toHaveTextContent("Showing accounts matching “pet”.");

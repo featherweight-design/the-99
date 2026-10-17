@@ -13,6 +13,9 @@ import type { SwitchName } from "../switches/registry";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
+/** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
+const FIND_BY_NAME = "Find an account by name";
+
 export const adminCopy = {
   door: { label: "Admin" },
   eyebrow: "Admin",
@@ -217,7 +220,7 @@ export const adminCopy = {
     selected: "selected",
     unselected: "unselected",
     selectedUnsaved: "selected, not saved",
-    find: "Find an account by name, email or id",
+    find: FIND_BY_NAME,
     noMatch: "No account matches.",
     carries: "Overrides this group carries",
     carriesNone: "This group carries no overrides.",
@@ -273,8 +276,8 @@ export const adminCopy = {
   // the Switches list says when the account list is the stored ids (STATES A3).
   accounts: {
     title: "Accounts",
-    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails from Clerk; the app stores only the id.`,
-    search: "Name, email or Clerk id",
+    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails are masked.`,
+    search: FIND_BY_NAME,
     noMatch: (q: string) => `No account matches ${q}.`,
     clerkDown: "Names didn’t load from Clerk.",
     back: "‹ Accounts",
@@ -365,7 +368,7 @@ export const adminCopy = {
       waitingHow: (how: string) => `Waiting · ${how}`,
       openAccount: (name: string) => `Open ${name}`,
       /** The desktop toolbar's search and its three counts. (new, for /copy-review) */
-      search: "Find an account",
+      search: FIND_BY_NAME,
       accounts: (n: number) => `${n} ${n === 1 ? "account" : "accounts"}`,
       invited: (n: number) => `${n} invited`,
       waiting: (n: number) => `${n} waiting`,
@@ -535,7 +538,7 @@ export const adminCopy = {
     cancelAdd: "Cancel",
     noteField: "Note (optional)",
     pendingHint: "Press On or Off to save.",
-    accountSearch: "Search by name, email or id",
+    accountSearch: FIND_BY_NAME,
     accountNoMatch: "No account matches.",
     groupSearch: "Search groups",
     groupNoMatch: "No group matches.",
@@ -590,6 +593,7 @@ export const adminCopy = {
 export const adminMaskCopy = {
   /** D1: an account Clerk holds no name or username for. */
   noName: (idTail: string) => `Account ·${idTail}`,
+  findByName: FIND_BY_NAME,
 } as const;
 
 /**
