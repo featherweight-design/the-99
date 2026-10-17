@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TH Six themes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:2740px;height:2800px;background:#0C0C10;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:80px;row-gap:60px;align-content:start">
+  <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="height:36px;display:flex;align-items:baseline;gap:12px;font-family:'IBM Plex Mono',monospace;color:#95A4A6"><span style="font-size:15px;color:#C6D2D3">{{ t.name }}</span><span style="font-size:11px">{{ t.key }} · A2 revealed row among masked</span></div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <div style="border-radius:12px;overflow:hidden;flex:none;outline:1px solid #2E3340"><dc-import name="AdminR3" scene="revealed" theme="{{ t.key }}" hint-size="900px,820px"></dc-import></div>
+        <div style="border-radius:22px;overflow:hidden;flex:none;outline:1px solid #2E3340"><dc-import name="AdminR3" scene="revealed" theme="{{ t.key }}" phone="{{ true }}" hint-size="390px,844px"></dc-import></div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2740,"height":2800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themes: [
+      { key: 'amonkhet', name: 'Low Sun' },
+      { key: 'kamigawa', name: 'Neon Rain' },
+      { key: 'ixalan', name: 'Canopy' },
+      { key: 'phyrexia', name: 'Oil Haze' },
+      { key: 'eldraine', name: 'Witching Hour' },
+      { key: 'kaldheim', name: 'First Frost' }
+    ] };
+  }
+}
+</script>
+</body>
+</html>
