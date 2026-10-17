@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ABOUT_SCREENS, DECK_VIEWS } from "../copy/about";
+import { aboutEntries } from "../copy/about-entries";
 import { TOOLS } from "../discovery/tools";
 import { DEFAULT_THEME, THEMES } from "../theme/themes";
 import { REQUIRED_SHOTS, TOUR_SHOTS, entryShotFor, shotFor, toolShotId, type ShotSet } from "./shots";
@@ -13,7 +14,7 @@ const MAX_SET_BYTES = 18 * 1024 * 1024;
 
 // Read from the tree (`process.cwd()` is the repository root under Vitest), so CI always runs this test.
 const DIR = join(process.cwd(), "public/about/shots");
-type Entry = { width: number; height: number; bytes: number; quality: number; halo?: readonly number[] };
+type Entry = { width: number; height: number; bytes: number; quality: number; halo?: readonly number[]; entries?: Record<string, readonly number[]> };
 const SET = SHOTS as unknown as Record<string, Record<string, Entry>>;
 const fileOf = (theme: string, id: string) => join(DIR, theme, `${id}.webp`);
 
@@ -43,6 +44,22 @@ describe("the screenshot set's coverage", () => {
       }
     });
     expect(absent, `${theme} has no file for`).toEqual([]);
+  });
+
+  it("places every About entry on its screen's frame in every theme (readiness R2 gap 9)", () => {
+    for (const { key } of THEMES) {
+      for (const e of aboutEntries) {
+        const frame = e.screen === "deck" ? `deck-${e.view}` : e.screen;
+        const box = SET[key]?.[frame]?.entries?.[e.id];
+        expect(box, `${key}/${frame}#${e.id}`).toHaveLength(4);
+        const [x, y, w, h] = box!;
+        expect(Math.min(x, y)).toBeGreaterThanOrEqual(0);
+        expect(w).toBeGreaterThan(0);
+        expect(h).toBeGreaterThan(0);
+        expect(x + w).toBeLessThanOrEqual(1.0001);
+        expect(y + h).toBeLessThanOrEqual(1.0001);
+      }
+    }
   });
 
   it("gives every tool crop its control's halo box, as fractions inside the crop", () => {
