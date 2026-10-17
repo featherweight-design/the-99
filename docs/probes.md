@@ -589,8 +589,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `MOMENTS_ENABLED` is on. A deck that does not draw the target must strip with no halo, spend nothing and leave the visit untouched (taken only
   when a bubble arrived on it); each landing starts on a fresh visit (R1's visit record cleared); a tool no
   deck draws is SKIP, never PASS. Then a stale id (`nope`, `wishlist`, `tour:banner`) is stripped with no halo and
-  writes nothing, and a deck id that does not exist (a deleted deck's) draws the not-found page (the route streams behind `loading.tsx`, so
-  `notFound()` answers 200). It WRITES only the account's `user_prefs.moments_spent`
+  writes nothing, and a deck id that does not exist (a deleted deck's) lands on `/decks` with no `?tool` and no halo (the route
+  streams behind `loading.tsx`, so the redirect answers 200 and the address is the proof). It WRITES only the account's `user_prefs.moments_spent`
   (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
   staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
   switches on, then off, and with the probe's own `MOMENTS_ENABLED` matching the server's.

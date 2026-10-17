@@ -2,7 +2,7 @@
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
 import { deckPrintingsEnabled } from "../../../lib/decks/printings-flag";
 import { perfRoute } from "../../../lib/perf/timing";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners, loadInDeckPartners } from "../../../lib/combos/near-miss";
@@ -257,6 +257,9 @@ export default async function DeckBuilderPage({
     ? early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])))
     : Promise.resolve([] as PrintedInSet[]);
   const detail = await detailRead;
+  // A Try it (`?tool=`) aimed at a deck that is gone since its card rendered lands on `/decks`, with no halo, rather
+  // than on the not-found page (discovery R2, STATES-showcase-reference: "Deck gone since render", L2).
+  if (!detail && query[TOOL_PARAM] !== undefined) redirect("/decks");
   if (!detail) notFound();
   // The commander's art, asked for NOW. The header draws it as a CSS background, which the browser
   // fetches only once the page's markup has streamed and its style is computed, behind every other
