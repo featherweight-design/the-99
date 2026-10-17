@@ -127,7 +127,7 @@ an unnumbered row under step 3, live from the first visit, done at one friend.
 
 ### 4. The no-friends invite (locked: "it invites you to add one")
 
-- Your seat (your signature commander's face, or your initials, with `You` under it) and three dashed seats at 40 —
+- Your seat (your signature commander's face, or your initials, with `You` under it) and four dashed seats at 40 (R2.2: five slots),
   Social R1's table, the empty chairs as "not yet". They are `aria-hidden`: a picture of the table, not controls.
 - One line: `Add the people you play with. Seat them when you log a game, and see their spares when you shop.` (Discovery
   R1's M16 line, kept as the placeholder.) Then Add a friend.

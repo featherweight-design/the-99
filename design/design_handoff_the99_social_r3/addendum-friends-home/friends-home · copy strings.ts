@@ -8,7 +8,7 @@ const friendsCount = (n: number) => (n === 1 ? "1 friend" : `${n} friends`);
 const links = (n: number) => (n === 1 ? "Friend link open" : `${n} friend links open`);
 
 export const friendsHomeCopy = {
-  // ── Home: the Friends section (dashboard, right column at 1180+, last at 390) ──
+  // ── Home: the Friends section (dashboard, right column at 1180+, after Ready to build at 390) ──
   home: {
     // Mono label, drawn uppercase by CSS. The count only with friends.
     head: "Friends",
