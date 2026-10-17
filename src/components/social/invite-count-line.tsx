@@ -25,7 +25,8 @@ export function InviteCountLine({
   className = "",
 }: {
   count: InviteCount;
-  /** The QR's own screens: the live QR is "this QR". */
+  /** The live QR is "this QR": used on the QR screen and on path 2 (plan R4: "Out of invites · 1 held by this QR"
+   * on path 2), where the QR in question is the one path 2's Show an invite QR re-shows. */
   thisQr?: boolean;
   /** `accent` on chooser card 2 while it is open, `off` on card 2 held (--fg-muted, the reason line), `muted`
    * everywhere else, where Out of invites reads in --fg-faint. */

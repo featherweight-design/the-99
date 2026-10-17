@@ -15,7 +15,8 @@ const a = vi.hoisted(() => ({
 const inv = vi.hoisted(() => ({ sendEmailInviteAction: vi.fn(), showInviteQrAction: vi.fn() }));
 vi.mock("../../app/friends/actions", () => a);
 vi.mock("../../app/friends/invite-actions", () => inv);
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => nav }));
 
 import { FriendsView } from "./friends-view";
 import { socialCopy } from "../../lib/copy/social";
@@ -59,7 +60,7 @@ describe("Add a friend, invites off", () => {
 });
 
 describe("Add a friend, invites on", () => {
-  const invites = { left: 2, waiting: 1, liveQr: false, out: false };
+  const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
 
   it("draws the count under the press and opens the chooser, making nothing", () => {
     draw({ invites });
@@ -95,5 +96,30 @@ describe("Add a friend, invites on", () => {
     fireEvent.click(press());
     await act(async () => fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.onTitle) })));
     expect(screen.getByRole("alert").textContent).toContain(socialCopy.invites.createFailed);
+  });
+});
+
+describe("a live QR's expiry with the sheet closed (state C4)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("redraws the page just after the QR expires, so the count line returns to N invites left", () => {
+    vi.useFakeTimers();
+    const qrUntil = new Date(NOW.getTime() + 60_000);
+    draw({ invites: { left: 2, waiting: 0, liveQr: true, qrUntil, out: false } });
+    nav.refresh.mockClear();
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(nav.refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(600));
+    expect(nav.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("schedules nothing with no live QR", () => {
+    vi.useFakeTimers();
+    draw({ invites: { left: 2, waiting: 0, liveQr: false, qrUntil: null, out: false } });
+    nav.refresh.mockClear();
+    act(() => vi.advanceTimersByTime(20 * 60_000));
+    expect(nav.refresh).not.toHaveBeenCalled();
   });
 });

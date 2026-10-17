@@ -19,7 +19,7 @@ const t = inviteCopy.path;
 const q = inviteCopy.qr;
 const NOW = new Date("2026-10-16T12:00:00Z");
 const TOKEN = "B".repeat(43);
-const count = (over: Partial<InviteCount> = {}): InviteCount => ({ left: 3, waiting: 0, liveQr: false, out: false, ...over });
+const count = (over: Partial<InviteCount> = {}): InviteCount => ({ left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false, ...over });
 const fetchMock = vi.fn();
 
 type Props = Parameters<typeof InviteSheet>[0];

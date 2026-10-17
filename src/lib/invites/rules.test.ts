@@ -37,14 +37,19 @@ describe("holdsInvite", () => {
 describe("inviteCount", () => {
   it("is the stock less every row holding, with the waiting and the live QR named apart", () => {
     const rows = [qr(60_000), email(HOLD_MS), email(-1), qr(-1), email(HOLD_MS, "spent")];
-    expect(inviteCount(5, rows, now)).toEqual({ left: 3, waiting: 1, liveQr: true, out: false });
+    expect(inviteCount(5, rows, now)).toEqual({ left: 3, waiting: 1, liveQr: true, qrUntil: ms(60_000), out: false });
     expect(holdingCount(rows, now)).toBe(2);
   });
 
   it("is out at zero left, and never reads below zero", () => {
-    expect(inviteCount(1, [email(HOLD_MS)], now)).toEqual({ left: 0, waiting: 1, liveQr: false, out: true });
+    expect(inviteCount(1, [email(HOLD_MS)], now)).toEqual({ left: 0, waiting: 1, liveQr: false, qrUntil: null, out: true });
     expect(inviteCount(0, [email(HOLD_MS)], now).left).toBe(0);
     expect(inviteCount(0, [], now).out).toBe(true);
+  });
+
+  it("names the latest expiry among the holding open QRs as qrUntil, and null when none holds", () => {
+    expect(inviteCount(5, [qr(60_000), qr(120_000), qr(-1)], now).qrUntil).toEqual(ms(120_000));
+    expect(inviteCount(5, [qr(-1), qr(0), qr(HOLD_MS, "claimed")], now).qrUntil).toBeNull();
   });
 });
 

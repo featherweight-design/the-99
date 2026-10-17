@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { InviteCountLine, inviteCountText } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
 
-const count = (over: Partial<InviteCount> = {}): InviteCount => ({ left: 3, waiting: 0, liveQr: false, out: false, ...over });
+const count = (over: Partial<InviteCount> = {}): InviteCount => ({ left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false, ...over });
 afterEach(cleanup);
 
 describe("the count line", () => {

@@ -41,6 +41,8 @@ const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
 /** Coming back to the window redraws the page, at most this often. */
 const FOCUS_REFRESH_MS = 10_000;
+/** How long after a live QR's expiry the page redraws, so the server reads it as expired. */
+const QR_EXPIRY_REFRESH_SLACK_MS = 500;
 
 /** What a redraw is compared by: the fields the head draws. */
 function drawnKey(p: OwnProfile): string {
@@ -250,6 +252,15 @@ export function FriendsView({
     return () => window.removeEventListener("focus", onFocus);
   }, [router]);
   const refresh = useCallback(() => router.refresh(), [router]);
+  // A live QR holds one invite until it expires (state C4). With its sheet closed nothing else watches that
+  // moment, so the page redraws just after it and the count line returns to `N invites left`. The delay is read
+  // against the server's clock at the draw (`nowMs`), and each redraw schedules afresh.
+  const qrUntilMs = invites?.qrUntil ? invites.qrUntil.getTime() : null;
+  useEffect(() => {
+    if (qrUntilMs === null) return;
+    const t = setTimeout(() => router.refresh(), Math.max(0, qrUntilMs - nowMs) + QR_EXPIRY_REFRESH_SLACK_MS);
+    return () => clearTimeout(t);
+  }, [qrUntilMs, nowMs, router]);
   function openChooser() {
     // Closing it returns focus to Add a friend, never to a Show pressed earlier.
     showOpener.current = null;

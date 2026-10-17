@@ -208,7 +208,7 @@ export function FriendsHead({
         {commander || editing ? null : <div className="mt-[4px] md:hidden">{choose}</div>}
       </div>
 
-      <div className="flex flex-col items-stretch gap-[8px] md:items-end">
+      <div className={`flex flex-col items-stretch md:items-end ${inviteCount !== undefined && heldLine ? "gap-[6px]" : "gap-[8px]"}`}>
         <button
           type="button"
           onClick={() => {
@@ -222,7 +222,7 @@ export function FriendsHead({
           {pressPending ? p.invitePending : p.invite}
         </button>
         {inviteCount === undefined ? heldLine : (
-          <div className="flex flex-col gap-[6px] md:items-end">
+          <div className="flex flex-col gap-[8px] md:items-end">
             {heldLine}
             {inviteCount}
           </div>

@@ -73,10 +73,10 @@ export function InviteQr({
   if (ended === "claimed") {
     return (
       <>
-        <InviteCountLine count={count} className="mb-[16px]" />
-        <div role="status" className="flex flex-col items-center gap-[8px] px-[18px] py-[22px] text-center md:py-[20px]">
+        <InviteCountLine count={count} className="mb-[14px]" />
+        <div role="status" className="flex flex-col items-center gap-[8px] rounded-[12px] bg-[color:var(--surface)] px-[18px] py-[22px] text-center [border:1px_solid_var(--border-strong)] md:py-[20px]">
           <InvitationBack />
-          <b className="mt-[10px] flex items-center gap-[8px] font-display text-[20px] font-bold text-[color:var(--fg)]">
+          <b className="flex items-center gap-[8px] font-display text-[20px] font-bold text-[color:var(--fg)]">
             <i aria-hidden className="not-italic text-[color:var(--success)]">✓</i>
             {inviteCopy.path.sent}
           </b>
@@ -89,7 +89,7 @@ export function InviteQr({
 
   return (
     <>
-      <InviteCountLine count={count} thisQr={live} className="mb-[16px]" />
+      <InviteCountLine count={count} thisQr={live} className="mb-[14px]" />
       <figure className="m-0 flex flex-col items-center gap-[10px] md:gap-[8px]">
         <div
           data-qr-ring=""
@@ -112,7 +112,7 @@ export function InviteQr({
             <span
               role="img"
               aria-label={q.expiredAria}
-              className="absolute left-1/2 top-1/2 flex h-[34px] -translate-x-1/2 -translate-y-1/2 items-center rounded-full bg-[color:var(--bg)] px-[14px] font-mono text-[13px] font-semibold tracking-[.08em] text-[color:var(--fg)] [border:1px_solid_var(--border-dashed)] md:h-[32px] md:text-[12.5px]"
+              className="absolute left-1/2 top-1/2 flex h-[34px] -translate-x-1/2 -translate-y-1/2 items-center rounded-full bg-[color:var(--bg)] px-[16px] font-mono text-[13px] font-semibold tracking-[.08em] text-[color:var(--fg)] [border:1px_solid_var(--border-dashed)] md:h-[32px] md:px-[14px] md:text-[12.5px]"
             >
               {q.expiredChip}
             </span>
@@ -127,12 +127,12 @@ export function InviteQr({
             <span data-qr-time="" className={`font-mono text-[22px] font-semibold md:text-[20px] ${warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg)]"}`}>
               {mmss(secondsLeft)}
             </span>
-            <span className="text-[12px] text-[color:var(--fg-muted)]">{q.left}</span>
+            <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{q.left}</span>
           </p>
-          <p className="m-0 text-center font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{q.meta}</p>
+          <p className="m-0 text-center font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] max-md:mt-[2px]">{q.meta}</p>
         </div>
       ) : (
-        <p className="m-0 mt-[12px] text-center text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">{q.expiredBody}</p>
+        <p className="m-0 mt-[14px] text-center text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">{q.expiredBody}</p>
       )}
 
       <Footer>
@@ -162,7 +162,7 @@ function Footer({ children }: { children: React.ReactNode }) {
 /** The claimed screen's card back: FriendCard's back face, small, with INVITATION for its word. */
 function InvitationBack() {
   return (
-    <div aria-hidden className="box-border h-[168px] w-[120px] rotate-[-4deg] rounded-[9px] bg-[color:var(--surface-inset)] p-[6px] shadow-[0_18px_40px_rgba(0,0,0,.5),inset_0_0_0_1px_var(--border-strong)]">
+    <div aria-hidden className="mb-[6px] box-border h-[168px] w-[120px] rotate-[-4deg] rounded-[9px] bg-[color:var(--surface-inset)] p-[6px] shadow-[0_18px_40px_rgba(0,0,0,.5),inset_0_0_0_1px_var(--border-strong)]">
       <div className="flex h-full w-full flex-col items-center justify-center gap-[6px] rounded-[6px] [border:1px_solid_var(--border-dashed)] bg-[radial-gradient(120px_130px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px),var(--surface-sunken)]">
         <span className="text-[8px] tracking-[3px] text-[color:var(--accent)]">◆ ◆ ◆</span>
         <span className="font-display text-[30px] font-bold leading-none text-[color:var(--fg)]">99</span>

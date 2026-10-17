@@ -126,12 +126,12 @@ export function InviteNew({
           </b>
           <span className="text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{t.sentBody}</span>
           {stage.last ? (
-            <span className="pb-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{t.lastOne}</span>
+            <span className="pb-[12px] font-mono text-[11px] md:pb-[10px] text-[color:var(--fg-faint)]">{t.lastOne}</span>
           ) : (
             <button
               type="button"
               onClick={() => setStage({ kind: "form" })}
-              className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent p-0 font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[36px]"
+              className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent px-[2px] py-0 font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[36px]"
             >
               {t.again}
             </button>
@@ -146,7 +146,7 @@ export function InviteNew({
           }}
         >
           <label htmlFor={`${id}-email`} className="mb-[6px] block text-[13px] font-semibold text-[color:var(--fg)]">{t.emailLabel}</label>
-          <div className="flex flex-col md:flex-row md:gap-[8px]">
+          <div className="flex flex-col md:flex-row md:flex-wrap md:gap-x-[8px]">
             <TextField
               id={`${id}-email`}
               type="email"
@@ -169,17 +169,18 @@ export function InviteNew({
             <button
               type="submit"
               aria-disabled={sending || emailHeld || undefined}
-              className={`mt-[8px] h-[48px] w-full flex-none cursor-pointer rounded-[8px] px-[16px] font-sans text-[15px] md:mt-0 md:h-[40px] md:w-auto md:rounded-[6px] md:text-[13px] ${
-                emailHeld ? `font-medium ${HELD_PRESS} border-0`
-                  : sending ? "border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
-                  : shaped ? "border-0 bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
-                  : "bg-transparent font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)]"
+              className={`order-2 h-[48px] w-full flex-none cursor-pointer rounded-[8px] px-[16px] font-sans text-[15px] md:order-1 md:mt-0 md:h-[40px] md:w-auto md:rounded-[6px] md:text-[13px] ${
+                emailHeld ? `mt-[8px] font-medium ${HELD_PRESS} border-0`
+                  : sending ? "mt-[12px] border-0 bg-[color:var(--accent-strong)] font-semibold text-[color:var(--bg)]"
+                  : shaped ? "mt-[12px] border-0 bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
+                  : "mt-[8px] bg-transparent font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] md:font-semibold"
               }`}
             >
               {sending ? t.sending : t.send}
             </button>
+            {/* Phone: under the field, above Send. Desktop: under the field+Send row, above the hint. */}
+            {bad ? <p id={`${id}-err`} role="alert" className="order-1 m-0 mt-[8px] text-[12.5px] leading-[1.45] text-[color:var(--danger)] md:order-2 md:basis-full">{t.notAnEmail}</p> : null}
           </div>
-          {bad ? <p id={`${id}-err`} role="alert" className="m-0 mt-[8px] text-[12.5px] leading-[1.45] text-[color:var(--danger)]">{t.notAnEmail}</p> : null}
           <p id={`${id}-hint`} className="m-0 mt-[8px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{t.emailHint}</p>
         </form>
       )}

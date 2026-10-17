@@ -46,17 +46,20 @@ export function holdsInvite(row: HoldingRow, now: Date): boolean {
 
 /**
  * What a sender has, from their stock and their rows. `waiting` is every claimed or reserved row still holding,
- * `liveQr` whether an open QR holds one. `left` never reads below zero: the invariant (held ≥ holding) keeps it
+ * `liveQr` whether an open QR holds one, and `qrUntil` the latest expiry among the open QRs holding one (null when
+ * none), so a page whose QR sheet is closed knows when its count line must move back. `left` never reads below zero: the invariant (held ≥ holding) keeps it
  * there, and a reading below would only mean a row the sweep has not yet written down.
  */
-export type InviteCount = { left: number; waiting: number; liveQr: boolean; out: boolean };
+export type InviteCount = { left: number; waiting: number; liveQr: boolean; qrUntil: Date | null; out: boolean };
 
 export function inviteCount(held: number, rows: readonly HoldingRow[], now: Date): InviteCount {
   const holding = rows.filter((r) => holdsInvite(r, now));
   const waiting = holding.filter((r) => r.state !== "qr_open").length;
-  const liveQr = holding.some((r) => r.state === "qr_open");
+  const qrs = holding.filter((r) => r.state === "qr_open" && r.qrExpiresAt !== null);
+  const liveQr = qrs.length > 0;
+  const qrUntil = liveQr ? new Date(Math.max(...qrs.map((r) => r.qrExpiresAt!.getTime()))) : null;
   const left = Math.max(0, held - holding.length);
-  return { left, waiting, liveQr, out: left === 0 };
+  return { left, waiting, liveQr, qrUntil, out: left === 0 };
 }
 
 /** How many rows hold an invite: what an admin Set adds to the left it was given. */

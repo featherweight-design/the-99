@@ -157,7 +157,8 @@ function Chooser({
         className={`${CARD} ${linkHeld ? CARD_OFF : linkPending ? "!border-[color:var(--accent-dim)]" : CARD_LIVE}`}
       >
         <span aria-hidden className={`flex h-[56px] w-[56px] items-center justify-center rounded-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border-dashed)] md:h-[52px] md:w-[52px] ${linkHeld ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg)]"}`}>
-          <QrIcon size={26} />
+          <span className="md:hidden"><QrIcon size={26} /></span>
+          <span className="max-md:hidden"><QrIcon size={24} /></span>
         </span>
         <span className="flex min-w-0 flex-col gap-[3px]">
           <b className={title(linkHeld, linkPending)}>{linkPending ? ch.onPending : ch.onTitle}</b>
