@@ -207,8 +207,15 @@ async function main() {
     const t5 = await rz.setTable(X, P5, [seat(pub[X]), seat(pub[A]), seat(pub[B])]);
     const t6 = await rz.setTable(A, P6, [seat(pub[A]), seat(pub[B]), seat(pub[X])]);
     if (t4.kind !== "set" || t5.kind !== "set" || t6.kind !== "set") throw new Error("purge fixtures refused");
-    await rz.markSeen(X, t6.tableId, new Date());
-    await purgeAccount(X);
+    // The account's own swap and acknowledgement racing its purge: no deadlock, and nothing of it survives.
+    const deckX = await deck(X, "Xi's deck");
+    const [raceSwapX, racePurgeX, raceSeenX] = await Promise.allSettled([
+      rz.setSeatDeck(X, t6.tableId, deckX),
+      purgeAccount(X),
+      rz.markSeen(X, t6.tableId, new Date()),
+    ]);
+    check("a swap and an acknowledgement racing the purge finish", [raceSwapX, racePurgeX, raceSeenX].every((r) => r.status === "fulfilled"),
+      [raceSwapX, racePurgeX, raceSeenX].map((r) => (r.status === "rejected" ? String(r.reason) : "ok")).join(" | "));
     check("the purge leaves no seat of the account", (await count(sql`select count(*)::int as n from rule_zero_seats where user_id = ${X}`)) === 0);
     check("the purge leaves no seen row of the account", (await count(sql`select count(*)::int as n from rule_zero_seen where user_id = ${X}`)) === 0);
     check("the purge deletes a table the account set", (await count(sql`select count(*)::int as n from rule_zero_tables where set_by = ${X}`)) === 0);

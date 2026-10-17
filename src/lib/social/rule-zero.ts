@@ -236,7 +236,11 @@ export type SetSeatDeckResult = "set" | "unchanged" | "refused";
 export async function setSeatDeck(viewerId: string, tableId: unknown, deckId: unknown): Promise<SetSeatDeckResult> {
   if (!isUuid(tableId) || (deckId !== null && !isUuid(deckId))) return "refused";
   return db.transaction(async (tx) => {
-    // The table row first, the lock every seat writer takes, then the deck (the order a reseat takes them).
+    // Pod, then table, then deck: the order setup, a reseat and the account purge take them, so a swap racing its
+    // own player's purge queues on the pod rather than holding the table while the purge holds the deck.
+    const [found] = await tx.select({ podId: ruleZeroTables.podId }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId));
+    if (!found) return "refused";
+    await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, found.podId)).for("update");
     const [table] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId)).for("update");
     if (!table) return "refused";
     if (deckId !== null) {
@@ -265,13 +269,20 @@ export async function setSeatDeck(viewerId: string, tableId: unknown, deckId: un
  */
 export async function markSeen(viewerId: string, tableId: unknown, seenThrough: unknown): Promise<boolean> {
   if (!isUuid(tableId) || !(seenThrough instanceof Date) || Number.isNaN(seenThrough.getTime())) return false;
-  const written = await db.execute(sql`
-    insert into ${ruleZeroSeen} (table_id, user_id, seen_at)
-    select ${tableId}, ${viewerId}, ${seenThrough.toISOString()}::timestamptz
-    where ${seatedAt(viewerId, tableId)}
-    on conflict (table_id, user_id) do update set seen_at = greatest(${ruleZeroSeen}.seen_at, excluded.seen_at)
-    returning table_id`);
-  return written.rows.length > 0;
+  return db.transaction(async (tx) => {
+    // The table row FOR SHARE first, in its own statement: a reseat or a purge removing this player holds it FOR
+    // UPDATE, so the grant below is checked on a snapshot taken after that removal commits, never before it, and a
+    // seen row cannot outlive its seat.
+    const [table] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId)).for("share");
+    if (!table) return false;
+    const written = await tx.execute(sql`
+      insert into ${ruleZeroSeen} (table_id, user_id, seen_at)
+      select ${tableId}, ${viewerId}, ${seenThrough.toISOString()}::timestamptz
+      where ${seatedAt(viewerId, tableId)}
+      on conflict (table_id, user_id) do update set seen_at = greatest(${ruleZeroSeen}.seen_at, excluded.seen_at)
+      returning table_id`);
+    return written.rows.length > 0;
+  });
 }
 
 /** A seated player as the pod row and Home's card draw them: a face and a name, in seat order. */
