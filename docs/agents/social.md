@@ -48,3 +48,18 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   each re-check `socialGamesEnabled` for the signed-in reader and answer an empty list when it is off, and
   `loadDeckOpponents` returns a deck's seats and matchups, or null when the switch is off, there are no games or the read
   failed (logged, never thrown). None has a caller beyond its tests and the probe until the form (PR 2) and the Games tab (PR 4).
+
+- **Invites** (plan `2026-10-16-invites.md`), behind `SOCIAL_INVITES_ENABLED` (needs `SOCIAL_FRIENDS_ENABLED`; dark
+  until the UI PR). PR 1 is the data and the pure rules (`src/lib/invites/rules.ts`, `tokens.ts`, `read.ts`). PR 2 is
+  the sender's writes: `sendEmailInvite` and `showInviteQr` (`send.ts`) and the admin's `setInvites`,
+  `topUpGroupInvites` and `revokeReservation` (`admin.ts`), each under the sender's advisory lock
+  (`lockSenderIn`, `invites:<sender>`). Every one but the revoke re-reads what is left through `readCountIn` (a revoke
+  only stops a row holding, which cannot break it), so the invariant (`held` ≥ the rows holding) holds. The email path commits its reservation BEFORE Clerk is asked and answers every outcome
+  after that as a success, at `SEND_FLOOR_MS` (`floor.ts`, 1500ms: about 2.4 times staging's measured Clerk READ p99, since a create was not measured), so neither the
+  words nor the time tell a sender whether an address has an account; a Clerk refusal and an indeterminate send both
+  keep holding. `src/lib/invites/clerk.ts` is the one caller of Clerk's invitations API, and `mail.ts` the Resend
+  `fetch`, FAIL CLOSED: without `RESEND_API_KEY`, `INVITE_EMAIL_FROM` and `INVITE_CODE_SECRET`, nothing is fetched.
+  The actions are `src/app/friends/invite-actions.ts`; the sender's sheet polls `GET /api/invite-qr?t=` (own row
+  only). Admin history lines are `admin_events` kinds `invites_set`, `invites_topped_up` and `invite_revoked`; a
+  sender's own sends and a newcomer's join are NOT logged there, because `admin_events.actor_id` survives the purge
+  and would keep a deleted player's id: PR 6 reads them from the rows. Proof: `pnpm probe:invites`.

@@ -27,6 +27,12 @@ export const RATE_RULES = {
    * no honest reader starts ten purchases in an hour.
    */
   checkout: { limit: 10, windowMs: 3_600_000 },
+  /** An invite by email, per sender (invites R11): a sender holds a handful of invites, so dozens an hour is a loop. */
+  "invite-email": { limit: 30, windowMs: 3_600_000 },
+  /** A newcomer's Send code at `/join`, keyed by the token's SENDER, since the newcomer has no account (R11). */
+  "invite-claim": { limit: 30, windowMs: 3_600_000 },
+  /** A newcomer's code typed at `/join`, keyed by the token's sender (R11). Five wrong tries end a claim anyway. */
+  "invite-code": { limit: 60, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;

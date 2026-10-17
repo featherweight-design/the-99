@@ -56,6 +56,7 @@
     "probe:game-opponents": "tsx scripts/probe-game-opponents.mts",
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",
+    "probe:invites": "tsx scripts/probe-invites.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:card-search": "tsx scripts/probe-card-search.mts",
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
