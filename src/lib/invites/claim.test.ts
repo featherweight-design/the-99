@@ -49,6 +49,14 @@ describe("decideClaim (Send code)", () => {
 });
 
 describe("decideConfirm", () => {
+  it("answers proven again to the claiming browser once the claim is proven (a retry after a lost response), and to nobody else", () => {
+    const proven = claimed({ provenAt: NOW, codeHmac: null, codeExpiresAt: null });
+    expect(decideConfirm(proven, COOKIE, "123456", SECRET, NOW)).toEqual({ kind: "proven" });
+    expect(decideConfirm(proven, "someone-else", "123456", SECRET, NOW)).toEqual({ kind: "ended" });
+    expect(decideConfirm({ ...proven, holdsUntil: at(-1) }, COOKIE, "123456", SECRET, NOW)).toEqual({ kind: "ended" });
+    // A row with its code still live is not yet the proven state a replay answers.
+    expect(decideConfirm(claimed({ provenAt: NOW, codeTries: 4 }), COOKIE, "000000", SECRET, NOW)).toEqual({ kind: "ends" });
+  });
   it("proves the right code from the claiming browser", () => {
     expect(decideConfirm(claimed(), COOKIE, "123456", SECRET, NOW)).toEqual({ kind: "proven" });
     expect(decideConfirm(claimed(), COOKIE, "123 456", SECRET, NOW)).toEqual({ kind: "proven" });

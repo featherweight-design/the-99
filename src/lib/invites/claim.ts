@@ -167,6 +167,8 @@ export type ConfirmDecision =
 
 export function decideConfirm(row: Row | undefined, presentedSecret: string | null, rawCode: string, secret: string, now: Date): ConfirmDecision {
   if (!row || row.kind !== "qr" || !claimLive(row, now) || !cookieMatches(row, presentedSecret)) return END;
+  // Already proven by this browser: a retry after a lost response is the same answer, not an ended invite.
+  if (row.provenAt !== null && row.codeHmac === null && row.codeTries < CODE_MAX_TRIES) return { kind: "proven" };
   const state = codeState({ codeExpiresAt: row.codeExpiresAt, codeTries: row.codeTries }, now);
   if (state === "spent" || state === "none") return END;
   if (state === "expired") return { kind: "expired" };
@@ -199,8 +201,11 @@ export async function confirmCode(
     switch (decision.kind) {
       case "proven":
         // Used once: the code is cleared, so the same six digits prove nothing a second time.
-        await tx.update(inviteReservations).set({ provenAt: now, codeHmac: null, codeExpiresAt: null })
-          .where(eq(inviteReservations.id, row.id));
+        // The stamp and the code's clearing happen once: a replay of an already-proven claim writes nothing.
+        if (row.provenAt === null) {
+          await tx.update(inviteReservations).set({ provenAt: now, codeHmac: null, codeExpiresAt: null })
+            .where(eq(inviteReservations.id, row.id));
+        }
         return { ok: true };
       case "wrong":
         await tx.update(inviteReservations).set({ codeTries: row.codeTries + 1 }).where(eq(inviteReservations.id, row.id));

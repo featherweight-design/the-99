@@ -403,7 +403,11 @@ async function main() {
     const wrong2 = await confirmCode(q2.token, lastCode() === "123456" ? "654321" : "123456", c2.claimSecret, { env });
     check("a wrong code proves nothing and counts a try", !wrong2.ok && wrong2.reason === "wrong" && wrong2.triesLeft === 4);
     check("the right code proves the mailbox", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok);
-    check("the same code is no good a second time", (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok === false);
+    const provenAt2 = (await db.execute<{ p: string }>(sql`select proven_at::text as p from invite_reservations where id = ${r2}`)).rows[0].p;
+    check("the same code again from the proven browser answers proven and writes nothing (a retry after a lost response)",
+      (await confirmCode(q2.token, lastCode(), c2.claimSecret, { env })).ok === true
+      && (await db.execute<{ p: string }>(sql`select proven_at::text as p from invite_reservations where id = ${r2}`)).rows[0].p === provenAt2);
+    check("…and to no other browser", (await confirmCode(q2.token, lastCode(), "someone-else", { env })).ok === false);
     const h1 = await handOver(q2.token, c2.claimSecret, { clerk: clerk3.clerk });
     check("Continue hands over the invitation's url", h1.ok && h1.url.includes("ticket="));
     const mk1 = clerk3.created[clerk3.created.length - 1];
