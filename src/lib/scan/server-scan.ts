@@ -41,8 +41,9 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   let scan = startStableScan(deps.now());
   let inFlight: AbortController | null = null;
   let state: ServerState = { kind: "idle" };
-  // An early answer that was not confident: when to ask again, while the card is still the one settled.
-  let confirmAt: number | null = null;
+  // An early answer that was not confident: the card is asked about again once it has held, UNBROKEN, for the full
+  // dwell. `since` is when its current unbroken run began, null while a frame breaks it (an empty frame, another card).
+  let confirm: { since: number | null } | null = null;
   const set = (s: ServerState) => {
     state = s;
     onState(s);
@@ -50,7 +51,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   const forget = () => {
     inFlight?.abort();
     inFlight = null;
-    confirmAt = null;
+    confirm = null;
   };
   const ask = (embedding: Float32Array, origin: number, early: boolean, runStart: number) => {
     const mine = new AbortController();
@@ -68,7 +69,7 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       if (r.kind === "match" && early && r.margin !== null && r.margin < CONFIDENT_MARGIN) {
         // Not sure enough yet: the screen keeps looking, and the card is asked about again once it has held the full
         // dwell from the start of its run.
-        confirmAt = runStart + DWELL_MS;
+        confirm = { since: runStart };
         set({ kind: "looking" });
         return;
       }
@@ -91,10 +92,14 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
       } else if (out.event?.kind === "lookup") {
         forget();
         ask(out.event.embedding, origin, true, runStart);
-      } else if (confirmAt !== null && now >= confirmAt && f.kind === "card" && scan.value && sameCard(scan.value, f)) {
-        // The card has held the full dwell: this frame's own reading is asked about, and its answer is shown.
-        confirmAt = null;
-        ask(f.embedding, origin, false, now);
+      } else if (confirm !== null) {
+        if (f.kind !== "card" || !scan.value || !sameCard(scan.value, f)) confirm.since = null;
+        else if (confirm.since === null) confirm.since = now;
+        else if (now - confirm.since >= DWELL_MS) {
+          // The card has held the full dwell: this frame's own reading is asked about, and its answer is shown.
+          confirm = null;
+          ask(f.embedding, origin, false, now);
+        }
       }
       // A match answers for the card that settled, as the tracker still holds it (it follows the card's own slow
       // drift frame to frame). While another card is settling in its place, or nothing holds, this frame is not that

@@ -149,6 +149,22 @@ describe("serverScanner's early lookup", () => {
     const { states } = await play(hold(card(0), 4), fetch);
     expect(states).toEqual(["looking", "retrying", "looking"]);
   });
+  it("starts the full dwell again when the card's run is broken before it is asked again", async () => {
+    let clock = 0;
+    const fetch = vi.fn(async () => answer(0.01));
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, () => {});
+    const at = async (f: ScanFrame, t: number) => { clock = t; s.frame(f, t); await flush(); };
+    for (const t of [0, 150, 300]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(none, 450);
+    await at(none, 600);
+    await at(card(0), 750);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    for (const t of [900, 1050, 1200, 1350]) await at(card(0), t);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await at(card(0), 1500);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it("does not ask again once the card is gone", async () => {
     const fetch = vi.fn(async () => answer(0.01));
     const { states } = await play([...hold(card(0), 4), ...hold(none, 20)], fetch);
