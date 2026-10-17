@@ -308,6 +308,8 @@ interface BuilderShellProps {
   /** Try it's `?tool=` (discovery R2, E11), decided by the page from this reader's switches: the deck tool to land
    *  on. The page opens its tab; the shell opens its view and lands on its target. Null strips the parameter. */
   landing?: Pick<ToolLanding, "tool" | "target" | "moment" | "lands"> | null;
+  /** A token that moves on each render carrying `?tool=`, so a landing on the mounted shell runs again. */
+  landingRequest?: string | null;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -373,12 +375,13 @@ export function BuilderShell({
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
   landing = null,
+  landingRequest = null,
 }: BuilderShellProps) {
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
   const [filter, setFilter] = useState<"all" | "shopping">(
     landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
   );
-  useToolLanding(landing, deck.id);
+  useToolLanding(landing, landingRequest ?? deck.id);
   // The grouping persists per reader, as the List / Card view does (`DECK_GROUPING_KEY`): "I read decks by role"
   // is a fact about the reader, not about one deck. By type until this browser says otherwise, which is also what
   // the server renders.
@@ -393,6 +396,16 @@ export function BuilderShell({
   const [view, setView] = useState<BuilderView>(
     initialBuilderView(initialView, versions.length + (originApart ? 1 : 0), analysisEnabled),
   );
+  // A new landing on the mounted shell (a client navigation to this deck with `?tool=`): its tab and view open, as on
+  // first load. Adjusted during render, keyed on the request, so an ordinary refresh keeps the reader's own state.
+  const [seenRequest, setSeenRequest] = useState(landingRequest);
+  if (landingRequest !== seenRequest) {
+    setSeenRequest(landingRequest);
+    if (landing?.lands.kind === "deck") {
+      setView(landing.lands.tab);
+      if (landing.lands.view === "shopping") setFilter("shopping");
+    }
+  }
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
   // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck

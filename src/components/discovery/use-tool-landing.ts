@@ -20,7 +20,8 @@ export const LANDING_WAIT_MS = 8000;
  * (d9, same day), so its moment returns on a later visit.
  *
  * A stale `?tool=` (unknown, its switch now off, or a target that never draws within `LANDING_WAIT_MS`) is stripped
- * with no halo, and spends nothing. `scope` re-runs the landing for a new page of the same route (another deck).
+ * with no halo, and spends nothing. `scope` re-runs the landing: another deck, or a new request on the same one (the
+ * page's per-render token, so a client navigation to this deck with `?tool=` lands again).
  */
 export function useToolLanding(landing: Pick<ToolLanding, "tool" | "target" | "moment"> | null, scope: string): void {
   const targets = useTargets();
@@ -51,12 +52,12 @@ export function useToolLanding(landing: Pick<ToolLanding, "tool" | "target" | "m
         const spend = () => {
           if (moment !== null) suppress(moment);
         };
+        // Only a halo spends: a target gone between the wait and the halo leaves its tip for a later visit.
         if (targets.haloTarget(target)) {
           // One guide at a time: a bubble already showing closes, unspent, so its moment comes back on a later visit.
           yieldBubble();
           void withVisitLock(() => takeVisit()).finally(spend);
         }
-        else spend();
       }
       strip();
     });

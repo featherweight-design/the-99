@@ -271,7 +271,8 @@ export function MomentsProvider({
         void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle(true));
         return;
       }
-      if (showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
+      // A landing took the visit while the claim was in flight (its halo is the visit's one guide): nothing shows.
+      if (peekVisit().taken || showingRef.current !== null || document.hidden || ![...regs.current.values()].includes(anchor) || !clearOver(anchor.el)) {
         void withVisitLock(() => releaseClaim(TAB_ID)).then(() => settle());
         return;
       }

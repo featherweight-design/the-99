@@ -149,6 +149,51 @@ describe("useToolLanding", () => {
     expect(spendMomentAction).toHaveBeenCalledWith("top-off");
   });
 
+  it("spends nothing when its target is gone between the wait and the halo", async () => {
+    at("?tool=top-off");
+    const view = mount("top-off", <Control id="top-off" name="Choose the last" />);
+    // The wait has resolved (the target was drawn); the control goes before the landing's continuation runs.
+    view.rerender(
+      <TargetsProvider>
+        <MomentsProvider live={["top-off", "matchups"]} spent={[]}>
+          <Page asked="top-off" />
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+    await flush();
+    expect(document.querySelector(`[${HALO_ATTR}]`)).toBeNull();
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+
+  it("lands again on a new request for the same page, and strips a stale id that arrives the same way", async () => {
+    function Asked({ request, asked, children }: { request: string; asked: string; children?: React.ReactNode }) {
+      useToolLanding(toolLanding(asked, () => true), request);
+      return <>{children}</>;
+    }
+    const tree = (request: string, asked: string) => (
+      <TargetsProvider>
+        <MomentsProvider live={["top-off", "matchups"]} spent={[]}>
+          <Asked request={request} asked={asked}>
+            <Control id="matchups" name="Split" />
+          </Asked>
+        </MomentsProvider>
+      </TargetsProvider>
+    );
+    at("?tool=matchups");
+    const view = render(tree("r1", "matchups"));
+    await flush();
+    expect(window.location.search).toBe("");
+    act(() => vi.advanceTimersByTime(HALO_MS));
+    at("?tool=nope");
+    view.rerender(tree("r2", "nope"));
+    await flush();
+    expect(window.location.search).toBe("");
+    at("?tool=matchups");
+    view.rerender(tree("r3", "matchups"));
+    await flush();
+    expect(screen.getByRole("button", { name: "Split" }).hasAttribute(HALO_ATTR)).toBe(true);
+  });
+
   it("leaves the visit free when it haloes nothing", async () => {
     at("?tool=top-off");
     mount("top-off", <Control id="matchups" name="Split" />);

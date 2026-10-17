@@ -28,6 +28,7 @@ import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
+import { randomUUID } from "node:crypto";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
@@ -587,6 +588,9 @@ export default async function DeckBuilderPage({
   // Try it's one-time `?tool=` (discovery R2, E11): a deck tool whose switch is on for this reader opens its tab
   // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
   const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
+  // A token per server render that carries `?tool=`: a client navigation to the same deck with a new (or the same)
+  // `?tool=` re-renders the page and moves it, so the mounted shell lands again; a render without one is null.
+  const landingRequest = query[TOOL_PARAM] === undefined ? null : randomUUID();
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
   // deck that was never analyzed (`holdsOpening`'s `analyzed`).
   const storedRead = await storedPermits;
@@ -743,6 +747,7 @@ export default async function DeckBuilderPage({
       // deployment that does not draw it lands on the decklist rather than on an unselected
       // row above an empty panel — the same rule `versions` already has for a brew.
       landing={landing}
+      landingRequest={landingRequest}
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
