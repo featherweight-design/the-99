@@ -244,6 +244,23 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
 export type ReadOnTheSpot = "read" | "busy" | "skipped" | "refused";
 
 /**
+ * The seat's player and deck, only through the viewer's grant, in ONE statement: the viewer's seat at the table, the
+ * table open, the viewer and the seat's player both still in its pod. Two statements under read committed would let a
+ * reseat committing between them pair the old grant with a newly seated deck. Apart so a test can render its SQL.
+ */
+export function seatTargetQuery(viewerId: string, tableId: string, seat: number, q: Pick<typeof db, "select"> = db) {
+  return q
+    .select({ userId: ruleZeroSeats.userId, deckId: decks.id })
+    .from(ruleZeroSeats)
+    .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
+    .innerJoin(viewerSeat, and(eq(viewerSeat.tableId, ruleZeroTables.id), eq(viewerSeat.userId, viewerId)))
+    .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
+    .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
+    .innerJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId)))
+    .where(and(eq(ruleZeroSeats.tableId, tableId), eq(ruleZeroSeats.seat, seat), sql`${ruleZeroTables.expiresAt} > now()`));
+}
+
+/**
  * At most this many on-the-spot reads run at once in this process. Each holds one connection of the process's ONE
  * pool (`src/db/index.ts`, ten by default) for its advisory lock while the build borrows more from the same pool, so
  * an unbounded number of them reading different decks could hold every connection and leave each build waiting on a
@@ -281,15 +298,7 @@ export async function readOnTheSpot(
 
 function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDeps: OwnerDeps): Promise<ReadOnTheSpot> {
   return db.transaction(async (tx: Tx) => {
-    const [table] = await tableGrantQuery(viewerId, tableId, tx);
-    if (!table) return "refused";
-    const [target] = await tx
-      .select({ userId: ruleZeroSeats.userId, deckId: decks.id })
-      .from(ruleZeroSeats)
-      .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
-      .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
-      .innerJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId)))
-      .where(and(eq(ruleZeroSeats.tableId, tableId), eq(ruleZeroSeats.seat, seat)));
+    const [target] = await seatTargetQuery(viewerId, tableId, seat, tx);
     if (!target) return "refused";
     const { rows } = await tx.execute<{ got: boolean }>(sql`
       select pg_try_advisory_xact_lock(hashtextextended(${`rule-zero-read:${target.deckId}`}, 0)) as got`);

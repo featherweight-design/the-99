@@ -2,7 +2,7 @@
 // their own pod membership, in one statement. Only the emitted SQL shows that; `probe:rule-zero` proves the answers.
 import { describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
-import { ON_THE_SPOT_MAX, loadTable, readOnTheSpot, tableGrantQuery } from "./rule-zero-table";
+import { ON_THE_SPOT_MAX, loadTable, readOnTheSpot, seatTargetQuery, tableGrantQuery } from "./rule-zero-table";
 
 const VIEWER = "user_viewer";
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -24,6 +24,18 @@ describe("tableGrantQuery", () => {
     const projection = q.sql.slice(0, q.sql.indexOf(" from "));
     // The pod's owner and the setter are compared on the server and never sent: `TableView` carries booleans and a name.
     expect(projection).not.toMatch(/deck_id|"user_id"/);
+  });
+});
+
+describe("seatTargetQuery", () => {
+  const q = seatTargetQuery(VIEWER, TABLE, 2).toSQL();
+
+  it("selects the seat's deck in the same statement as the viewer's grant, so a reseat cannot fall between them", () => {
+    expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
+    expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
+    expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_seats"."user_id")`);
+    expect(q.sql).toMatch(/where \("rule_zero_seats"\."table_id" = \$3 and "rule_zero_seats"\."seat" = \$4 and "rule_zero_tables"\."expires_at" > now\(\)\)$/);
+    expect(q.params).toEqual([VIEWER, VIEWER, TABLE, 2]);
   });
 });
 
