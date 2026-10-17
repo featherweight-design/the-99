@@ -81,14 +81,6 @@ export default clerkMiddleware(async (auth, req) => {
   if (userId) headers.set(SWITCHES_HEADER, switchBits(env));
   const pass = () => NextResponse.next({ request: { headers } });
   const path = req.nextUrl.pathname;
-  // `/about` itself, as a navigation, in either mode: the page draws and acknowledges the entries
-  // THIS request's switches show, which another instance's memo may not have agreed with when it
-  // redirected here and set the legacy cookie. So that cookie is re-keyed to what this page is
-  // drawn: an entry it did not draw stops matching, and the gate asks again once the instances
-  // agree, rather than the cookie suppressing that entry for good. In sheet mode too, so a cookie
-  // the legacy gate left is still corrected if the reader returns to it.
-  // Any navigation the gate would handle (a document load or a client transition, never a
-  // prefetch), since a reader sent here by a redirect arrives either way.
   // A newcomer's browser is handed its claim secret when it first loads the invite page, so a first Send code whose
   // response never arrives still leaves the cookie behind; `claimInvite` binds the presented secret.
   const withClaimCookie = (response: NextResponse): NextResponse => {
@@ -98,6 +90,14 @@ export default clerkMiddleware(async (auth, req) => {
     }
     return response;
   };
+  // `/about` itself, as a navigation, in either mode: the page draws and acknowledges the entries
+  // THIS request's switches show, which another instance's memo may not have agreed with when it
+  // redirected here and set the legacy cookie. So that cookie is re-keyed to what this page is
+  // drawn: an entry it did not draw stops matching, and the gate asks again once the instances
+  // agree, rather than the cookie suppressing that entry for good. In sheet mode too, so a cookie
+  // the legacy gate left is still corrected if the reader returns to it.
+  // Any navigation the gate would handle (a document load or a client transition, never a
+  // prefetch), since a reader sent here by a redirect arrives either way.
   const rekeyLegacy = (response: NextResponse): NextResponse => {
     if (userId && path === "/about" && gateHandles(req.method, req.headers)) {
       response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
