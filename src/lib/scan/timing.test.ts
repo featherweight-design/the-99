@@ -60,6 +60,12 @@ describe("scanTimer's read median", () => {
     for (let i = 0; i < 401; i++) t.frame(0, 400, false);
     expect(t.row()).toMatchObject({ frames: 801, read: 405 });
   });
+  it("averages the two middle reads of an even count", () => {
+    const t = scanTimer("phone");
+    for (let i = 0; i < 400; i++) t.frame(0, 100, false);
+    for (let i = 0; i < 400; i++) t.frame(0, 400, false);
+    expect(t.row()?.read).toBe(255);
+  });
 });
 
 describe("parseScanTiming", () => {

@@ -128,14 +128,17 @@ export function scanTimer(layout: ScanTimingRow["layout"]) {
 
 export type ScanTimer = ReturnType<typeof scanTimer>;
 
-/** The median of a read histogram, as the middle of its bucket. */
+/** The median of a read histogram, each read taken at its bucket's middle; an even count averages the two middle reads. */
 function histogramMedian(counts: number[]): number | null {
   const total = counts.reduce((a, b) => a + b, 0);
   if (!total) return null;
-  let seen = 0;
-  for (let i = 0; i < counts.length; i++) {
-    seen += counts[i];
-    if (seen * 2 >= total) return Math.min(MAX_MS, i * READ_BUCKET_MS + READ_BUCKET_MS / 2);
-  }
-  return null;
+  const at = (rank: number) => {
+    let seen = 0;
+    for (let i = 0; i < counts.length; i++) {
+      seen += counts[i];
+      if (seen > rank) return i * READ_BUCKET_MS + READ_BUCKET_MS / 2;
+    }
+    return (counts.length - 1) * READ_BUCKET_MS + READ_BUCKET_MS / 2;
+  };
+  return Math.min(MAX_MS, Math.round((at((total - 1) >> 1) + at(total >> 1)) / 2));
 }
