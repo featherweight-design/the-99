@@ -5,7 +5,7 @@
 //   c. `publishScanIndex` replaces the index and its meta row, all rows counted;
 //   d. `lookupGuesses` over pgvector's HNSW agrees with an exact fp32 scan of the same rows, pooled as the lab pools
 //      them: the same first card, every shared guess's score within 2e-3 (halfvec), the margin within 4e-3 wherever it
-//      is under 0.1 (near the scanner's 0.02 gate; a far runner-up is where HNSW's recall is weakest and the margin is
+//      is under the scanner's sure gate plus 0.1 (`SURE_MARGIN` + 0.1; a far runner-up is where HNSW's recall is weakest and the margin is
 //      already huge), and the same side of the gate every time, on rows nudged off themselves and on blends of two
 //      cards' rows, which put the margin near the gate;
 //   e. the most-printed card in the index still gets three distinct guesses;
@@ -23,6 +23,7 @@ import ws from "ws";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { publishScanIndex, readScanRows, scanRowsRefusal } from "./lib/scan-index";
 import { lookupGuesses } from "../src/lib/card-scan/lookup";
+import { SURE_MARGIN } from "../src/lib/scan/lookup";
 import { EMBED_DIM, SCAN_MODEL, poolGuesses } from "../src/lib/card-scan/match";
 
 neonConfig.webSocketConstructor = ws;
@@ -112,7 +113,7 @@ try {
     for (let i = 0; i < EMBED_DIM; i++) q[i] /= Math.sqrt(norm);
     return q;
   };
-  const GATE = 0.02;
+  const GATE = SURE_MARGIN;
   let sameTop = 0, worstScore = 0, worstMargin = 0, gateFlips = 0, nearGate = 0;
   const ms: number[] = [];
   for (let k = 0; k < QUERIES * 2; k++) {
@@ -136,19 +137,19 @@ try {
     if ((got.answer.margin === null) !== (want.margin === null)) worstMargin = Infinity;
     else if (got.answer.margin !== null && want.margin !== null) {
       if ((got.answer.margin >= GATE) !== (want.margin >= GATE)) gateFlips += 1;
-      if (want.margin < 0.1) {
+      if (want.margin < GATE + 0.1) {
         nearGate += 1;
         worstMargin = Math.max(worstMargin, Math.abs(got.answer.margin - want.margin));
       }
     }
   }
   ms.sort((a, b) => a - b);
-  console.log(`     ${sameTop}/${QUERIES * 2} same first card; worst score gap ${worstScore.toFixed(5)}; ${nearGate} margins under 0.1, worst gap ${worstMargin.toFixed(5)}; ${gateFlips} gate flips; lookup median ${ms[ms.length >> 1]}ms, worst ${ms[ms.length - 1]}ms`);
+  console.log(`     ${sameTop}/${QUERIES * 2} same first card; worst score gap ${worstScore.toFixed(5)}; ${nearGate} margins under ${GATE + 0.1}, worst gap ${worstMargin.toFixed(5)}; ${gateFlips} gate flips; lookup median ${ms[ms.length >> 1]}ms, worst ${ms[ms.length - 1]}ms`);
   check("d. HNSW names the exact scan's first card every time", sameTop === QUERIES * 2, `${sameTop}/${QUERIES * 2}`);
   check("d. scores within 2e-3 of fp32", worstScore <= 2e-3, worstScore.toFixed(5));
   check("d. some margins land near the gate", nearGate >= 10, `${nearGate}`);
-  check("d. margins under 0.1 within 4e-3 of fp32", worstMargin <= 4e-3, worstMargin.toFixed(5));
-  check("d. never the other side of the 0.02 gate", gateFlips === 0, `${gateFlips}`);
+  check(`d. margins under ${GATE + 0.1} within 4e-3 of fp32`, worstMargin <= 4e-3, worstMargin.toFixed(5));
+  check(`d. never the other side of the ${GATE} sure gate`, gateFlips === 0, `${gateFlips}`);
 
   // e. the most-printed card
   const per = new Map<string, number[]>();

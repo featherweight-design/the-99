@@ -4,7 +4,7 @@ import { MAX_GUESSES, poolGuesses, vectorLiteral, type MatchAnswer, type NearRow
 
 /**
  * HNSW's candidate list per read. Measured by `probe:card-scan-match` on the real index: at 100, an ambiguous
- * fingerprint (a blend of two cards) named the wrong first card in 3 of 40 and overstated a margin near the 0.02 gate
+ * fingerprint (a blend of two cards) named the wrong first card in 3 of 40 and overstated a margin near the scanner's gate (0.02 when measured; `SURE_MARGIN` is 0.10 now)
  * by 0.33; at 400 every first card and every near-gate margin matched an exact scan (within 0.00006), for about the
  * same lookup time. 1,000 bought nothing more.
  */

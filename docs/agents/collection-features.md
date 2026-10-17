@@ -71,7 +71,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `[scan-timing]` line only while `SCAN_LAB_ENABLED` is on for the reader (staging); find them with
   `vercel logs -p the-99-staging -q "scan-timing"`.
   **A card is asked about early** (`server-scan.ts`): once it has held `EARLY_DWELL_MS` (300ms, its second agreeing
-  frame on a phone), and that answer is shown only at margin `CONFIDENT_MARGIN` (0.10) or more; under it the card is
+  frame on a phone), and that answer is shown only when it is sure (`SURE_MARGIN`, 0.10, below); under it the card is
   asked again once it has held the full `DWELL_MS` (700ms) from the start of its run, and that answer is shown whatever it is. An
   empty frame still needs the full dwell, so a missed frame never reads as the card having left. On staging's lab
   frames (8 runs, 264 card frames, truth the run's most common card) 78 frames read at 0.10 or more and none was wrong;
