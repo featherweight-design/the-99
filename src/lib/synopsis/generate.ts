@@ -581,7 +581,7 @@ export async function finishRun(
       // same and its unit counts at its worst case until its meters land. Reached by the unit's
       // own id, never through the run row. `recordModelUsage` writes them only while none are
       // recorded.
-      await recordModelUsage(tx, callId, set.billed, now);
+      await recordModelUsage(tx, callId, set.billed);
     }
     return rows.length > 0;
   });

@@ -4,7 +4,6 @@ import type { CostDetail } from "../../lib/admin/costs-detail-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
 import {
   capMicro,
-  capUsd,
   daysIn,
   monthParam,
   shiftMonth,
@@ -14,7 +13,6 @@ import {
   type MonthKey,
 } from "../../lib/admin/costs-rule";
 import { adminCopy } from "../../lib/copy/admin";
-import { ALARM_PCTS, BUDGET_USD, HARD_STOP_USD, usdToMicro } from "../../lib/model/spend-rule";
 import { PendingReporter } from "../shell/pending-reporter";
 import { CostsDetail, fill, INK, SectionHead } from "./costs-detail";
 import { SettingAction } from "./setting-dialog";
@@ -108,11 +106,6 @@ function Trend({ s, month }: { s: CostSummary; month: MonthKey }) {
   const last = cum.length - 1;
   const total = s.player.micro;
   const pts = ["0,200", ...cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`)].join(" ");
-  const plan = usdToMicro(BUDGET_USD);
-  const lines = [
-    { micro: plan, label: copy.ticks.plan(capUsd(BUDGET_USD)), dashed: false, ink: "var(--fg-muted)" },
-    ...[...ALARM_PCTS].reverse().map((p) => ({ micro: (plan * p) / 100, label: copy.ticks.alarm(capUsd((BUDGET_USD * p) / 100), p), dashed: true, ink: "var(--warning)" })),
-  ];
   const tallest = Math.max(0, ...s.playerByDay);
   const empty = s.calls.runs === 0;
   const endFigure = s.current ? s.playerPaceMicro ?? total : total;
@@ -139,15 +132,6 @@ function Trend({ s, month }: { s: CostSummary; month: MonthKey }) {
             </>
           )}
         </svg>
-        {lines.map((l) => {
-          const top = `${(1 - l.micro / max) * 100}%`;
-          return (
-            <span key={l.label}>
-              <span className="absolute inset-x-0 h-0" style={{ top, borderTop: `1.5px ${l.dashed ? "dashed" : "solid"} ${l.ink}` }} />
-              <span className="absolute left-[4px] -translate-y-[115%] bg-[color:var(--surface)] px-[3px] font-mono text-[10px]" style={{ top, color: l.ink }}>{l.label}</span>
-            </span>
-          );
-        })}
         {s.current && !empty && (
           <span className="absolute inset-y-0 w-px bg-[color:var(--border-dashed)]" style={{ left: `${x(last) / 10}%` }} />
         )}
@@ -181,22 +165,10 @@ function Trend({ s, month }: { s: CostSummary; month: MonthKey }) {
   );
 }
 
-function Banner({ tone, children }: { tone: "warning" | "danger"; children: ReactNode }) {
-  const ink = tone === "danger" ? "var(--danger)" : "var(--warning)";
-  return (
-    <div role="status" className="flex items-start gap-[12px] rounded-[12px] bg-[color:var(--surface-rail)] px-[14px] py-[12px] md:px-[16px] md:py-[14px]" style={{ border: `1px solid ${ink}` }}>
-      <span aria-hidden className="mt-[6px] h-[8px] w-[8px] flex-none rotate-45" style={{ background: ink }} />
-      <span className="text-[13.5px] font-medium leading-[1.5] text-[color:var(--fg)]">{children}</span>
-    </div>
-  );
-}
-
 export function CostsView({ s, month, current, detail, env, viewerId }: { s: CostSummary; month: MonthKey; current: MonthKey; detail?: CostDetail; env?: AdminEnv; viewerId?: string }) {
   const prev = shiftMonth(month, -1);
   const prevHref = hrefFor(prev, current);
   const nextHref = hrefFor(shiftMonth(month, 1), current);
-  const plan = capUsd(BUDGET_USD);
-  const planMicro = usdToMicro(BUDGET_USD);
   const storedCeiling = s.settings.system_ceiling_usd;
   // A ceiling set to start in a later month does not apply to this one.
   const ceilingStart = startsAfter(storedCeiling, month);
@@ -220,24 +192,13 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
   const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
   const note = (text: string | null | undefined) => (text ? ` ${copy.note(text)}` : "");
 
-  let banner: ReactNode = null;
-  if (s.banner?.kind === "paused") banner = <Banner tone="danger">{copy.banner.paused(monthName(shiftMonth(month, 1)))}</Banner>;
-  else if (s.banner?.kind === "alarm") banner = <Banner tone="warning">{copy.banner.alarm(s.alarm)}</Banner>;
-  else if (s.banner?.kind === "pace") banner = <Banner tone="warning">{copy.banner.pace(plan, `${s.banner.day} ${monthName(month)}`)}</Banner>;
-
   const tiles = [
     { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: [copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null].filter(Boolean).join(" · ") },
-    { label: copy.tiles.player, fig: usd(s.player.micro), sub: copy.tileSub.ofPlan(pct(s.player.micro, planMicro), plan), warn: s.alarm >= 80 },
+    { label: copy.tiles.player, fig: usd(s.player.micro), sub: [copy.tileSub.runs(s.player.runs), s.playerPaceMicro !== null && s.player.runs > 0 ? copy.tileSub.pace(usd(s.playerPaceMicro)) : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.system, fig: sysUsd(sys.total), sub: [ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast(pctFloor(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro))) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.perAccount, fig: usd(s.perAccountMicro ?? 0), sub: copy.tileSub.accounts(s.accounts) },
   ];
 
-  const planTicks: Tick[] = [
-    ...ALARM_PCTS.map((p) => ({ micro: (planMicro * p) / 100, label: copy.ticks.alarm(capUsd((BUDGET_USD * p) / 100), p), ink: "var(--warning)" })),
-    { micro: planMicro, label: copy.ticks.plan(plan), ink: "var(--fg-muted)" },
-    { micro: usdToMicro(HARD_STOP_USD), label: copy.ticks.hardStop(capUsd(HARD_STOP_USD)), ink: "var(--danger)" },
-  ];
-  const paceRest = s.current && s.playerPaceMicro !== null ? Math.max(0, s.playerPaceMicro - s.player.micro) : 0;
 
   return (
     <>
@@ -264,30 +225,18 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
       </div>
 
       <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
-        {banner}
         <div className="grid grid-cols-2 gap-[8px] md:grid-cols-4 md:gap-[12px]">
           {tiles.map((t) => (
             <div key={t.label} className="flex min-w-0 flex-col gap-[4px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[12px] py-[11px] md:px-[14px] md:py-[13px]">
               <span className="text-[12px] text-[color:var(--fg-muted)]">{t.label}</span>
               <span className="whitespace-nowrap font-mono text-[19px] font-medium text-[color:var(--fg)] md:text-[22px]">{t.fig}</span>
-              <span className={`font-mono text-[10.5px] ${t.warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg-faint)]"}`}>{t.sub}</span>
+              <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{t.sub}</span>
             </div>
           ))}
         </div>
 
         <SectionHead title={copy.caps} meta={copy.capsMeta} />
         <div className="overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
-          <CapRow
-            label={copy.capRows.plan}
-            figure={copy.of(usd(s.player.micro), plan)}
-            sub={<>
-              <span className="md:hidden">{copy.capSub.planLines(planTicks.map((t) => t.label).join("; "))}</span>
-              {copy.capSub.plan}
-              {paceRest > 0 && s.playerPaceMicro !== null ? copy.capSub.planPace(usd(s.playerPaceMicro)) : ""}
-            </>}
-          >
-            <CapBar scale={usdToMicro(HARD_STOP_USD)} segs={[{ micro: s.player.micro, ink: INK.player }, { micro: paceRest, ink: INK.player, hatch: true }]} ticks={planTicks} />
-          </CapRow>
           <CapRow
             label={copy.capRows.owner}
             figure={s.ownerMicro === null ? copy.notSet(usd(0)) : copy.of(usd(s.ownerMicro), capMicro(share))}
@@ -331,7 +280,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
         </div>
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.capsReference}</p>
 
-        <SectionHead title={copy.trendPlayer} meta={copy.trendPlayerMeta(plan)} />
+        <SectionHead title={copy.trendPlayer} />
         <Trend s={s} month={month} />
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.trendNote}</p>
         {detail && <CostsDetail s={s} d={detail} month={month} env={env ?? null} />}

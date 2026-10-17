@@ -3,15 +3,13 @@ import { join } from "node:path";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminSettings, cardLabelBatches, modelCallParts, modelCalls } from "../../db/schema";
-import { modelOwnerUserId, ownerShareMicro, readAllowance } from "../model/allowance";
+import { modelOwnerUserId, ownerShareMicro } from "../model/allowance";
 import { costDetail, EVAL_DIR_UNREADABLE, type CallRow, type CostDetail, type LedgerEntry, type LedgerFile } from "./costs-detail-rule";
 import { OPEN_STATUSES } from "../labels/reserve";
 import {
   costSummary,
   settingsForMonth,
   monthStart,
-  sameMonth,
-  monthOf,
   shiftMonth,
   type CostRows,
   type CostSummary,
@@ -173,11 +171,10 @@ const readEvalLedgersAs = () => {
   return { ledgers, ledgersUnreadable: unreadable };
 };
 
-export async function loadCosts(month: MonthKey, adminId: string, now: Date = new Date()): Promise<{ summary: CostSummary; detail: CostDetail }> {
+export async function loadCosts(month: MonthKey, now: Date = new Date()): Promise<{ summary: CostSummary; detail: CostDetail }> {
   const start = monthStart(month);
   const end = monthStart(shiftMonth(month, 1));
   const ownerId = modelOwnerUserId();
-  const current = sameMonth(month, monthOf(now));
   // Every figure from ONE instant: the summary's day rows and the detail's call rows split the same
   // spend two ways (labels against rewrites), so a row committing between two separate reads would
   // land in one and not the other, and could drive a segment negative.
@@ -194,12 +191,7 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
     // connection to the next transaction (`READ_SNAPSHOT`, `src/lib/decks/draft-state.ts`).
     { isolationLevel: "repeatable read" },
   );
-  // The pause is the allowance's own verdict, with no feature named: no press at all fits.
-  const [[days, [figures], settingRows, callRows, partRows, labelRows], allowance] = await Promise.all([
-    read,
-    current ? readAllowance(adminId, now) : null,
-  ]);
-  const paused = !!allowance?.paused;
+  const [days, [figures], settingRows, callRows, partRows, labelRows] = await read;
 
   const detail = costDetail({
     calls: callRows.map((c): CallRow => ({
@@ -245,7 +237,6 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy })),
       month,
     ),
-    paused,
     outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete, evalsUnreadable: detail.ledgersUnreadable.length > 0 },
   };
   return { summary: costSummary(rows, month, now), detail };

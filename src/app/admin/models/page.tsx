@@ -16,9 +16,9 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
  * repository variables, read server-side; without a token they draw M2.
  */
 export default async function AdminModelsPage() {
-  const { userId, env } = await requireAdmin();
+  const { env } = await requireAdmin();
   const now = new Date();
-  const [{ detail }, jobs] = await Promise.all([loadCosts(monthOf(now), userId, now), readJobValues()]);
+  const [{ detail }, jobs] = await Promise.all([loadCosts(monthOf(now), now), readJobValues()]);
   const rows = MODEL_ROWS.map((def) => ({ ...def, ...rowSpend(def, detail) }));
   return <ModelsView rows={rows} jobs={jobs} month={utcMonthName(now)} env={env} />;
 }
