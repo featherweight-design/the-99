@@ -11,12 +11,15 @@
 //
 // Point it at `next start`, never `next dev` (dev overlays add bodies of their own).
 
-import { setupClerkTestingToken } from "@clerk/testing/playwright";
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+// Read-only: the waiting invites and the switch with an account override, from the database the server reads.
+const sql = neon(DATABASE_URL);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 
 let failures = 0;
@@ -26,7 +29,7 @@ function report(label, ok, detail = "") {
   return ok;
 }
 
-/** What must never reach a page before a Show: every Clerk user's whole email and last name. */
+/** What must never reach a page before a Show: every Clerk user's whole email and last name, and every waiting invite's address. */
 async function needles() {
   const out = new Set();
   for (let offset = 0; ; offset += 500) {
@@ -40,8 +43,13 @@ async function needles() {
       for (const e of u.email_addresses ?? []) out.add(e.email_address.toLowerCase());
       if (u.last_name && u.last_name.trim().length >= 3) out.add(u.last_name.trim().toLowerCase());
     }
-    if (data.length < 500) return [...out];
+    if (data.length < 500) break;
   }
+  // A waiting invite's recipient is masked always and never revealable (D9, G2).
+  for (const r of await sql`select email from invite_reservations where state in ('claimed', 'reserved') and email is not null`) {
+    out.add(r.email.toLowerCase());
+  }
+  return [...out];
 }
 
 async function signIn(page) {
@@ -66,6 +74,7 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+await clerkSetup();
 const browser = await chromium.launch();
 try {
   const find = await needles();
@@ -89,33 +98,66 @@ try {
 
   const visit = async (path, open = async () => {}) => {
     route = path;
-    await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
-    report(`${path} loads`, !page.url().includes("sign-in") && (await page.locator("main").count()) > 0);
+    const res = await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+    report(`${path} loads`, Boolean(res?.ok()) && !page.url().includes("sign-in") && (await page.locator("main").count()) > 0, String(res?.status()));
     await open();
     await page.waitForLoadState("networkidle");
+    // What the page drew, pickers opened, as well as what it was sent.
+    bodies.push({ route, url: page.url(), text: (await page.content()).toLowerCase() });
+    // The route's RSC flight as a client navigation fetches it, which a document load only inlines.
+    const flight = await page.request.get(`${BASE}${path}`, { headers: { RSC: "1" } });
+    const type = flight.headers()["content-type"] ?? "";
+    report(`${path} answers an RSC flight`, flight.ok() && type.includes("text/x-component"), `${flight.status()} ${type}`);
+    bodies.push({ route, url: `${BASE}${path}?rsc`, text: (await flight.text()).toLowerCase() });
   };
 
   await visit("/admin/accounts");
-  const account = await onPage(page, "a[href^='/admin/accounts/']").first().getAttribute("href");
-  if (report("an account to open", Boolean(account))) await visit(account);
+  // Every account page: each head, Invites and History names someone different.
+  const accounts = [...new Set(await onPage(page, "a[href^='/admin/accounts/']").evaluateAll((as) => as.map((a) => a.getAttribute("href"))))];
+  report("accounts to open", accounts.length > 1, String(accounts.length));
+  for (const href of accounts) await visit(href);
   await visit("/admin/invites");
   await visit("/admin/groups");
-  const group = await onPage(page, "a[href^='/admin/groups/']").first().getAttribute("href");
-  if (report("a group to open", Boolean(group))) await visit(group);
+  // A saved group (members, pending and history) and a new one: the editor's member picker is drawn open in both.
+  const group = await onPage(page, "a[href^='/admin/groups/']:not([href='/admin/groups/new'])").first().getAttribute("href");
+  for (const href of [group, "/admin/groups/new"]) {
+    if (!report(`a group to open (${href})`, Boolean(href))) continue;
+    await visit(href, async () => {
+      report("the group editor lists its member picker", (await onPage(page, "[data-testid='group-members'] button").count()) > 0);
+    });
+  }
   await visit("/admin/switches");
-  const sw = await onPage(page, "a[href^='/admin/switches/']").first().getAttribute("href");
+  // The switch carrying an account override, so its override row, sub and history are drawn.
+  const [held] = await sql`select switch from flag_overrides where scope = 'user' order by switch limit 1`;
+  report("a switch carries an account override (seed:admin-pii-fixture)", Boolean(held));
+  const sw = held ? `/admin/switches/${held.switch}` : await onPage(page, "a[href^='/admin/switches/']").first().getAttribute("href");
   if (report("a switch to open", Boolean(sw))) {
     await visit(sw, async () => {
       await onPageRole(page, "button", /Add an account override/).first().click();
-      await onPageRole(page, "combobox", /Check an account/).first().click().catch(() => {});
+      report("the override picker opens", await onPageRole(page, "searchbox", /Find an account by name/).first().isVisible());
+      // Check an account is a native select: its choices are already in the page; picking one reads, never writes.
+      const check = onPageRole(page, "combobox", /Check an account/).first();
+      report("Check an account offers accounts", (await check.locator("option").count()) > 1);
+      await check.selectOption({ index: 1 });
     });
   }
-  await visit("/admin/costs");
+  // Costs: the month view at /admin, the per-model view at /admin/models.
+  await visit("/admin");
+  await visit("/admin/models");
 
   for (const n of find) {
-    const hits = bodies.filter((b) => b.text.includes(n));
+    // The shell's account menu names the signed-in reader to themself on every page (`shell.ts` triggerLabel). That
+    // one label is the reader's own identity, not a listed account; anywhere else, the owner row included, it counts.
+    const own = `account: ${EMAIL.toLowerCase()}`;
+    const hits = bodies.filter((b) => (n === EMAIL.toLowerCase() ? b.text.replaceAll(own, "") : b.text).includes(n));
     report(`no response carries ${n.includes("@") ? "an email" : "a last name"} (${n.slice(0, 2)}…)`, hits.length === 0,
       hits.map((h) => `${h.route} ${new URL(h.url).pathname}`).slice(0, 3).join(", "));
+    // Where the first hit sits, the value itself blanked, so a failure says what drew it without printing it.
+    if (hits.length) {
+      const text = n === EMAIL.toLowerCase() ? hits[0].text.replaceAll(own, "") : hits[0].text;
+      const at = text.indexOf(n);
+      console.log(`       near: ${text.slice(Math.max(0, at - 160), at + n.length + 80).replaceAll(n, "[value]")}`);
+    }
   }
 } finally {
   await browser.close();
