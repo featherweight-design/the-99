@@ -99,7 +99,7 @@ describe("SynopsisOverview", () => {
   it("names no feature in the spent line, and links to what uses credits", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: null, nextAt: null } }));
     expect(screen.getByText(creditLine("0 of 3 left · What uses credits?"))).toBeTruthy();
-    expect(screen.getByRole("link", { name: "What uses credits?" }).getAttribute("href")).toBe("/about#credits");
+    expect(screen.getByRole("link", { name: "What uses credits?" }).getAttribute("href")).toBe("/about?tab=reference#credits");
   });
 
   it("names when a credit truly comes back once every one is out, not the earliest expiry", () => {

@@ -92,6 +92,30 @@
           "settle": 600
         }
       ]
+    },
+    {
+      "id": "about-tools",
+      "label": "/about — Tools, the default tab: the five groups (1280 grids, the phone's sideways rows), ToolCard's states, Written for you (R2·6b)",
+      "view": "src/components/about/tools/tools-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-about-tools]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "about-reference",
+      "label": "/about?tab=reference — the Reference: entries by screen with the screens index, what's new, search, How it works last (R2·6b)",
+      "view": "src/components/about/reference/reference-tab.tsx",
+      "steps": [
+        {
+          "goto": "/about?tab=reference",
+          "wait": "[data-about-reference]",
+          "settle": 600
+        }
+      ]
     }
   ],
   "needsFixture": [
@@ -132,6 +156,18 @@
       ],
       "shows": "N1 `suggest swaps →`, N2 `balance mana →` and N2b `Proposed cuts →` on their own switches (builder-shell.tsx, tuning-hub.tsx, analysis-panel.tsx, role-counter-cell.tsx), and N3 the over count on Money's Shopping line at 390 (deck-stats-money.tsx, with its no-wrap test)",
       "why": "each draws only in a deck state (a deck over budget, a mana imbalance, a held reading); no row yet, because none of the audit account's decks was checked for them. Add rows with the selectors from the PR's tests (`builder-shell-nudges.test.tsx`) once a fixture deck is named."
+    },
+    {
+      "id": "about-banner-target",
+      "mergedIn": "R2·6b",
+      "goto": "/",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "wait": "[data-about-link]",
+      "shows": "the banner's Show me to `/about?tab=reference#new` for a returning reader and `/about` (Tools) for a new account (E14), its words unchanged",
+      "why": "About's line draws only for a reader behind on About, and `clearAbout` marks the account seen before the first row; run it on an account with an unseen entry (or a first-run account), and press Show me to land on the Reference's what's new"
     }
   ],
   "unmounted": [
@@ -144,36 +180,6 @@
         "desktop"
       ],
       "shows": "the landing on Help me choose, Precons, Wishlist, Upload, Friends, /collection (Find a deck) and /decks?view=stats (Stats for your decks); loadToolFits and each tool's fits"
-    },
-    {
-      "id": "tools-tab",
-      "mountedBy": "R2·5 (unmounted) then R2·6b (the route)",
-      "goto": "/about",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "Tools, the five groups at 1280 and the phone's sideways rows; ToolCard in its five states; Written for you"
-    },
-    {
-      "id": "reference-tab",
-      "mountedBy": "R2·6a (unmounted) then R2·6b (the route)",
-      "goto": "/about?tab=reference",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "entries by screen with the screens index; an opened entry with its frame and halo box; what's new; text search; How it works last"
-    },
-    {
-      "id": "about-banner-target",
-      "mountedBy": "R2·6b",
-      "goto": "/",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "the banner's new target (E14)"
     },
     {
       "id": "help-panel",

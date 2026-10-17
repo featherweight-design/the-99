@@ -9,7 +9,7 @@ vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 // The checklist's live step needs the app router; About's line is what these tests read.
 vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
 
-const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID } = await import("./arrivals-banner");
+const { ArrivalsBanner, COLLAPSE_MS, HOME_HEADING_ID, aboutHref } = await import("./arrivals-banner");
 const { Dashboard } = await import("./dashboard");
 const { acknowledgeAbout, acknowledgeArrivals, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 const { FirstRunChecklist } = await import("./first-run");
@@ -236,12 +236,12 @@ const behind = (titles: string[], ids = titles.map((t) => t.toLowerCase().replac
 const FIRST: AboutLine = { kind: "firstRun", ids: ["browse", "import"] };
 
 describe("ArrivalsBanner, About's line", () => {
-  it("names what is new in About in one sentence, with Show me to /about and ✕ (A1)", () => {
+  it("names what is new in About in one sentence, with Show me to the Reference's what's new and ✕ (A1, E14)", () => {
     render(<ArrivalsBanner data={null} about={behind(["Commander sets on the way", "Organizing decks into folders"])} />);
     const r = region()!;
     expect(r.tagName).toBe("SECTION");
     expect(r).toHaveTextContent("2 new in About: Commander sets on the way, and Organizing decks into folders.");
-    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about?tab=reference#new");
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
   });
@@ -259,7 +259,7 @@ describe("ArrivalsBanner, About's line", () => {
     expect(region()).toHaveTextContent("1 new in About: Commander sets on the way.");
   });
 
-  it("introduces a first-run reader to the page in one line (A3)", () => {
+  it("introduces a first-run reader to the page in one line, Show me opening Tools (A3, E14)", () => {
     render(<ArrivalsBanner data={null} about={FIRST} />);
     expect(region()).toHaveTextContent(/What The\s99 does: every mark and figure in the app, and where to find it, on one page\./);
     expect(screen.getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
@@ -272,11 +272,22 @@ describe("ArrivalsBanner, About's line", () => {
     const items = within(r).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("2 new in About: Commander sets on the way, and Folders. Show me");
-    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about?tab=reference#new");
     expect(items[1]).toHaveTextContent("Star Trek Commander is announced, with 15 commanders revealed. See it in Precons");
     expect(within(items[1]!).getByRole("link")).toHaveAttribute("href", "/decks/precons?sort=newest#announced");
     expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
     expect(r.querySelector("[aria-live], [role=alert]")).toBeNull();
+  });
+
+  it("a first-run line beside an arrival still opens Tools (A2, E14)", () => {
+    render(<ArrivalsBanner data={one(TRC, ["trc", "a2-first"])} about={{ kind: "firstRun", ids: ["browse", "a2-first"] }} />);
+    const items = within(region()!).getAllByRole("listitem");
+    expect(within(items[0]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
+  });
+
+  it("aboutHref: the Reference at what's new for a returning reader, Tools for a new account (E14)", () => {
+    expect(aboutHref(behind(["Folders"]))).toBe("/about?tab=reference#new");
+    expect(aboutHref(FIRST)).toBe("/about");
   });
 
   it("caps several arrivals beside About and closes them with one Precons link", () => {

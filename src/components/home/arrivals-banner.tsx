@@ -26,8 +26,14 @@ import { PendingReporter } from "../shell/pending-reporter";
 
 /** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
 export const HOME_HEADING_ID = "home-heading";
-/** Where About's Show me goes. The page records the visit itself (`RecordVisit`). */
-export const ABOUT_HREF = "/about";
+/**
+ * Where About's Show me goes (discovery R2·6b, E14, README-r2 G18): a returning reader to the Reference at what's new,
+ * a brand-new account to Tools. The words stay as they are. The page records the visit itself (`RecordVisit`), on the
+ * Reference only (R2 gap 10), so a new account's line stands until they open the Reference or press ✕.
+ */
+export function aboutHref(line: Pick<AboutLine, "kind">): string {
+  return line.kind === "firstRun" ? "/about" : "/about?tab=reference#new";
+}
 /** The close: a height collapse this long, instant under reduced motion. */
 export const COLLAPSE_MS = 160;
 
@@ -190,12 +196,12 @@ export function ArrivalsBanner({
               </p>
               {single === "about" ? (
                 <Link
-                  href={ABOUT_HREF}
+                  href={aboutHref(aboutShown!)}
                   data-about-link
                   className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
                 >
                   {copy.aboutShow}
-                  <PendingReporter href={ABOUT_HREF} />
+                  <PendingReporter href={aboutHref(aboutShown!)} />
                 </Link>
               ) : (
                 <Link
@@ -230,9 +236,9 @@ export function ArrivalsBanner({
             <ul className="m-0 mr-[10px] ml-[32px] list-none p-0 sm:mt-[2px] sm:mr-0">
               <li className={LINE}>
                 <AboutSentence line={aboutShown} />{" "}
-                <Link href={ABOUT_HREF} data-about-link className={`${LINK} whitespace-nowrap`}>
+                <Link href={aboutHref(aboutShown)} data-about-link className={`${LINK} whitespace-nowrap`}>
                   {copy.aboutShow}
-                  <PendingReporter href={ABOUT_HREF} />
+                  <PendingReporter href={aboutHref(aboutShown)} />
                 </Link>
               </li>
               {lines.slice(0, shown).map((l, i) => (

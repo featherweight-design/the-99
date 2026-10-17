@@ -35,8 +35,8 @@ export function monthName(at: Date): string {
 
 /** The phrase that ends a line about what shares the credits, drawn as a link to `CREDITS_HREF`. */
 const link = "What uses credits?";
-/** The About entry that lists every feature spending credits (entries carry their own anchors). */
-export const CREDITS_HREF = "/about#credits";
+/** The About entry that lists every feature spending credits, in the Reference tab (entries carry their own anchors). */
+export const CREDITS_HREF = "/about?tab=reference#credits";
 
 const pausedReason = `The app has reached its monthly limit. Nothing you did caused this. ${link}`;
 

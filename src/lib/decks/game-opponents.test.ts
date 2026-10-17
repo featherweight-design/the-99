@@ -139,6 +139,9 @@ describe("who reads the opponents table", () => {
     "src/lib/decks/game-opponents.ts",
     "src/lib/discovery/fits.ts",
     "src/lib/social/purge.ts",
+    // Matchups' fit (discovery R2·6b, About's Tools): which of the reader's decks logged a game with an opponent. It
+    // selects deck ids only, never a label or a friend's name, and reaches no prompt.
+    "src/lib/discovery/fits.ts",
   ]);
   // Dot directories are skipped: other guards write short-lived fixtures under `src/lib/.name-*` and remove
   // them while this walk may be running.

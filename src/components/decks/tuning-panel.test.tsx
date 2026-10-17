@@ -402,7 +402,7 @@ describe("TuningPanel", () => {
     const out = { used: 5, limit: 5, reopensAt: null, nextAt: null };
     await draw(deps([{ ...results, stale: true, allowance: out }]));
     expect(screen.getByText(creditLine("0 of 5 left · What uses credits?"))).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "What uses credits?" })).toHaveAttribute("href", "/about#credits");
+    expect(screen.getByRole("link", { name: "What uses credits?" })).toHaveAttribute("href", "/about?tab=reference#credits");
     cleanup();
     const until = new Date("2026-10-01T00:00:00Z");
     await draw(deps([{ ...results, stale: true, allowance: { ...out, paused: { until } } }]));
