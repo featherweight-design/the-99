@@ -49,8 +49,14 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   guesses. `pnpm db:seed:scan-index <dir>` publishes `export_index.py all --server`'s files in ONE transaction on a
   NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, never defaulted, checked by `neon.branch_id`),
   refusing a wrong model, a row off unit length or fewer than 100,000 rows; never through the Neon MCP. Until it
-  has run on a database, the endpoint there answers 503 `no-index`. Production's index comes by a copy step, not a
-  second embedding run. `pnpm probe:card-scan-match` proves it on a scratch branch. Where the camera is blocked or
+  has run on a database, the endpoint there answers 503 `no-index`. Production's index comes by a copy, not a second
+  embedding run: `pnpm db:copy:scan-index [--dry-run]` (Hugh runs it on production) takes the harness's three variables
+  (`CATALOG_COPY_SOURCE_URL`, `CATALOG_COPY_TARGET_URL`, `CATALOG_COPY_TARGET_BRANCH`, never defaulted, the target checked by
+  `neon.branch_id`), reads the source's rows in one repeatable-read snapshot, refuses rows the seed would refuse and a target
+  whose catalog lacks over 1% of the index's cards, and publishes through the seed's own `publishScanIndexIn` in one
+  transaction, verified by count and md5 against the source before it commits. Each embedding is written as the source
+  printed it: read into floats and printed again, a halfvec does not always land on the same fp16 value, and the first
+  run's verify caught exactly that. Measured on two scratch branches of local-dev: 103,823 rows in 121s at 1.5GB resident. `pnpm probe:card-scan-match` proves it on a scratch branch. Where the camera is blocked or
   absent, the scanner offers Choose photos (PR 5): each photo is read ONCE, in order, through the camera's own
   detector and embedder and one lookup (`usePhotoReader`), and nothing is added until the player presses. A photo
   row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Auto
