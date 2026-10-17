@@ -40,32 +40,32 @@ export function TableBody({
   return (
     <div data-testid="table-body" className="flex flex-col">
       {/* The phone's back row sits outside the padded column (R1); desktop's sits in the head band (R2). */}
-      <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] md:hidden" glyph />
-      <div className="flex flex-col gap-[14px] px-[16px] pb-[22px] md:block md:p-0">
-        <header className="flex flex-col md:border-b md:border-b-[color:var(--border)] md:px-[34px] md:pb-[16px] md:pt-[22px]">
-          <BackLink className="mb-[6px] hidden gap-[6px] text-[13px] md:flex" />
-          <h1 className="m-0 font-display text-[24px] font-bold leading-[1.2] md:text-[30px]">{copy.title}</h1>
-          <p className="m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] md:text-[12px] md:leading-normal">
+      <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] xl:hidden" glyph />
+      <div className="flex flex-col gap-[14px] px-[16px] pb-[22px] xl:block xl:p-0">
+        <header className="flex flex-col xl:border-b xl:border-b-[color:var(--border)] xl:px-[34px] xl:pb-[16px] xl:pt-[22px]">
+          <BackLink className="mb-[6px] hidden gap-[6px] text-[13px] xl:flex" />
+          <h1 className="m-0 font-display text-[24px] font-bold leading-[1.2] xl:text-[30px]">{copy.title}</h1>
+          <p className="m-0 mt-[6px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)] xl:text-[12px] xl:leading-normal">
             <b className="font-medium text-[color:var(--fg-body)]">{view.podName}</b>
             {copy.metaSetBy(view.setByYou ? null : view.setBy, view.seats.length)}
-            <span className="hidden md:inline"> · </span>
-            <br className="md:hidden" />
+            <span className="hidden xl:inline"> · </span>
+            <br className="xl:hidden" />
             {copy.metaOpen(closes)}
           </p>
         </header>
         {/* One mount of each part, placed by the grid: desktop's right column is the read over Log this game (14px
             apart), and the seats span both rows on the left. */}
-        <div className="flex flex-col gap-[14px] md:grid md:grid-cols-[minmax(0,1fr)_392px] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[28px] md:gap-y-[14px] md:px-[34px] md:pb-[28px] md:pt-[22px]">
-          <div className="md:col-start-2 md:row-start-1">
+        <div className="flex flex-col gap-[14px] xl:grid xl:grid-cols-[minmax(0,1fr)_392px] xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-[28px] xl:gap-y-[14px] xl:px-[34px] xl:pb-[28px] xl:pt-[22px]">
+          <div className="xl:col-start-2 xl:row-start-1">
             <ReadCard draw={draw} updated={updated} />
           </div>
-          <div className="flex flex-col gap-[10px] md:col-start-1 md:row-start-1 md:row-end-3" data-testid="table-seats">
+          <div className="flex flex-col gap-[10px] xl:col-start-1 xl:row-start-1 xl:row-end-3" data-testid="table-seats">
             {draw.seats.map((s) => (
               <TableSeat key={s.key} draw={s} />
             ))}
           </div>
           {log ? (
-            <div className="md:col-start-2 md:row-start-2">
+            <div className="xl:col-start-2 xl:row-start-2">
               <LogGame href={log} />
             </div>
           ) : null}

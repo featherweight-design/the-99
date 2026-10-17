@@ -98,7 +98,13 @@ describe("drawTable", () => {
     expect(d.headline).toEqual({ kind: "leftOut", n: 1 });
   });
 
-  it("keys every seat by its seat number", () => {
+  it("an undeclared range beside single brackets is balanced with no shared reading, though its face matches", () => {
+    const d = drawTable(TABLES.mixed);
+    expect(byName(d.seats, "Peter").read?.face).toBe(2);
+    expect(d.headline).toEqual({ kind: "balanced", reads: null });
+  });
+
+    it("keys every seat by its seat number", () => {
     expect(drawTable(TABLES.T1).seats.map((s) => s.key)).toEqual(["seat-1", "seat-2", "seat-3", "seat-4"]);
   });
 });

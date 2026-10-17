@@ -185,6 +185,8 @@ export const TABLES = {
   ]),
   T9: table([you(), colin(sai()), peter(deck("Ashling Elementals", "Ashling, the Limitless", null)), max(gisa())]),
   T10: table([you(), peter({ ...giada(), built: 86 }), max(null)], { setBy: "Hugh", setByYou: true }),
+  /** No flag, and the read seats do not all read the same: an undeclared Exhibition or Core beside two Cores. */
+  mixed: table([you(giada()), colin(giada()), peter(miku())]),
   /** Legal, with a row this deployment cannot read: its player analyzes it (rules.ts `needsAnalysis`). */
   needsAnalysis: table([
     you(),

@@ -10,7 +10,8 @@ import { FINDING_ORDER } from "../../lib/bracket/findings";
 import type { Bracket } from "../../lib/bracket/types";
 import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { leftOutCards, readsList, ruleZeroCopy, seatNames, whose } from "../../lib/copy/rule-zero";
-import { middleBrackets, type Headline, type SeatDraw, type TableDraw } from "../../lib/rule-zero/table-view";
+import { middleBrackets, sharedReading, type Headline, type SeatDraw, type TableDraw } from "../../lib/rule-zero/table-view";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BracketMark } from "../decks/bracket-mark";
 import { FindingMark } from "../decks/finding-mark";
 import { ProvenanceOpener } from "../decks/provenance-panel";
@@ -49,7 +50,10 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
       <CountsKey />
       <div className="flex flex-col gap-[2px] border-t border-[color:var(--border)] pt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         <span>{copy.read.honest}</span>
-        <ProvenanceOpener tone="accent" className="self-start" />
+        {/* The opener's sheet draws through the shared modal chrome, which reads the card detail context. */}
+        <CardDetailProvider>
+          <ProvenanceOpener tone="accent" className="self-start" />
+        </CardDetailProvider>
       </div>
     </section>
   );
@@ -116,14 +120,14 @@ function seatPart(s: SeatDraw): string {
   return r.seatReads(whoseSeat(s), deck, em(readsPhrase(s)));
 }
 
-/** The read seats, the viewer's first, as T8 and T9 name them, and the brackets they read. */
-function compared(draw: TableDraw): { names: string; both: boolean; reads: string } {
+/** The read seats, the viewer's first, as T8 and T9 name them, and what they all read (null when they differ). */
+function compared(draw: TableDraw): { names: string; both: boolean; reads: string | null } {
   const read = draw.seats.filter((s) => s.read).sort((a, b) => Number(b.seat.you) - Number(a.seat.you));
-  const faces = [...new Set(read.map((s) => s.read!.face))].sort((a, b) => a - b);
+  const shared = sharedReading(read);
   return {
     names: seatNames(read.map((s) => (s.seat.you ? null : s.seat.displayName))),
     both: read.length === 2,
-    reads: em(bracketPhrase(faces)),
+    reads: shared ? em(bracketPhrase(shared)) : null,
   };
 }
 
@@ -142,7 +146,7 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       };
       break;
     case "balanced":
-      out = { title: r.balanced(bracketPhrase(h.reads)), ink: null, body: r.balancedBody };
+      out = { title: h.reads ? r.balanced(bracketPhrase(h.reads)) : r.balancedMixed, ink: null, body: r.balancedBody };
       break;
     case "one": {
       const deck = h.seat.seat.deck?.name ?? "";
@@ -169,14 +173,17 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
     case "reading": {
       // The seat being read is left out until it lands, and the sentence already says it joins.
       const c = compared(draw);
-      return { title: r.reading(h.seat.seat.displayName), ink: null, body: r.readingBody(c.names, c.both, c.reads, h.seat.seat.displayName) };
+      const name = h.seat.seat.displayName;
+      const body = c.reads ? r.readingBody(c.names, c.both, c.reads, name) : r.readingMixed(c.names, name);
+      return { title: r.reading(name), ink: null, body };
     }
     case "leftOut": {
       const c = compared(draw);
       const sized = draw.seats.flatMap((s) =>
         s.state.kind === "illegal" ? [{ name: s.seat.you ? null : s.seat.displayName, cards: s.state.cards }] : [],
       );
-      const body = [r.comparing(c.names, c.both, c.reads), leftOutCards(sized)].filter(Boolean).join(" ");
+      const comparing = c.reads ? r.comparing(c.names, c.both, c.reads) : r.comparingMixed(c.names);
+      const body = [comparing, leftOutCards(sized)].filter(Boolean).join(" ");
       return { title: r.leftOut(h.n), ink: null, body };
     }
   }

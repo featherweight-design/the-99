@@ -27,7 +27,7 @@ export function TableClosed({
   return (
     // The phone keeps its `‹ Friends` row (L4); desktop draws the card alone, centered in the page (H3).
     <div className="flex min-h-[calc(100dvh-140px)] flex-col">
-      <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] md:hidden" glyph />
+      <BackLink className="h-[44px] gap-[4px] px-[8px] text-[14px] xl:hidden" glyph />
       <div data-testid="table-closed" className="m-auto flex max-w-[440px] flex-col items-center gap-[12px] px-[20px] py-[30px] text-center">
         <div aria-hidden className="relative mb-[8px] h-[120px] w-[200px]">
           <span className="absolute left-[30px] top-[30px] h-[62px] w-[140px] rounded-[31px] border-[1.5px] border-dashed border-[color:var(--border-dashed)]" />

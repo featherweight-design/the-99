@@ -55,10 +55,14 @@ export function expiresWhen(expires: Date, now: Date, timeZone?: string): string
 }
 
 /**
- * `9:40 pm`, or `9:40 pm tomorrow`: when a Rule 0 table closes, as its page meta and Home's card say it. A table lasts
- * 24 hours, so it closes today or tomorrow, by calendar day in the zone.
+ * `9:40 pm`, `9:40 pm tomorrow`, or `12:30 am Mon`: when a Rule 0 table closes, by calendar day in the zone. A table
+ * lasts 24 hours, which is usually today or tomorrow, but the night the clocks spring forward it can end two calendar
+ * days on, and the weekday then names it.
  */
 export function closesWhen(closes: Date, now: Date, timeZone?: string): string {
   const time = fmt({ hour: "numeric", minute: "2-digit" }, timeZone).format(closes).replace(/\s?([AP])M$/, (_, m: string) => ` ${m.toLowerCase()}m`);
-  return dayNumber(closes, timeZone) > dayNumber(now, timeZone) ? ruleZeroCopy.page.closesTomorrow(time) : time;
+  const days = dayNumber(closes, timeZone) - dayNumber(now, timeZone);
+  if (days <= 0) return time;
+  if (days === 1) return ruleZeroCopy.page.closesTomorrow(time);
+  return ruleZeroCopy.page.closesOn(time, fmt({ weekday: "short" }, timeZone).format(closes));
 }

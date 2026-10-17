@@ -59,6 +59,7 @@ export const ruleZeroCopy = {
     metaSetBy: (setter: string | null, n: number) => ` · set by ${setter ?? "you"} · ${seated(n)}`,
     metaOpen: (closes: string) => `open until ${closes}`,
     closesTomorrow: (time: string) => `${time} tomorrow`, // "9:40 pm tomorrow"; today's close is the time alone
+    closesOn: (time: string, day: string) => `${time} ${day}`, // "12:30 am Mon": two calendar days on, across a clock change
     seats: "Seats", // setter only
     readKicker: "The read",
     updated: (when: string) => `updated ${when}`, // "updated just now", "updated 9:42 pm"
@@ -66,6 +67,8 @@ export const ruleZeroCopy = {
   },
   read: {
     balanced: (bracket: string) => `Balanced: every deck reads ${bracket}.`,
+    // When the read seats do not all read the same: no single bracket is claimed for them.
+    balancedMixed: "Balanced: every deck sits within a bracket of the rest.",
     balancedBody: "No deck sits a bracket or more from the rest. It’s a read of each list, so still say what you brought.",
     high: (whose: string, deck: string) => `${whose} ${deck} reads above the table.`, // "Colin’s Zimone Combo", "Your Zimone Combo"
     low: (whose: string, deck: string) => `${whose} ${deck} reads below the table.`,
@@ -85,12 +88,15 @@ export const ruleZeroCopy = {
     seatDeclared: (name: string, answer: string) => `${name} declared ${answer}`, // "Colin declared Optimized", "You declared Optimized"
     // T8, T9: who the read compares while seats are left out. `names` comes from `seatNames`.
     comparing: (names: string, both: boolean, reads: string) => `Comparing ${names}: ${both ? "both" : "all"} read ${reads}.`,
+    comparingMixed: (names: string) => `Comparing ${names}: they sit within a bracket of each other.`,
+    readingMixed: (names: string, name: string) =>
+      `${names.charAt(0).toUpperCase()}${names.slice(1)} sit within a bracket of each other. ${name}’s joins in a second.`,
     readingBody: (names: string, both: boolean, reads: string, name: string) =>
       `${names.charAt(0).toUpperCase()}${names.slice(1)} ${both ? "both" : "all"} read ${reads}. ${name}’s joins in a second.`,
     band: "TABLE", // the rail's dashed middle
     railLabel: "Each seat placed on the five brackets",
     keyLabel: "What the counts on each seat are",
-    split: "A split: these two decks are a bracket apart.",
+    split: "A split: these two decks are a bracket or more apart.",
     splitBody: "With two seats there’s no rest of the table, so both are marked.",
     leftOut: (n: number) => (n === 1 ? "One seat isn’t in the read yet." : `${n} seats aren’t in the read yet.`),
     reading: (name: string) => `Reading ${name}’s deck…`,

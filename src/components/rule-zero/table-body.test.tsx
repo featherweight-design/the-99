@@ -1,7 +1,7 @@
 // The table page's body, rendered from the boards' fixtures (plan PR 3): every seat state of T1 to T10 (and D1 to
 // D10, the same tree at 1300), the flag tags in words, no link on another player's seat (readiness gap 11), no
 // other player's deck id anywhere (decision 5), and `Log this game` absent with games off (L3).
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
@@ -42,7 +42,11 @@ describe("TableBody", () => {
     expect(within(colin).getByTestId("seat-why")).toHaveTextContent(
       "What puts it here: it can find a two-card combo, Thassa’s Oracle + Demonic Consultation, with 5 tutors to reach it.",
     );
-    expect(within(colin).getByLabelText("Two-card infinites: 1")).toHaveAttribute("data-driving");
+    // Each count names itself in text a screen reader reads, not in an aria-label on a generic span.
+    const combos = within(colin).getByText("Two-card infinites:").closest("[data-finding]") as HTMLElement;
+    expect(combos).toHaveTextContent("Two-card infinites: 1");
+    expect(combos).toHaveAttribute("data-driving");
+    expect(combos).not.toHaveAttribute("aria-label");
     expect(headline()).toHaveTextContent("Colin’s Zimone Combo reads above the table.");
     expect(headline().querySelector("[data-ink='high']")).toHaveTextContent("above the table");
     expect(within(screen.getByTestId("read-card")).getByText(/sits at/)).toHaveTextContent(
@@ -192,5 +196,16 @@ describe("TableClosed", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(copy.expired.body("Thursday night", "Colin"))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Friends" })).toHaveAttribute("href", "/friends");
+  });
+
+  it("opens the provenance sheet from the read without a card-detail ancestor", () => {
+    draw(TABLES.T1);
+    fireEvent.click(within(screen.getByTestId("read-card")).getByRole("button", { name: /How we make these decisions/ }));
+    expect(screen.getByRole("dialog", { name: /How we make these decisions/ })).toBeInTheDocument();
+  });
+
+  it("claims no shared bracket when the read seats read differently", () => {
+    draw(TABLES.mixed);
+    expect(headline()).toHaveTextContent(copy.read.balancedMixed);
   });
 });

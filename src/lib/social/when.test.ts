@@ -12,6 +12,12 @@ describe("closesWhen", () => {
     expect(closesWhen(new Date("2026-10-16T23:05:00Z"), now, "UTC")).toBe("11:05 pm");
   });
 
+  it("names the weekday when a spring-forward night puts the close two calendar days on", () => {
+    // Set 11:30 pm Saturday March 13, 2027 in New York; 24 hours later is 12:30 am Monday, after the clocks moved.
+    const now = new Date("2027-03-14T04:30:00Z");
+    expect(closesWhen(new Date(now.getTime() + 24 * 3_600_000), now, "America/New_York")).toBe("12:30 am Mon");
+  });
+
   it("decides the day in the reader's zone, not the server's", () => {
     // 03:40 UTC on the 17th is 9:40 pm on the 16th in Denver, the same day as 23:00 UTC on the 16th there; in UTC
     // the two straddle midnight, so a day decided in UTC would say tomorrow.

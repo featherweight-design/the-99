@@ -38,8 +38,11 @@ export type SeatDraw = {
 export type Headline =
   | { kind: "nothing" }
   | { kind: "split" }
-  /** No flag: `reads` are the read seats' distinct faces, lowest first. */
-  | { kind: "balanced"; reads: Bracket[] }
+  /**
+   * No flag. `reads` is what every read seat reads when they all read the same (one bracket, an answer, or one
+   * range); null when they differ, since a range's face is where the rail draws it, not what it reads.
+   */
+  | { kind: "balanced"; reads: readonly Bracket[] | null }
   | { kind: "one"; seat: SeatDraw; dir: "high" | "low" }
   /** Two flagged, one each way. */
   | { kind: "two" }
@@ -115,8 +118,18 @@ function headlineOf(read: TableView["read"], seats: SeatDraw[], leftOut: number)
   const reading = seats.find((s) => s.state.kind === "unread" && !s.seat.you);
   if (reading) return { kind: "reading", seat: reading };
   if (leftOut > 0) return { kind: "leftOut", n: leftOut };
-  const reads = [...new Set(seats.flatMap((s) => (s.read ? [s.read.face] : [])))].sort((a, b) => a - b);
-  return { kind: "balanced", reads };
+  return { kind: "balanced", reads: sharedReading(seats.filter((s) => s.read)) };
+}
+
+/** What a seat reads, spoken: its answer, its one bracket, or its whole range. */
+export const seatReading = (s: SeatDraw): readonly Bracket[] =>
+  s.chip ? (s.chip.answered !== null ? [s.chip.answered] : s.chip.permits) : [];
+
+/** The reading every one of `seats` shares, or null when any two differ. */
+export function sharedReading(seats: readonly SeatDraw[]): readonly Bracket[] | null {
+  const [first, ...rest] = seats.map(seatReading);
+  if (!first) return null;
+  return rest.every((r) => r.length === first.length && r.every((b, i) => b === first[i])) ? first : null;
 }
 
 /** The middle as the read's sentences name it: a bracket, or the two it sits between. */

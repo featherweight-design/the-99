@@ -51,7 +51,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           : kind
             ? "border-[color:color-mix(in_oklab,var(--flag)_70%,transparent)] "
             : "border-[color:var(--border-strong)] ")
-        + (kind ? "md:bg-[color:color-mix(in_srgb,var(--flag)_7%,var(--surface-rail))]" : "")
+        + (kind ? "xl:bg-[color:color-mix(in_srgb,var(--flag)_7%,var(--surface-rail))]" : "")
       }
     >
       {art ? (
@@ -59,7 +59,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           <FadingImg
             src={art}
             alt=""
-            className="absolute inset-[-30px] h-[calc(100%+60px)] w-[calc(100%+60px)] max-w-none object-cover opacity-[.22] [filter:blur(30px)_saturate(1.2)] md:opacity-[.26] md:[filter:blur(28px)_saturate(1.25)]"
+            className="absolute inset-[-30px] h-[calc(100%+60px)] w-[calc(100%+60px)] max-w-none object-cover opacity-[.22] [filter:blur(30px)_saturate(1.2)] xl:opacity-[.26] xl:[filter:blur(28px)_saturate(1.25)]"
           />
         </span>
       ) : null}
@@ -70,21 +70,21 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
           // counts); desktop's three columns by the grid's gap. Placement uses start and end lines only: a `span`
           // shorthand at one width resets the other width's start line, and the cell is then auto-placed.
           "relative grid grid-cols-[84px_minmax(0,1fr)_auto] gap-x-[12px] gap-y-0 p-[12px] "
-          + "md:grid-cols-[132px_minmax(0,1fr)_auto] md:items-center md:gap-x-[18px] md:gap-y-[4px] md:pl-[12px] md:pr-[16px] "
-          + (kind ? "md:pt-[16px] md:pb-[14px]" : "")
+          + "xl:grid-cols-[132px_minmax(0,1fr)_auto] xl:items-center xl:gap-x-[18px] xl:gap-y-[4px] xl:pl-[12px] xl:pr-[16px] "
+          + (kind ? "xl:pt-[16px] xl:pb-[14px]" : "")
         }
       >
         <span
           aria-hidden
           className={
-            "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] md:row-end-3 md:h-[92px] md:w-[132px] md:rounded-[10px] md:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
-            + (art ? "" : "bg-[radial-gradient(120px_80px_at_50%_40%,#262A35,var(--surface))]")
+            "col-start-1 row-start-1 flex h-[60px] w-[84px] items-center justify-center overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] [border:1px_solid_rgba(255,255,255,.08)] shadow-[0_8px_18px_rgba(0,0,0,.45)] xl:row-end-3 xl:h-[92px] xl:w-[132px] xl:rounded-[10px] xl:shadow-[0_10px_22px_rgba(0,0,0,.5)] "
+            + (art ? "" : "bg-[radial-gradient(120px_80px_at_50%_40%,var(--elevated),var(--surface))]")
           }
         >
           {art ? (
             <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
           ) : (
-            <span data-testid="seat-initials" className="font-display text-[22px] font-bold text-[color:var(--fg-muted)] md:text-[26px]">
+            <span data-testid="seat-initials" className="font-display text-[22px] font-bold text-[color:var(--fg-muted)] xl:text-[26px]">
               {faceInitials(seat.displayName)}
             </span>
           )}
@@ -92,22 +92,22 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
 
         <span
           className={
-            "col-start-2 col-end-4 row-start-1 flex min-w-0 flex-col gap-[3px] md:col-end-3 md:gap-[4px] "
-            + (chip ? "md:self-end" : "md:row-end-3 md:self-center")
+            "col-start-2 col-end-4 row-start-1 flex min-w-0 flex-col gap-[3px] xl:col-end-3 xl:gap-[4px] "
+            + (chip ? "xl:self-end" : "xl:row-end-3 xl:self-center")
           }
         >
-          <span className="flex min-w-0 items-baseline gap-[7px] text-[15px] font-semibold text-[color:var(--fg)] md:gap-[8px] md:text-[16px]">
+          <span className="flex min-w-0 items-baseline gap-[7px] text-[15px] font-semibold text-[color:var(--fg)] xl:gap-[8px] xl:text-[16px]">
             {name}
             <SeatTag draw={draw} />
           </span>
           {deck ? (
             <>
-              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] md:text-[14px]">{deck.name}</span>
+              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] xl:text-[14px]">{deck.name}</span>
               <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.partner ? copy.commanders(deck.commander.name, deck.partner.name) : deck.commander.name}</span>
             </>
           ) : state.kind === "waiting" ? (
             <>
-              <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] md:text-[14px]">
+              <span className="truncate text-[13.5px] text-[color:var(--fg-muted)] xl:text-[14px]">
                 {seat.you ? copy.pickingOwn : copy.picking}
               </span>
               <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">
@@ -120,12 +120,12 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         {/* Desktop's chip row (`.br`) sits in the name column with the sub line beside the chip; on the phone the row
             dissolves (`contents`) so the chip takes its own row and the sub line the row under it. */}
         {chip ? (
-          <span className="max-md:contents md:col-start-2 md:row-start-2 md:mt-[4px] md:flex md:min-w-0 md:flex-wrap md:items-center md:gap-x-[10px] md:gap-y-[4px] md:self-start">
-            <span className="max-md:col-start-1 max-md:col-end-3 max-md:row-start-2 max-md:mt-[10px] max-md:self-center">
+          <span className="max-xl:contents xl:col-start-2 xl:row-start-2 xl:mt-[4px] xl:flex xl:min-w-0 xl:flex-wrap xl:items-center xl:gap-x-[10px] xl:gap-y-[4px] xl:self-start">
+            <span className="max-xl:col-start-1 max-xl:col-end-3 max-xl:row-start-2 max-xl:mt-[10px] max-xl:self-center">
               <BracketChip permits={chip.permits} answered={chip.answered} />
             </span>
             {state.kind === "stale" || draw.rangeLine ? (
-              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-md:col-start-1 max-md:col-end-4 max-md:row-start-3 max-md:mt-[8px] md:contents">
+              <span className="flex flex-wrap items-center gap-x-[10px] gap-y-[4px] max-xl:col-start-1 max-xl:col-end-4 max-xl:row-start-3 max-xl:mt-[8px] xl:contents">
                 {state.kind === "stale" ? (
                   <span data-testid="seat-stale" className="inline-flex items-center gap-[5px] font-mono text-[10.5px] text-[color:var(--warning)]">
                     <i aria-hidden className="block h-[6px] w-[6px] rounded-full bg-[color:var(--warning)]" />
@@ -133,7 +133,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
                   </span>
                 ) : null}
                 {draw.rangeLine ? (
-                  <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[10px]">
+                  <span data-testid="seat-range-line" className="font-mono text-[10.5px] text-[color:var(--fg-faint)] xl:text-[10px]">
                     {rangeLineText(draw.rangeLine)}
                   </span>
                 ) : null}
@@ -143,7 +143,7 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         ) : null}
 
         {kind ? (
-          <span className="col-start-3 row-start-2 self-center justify-self-end max-md:mt-[10px] md:row-start-1 md:self-end">
+          <span className="col-start-3 row-start-2 self-center justify-self-end max-xl:mt-[10px] xl:row-start-1 xl:self-end">
             <FlagTag kind={kind} />
           </span>
         ) : null}
@@ -151,8 +151,8 @@ export function TableSeat({ draw }: { draw: SeatDraw }) {
         {chip && draw.counts ? (
           <span
             className={
-              "col-start-1 col-end-4 row-start-4 mt-[12px] md:col-start-3 md:col-end-4 md:mt-0 md:justify-self-end "
-              + (kind ? "md:row-start-2 md:mt-[4px] md:self-start" : "md:row-start-1 md:row-end-3 md:self-center")
+              "col-start-1 col-end-4 row-start-4 mt-[12px] xl:col-start-3 xl:col-end-4 xl:mt-0 xl:justify-self-end "
+              + (kind ? "xl:row-start-2 xl:mt-[4px] xl:self-start" : "xl:row-start-1 xl:row-end-3 xl:self-center")
             }
           >
             <SeatFacts counts={draw.counts} driving={draw.driving} />
@@ -176,7 +176,7 @@ function SeatTag({ draw }: { draw: SeatDraw }) {
   return <small className="whitespace-nowrap font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small>;
 }
 
-const MORE = "relative mx-[12px] mb-[12px] md:mb-[14px] md:ml-[162px] md:mr-[16px]";
+const MORE = "relative mx-[12px] mb-[12px] xl:mb-[14px] xl:ml-[162px] xl:mr-[16px]";
 const WAIT = `${MORE} rounded-[9px] border-[1.5px] border-dashed border-[color:var(--border-dashed)] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]`;
 
 /** What opens under the seat: the reason it is flagged, or why it is not in the read. */
@@ -230,7 +230,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
     return (
       <div
         data-testid="seat-why"
-        className={`${MORE} rounded-[9px] border border-[color:color-mix(in_oklab,var(--flag)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--flag)_9%,var(--surface-sunken))] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-body)] md:bg-[color:color-mix(in_srgb,var(--flag)_10%,var(--surface-sunken))]`}
+        className={`${MORE} rounded-[9px] border border-[color:color-mix(in_oklab,var(--flag)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--flag)_9%,var(--surface-sunken))] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-body)] xl:bg-[color:color-mix(in_srgb,var(--flag)_10%,var(--surface-sunken))]`}
       >
         <b className="font-semibold text-[color:var(--fg)]">{copy.whyLead}</b> {why}
       </div>
@@ -250,8 +250,6 @@ export function SeatFacts({ counts, driving }: { counts: Record<FindingId, numbe
         return (
           <span
             key={id}
-            title={labels[id]}
-            aria-label={`${labels[id]}: ${n}`}
             data-finding={id}
             data-driving={lifted ? "" : undefined}
             className={
@@ -266,6 +264,7 @@ export function SeatFacts({ counts, driving }: { counts: Record<FindingId, numbe
             <span aria-hidden className={"[&_svg]:h-[13px] [&_svg]:w-[13px] " + (n === 0 && !lifted ? "opacity-50" : "")}>
               <FindingMark id={id} />
             </span>
+            <span className="sr-only">{labels[id]}: </span>
             {n}
           </span>
         );
