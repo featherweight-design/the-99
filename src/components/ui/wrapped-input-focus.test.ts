@@ -17,6 +17,7 @@ const ROOT = join(process.cwd(), "src/components");
 const ALLOWED: Record<string, string> = {
   "decks/spine-desktop.tsx": "the rename field is a standalone input, drawn only while editing, whose accent border is its focus",
   "decks/spine-mobile.tsx": "the rename field is a standalone input, drawn only while editing, whose accent border is its focus",
+  "join/join-flow.tsx": "the 6-digit code field is a transparent overlay on six drawn boxes (N3): its focus is the accent border on the box it is typing into, through group-focus-within",
   "ui/count-stepper.tsx": "the basics stepper's count is a bare field with no box to wrap it, whose focus is its own 2px accent underline (R2 design table)",
 };
 

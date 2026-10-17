@@ -2464,6 +2464,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the matching checks fail. Every sweep call is scoped to the probe's own sender ids (`sweepInvites`' `senderIds`),
   so a populated database's other rows are never returned or erased, and a check pins it with a lapsed row of an
   outside sender. Clerk is passed as the stub on every call that can reach it (address-changing resends, the fifth wrong try, hand-overs, sweeps and the purge).
+- `pnpm probe:invites-join` walks the newcomer's pages (invites R1 PR 5) in Chromium, SIGNED OUT, at 390 and 1300, because
+  the contact sheet signs in and a signed-in reader is sent Home from `/join`. It seeds one sender and one QR reservation
+  per state (open, expired, revoked, claimed with a code, claimed and proven; its own per-run ids, deleted afterwards),
+  stands in for the claiming browser with the claim cookie, and checks: `/join/<token>` and `/sign-up` public, the sender
+  named only on a live invite, a shape error sending nothing, R14's toast with Try again and the field kept (mail
+  unconfigured on the server), a reopened claim redrawn at the code step (N3) and the hand-over (N6) for its own browser
+  and ended for any other, N11 and N12 naming nobody, an unknown token ended, no sideways scroll, and photographs into
+  `contact-sheets/invites-join/`. Needs a server on the SAME database with `SOCIAL_FRIENDS_ENABLED` and
+  `SOCIAL_INVITES_ENABLED` true and no `INVITE_CODE_SECRET`; it WRITES, so `PROBE_DB_BRANCH` must name the branch
+  `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
 - `pnpm probe:scan-auto` proves Auto's optimistic add in Chromium at 390 and 1300, with the fake camera and a stubbed
   match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card

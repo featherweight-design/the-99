@@ -21,4 +21,12 @@ describe("Clerk's hosted pages", () => {
     expect(page).toContain('<SignInButton mode="redirect">');
     expect(page).not.toMatch(/mode="modal"/);
   });
+
+  it("signs in by redirect on the newcomer's pages too", () => {
+    for (const f of ["sign-up/page.tsx", "../components/join/join-flow.tsx"]) {
+      const src = read(f);
+      expect(src).toContain('<SignInButton mode="redirect">');
+      expect(src).not.toMatch(/mode="modal"/);
+    }
+  });
 });

@@ -142,7 +142,7 @@ export const socialCopy = {
     signedOutTitle: "Someone sent you a friend request",
     signedOutBody: "Sign in to turn the card over and see who it’s from.",
     signIn: "Sign in",
-    signedOutFine: "No account? The 99 is invite-only. Ask whoever sent this.",
+    signedOutFine: "No account? The 99 is invite-only. Ask whoever sent this to invite you.",
     openTitle: (name: string) => `${name} wants to be friends`,
     // The card's text box (rules text), not a paragraph beside it.
     openRules: (name: string) => `When you accept, you and ${name} become friends. Each of you sees the other’s name and commander, and nothing else until one of you shares more.`,
