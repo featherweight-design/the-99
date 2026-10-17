@@ -79,7 +79,7 @@ function Swapped({ name, deck }: { name: string; deck: string }) {
     <>
       {" "}
       {text.slice(0, at)}
-      <b className="font-semibold">{deck}</b>
+      <b className="font-semibold text-[color:var(--fg)]">{deck}</b>
       {text.slice(at + deck.length)}
     </>
   );
