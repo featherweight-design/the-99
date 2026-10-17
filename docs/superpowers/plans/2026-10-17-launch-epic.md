@@ -13,7 +13,7 @@ without written permission from Wizards, and nothing is left out by omission.
 This plan sequences work. It does not restate the two plans it depends on:
 
 - **Buying credits UI** (U1 to U5): `docs/superpowers/plans/2026-10-17-buying-credits-ui.md`, on branch
-  `docs/buying-credits-ui-plan` (not yet on `main`); U1 merged as #2006.
+  now on `main`; U1 merged as #2006.
 - **Admin PII masking** (PR 1 to PR 4): `docs/superpowers/plans/2026-10-17-admin-pii-masking.md`, on branch
   `admin-pii-masking` (not yet on `main`); brief #2001 and handoff #2003 are merged.
 
@@ -68,7 +68,7 @@ No stacking: each PR is cut from fresh `main` after the one it depends on merges
 | A2 | The notice on /about; an audit that mana and guild symbols stay out of the logo, favicon, manifest icons and marketing (FCP rule 4) | A1 | No (existing About layout) | Yes | S | TBD |
 | A3 | Record L3 as settled (no artist line; washes stay). Optional: a Design exploration of an unblurred wash, adopted only if it keeps today's intent | none | Optional | No | S (doc) | TBD |
 | **B. Privacy and terms** | | | | | | |
-| B1 | Public `/privacy` and `/terms` (added to `isPublic` in `src/proxy.ts`): receipts and refunds via support@the-99.dev, the admin PII line, the FCP notice, data deletion (`purgeAccount`), the AI vendor named, and that users must be 18 or older (L11). Linked from the footer, `/credits` and `/sign-up` | A0, A1; E3 for the "views are logged" sentence | Built from A0 | Yes, and `prose-pass` for the long text | M | TBD |
+| B1 | Public `/privacy` and `/terms` (added to `isPublic` in `src/proxy.ts`): receipts and refunds via support@the-99.dev, the admin PII line, the FCP notice, data deletion (`purgeAccount`), the AI vendor named, and that users must be 18 or older (L11). Linked from the footer, `/credits` and `/sign-up`. An invited player makes the account on Clerk's hosted sign-up, not on `/sign-up` (an invite-only explainer), so B1 also sets the hosted sign-up's terms and privacy links in Clerk and checks them during an invitation redemption from `/join/[token]` | A0, A1; E3 for the "views are logged" sentence | Built from A0 | Yes, and `prose-pass` for the long text | M | TBD |
 | **C. Pricing copy** | | | | | | |
 | C1 | `/credits` and every offer string pass L6: lead with the pack, "Credits pay for AI model runs ... Every card, deck, collection and recommendation view stays free," no "unlock", "premium" or "full access"; the monthly plan reads as a credit bundle that renews, never a membership | U1 (#2006, merged) | No (copy only) | Yes | S | TBD |
 | U3 | The monthly plan, per the buying-credits plan, in the launch and drawn behind the pack on `/credits` (L6) | per that plan; C1 for its wording | per that plan | Yes | per that plan | TBD |
@@ -109,11 +109,17 @@ None remain.
 **Before `PAYMENTS_ENABLED` goes on in production:**
 
 1. U1 and U2a merged (the credits plan already gates production on U2a).
-2. A1 (the notice is on every page) and C1 (pricing copy). U3 (the monthly plan) is in the launch, after C1 and
-   behind the pack.
-3. E1 to E3 (masking and the reveal log), then B1, whose privacy page states that reveals are logged. A privacy
+2. A1 (the notice is on every page) and C1 (pricing copy).
+3. K2 (refunds and disputes) from the buying-credits plan. Today the Stripe webhook acknowledges every event except
+   `checkout.session.completed` without acting on it, so without K2 a refunded or disputed pack keeps spendable credits.
+4. E1 to E3 (masking and the reveal log), then B1, whose privacy page states that reveals are logged. A privacy
    page must not claim a log that does not exist yet.
-4. B1 merged and linked from `/credits`, so receipts and refunds have a stated route.
+5. B1 merged and linked from `/credits`, so receipts and refunds have a stated route.
+
+**Before the monthly plan (U3) goes on sale in production:** U3 is in the launch, after C1 and behind the pack, and
+sales wait on the buying-credits plan's R step too (Stripe Customer delete on account deletion). Today the purge
+deletes the local `stripe_customers` row without deleting the Stripe Customer or cancelling its subscription, so a
+deleted account would keep being charged with nothing left locally to find it by.
 
 **Before invites widen (any new batch of invites beyond the current players):**
 
@@ -142,8 +148,10 @@ Run the `feature-acceptance` skill per UI PR and again at the epic's close:
   `/offline`), `/about`, `/privacy`, `/terms`, the onboarding section, and each public route F3 opens; each at 390 and
   1300, with the footer checked in all six themes for contrast.
 - **Contact sheet**: `scripts/contact-sheet.mjs` over that inventory, one image per PR.
-- **Sameness**: `pnpm check:shared` proves every shell imports the one footer component, and every spend surface reads
-  welcome credits through the same `CreditButton` line.
+- **Sameness**: `pnpm check:shared` checks one shared binding per inventory, by direct import, so it cannot prove a
+  footer mounted once in the root layout reaches every shell, or that `CreditButton` shows welcome credits. Use two
+  inventories: one for the spend surfaces (each imports `CreditButton`), one for the shells. A1's render test proves
+  every layout branch draws the footer, and a separate test proves the credit line shows a welcome lot.
 - **Markers**: a probe asserts the exact L4 text on a signed-out and a signed-in page, and that `/privacy` and `/terms`
   load with no session.
 - **Walk**: the close-out walk on staging against L1 to L8: no card, deck or collection view sits behind credits;
