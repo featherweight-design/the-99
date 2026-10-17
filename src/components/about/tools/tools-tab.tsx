@@ -39,7 +39,7 @@ function Group({ group, theme }: { group: ShowcaseGroup; theme: string | undefin
 
 function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[]; free: string; allowance: string }) {
   const chip =
-    "self-baseline justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent)] [grid-area:chip] md:self-center";
+    "self-baseline justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent)] [grid-area:chip] lg:self-center";
   return (
     <section aria-label={writtenForYouCopy.title} data-written-for-you className="mx-[16px] mt-[30px] md:mx-0 md:mt-[40px]">
       <div className="mb-[12px] flex items-baseline justify-between gap-[10px] md:mb-[16px] md:justify-start md:gap-[12px]">
@@ -50,19 +50,21 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
         <p className="m-0 mb-[12px] text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:mb-[14px] md:text-[14.5px]">
           {writtenForYouCopy.intro(allowance)}
         </p>
+        {/* The drawn 300 / 1fr / 170 row needs the room it has at 1280: from `md` its fixed tracks would leave the
+            description a few dozen pixels at 768, so the row keeps its stacked shape until `lg`. */}
         <ul role="list" className="m-0 list-none p-0">
           {rows.map((r) => (
             <li
               key={r.id}
               data-written-row={r.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[10px] gap-y-[4px] border-t border-t-[color:var(--border)] py-[12px] [grid-template-areas:'name_chip'_'what_what'_'where_where'] md:min-h-[52px] md:grid-cols-[300px_minmax(0,1fr)_170px] md:items-center md:gap-x-[18px] md:gap-y-[2px] md:py-0 md:[grid-template-areas:'name_what_chip'_'where_what_chip']"
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[10px] gap-y-[4px] border-t border-t-[color:var(--border)] py-[12px] [grid-template-areas:'name_chip'_'what_what'_'where_where'] lg:min-h-[52px] lg:grid-cols-[300px_minmax(0,1fr)_170px] lg:items-center lg:gap-x-[18px] lg:gap-y-[2px] lg:py-0 lg:[grid-template-areas:'name_what_chip'_'where_what_chip']"
             >
-              <span className="text-[14.5px] font-semibold text-[color:var(--fg)] [grid-area:name] md:self-end md:text-[15px]">{r.name}</span>
-              <span className="font-mono text-[11px] text-[color:var(--fg-faint)] [grid-area:where] md:self-start">{r.where}</span>
-              <span className="text-[13.5px] leading-[1.5] text-[color:var(--fg-body)] [grid-area:what] md:text-[14px]">{r.what}</span>
+              <span className="text-[14.5px] font-semibold text-[color:var(--fg)] [grid-area:name] lg:self-end lg:text-[15px]">{r.name}</span>
+              <span className="font-mono text-[11px] text-[color:var(--fg-faint)] [grid-area:where] lg:self-start">{r.where}</span>
+              <span className="text-[13.5px] leading-[1.5] text-[color:var(--fg-body)] [grid-area:what] lg:text-[14px]">{r.what}</span>
               <span className={chip}>
-                <span aria-hidden className="md:hidden">{r.short}</span>
-                <span className="sr-only md:not-sr-only">{r.cost}</span>
+                <span aria-hidden className="lg:hidden">{r.short}</span>
+                <span className="sr-only lg:not-sr-only">{r.cost}</span>
               </span>
             </li>
           ))}
