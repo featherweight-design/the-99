@@ -31,8 +31,13 @@ export type CreateResult =
 
 export type ClerkInvites = {
   create(input: CreateInvitation): Promise<CreateResult>;
-  /** True when Clerk revoked it or it was already not pending; false when Clerk could not be reached. */
+  /** True when Clerk revoked it or it was already not pending; false when that is not known. */
   revoke(invitationId: string): Promise<boolean>;
+  /**
+   * Revokes every PENDING invitation to this address whose public metadata names this reservation: the cleanup for
+   * a reservation whose invitation id was never stored (an indeterminate send). True when none is left pending.
+   */
+  revokeFor(emailAddress: string, reservationId: string): Promise<boolean>;
   /** Whether an account holds this address (R6's N9). */
   hasAccount(emailAddress: string): Promise<boolean>;
 };
@@ -46,6 +51,15 @@ export function classifyClerkError(error: unknown): CreateResult & { ok: false }
     return { ok: false, reason: "refused", code };
   }
   return { ok: false, reason: "indeterminate" };
+}
+
+/**
+ * Whether a revoke's error still means nothing is left to revoke: a 400, 404, 410 or 422 is an invitation already
+ * accepted, revoked, expired or gone. An auth failure (401, 403), a rate limit (429) or no answer proves nothing.
+ */
+export function revokeSettled(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  return status === 400 || status === 404 || status === 410 || status === 422;
 }
 
 export const clerkInvites: ClerkInvites = {
@@ -68,8 +82,18 @@ export const clerkInvites: ClerkInvites = {
       await (await clerkClient()).invitations.revokeInvitation(invitationId);
       return true;
     } catch (error) {
-      // A 4xx is an invitation already accepted, revoked or expired: nothing is left to revoke.
-      return classifyClerkError(error).reason === "refused";
+      return revokeSettled(error);
+    }
+  },
+  async revokeFor(emailAddress, reservationId) {
+    try {
+      const client = await clerkClient();
+      const list = await client.invitations.getInvitationList({ query: emailAddress, status: "pending" });
+      const ours = list.data.filter((i) => i.publicMetadata?.inviteReservation === reservationId);
+      const done = await Promise.all(ours.map((i) => clerkInvites.revoke(i.id)));
+      return done.every(Boolean);
+    } catch {
+      return false;
     }
   },
   async hasAccount(emailAddress) {

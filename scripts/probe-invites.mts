@@ -27,15 +27,17 @@ const check = (label: string, ok: boolean, detail = "") => {
 };
 
 /** A Clerk stand-in answering what it is told to, recording every call. */
-function stubClerk(answer: (input: CreateInvitation) => CreateResult) {
+function stubClerk(answer: (input: CreateInvitation) => CreateResult | Promise<CreateResult>) {
   const created: CreateInvitation[] = [];
   const revoked: string[] = [];
+  const revokedFor: { email: string; reservationId: string }[] = [];
   const clerk: ClerkInvites = {
     async create(input) { created.push(input); return answer(input); },
     async revoke(id) { revoked.push(id); return true; },
+    async revokeFor(email, reservationId) { revokedFor.push({ email, reservationId }); return true; },
     async hasAccount() { return false; },
   };
-  return { clerk, created, revoked };
+  return { clerk, created, revoked, revokedFor };
 }
 
 async function main() {
@@ -171,6 +173,35 @@ async function main() {
       !(await revokeReservation(ADMIN, waiting[0].id, { clerk: revoke.clerk })).changed && revoke.revoked.length === 1);
     await invariant(S, "a revoke");
 
+    // A revoke of a reservation whose Clerk id was never stored (the indeterminate send above) looks the invitation
+    // up by its address and reservation, read before the address is erased.
+    const { rows: lostRow } = await db.execute<{ id: string }>(sql`
+      select id from invite_reservations where user_id = ${S} and email = 'lost@x.dev'`);
+    const byMeta = stubClerk(() => ({ ok: false, reason: "indeterminate" }));
+    check("revoke of a row with no Clerk id changes it",
+      (await revokeReservation(ADMIN, lostRow[0].id, { clerk: byMeta.clerk })).changed);
+    check("its invitation is looked up by address and reservation", byMeta.revoked.length === 0
+      && byMeta.revokedFor.length === 1 && byMeta.revokedFor[0].email === "lost@x.dev"
+      && byMeta.revokedFor[0].reservationId === lostRow[0].id);
+
+    // A revoke that lands while Clerk is still creating: the send finds its reservation gone and revokes the
+    // invitation it was just handed, so the ticket is not left usable with its invite returned.
+    check("Set 1 left for the mid-send revoke", (await setInvites(ADMIN, S, 1)).ok);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const slow = stubClerk(async (i) => { await gate; return { ok: true, id: `inv_late_${i.reservationId.slice(0, 8)}`, url: null }; });
+    const pending = sendEmailInvite(S, "midway@x.dev", { clerk: slow.clerk });
+    while (slow.created.length === 0) await new Promise((r) => setTimeout(r, 20));
+    const midId = slow.created[0].reservationId;
+    check("an admin revokes it mid-send", (await revokeReservation(ADMIN, midId, { clerk: slow.clerk })).changed);
+    release();
+    check("the send still answers ok", (await pending).ok);
+    check("the late invitation is revoked", slow.revoked.includes(`inv_late_${midId.slice(0, 8)}`));
+    const { rows: mid } = await db.execute<{ state: string; clerk: string | null }>(sql`
+      select state, clerk_invitation_id as clerk from invite_reservations where id = ${midId}`);
+    check("the revoked row is not rewritten with the late id", mid[0].state === "revoked" && mid[0].clerk === null);
+    await invariant(S, "a mid-send revoke");
+
     // A group top-up: raises who is below, lowers nobody.
     const { rows: g } = await db.execute<{ id: string }>(sql`
       insert into flag_groups (name, created_by) values (${`probe-inv-${run}`}, ${ADMIN}) returning id`);
@@ -194,7 +225,7 @@ async function main() {
       select kind, count(*)::int as n from admin_events where actor_id = ${ADMIN} group by kind order by kind`);
     const byKind = Object.fromEntries(events.map((e) => [e.kind, e.n]));
     check("history: one line per Set, top-up and revoke",
-      byKind.invites_set === 5 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 1, JSON.stringify(byKind));
+      byKind.invites_set === 6 && byKind.invites_topped_up === 1 && byKind.invite_revoked === 3, JSON.stringify(byKind));
   } finally {
     await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
     await db.execute(sql`delete from invite_reservations where user_id in (${S}, ${T}, ${O})`);

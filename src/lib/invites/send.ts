@@ -56,13 +56,19 @@ export async function sendEmailInvite(
 
   const made = await clerk.create({ emailAddress: email, reservationId, notify: true });
   if (made.ok) {
+    let stored: boolean | null = null;
     try {
-      await db.update(inviteReservations).set({ clerkInvitationId: made.id })
-        .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")));
+      const rows = await db.update(inviteReservations).set({ clerkInvitationId: made.id })
+        .where(and(eq(inviteReservations.id, reservationId), eq(inviteReservations.state, "reserved")))
+        .returning({ id: inviteReservations.id });
+      stored = rows.length > 0;
     } catch {
       // The invitation exists without its id stored: the same as an indeterminate send, which the sweep reconciles.
       console.warn("[invites] invite-email sent, id not stored");
     }
+    // The reservation was resolved while Clerk was asked (an admin revoke): its invite is back, so the ticket just
+    // made must not stay usable.
+    if (stored === false && !(await clerk.revoke(made.id))) console.warn("[invites] invite-email: late invitation not revoked");
   } else if (made.reason === "refused") {
     console.info(`[invites] invite-email refused code=${made.code ?? "none"}`);
   } else {

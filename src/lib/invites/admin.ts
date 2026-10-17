@@ -92,20 +92,24 @@ export async function revokeReservation(
     .where(eq(inviteReservations.id, reservationId));
   if (!found) return { ok: true, changed: false };
 
-  const invitationId = await db.transaction(async (tx) => {
+  const revoked = await db.transaction(async (tx) => {
     await lockSenderIn(tx, found.userId);
-    const [row] = await tx.update(inviteReservations)
-      .set({ state: "revoked", email: null, resolvedAt: now })
-      .where(and(eq(inviteReservations.id, reservationId), inArray(inviteReservations.state, ["claimed", "reserved"])))
-      .returning({ clerkInvitationId: inviteReservations.clerkInvitationId });
-    if (!row) return undefined;
+    const waiting = and(eq(inviteReservations.id, reservationId), inArray(inviteReservations.state, ["claimed", "reserved"]));
+    // The address is read before it is erased: with no invitation id stored, it is how Clerk's invitation is found.
+    const [row] = await tx.select({ email: inviteReservations.email, clerkInvitationId: inviteReservations.clerkInvitationId })
+      .from(inviteReservations).where(waiting);
+    if (!row) return null;
+    await tx.update(inviteReservations).set({ state: "revoked", email: null, resolvedAt: now }).where(waiting);
     await tx.insert(adminEvents).values({ actorId, kind: "invite_revoked", userId: found.userId, at: now });
-    return row.clerkInvitationId;
+    return row;
   });
-  if (invitationId === undefined) return { ok: true, changed: false };
-  if (invitationId && !(await clerk.revoke(invitationId))) {
-    // Left to Clerk's own 7-day expiry, the same lapse; the spend refuses a revoked reservation in any case.
-    console.warn("[invites] revoke: Clerk invitation not revoked");
-  }
+  if (revoked === null) return { ok: true, changed: false };
+  // A missing id is not proof that nothing was made (an indeterminate send): look the invitation up by the
+  // reservation it names. A send still in flight revokes its own once it finds the reservation gone (`send.ts`).
+  const cleared = revoked.clerkInvitationId
+    ? await clerk.revoke(revoked.clerkInvitationId)
+    : revoked.email ? await clerk.revokeFor(revoked.email, reservationId) : true;
+  // Left to Clerk's own 7-day expiry, the same lapse; the spend refuses a revoked reservation in any case.
+  if (!cleared) console.warn("[invites] revoke: Clerk invitation not revoked");
   return { ok: true, changed: true };
 }

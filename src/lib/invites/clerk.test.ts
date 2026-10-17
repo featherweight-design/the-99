@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn() }));
+const m = vi.hoisted(() => ({ create: vi.fn(), revoke: vi.fn(), list: vi.fn(), pending: vi.fn() }));
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: async () => ({
-    invitations: { createInvitation: m.create, revokeInvitation: m.revoke },
+    invitations: { createInvitation: m.create, revokeInvitation: m.revoke, getInvitationList: m.pending },
     users: { getUserList: m.list },
   }),
 }));
@@ -52,13 +52,33 @@ describe("clerkInvites.create", () => {
 });
 
 describe("clerkInvites.revoke and hasAccount", () => {
-  it("counts an invitation already gone as revoked, and an unreachable Clerk as not", async () => {
+  it("counts an invitation already gone as revoked, and nothing else", async () => {
     m.revoke.mockResolvedValue({});
     expect(await clerkInvites.revoke("inv_1")).toBe(true);
-    m.revoke.mockRejectedValue({ status: 400 });
-    expect(await clerkInvites.revoke("inv_1")).toBe(true);
-    m.revoke.mockRejectedValue({ status: 502 });
-    expect(await clerkInvites.revoke("inv_1")).toBe(false);
+    for (const status of [400, 404, 410, 422]) {
+      m.revoke.mockRejectedValue({ status });
+      expect(await clerkInvites.revoke("inv_1")).toBe(true);
+    }
+    for (const e of [{ status: 401 }, { status: 403 }, { status: 429 }, { status: 502 }, new Error("down")]) {
+      m.revoke.mockRejectedValue(e);
+      expect(await clerkInvites.revoke("inv_1")).toBe(false);
+    }
+  });
+
+  it("revokes by address only the pending invitations naming this reservation", async () => {
+    m.pending.mockResolvedValue({ data: [
+      { id: "inv_a", publicMetadata: { inviteReservation: "r1" } },
+      { id: "inv_b", publicMetadata: { inviteReservation: "r2" } },
+      { id: "inv_c", publicMetadata: {} },
+    ] });
+    m.revoke.mockResolvedValue({});
+    expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(true);
+    expect(m.pending).toHaveBeenCalledWith({ query: "a@x.dev", status: "pending" });
+    expect(m.revoke.mock.calls).toEqual([["inv_a"]]);
+    m.revoke.mockRejectedValue({ status: 429 });
+    expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(false);
+    m.pending.mockRejectedValue(new Error("down"));
+    expect(await clerkInvites.revokeFor("a@x.dev", "r1")).toBe(false);
   });
 
   it("looks an address up by exact email", async () => {
