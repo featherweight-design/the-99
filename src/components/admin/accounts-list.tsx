@@ -67,7 +67,7 @@ function Row({ row }: { row: AccountRow }) {
           <span className="sr-only">{copy.cols.credits} </span>
           {row.credits}
         </span>
-        <span data-testid="account-invites" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg)]"}`}>
+        <span data-testid="account-invites-cell" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg)]"}`}>
           <span className="sr-only">{inv.colInvites} </span>
           {left}
           {waiting > 0 && <span className="text-[color:var(--fg-muted)]">{inviteCopy.count.waiting(waiting)}</span>}

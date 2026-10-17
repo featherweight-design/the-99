@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { HOLD_MS } from "../invites/rules";
 import { adminCopy } from "../copy/admin";
 import {
   accountInvites,
@@ -73,7 +72,8 @@ describe("an account's Invites section (M2)", () => {
       { at: day(14, 10), actorId: "u_hugh", kind: "invites_set", userId: "u_colin", oldValue: "1", newValue: "4" },
       { at: day(16), actorId: "u_admin2", kind: "invite_revoked", userId: "u_colin", oldValue: null, newValue: null },
     ],
-    sentAt: [new Date(day(27).getTime() - HOLD_MS)],
+    // The raw holds_until: the send line is dated a hold earlier (Oct 20).
+    holdsUntil: [day(27)],
     accounts,
     viewerId: "u_hugh",
     limit: 100,
@@ -111,7 +111,7 @@ describe("an account's Invites section (M2)", () => {
   });
 
   it("reads a founder with no stock as 0 left", () => {
-    const s = accountInvites({ ...base, userId: "u_hugh", held: undefined, open: [], edges: [], events: [], sentAt: [] });
+    const s = accountInvites({ ...base, userId: "u_hugh", held: undefined, open: [], edges: [], events: [], holdsUntil: [] });
     expect([s.left, s.waiting, s.spent, s.invitedBy.kind]).toEqual([0, 0, 0, "founder"]);
   });
 });

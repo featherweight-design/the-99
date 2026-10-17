@@ -44,7 +44,7 @@ export type OneAccountInvites = {
   open: ReservationRow[];
   edges: Edge[];
   events: InviteEvent[];
-  sentAt: Date[];
+  holdsUntil: Date[];
 };
 
 /**
@@ -87,6 +87,6 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
     edges: row.edges.map(toEdge),
     events: row.events.map((e) => ({ ...e, at: utc(e.at)! })),
-    sentAt: row.sent.map((t) => utc(t)!),
+    holdsUntil: row.sent.map((t) => utc(t)!),
   };
 }

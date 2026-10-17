@@ -89,12 +89,12 @@ describe("AccountsList (A1 to A3)", () => {
     render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
     const [hugh, mara, theo] = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     // The column cells, each with its sr-only label; a 0 with nothing waiting and a founder are faint.
-    expect(within(hugh).getByTestId("account-invites")).toHaveTextContent(/^Invites 0$/);
-    expect(within(hugh).getByTestId("account-invites").className).toContain("--fg-faint");
+    expect(within(hugh).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 0$/);
+    expect(within(hugh).getByTestId("account-invites-cell").className).toContain("--fg-faint");
     expect(within(hugh).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by founder$/);
     expect(within(hugh).getByTestId("account-invited-by").className).toContain("--fg-faint");
-    expect(within(mara).getByTestId("account-invites")).toHaveTextContent(/^Invites 2 · 1 waiting$/);
-    expect(within(mara).getByTestId("account-invites").className).not.toContain("--fg-faint");
+    expect(within(mara).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 2 · 1 waiting$/);
+    expect(within(mara).getByTestId("account-invites-cell").className).not.toContain("--fg-faint");
     expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh Hartigan$/);
     expect(within(theo).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by deleted account$/);
     expect(hugh).toHaveTextContent("No group · 7 of 10 left · 0 invites · founder");

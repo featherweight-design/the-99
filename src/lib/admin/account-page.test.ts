@@ -62,7 +62,7 @@ beforeEach(() => {
   readAllowance.mockReset().mockResolvedValue({ used: 0, limit: 5, reopensAt: null, nextAt: null });
   execute.mockReset().mockResolvedValue({ rows: [] });
   readEveryInvite.mockReset().mockResolvedValue({ balances: new Map(), open: [], edges: [] });
-  readAccountInvites.mockReset().mockResolvedValue({ held: undefined, open: [], edges: [], events: [], sentAt: [] });
+  readAccountInvites.mockReset().mockResolvedValue({ held: undefined, open: [], edges: [], events: [], holdsUntil: [] });
 });
 
 describe("the invite figures (M1, M2)", () => {
@@ -83,7 +83,7 @@ describe("the invite figures (M1, M2)", () => {
   it("draws the Invites tile fifth, and reads the account's history at the page's limit for the viewer", async () => {
     readAccountInvites.mockResolvedValue({
       held: 4, open: [], edges: [{ inviter: HUGH.id, invitee: null, kind: "qr", joinedAt: new Date(now.getTime() + 3_600_000) }],
-      events: [{ at: now, actorId: "user_viewer", kind: "invites_set", userId: HUGH.id, oldValue: "1", newValue: "4" }], sentAt: [],
+      events: [{ at: now, actorId: "user_viewer", kind: "invites_set", userId: HUGH.id, oldValue: "1", newValue: "4" }], holdsUntil: [],
     });
     const page = (await loadAccountPage(HUGH.id, "user_viewer", later))!;
     expect(page.tiles.at(-1)).toEqual({ key: "invites", label: "Invites", figure: "4", sub: "0 waiting · 1 spent" });

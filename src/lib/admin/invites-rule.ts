@@ -97,7 +97,7 @@ export type AccountInvites = {
 
 /**
  * M2: an account's invites, from its stock, its reservations still open, every edge naming it, its admin events,
- * and the reservations that ever held (`sentAt`: the moment a hold began, its `holds_until` less `HOLD_MS`). The
+ * and the reservations that ever held (`holdsUntil`, raw; a send line is dated `holds_until` less `HOLD_MS`, when the hold began). The
  * history merges three sources newest first and keeps `limit`; each source arrives cut at `limit + 1`, so the merge
  * still knows when the whole is cut.
  */
@@ -107,7 +107,7 @@ export function accountInvites(input: {
   open: readonly ReservationRow[];
   edges: readonly Edge[];
   events: readonly InviteEvent[];
-  sentAt: readonly Date[];
+  holdsUntil: readonly Date[];
   accounts: readonly Account[];
   viewerId: string;
   limit: number;
@@ -127,7 +127,7 @@ export function accountInvites(input: {
       if (e.kind === "invite_revoked") return [{ at: e.at, what: copy.history.revoked(actor(e.actorId), name) }];
       return [];
     }),
-    ...input.sentAt.map((at) => ({ at, what: copy.history.sent(name) })),
+    ...input.holdsUntil.map((until) => ({ at: new Date(until.getTime() - HOLD_MS), what: copy.history.sent(name) })),
     ...made.map((e) => ({ at: e.joinedAt, what: copy.history.joined(e.invitee === null ? copy.deleted : userName(e.invitee), name) })),
   ].sort((a, b) => b.at.getTime() - a.at.getTime());
 
