@@ -1473,6 +1473,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
     captionLineSwitches: {
+      // 2026-10-17 (discovery R2·5, plan decision 3): the Overview is written only with the Analysis tab on
+      // (`synopsis-actions.ts` refuses otherwise), so its line follows that switch. An ordinary edit, no bump.
+      '- Writing a deck’s Overview': 'ANALYSIS_TAB_ENABLED',
       '- Each “Suggested changes” run': 'TUNING_ENABLED',
       // The read spends only with Help me choose on; the bullet names it, so it follows that switch.
       '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
