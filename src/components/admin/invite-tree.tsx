@@ -52,7 +52,7 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
       <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}>
         {row.initials}
       </span>
-      <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-baseline md:gap-[10px]">
+      <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
         <b className="font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{row.name}</b>
         {row.owner && (
           <span className="hidden flex-none rounded-full border border-solid border-[color:var(--border-strong)] px-[7px] py-[2px] font-mono text-[10px] tracking-[0.08em] text-[color:var(--fg-muted)] md:inline">
