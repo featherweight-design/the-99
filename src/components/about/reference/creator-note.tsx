@@ -42,7 +42,7 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
             ✕
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[28px] pt-[4px] text-[14.5px] leading-[1.65] text-[color:var(--fg-body)] md:px-[28px] md:text-[15px]">
+        <div className="relative min-h-0 flex-1 overflow-y-auto px-[16px] pb-[70px] pt-[4px] text-[14.5px] leading-[1.65] text-[color:var(--fg-body)] md:px-[28px] md:text-[15px]">
           {body.map((p, i) => (
             <p key={i} className="m-0 mb-[14px]">
               {p}
@@ -51,6 +51,11 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
           <p className="m-0 mb-[2px] mt-[6px]">{signOff}</p>
           <p className="m-0 font-display text-[18px] text-[color:var(--fg)]">{signature}</p>
         </div>
+        {/* The drawn bottom edge: the text scrolls beneath it, and the body's foot clears it at the end. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[70px] bg-[linear-gradient(transparent,var(--surface-rail))] md:rounded-b-[16px]"
+        />
       </div>
     </div>
   );
@@ -66,7 +71,7 @@ export function CreatorNote() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         data-creator-note-row
-        className="mt-[28px] flex min-h-[56px] w-full items-center justify-between gap-[12px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[18px] py-[8px] text-left hover:border-[color:var(--accent-dim)]"
+        className="mt-[28px] flex min-h-[56px] w-full items-center justify-between gap-[12px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[18px] py-0 text-left hover:border-[color:var(--accent-dim)]"
       >
         <span>
           <span className="block font-display text-[16px] font-semibold text-[color:var(--fg)]">{creatorNoteCopy.title}</span>

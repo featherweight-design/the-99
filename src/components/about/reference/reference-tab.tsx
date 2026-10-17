@@ -87,10 +87,15 @@ function EntryRow({ entry, open, onToggle }: { entry: ReferenceEntry; open: bool
         aria-expanded={open}
         aria-controls={body}
         onClick={onToggle}
-        className="grid w-full min-h-[48px] grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-[8px] gap-y-[3px] py-[10px] text-left [grid-template-areas:'title_mark'_'first_first'] md:min-h-[44px] md:grid-cols-[300px_minmax(0,1fr)_56px_16px] md:items-center md:gap-x-[16px] md:py-[6px] md:[grid-template-areas:'title_first_mark_chev']"
+        className="grid w-full min-h-[48px] grid-cols-[minmax(0,1fr)] items-baseline gap-y-[3px] py-[10px] text-left [grid-template-areas:'title'_'first'] md:min-h-[44px] md:grid-cols-[300px_minmax(0,1fr)_56px_16px] md:items-center md:gap-x-[16px] md:py-[6px] md:[grid-template-areas:'title_first_mark_chev']"
       >
-        <span className="text-[14.5px] font-medium text-[color:var(--fg)] [grid-area:title]">{entry.title}</span>
-        <span className="font-mono text-[10.5px] text-[color:var(--accent)] [grid-area:mark]">{entry.inTools ? referenceCopy.inTools : ""}</span>
+        <span className="text-[14.5px] font-medium text-[color:var(--fg)] [grid-area:title]">
+          {entry.title}
+          {entry.inTools && <span className="font-mono text-[10.5px] font-normal text-[color:var(--accent)] md:hidden"> {referenceCopy.inTools}</span>}
+        </span>
+        <span aria-hidden className="hidden font-mono text-[10.5px] text-[color:var(--accent)] [grid-area:mark] md:inline">
+          {entry.inTools ? referenceCopy.inTools : ""}
+        </span>
         <span className="text-[13px] leading-[1.45] text-[color:var(--fg-faint)] [grid-area:first] md:overflow-hidden md:text-ellipsis md:whitespace-nowrap">
           {entry.first}
         </span>
@@ -199,12 +204,13 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
         )}
 
         {q && hits.length > 0 && (
-          <div data-reference-hits className="flex flex-col gap-[12px]">
+          <div data-reference-hits className="flex flex-col gap-[12px] md:gap-[14px]">
             <p role="status" className="m-0 pb-[4px] pt-[6px] font-mono text-[12px] text-[color:var(--fg-muted)]">
               {referenceCopy.hits(hits.length, q)}
             </p>
             {hits.map((h) => {
               const [before, after] = around(h.before, h.after);
+              // A title match still shows a line of the entry: its first sentence, as the closed row does.
               return (
                 <a
                   key={h.entry.id}
@@ -214,11 +220,9 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
                 >
                   <span className="block font-mono text-[11px] uppercase tracking-[0.06em] text-[color:var(--fg-faint)]">{h.entry.screen}</span>
                   <span className="mt-[4px] block text-[15px] font-medium text-[color:var(--fg)]">{h.field === "title" ? <Marked before={before} hit={h.hit} after={after} /> : h.entry.title}</span>
-                  {h.field !== "title" && (
-                    <span className="mt-[4px] block text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-                      <Marked before={before} hit={h.hit} after={after} />
-                    </span>
-                  )}
+                  <span className="mt-[4px] block text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+                    {h.field === "title" ? h.entry.first : <Marked before={before} hit={h.hit} after={after} />}
+                  </span>
                 </a>
               );
             })}
@@ -229,13 +233,16 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
           <div role="status" className="flex flex-col gap-[8px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] px-[20px] py-[28px]">
             <span className="text-[16px] text-[color:var(--fg)]">{referenceCopy.none(q)}</span>
             <span className="text-[14px] leading-[1.5] text-[color:var(--fg-muted)]">{referenceCopy.noneNote}</span>
-            <button
-              type="button"
-              onClick={() => setQuery("")}
+            <a
+              href={`#screen-${screens[0]?.key ?? ""}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setQuery("");
+              }}
               className="mt-[6px] self-start py-[8px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline"
             >
               {referenceCopy.noneOut}
-            </button>
+            </a>
           </div>
         )}
 

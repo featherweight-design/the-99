@@ -118,6 +118,8 @@ describe("ReferenceTab, search", () => {
     const link = within(hits).getAllByRole("link").find((a) => a.getAttribute("href") === `#${first.id}`)!;
     expect(link.textContent).toContain(first.screen);
     expect(link.querySelector("mark")).not.toBeNull();
+    // A title match still shows the entry's first sentence beneath it.
+    expect(link.textContent).toContain(first.first);
     const list = container.querySelector("[data-reference-screen]")!.parentElement!;
     expect(list.hidden).toBe(true);
   });
@@ -147,7 +149,7 @@ describe("ReferenceTab, search", () => {
     expect(container.querySelector("[data-reference-hits]")).toBeNull();
     expect(screen.getByText(referenceCopy.none(q))).toBeTruthy();
     expect(screen.getByText(referenceCopy.noneNote)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: referenceCopy.noneOut }));
+    fireEvent.click(screen.getByRole("link", { name: referenceCopy.noneOut }));
     expect(field().value).toBe("");
     expect((container.querySelector("[data-reference-screen]")!.parentElement as HTMLElement).hidden).toBe(false);
   });
