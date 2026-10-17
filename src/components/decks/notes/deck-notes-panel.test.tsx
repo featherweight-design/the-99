@@ -82,6 +82,9 @@ describe("formatNoteDate", () => {
   });
 });
 
+// 9 March at local noon: the date is formatted in local time, so a UTC literal drifts a day at +12 and beyond.
+const localNoon = (year: number) => new Date(year, 2, 9, 12).toISOString();
+
 describe("the list", () => {
   it("shows six open notes in the order given, then Show all N", async () => {
     const open = Array.from({ length: 8 }, (_, i) => note(`n${i}`, `note ${i}`));
@@ -96,7 +99,7 @@ describe("the list", () => {
     // The year is read off the clock: the date is written bare only inside the current year, so a fixture
     // pinned to a calendar year goes red the day the clock leaves it (the clock-shifted run found this one).
     const year = new Date().getFullYear();
-    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: `${year}-03-09T12:00:00.000Z` })]));
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: localNoon(year) })]));
     expect(screen.queryByText("finished")).toBeNull();
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getByText("finished")).toBeTruthy();
@@ -105,7 +108,7 @@ describe("the list", () => {
 
   it("writes the year on a done note from another year", () => {
     const year = new Date().getFullYear() - 1;
-    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: `${year}-03-09T12:00:00.000Z` })]));
+    mount(view([note("a", "open one")], [note("b", "finished", { doneAt: localNoon(year) })]));
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getAllByText(`done 9 Mar ${year}`).length).toBeGreaterThan(0);
   });
