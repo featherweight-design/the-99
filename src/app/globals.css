@@ -479,8 +479,6 @@
 
   /* Display face (1) */
   --font-display-face: var(--font-metamorphous);
-  /* Lifts the diamond numeral 1.5px (the pad is twice the lift): Metamorphous digits sit low on the cap box. */
-  --numeral-pad: 3px;
 }
 
 /* ------------------------------------------------------------------
@@ -1629,4 +1627,10 @@ html {
   box-shadow:
     0 0 0 2px color-mix(in oklab, var(--accent) 60%, transparent),
     0 0 0 6px color-mix(in oklab, var(--accent) 16%, transparent) !important;
+}
+
+/* The /credits diamond numeral (OfferArt) is centred on its cap height; First Frost's Metamorphous digits still sit
+   1.5px low, so it is lifted by padding twice that. Outside the palette block: the theme contract owns its keys. */
+[data-theme="kaldheim"] .offer-numeral {
+  padding-bottom: 3px;
 }
