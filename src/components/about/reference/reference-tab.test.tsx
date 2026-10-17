@@ -173,7 +173,7 @@ describe("ReferenceTab, the screens index", () => {
 describe("CreatorNote", () => {
   it("is the last row, opening the note as a dialog that Escape closes", () => {
     render(<CreatorNote />);
-    const row = screen.getByRole("button", { name: new RegExp(creatorNoteCopy.title) });
+    const row = screen.getByRole("link", { name: new RegExp(creatorNoteCopy.title) });
     expect(row.getAttribute("aria-haspopup")).toBe("dialog");
     fireEvent.click(row);
     const dialog = screen.getByRole("dialog", { name: creatorNoteCopy.title });
@@ -188,7 +188,7 @@ describe("CreatorNote", () => {
 
   it("closes from its ✕ and from the scrim", () => {
     render(<CreatorNote />);
-    const row = screen.getByRole("button", { name: new RegExp(creatorNoteCopy.title) });
+    const row = screen.getByRole("link", { name: new RegExp(creatorNoteCopy.title) });
     fireEvent.click(row);
     fireEvent.click(screen.getByRole("button", { name: creatorNoteCopy.close }));
     expect(screen.queryByRole("dialog")).toBeNull();

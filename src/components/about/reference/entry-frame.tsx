@@ -17,8 +17,8 @@ export function EntryFrame({ shot, alt }: { shot: Shot; alt: string }) {
         alt={alt}
         loading="lazy"
         decoding="async"
-        className="absolute left-0 block w-full max-w-none"
-        style={{ top: `${w.top}%`, height: `${w.height}%` }}
+        className="absolute inset-0 block h-full w-full object-cover"
+        style={{ objectPosition: `50% ${w.position}%` }}
       />
       {w.halo && (
         <span

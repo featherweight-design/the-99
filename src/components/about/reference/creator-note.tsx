@@ -11,7 +11,7 @@ import { creatorNoteCopy } from "../../../lib/copy/discovery";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 
 function NoteDialog({ onClose }: { onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   useDialogA11y(ref, onClose);
   const paragraphs = aboutCopy.pageIntro.split("\n\n");
   const signature = paragraphs.at(-1);
@@ -20,17 +20,17 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
       <div aria-hidden className="absolute inset-0 bg-[rgba(10,8,6,0.62)]" onClick={onClose} />
-      <div
+      <section
         ref={ref}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="creator-note-title"
+        aria-label={creatorNoteCopy.title}
         data-creator-note
         className="relative flex h-[min(700px,92dvh)] w-full flex-col rounded-t-[18px] border border-b-0 border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] md:h-[min(660px,90dvh)] md:w-[640px] md:rounded-[16px] md:border-b md:border-b-[color:var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,0.7)]"
       >
         <span aria-hidden className="mt-[8px] h-[4px] w-[40px] self-center rounded-full bg-[color:var(--border-dashed)] md:hidden" />
         <div className="flex items-start justify-between gap-[12px] px-[16px] pb-[10px] pt-[12px] md:px-[28px] md:pt-[24px]">
-          <h2 id="creator-note-title" className="m-0 font-display text-[20px] font-semibold text-[color:var(--fg)] md:text-[24px]">
+          <h2 className="m-0 font-display text-[20px] font-semibold text-[color:var(--fg)] md:text-[24px]">
             {creatorNoteCopy.title}
           </h2>
           <button
@@ -56,7 +56,7 @@ function NoteDialog({ onClose }: { onClose: () => void }) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[70px] bg-[linear-gradient(transparent,var(--surface-rail))] md:rounded-b-[16px]"
         />
-      </div>
+      </section>
     </div>
   );
 }
@@ -66,9 +66,12 @@ export function CreatorNote() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
+      <a
+        href="#creator-note"
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen(true);
+        }}
         aria-haspopup="dialog"
         data-creator-note-row
         className="mt-[28px] flex min-h-[56px] w-full items-center justify-between gap-[12px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[18px] py-0 text-left hover:border-[color:var(--accent-dim)]"
@@ -80,7 +83,7 @@ export function CreatorNote() {
         <span aria-hidden className="text-[14px] text-[color:var(--fg-faint)]">
           ›
         </span>
-      </button>
+      </a>
       {open && <NoteDialog onClose={() => setOpen(false)} />}
     </>
   );

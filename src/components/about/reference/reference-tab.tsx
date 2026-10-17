@@ -17,6 +17,7 @@ import { HOW_IT_WORKS_ID } from "../../../lib/copy/how-it-works-links";
 import { searchEntries } from "../../../lib/about/search";
 import type { ReferenceEntry, ReferenceScreen } from "../../../lib/about/reference";
 import { SearchField } from "../../ui/text-field";
+import { SearchIcon } from "../../ui/search-icon";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { EntryCaption } from "../entry-caption";
 import { CreatorNote } from "./creator-note";
@@ -177,6 +178,9 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
           clearLabel={referenceCopy.clear}
+          clearTrimmed
+          clearClassName="h-[32px] w-[32px] rounded-none bg-transparent text-[14px]"
+          leading={<SearchIcon size={16} className="shrink-0 text-[color:var(--fg-faint)]" />}
           placeholder={referenceCopy.search}
           aria-label={referenceCopy.search}
           containerClassName={`h-[46px] rounded-[10px] bg-[color:var(--surface-sunken)] px-[14px] ${q ? "border-[color:var(--accent)]" : ""}`}

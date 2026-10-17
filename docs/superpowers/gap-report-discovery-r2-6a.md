@@ -183,9 +183,25 @@ VERDICT: 12 visual gaps, 1 state gap
 
 VERDICT: all 7 re-checked items FIXED.
 
+## Second pass: the settled items, fixed (the mocks win)
+
+Re-checked against the standing rule that a mismatch is a defect unless a LATER Design decision supersedes the mock.
+The handoff (#1927, 2026-10-16) post-dates every earlier decision these items leaned on, so each is fixed:
+
+- 1, the magnifier: 16px at both widths (`SearchIcon size={16}` as the field's `leading`).
+- 2, the clear ✕: 32×32, no background or border, ✕ at 14 (`SearchField`'s new `clearClassName`).
+- 3, when the ✕ shows: only for a trimmed query with text (`SearchField`'s new `clearTrimmed`).
+- 8, the picture: fills the box (`inset: 0`, 100%×100%, `object-fit: cover`); `frameWindow`'s `position` is its
+  `object-position` y, so the entry's control stays in view.
+- 9, the note row: an `a` (`href="#creator-note"`, opening the note), `padding: 0 18px`, 56 tall.
+- 10, the note: a `section role="dialog"` named by `aria-label`.
+
 ## Settled (not changed)
 
-- 1–3, the search field's icon, clear ✕ and when ✕ shows: the Reference reuses the shipped `SearchField` (`src/components/ui/text-field.tsx`), the field About R6 ratified (design table `about-r6.md`); restyling the shared control would move every other search in the app off its own design.
-- 8, the picture: `frameWindow` places the 390×844 frame in the 3:2 box so the entry's control is in view; `object-fit: cover` would centre the frame and crop the control out.
-- 9 (element), 10: the note row stays a `button` and the note a `div role="dialog"` named by `aria-labelledby`: it opens a dialog rather than navigating, and the accessible name is the same.
-- State "opened entry with no frame": unreachable. Every screen has a frame in every theme (`shots.test.ts` fails otherwise) and every entry is placed on its frame (R2·6a's locator PR); the specimens retire in R2·7.
+- 1, the magnifier's drawing (stroke 1.6, circle 8.5/8.5 r5.5, path `M13 13l4.5 4.5` in the mock): the app draws ONE
+  magnifier, `SearchIcon`, redrawn in #1660 because the drawing the mock carries puts the handle inside the lens's
+  stroke and reads as one smear at small sizes. The mock's geometry is that pre-#1660 drawing; the size is matched.
+  Raised to the orchestrator: #1660 predates the mock, so this stands only if it agrees.
+- State "opened entry with no frame": unreachable. Every screen has a frame in every theme (`shots.test.ts` fails
+  otherwise) and every entry is placed on its frame (the locator PR, R2·6a-2); the specimens retire in R2·7
+  (readiness R2 gap 9).

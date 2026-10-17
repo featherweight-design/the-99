@@ -131,6 +131,7 @@ describe("frameWindow", () => {
     const w = frameWindow({ ...tall, halo: null });
     expect(w.top).toBeCloseTo(0);
     expect(w.height).toBeCloseTo(300);
+    expect(w.position).toBeCloseTo(0);
     expect(w.halo).toBeNull();
   });
 
@@ -142,6 +143,8 @@ describe("frameWindow", () => {
     expect(w.halo!.width).toBeCloseTo(40);
     const mid = w.halo!.top + w.halo!.height / 2;
     expect(mid).toBeCloseTo(50);
+    // object-position agrees with the offset: the image's top sits where `top` says, with cover filling the width.
+    expect(w.position).toBeCloseTo(50);
   });
 
   it("clamps at the top: a control near the top never pulls the frame down", () => {
@@ -153,6 +156,7 @@ describe("frameWindow", () => {
   it("clamps at the bottom: a control at the foot shows the frame's foot", () => {
     const w = frameWindow({ ...tall, halo: { x: 0, y: 0.97, w: 0.1, h: 0.02 } });
     expect(w.top + w.height).toBeCloseTo(100);
+    expect(w.position).toBeCloseTo(100);
     expect(w.halo!.top + w.halo!.height).toBeLessThanOrEqual(100.0001);
   });
 

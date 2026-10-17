@@ -107,11 +107,14 @@ export function referenceScreens(
 /**
  * Where a frame sits in a 3:2 window, so the entry's control is in view (README-r2 C5: an opened entry leads with its
  * screen, its control haloed). Every figure is a percentage of the WINDOW: the image's top offset and height, and the
- * halo's box. With no control placed, the window shows the top of the screen and no halo.
+ * halo's box. `position` is the same offset as the image's `object-position` y, for an image drawn as the design
+ * draws it (filling the window, `object-fit: cover`). With no control placed, the window shows the top of the screen
+ * and no halo. Frames are taller than the window (390x844); a wider one would be cropped at its sides by `cover`.
  */
 export function frameWindow(shot: Pick<Shot, "width" | "height" | "halo">): {
   top: number;
   height: number;
+  position: number;
   halo: { left: number; top: number; width: number; height: number } | null;
 } {
   const ratio = shot.height / shot.width; // the frame's height in units of its width
@@ -123,6 +126,7 @@ export function frameWindow(shot: Pick<Shot, "width" | "height" | "halo">): {
   return {
     top: -pct(offset),
     height: pct(ratio),
+    position: ratio > window ? (offset / (ratio - window)) * 100 : 50,
     halo: box
       ? { left: box.x * 100, top: pct(box.y * ratio - offset), width: box.w * 100, height: pct(box.h * ratio) }
       : null,

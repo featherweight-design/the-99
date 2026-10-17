@@ -83,6 +83,13 @@ type SearchFieldProps = TextFieldProps & {
   onClear?: () => void;
   /** The ✕'s accessible name, when "Clear search" is not specific enough. */
   clearLabel?: string;
+  /** Restyles the ✕ for a surface whose design draws it otherwise (About's Reference: a bare 32px ✕). */
+  clearClassName?: string;
+  /**
+   * Shows the ✕ only for text that is not all spaces, for a surface whose design ties the ✕ to the trimmed
+   * query (About's Reference). Off, any text at all earns it.
+   */
+  clearTrimmed?: boolean;
 };
 
 /**
@@ -103,6 +110,8 @@ export function SearchField({
   trailing,
   onClear,
   clearLabel = searchFieldCopy.clear,
+  clearClassName,
+  clearTrimmed = false,
   type = "search",
   ref: callerRef,
   ...rest
@@ -127,7 +136,7 @@ export function SearchField({
     [callerRef],
   );
   // Any text at all earns the ✕, spaces included: a reader can always clear what they typed.
-  const filled = typeof rest.value === "string" && rest.value !== "";
+  const filled = typeof rest.value === "string" && (clearTrimmed ? rest.value.trim() : rest.value) !== "";
   return (
     <label
       // A styling hook only — lets a page target "this field or its own trailing
@@ -178,7 +187,10 @@ export function SearchField({
           }}
           // `visibility` rather than unmounting, so the box is held and the input never reflows.
           style={{ visibility: filled ? "visible" : "hidden" }}
-          className="flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]"
+          className={twMerge(
+            "flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]",
+            clearClassName,
+          )}
         >
           ✕
         </button>
