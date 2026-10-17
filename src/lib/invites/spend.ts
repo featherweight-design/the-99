@@ -37,6 +37,11 @@ export async function spendInviteOnSignUp(
     .where(eq(inviteReservations.id, reservationId));
   if (!found) return { spent: false, reason: "unknown" };
 
+  // The edge is the record of a spend and is visible without the lock: an account's invitation stays on its Clerk user
+  // for good, so every later `/friends` lands here and must not queue on the inviter's lock to learn it is done.
+  const [done] = await db.select({ id: inviteEdges.id }).from(inviteEdges).where(eq(inviteEdges.inviteeUserId, newUserId));
+  if (done) return { spent: false, reason: "already" };
+
   return db.transaction(async (tx): Promise<SpendResult> => {
     const now = await lockSenderIn(tx, found.senderId, deps.now);
     const [row] = await tx.select().from(inviteReservations).where(eq(inviteReservations.id, reservationId)).for("update");
