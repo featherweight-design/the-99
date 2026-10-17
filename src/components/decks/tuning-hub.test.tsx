@@ -368,6 +368,15 @@ describe("TuningHub opening a tool", () => {
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
   });
 
+  it("shows the tiles again on a request naming no tool, as a landing on one of them asks", async () => {
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(tile("cuts")).toBeNull();
+    rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: "landing-r1" }} />);
+    expect(tile("cuts")).not.toBeNull();
+    expect(tile("suggested")).not.toBeNull();
+  });
+
   it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

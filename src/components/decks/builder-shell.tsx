@@ -396,16 +396,6 @@ export function BuilderShell({
   const [view, setView] = useState<BuilderView>(
     initialBuilderView(initialView, versions.length + (originApart ? 1 : 0), analysisEnabled),
   );
-  // A new landing on the mounted shell (a client navigation to this deck with `?tool=`): its tab and view open, as on
-  // first load. Adjusted during render, keyed on the request, so an ordinary refresh keeps the reader's own state.
-  const [seenRequest, setSeenRequest] = useState(landingRequest);
-  if (landingRequest !== seenRequest) {
-    setSeenRequest(landingRequest);
-    if (landing?.lands.kind === "deck") {
-      setView(landing.lands.tab);
-      if (landing.lands.view === "shopping") setFilter("shopping");
-    }
-  }
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
   // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck
@@ -616,9 +606,25 @@ export function BuilderShell({
   const [hubRequest, setHubRequest] = useState<HubRequest | null>(null);
   const hubNonce = useRef(0);
   const onHubRequestAnswered = useCallback(
-    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
+    (nonce: number | string) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
     [],
   );
+  // A new landing on the mounted shell (a client navigation to this deck with `?tool=`): its tab and view open, as on
+  // first load, and whatever the reader had open over them gives way: Your deck's Stats or Notes panel, or a hub
+  // tool already open on Analysis. Adjusted during render, keyed on the request, so an ordinary refresh keeps the
+  // reader's own state.
+  const [seenRequest, setSeenRequest] = useState(landingRequest);
+  if (landingRequest !== seenRequest) {
+    setSeenRequest(landingRequest);
+    if (landing?.lands.kind === "deck" && landingRequest !== null) {
+      setView(landing.lands.tab);
+      if (landing.lands.tab === "deck") {
+        deckPanel[1]("list");
+        if (landing.lands.view === "shopping") setFilter("shopping");
+      }
+      if (landing.lands.tab === "analysis") setHubRequest({ tool: null, nonce: landingRequest });
+    }
+  }
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.

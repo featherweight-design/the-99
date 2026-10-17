@@ -35,7 +35,8 @@ export type HubToolSpec =
   | { tool: "history" };
 
 /** A shortcut's ask: open this tool. `nonce` makes a second press of the same shortcut count. */
-export type HubRequest = { tool: TuningTool; nonce: number };
+/** An ask for the hub: open `tool`, or with `tool: null` show the tiles (a landing on one of them). */
+export type HubRequest = { tool: TuningTool | null; nonce: number | string };
 
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -132,7 +133,7 @@ export function TuningHub({
   request?: HubRequest | null;
   /** Told when a request has been answered, so its owner can drop it: the hub remounts on every
    *  visit to the tab, and a request still held then would reopen the tool over the landing. */
-  onRequestAnswered?: (nonce: number) => void;
+  onRequestAnswered?: (nonce: number | string) => void;
   /** Called once the landing's first read has landed or failed (the tab's opening loader). */
   onSettled?: () => void;
 }) {
@@ -253,12 +254,16 @@ export function TuningHub({
   const [drawnThisVisit, setDrawnThisVisit] = useState(drawn);
   if (drawn && !drawnThisVisit) setDrawnThisVisit(true);
 
-  const [answered, setAnswered] = useState<number | null>(null);
+  const [answered, setAnswered] = useState<number | string | null>(null);
   if (request && request.nonce !== answered) {
     setAnswered(request.nonce);
-    if (tools.some((t) => t.tool === request.tool)) {
+    if (request.tool === null) {
       setReview(null);
-      setOpening((prev) => ({ tool: request.tool, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
+      setOpening(null);
+    } else if (tools.some((t) => t.tool === request.tool)) {
+      const tool = request.tool;
+      setReview(null);
+      setOpening((prev) => ({ tool, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
 

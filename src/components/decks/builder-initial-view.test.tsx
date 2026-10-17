@@ -118,6 +118,36 @@ describe("BuilderShell — a landing on the mounted shell (discovery R2 E11)", (
   });
 });
 
+describe("BuilderShell — a Shopping landing over the Stats panel (discovery R2 E11)", () => {
+  it("puts Your deck back on its list when a same-deck ?tool= lands on Shopping", async () => {
+    window.localStorage.setItem("the99:deck-panel", "stats");
+    const shell = (landingRequest: string | null) => (
+      <BuilderShell mix={TEST_MIX}
+        deck={DECK}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        initialView="deck"
+        statsEnabled
+        statsData={{ commanders: [] }}
+        newestAsOf={null}
+        landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
+        landingRequest={landingRequest}/>
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(shell(null));
+    });
+    fireEvent.click(screen.getByRole("tab", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    await act(async () => view.rerender(shell("r1")));
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    window.localStorage.removeItem("the99:deck-panel");
+  });
+});
+
 describe("BuilderShell — the tab it opens on", () => {
   it("opens on the deck by default", async () => {
     await mount("deck");
