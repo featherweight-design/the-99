@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { MAX_GUESSES, poolGuesses, vectorLiteral, type MatchAnswer, type NearRow } from "./match";
+import { MAX_GUESSES, MAX_PRINTINGS, poolGuesses, vectorLiteral, type MatchAnswer, type NearRow, type PrintingRow } from "./match";
 
 /**
  * HNSW's candidate list per read. Measured by `probe:card-scan-match` on the real index: at 100, an ambiguous
@@ -38,6 +38,7 @@ export async function lookupGuesses(embedding: Float32Array, model: string): Pro
       if (!meta || meta.rows === 0) return { kind: "no-index" } as const;
       if (meta.model !== model) return { kind: "model", index: { version: meta.version, model: meta.model } } as const;
       const rows: NearRow[] = [];
+      const near = new Map<string, PrintingRow[]>();
       for (let k = 0; k < MAX_GUESSES; k++) {
         const found = rows.map((r) => r.oracleId);
         const exclude = found.length ? sql`where s.oracle_id <> all(${`{${found.join(",")}}`}::uuid[])` : sql``;
@@ -58,7 +59,28 @@ export async function lookupGuesses(embedding: Float32Array, model: string): Pro
         if (!hit) break;
         rows.push(hit);
       }
-      return { kind: "ok", index: meta.version, answer: poolGuesses(rows) } as const;
+      // Each guess's printings near the fingerprint, for the scanner's short list, in ONE read: every row of the
+      // guessed cards by `scan_index_oracle_idx` (a card has at most a few hundred), ranked per card. Twice the cap,
+      // so a printing's two faces still leave the cap filled once `scorePrintings` counts each printing once.
+      if (rows.length > 0) {
+        const ids = `{${rows.map((r) => r.oracleId).join(",")}}`;
+        const ranked = (
+          await tx.execute(sql`
+            select "oracleId", "scryfallId", distance from (
+              select s.oracle_id::text as "oracleId", s.scryfall_id::text as "scryfallId",
+                     (s.embedding <=> ${vec}::halfvec(256))::float8 as distance,
+                     row_number() over (partition by s.oracle_id order by s.embedding <=> ${vec}::halfvec(256)) as k
+              from scan_index s
+              where s.oracle_id = any(${ids}::uuid[])
+            ) r where k <= ${MAX_PRINTINGS * 2}`)
+        ).rows as (PrintingRow & { oracleId: string })[];
+        for (const r of ranked) {
+          const list = near.get(r.oracleId) ?? [];
+          list.push({ scryfallId: r.scryfallId, distance: r.distance });
+          near.set(r.oracleId, list);
+        }
+      }
+      return { kind: "ok", index: meta.version, answer: poolGuesses(rows, near) } as const;
     },
     // Never `accessMode: "read only"`: on the pooled Neon connection it poisons the next transaction taken from the
     // pool (`draft-state-snapshot.test.ts`). The reads write nothing.

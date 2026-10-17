@@ -471,6 +471,8 @@ export const collectionEditCopy = {
       searchAria: "Search this card’s printings by set, code or number",
       emptyBody: (q: string, card: string) => `No printing of ${card} comes from a set matching “${q}”.`,
       tileOwned: (q: number) => `you own ×${n(q)}`,
+      /** The scanner's short list leads; this press adds every other printing after it (new, for /copy-review). */
+      showAll: "Show all printings",
     },
   },
   // Edit copies and removal (§C/§D, R2 canvas): the handoff's strings. Lines marked (new) have no

@@ -1,6 +1,6 @@
 import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
-import { encodeEmbedding, LOOKUP_BACKOFF_MS, lookupCard, marginClears, SURE_MARGIN } from "./lookup";
+import { encodeEmbedding, LOOKUP_BACKOFF_MS, lookupCard, marginClears, scoredPrintings, SURE_MARGIN } from "./lookup";
 
 const MODEL = SCAN_MODEL;
 const emb = new Float32Array(256).fill(1 / 16);
@@ -41,7 +41,8 @@ describe("lookupCard", () => {
     const [url, init] = d.fetch.mock.calls[0];
     expect(url).toBe("/api/card-scan/match");
     expect(JSON.parse(init.body)).toEqual({ model: MODEL, embedding: encodeEmbedding(emb) });
-    expect(out).toEqual({ kind: "match", ...MATCH, sure: true });
+    // An answer from before guesses carried printings reads each as having none.
+    expect(out).toEqual({ kind: "match", ...MATCH, guesses: MATCH.guesses.map((g) => ({ ...g, printings: [] })), sure: true });
   });
 
   it("calls a match under the margin unsure", async () => {
@@ -90,5 +91,14 @@ describe("lookupCard", () => {
     const proxy = deps({ ok: false, status: 404, json: async () => { throw new Error("html"); } } as never);
     expect(await lookupCard(emb, MODEL, proxy)).toEqual({ kind: "refused", reason: "unavailable" });
     expect(await lookupCard(emb, MODEL, deps(reply(404, null)))).toEqual({ kind: "refused", reason: "off" });
+  });
+});
+
+describe("scoredPrintings", () => {
+  it("keeps entries with a string id and a finite score, and reads anything else as none", () => {
+    expect(scoredPrintings([{ scryfallId: "a", score: 0.9 }, { scryfallId: 3, score: 1 }, { scryfallId: "b", score: NaN }, null, { scryfallId: "c", score: 0.5 }]))
+      .toEqual([{ scryfallId: "a", score: 0.9 }, { scryfallId: "c", score: 0.5 }]);
+    expect(scoredPrintings(undefined)).toEqual([]);
+    expect(scoredPrintings("x")).toEqual([]);
   });
 });

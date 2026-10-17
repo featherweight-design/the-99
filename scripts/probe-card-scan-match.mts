@@ -9,11 +9,13 @@
 //      already huge), and the same side of the gate every time, on rows nudged off themselves and on blends of two
 //      cards' rows, which put the margin near the gate;
 //   e. the most-printed card in the index still gets three distinct guesses;
-//   f. a request naming another model is refused, and nothing is read.
+//   f. a request naming another model is refused, and nothing is read;
+//   g. each guess carries its card's printings near the fingerprint: the first guess's list is the exact scan's, in
+//      its order, and the most-printed card's stops at `MAX_PRINTINGS`, each printing once, best first.
 //
 // It REPLACES `scan_index` on its database, so it refuses production, staging and local-dev by `neon.branch_id`
 // (`assertScratchBranch`). Point the worktree's `.env` DATABASE_URL at a scratch branch made from local-dev, migrated
-// to 0137, and SCAN_ROWS_DIR at `export_index.py all --server`'s output:
+// to 0142, and SCAN_ROWS_DIR at `export_index.py all --server`'s output:
 //
 //   SCAN_ROWS_DIR=… pnpm probe:card-scan-match
 import { requireEnv } from "./lib/env.mjs";
@@ -24,7 +26,7 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { publishScanIndex, readScanRows, scanRowsRefusal } from "./lib/scan-index";
 import { lookupGuesses } from "../src/lib/card-scan/lookup";
 import { SURE_MARGIN } from "../src/lib/scan/lookup";
-import { EMBED_DIM, SCAN_MODEL, poolGuesses } from "../src/lib/card-scan/match";
+import { EMBED_DIM, MAX_PRINTINGS, SCAN_MODEL, poolGuesses, scorePrintings } from "../src/lib/card-scan/match";
 
 neonConfig.webSocketConstructor = ws;
 const { DATABASE_URL, SCAN_ROWS_DIR } = requireEnv(["DATABASE_URL", "SCAN_ROWS_DIR"]);
@@ -113,6 +115,20 @@ try {
     for (let i = 0; i < EMBED_DIM; i++) q[i] /= Math.sqrt(norm);
     return q;
   };
+  // g's exact answer: a card's printings scored by their nearest face over every row of that card, as the lookup scores
+  // them, so the two lists name the same printings in the same order.
+  const exactPrintings = (q: Float32Array, oracleId: string, own: { scryfallId: string; score: number }) => {
+    const near: { scryfallId: string; distance: number }[] = [];
+    for (const r of per.get(oracleId) ?? []) {
+      let s = 0;
+      for (let i = 0; i < EMBED_DIM; i++) s += q[i] * data.vectors[r * EMBED_DIM + i];
+      near.push({ scryfallId: data.keys[r][0], distance: 1 - s });
+    }
+    return scorePrintings(own, near).map((p) => p.scryfallId);
+  };
+  const per = new Map<string, number[]>();
+  data.keys.forEach(([, , oid], r) => per.set(oid, [...(per.get(oid) ?? []), r]));
+  let samePrintings = 0;
   const GATE = SURE_MARGIN;
   let sameTop = 0, worstScore = 0, worstMargin = 0, gateFlips = 0, nearGate = 0;
   const ms: number[] = [];
@@ -128,6 +144,8 @@ try {
       continue;
     }
     if (got.answer.guesses[0]?.oracleId === want.guesses[0]?.oracleId) sameTop += 1;
+    const first = got.answer.guesses[0];
+    if (first && exactPrintings(q, first.oracleId, first).join() === first.printings.map((p) => p.scryfallId).join()) samePrintings += 1;
     for (const g of got.answer.guesses) {
       const w = want.guesses.find((x) => x.oracleId === g.oracleId);
       if (w) worstScore = Math.max(worstScore, Math.abs(w.score - g.score));
@@ -150,15 +168,19 @@ try {
   check("d. some margins land near the gate", nearGate >= 10, `${nearGate}`);
   check(`d. margins under ${GATE + 0.1} within 4e-3 of fp32`, worstMargin <= 4e-3, worstMargin.toFixed(5));
   check(`d. never the other side of the ${GATE} sure gate`, gateFlips === 0, `${gateFlips}`);
+  check("g. the first guess's printings are the exact scan's, in its order", samePrintings === QUERIES * 2, `${samePrintings}/${QUERIES * 2}`);
 
   // e. the most-printed card
-  const per = new Map<string, number[]>();
-  data.keys.forEach(([, , oid], r) => per.set(oid, [...(per.get(oid) ?? []), r]));
   const [topOracle, topRows] = [...per.entries()].sort((a, b) => b[1].length - a[1].length)[0];
   const most = await lookupGuesses(nudged(topRows[0], 99), SCAN_MODEL);
   const distinct = most.kind === "ok" ? new Set(most.answer.guesses.map((g) => g.oracleId)).size : 0;
   check(`e. the most-printed card (${topRows.length} rows) gets three distinct guesses`, distinct === 3, `${distinct}`);
   check("e. and is the first of them", most.kind === "ok" && most.answer.guesses[0]?.oracleId === topOracle);
+  const mostPrintings = most.kind === "ok" ? most.answer.guesses[0]?.printings ?? [] : [];
+  check(`g. its printings stop at ${MAX_PRINTINGS}, each once, best first`,
+    mostPrintings.length === MAX_PRINTINGS && new Set(mostPrintings.map((p) => p.scryfallId)).size === MAX_PRINTINGS
+      && mostPrintings.every((p, i) => i === 0 || mostPrintings[i - 1].score >= p.score),
+    JSON.stringify(mostPrintings));
 
   // f. another model
   const other = await lookupGuesses(nudged(0, 1), "dhvazquez/mtg_card_identification_embeddings@653d88d int8");

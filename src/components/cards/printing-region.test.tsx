@@ -2,6 +2,7 @@ import { cleanup, render, screen, fireEvent, within } from "@testing-library/rea
 import { describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
@@ -483,6 +484,44 @@ describe("PrintingRegion role=choose source=catalog", () => {
     );
     return { ...utils, onPick };
   }
+
+  describe("the scanner's short list", () => {
+    const showAll = collectionEditCopy.add.choose.showAll;
+    const labels = () => screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? "");
+
+    it("draws only the short list, in its order, with Show all after it", () => {
+      renderChoose({ shortList: ["id-3", "id-1"] });
+      expect(labels()).toEqual([expect.stringContaining("Commander Masters"), expect.stringContaining("Commander 2021")]);
+      expect(screen.getByRole("button", { name: showAll })).toBeInTheDocument();
+    });
+
+    it("adds every other printing after the short list on Show all, moving no tile, and hands focus to the first added", () => {
+      renderChoose({ shortList: ["id-3", "id-1"] });
+      const before = screen.getAllByRole("radio");
+      fireEvent.click(screen.getByRole("button", { name: showAll }));
+      const after = screen.getAllByRole("radio");
+      expect(after).toHaveLength(3);
+      expect(after.slice(0, 2)).toEqual(before);
+      expect(after[2].getAttribute("aria-label")).toContain("Secret Lair");
+      expect(document.activeElement).toBe(after[2]);
+      expect(screen.queryByRole("button", { name: showAll })).toBeNull();
+    });
+
+    it("draws no press when the short list already holds every printing, and every printing with none", () => {
+      const { unmount } = renderChoose({ shortList: ["id-1", "id-2", "id-3"] });
+      expect(screen.queryByRole("button", { name: showAll })).toBeNull();
+      unmount();
+      renderChoose({ shortList: [] });
+      expect(screen.getAllByRole("radio")).toHaveLength(3);
+      expect(screen.queryByRole("button", { name: showAll })).toBeNull();
+    });
+
+    it("reserves each thumbnail's box before its art loads", () => {
+      renderChoose({ shortList: ["id-3"] });
+      const box = screen.getAllByRole("radio")[0].firstElementChild as HTMLElement;
+      expect(box.style.aspectRatio).toBe("63/88");
+    });
+  });
 
   it("selects nothing, badges nothing and offers no reset", () => {
     renderChoose();

@@ -144,6 +144,13 @@ type ChooseRegionProps = {
    * leave most of them out of a pointer's reach. Absent, the tiles are the Add cards sheet's.
    */
   tiles?: "confirm";
+  /**
+   * The scanner's short list (Normal mode): the printings it identified, by catalog id, best first
+   * (`orderPrintings`). They lead, alone, with a `Show all printings` press after them, which adds
+   * every other printing AFTER them, so no tile already drawn moves. A search reads every printing.
+   * Absent or empty, every printing is drawn as before.
+   */
+  shortList?: readonly string[];
 };
 
 export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
@@ -156,6 +163,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const deckScope = props.role !== "choose" && props.scope === "deck";
   const resolvedKey = props.role === "choose" ? null : props.resolvedKey;
   const sourcePrintings = props.printings;
+  const shortList = props.role === "choose" && props.shortList && props.shortList.length > 0 ? props.shortList : null;
+  const [showAll, setShowAll] = useState(false);
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
   // the search and the keyboard are written once. `quantity` is what the player holds of it.
   // A catalog tile is keyed by its catalog id: (set, collector number) is not unique in the
@@ -229,7 +238,15 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   }, [preferred, printings, deckScope]);
 
   const entries: Entry[] = useMemo(() => {
-    const owned: Entry[] = printings.map((p) => ({ ...p, dormant: false }));
+    const loaded: Entry[] = printings.map((p) => ({ ...p, dormant: false }));
+    // The short list's printings lead, in its order, in every state, so `Show all printings` only
+    // adds tiles after them.
+    const rank = new Map((shortList ?? []).map((id, i) => [id, i]));
+    const owned = shortList === null ? loaded : [
+      ...loaded.filter((p) => p.scryfallId != null && rank.has(p.scryfallId))
+        .sort((a, b) => rank.get(a.scryfallId!)! - rank.get(b.scryfallId!)!),
+      ...loaded.filter((p) => p.scryfallId == null || !rank.has(p.scryfallId)),
+    ];
     if (dormantPick === null) return owned;
     // The same comparator the list is already sorted by, so re-acquiring the printing puts
     // a real tile exactly where the dormant one stood — comparing set codes alone would drop
@@ -238,11 +255,12 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     const out = [...owned];
     out.splice(at === -1 ? owned.length : at, 0, dormantPick);
     return out;
-  }, [printings, dormantPick]);
+  }, [printings, dormantPick, shortList]);
 
   const overflow = entries.length > OVERFLOW_THRESHOLD;
   // The phone's row is one run of tiles; set headers only make sense in the grid.
-  const grouped = overflow && !row;
+  // A short list is one ordered run: set headers would re-sort its tiles and move them on Show all.
+  const grouped = overflow && !row && shortList === null;
 
   const counts = useMemo(() => {
     let foil = 0;
@@ -292,12 +310,24 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     () => (overflow ? matching(query.trim().toLowerCase(), finish) : entries),
     [entries, overflow, query, finish, matching],
   );
+  // The short list alone until Show all, unless a search is narrowing every printing.
+  const limited = shortList !== null && !showAll && query.trim() === "";
+  const hidden = limited ? entries.filter((p) => !p.dormant && !shortList.includes(p.scryfallId ?? "")).length : 0;
   // A selected tile a search has narrowed out stays first (B2): the way back is never lost.
   const visible = useMemo(() => {
-    if (selectedKey === null || matched.some((p) => p.scryfallId === selectedKey)) return matched;
+    const shown = limited ? matched.filter((p) => p.dormant || shortList.includes(p.scryfallId ?? "")) : matched;
+    if (selectedKey === null || shown.some((p) => p.scryfallId === selectedKey)) return shown;
     const sel = entries.find((p) => p.scryfallId === selectedKey);
-    return sel ? [sel, ...matched] : matched;
-  }, [matched, entries, selectedKey]);
+    return sel ? [sel, ...shown] : shown;
+  }, [matched, entries, selectedKey, limited, shortList]);
+  // Show all removes its own press: focus goes to the first printing it added, never the document.
+  const revealFrom = useRef<string | null>(null);
+  useEffect(() => {
+    const key = revealFrom.current;
+    if (!showAll || key === null) return;
+    revealFrom.current = null;
+    tileRefs.current.get(key)?.focus();
+  }, [showAll]);
 
   // Past the threshold the tiles are grouped under set headers; below it they are one flat
   // grid in the order aggregateCollection produced.
@@ -585,6 +615,19 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
         ))}
       </div>
       </ArrivalOrder>
+      {hidden > 0 ? (
+        <button
+          type="button"
+          onClick={() => {
+            const first = entries.find((p) => !p.dormant && !shortList!.includes(p.scryfallId ?? ""));
+            revealFrom.current = first ? tileKey(first) : null;
+            setShowAll(true);
+          }}
+          className="mt-[12px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)]"
+        >
+          {chooseCopy.showAll}
+        </button>
+      ) : null}
       {/* A refused deck save, below the tiles it reverted: a warning glyph and body text, never
           red and with no retry button (deck printings STATES, "Save failed"). */}
       {props.role !== "choose" && props.notice ? (

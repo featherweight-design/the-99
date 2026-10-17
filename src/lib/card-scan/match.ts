@@ -12,6 +12,8 @@ export const SCAN_MODEL = "dhvazquez/mtg_card_identification_embeddings@653d88d 
 export const EMBED_DIM = 256;
 /** Guesses per answer. */
 export const MAX_GUESSES = 3;
+/** Scored printings carried per guess: enough for the scanner's short list, and a small answer. */
+export const MAX_PRINTINGS = 6;
 /** How far from unit length a fingerprint may be: the client normalises, so more is a different input. */
 export const NORM_TOLERANCE = 0.01;
 
@@ -52,7 +54,17 @@ export function vectorLiteral(v: Float32Array): string {
  */
 export type NearRow = { oracleId: string; name: string; scryfallId: string; typeLine: string; imageUri: string | null; distance: number };
 
-export type Guess = { oracleId: string; name: string; scryfallId: string; typeLine: string; imageUri: string | null; score: number };
+/** One printing of a guess's card, scored by its nearest face. */
+export type ScoredPrinting = { scryfallId: string; score: number };
+
+/**
+ * A guess: its card, the best row's printing and image, the card's score, and `printings`, the card's printings the
+ * index found near the fingerprint, best first, each once, at most `MAX_PRINTINGS`.
+ */
+export type Guess = {
+  oracleId: string; name: string; scryfallId: string; typeLine: string; imageUri: string | null; score: number;
+  printings: ScoredPrinting[];
+};
 
 export type MatchAnswer = { guesses: Guess[]; margin: number | null };
 
@@ -61,15 +73,39 @@ export type MatchAnswer = { guesses: Guess[]; margin: number | null };
  * (1 minus the distance), clamped to [-1, 1] as the lab clamps it, since a halfvec row is not exactly unit length.
  * `margin` is the first score minus the second, null with fewer than two guesses.
  */
-export function poolGuesses(rows: NearRow[]): MatchAnswer {
+export function poolGuesses(rows: NearRow[], near: ReadonlyMap<string, readonly PrintingRow[]> = new Map()): MatchAnswer {
   const best = new Map<string, Guess>();
   for (const r of rows) {
-    const score = Math.min(1, Math.max(-1, 1 - r.distance));
+    const score = similarity(r.distance);
     const prev = best.get(r.oracleId);
     if (!prev || score > prev.score) {
-      best.set(r.oracleId, { oracleId: r.oracleId, name: r.name, scryfallId: r.scryfallId, typeLine: r.typeLine, imageUri: r.imageUri, score });
+      best.set(r.oracleId, { oracleId: r.oracleId, name: r.name, scryfallId: r.scryfallId, typeLine: r.typeLine, imageUri: r.imageUri, score, printings: [] });
     }
   }
+  for (const g of best.values()) g.printings = scorePrintings(g, near.get(g.oracleId) ?? []);
   const guesses = [...best.values()].sort((a, b) => b.score - a.score).slice(0, MAX_GUESSES);
   return { guesses, margin: guesses.length >= 2 ? guesses[0].score - guesses[1].score : null };
+}
+
+/** One of a card's rows near the fingerprint: a printing's face and its cosine distance. */
+export type PrintingRow = { scryfallId: string; distance: number };
+
+/** Cosine similarity from pgvector's distance, clamped as the guesses are. */
+function similarity(distance: number): number {
+  return Math.min(1, Math.max(-1, 1 - distance));
+}
+
+/**
+ * A guess's printings: its own printing and every printing among `rows`, each scored by its nearest face, best first,
+ * at most `MAX_PRINTINGS`.
+ */
+export function scorePrintings(guess: { scryfallId: string; score: number }, rows: readonly PrintingRow[]): ScoredPrinting[] {
+  const byId = new Map<string, number>([[guess.scryfallId, guess.score]]);
+  for (const r of rows) {
+    const score = similarity(r.distance);
+    if (score > (byId.get(r.scryfallId) ?? -Infinity)) byId.set(r.scryfallId, score);
+  }
+  return [...byId].map(([scryfallId, score]) => ({ scryfallId, score }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_PRINTINGS);
 }
