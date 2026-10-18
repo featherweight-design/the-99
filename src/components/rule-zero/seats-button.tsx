@@ -9,6 +9,7 @@ import { loadTableSetupAction, reseatTableAction } from "../../app/friends/table
 import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { GhostButton } from "../ui/button";
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { SetupSheet, type SetupData } from "./setup-sheet";
 
 export function SeatsButton({ tableId, className }: { tableId: string; className?: string }) {
@@ -33,7 +34,7 @@ export function SeatsButton({ tableId, className }: { tableId: string; className
         type="button"
         aria-busy={busy || undefined}
         onClick={() => void press()}
-        className={`inline-flex min-h-[36px] flex-none items-center justify-center whitespace-nowrap rounded-[8px] px-[13px] text-[13px] ${className ?? ""}`}
+        className={`${TOUCH_HIT} inline-flex min-h-[36px] flex-none items-center justify-center whitespace-nowrap rounded-[8px] px-[13px] text-[13px] ${className ?? ""}`}
       >
         {ruleZeroCopy.page.seats}
       </GhostButton>
