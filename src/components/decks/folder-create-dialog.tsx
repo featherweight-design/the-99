@@ -17,6 +17,7 @@ import { useId, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import { folderCopy } from "../../lib/copy/folders";
 import { FOLDER_NAME_MAX } from "../../lib/decks/folder-name";
 
@@ -51,6 +52,8 @@ export function FolderCreateDialog({
   // would capture this input as its own return target and, on close, focus an
   // element that no longer exists.
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
+  // Its name field raises the keyboard: on the phone the frame is the visible window and the dialog centers in it (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
 
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export function FolderCreateDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-center px-[16px]">
+    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-center px-[16px]`} style={visible}>
       <div
         aria-hidden="true"
         onClick={dismiss}
@@ -94,7 +97,7 @@ export function FolderCreateDialog({
         aria-modal="true"
         aria-label={folderCopy.create.heading}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex max-h-[calc(100dvh-32px)] w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px]"
+        className="relative z-10 mx-auto flex max-h-[calc(100dvh-32px)] max-md:max-h-[min(calc(100dvh-32px),calc(var(--vv-h,100dvh)-32px))] w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px]"
       >
         <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
           {folderCopy.create.heading}

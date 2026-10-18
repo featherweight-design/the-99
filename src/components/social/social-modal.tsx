@@ -14,37 +14,11 @@
 // the dialog's name) follows the screen. A screen change moves focus to the ‹, or to the ✕ when there is none, since
 // the press that changed it is gone with the screen it was on. Escape and ✕ close from any screen.
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useSheetHost } from "../ui/sheet-host";
-
-/**
- * The VISIBLE part of the window, as the phone sheet's frame. A phone's keyboard shrinks or pans the visual
- * viewport and leaves the layout one (`vh`, `inset-0`) alone, so a sheet sized against the layout viewport puts
- * its lower rows (and Use initials instead) behind the keyboard, and the arrow keys' scroll measures a body bottom
- * the reader cannot see. The frame sits at `offsetTop` and is `height` tall, measured again on the visual
- * viewport's resize and scroll, as the card tag picker's floating list is. The values reach CSS as two custom
- * properties the phone classes read (desktop reads neither); with no visual viewport, nothing is set and the
- * classes' fallbacks are the layout viewport.
- */
-function useVisualViewportFrame(): CSSProperties | undefined {
-  const [box, setBox] = useState<{ top: number; height: number } | null>(null);
-  useLayoutEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const measure = () =>
-      setBox((prev) => (prev && prev.top === vv.offsetTop && prev.height === vv.height ? prev : { top: vv.offsetTop, height: vv.height }));
-    measure();
-    vv.addEventListener("resize", measure);
-    vv.addEventListener("scroll", measure);
-    return () => {
-      vv.removeEventListener("resize", measure);
-      vv.removeEventListener("scroll", measure);
-    };
-  }, []);
-  return box ? ({ "--social-vv-top": `${box.top}px`, "--social-vv-h": `${box.height}px` } as CSSProperties) : undefined;
-}
+import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 
 export function SocialModal({
   title,
@@ -97,6 +71,7 @@ export function SocialModal({
     (back.current ?? close.current)?.focus();
   }, [screen]);
   useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
+  // The phone sheet frames the VISIBLE window, which a keyboard shrinks (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   // Rule 0's setup (640) keeps its board's rhythm: 24px sides from md, lined up with its footer, and its own gaps.
   const setup = width === 640;
@@ -112,7 +87,7 @@ export function SocialModal({
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className={`fixed inset-0 ${raised ? "z-[60]" : "z-50"} flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10dvh]`}
+      className={`fixed inset-0 ${raised ? "z-[60]" : "z-50"} flex items-end ${VV_FRAME} justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10dvh]`}
     >
       <div
         ref={panel}
@@ -121,7 +96,7 @@ export function SocialModal({
         aria-labelledby={`${id}-title`}
         data-social-modal=""
         tabIndex={-1}
-        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--social-vv-h,100dvh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--social-vv-h,100dvh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
+        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--vv-h,100dvh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--vv-h,100dvh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
       >
         <div aria-hidden className="flex justify-center pt-[9px] md:hidden">
           <span className="mb-[4px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />

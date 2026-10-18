@@ -35,6 +35,7 @@ import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
 import { noteAppScroll } from "../../lib/ui/reveal";
 import type { SiblingCard } from "../cards/card-detail-provider";
+import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
 
 /** A read starts this long after the last key, and only from this many characters (S3). */
@@ -459,6 +460,9 @@ function PhoneFrame() {
   const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
+  // The field is up with the keyboard whenever the sheet is: the sheet is the visible window, so the results end at
+  // the keyboard instead of running under it (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame(isOpen || veiled);
 
   // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
   // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
@@ -530,7 +534,8 @@ function PhoneFrame() {
       tabIndex={-1}
       hidden={!isOpen && !veiled}
       inert={!isOpen && veiled}
-      className="fixed inset-0 z-40 flex flex-col bg-[color:var(--bg)] outline-none md:hidden"
+      style={visible}
+      className={`fixed inset-0 ${VV_FRAME} z-40 flex flex-col bg-[color:var(--bg)] outline-none md:hidden`}
     >
       <h2 id="card-search-heading" className="sr-only">
         {cardSearchCopy.label}

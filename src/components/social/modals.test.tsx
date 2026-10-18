@@ -225,23 +225,24 @@ describe("SocialModal on a phone with a keyboard up", () => {
       </SocialModal>,
     );
     const frame = document.querySelector<HTMLElement>("[data-social-modal-frame]")!;
-    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("0px");
-    expect(frame.style.getPropertyValue("--social-vv-h")).toBe("800px");
+    expect(frame.style.getPropertyValue("--vv-top")).toBe("0px");
+    expect(frame.style.getPropertyValue("--vv-h")).toBe("800px");
     // The keyboard opens: the visual viewport shrinks and pans, the layout viewport does not.
     act(() => {
       Object.assign(vv, { height: 420, offsetTop: 60 });
       vv.dispatchEvent(new Event("resize"));
     });
-    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("60px");
-    expect(frame.style.getPropertyValue("--social-vv-h")).toBe("420px");
+    expect(frame.style.getPropertyValue("--vv-top")).toBe("60px");
+    expect(frame.style.getPropertyValue("--vv-h")).toBe("420px");
     act(() => {
       Object.assign(vv, { offsetTop: 120 });
       vv.dispatchEvent(new Event("scroll"));
     });
-    expect(frame.style.getPropertyValue("--social-vv-top")).toBe("120px");
+    expect(frame.style.getPropertyValue("--vv-top")).toBe("120px");
     // The sheet and the frame read those values at phone width alone; the desktop dialog reads neither.
-    expect(frame.className).toContain("max-md:h-[var(--social-vv-h,100%)]");
-    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100dvh)*0.86)]");
+    expect(frame.className).toContain("max-md:h-[var(--vv-h,100%)]");
+    expect(frame.className).toContain("max-md:top-[var(--vv-top,0px)]");
+    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--vv-h,100dvh)*0.86)]");
     expect(screen.getByRole("dialog").className).not.toMatch(/(^|\s)h-\[86vh\]/);
     unmount();
     expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));

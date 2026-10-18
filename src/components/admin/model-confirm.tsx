@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import { usd } from "../../lib/admin/costs-rule";
 import type { ConfirmPreview } from "../../lib/admin/switch-writes";
 import type { Op, Scope } from "../../lib/admin/switch-writes-rule";
@@ -47,6 +48,8 @@ export function ModelConfirm({
   const id = useId();
   const [note, setNote] = useState("");
   useDialogA11y(ref, onCancel, { initialFocusRef: cancelRef, closeOnEscape: !pending });
+  // Its confirmation field raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
   const credits = preview.credits.join(" or ");
   const facts: [string, string][] = [
     [copy.facts.who, preview.names.join(", ")],
@@ -61,7 +64,7 @@ export function ModelConfirm({
     [copy.facts.when, copy.when],
   ];
   return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[110px]">
+    <div role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[110px]`}>
       <div
         ref={ref}
         role="dialog"
@@ -69,7 +72,7 @@ export function ModelConfirm({
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-lead`}
         tabIndex={-1}
-        className="flex max-h-[100dvh] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
+        className="flex max-h-[100dvh] max-md:max-h-[min(100dvh,var(--vv-h,100dvh))] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
         <h2 id={`${id}-title`} className="m-0 flex-none font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">

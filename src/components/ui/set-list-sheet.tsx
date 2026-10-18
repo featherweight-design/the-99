@@ -10,6 +10,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import { SearchField } from "./text-field";
 import { escapeDismisses } from "../../lib/ui/search-dismiss";
+import { useVisualViewportFrame, VV_FRAME } from "./visual-viewport";
 
 /** 44px, not 36. This is the phone's only route to each filter (R3 §2). */
 // `shrink-0` is the height, not tidiness: in the set panel these are direct
@@ -93,6 +94,8 @@ export function SetListSheet({
   // the sheet does: raising the keyboard on a reader who pressed a row is not
   // what they asked for.
   useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog, returnFocusRef: returnFocusTo });
+  // Its search raises the keyboard: the frame is the visible window on the phone (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
 
   // The query's matches, on their own. `sets` below prepends the selected
   // options so they stay reachable, which makes its length useless as a match
@@ -146,7 +149,7 @@ export function SetListSheet({
   return (
     // z-[60]: the sheet is z-50 and the phone tab bar is z-40, and this sits
     // over both.
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+    <div className={`fixed inset-0 z-[60] flex flex-col justify-end ${VV_FRAME}`} style={visible}>
       <div
         aria-hidden="true"
         onClick={onDismiss}
@@ -158,7 +161,7 @@ export function SetListSheet({
         aria-modal="true"
         aria-label={copy.panelAriaLabel}
         tabIndex={-1}
-        className="relative z-10 flex h-[86dvh] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+        className="relative z-10 flex h-[86dvh] max-md:h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
       >
         <div
           aria-hidden="true"

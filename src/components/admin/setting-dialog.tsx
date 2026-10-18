@@ -4,6 +4,7 @@ import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { setAccountCap, setOrgCap, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
 import { useRouter } from "next/navigation";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import { adminCopy } from "../../lib/copy/admin";
 
 // The settings dialog (admin STATES C7): Change the cap and Change the org cap take an amount and a
@@ -28,6 +29,8 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
   const router = useRouter();
   const [pending, start] = useTransition();
   useDialogA11y(ref, onClose, { initialFocusRef: amountRef, closeOnEscape: !pending });
+  // Its fields raise the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
 
   function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,7 +63,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
   const thisMonth = new Date().toISOString().slice(0, 7);
   const message = error === "amount" ? copy.badAmount : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : error === "unknown" ? copy.unknown : null;
   return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
+    <div role="presentation" style={visible} className={`fixed inset-0 ${VV_FRAME} z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center`}>
       <div
         ref={ref}
         role="dialog"

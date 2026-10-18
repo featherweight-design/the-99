@@ -176,8 +176,9 @@ export function shellFailures(shell: Shell, text?: string): string[] {
 // The cap is in dvh, never vh: dvh tracks the browser's dynamic toolbars (a phone's address bar showing or
 // hiding), where vh is the large viewport, so a vh-capped box can run under a shown toolbar and lose its footer.
 // dvh does NOT track the on-screen keyboard: on iOS Safari and default Android Chrome the keyboard shrinks the
-// VISUAL viewport, not the layout viewport dvh measures. Keyboard framing is visual-viewport framing, which
-// SocialModal does with --social-vv-h; the other input-bearing shells get it in a follow-up. Every height and
+// VISUAL viewport, not the layout viewport dvh measures. Keyboard framing is visual-viewport framing: the shared
+// hook `useVisualViewportFrame` (src/components/ui/visual-viewport.ts) hands the visible window to CSS as --vv-top
+// and --vv-h, and every input-bearing phone shell reads them (KEYBOARD_SHELLS below). Every height and
 // max-height under src/components is swept, class token or style key, so a new modal cannot bring vh back.
 // `h-screen`, `max-h-screen` and `min-h-screen` are 100vh.
 const VH_TOKEN = /(?<![\w-])(?:[\w[\]():@-]+:)*(?:max-h-|h-|min-h-)(?:\[[^\]\s]*\]|screen)(?![\w-])/g;
@@ -257,6 +258,62 @@ describe("modal shells: capped box, scrolling body, pinned header and footer", (
   it("reads a px height as no cap, and a viewport calc as one", () => {
     expect(capsAt("h-[620px]")).toEqual({ phone: false, desktop: false });
     expect(capsAt("max-md:max-h-[calc(var(--vv,100vh)*0.92)] md:max-h-[calc(90dvh-24px)]")).toEqual({ phone: true, desktop: true });
+  });
+});
+
+// Hugh's modal rule, part D: a phone shell holding a field frames the VISIBLE window, which the keyboard shrinks,
+// not the layout one. Each takes `useVisualViewportFrame` (ui/visual-viewport.ts) and reads its values at the
+// phone: a frame made the visible window (`VV_FRAME`), a bottom-anchored panel lifted to its bottom (`VV_BOTTOM`),
+// or a cap in `--vv-h`. The render-level proofs are visual-viewport.test.tsx, sheet.test.tsx and modals.test.tsx.
+export const KEYBOARD_SHELLS: { name: string; file: string; constFiles?: string[]; why: string }[] = [
+  { name: "Sheet", file: "src/components/ui/sheet.tsx", why: "every open sheet; the seat picker, deck filter sheet and issue inspector hold a search" },
+  { name: "SocialModal", file: "src/components/social/social-modal.tsx", why: "the commander picker's search, Add a friend's fields" },
+  { name: "FilterPanel sheet (phone)", file: "src/components/ui/filter-panel.tsx", why: "opens on its search" },
+  { name: "SetListSheet", file: "src/components/ui/set-list-sheet.tsx", why: "its set search" },
+  { name: "Collection side sheet: Add cards", file: "src/components/collection/add-cards-sheet.tsx", constFiles: ["src/components/collection/sheet-frame.ts"], why: "its card search" },
+  { name: "Collection side sheet: Edit copies", file: "src/components/collection/edit-copies-sheet.tsx", constFiles: ["src/components/collection/sheet-frame.ts"], why: "the add line's fields" },
+  { name: "ModelConfirm", file: "src/components/admin/model-confirm.tsx", why: "its confirmation field" },
+  { name: "SettingDialog", file: "src/components/admin/setting-dialog.tsx", why: "amount, start and note" },
+  { name: "StartPrecon", file: "src/components/decks/precons/start-precon.tsx", why: "the deck name" },
+  { name: "PreconLinkDialogs", file: "src/components/decks/precons/precon-link-dialogs.tsx", why: "its deck search" },
+  { name: "FolderCreateDialog", file: "src/components/decks/folder-create-dialog.tsx", why: "the folder name" },
+  { name: "Help panel (phone sheet)", file: "src/components/help/help-panel.tsx", why: "its search" },
+  { name: "Card search (phone sheet)", file: "src/components/card-search/card-search.tsx", why: "the app's search field, up whenever the sheet is" },
+];
+
+/** Each way a keyboard shell fails to frame the visible window, as `file: why`. Pass `text` to check a fixture. */
+export function keyboardFailures(shell: { file: string; constFiles?: string[] }, text?: string): string[] {
+  const own = text ?? read(shell.file);
+  const all = [own, ...(shell.constFiles ?? []).map(read)].join("\n");
+  const found: string[] = [];
+  if (!/\buseVisualViewportFrame\(/.test(own)) found.push(`${shell.file}: does not take useVisualViewportFrame`);
+  if (!/\bVV_FRAME\b|\bVV_BOTTOM\b|var\(--vv-(?:h|top)\b/.test(all)) found.push(`${shell.file}: reads neither --vv-top nor --vv-h, so its box still follows the layout viewport`);
+  if (!/\bstyle=\{[^}]*\bvisible\b|\.\.\.visible\b|:\s*visible\b/.test(own)) found.push(`${shell.file}: the measured values reach no element's style`);
+  return found;
+}
+
+/** A field a reader types into, which raises the keyboard. */
+const FIELD = /<(?:input|textarea|SearchField|TextField|DeckSearchField|AddLine)\b/;
+
+describe("modal shells: a field's keyboard does not cover the shell", () => {
+  it("every input-bearing phone shell frames the visible window", () => {
+    expect(KEYBOARD_SHELLS.flatMap((s) => keyboardFailures(s))).toEqual([]);
+  });
+
+  it("every shared shell holding a field is a keyboard shell, or is drawn by one (a Sheet override)", () => {
+    const framed = new Set(KEYBOARD_SHELLS.map((k) => k.file));
+    const missing = SHELLS.filter((s) => FIELD.test(read(s.file)) && !framed.has(s.file) && !(s.bodyFiles ?? []).some((f) => framed.has(f)));
+    expect(missing.map((s) => s.name)).toEqual([]);
+  });
+
+  it("names a shell that skips the hook, reads no value, or sets it nowhere", () => {
+    const shell = { file: "f.tsx" };
+    expect(keyboardFailures(shell, "const visible = useVisualViewportFrame(); <div style={visible} className={VV_FRAME} />")).toEqual([]);
+    expect(keyboardFailures(shell, '<div className="fixed inset-0" />')).toHaveLength(3);
+    expect(keyboardFailures(shell, 'const visible = useVisualViewportFrame(); <div style={visible} className="fixed inset-0" />')).toEqual([
+      "f.tsx: reads neither --vv-top nor --vv-h, so its box still follows the layout viewport",
+    ]);
+    expect(keyboardFailures(shell, "useVisualViewportFrame(); <div className={VV_FRAME} />")).toEqual(["f.tsx: the measured values reach no element's style"]);
   });
 });
 
