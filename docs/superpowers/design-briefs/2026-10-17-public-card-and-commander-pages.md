@@ -63,8 +63,7 @@ surface that sits beside it.
   deduplicated by the reader's own rank order), so a person-independent slug for each is new work in F3. Design the title and
   heading for the name; the address is not part of this brief.
 - **Anonymous reads get an IP-keyed rate bucket** and `robots` and a sitemap for the two page types. None of that is drawn.
-- **Prices** come from Mana Pool (`printing_prices`), credited in the footer. Whether a public page shows a price is open
-  below.
+- **Prices** come from Mana Pool (`printing_prices`), credited in the footer. The public pages show none (decided, below).
 
 ## Open for Design to call
 
@@ -93,14 +92,14 @@ surface that sits beside it.
 8. **Share and link previews.** What a link to either page unfurls as (title, description, image). The page is the product's
    front door, so this is the first thing many people see.
 
-## Open for Hugh
+## Decided 2026-10-18 (d9 for Hugh)
 
-- **Do public pages show prices?** Mana Pool's price feed is credited in the footer, but a public price is a new use of it
-  and a new load on the price tables, and prices are per printing, so a card page has no single price without a rule for
-  which printing. The recommendation is no price on the first cut; a link out to the card on Scryfall
-  carries the shopper to a price without The 99 serving one.
-- **Do the pages carry the prose sentence?** It costs nothing to show and hands the paid generation to scrapers. The
-  recommendation is to show it: it is what makes the commander page worth opening.
+- **No prices on the public pages, first cut.** They come from Mana Pool's feed, anonymous traffic on them adds scraping
+  value, and prices are per printing so a card page has no single price. The link out to the card on Scryfall carries a
+  shopper to one. Revisit later.
+- **The generated prose sentence is on the public commander page.** It is already generated and cached, so a view costs
+  nothing extra, and it is what makes the page worth opening. Open 3 decides where it sits.
+- Logged as Hugh's proxy; he can override.
 
 ## Every state to draw
 
