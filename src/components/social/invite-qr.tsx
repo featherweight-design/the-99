@@ -129,7 +129,9 @@ export function InviteQr({
           className="relative rounded-[15px] p-[5px]"
           style={{ background: `conic-gradient(${colour} 0 ${pct}%, var(--border-strong) ${pct}% 100%)` }}
         >
-          <div className={`rounded-[10px] p-[16px] ${live ? "bg-[#F4F5F8]" : "bg-[color:var(--fg-muted)]"}`}>
+          {/* Both plates are fixed in every theme, as the board draws them (pr4 table, Plate): #F4F5F8 live, #8E929E
+              expired. No theme token carries #8E929E, so it is written as the board's value, like the live plate. */}
+          <div className={`rounded-[10px] p-[16px] ${live ? "bg-[#F4F5F8]" : "bg-[#8E929E]"}`}>
             <svg
               role="img"
               aria-label={q.aria}
@@ -194,10 +196,13 @@ function Footer({ children }: { children: React.ReactNode }) {
 /** The claimed screen's card back: FriendCard's back face, small, with INVITATION for its word. */
 function InvitationBack() {
   return (
-    <div aria-hidden className="mb-[6px] box-border h-[168px] w-[120px] rotate-[-4deg] rounded-[9px] bg-[color:var(--surface-inset)] p-[6px] shadow-[0_18px_40px_rgba(0,0,0,.5),inset_0_0_0_1px_var(--border-strong)]">
-      <div className="flex h-full w-full flex-col items-center justify-center gap-[6px] rounded-[6px] [border:1px_solid_var(--border-dashed)] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(120px_130px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]">
-        <span className="text-[8px] tracking-[3px] text-[color:var(--accent)]">◆ ◆ ◆</span>
-        <span className="font-display text-[30px] font-bold leading-none text-[color:var(--fg)]">99</span>
+    // pr4 table, Card back `.back` (Q3): the pips sit 4px over the 28px "99" in one hero column, 6px over the word.
+    <div aria-hidden className="mb-[6px] box-border h-[168px] w-[120px] rotate-[-4deg] rounded-[9px] bg-[color:var(--surface-inset)] p-[6px] shadow-[0_14px_30px_rgba(0,0,0,.55),inset_0_0_0_1px_var(--border-strong)]">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-[6px] rounded-[6px] [border:1px_solid_var(--border-dashed)] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(90px_100px_at_50%_46%,color-mix(in_oklab,var(--accent)_24%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]">
+        <span className="flex flex-col items-center font-display text-[28px] font-bold leading-none text-[color:var(--fg)]">
+          <span className="mb-[4px] text-[7px] tracking-[2px] text-[color:var(--accent)]">◆ ◆ ◆</span>
+          99
+        </span>
         <span className="font-mono text-[7px] uppercase tracking-[.3em] text-[color:var(--accent)]">{q.cardBack}</span>
       </div>
     </div>

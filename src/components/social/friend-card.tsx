@@ -115,14 +115,16 @@ export function InviteFan({ word }: { word: string }) {
   );
 }
 
+// The compact back is the 300×419 box at .5, so the board's 150×210 values are doubled here (pr5 table, Card back and
+// Back inner): radius 9px → 18, inner radius 6px → 12, inner border 1px → 2.
 function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; compact: boolean }) {
   return (
     <div
       aria-hidden
       data-testid="friend-card-back"
-      className={`friend-card-face friend-card-back box-border rounded-[17px] bg-[color:var(--surface-inset)] p-[12px] ${compact ? "shadow-[0_40px_88px_rgba(0,0,0,.6),inset_0_0_0_2px_var(--border-strong)]" : "shadow-[0_34px_70px_rgba(0,0,0,.6),inset_0_0_0_1px_var(--border-strong)]"} ${dim ? "opacity-[.42] grayscale" : ""}`}
+      className={`friend-card-face friend-card-back box-border bg-[color:var(--surface-inset)] p-[12px] ${compact ? "rounded-[18px] shadow-[0_40px_88px_rgba(0,0,0,.6),inset_0_0_0_2px_var(--border-strong)]" : "rounded-[17px] shadow-[0_34px_70px_rgba(0,0,0,.6),inset_0_0_0_1px_var(--border-strong)]"} ${dim ? "opacity-[.42] grayscale" : ""}`}
     >
-      <div className={`flex h-full w-full flex-col items-center justify-center rounded-[10px] [border:1px_solid_var(--border-dashed)] ${compact ? "gap-[12px]" : "gap-[10px]"} bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(240px_260px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]`}>
+      <div className={`flex h-full w-full flex-col items-center justify-center ${compact ? "gap-[12px] rounded-[12px] [border:2px_solid_var(--border-dashed)]" : "gap-[10px] rounded-[10px] [border:1px_solid_var(--border-dashed)]"} bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(240px_260px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]`}>
         <div className="flex flex-col items-center">
           <span className={`text-[color:var(--accent)] ${compact ? "mb-[8px] text-[16px] tracking-[6px]" : "mb-[6px] text-[13px] tracking-[4px]"}`}>◆ ◆ ◆</span>
           <span className={`font-display font-bold leading-none text-[color:var(--fg)] ${compact ? "text-[68px]" : "text-[58px]"}`}>99</span>

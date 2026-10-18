@@ -1,5 +1,5 @@
 // The newcomer's column (invites R1 PR 5; boards `R1 - Newcomer` N1 to N12 and `R1 - Invite-Only` I1, I2): one
-// centred column at every width, under a 150×210 card. `/join` and `/sign-up` draw it; the friend landing keeps its
+// centred column under a 150×210 card; the invite-only page's column is left-aligned beside its fan from `md` (I1). `/join` and `/sign-up` draw it; the friend landing keeps its
 // own `LandingColumn`. `variant` picks the type scale: the join steps are one scale at every width, the invite-only
 // page steps up at `md`.
 
@@ -11,8 +11,11 @@ import { Emphasis } from "./emphasis";
 export const NEWCOMER_MAIN =
   "flex min-h-dvh flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
 
-/** The invite-only page's frame (I1, I2): 56px under the top on a phone, the fan beside the column from `md`. */
-export const INVITE_MAIN = NEWCOMER_MAIN.replace("pt-[44px]", "pt-[56px]") + " md:flex-row md:justify-center md:gap-[64px]";
+/** The invite-only page's frame (I1, I2): 56px under the top on a phone, the fan beside the column from `md`, under
+ * the desktop frame's own wash (1000×520 at 50% 8%, the accent at 10%; pr5 table, Shared ground). */
+export const INVITE_MAIN =
+  NEWCOMER_MAIN.replace("pt-[44px]", "pt-[56px]") +
+  " md:flex-row md:justify-center md:gap-[64px] md:bg-[radial-gradient(1000px_520px_at_50%_8%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]";
 
 /** The form wrapper (`.form`): full width, left-aligned, 22px under the body. */
 export const FORM = "mt-[22px] flex w-full flex-col text-left";
@@ -20,6 +23,11 @@ export const FORM = "mt-[22px] flex w-full flex-col text-left";
 const H1 = {
   join: "mt-[28px] text-[22px] leading-[1.25]",
   invite: "mt-[6px] text-[24px] leading-[1.2] md:mt-0 md:text-[30px]",
+} as const;
+/** The column itself: centred, and for the invite-only page left-aligned from `md`, as I1's `.col` draws it. */
+const COLUMN = {
+  join: "items-center text-center",
+  invite: "items-center text-center md:items-stretch md:text-left",
 } as const;
 const BODY = {
   join: "mt-[8px] text-[14px] leading-[1.55]",
@@ -53,7 +61,7 @@ export function NewcomerColumn({
   return (
     <section
       aria-labelledby="friend-landing-title"
-      className={`flex w-full min-w-0 max-w-[380px] flex-col items-center text-center [overflow-wrap:anywhere]`}
+      className={`flex w-full min-w-0 max-w-[380px] flex-col ${COLUMN[variant]} [overflow-wrap:anywhere]`}
     >
       {kicker && (
         <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent)] max-md:hidden">{kicker}</p>

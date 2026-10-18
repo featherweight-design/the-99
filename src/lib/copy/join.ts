@@ -9,7 +9,8 @@ export const joinCopy = {
   brand: "The Ninety-Nine",
   cardType: "Invitation",
   cardRules: (name: string) => `Join The 99 as ${name}’s friend. Your decks and your collection stay yours.`,
-  title: (name: string) => `${name} invited you to The 99`,
+  // "The" and "99" are held together by a no-break space, so the heading never breaks before the 99.
+  title: (name: string) => `${name} invited you to The\u00A099`,
   body: "Type your own email. We’ll send it a code to check it’s yours, then you’ll make your account.",
   emailLabel: "Your email",
   emailPlaceholder: "name@example.com",

@@ -57,23 +57,22 @@ const SECONDARY_BUTTON = `${BUTTON} bg-transparent px-[20px] font-medium text-[c
  */
 export function LandingColumn({
   kicker,
-  brand = false,
+  signedOut = false,
   title,
   body,
   actions,
   fine,
-  fineMuted,
   landing,
 }: {
   kicker: string;
-  /** The signed-out kicker is the landing's mark, in the accent. */
-  brand?: boolean;
+  /** L1, the signed-out link (invites pr5 table, Friend link signed out, Column): the kicker is the landing's mark in
+   * the accent at 500 11px .2em; the heading 22px (26px from md) at 1.25; the body 14px (15px from md) at 1.6; the
+   * press 10px more under the body than the section's gap; the fine line in --fg-muted at 1.6, 4px more under the press than the column's gap. */
+  signedOut?: boolean;
   title: string;
   body?: string;
   actions: ReactNode;
   fine?: string;
-  /** L1: the signed-out link's fine line as the board draws it (--fg-muted, 1.6 leading, 4px under the buttons). */
-  fineMuted?: boolean;
   landing?: "wait" | "go";
 }) {
   // A display name is up to 30 characters with no space required, so the column breaks a long one anywhere.
@@ -81,15 +80,15 @@ export function LandingColumn({
   const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
   return (
     <section aria-labelledby="friend-landing-title" className="flex w-full min-w-0 flex-col gap-[8px] text-center [overflow-wrap:anywhere] md:w-[380px] md:gap-[10px] md:text-left">
-      <p className={`m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] max-md:hidden ${brand ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>
+      <p className={`m-0 font-mono font-medium uppercase max-md:hidden ${signedOut ? "text-[11px] leading-[normal] tracking-[.2em] text-[color:var(--accent)]" : "text-[10.5px] tracking-[.14em] text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
-      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none text-[21px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px] ${land}`}>
+      <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none font-bold text-[color:var(--fg)] ${signedOut ? "text-[22px] leading-[1.25] md:text-[26px]" : "text-[21px] leading-[1.15] md:text-[28px]"} ${land}`}>
         {title}
       </h1>
-      {body && <p className={`m-0 font-sans text-[14px] leading-[1.55] text-[color:var(--fg-body)] md:text-[14.5px] ${land}`}>{body}</p>}
-      <div className={`mt-[6px] flex flex-col gap-[8px] md:mt-[12px] md:flex-row md:gap-[10px] ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 font-mono text-[11px] ${fineMuted ? "-mt-[4px] leading-[1.6] text-[color:var(--fg-muted)] md:-mt-[6px]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
+      {body && <p className={`m-0 font-sans text-[14px] text-[color:var(--fg-body)] ${signedOut ? "leading-[1.6] md:text-[15px]" : "leading-[1.55] md:text-[14.5px]"} ${land}`}>{body}</p>}
+      <div className={`flex flex-col gap-[8px] md:flex-row md:gap-[10px] ${signedOut ? "mt-[10px]" : "mt-[6px] md:mt-[12px]"} ${land}`}>{actions}</div>
+      {fine && <p className={`m-0 font-mono text-[11px] ${signedOut ? "mt-[4px] leading-[1.6] text-[color:var(--fg-muted)]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
     </section>
   );
 }
