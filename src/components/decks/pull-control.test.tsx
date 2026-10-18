@@ -572,6 +572,19 @@ describe("PullControl — 2+ choosable sources", () => {
     ).toBe("false");
   });
 
+  it("places the desktop popover by the panel's own gap, held to the room it was given", async () => {
+    setViewport(true);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    const dialog = screen.getByRole("dialog");
+    // Fixed once placed: the class's 6px margin would push the box past the room `place()` measured.
+    await vi.waitFor(() => expect(dialog.style.position).toBe("fixed"));
+    expect(dialog.style.marginTop).toBe("0px");
+    expect(dialog.style.maxHeight).not.toBe("");
+  });
+
   // Bug batch 2026-10-12: the phone sheet's body takes the other sheets' inset (16 / 14 / 16), and
   // the desktop popover keeps its own box padding with no second inset inside it.
   it("insets the phone sheet's body, and leaves the popover's own padding alone", () => {

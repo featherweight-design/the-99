@@ -125,6 +125,8 @@ describe("Change deck's failures and focus", () => {
       const scroller = screen.getByRole("list", { name: s.decksList }).closest(".overflow-y-auto");
       expect(scroller?.className).toContain("min-h-0");
       expect(scroller?.textContent).not.toContain(s.sheetTitle);
+      // The head keeps its height while the list takes what is left.
+      expect(within(dialog).getByText(s.sheetTitle).parentElement?.className).toContain("shrink-0");
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
     }

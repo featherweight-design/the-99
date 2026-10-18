@@ -504,8 +504,9 @@ function Popover({
       aria-modal="true"
       aria-labelledby={`${titleId}-title`}
       tabIndex={-1}
-      // Held to the room on the side it hangs; the body's source list scrolls inside, under its title.
-      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left, maxHeight: at.maxHeight } : {}) }}
+      // Held to the room on the side it hangs; the body's source list scrolls inside, under its title. `marginTop: 0`
+      // because the gap is `place()`'s once the box is fixed: the class's 6px would push it past the room it was given.
+      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0, maxHeight: at.maxHeight } : {}) }}
       className={`absolute top-full right-0 mt-[6px] flex flex-col p-[14px] ${ANCHORED_PANEL_CLASS}`}
     >
       {children}
