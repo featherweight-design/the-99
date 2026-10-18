@@ -125,12 +125,9 @@ try {
   // Bounded: a response that streams without end (a poll held open) must not hold the probe forever. A body still
   // unread after 10 seconds is reported, so a check never silently skips one.
   const drain = async () => {
-    const pending = [...reading.keys()];
-    const late = await Promise.race([
-      Promise.all(pending).then(() => false),
-      new Promise((r) => setTimeout(() => r(true), 10_000)),
-    ]);
-    if (late) report("every response body read before the check", false, [...reading.values()].map((u) => new URL(u).pathname).join(", "));
+    // The live set, not a snapshot: a read that settles, or a request that fails, leaves it.
+    for (const end = Date.now() + 10_000; reading.size > 0 && Date.now() < end; ) await new Promise((r) => setTimeout(r, 100));
+    if (reading.size > 0) report("every response body read before the check", false, [...reading.values()].map((r) => `${r.request.method()} ${new URL(r.url).pathname}${r.request.headers().rsc ? " (rsc)" : ""}`).join(", "));
   };
   page.on("response", (res) => {
     if (!res.url().startsWith(BASE)) return;
@@ -145,7 +142,15 @@ try {
       // A redirect or an aborted request has no body to read.
       .catch(() => {})
       .finally(() => reading.delete(read));
-    reading.set(read, res.url());
+    // A route outside /admin (the shell's Home link, prefetched) can stream on past any check; its body is still filed
+    // if it ends, but no check waits on it. Every admin body is waited for, and one that never ends is reported.
+    if (!new URL(res.url()).pathname.startsWith("/admin")) return;
+    reading.set(read, { url: res.url(), request: res.request() });
+  });
+  // A request cancelled mid-body (a prefetch the router dropped) leaves a read that never settles; it has no body to
+  // check, so it leaves the drain.
+  page.on("requestfailed", (req) => {
+    for (const [read, r] of reading) if (r.request === req) reading.delete(read);
   });
 
   const visit = async (path, open = async () => {}) => {
