@@ -52,18 +52,6 @@ describe("pressNote", () => {
     expect(pressNote(ready({ pressWrites: true }, false), "analyze")).toBeNull();
   });
 
-  it("says the app is paused, and writes nothing, while the spend cap holds", () => {
-    const until = new Date("2026-10-01T00:00:00Z");
-    const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze")!;
-    expect(n.writes).toBe(false);
-    // The press still reads the bracket; it is the APP that is paused, since the player has
-    // credits, so "waits for a credit" would be false. Then the cap's own reason, not restated, and
-    // the link to what uses credits in place of a list.
-    expect(n.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit. Nothing you did caused this. What uses credits?");
-    expect(n.text).not.toMatch(/waits for a credit/);
-    expect(n.text).not.toMatch(/uses a credit/i);
-  });
-
   it("says the owner's share is used, and writes nothing", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
     expect(n.writes).toBe(false);
@@ -73,8 +61,7 @@ describe("pressNote", () => {
   // Build rule 2: the method-change rewrite spends no credit, so Re-analyze writes it whatever the
   // allowance says, and the note says so in place of every credit form.
   it("says the rewrite is free, and writes, while a free try is left", () => {
-    const paused = { ...out, used: 0, paused: { until: new Date("2026-11-01") } };
-    for (const allowance of [undefined, out, paused, { ...out, used: 0, ownerShare: true as const }]) {
+    for (const allowance of [undefined, out, { ...out, used: 0, ownerShare: true as const }]) {
       for (const attemptsLeft of [2, 1]) {
         const n = pressNote(ready({ pressWrites: true, methodNotice: { attemptsLeft }, ...(allowance ? { allowance } : {}) } as never), "reanalyze")!;
         expect(n).toEqual({ text: synopsisCopy.pressNote.free, writes: true });

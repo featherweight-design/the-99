@@ -27,8 +27,8 @@ export function clockTime(at: Date): string {
   return at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-/** A month's name, `October`, read in UTC: the spend cap's months are UTC calendar months, so
- *  a pause lifting at 00:00 UTC on the 1st is named for that month in every reader's clock. */
+/** A month's name, `October`, read in UTC: the owner's share counts UTC calendar months, so the
+ *  month is named the same in every reader's clock. */
 export function monthName(at: Date): string {
   return at.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 }
@@ -37,8 +37,6 @@ export function monthName(at: Date): string {
 const link = "What uses credits?";
 /** The About entry that lists every feature spending credits, in the Reference tab (entries carry their own anchors). */
 export const CREDITS_HREF = "/about?tab=reference#credits";
-
-const pausedReason = `The app has reached its monthly limit. Nothing you did caused this. ${link}`;
 
 /** The count and, when one is out, when the next comes back. "reset at", not "next one at"
  *  (H35, engineering note 11). */
@@ -61,14 +59,6 @@ export const creditsCopy = {
   /** Every credit is out: the press is disabled and this says when it comes back, then links to
    *  what uses them. */
   spent: (total: number, next: Date | null) => `${standing(0, total, next)} · ${link}`,
-  /**
-   * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
-   * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
-   */
-  paused: (until: Date) => `Paused until ${monthName(until)} 1. ${pausedReason}`,
-  /** `paused`'s reason alone, for a surface that names the pause in its own lead (the overview's
-   *  press note), so the reason is said in exactly these words and nowhere restated. */
-  pausedReason,
   /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,
   /** The same refusal from the server, where no date is formatted in the reader's clock. */

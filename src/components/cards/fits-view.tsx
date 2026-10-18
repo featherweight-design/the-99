@@ -223,7 +223,7 @@ export function FitsView({
       setMemory((m) => ({ ...m, runFrom: null }));
       setRunning(null);
       // A refusal costs nothing: the panel is read again so the band says why (a current read, no
-      // credit, the pause) rather than a failure the reader did not have.
+      // credit, the owner's share) rather than a failure the reader did not have.
       const again = await readFitsReadAction(card.oracleId).catch(() => null);
       if (again) adopt(again);
       if (res.reason === "tooBig") {
@@ -340,15 +340,13 @@ export function FitsView({
   const allowance = panel?.allowance;
   const left = allowance ? freeCount(allowance) : 0;
   const spent = allowance ? !hasCredit(allowance) : false;
-  const closed = !!allowance?.paused || allowance?.ownerShare === true;
+  const closed = allowance?.ownerShare === true;
   const blocked = !allowance || spent || closed || running !== null;
-  const standing = !allowance ? "" : allowance.paused
-    ? creditsCopy.paused(allowance.paused.until)
-    : allowance.ownerShare
-      ? creditsCopy.ownerShare(new Date())
-      : spent
-        ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
-        : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
+  const standing = !allowance ? "" : allowance.ownerShare
+    ? creditsCopy.ownerShare(new Date())
+    : spent
+      ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
+      : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
   const stored = panel?.view.stored ?? null;
   // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
   // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.
@@ -406,7 +404,7 @@ export function FitsView({
           blocked={blocked}
           spent={spent || closed}
           onPress={() => void press()}
-          // Paused or the owner's share, no credit is out: the press is named alone, never `No credits left`.
+          // The owner's share used, no credit is out: the press is named alone, never `No credits left`.
           ariaLabel={closed && !spent ? read.readAgain : undefined}
         />
       </div>

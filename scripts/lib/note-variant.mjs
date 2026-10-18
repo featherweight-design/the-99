@@ -1,8 +1,8 @@
 // Which credit note landed beside Analyze, and how far the Tuning hub may move when it does
 // (Hugh, 2026-10-15). The empty state reserves TWO of the note's own lines while the note's read is out
-// (`min-h-[2lh]` in analysis-empty.tsx), so a note of up to two lines must move nothing. The used-up,
-// paused and owner-share notes can run longer and grow past that frame by their extra lines (measured
-// 2026-10-15: used up 3 lines at 1300, +7px; paused 4 lines at 1300, +24px, and 3 at 390, +15px).
+// (`min-h-[2lh]` in analysis-empty.tsx), so a note of up to two lines must move nothing. The used-up
+// and owner-share notes can run longer and grow past that frame by their extra lines (measured
+// 2026-10-15: used up 3 lines at 1300, +7px).
 // Read from the note's rendered words, mirroring the copy in src/lib/copy/synopsis.ts, credits.ts and
 // notices.ts; a note matching none is "unknown" and FAILS, so an unexpected variant never passes silently.
 
@@ -15,7 +15,6 @@ export const COVERED = new Set(["credit", "free", "check"]);
 export function noteVariant(text) {
   const t = (text ?? "").replace(/\s+/g, " ").trim();
   if (t === "") return "none";
-  if (/^Reads the bracket only; the overview is paused until /.test(t)) return "paused";
   if (/^Reads the bracket only; you(’|')ve used your testing share/.test(t)) return "ownerShare";
   if (/^Reads the bracket only; the overview (waits for a credit|stays as it was)\./.test(t)) return "usedUp";
   if (/^Reads the bracket only\. The overview waits until every card is legal/.test(t)) return "check";
@@ -29,7 +28,7 @@ export function noteVariant(text) {
  * page (`NOTE_SHAPE`), or null when no note landed.
  *  - no note, or a covered variant: 1px (strict). A covered note that runs past the reserved lines is
  *    still held to 1px: the reservation was meant to hold it, so a move there is a finding.
- *  - used up, paused, owner share: its extra lines past the reservation, plus 1px. An upper bound: at
+ *  - used up, owner share: its extra lines past the reservation, plus 1px. An upper bound: at
  *    1300 the 44px button already holds part of a third line.
  *  - unknown: never allowed (`ok` false), whatever the move.
  */

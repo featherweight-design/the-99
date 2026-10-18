@@ -21,7 +21,7 @@ import type { ChooseParams } from "../../lib/intake/params";
 const READ = "0000cccc-0000-4000-8000-000000000001";
 const params: ChooseParams = { ...emptyParams(), results: true, words: "something scary", readId: READ };
 const standing = (over = {}) => ({
-  used: 2, limit: 10, nextAt: null, reopensAt: null, paused: null, ownerShare: false, now: "2026-10-11T12:00:00Z", ...over,
+  used: 2, limit: 10, nextAt: null, reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00Z", ...over,
 });
 const done = (pool = 3445, weighed = 36): TheReadState => ({ kind: "done", result: { picks: [], pool, weighed } });
 
@@ -333,13 +333,7 @@ describe("7l, 7n: unread", () => {
     expect(panel().dataset.phase).toBe("unread");
   });
 
-  it("says why when the app is paused or the owner's share is used (7n)", () => {
-    draw(null, { over: { paused: "2026-11-01T00:00:00Z" } });
-    expect(screen.getByTestId("read-line").textContent).toMatch(/^Paused until November 1/);
-    expect(text()).toContain("What you wrote wasn’t read");
-    expect(screen.queryByRole("button")).toBeNull();
-    noReadIt();
-    cleanup();
+  it("says why when the owner's share is used (7n)", () => {
     draw(null, { over: { ownerShare: true } });
     expect(screen.getByTestId("read-line").textContent).toMatch(/testing share/);
     expect(screen.queryByRole("button")).toBeNull();

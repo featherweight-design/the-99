@@ -321,7 +321,7 @@ async function walk(browser: Browser, width: number, userId: string, deck: strin
   report(at("the hub is drawn in every frame"), missing.length === 0, `${missing.length} frame(s) without it, states ${JSON.stringify([...new Set(missing.map((f) => f.state))])}`);
   report(at("the hub is never replaced"), replaced.length === 0 && sequence.some((f) => f.same === true), `${replaced.length} frame(s) on another node`);
   // Before the press, from the hub's first frame: a note of up to two lines (credit, free, check) must move
-  // it not at all, since two of the note's lines are reserved; a longer one (used up, paused, owner share)
+  // it not at all, since two of the note's lines are reserved; a longer one (used up, owner share)
   // by its extra lines at most, named in the line; an unrecognised note fails (`lib/note-variant.mjs`). The
   // over-size deck's press is blocked and draws no note, so it is held to 1px. From the press on, the
   // hub is held to its settled top, the last idle frame's.

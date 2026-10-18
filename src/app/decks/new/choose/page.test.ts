@@ -48,7 +48,7 @@ function find(node: unknown, type: unknown): { props: Record<string, unknown> } 
 }
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 
-const STANDING = { used: 0, limit: 3, nextAt: null, reopensAt: null, paused: null, ownerShare: false };
+const STANDING = { used: 0, limit: 3, nextAt: null, reopensAt: null, ownerShare: false };
 
 describe("the choose page", () => {
   beforeEach(() => {
@@ -176,7 +176,7 @@ describe("the choose page", () => {
   it("hands the form the player's credit standing, and none when that read fails (F7)", async () => {
     stub.themes.mockResolvedValue([]);
     const form = find(await ChoosePage({ searchParams: Promise.resolve({ w: "scary" }) }), IntakeForm)!;
-    expect(form.props.standing).toMatchObject({ used: 0, limit: 3, paused: null, ownerShare: false });
+    expect(form.props.standing).toMatchObject({ used: 0, limit: 3, ownerShare: false });
     stub.allowance.mockRejectedValue(new Error("ledger down"));
     const plain = find(await ChoosePage({ searchParams: Promise.resolve({ w: "scary" }) }), IntakeForm)!;
     expect(plain.props.standing).toBeNull();

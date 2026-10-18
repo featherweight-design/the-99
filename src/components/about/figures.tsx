@@ -878,7 +878,7 @@ function DeckTokensFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
+/** The shared credit line in the two states a friend sees: credits left, and every credit out. */
 function CreditsFigure({ width, creditLimit }: { width: AboutWidth; creditLimit: number }) {
   return (
     <Specimen label="credits" width={width}>

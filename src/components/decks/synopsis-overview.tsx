@@ -125,10 +125,10 @@ export function SynopsisOverview({
   const lastRefused = freeFailed ? null : state.lastRefused;
   const content = synopsis?.content ?? null;
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
-    // No write can reserve: every credit out, the app-wide cap reached, or the owner's share used.
+    // No write can reserve: every credit out, or the owner's share used.
   // Each disables the press in 7g's form and says which, never "uses a credit".
   const left = freeCount(allowance);
-  const spent = !freeLeft && (!hasCredit(allowance) || !!allowance.paused || !!allowance.ownerShare);
+  const spent = !freeLeft && (!hasCredit(allowance) || !!allowance.ownerShare);
   // A withheld overview offers no write at all (the server refuses one before its reservation).
   const canWrite = readingFresh && settled && !state.pending && !state.illegal;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
@@ -136,11 +136,9 @@ export function SynopsisOverview({
   // credit out says so, whatever the press.
   // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
-  const spentNote = allowance.paused
-    ? creditsCopy.paused(allowance.paused.until)
-    : allowance.ownerShare
-      ? creditsCopy.ownerShare(new Date())
-      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
+  const spentNote = allowance.ownerShare
+    ? creditsCopy.ownerShare(new Date())
+    : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   // While a free try is left the press spends nothing, so no credit note stands over it.
   const note = freeLeft ? null : spent ? spentNote : state.wouldSpend ? spendNote : null;

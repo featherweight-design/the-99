@@ -905,9 +905,8 @@ export function SuggestedChangesFigureBody() {
 }
 
 /**
- * `credits`: the shared credit line in the three states a friend sees, each from `creditsCopy` itself: with
- * credits left (`first`), with every credit out (`spent`), and under the app-wide monthly limit
- * (`paused`). The line has no component of its own (each panel draws it inline), so it is set
+ * `credits`: the shared credit line in the two states a friend sees, each from `creditsCopy` itself: with
+ * credits left (`first`) and with every credit out (`spent`). The line has no component of its own (each panel draws it inline), so it is set
  * here in the type `SuggestedChangesFigureBody` gives it, from the real copy and never retyped.
  * One numeral per state, as the availability figure numbers its rows.
  */
@@ -915,7 +914,6 @@ export function CreditsFigureBody({ limit }: { limit: number }) {
   // `limit` is the app-wide default (`AboutPage`), so the figure agrees with the caption a reader in no
   // group reads. Never more left than the limit: at a limit of one the first line reads 1 of 1.
   const left = Math.min(CREDITS.left, limit);
-  const { pausedUntil } = CREDITS;
   // The reset time is the reader's clock (`clockTime`), which the server cannot know, and React
   // never patches mismatched text. So the server snapshot draws the lines with no time, and the
   // time arrives with the client's own render, the pattern `ThemesFigureBody` uses.
@@ -929,7 +927,6 @@ export function CreditsFigureBody({ limit }: { limit: number }) {
     // A reset time only with a credit out, as the app draws it (`nextAt` is null when none is used).
     creditsCopy.first(left, limit, left < limit ? nextAt : null),
     creditsCopy.spent(limit, nextAt),
-    creditsCopy.paused(pausedUntil),
   ];
   return (
     <div className="flex flex-col gap-[11px]">

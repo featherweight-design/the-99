@@ -1130,7 +1130,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   samples the Tuning hub's top every frame from its first through the note's landing (Hugh,
   2026-10-15). The empty state holds two of the note's own lines while its read is out, so a note of up
   to two lines (the credit, free and check notes) must move the hub by no more than 1px. A longer note
-  (used up, paused, owner share) still grows past the frame, so it may move the hub by its lines past
+  (used up, owner share) still grows past the frame, so it may move the hub by its lines past
   two and no more, and the line names the variant. The variant is read from the note's words
   (`scripts/lib/note-variant.mjs`, pinned against the shipped copy by its test), and a note it does not
   recognise fails. The held read makes the landing ~3s late, so a move cannot hide in one frame. `PROBE_HUB=off` (the default is on) skips that check and says so, for a server
@@ -1193,7 +1193,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   empty state 0.7 to 2s after it (#1465), and until the empty state reserved the note's frame the hub
   dropped once on the note's own frame, 56px at 1300 (1027.5 to 1083.5) and 35.4px at 390 (1440 to
   1475.4). That move was printed; it now fails for a note of up to two lines (credit, free, check: two
-  lines are reserved). A longer note (used up, paused, owner share) may move it by its lines past two,
+  lines are reserved). A longer note (used up, owner share) may move it by its lines past two,
   named in the line, and an unrecognised note fails (`scripts/lib/note-variant.mjs`). The probe already
   stops on a note that does not write the overview, so in practice it walks the credit and free notes. Measured 2026-10-15 on local-dev, `held`, hub on: 0px
   at both widths; with the reservation removed, that check fails at both widths with the same 56 and
@@ -2311,7 +2311,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
   through the overview write) and done. The hub must be drawn in every frame, be the node first seen
   (a handle compared every frame). Its top must hold within 1px from its FIRST idle frame to the press
-  for a credit note of up to two lines (a longer note, used up, paused or owner share, may move it by
+  for a credit note of up to two lines (a longer note, used up or owner share, may move it by
   its lines past the reserved two, named; an unrecognised note fails: `scripts/lib/note-variant.mjs`),
   and within 1px of the settled tab from the press through running. Every idle frame counts (2026-10-15; it was the last 30 before the press, which sat after
   the credit note's landing and so never saw the 56px / 35.4px drop it caused before the note's frame

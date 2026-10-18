@@ -74,7 +74,7 @@ describe("Cards for the 99", () => {
 
 describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
   const now = "2026-10-11T12:00:00.000Z";
-  const credit = { used: 1, limit: 10, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, paused: null, ownerShare: false, now };
+  const credit = { used: 1, limit: 10, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now };
   const box = () => screen.getByLabelText(/Anything else\?/);
   const presses = () => screen.getAllByRole("button", { name: /Find commanders|1 credit/ });
 
@@ -124,12 +124,6 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect(b.getAttribute("aria-describedby")).toBeTruthy();
       expect(document.getElementById(b.getAttribute("aria-describedby")!)!.textContent).toMatch(/^Won’t be read/);
     }
-  });
-
-  it("7n: paused says why, before a spent allowance", () => {
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10, paused: "2026-11-01T00:00:00.000Z" }} />);
-    expect(screen.getAllByText(/^Paused until November 1\./).length).toBeGreaterThan(0);
-    expect(screen.queryByText("1 credit")).toBeNull();
   });
 
   it("draws the plain press when the standing could not be read", () => {

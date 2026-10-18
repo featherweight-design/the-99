@@ -139,8 +139,8 @@ export function synopsisStatus(input: {
   // An overview whose data moved is not this list's any more: its press writes (D11), or the stale
   // form's *Write a new overview* would hand back the overview it says is out of date.
   const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list && !input.dataMoved;
-  // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
-  const refused = !!allowance.paused || !!allowance.ownerShare;
+  // The owner's share used: the reservation refuses, so nothing would spend.
+  const refused = !!allowance.ownerShare;
   const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && !input.illegal
     && hasCredit(allowance);
   return { stale, wouldSpend };

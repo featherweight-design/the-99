@@ -111,13 +111,6 @@ describe("SynopsisOverview", () => {
     expect(note).not.toContain(clockTime(next));
   });
 
-  it("holds Write one and says the app is paused while the spend cap holds", () => {
-    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until: new Date("2026-10-01T12:00:00Z") } } }));
-    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
-    expect(screen.getByText(/^Paused until/)).toBeTruthy();
-    expect(screen.queryByText(/Uses a credit/)).toBeNull();
-  });
-
   it("holds Write one and names the owner's used share", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }));
     expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
@@ -500,9 +493,9 @@ describe("the method-changed notice", () => {
     expect(screen.getByTestId("synopsis-overview").textContent).toContain("then close with");
   });
 
-  // Rule 2: it reads the same at 0 credits or paused, and the press stays live.
-  it("1a: reads the same, and stays pressable, with every credit out or the allowance paused", () => {
-    for (const allowance of [out, { ...out, used: 0, paused: { until: new Date("2026-11-01") } }, { ...out, used: 0, ownerShare: true as const }]) {
+  // Rule 2: it reads the same at 0 credits or the owner's share used, and the press stays live.
+  it("1a: reads the same, and stays pressable, with every credit out or the owner's share used", () => {
+    for (const allowance of [out, { ...out, used: 0, ownerShare: true as const }]) {
       cleanup();
       draw(old({ allowance } as never));
       expect(within(notice()).getByText(m.note)).toBeTruthy();

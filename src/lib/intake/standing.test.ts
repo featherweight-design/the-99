@@ -2,15 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { bareStanding, closedBy, formLine, standingLine, toStanding } from "./standing";
 
-const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, paused: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
+const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
 
 describe("the form's credit line", () => {
-  it("closes paused first, then the owner's share, then spent", () => {
-    expect(closedBy({ ...base, used: 5, ownerShare: true, paused: "2026-11-01T00:00:00.000Z" })).toBe("paused");
+  it("closes on the owner's share first, then spent", () => {
     expect(closedBy({ ...base, used: 5, ownerShare: true })).toBe("ownerShare");
     expect(closedBy({ ...base, used: 5 })).toBe("spent");
     expect(closedBy(base)).toBeNull();
-    // A paid lot keeps the press open once the free allowance is spent, behind the cap's two states.
+    // A paid lot keeps the press open once the free allowance is spent, behind the owner's share.
     expect(closedBy({ ...base, used: 5, plan: 2 })).toBeNull();
     expect(closedBy({ ...base, used: 5, plan: 2, ownerShare: true })).toBe("ownerShare");
     // Open on a paid lot with more units out than the limit: the free count never reads below zero.

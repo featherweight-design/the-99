@@ -295,7 +295,7 @@ async function run() {
       report(at("and the credit note arrives once the read is released"), noteAfter, noteAfter ? "drawn" : "never drawn");
       // THE HUB DOES NOT MOVE WHEN A NOTE OF UP TO TWO LINES LANDS (Hugh, 2026-10-15): the empty state holds
       // two of the note's lines from its first frame. Before, the note pushed the hub down once, 56px at 1300
-      // and 35px at 390. A longer note (used up, paused, owner share) may move it by its extra lines, and is
+      // and 35px at 390. A longer note (used up, owner share) may move it by its extra lines, and is
       // named; an unrecognised note fails (`scripts/lib/note-variant.mjs`). The held read makes the landing
       // late, well after the hub's first frame, so a move cannot hide in one frame.
       await held.waitForTimeout(1_000);

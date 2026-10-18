@@ -6,7 +6,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 
 /**
  * A credit line as text, with `What uses credits?` drawn as a link to the About `credits` entry
- * (Hugh, 2026-10-12: link, never list). Every surface that draws `creditsCopy.spent` or `paused`, or
+ * (Hugh, 2026-10-12: link, never list). Every surface that draws `creditsCopy.spent`, or
  * a line built around them, renders it through here, so the phrase is a link wherever it appears and
  * nothing else in the line changes. A line without the phrase renders as it is.
  *

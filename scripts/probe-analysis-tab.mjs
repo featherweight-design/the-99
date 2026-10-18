@@ -377,7 +377,7 @@ async function run() {
 
       // WHAT THE PRESS WILL DO, decided before it is made. A press writes the overview exactly when its
       // credit note said it would (`pressWrites` in builder-shell, from `pressNote`, #916): the credit and
-      // free notes write; the check, used-up, paused and owner-share notes, and no note at all (the list
+      // free notes write; the check, used-up and owner-share notes, and no note at all (the list
       // already has its overview), write nothing. So the note is waited for (its frame, #1844, gives way
       // to the note or to nothing once the read answers) and classified by its words (`noteVariant`,
       // tested against the shipped copy). An unrecognised note fails rather than guessing. The wait for the note
