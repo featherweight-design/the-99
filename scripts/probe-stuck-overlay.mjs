@@ -163,7 +163,10 @@ async function run(page, label, press) {
   ]).then((v) => v ?? { history: [], longtasks: [] });
   console.log(`   ${label}: from ${startPath}; samples ${trace}; end path ${last?.path}; beacons ${last?.beacons}; history ${extra.history.length}; long tasks ${extra.longtasks.length}`);
   for (const h of extra.history.slice(0, 4)) console.log(`      ${h.name} ${h.url} @${h.t} ${h.stack}`);
-  report(answers, `${label}: the page answers throughout`);
+  report(answers, `${label}: the page answers throughout`);  // A press has to GO somewhere: a dropped navigation or a page left inert must not pass for "no overlay, no report".
+  const landed = last !== null && new URL(last.path, BASE).pathname !== startPath;
+  report(landed, `${label}: the press left ${startPath}`, `ended on ${last?.path}`);
+  report(last !== null && !last.inert, `${label}: <main> is not left inert`);
   // The bug: an overlay still up at the end that nothing reported and nothing will take down.
   const stuck = last?.overlay && !last.leaving;
   report(!stuck, `${label}: the overlay is not left up after 15s`, stuck ? `up with ${last.beacons} nav-stall report(s); main inert ${last.inert}` : everUp ? "it showed, then left" : "it never showed");
