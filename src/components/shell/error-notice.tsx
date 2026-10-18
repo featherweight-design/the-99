@@ -35,7 +35,7 @@ export function ErrorNotice({
   }, [boundary, error]);
 
   return (
-    <EmptyState className="min-h-[400px] md:min-h-[480px] p-[40px]">
+    <EmptyState className="flex-1 min-h-[400px] md:min-h-[480px] p-[40px]">
       <EmptyStateTitle className="text-[21px] md:text-[24px]">{copy.heading}</EmptyStateTitle>
       <EmptyStateBody className="text-[13.5px] md:text-[15px] max-w-[380px] mt-[10px] mb-0">
         {copy.body}

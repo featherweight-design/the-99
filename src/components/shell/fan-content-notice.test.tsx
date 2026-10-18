@@ -64,7 +64,11 @@ describe("FanContentNotice", () => {
     expect([...tokens].filter((t) => !allowed.has(t))).toEqual([]);
     expect(tokens.has("fg-muted")).toBe(true);
     expect(tokens.has("border")).toBe(true);
-    expect(SOURCE).toContain("text-[color:var(--fg-muted)]");
+    // On the PARAGRAPH CONTAINER, not only the link: the link keeps the class on its own, so a bare substring would pass without it.
+    render(<FanContentNotice />);
+    expect(document.querySelector("footer > div")!.className).toContain("text-[color:var(--fg-muted)]");
+    expect(document.querySelector("footer > div")!.className).toContain("font-sans");
+    cleanup();
     // The ink of the text is not --fg-faint or --accent (the underline's --fg-faint is `decoration-`, the ring's --accent `outline-`).
     expect(SOURCE).not.toMatch(/(?<![\w-])text-\[color:var\(--(fg-faint|accent)\)\]/);
     expect(SOURCE).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
@@ -91,3 +95,19 @@ describe("the notice's ink on --bg", () => {
     expect(failing).toEqual(["kamigawa", "phyrexia"]);
   });
 });
+
+// A page that is SHORT must fill the screen, so the notice that follows it starts below the fold: the shell's 404 and its error
+// fallback both stretch (`flex-1`) inside the flex column the body (signed out) or `ShellMain` (signed in) provides.
+describe("the short pages that render around the notice", () => {
+  it("the 404 and the error fallback stretch, and keep their old minimum height", async () => {
+    const NotFound = (await import("../../app/not-found")).default;
+    const { container } = render(<NotFound />);
+    expect(container.firstElementChild!.className).toMatch(/(^|\s)flex-1(\s|$)/);
+    cleanup();
+    const { ErrorNotice } = await import("./error-notice");
+    const err = render(<ErrorNotice boundary="page" error={new Error("x")} retry={() => {}} />);
+    expect(err.container.firstElementChild!.className).toMatch(/(^|\s)flex-1(\s|$)/);
+    expect(err.container.firstElementChild!.className).toContain("min-h-[400px]");
+  });
+});
+

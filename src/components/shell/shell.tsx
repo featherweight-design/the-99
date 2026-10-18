@@ -54,7 +54,7 @@ export default async function Shell({
 
   if (!userId) {
     // The Fan Content notice follows every signed-out page, centered on the pages' own axis; none of them mounts it
-    // (launch epic A1). Each keeps its shipped `min-h-screen`, so the notice waits one scroll below the fold.
+    // (launch epic A1). Each keeps its shipped full-height minimum, so the notice waits one scroll below the fold.
     return <>{children}<FanContentNotice align="center" /></>;
   }
 
