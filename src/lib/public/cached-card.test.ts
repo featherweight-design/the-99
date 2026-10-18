@@ -21,7 +21,7 @@ vi.mock("next/cache", () => ({
 // `React.cache` memoizes per request; outside one it would hold across tests, so each call reads through here.
 vi.mock("react", async (orig) => ({ ...(await orig<typeof import("react")>()), cache: <T,>(fn: T) => fn }));
 
-import { publicCardKey, readPublicCard } from "./cached-card";
+import { publicCardImageKey, publicCardKey, readPublicCard } from "./cached-card";
 
 const ok = { kind: "ok", card: { name: "Sol Ring" }, canonicalSlug: "sol-ring-0b3f2c9e6a41" };
 
@@ -35,6 +35,11 @@ beforeEach(() => {
 describe("the public card cache", () => {
   it("keys on the catalog generation, the deployment and the card's id", () => {
     expect(publicCardKey("1000", "0b3f2c9e6a41", "dpl_1")).toEqual(["public-card", "gen:1000", "dep:dpl_1", "id:0b3f2c9e6a41"]);
+  });
+
+  it("keys the link-preview image on the same parts, under its own name, so a refresh retires both together", () => {
+    expect(publicCardImageKey("1000", "0b3f2c9e6a41", "dpl_1")).toEqual(["public-card-image", "gen:1000", "dep:dpl_1", "id:0b3f2c9e6a41"]);
+    expect(publicCardImageKey("1001", "0b3f2c9e6a41", "dpl_1")).not.toEqual(publicCardImageKey("1000", "0b3f2c9e6a41", "dpl_1"));
   });
 
   it("stores one copy of a card however its name part is spelled", async () => {

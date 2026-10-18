@@ -1,7 +1,8 @@
 // The public card and commander pages (launch epic F3), transcribed from the handoff's `public-pages · copy strings.ts`
-// (design/design_handoff_the99_public_pages, R1, audited GREEN). Only the shell's, the signed-out block's, the card
-// page's and the commander page's strings live here so far: the link previews' arrive with the PR that first draws them,
-// so no key ships without a caller. Strings the handoff marks `shipped` are reused verbatim. Nothing here varies by
+// (design/design_handoff_the99_public_pages, R1, audited GREEN). The shell's, the signed-out block's, the card page's,
+// the commander page's and the card's link preview's strings live here (the commander page's preview arrives with the PR
+// that first draws it), so no key ships without a caller. The unknown address (C3) draws the shipped not-found's own
+// strings (`shellCopy.notFound`), minus `View decks`. Strings the handoff marks `shipped` are reused verbatim. Nothing here varies by
 // visitor. US English, no em dashes.
 
 export const publicPagesCopy = {
@@ -73,5 +74,10 @@ export const publicPagesCopy = {
     absentBody: " EDHREC doesn’t track this commander, so there’s no rank, no themes and no cards to list here. The card is still all here.",
     degradedTitle: "Deck figures aren’t available right now.",
     degradedBody: " They come from EDHREC, which didn’t answer the last time this page was built. They return with the next refresh.",
+  },
+  /** The card page's link preview (C2, README call 8). */
+  linkPreview: {
+    cardTitle: (name: string) => `${name} · The 99`,
+    ogCardKicker: "Card",
   },
 } as const;

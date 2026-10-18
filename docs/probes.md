@@ -3147,5 +3147,15 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
   staging, 2026-10-18), that twenty cards and twenty commanders load by their own address, that a wrong name part still
   resolves to the canonical address, that a prefix no card has is `not-found`, and prints the per-load read time.
 
+- `pnpm probe:public-pages` (launch epic F3 PR 2b) requests the public card page over HTTP, SIGNED OUT (no cookie, no
+  browser), against a running server: `PROBE_BASE=http://localhost:3110 pnpm probe:public-pages`, served with
+  `PUBLIC_PAGES_ENABLED=true`. Read-only, and it refuses the production host. For each id in `PROBE_CARDS` (12 hex,
+  comma-separated; default the boards' four: A1 Rootha `348c67ef9ccc`, A2 Valki `907ae51722d5`, A3 Ghalta `b0b6be0c41cf`,
+  A4 Sol Ring `6ad8011d3471`) it proves the bare id and a wrong name part both 308 to one canonical address, that address
+  answers 200 with the page's marker, `og:title`, `og:description`, `og:image` and `twitter:card` `summary_large_image`,
+  and the `og:image` answers 200 `image/png`. An unknown id (`PROBE_UNKNOWN`, default `000000000000`) answers 404 with the
+  public not-found (C3: the 404 copy and `Back home`, never `View decks`), and its image a bare 404. No response may carry
+  `Set-Cookie`. Exits 1 on any failure, after a summary.
+
 - `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree. Signed in it also opens the pages with a `fixed` bottom dock (the deck picker, the Help me choose form, a precon, About's gate bar; a deck's top-off bar through `PROBE_TOPOFF_PATH`, opened by pressing the strip's door) and checks the notice's last line clears the topmost dock at the scroll end (A1b, `useDockClearance`). A page that draws no dock at that width reports SKIP, never PASS: serve with `HELP_ME_CHOOSE_ENABLED=true PRECONS_ENABLED=true` to reach three of them; the gate bar needs a reader behind on About with the sheet switch off.
 
