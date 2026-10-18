@@ -20,8 +20,9 @@ describe("no model prompt carries who the player is", () => {
   });
 
   it("hands no prompt builder an identity field", () => {
-    const { hits, missing } = identityPaths(root);
+    const { hits, missing, truncated } = identityPaths(root);
     expect(missing).toEqual([]);
+    expect(truncated).toEqual([]);
     expect(hits).toEqual([]);
   }, 120_000);
 
@@ -59,6 +60,10 @@ describe("the guard's failure paths", () => {
     "export function scalar(email: string): string { return email.length + \"\"; }",
     "export const VARIANTS = { a: { prompt: (who: () => { firstName: string }) => who().firstName } };",
     "export function finite(r: Record<\"variant\", { owner: { email: string } }>): string { return Object.keys(r).join(); }",
+    "type Shared = { contact: { email: string } };",
+    // 23 levels puts Shared at exactly the walk's depth limit, so its own fields fall past it on this first visit.
+    `type Deep = ${"{ d: ".repeat(23)}Shared${" }".repeat(23)};`,
+    "export function layered(input: { deep: Deep; shallow: Shared }): string { return String(input); }",
     "export function clean(cards: { name: string; typeLine: string }[]): string { return cards.map((c) => c.name).join(); }",
   ].join("\n"));
   put("src/lib/fx/static-import.ts", "import { requireUserId } from \"../auth\";\nexport const p = () => requireUserId;\n");
@@ -69,8 +74,10 @@ describe("the guard's failure paths", () => {
   put("src/lib/fx/sender.ts", "declare function callModel<T>(r: unknown): T;\ntype Reply = { ok: true };\nexport const go = () => callModel<Reply>({});\n");
 
   it("finds identity fields nested, through Pick and Record, in a scalar parameter and in a function's return", () => {
-    const { hits, missing } = identityPaths(fx, [{ file: "src/lib/fx/builder.ts", fns: ["nested", "picked", "recorded", "scalar", "VARIANTS", "finite", "clean"] }]);
+    const { hits, missing, truncated } = identityPaths(fx, [{ file: "src/lib/fx/builder.ts", fns: ["nested", "picked", "recorded", "scalar", "VARIANTS", "finite", "layered", "clean"] }]);
     expect(missing).toEqual([]);
+    // A type first met past the depth limit is still checked where it is met shallow, and the cut-off is reported.
+    expect(truncated.some((t) => t.includes("#layered(input).deep"))).toBe(true);
     expect(hits).toEqual(expect.arrayContaining([
       expect.stringMatching(/#nested\(c\)\[\]\.owner\.primaryEmail$/),
       expect.stringMatching(/#picked\(i\)\.viewerId$/),
@@ -78,6 +85,7 @@ describe("the guard's failure paths", () => {
       expect.stringMatching(/#scalar\(email\)$/),
       expect.stringMatching(/#VARIANTS\.a\.prompt\(who\)\(\)\.firstName$/),
       expect.stringMatching(/#finite\(r\)\.variant\.owner\.email$/),
+      expect.stringMatching(/#layered\(input\)\.shallow\.contact\.email$/),
     ]));
     expect(hits.filter((h) => h.includes("#clean"))).toEqual([]);
   }, 120_000);

@@ -150,12 +150,16 @@ function program(root, files) {
   return ts.createProgram(files.map((f) => join(root, f)), { ...(config?.options ?? {}), noEmit: true });
 }
 
+/** How deep the walk follows a type before it reports the path as truncated rather than checked. */
+const MAX_DEPTH = 24;
+
 /** The identity fields reachable from a builder's parameters, as `fn(param).path.to.field`. */
 export function identityPaths(root, builders = BUILDERS) {
   const prog = program(root, builders.map((b) => b.file));
   const checker = prog.getTypeChecker();
   const hits = [];
   const missing = [];
+  const truncated = [];
 
   for (const b of builders) {
     const sf = prog.getSourceFile(join(root, b.file));
@@ -172,20 +176,28 @@ export function identityPaths(root, builders = BUILDERS) {
       }
       const type = checker.getTypeOfSymbolAtLocation(sym, sf);
       const sigs = type.getCallSignatures();
-      if (sigs.length === 0) walk(type, `${b.file}#${fn}`, 0, new Set());
+      if (sigs.length === 0) walk(type, `${b.file}#${fn}`, 0, new Map());
       for (const sig of sigs) {
         for (const p of sig.getParameters()) {
           const at = `${b.file}#${fn}(${p.name})`;
           if (named(p.name)) hits.push(at);
-          walk(checker.getTypeOfSymbolAtLocation(p, sf), at, 0, new Set());
+          walk(checker.getTypeOfSymbolAtLocation(p, sf), at, 0, new Map());
         }
       }
     }
   }
 
+  // `seen` holds the shallowest depth each type was reached at: a type met again by a SHORTER path is walked again, so
+  // a deep first visit cut off at the limit cannot hide a shallow field. A path that reaches the limit is reported as
+  // `truncated`, never passed as clean.
   function walk(type, path, depth, seen) {
-    if (depth > 14 || seen.has(type)) return;
-    seen.add(type);
+    const at = seen.get(type);
+    if (at !== undefined && at <= depth) return;
+    seen.set(type, depth);
+    if (depth > MAX_DEPTH) {
+      truncated.push(path);
+      return;
+    }
     if (type.flags & (ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike | ts.TypeFlags.BigIntLike | ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Never | ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.ESSymbolLike)) return;
     if (type.isUnionOrIntersection()) {
       for (const t of type.types) walk(t, path, depth + 1, seen);
@@ -218,7 +230,7 @@ export function identityPaths(root, builders = BUILDERS) {
     }
   }
 
-  return { hits: [...new Set(hits)].sort(), missing };
+  return { hits: [...new Set(hits)].sort(), missing, truncated: [...new Set(truncated)].sort() };
 }
 
 /** A builder module's direct imports from an identity source. */
