@@ -181,7 +181,7 @@ export function AccountsList({
       </p>
       <div
         ref={pinRef}
-        className="sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px))] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
+        className="sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px))] z-[1] flex flex-none flex-col gap-[12px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[12px] md:px-[28px]"
       >
         <SearchField
           value={query}
@@ -198,7 +198,7 @@ export function AccountsList({
           aria-label={maskAccounts.search}
           aria-describedby={line ? lineId : undefined}
           aria-busy={looking || undefined}
-          containerClassName={`h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] ${email ? "border-[color:var(--accent)]" : ""}`}
+          containerClassName={`h-[44px] gap-[9px] rounded-[9px] py-0 pl-[12px] pr-[6px] md:h-[38px] ${email ? "border-[color:var(--accent)]" : ""}`}
           className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
         />
         {line && (

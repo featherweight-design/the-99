@@ -35,6 +35,46 @@
       ]
     },
     {
+      "id": "masking-search-name",
+      "label": "/admin/accounts: A7, a name typed with no @ filters the masked names as you type",
+      "view": "src/components/admin/accounts-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 800
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "a"
+        },
+        {
+          "wait": "[data-testid='account-rows']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "masking-search-email",
+      "label": "/admin/accounts: A8, an address typed and not yet looked up: the list whole, `Press Enter to look up this exact email.`, the field's accent border",
+      "view": "src/components/admin/accounts-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 800
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "someone@example.com"
+        },
+        {
+          "wait": "[data-lookup-line='enter']",
+          "settle": 600
+        }
+      ]
+    },
+    {
       "id": "masking-account-head",
       "label": "/admin/accounts/[clerkId]: B1, the masked head, Invites (the waiting email masked) and History",
       "view": "src/components/admin/account-page.tsx",
@@ -166,6 +206,36 @@
       ],
       "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it aborts the Show action's request): masking-reveal-failed-<width>.png",
       "why": "a Show fails only when Clerk or the log write refuses, which no step of this runner can cause"
+    },
+    {
+      "id": "masking-lookup-hit",
+      "label": "/admin/accounts: A3, a hit: the address in the field, `One account holds this email.`, its one masked row with Show",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it presses Enter on a real account's address, an unheld one, and one whose request it aborts): masking-lookup-hit-<width>.png",
+      "why": "the runner fills a field but presses no key, and a lookup needs Enter; a failure needs the request aborted"
+    },
+    {
+      "id": "masking-lookup-miss",
+      "label": "/admin/accounts: A4, a miss: `No account holds this email.`, no rows and no column head",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it presses Enter on a real account's address, an unheld one, and one whose request it aborts): masking-lookup-miss-<width>.png",
+      "why": "the runner fills a field but presses no key, and a lookup needs Enter; a failure needs the request aborted"
+    },
+    {
+      "id": "masking-lookup-failed",
+      "label": "/admin/accounts: A5, a failed lookup: the field and the whole list unchanged, the toast with Try again",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it presses Enter on a real account's address, an unheld one, and one whose request it aborts): masking-lookup-failed-<width>.png",
+      "why": "the runner fills a field but presses no key, and a lookup needs Enter; a failure needs the request aborted"
     }
   ]
 }

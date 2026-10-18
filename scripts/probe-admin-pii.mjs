@@ -122,7 +122,16 @@ try {
   let sink = bodies;
   // Each body is read asynchronously, so a check waits for the reads still in flight (`drain`) before it counts.
   const reading = new Set();
-  const drain = () => Promise.all([...reading]);
+  // Bounded: a response that streams without end (a poll held open) must not hold the probe forever. A body still
+  // unread after 10 seconds is reported, so a check never silently skips one.
+  const drain = async () => {
+    const pending = [...reading];
+    const late = await Promise.race([
+      Promise.all(pending).then(() => false),
+      new Promise((r) => setTimeout(() => r(true), 10_000)),
+    ]);
+    if (late) report("every response body read before the check", false, `${reading.size} still streaming`);
+  };
   page.on("response", (res) => {
     if (!res.url().startsWith(BASE)) return;
     const type = res.headers()["content-type"] ?? "";
