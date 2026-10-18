@@ -30,6 +30,7 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import type { ShortDeck } from "../../lib/collection/write";
 import { usePendingPush } from "../shell/pending-push";
 import { LoadingScreen } from "../shell/loading-screen";
+import { TOUCH_HIT } from "../ui/touch-hit";
 
 /** A sync dry run: the whole preview, with its Sync extras. */
 type SyncRead = UploadChangePreview & { sync: UploadSyncPreview };
@@ -532,7 +533,7 @@ export function ReplaceFlow({
           <>
             {/* The phone's page header, the upload step's alone: the review draws its own. */}
             <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
-              <a href="/collection" aria-label={replaceCopy.backAria} className="text-[20px] text-[color:var(--accent)]">‹</a>
+              <a href="/collection" aria-label={replaceCopy.backAria} className={`${TOUCH_HIT} text-[20px] text-[color:var(--accent)]`}>‹</a>
               <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{pageTitle}</h1>
             </div>
             <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">

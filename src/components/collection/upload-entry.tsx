@@ -11,6 +11,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useTarget } from "../discovery/targets-provider";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -294,7 +295,7 @@ export function UploadEntry({
             <PrimaryButton
               onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
               disabled={pending}
-              className="text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait"
+              className={`${TOUCH_HIT} text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait`}
             >
               {pending ? "Uploading…" : collectionChassisCopy.upload.browse}
             </PrimaryButton>
@@ -305,7 +306,7 @@ export function UploadEntry({
             >
               <span className="md:hidden">
                 Only a Name and Quantity column are required.{" "}
-                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className="text-[color:var(--accent)]">
+                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className={`${TOUCH_HIT_INLINE} text-[color:var(--accent)]`}>
                   {collectionChassisCopy.upload.paste}
                 </button>
               </span>
