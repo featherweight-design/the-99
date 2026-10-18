@@ -24,10 +24,10 @@ export type ChipState = {
   hollow: boolean;
 };
 
-export function chipFor(input: { allowance: Allowance; switchOn: boolean; everBought: boolean }, now: Date): ChipState | null {
+export function chipFor(input: { allowance: Allowance; switchOn: boolean; everBought: boolean; planHeld?: boolean }, now: Date): ChipState | null {
   const a = input.allowance;
   const held = heldCredits(a) > 0;
-  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: input.everBought, returning: false })) return null;
+  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: input.everBought, returning: false, planHeld: input.planHeld })) return null;
   const total = freeCount(a) + heldCredits(a);
   if (creditLineKind(a) === "spent") {
     // Nothing to spend. The offer is a purchase, so it follows the switch; a reader who can no longer buy sees the count.
@@ -37,6 +37,6 @@ export function chipFor(input: { allowance: Allowance; switchOn: boolean; everBo
   }
   const expiring = expiringPhrase(a, now);
   if (expiring) return { kind: "expiring", label: creditsCopy.chip.credits(total), line: expiring, hollow: false };
-  if (held || input.everBought) return { kind: "credits", label: creditsCopy.chip.credits(total), line: null, hollow: false };
+  if (held || input.everBought || input.planHeld) return { kind: "credits", label: creditsCopy.chip.credits(total), line: null, hollow: false };
   return { kind: "free", label: creditsCopy.chip.free(total), line: null, hollow: false };
 }

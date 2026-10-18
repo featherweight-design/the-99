@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "./allowance-rule";
-import { countsAgainstGrant, creditTotals, earliestPlanExpiry, isLive, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
+import { countsAgainstGrant, creditTotals, earliestPlanExpiry, isLive, planCreditsByExpiry, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -135,5 +135,19 @@ describe("earliestPlanExpiry: the Allowance's planExpiresAt", () => {
   it("skips a spent lot, and any lot that is not a plan lot", () => {
     const welcome = { grant: lot({ id: "w", source: "welcome", expiresAt: at(1) }), remaining: 9 };
     expect(earliestPlanExpiry([plan("a", 0, at(2)), welcome, plan("b", 4, at(6))])).toEqual(at(6));
+  });
+});
+
+describe("planCreditsByExpiry: remaining plan credits grouped by the instant they lapse", () => {
+  const at = (days: number) => new Date(now.getTime() + days * DAY);
+  const plan = (id: string, remaining: number, expiresAt: Date | null) => ({ grant: lot({ id, source: "plan", expiresAt }), remaining });
+
+  it("sums lots that lapse on the same instant, earliest first, null (rolling) last", () => {
+    expect(planCreditsByExpiry([plan("a", 5, null), plan("b", 30, at(2)), plan("c", 40, at(30)), plan("d", 50, at(30)), plan("e", 7, new Date(at(2).getTime()))]))
+      .toEqual([{ at: at(2), n: 37 }, { at: at(30), n: 90 }, { at: null, n: 5 }]);
+  });
+  it("leaves out a spent lot and any lot that is not a plan lot", () => {
+    expect(planCreditsByExpiry([plan("a", 0, at(2)), { grant: lot({ id: "p", source: "pack" }), remaining: 40 }, { grant: lot({ id: "w", source: "welcome", expiresAt: at(2) }), remaining: 9 }])).toEqual([]);
+    expect(planCreditsByExpiry([])).toEqual([]);
   });
 });

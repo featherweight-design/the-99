@@ -103,6 +103,24 @@ export function planCreditsExpiringAt(balances: readonly GrantBalance[], at: Dat
 }
 
 /**
+ * The plan credits still held, grouped by the instant they lapse (`at` null: no expiry, a plan whose lots roll over),
+ * earliest first, groups with nothing left left out. A plan card dates ITS subscription by that subscription's own
+ * period end and counts only the groups landing on it, so an older subscription's lots lapsing sooner are not its credits.
+ */
+export function planCreditsByExpiry(balances: readonly GrantBalance[]): { at: Date | null; n: number }[] {
+  const groups = new Map<number | null, { at: Date | null; n: number }>();
+  for (const b of balances) {
+    if (b.grant.source !== "plan" || b.remaining <= 0) continue;
+    const at = b.grant.expiresAt ?? null;
+    const key = at ? at.getTime() : null;
+    const g = groups.get(key);
+    if (g) g.n += b.remaining;
+    else groups.set(key, { at, n: b.remaining });
+  }
+  return [...groups.values()].sort((x, y) => (x.at?.getTime() ?? Infinity) - (y.at?.getTime() ?? Infinity));
+}
+
+/**
  * The earliest `expires_at` among the plan lots that still hold a credit, or null when none expires (a held plan's
  * lots roll over). It is the `Allowance`'s `planExpiresAt`: when the plan credits the player holds begin to lapse.
  */

@@ -64,7 +64,7 @@ export type CreditsModel = {
   plan: PlanCardModel | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null; planExpiresAt?: Date | null; planExpiring?: number };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null; planExpiresAt?: Date | null; planExpiring?: number; planByExpiry?: { at: Date | null; n: number }[] };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;
@@ -109,7 +109,7 @@ export function buildCreditsModel(input: {
     cancelling: facts.cancelling,
     offer: planOffer(),
     on: facts.endsAt ? longDate(facts.endsAt) : null,
-    credits: facts.cancelling ? (a.planExpiring ?? plan) : plan,
+    credits: planCreditsFor(a, input.subscription ?? null, facts.cancelling),
     days: facts.days,
   };
   return {
@@ -141,4 +141,22 @@ export function historyItem(r: CreditHistoryRow): HistoryItem {
     sessionId: r.externalId?.startsWith("cs_") ? r.externalId : null,
     invoiceId: r.source === "plan" && r.externalId?.startsWith("in_") ? r.externalId : null,
   };
+}
+
+/**
+ * The plan credits the card names. A plan that is cancelling lapses its OWN credits on the subscription's period end (the
+ * webhook sets the lots' expiry to exactly it), so those are the groups whose instant equals it; the account's earliest
+ * group (`planExpiring`) may belong to an older subscription. With no group on that instant (the webhook has not set
+ * the expiry yet) the lots that roll over stand in, and then the account's figures as before. A plan that is not cancelling
+ * names everything the account holds.
+ */
+export function planCreditsFor(a: AllowanceFacts, sub: PlanSubscriptionFacts | null, cancelling: boolean): number {
+  const total = a.plan ?? 0;
+  if (!cancelling) return total;
+  const groups = a.planByExpiry ?? [];
+  const end = sub?.currentPeriodEnd?.getTime() ?? null;
+  const onEnd = end === null ? 0 : groups.filter((g) => g.at?.getTime() === end).reduce((n, g) => n + g.n, 0);
+  if (onEnd > 0) return onEnd;
+  const rolling = groups.filter((g) => g.at === null).reduce((n, g) => n + g.n, 0);
+  return rolling > 0 ? rolling : (a.planExpiring ?? total);
 }

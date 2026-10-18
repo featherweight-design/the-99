@@ -185,4 +185,22 @@ describe("buildCreditsModel: the plan card and plan history", () => {
     const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 60, planExpiresAt: end(2) }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
     expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", days: 30, credits: 60 });
   });
+
+  it("the card counts only the credits that lapse on ITS subscription's date: 30 old credits on Nov 16 and 90 current ones on Dec 14 read 90", () => {
+    const byExpiry = [{ at: end(2), n: 30 }, { at: end(30), n: 90 }];
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30, planExpiresAt: end(2), planByExpiry: byExpiry }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", credits: 90 });
+  });
+
+  it("a plan that is not cancelling names everything the account holds", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(m.plan?.credits).toBe(120);
+  });
+
+  it("with no group on the period end yet (the webhook has not set the expiry), the rolling lots stand in, then the account's figures", () => {
+    const rolling = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(rolling.plan?.credits).toBe(90);
+    const none = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30 }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(none.plan?.credits).toBe(30);
+  });
 });
