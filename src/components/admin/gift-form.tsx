@@ -21,7 +21,6 @@ const f = adminCopy.payments.form;
 export type PickAccount = { id: string; name: string; email: string | null };
 
 const NOTE = "min-h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] py-[10px] text-[16px] text-[color:var(--fg)] md:min-h-[38px] [@media(pointer:fine)]:md:text-[14px]";
-const SHOWN = 8;
 
 const unitsOf = (text: string): number | null => (/^\d+$/.test(text.trim()) ? Number(text.trim()) : null);
 
@@ -43,7 +42,8 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return accounts.filter((a) => a.name.toLowerCase().includes(q)).slice(0, SHOWN);
+    // Every match: two accounts can share a masked name, so a cap could leave one out of reach. The list scrolls.
+    return accounts.filter((a) => a.name.toLowerCase().includes(q));
   }, [accounts, query]);
   const picked = accounts.find((a) => a.id === accountId) ?? null;
   const rows = picked && !matches.some((m) => m.id === picked.id) ? [picked, ...matches] : matches;
@@ -116,7 +116,7 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
               role="radiogroup"
               aria-label={f.account}
               onKeyDown={(e) => onSegmentKeys(e, rows.map((r) => r.id), idOf, () => {}, () => inFlight)}
-              className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]"
+              className="max-h-[320px] overflow-y-auto rounded-[10px] border border-solid border-[color:var(--border)]"
             >
               {rows.map((a) => {
                 const on = a.id === accountId;

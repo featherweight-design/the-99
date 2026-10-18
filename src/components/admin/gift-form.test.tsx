@@ -116,6 +116,15 @@ describe("GiftForm", () => {
     expect(within(pending()!).getByRole("alert")).toHaveTextContent("Couldn't grant the credits, so nothing changed.");
   });
 
+  it("lists every match, so accounts sharing a masked name are all reachable", () => {
+    const alexes = Array.from({ length: 12 }, (_, i) => ({ id: `u_alex${i}`, name: "Alex S.", email: null }));
+    render(<GiftForm accounts={alexes} clerkDown={false} />);
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "alex" } });
+    expect(screen.getAllByRole("radio")).toHaveLength(12);
+    fireEvent.click(screen.getAllByRole("radio")[11]);
+    expect(screen.getAllByRole("radio")[11]).toHaveAttribute("aria-checked", "true");
+  });
+
   it("says when Clerk could not be read", () => {
     render(<GiftForm accounts={ACCOUNTS} clerkDown />);
     expect(screen.getByText("Clerk could not be read, so accounts show by id.")).toBeInTheDocument();
