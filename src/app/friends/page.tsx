@@ -30,8 +30,10 @@ import { openTablesFor } from "../../lib/social/rule-zero";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
-  const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
+  // The three awaits ahead of the reads are timed too: `total` has always run from the top of this function, and the reads
+  // account for ~35 ms of the ~190 it measured warm on staging (2026-10-18), so the rest sits in one of these.
+  const userId = await perf.timed("requireUserId", () => requireUserId());
+  const env = await perf.timed("switchEnv", () => requestSwitchEnv(userId));
   if (!socialFriendsEnabled(env)) notFound();
   const query = await searchParams;
   const accepted = query[ACCEPTED_PARAM];
@@ -39,7 +41,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
-  const user = await currentUser();
+  const user = await perf.timed("currentUser", () => currentUser());
   // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
   // not yet; the spend is idempotent, so this runs it when the account's own invitation names a reservation, and the
   // receipt is then drawn once from the edge, whichever of the two ran first.
