@@ -92,6 +92,14 @@ describe("loadCosts, the Anthropic workspace", () => {
     const { summary } = await loadCosts(OCT, NOW);
     expect(summary.workspace.read).toEqual({ ok: false, kind: "upstream" });
   });
+
+  it("never asks Anthropic for a caller that draws the detail alone (/admin/models)", async () => {
+    workspace.calls.length = 0;
+    workspace.answer = () => new Promise(() => {});
+    const { detail } = await loadCosts(OCT, NOW, { workspace: false });
+    expect(detail).toBeDefined();
+    expect(workspace.calls).toEqual([]);
+  });
 });
 
 describe("readEvalLedgers", () => {

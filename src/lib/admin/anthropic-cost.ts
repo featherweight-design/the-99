@@ -153,17 +153,30 @@ const memo = new Map<string, { kind: CostUnread; count?: number; until: number }
 /** Tests only: forget every remembered failure. */
 export function clearNegativeMemo(): void {
   memo.clear();
+  inFlight.clear();
 }
 
 /**
  * The month's workspace figure as the page reads it. In order: no key is `no_key`; a failure
  * inside the last minute is answered from memory; otherwise `unstable_cache`, keyed on the
  * deployment, the month and (for the current month) the five-minute bucket. A failure is thrown
- * as `NotStored`, so it is served and never filed.
+ * as `NotStored`, so it is served and never filed. Reads of one month that overlap share one
+ * in-flight read, so a cold cache or an outage costs one poll however many loads arrive at once.
  */
 export async function cachedWorkspaceCost(month: MonthKey, now: Date, deps: AnthropicDeps = defaultDeps()): Promise<WorkspaceCost> {
   if (!deps.key?.trim()) return { ok: false, kind: "no_key" };
   const m = monthParam(month);
+  const pending = inFlight.get(m);
+  if (pending) return pending;
+  const read = readThrough(month, m, now, deps).finally(() => inFlight.delete(m));
+  inFlight.set(m, read);
+  return read;
+}
+
+/** Per month: the read in progress, shared by every overlapping request in this process. */
+const inFlight = new Map<string, Promise<WorkspaceCost>>();
+
+async function readThrough(month: MonthKey, m: string, now: Date, deps: AnthropicDeps): Promise<WorkspaceCost> {
   const held = memo.get(m);
   if (held && held.until > now.getTime()) {
     return held.count === undefined ? { ok: false, kind: held.kind } : { ok: false, kind: held.kind, count: held.count };

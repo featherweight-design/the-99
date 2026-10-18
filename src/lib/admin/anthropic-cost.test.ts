@@ -202,6 +202,18 @@ describe("readWorkspaceCost", () => {
 });
 
 describe("cachedWorkspaceCost", () => {
+  it("shares one in-flight read between overlapping requests for a month, so an outage costs one poll", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const f = fake({ cost: [() => gate.then(() => json({}, 503))] });
+    const a = cachedWorkspaceCost(OCT, NOW, f.deps());
+    const b = cachedWorkspaceCost(OCT, NOW, f.deps());
+    release();
+    expect(await a).toEqual({ ok: false, kind: "upstream" });
+    expect(await b).toEqual({ ok: false, kind: "upstream" });
+    expect(f.calls.filter((c) => c.url.includes("/cost_report"))).toHaveLength(1);
+  });
+
   it("is no_key before the cache and the memo: no fetch, no unstable_cache", async () => {
     const f = fake({});
     expect(await cachedWorkspaceCost(OCT, NOW, f.deps(""))).toEqual({ ok: false, kind: "no_key" });

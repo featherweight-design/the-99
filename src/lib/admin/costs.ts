@@ -174,7 +174,13 @@ const readEvalLedgersAs = () => {
   return { ledgers, ledgersUnreadable: unreadable };
 };
 
-export async function loadCosts(month: MonthKey, now: Date = new Date()): Promise<{ summary: CostSummary; detail: CostDetail }> {
+export async function loadCosts(
+  month: MonthKey,
+  now: Date = new Date(),
+  /** `workspace: false` skips Anthropic's read: for a caller that draws only `detail` (`/admin/models`), which
+   *  must never wait on an outage for a figure it discards. Its summary then reads the workspace as not read. */
+  opts: { workspace?: boolean } = {},
+): Promise<{ summary: CostSummary; detail: CostDetail }> {
   const start = monthStart(month);
   const end = monthStart(shiftMonth(month, 1));
   const ownerId = modelOwnerUserId();
@@ -196,7 +202,9 @@ export async function loadCosts(month: MonthKey, now: Date = new Date()): Promis
   );
   // Outside the transaction: a network read must not hold a database snapshot open. It never throws,
   // and a rejection all the same is read as upstream rather than taking the page down.
-  const anthropic: Promise<WorkspaceCost> = cachedWorkspaceCost(month, now).catch(() => ({ ok: false, kind: "upstream" }));
+  const anthropic: Promise<WorkspaceCost> = opts.workspace === false
+    ? Promise.resolve({ ok: false, kind: "no_key" })
+    : cachedWorkspaceCost(month, now).catch(() => ({ ok: false, kind: "upstream" }));
   const [[days, [figures], settingRows, callRows, partRows, labelRows], workspace] = await Promise.all([read, anthropic]);
 
   const detail = costDetail({
