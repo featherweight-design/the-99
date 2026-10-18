@@ -1,4 +1,4 @@
-import { freeCount } from "../model/allowance-rule";
+import { freeCount, heldCredits } from "../model/allowance-rule";
 import type { CreditHistoryRow } from "./return";
 import { paidToday, type PaidToday } from "./paid-today-rule";
 import { readerSeesCredits, readerSeesOffers } from "./visible-rule";
@@ -15,7 +15,7 @@ import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/cre
  *   reader holds now or has held once (a grant row of that source), never an empty one for a reader who never
  *   bought. The total is the sum of every source, drawn or not.
  */
-export type BalanceCell = { key: "free" | "plan" | "pack"; value: number };
+export type BalanceCell = { key: "free" | "welcome" | "plan" | "pack"; value: number };
 
 export type HistoryItem = {
   id: string;
@@ -42,7 +42,7 @@ export type CreditsModel = {
   paidToday: PaidToday | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; plan?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;
@@ -54,20 +54,24 @@ export function buildCreditsModel(input: {
   returning?: boolean;
 }): { sees: false } | { sees: true; model: CreditsModel } {
   const { allowance: a, history } = input;
+  const welcome = a.welcome ?? 0;
   const plan = a.plan ?? 0;
   const pack = a.pack ?? 0;
-  const held = plan + pack > 0;
+  const held = heldCredits(a) > 0;
   if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false })) return { sees: false };
   const freeLeft = freeCount(a);
   const oncePlan = history.some((r) => r.source === "plan");
   const oncePack = history.some((r) => r.source === "pack");
   const cells: BalanceCell[] = [{ key: "free", value: freeLeft }];
+  // The welcome lot is spent after the free allowance and before the others, so its cell sits second. It is drawn only
+  // while it holds a credit: it is never bought, so there is no empty cell to explain (D1; D2 owns its wording).
+  if (welcome > 0) cells.push({ key: "welcome", value: welcome });
   if (plan > 0 || oncePlan) cells.push({ key: "plan", value: plan });
   if (pack > 0 || oncePack) cells.push({ key: "pack", value: pack });
   return {
     sees: true,
     model: {
-      total: freeLeft + plan + pack,
+      total: freeLeft + welcome + plan + pack,
       freeLeft,
       freeLimit: a.limit,
       nextAtMs: a.nextAt ? a.nextAt.getTime() : null,

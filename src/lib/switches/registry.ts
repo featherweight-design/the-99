@@ -71,6 +71,7 @@ export const SWITCHES = [
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "UPCOMING_PRECONS_ENABLED", kind: "feature", needs: "PRECONS_ENABLED" },
+  { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
 ] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED` }[];
 
 export type SwitchName = (typeof SWITCHES)[number]["name"];

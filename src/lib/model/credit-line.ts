@@ -1,5 +1,5 @@
 import { creditsCopy } from "../copy/credits";
-import { freeCount, freeRoom, hasCredit, paidAtLimit, type Allowance } from "./allowance-rule";
+import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowance } from "./allowance-rule";
 
 /**
  * THE CREDIT LINE, as every spend surface draws it (buying credits U2b, frames L1 to L8). Pure.
@@ -18,14 +18,14 @@ import { freeCount, freeRoom, hasCredit, paidAtLimit, type Allowance } from "./a
  * L7 (a cancelled plan within three days of lapsing) is a suffix on L2/L3, drawn in `--warning` by `CreditsText`.
  */
 export type LineAllowance = Pick<Allowance, "used" | "limit" | "nextAt" | "reopensAt"> &
-  Partial<Pick<Allowance, "plan" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "payments">>;
+  Partial<Pick<Allowance, "welcome" | "plan" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "payments">>;
 
 export type CreditLineKind = "free" | "withPaid" | "paidNext" | "spent" | "limit" | "limitFree";
 
 /** Three days, the lead time the warning is drawn at (handoff G9). */
 export const EXPIRY_WARNING_MS = 3 * 24 * 60 * 60 * 1000;
 
-const paidHeld = (a: LineAllowance) => (a.plan ?? 0) + (a.pack ?? 0);
+const paidHeld = (a: LineAllowance) => heldCredits(a);
 
 export function creditLineKind(a: LineAllowance): CreditLineKind {
   const held = paidHeld(a) > 0;

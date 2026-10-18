@@ -2397,11 +2397,14 @@ export const creditGrants = pgTable("credit_grants", {
   externalId: text("external_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
-  check("credit_grants_source_check", sql`${t.source} in ('plan', 'pack')`),
+  check("credit_grants_source_check", sql`${t.source} in ('plan', 'pack', 'welcome')`),
   check("credit_grants_units_check", sql`${t.units} > 0`),
   check("credit_grants_revoked_check", sql`${t.revokedUnits} between 0 and ${t.units}`),
-  check("credit_grants_pack_never_expires_check", sql`${t.source} = 'plan' or ${t.expiresAt} is null`),
+  // A pack never expires, a welcome lot always does, a plan lot may (while subscribed it does not).
+  check("credit_grants_pack_never_expires_check", sql`${t.source} = 'plan' or (${t.source} = 'pack' and ${t.expiresAt} is null) or (${t.source} = 'welcome' and ${t.expiresAt} is not null)`),
   index("credit_grants_user_idx").on(t.userId),
+  // One welcome lot per account, ever (D1): the write is `on conflict do nothing`, so every path is idempotent.
+  uniqueIndex("credit_grants_welcome_once").on(t.userId).where(sql`${t.source} = 'welcome'`),
 ]);
 
 /**

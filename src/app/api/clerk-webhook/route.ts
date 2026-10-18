@@ -2,6 +2,8 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
+import { grantWelcome } from "../../../lib/payments/welcome";
+import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -14,9 +16,11 @@ export const dynamic = "force-dynamic";
  * an unsigned or forged request is refused with 400 before anything runs.
  *
  * Two events do something. `user.deleted` purges every row the app holds for that account (`purgeAccount`).
- * `user.created` spends the invite reservation the account's invitation named, when it names one
- * (`spendInviteOnSignUp`, invites plan R8); it reads no feature switch, since an invitation already accepted is
- * honored whatever the switches say, as a taken payment is. Any other event is acknowledged and ignored, so
+ * `user.created` does two independent things: it gives the account its one welcome lot (`grantWelcome`, launch epic D1;
+ * gated by `WELCOME_CREDITS_ENABLED`, which only decides whether to write) and it spends the invite reservation the
+ * account's invitation named, when it names one (`spendInviteOnSignUp`, invites plan R8), which reads no feature
+ * switch, since an invitation already accepted is honored whatever the switches say, as a taken payment is. Either
+ * failing answers 500 for a retry, and neither skips the other. Any other event is acknowledged and ignored, so
  * subscribing to more events in the dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return new Response("Webhook verification failed", { status: 400 });
   }
-  if (evt.type === "user.created") return spendOnCreated(evt.data);
+  if (evt.type === "user.created") return handleCreated(evt.data);
   if (evt.type !== "user.deleted") return new Response("Ignored", { status: 200 });
   const userId = evt.data.id;
   if (typeof userId !== "string" || userId.length === 0) return new Response("No user id", { status: 400 });
@@ -52,6 +56,23 @@ export async function POST(req: NextRequest) {
     console.error(`[clerk-webhook] purge failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     return new Response("Purge failed", { status: 500 });
   }
+}
+
+/** A new account: its welcome lot, then its invite. Both are idempotent, so a retry repeats whichever failed. */
+async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown }): Promise<Response> {
+  if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
+  let welcomeFailed = false;
+  try {
+    // The account's own creation time, so a redelivery cannot extend the lot; the event's clock only when it is absent.
+    const created = typeof data.created_at === "number" && Number.isFinite(data.created_at) ? new Date(data.created_at) : new Date();
+    const result = await grantWelcome(data.id, created, await resolveSwitchEnv(data.id));
+    console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
+  } catch {
+    welcomeFailed = true;
+    console.error("[clerk-webhook] user.created: welcome grant failed");
+  }
+  const invite = await spendOnCreated(data);
+  return welcomeFailed && invite.ok ? new Response("Grant failed", { status: 500 }) : invite;
 }
 
 /**

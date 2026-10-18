@@ -44,6 +44,7 @@ export const creditsPageCopy = {
     total: "credits to spend",
     order: "Spent in this order",
     free: "Free",
+    welcome: "Welcome",
     plan: "Plan",
     packs: "Packs",
     freeOf: (limit: number) => `of ${limit}`,

@@ -128,6 +128,7 @@ export type Allowance = {
   ownerShare?: boolean;
   /** Paid credits left (`credit-rule.ts`), spent only once `used` reaches `limit`: plan credits
    *  first, then pack credits. OPTIONAL like `ownerShare`, and absent while the player holds no lot. */
+  welcome?: number;
   plan?: number;
   pack?: number;
   /** Paid runs counted in the window (`PAID_DAILY_LIMIT`'s counter), present with `plan`/`pack`. */
@@ -163,6 +164,11 @@ export function freeCount(a: { used: number; limit: number }): number {
   return Math.max(0, a.limit - a.used);
 }
 
+/** Credits held in lots (welcome, plan, pack): the one definition of "holds a lot", so no caller sums the sources itself. */
+export function heldCredits(a: { welcome?: number | null; plan?: number | null; pack?: number | null }): number {
+  return (a.welcome ?? 0) + (a.plan ?? 0) + (a.pack ?? 0);
+}
+
 /**
  * THE PAID LIMIT, decided here alone: a paid run may start while fewer than `paidLimit` paid runs count.
  * It gates paid runs only, and `hasCredit` applies it after the free allowance, so it can never refuse a
@@ -177,17 +183,17 @@ export function paidRoom(a: { paidUsed: number; paidLimit: number }): boolean {
  * `paidLimit`. The credit line asks this to say "the limit" (L5, L6) instead of "out of credits", so the
  * comparison stays here with `paidRoom`. A player with no lot, or an Allowance without the counter, is never at it.
  */
-export function paidAtLimit(a: { plan?: number | null; pack?: number | null; paidUsedToday?: number | null; paidLimit?: number | null }): boolean {
-  if ((a.plan ?? 0) + (a.pack ?? 0) <= 0) return false;
+export function paidAtLimit(a: { welcome?: number | null; plan?: number | null; pack?: number | null; paidUsedToday?: number | null; paidLimit?: number | null }): boolean {
+  if (heldCredits(a) <= 0) return false;
   return a.paidUsedToday != null && a.paidLimit != null && !paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
 export function hasCredit(a: {
-  used: number; limit: number; plan?: number | null; pack?: number | null;
+  used: number; limit: number; welcome?: number | null; plan?: number | null; pack?: number | null;
   paidUsedToday?: number | null; paidLimit?: number | null;
 }): boolean {
   if (freeRoom(a)) return true;
-  if ((a.plan ?? 0) + (a.pack ?? 0) <= 0) return false;
+  if (heldCredits(a) <= 0) return false;
   // An Allowance without the paid counter (a fixture, a caller that did not read it) has no limit to apply.
   return a.paidUsedToday == null || a.paidLimit == null || paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
