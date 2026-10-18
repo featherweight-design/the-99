@@ -8,7 +8,9 @@ no screen names it yet, and none will until this brief has a handoff with a READ
   (`:77`, `:78`), the welcome grant under "Decided" (`:99`), the order before invites widen (`:126`), acceptance (`:152`
   to `:158`).
 - D1's plan, `docs/superpowers/plans/2026-10-18-welcome-credit-d1.md`, "Review outcome" (`:47` to `:64`).
-- The research board `boards/teaser-credits-and-tiers-2026-10-17.md`, §2 "Onboarding section" (`:46`) and §3.
+- The orchestrator's research board `teaser-credits-and-tiers-2026-10-17.md`, §2 "Onboarding section" (`:46`) and §3.
+  It lives on the orchestrator's boards, not in this repository, so every line this brief relies on is quoted where
+  it is used.
 - The code: `src/lib/payments/welcome.ts`, `flag.ts`, `chip-rule.ts`, `visible-rule.ts`; `src/lib/model/credit-rule.ts`,
   `allowance-rule.ts`, `credit-line.ts`; `src/lib/copy/credits.ts`, `credits-page.ts`, `discovery.ts`.
 
@@ -47,7 +49,8 @@ it, and which therefore holds a welcome lot. Everyone else sees nothing new.
 - **From the buying-credits handoff, not reopened** (`design/design_handoff_the99_buying_credits/README.md`):
   - No new row in the account menu (`:51`); the balance is the chip in the identity block.
   - Payments off: buying is absent, never disabled (`:75`; buying brief §6).
-  - The expiry warning for plan credits is drawn 3 days out, in `--warning`, never `--danger` (`:71`, G9).
+  - The expiry warning for plan credits is drawn 3 days out, in `--warning` (`:71`, G9). The same README's `Never --danger` (`:70`) is said of the
+    daily paid-limit meter; this brief applies it to the welcome warning by analogy, for Design to confirm.
   - On a spending surface the paid total is one number; plan and packs split only on `/credits` (`:55-57`).
 - **Moments and the tour, not interrupted.** One moment per visit, a spent moment never returns, and nothing arrives
   while a surface is open over the page (`docs/agents/moments.md:10-19`). The first-run tour takes the visit it opens
@@ -80,7 +83,9 @@ Today, for a reader: the `Allowance` (`allowance-rule.ts:118-146`) carries `welc
 - **The welcome lot's expiry date.** Not on the `Allowance` today: only `planExpiresAt` is (`:142`). It is on the
   grant row.
 - **Whether the lot expired.** The allowance read drops an expired lot (`allowance.ts:189`), so today an expired lot
-  and no lot read the same. One indexed read of the grant row tells them apart.
+  and no lot read the same. So do a lot used up and no lot: `creditTotals` sums what is left per source
+  (`credit-rule.ts:80-83`), so both read `welcome: 0`. One indexed read of the grant row (its `units`, what is left,
+  and its expiry) tells all three apart, and the `Used up` and `Partly spent` rows below need it.
 - **Units at the start.** 15 (`WELCOME_UNITS`), so "partly spent" is `welcome < 15`.
 - **Live, per request.** Home's payload is cached per reader on `user_data_stamps`, and neither `credit_grants` nor
   `model_calls` bumps the stamp (the trigger list in `drizzle/0073_user_data_stamps.sql` and later). Any figure here
@@ -104,8 +109,9 @@ Ask for anything else and engineering will say whether it can be read.
      `/credits`, where a `Welcome` cell already draws (`src/lib/payments/page-model.ts:66-68`). The tour's look step
      already lights the menu (`tourCopy.lit.account`, `discovery.ts:236`).
    - **The tour's last step.** Locked 9 keeps the banner last, so this would be a seventh stop before it. That
-     changes `Six stops · about a minute` (`discovery.ts:246`), runs only with `FIRST_RUN_TOUR_ENABLED` and once
-     (`src/lib/discovery/tour.ts:13-15`), and a player who skips the tour never sees it.
+     changes `Six stops · about a minute` (`discovery.ts:246`), runs only with `FIRST_RUN_TOUR_ENABLED`, once on its own (`src/lib/discovery/tour.ts:13-15`), and again only when
+     the player asks for it (`/?tour=1`, `src/app/page.tsx:317-319`): a player who skips it and never takes it again
+     never sees the stop.
 2. **What `Try it` does** where no landing exists (Overview, the fits read) or the tool needs a deck a new player does
    not have yet. The showcase's answer for a tool with no fitting deck is a reason line (`NEEDS_A_DECK`,
    `discovery.ts:69`); reuse it or call another.
@@ -116,7 +122,8 @@ Ask for anything else and engineering will say whether it can be read.
 4. **The `Welcome` cell on `/credits`.** It has no line under it (`balance.tsx:61-63`: only Free, Plan and Packs
    carry one). Draw its expiry line.
 5. **The expiring state.** Its lead time (the open question below) and which surfaces turn `--warning`: the plan's
-   version turns the chip, the cell and every credit line (README `:71`).
+   version turns the plan card, the Plan cell and every credit line (README `:71`), and the chip separately
+   (`chip-rule.ts:12`, `:38-39`).
 6. **The conversion teaser.** Its form and where it sits, and that it goes to `/credits`. Not drawn while payments
    are off for the reader.
 7. **Dismissal.** Whether the section can be closed for good, and whether it leaves on its own once the lot is used up
