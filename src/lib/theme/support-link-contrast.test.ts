@@ -1,4 +1,4 @@
-// The support address wherever it sits on a raised ground: the deletion warning (buying-credits D1/D2, U5), a 13px mailto
+// The support address wherever it sits on a raised ground: the deletion warning (buying-credits D1/D2, U5), a 12.5px mailto
 // link in a SocialModal, which is --surface-raised as a popover and --surface as the phone sheet, and the /credits bands
 // on --surface (B1's pause band, R4's slow return band), 12.5px. It must clear WCAG's 4.5:1 on both grounds in every
 // theme, in the ink the component actually uses, read from its source so a change there is a change here.
