@@ -85,6 +85,19 @@ async function needles() {
   return [...out];
 }
 
+/** One response's body, lower-cased, or null when it cannot be read within `ms`: a stalled body fails its check. */
+async function readBody(responseP, ms = 15_000) {
+  let timer;
+  try {
+    const res = await responseP;
+    return await Promise.race([res.text().then((t) => t.toLowerCase()), new Promise((r) => (timer = setTimeout(() => r(null), ms)))]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function signIn(page) {
   await setupClerkTestingToken({ page });
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
@@ -251,7 +264,7 @@ try {
     // The Show's own answer, read directly: a listener's body read can fail without a trace.
     const showP = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === new URL(`${BASE}${target}`).pathname, { timeout: 15_000 });
     await onPageRole(page, "button", /^Show /).filter({ visible: true }).first().click();
-    const showAnswer = await showP.then((r) => r.text()).then((t) => t.toLowerCase(), () => null);
+    const showAnswer = await readBody(showP);
     const head = onPage(page, "[data-testid='account-head'][data-revealed]");
     report("Show reveals the head", await head.waitFor({ timeout: 10_000 }).then(() => true, () => false));
     await page.waitForLoadState("networkidle");
@@ -329,7 +342,7 @@ try {
     // The lookup's own answer, read directly: a listener's body read can fail without a trace.
     const answerP = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/admin/accounts", { timeout: 15_000 });
     await field.press("Enter");
-    const answer = await answerP.then((r) => r.text()).then((t) => t.toLowerCase(), () => null);
+    const answer = await readBody(answerP);
     const hit = await onPage(page, "[data-lookup-line='hit']").waitFor({ timeout: 10_000 }).then(() => true, () => false);
     await page.waitForLoadState("networkidle");
     await shot("masking-lookup-hit");
