@@ -13,7 +13,8 @@
 // ON, so the frames show the ?, the account menu's `Take the tour` row and the pod's `Rule 0 check` row that the
 // launch-end entries point at (About batch brief, 2026-10-18), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
 // `off`, so no bubble or sheet is photographed. The fixture account has decks, so its Home is the dashboard and the
-// tour never opens on its own. A frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`), so a server
+// tour never opens on its own. A SCREEN frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
+// tour pictures are not checked), so a server
 // started with the old switch set cannot ship a stale set (docs/probes.md, capture:about).
 //
 // A tool on a deck is found as the landing finds it: the deck opened with `?tool=<id>`, its target is the element the
