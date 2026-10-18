@@ -179,5 +179,7 @@ const COOKIE_OPTIONS = {
 } as const;
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],
+  // The public pages' addresses may carry a dot in their name part (`/card/sol.ring-<id>`), which the first pattern
+  // excludes as a static file. Without the proxy, `Shell`'s `auth()` throws instead of the page's 308 or 404.
+  matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)", "/card/(.*)", "/commander/(.*)"],
 };

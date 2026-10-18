@@ -40,6 +40,7 @@ function expectPassed(res: NextResponse | undefined) {
   expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
 }
 
+const { config: proxyConfig } = await import("./proxy");
 const proxy = (await import("./proxy")).default as unknown as (
   auth: unknown,
   req: NextRequest,
@@ -505,5 +506,16 @@ describe("the invite claim cookie (signed out, /join/<token>)", () => {
     const prefetch = new NextRequest(`https://the99.test/join/${TOKEN}`, { headers: { accept: "text/html", "next-router-prefetch": "1" } });
     expectPassed(await proxy(auth, prefetch));
     expectPassed(await proxy(auth, join("/")));
+  });
+});
+
+describe("the proxy's matcher", () => {
+  it("runs on a public address whose name part carries a dot, as Next itself matches it", async () => {
+    const { unstable_doesMiddlewareMatch } = await import("next/experimental/testing/server");
+    for (const url of ["/card/sol.ring-6ad8011d3471", "/commander/ob.nixilis-0b3f2c9e6a41", "/card/sol-ring-6ad8011d3471"]) {
+      expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url }), url).toBe(true);
+    }
+    // A static file elsewhere is still left alone.
+    expect(unstable_doesMiddlewareMatch({ config: proxyConfig, url: "/mana/sprite.svg" })).toBe(false);
   });
 });
