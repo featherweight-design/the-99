@@ -118,6 +118,15 @@ describe("Change deck's failures and focus", () => {
       const dialog = await screen.findByRole("dialog");
       expect(dialog.style.visibility).toBe("visible");
       await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
+      // The panel is capped by `useAnchoredPanel`'s room on the side it hangs: jsdom's link sits at 0 on a 768px
+      // viewport, at the very edge, so it hangs from the top margin (8px) with 8px kept at the foot. The list scrolls inside,
+      // and the head stays outside the scroller.
+      expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 8 - 8}px`);
+      const scroller = screen.getByRole("list", { name: s.decksList }).closest(".overflow-y-auto");
+      expect(scroller?.className).toContain("min-h-0");
+      expect(scroller?.textContent).not.toContain(s.sheetTitle);
+      // The head keeps its height while the list takes what is left.
+      expect(within(dialog).getByText(s.sheetTitle).parentElement?.className).toContain("shrink-0");
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
     }

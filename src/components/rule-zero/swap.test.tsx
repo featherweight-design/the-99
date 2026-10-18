@@ -87,6 +87,8 @@ describe("Swap in (S2, W2)", () => {
     expect(readCard().textContent).toContain(copy.read.youSwapped("Sai Thopters"));
     expect(within(seatOf("You")).getByTestId("changed")).toBeTruthy();
     expect(screen.queryByTestId("seat-offer")).toBeNull();
+    // The answer is a fresh read of the table: it stamps `updated` as a check does (no check answers in this test).
+    expect(readCard().textContent).toMatch(/updated \d{1,2}:\d{2} [ap]m/);
     const toast = screen.getByRole("status");
     expect(toast.textContent).toContain(s.toast("Sai Thopters"));
     m.swap.mockResolvedValueOnce({ ok: true, view: S1 });

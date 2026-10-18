@@ -25,7 +25,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
-import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+import { ANCHORED_PANEL_CLASS, useAnchoredPanel, type AnchoredAt } from "../ui/anchored-panel";
 import { Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { draftAnnouncer } from "./draft-announcer";
@@ -485,7 +485,7 @@ function Popover({
   children,
 }: {
   ref: React.RefObject<HTMLDivElement | null>;
-  at: { top: number; left: number } | null;
+  at: AnchoredAt | null;
   titleId: string;
   onDismiss: () => void;
   returnFocusRef: React.RefObject<HTMLElement | null>;
@@ -504,8 +504,10 @@ function Popover({
       aria-modal="true"
       aria-labelledby={`${titleId}-title`}
       tabIndex={-1}
-      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left } : {}) }}
-      className={`absolute top-full right-0 mt-[6px] p-[14px] ${ANCHORED_PANEL_CLASS}`}
+      // Held to the room on the side it hangs; the body's source list scrolls inside, under its title. `marginTop: 0`
+      // because the gap is `place()`'s once the box is fixed: the class's 6px would push it past the room it was given.
+      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0, maxHeight: at.maxHeight } : {}) }}
+      className={`absolute top-full right-0 mt-[6px] flex flex-col p-[14px] ${ANCHORED_PANEL_CLASS}`}
     >
       {children}
     </div>
@@ -645,11 +647,19 @@ function SourcePickerBody({
     }
   }
 
+  // A column whose TITLE alone stays put while everything under it scrolls as ONE body: the popover is
+  // held to the room beside its trigger, and on a short window a fixed order line, consequence and
+  // buttons would leave no room and clip the controls out of reach. One scroller, not a nested one for
+  // the sources. In the phone sheet nothing caps it, so the sheet's own body scrolls as before.
   return (
-    <div className="flex flex-col gap-[12px]">
-      <p id={`${titleId}-title`} className="m-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
+    <div className="flex min-h-0 flex-col gap-[12px]">
+      <p id={`${titleId}-title`} className="m-0 shrink-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
         {nameOpens ? <TitleOpeningCard card={card} /> : sourceCopy.title(card.name)}
       </p>
+      {/* A 4px gutter, with the margin taken back, so the 2px focus ring at its 2px offset is never clipped by
+          this scroller's edge (globals.css's `:focus-visible`). */}
+      <div data-picker-body className="-m-[4px] min-h-0 overflow-y-auto p-[4px]">
+      <div className="flex flex-col gap-[12px]">
       {/* Found missing by Copilot's round-2 review: `sourceCopy.order` was defined for exactly
           this line (the handoff draws it under the title in both shells) and never rendered. */}
       <p className="m-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
@@ -733,6 +743,8 @@ function SourcePickerBody({
         </button>
       </div>
       {error && <MutationError message={error} />}
+      </div>
+      </div>
     </div>
   );
 }

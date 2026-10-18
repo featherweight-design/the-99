@@ -111,6 +111,10 @@ export function TableLive({
       }
       swaps.current += 1;
       adopt(out.view);
+      // The answer is the table as it reads now, so it moves the `updated` stamp as a check does.
+      const at = new Date();
+      setNow(at);
+      setUpdated(clock(at));
       // A swap answered before the visit's first check stands in for it: the check it drops would have set the
       // visit's baseline, and `recordSeen` waits on `arrived`.
       if (!firstAnswered.current) {

@@ -125,9 +125,9 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
       role="dialog"
       aria-label={copy.sheetTitle}
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col p-[8px]`}
-      style={{ width: PANEL_WIDTH, maxHeight: "calc(100dvh - 16px)", top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+      style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
-      <div className="flex items-center justify-between px-[8px] pb-[8px] pt-[6px] font-mono text-[10.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
+      <div className="flex shrink-0 items-center justify-between px-[8px] pb-[8px] pt-[6px] font-mono text-[10.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{copy.sheetTitle}</span>
         <span>{copy.nearestFirst}</span>
       </div>

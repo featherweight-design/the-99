@@ -49,13 +49,20 @@ export function DeleteConfirm({
   }, []);
 
   return (
-    <div className="flex flex-col gap-[10px] p-[12px]">
+    // The heading sits OUTSIDE the scrolling body: a pane capped to the room beside its trigger (the
+    // deck's and the game's, `useAnchoredPanel`) scrolls the sentence and buttons under it, and the
+    // heading is what names WHICH thing is going. The 12px padding and 10px gap are split across the
+    // two so the pane reads as before; the body carries its own padding so a focus ring is not cut at
+    // its edge. In a box that does not cap it, the body never scrolls.
+    <div data-delete-confirm className="flex min-h-0 flex-col">
       {/* `line-clamp-2` and `break-words`: the heading carries a name the reader chose, with no rule
           against an unbroken run, and the pane can hang inside a clipped box (the deck tile's art
           band). Two lines name anything a player can tell apart; three clipped the heading of a pane that exists to say WHICH thing is going. */}
-      <p className="m-0 line-clamp-2 font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
+      <p className="m-0 line-clamp-2 shrink-0 px-[12px] pt-[12px] font-display text-[14px] font-semibold break-words text-[color:var(--fg)]">
         {heading}
       </p>
+      <div data-delete-confirm-body className="min-h-0 overflow-y-auto px-[12px] pt-[10px] pb-[12px]">
+      <div className="flex flex-col gap-[10px]">
       {/* `[overflow-wrap:anywhere]`: a body can name a person, and a name may be one unbroken run. */}
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{body}</p>
       {error && (
@@ -83,6 +90,8 @@ export function DeleteConfirm({
         >
           {pending && pendingLabel ? pendingLabel : confirmLabel}
         </button>
+      </div>
+      </div>
       </div>
     </div>
   );
