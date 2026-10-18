@@ -35,7 +35,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
       <Link href={`/friends/table/${table.tableId}`} data-testid="pod-rule-zero" className={`${ROW} [border:1px_solid_var(--accent)]`}>
         <Icon />
         <Text title={copy.open} sub={copy.openSub(table.seats.length, closes)} />
-        <span aria-hidden className="flex flex-none pl-[6px]">
+        <span aria-hidden className="flex flex-none">
           {table.seats.slice(0, FACES_MAX).map((s, i) => (
             <Face
               key={i}
@@ -112,8 +112,8 @@ function Text({ title, sub }: { title: string; sub: string }) {
 
 function Chevron() {
   return (
-    <span aria-hidden className="flex w-[28px] flex-none items-center justify-center text-[color:var(--fg-faint)]">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <span aria-hidden className="flex w-[28px] flex-none items-center justify-start text-[color:var(--fg-faint)]">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
         <path d="M5 2.5 9.5 7 5 11.5" />
       </svg>
     </span>

@@ -18,10 +18,10 @@ export { faceInitials };
 const BOX: Record<FaceSize, string> = {
   64: "h-[56px] w-[56px] rounded-[13px] text-[16px] md:h-[64px] md:w-[64px] md:rounded-[14px] md:text-[18px]",
   40: "h-[40px] w-[40px] rounded-[10px] text-[12px]",
-  36: "h-[36px] w-[36px] rounded-[10px] text-[11px]",
+  36: "h-[36px] w-[36px] rounded-[10px] text-[10px] font-semibold",
   30: "h-[30px] w-[30px] rounded-[8px] text-[10px]",
   26: "h-[26px] w-[26px] rounded-full text-[9.5px]",
-  24: "h-[24px] w-[24px] rounded-full text-[10px]",
+  24: "h-[24px] w-[24px] rounded-full text-[10px] font-semibold",
 };
 
 export function Face({
@@ -41,7 +41,7 @@ export function Face({
     <span
       aria-hidden
       data-face={art ? "art" : "initials"}
-      className={`${BOX[size]} flex flex-none items-center justify-center overflow-hidden font-mono font-medium ${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
+      className={`${BOX[size]} flex flex-none items-center justify-center overflow-hidden font-mono ${size === 24 || size === 36 ? "" : "font-medium "}${size === 26 || size === 24 || size === 36 ? "bg-[color:var(--elevated)] text-[color:var(--fg-muted)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fg-body)]"} ${className}`}
     >
       {art ? <FadingImg src={art} alt="" className="block h-full w-full object-cover" /> : faceInitials(name)}
     </span>

@@ -81,5 +81,9 @@ describe("Home's table card (E3, F3)", () => {
     cleanup();
     render(<HomeTableCard table={{ ...TABLE, yourDeck: null }} now={NOW} />);
     expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyWaiting("Colin", 6, CLOSES));
+    cleanup();
+    // A setter whose profile is gone names nobody, never the pod as if it were a person.
+    render(<HomeTableCard table={{ ...TABLE, setterName: null }} now={NOW} />);
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES));
   });
 });
