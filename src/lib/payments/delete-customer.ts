@@ -22,6 +22,9 @@ import { PAYMENTS_APP } from "./packs";
  * - Already gone (404 / `resource_missing`, or a Customer Stripe reports `deleted`) is DONE. Any other failure,
  *   and a mapping with no usable Stripe key, THROW: the purge does nothing, the webhook answers 500 and Clerk
  *   retries, and the sweep re-runs it. The mapping row is still there, so the retry finds the Customer.
+ * - Returns the Customer id it handled (null with no mapping): the purge's transaction deletes the mapping
+ *   `returning` its id and rolls back on one this call did not handle (a Checkout that stored a mapping after
+ *   the read above), so the retry deletes that Customer.
  * - Idempotent. After the purge the mapping is gone, so a re-run (the sweep's, for a day) makes no call.
  *
  * Races with a late payment: between this delete and the purge's transaction the mapping still exists, so a
@@ -33,10 +36,10 @@ import { PAYMENTS_APP } from "./packs";
  *
  * Logs are fixed words: never an id, an email or an amount. Reads no feature switch.
  */
-export async function deleteStripeCustomerFor(userId: string, getStripe: () => Stripe | null): Promise<"none" | "deleted" | "gone" | "foreign"> {
+export async function deleteStripeCustomerFor(userId: string, getStripe: () => Stripe | null): Promise<{ outcome: "none" | "deleted" | "gone" | "foreign"; customerId: string | null }> {
   const [row] = await db.select({ id: stripeCustomers.stripeCustomerId }).from(stripeCustomers)
     .where(eq(stripeCustomers.userId, userId));
-  if (!row) return "none";
+  if (!row) return { outcome: "none", customerId: null };
   const stripe = getStripe();
   if (!stripe) {
     console.error("[payments] account deletion: a Stripe customer exists but no usable Stripe key; purge deferred");
@@ -46,26 +49,26 @@ export async function deleteStripeCustomerFor(userId: string, getStripe: () => S
   try {
     found = await stripe.customers.retrieve(row.id);
   } catch (error) {
-    return failed(error);
+    return failed(error, row.id);
   }
-  if ("deleted" in found && found.deleted) return "gone";
+  if ("deleted" in found && found.deleted) return { outcome: "gone", customerId: row.id };
   const meta = (found as Stripe.Customer).metadata ?? {};
   if (meta.app !== PAYMENTS_APP || meta.user_id !== userId) {
     console.error("[payments] account deletion: stripe customer not tagged as this app's; left in place, check Stripe");
-    return "foreign";
+    return { outcome: "foreign", customerId: row.id };
   }
   try {
     await stripe.customers.del(row.id);
   } catch (error) {
-    return failed(error);
+    return failed(error, row.id);
   }
   console.info("[payments] account deletion: Stripe customer deleted");
-  return "deleted";
+  return { outcome: "deleted", customerId: row.id };
 }
 
 /** A missing Customer is done; anything else stops the purge. */
-function failed(error: unknown): "gone" {
-  if (isMissing(error)) return "gone";
+function failed(error: unknown, customerId: string) {
+  if (isMissing(error)) return { outcome: "gone" as const, customerId };
   console.error("[payments] account deletion: the Stripe customer could not be deleted; purge deferred");
   throw new Error("Stripe customer deletion failed");
 }

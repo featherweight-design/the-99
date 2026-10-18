@@ -32,12 +32,12 @@
  * in its own commit, so a purge that fails is still swept, and a probe that purges its own fixtures leaves
  * none. The account sweep re-runs this purge for every tombstone younger than a day (`sweep.ts`).
  */
-import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
 import { invitationIdsIn, revokeAfterPurge, unlinkInvitesIn } from "../invites/purge";
 import { ownedSupportLock } from "../discovery/owned-support-lock";
+import { tombstoneHash } from "./tombstone";
 import { deleteStripeCustomerFor } from "../payments/delete-customer";
 import { stripeClient } from "../payments/stripe";
 
@@ -63,10 +63,7 @@ export const PURGE_ORDER = [
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
 
-/** The tombstone's key: the SHA-256 of the Clerk id, hex. Random ids, never reissued, so it needs no key. */
-export function tombstoneHash(userId: string): string {
-  return createHash("sha256").update(userId, "utf8").digest("hex");
-}
+export { tombstoneHash };
 
 /**
  * Record that the account was deleted: the hash of its id, the raw id for a day, and when. Its own statement,
@@ -99,7 +96,7 @@ export async function purgeAccount(
   } = {},
 ): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
-  await deleteStripeCustomerFor(userId, deps.stripe ?? stripeClient);
+  const handled = await deleteStripeCustomerFor(userId, deps.stripe ?? stripeClient);
   const { report, invitationIds } = await db.transaction(async (tx) => {
     // Waits out a refresh of the reader's owned-support store, which would otherwise write rows back
     // after this commits; a refresh that takes the lock after it finds no collection and writes none.
@@ -114,8 +111,19 @@ export async function purgeAccount(
     const invitationIds = await invitationIdsIn(tx, userId);
     const rows: Record<string, number> = {};
     for (const table of PURGE_ORDER) {
-      const done = await tx.execute(sql`delete from ${sql.identifier(table)} where user_id = ${userId}`);
+      const done = await tx.execute(sql`delete from ${sql.identifier(table)} where user_id = ${userId}${table === "stripe_customers" ? sql` returning stripe_customer_id` : sql``}`);
       rows[table] = done.rowCount ?? 0;
+      if (table === "stripe_customers") {
+        // A first Checkout can be awaiting `customers.create` when step 0 finds no mapping, then store one before
+        // this runs. Any mapping this delete takes that step 0 did not handle would strand its Customer, so the
+        // transaction rolls back, the caller answers 500, and the retry's step 0 deletes it. Deleting with
+        // `returning` makes the check and the delete one statement, so no insert can slip between them.
+        const ids = (done.rows as { stripe_customer_id: string }[]).map((r) => r.stripe_customer_id);
+        if (ids.some((id) => id !== handled.customerId)) {
+          console.error("[account-purge] a Stripe customer appeared during the purge; rolled back for a retry");
+          throw new Error("Stripe customer appeared during the purge");
+        }
+      }
     }
     // The data stamps LAST, after every row, in user id order, which is where and how any other writer takes
     // them (the deferred triggers, at its commit). Taken earlier, a writer holding a row this purge must

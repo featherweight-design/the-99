@@ -52,3 +52,4 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   AFTER the commit finds no mapping and is kept unattributed (refund by hand; `fulfil.ts` reads the mapping FOR
   SHARE). A Checkout started in that instant fails at `ensureCustomer`: accepted. The restricted key needs Customers
   write, which it already has. The purge reads no feature switch. `src/lib/account/purge-stripe.test.ts` pins the order.
+  A Checkout racing step 0 is closed twice: `ensureCustomer` refuses an account with a tombstone (no Customer, no mapping), and the transaction deletes `stripe_customers` `returning` the id and rolls back on one step 0 did not handle, so the 500 and its retry delete that Customer.

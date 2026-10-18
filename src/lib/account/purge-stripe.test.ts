@@ -3,13 +3,41 @@ import type Stripe from "stripe";
 
 // Step 0 of the purge: Stripe first, database second. The database is a spy, so "nothing purged" is
 // "no transaction was opened".
-const st = vi.hoisted(() => ({ mapping: null as string | null, transactions: 0 }));
-vi.mock("../../db", () => ({
-  db: {
-    select: () => ({ from: () => ({ where: async () => (st.mapping ? [{ id: st.mapping }] : []) }) }),
-    transaction: async () => { st.transactions += 1; throw new Error("stop after the transaction opened"); },
-  },
-}));
+// `full`: the transaction runs its body against a recording tx; `rowsForMapping` is what the mapping delete
+// returns (the interleaving: a mapping stored after step 0 looked).
+const st = vi.hoisted(() => ({ mapping: null as string | null, transactions: 0, full: false, rowsForMapping: [] as string[], committed: false, ran: [] as string[] }));
+vi.mock("../../db", async () => {
+  const { PgDialect } = await import("drizzle-orm/pg-core");
+  const dialect = new PgDialect();
+  return {
+    db: {
+      select: () => ({ from: () => ({ where: async () => (st.mapping ? [{ id: st.mapping }] : []) }) }),
+      transaction: async (cb: (tx: unknown) => Promise<unknown>) => {
+        st.transactions += 1;
+        if (!st.full) throw new Error("stop after the transaction opened");
+        const tx = {
+          execute: async (q: never) => {
+            const text = dialect.sqlToQuery(q).sql;
+            st.ran.push(text);
+            if (/delete from "stripe_customers"/.test(text)) {
+              return { rowCount: st.rowsForMapping.length, rows: st.rowsForMapping.map((id) => ({ stripe_customer_id: id })) };
+            }
+            return { rowCount: 0, rows: [] };
+          },
+        };
+        const out = await cb(tx);
+        st.committed = true;
+        return out;
+      },
+    },
+  };
+});
+vi.mock("../social/purge", () => ({ purgeSocialIn: async () => ({ counts: { friendLinks: 0, podsLeft: 0, podsHandedOn: 0, podsDeleted: 0 }, friendIds: [] }), SOCIAL_PURGED: {}, SOCIAL_UNLINKED: {} }));
+vi.mock("../invites/purge", () => ({ unlinkInvitesIn: async () => 0, invitationIdsIn: async () => [], revokeAfterPurge: async () => ({ found: 0, revoked: 0 }), INVITES_UNLINKED: {} }));
+vi.mock("../discovery/owned-support-lock", async () => {
+  const { sql } = await import("drizzle-orm");
+  return { ownedSupportLock: () => sql`select 1` };
+});
 
 const { purgeAccount } = await import("./purge");
 
@@ -20,6 +48,10 @@ const fake = { customers: { retrieve, del } } as unknown as Stripe;
 beforeEach(() => {
   st.mapping = "cus_1";
   st.transactions = 0;
+  st.full = false;
+  st.rowsForMapping = [];
+  st.committed = false;
+  st.ran = [];
   retrieve.mockReset().mockResolvedValue({ id: "cus_1", metadata: { app: "the-99", user_id: "user_a" } });
   del.mockReset().mockResolvedValue({ id: "cus_1", deleted: true });
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -57,5 +89,28 @@ describe("purgeAccount and Stripe", () => {
     await expect(purgeAccount("user_a", { stripe: getStripe })).rejects.toThrow("stop after");
     expect(getStripe).not.toHaveBeenCalled();
     expect(st.transactions).toBe(1);
+  });
+
+  it("aborts, deleting nothing, when a mapping appeared after step 0 saw none; the retry deletes that Customer and purges", async () => {
+    st.full = true;
+    st.mapping = null; // step 0 looks: no mapping
+    st.rowsForMapping = ["cus_late"]; // ...then a Checkout stores one before the transaction deletes it
+    const getStripe = vi.fn(() => fake);
+    await expect(purgeAccount("user_a", { stripe: getStripe })).rejects.toThrow("appeared during the purge");
+    expect(st.committed).toBe(false);
+    expect(del).not.toHaveBeenCalled();
+    // The retry (Clerk, or the sweep): step 0 now sees the mapping.
+    st.mapping = "cus_late";
+    retrieve.mockResolvedValue({ id: "cus_late", metadata: { app: "the-99", user_id: "user_a" } });
+    await purgeAccount("user_a", { stripe: () => fake });
+    expect(del).toHaveBeenCalledWith("cus_late");
+    expect(st.committed).toBe(true);
+  });
+
+  it("commits when the mapping the transaction deletes is the one step 0 handled", async () => {
+    st.full = true;
+    st.rowsForMapping = ["cus_1"];
+    await purgeAccount("user_a", { stripe: () => fake });
+    expect(st.committed).toBe(true);
   });
 });

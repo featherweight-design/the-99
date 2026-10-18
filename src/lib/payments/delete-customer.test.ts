@@ -28,34 +28,34 @@ describe("deleteStripeCustomerFor", () => {
   it("does nothing, and never asks for a client, when the account has no mapping", async () => {
     state.mapping = null;
     const getStripe = vi.fn(() => null);
-    expect(await deleteStripeCustomerFor("user_a", getStripe)).toBe("none");
+    expect(await deleteStripeCustomerFor("user_a", getStripe)).toMatchObject({ outcome: "none", customerId: null });
     expect(getStripe).not.toHaveBeenCalled();
     expect(retrieve).not.toHaveBeenCalled();
     expect(del).not.toHaveBeenCalled();
   });
 
   it("deletes the account's own Customer, which also cancels its subscriptions", async () => {
-    expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("deleted");
+    expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "deleted", customerId: "cus_1" });
     expect(del).toHaveBeenCalledWith("cus_1");
   });
 
   it("treats a 404 on the delete as done", async () => {
     del.mockRejectedValue(missing);
-    expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("gone");
+    expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "gone", customerId: "cus_1" });
   });
 
   it("treats a 404 on the retrieve, or an already-deleted Customer, as done without deleting", async () => {
     retrieve.mockRejectedValueOnce(missing);
-    expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("gone");
+    expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "gone", customerId: "cus_1" });
     retrieve.mockResolvedValueOnce({ id: "cus_1", deleted: true });
-    expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("gone");
+    expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "gone", customerId: "cus_1" });
     expect(del).not.toHaveBeenCalled();
   });
 
   it("never deletes a Customer that is not this app's or not this account's, and does not throw: result foreign, logged", async () => {
     for (const metadata of [{}, { app: "concert-crawl", user_id: "user_a" }, { app: "the-99", user_id: "user_b" }, { app: "the-99" }]) {
       retrieve.mockResolvedValueOnce({ id: "cus_1", metadata });
-      expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("foreign");
+      expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "foreign", customerId: "cus_1" });
     }
     expect(del).not.toHaveBeenCalled();
     expect(errors).toHaveLength(4);
@@ -77,7 +77,7 @@ describe("deleteStripeCustomerFor", () => {
   it("is idempotent: a second run over a Customer Stripe now reports deleted makes no second delete", async () => {
     await deleteStripeCustomerFor("user_a", () => fake);
     retrieve.mockRejectedValueOnce(missing);
-    expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("gone");
+    expect(await deleteStripeCustomerFor("user_a", () => fake)).toMatchObject({ outcome: "gone", customerId: "cus_1" });
     expect(del).toHaveBeenCalledTimes(1);
   });
 });
