@@ -1,20 +1,20 @@
 "use client";
 
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
-import { setAccountCap, setElsewhere, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
+import { setAccountCap, setOrgCap, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
 import { useRouter } from "next/navigation";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { adminCopy } from "../../lib/copy/admin";
 
-// The settings dialog (admin STATES C7): Enter elsewhere takes an amount, the day it was read and a
-// note; Change the cap takes an amount and a note; Change the ceiling takes an amount, the month it
-// starts (this UTC month or a later one) and a note. A small dialog at 900, a sheet at 390, as the
+// The settings dialog (admin STATES C7): Change the cap and Change the org cap take an amount and a
+// note; Change the ceiling takes an amount, the month it starts (this UTC month or a later one) and
+// a note. A small dialog at 900, a sheet at 390, as the
 // app's confirm modal draws them. Nothing is written until Save.
 //
 // The form submits through `onSubmit`, never `<form action>`: React 19 resets a form when its action
 // returns, so a refused save would show its alert over emptied fields.
 
-export type SettingKind = "elsewhere" | "cap" | "ceiling";
+export type SettingKind = "cap" | "org" | "ceiling";
 
 const copy = adminCopy.setting;
 const FIELD =
@@ -38,10 +38,10 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
       let result: SettingResult;
       try {
         result =
-          kind === "elsewhere"
-            ? await setElsewhere({ amount, asOf: String(form.get("asOf") ?? ""), note })
-            : kind === "cap"
-              ? await setAccountCap({ amount, note })
+          kind === "cap"
+            ? await setAccountCap({ amount, note })
+            : kind === "org"
+              ? await setOrgCap({ amount, note })
               : await setSystemCeiling({ amount, start: String(form.get("start") ?? ""), note });
       } catch {
         // A rejected action (a dropped connection, an expired session) may have committed before the
@@ -58,7 +58,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
 
   // The current UTC month, as the action reads it: a ceiling starts no earlier.
   const thisMonth = new Date().toISOString().slice(0, 7);
-  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : error === "unknown" ? copy.unknown : null;
+  const message = error === "amount" ? copy.badAmount : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : error === "unknown" ? copy.unknown : null;
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
       <div
@@ -75,12 +75,6 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
             {copy.amount}
             <input ref={amountRef} name="amount" inputMode="decimal" autoComplete="off" required className={`${FIELD} font-mono`} />
           </label>
-          {kind === "elsewhere" && (
-            <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
-              {copy.asOf}
-              <input name="asOf" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} className={`${FIELD} font-mono`} />
-            </label>
-          )}
           {kind === "ceiling" && (
             <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
               {copy.starts}

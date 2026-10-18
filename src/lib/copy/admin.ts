@@ -50,7 +50,7 @@ export const adminCopy = {
     // `here` names a figure typed in on this page, not read from code; `anthropic`, one read from
     // Anthropic's cost report. Owed to /copy-review.
     capSource: { code: "in code", here: "recorded here", anthropic: "from Anthropic" },
-    capRows: { owner: "Owner testing share", ceiling: "System ceiling", workspace: "The 99 workspace cap" },
+    capRows: { owner: "Owner testing share", ceiling: "System ceiling", workspace: "The 99 workspace cap", org: "Anthropic org cap" },
     of: (figure: string, cap: string) => `${figure} of ${cap}`,
     notSet: (figure: string) => `${figure} · not set`,
     capSub: {
@@ -62,7 +62,12 @@ export const adminCopy = {
       workspace: "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched.",
       elsewhere: (v: string) => ` Elsewhere ${v}: the other environment and anything else on this workspace.`,
       ledgerAhead: " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.",
+      org: (here: string, others: string) => `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`,
+      // Owed to /copy-review: the org is read with the workspace, whose row already gives the reason.
+      orgUnread: "Read with the workspace above, so not read either.",
     },
+    // Owed to /copy-review.
+    orgUnread: "not read",
     /** `time` is `14:05 UTC`, or `17 Oct, 14:05 UTC` when not today. */
     asOf: (time: string) => ` Read from Anthropic at ${time}, about five minutes behind.`,
     workspaceUnread: (figure: string) => `${figure} here · workspace not read`,
@@ -78,6 +83,15 @@ export const adminCopy = {
     },
     note: (text: string) => `Note: ${text}`,
     changeCap: "Change the cap",
+    changeOrgCap: "Change the org cap",
+    // The keys billed to The 99 (PR 2). Owed to /copy-review.
+    keys: {
+      title: "Keys on The 99",
+      meta: "name and hint only",
+      none: "No keys on this workspace.",
+      unread: "The key list was not read.",
+      status: { active: "active", archived: "archived", expired: "expired", inactive: "inactive" },
+    },
     changeCeiling: "Change the ceiling",
     trendPlayer: "Player runs, month to date",
     trendNote: "Free rewrites are system spend and not in this line.",
@@ -173,13 +187,11 @@ export const adminCopy = {
 
   setting: {
     amount: "Amount ($)",
-    asOf: "As of",
     starts: "Starts",
     note: "Note (optional)",
     save: "Save",
     cancel: "Cancel",
     badAmount: "Enter dollars, like 18.40.",
-    badDate: "Enter the date it was read.",
     badMonth: "Pick this month or a later one.",
     badNote: "Keep the note to 500 characters.",
     unknown: "The page lost touch with the server, so it may have saved. Check the figure above before saving again.",

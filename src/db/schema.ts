@@ -2493,26 +2493,27 @@ export const modelCallParts = pgTable("model_call_parts", {
 /**
  * The admin's own figures (brief, locked rule 11): the caps that live outside the code.
  * `account_cap_usd` is The 99 workspace cap, set in Anthropic's console (the key keeps its old
- * name; the page reads the workspace's spend from Anthropic's cost report). The system ceiling is a
+ * name; the page reads the workspace's spend from Anthropic's cost report). `org_cap_usd` is the
+ * Anthropic org cap, also set in the console (Spend Limits cannot be read). The system ceiling is a
  * ruling. `elsewhere_usd` is RETIRED (the admin cost-report plan, 2026-10-17): it was what this
- * environment's ledger could not see, entered by hand, and the page no longer reads it; its rows and
- * their audit are kept, and the key stays in the check so they stay valid. One row per key and UTC
+ * environment's ledger could not see, entered by hand, and nothing reads or writes it now; its rows
+ * and their audit are kept, and the key stays in the check so they stay valid. One row per key and UTC
  * month (see `month`); every change is also an `admin_events` `setting_set` row naming that month.
  */
 export const adminSettings = pgTable("admin_settings", {
   key: text("key").notNull(),
   // The UTC month (`YYYY-MM`) the value belongs to. A cap or a ceiling holds from its month until a
-  // later month's row; `elsewhere` is that month's figure alone. Keyed by month so a change never
+  // later month's row; a retired `elsewhere` row was that month's figure alone. Keyed by month so a change never
   // rewrites what an earlier month shows, and a ceiling set for a later month leaves this one's.
   month: text("month").notNull(),
   valueMicroUsd: bigint("value_micro_usd", { mode: "number" }).notNull(),
-  // The day the figure was read, for `elsewhere` (STATES C7); the write's own day otherwise.
+  // The write's own day (a ceiling's, its month's first day); a retired `elsewhere` row's, the day it was read.
   asOf: date("as_of", { mode: "string" }).notNull(),
   note: text("note"),
   updatedBy: text("updated_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
-  check("admin_settings_key_check", sql`${t.key} in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd')`),
+  check("admin_settings_key_check", sql`${t.key} in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd', 'org_cap_usd')`),
   check("admin_settings_value_check", sql`${t.valueMicroUsd} >= 0`),
   check("admin_settings_month_check", sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
   primaryKey({ columns: [t.key, t.month] }),

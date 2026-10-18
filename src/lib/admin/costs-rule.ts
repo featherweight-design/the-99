@@ -1,5 +1,5 @@
 import { usdToMicro } from "../model/spend-rule";
-import { elsewhere as elsewhereOf, type CostUnread, type WorkspaceCost } from "./anthropic-cost-rule";
+import { elsewhere as elsewhereOf, type CostUnread, type KeyList, type WorkspaceCost } from "./anthropic-cost-rule";
 
 /**
  * The admin's Costs page as arithmetic (admin STATES C1 to C7). Pure and client-safe: `costs.ts`
@@ -10,10 +10,14 @@ import { elsewhere as elsewhereOf, type CostUnread, type WorkspaceCost } from ".
 /** A UTC calendar month; `month` is 0-based, as `Date` has it. */
 export type MonthKey = { year: number; month: number };
 
-// `elsewhere_usd` is retired (the admin cost-report plan): nothing reads it since the workspace
-// figure comes from Anthropic. It stays a key until its writer goes (PR 2), and its rows are kept.
-export const SETTING_KEYS = ["account_cap_usd", "system_ceiling_usd", "elsewhere_usd"] as const;
+// The keys the page reads and writes. `org_cap_usd` is the Anthropic org cap, typed in from the
+// console as the workspace cap is (Spend Limits cannot be read). `elsewhere_usd` is RETIRED (the
+// admin cost-report plan): the workspace figure comes from Anthropic, nothing writes or reads it,
+// and it is no key here. Its stored rows are kept, and the check constraint still allows it.
+export const SETTING_KEYS = ["account_cap_usd", "system_ceiling_usd", "org_cap_usd"] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
+/** A stored row's key, read back: a retired key (`elsewhere_usd`) is not one. */
+export const isSettingKey = (key: string): key is SettingKey => (SETTING_KEYS as readonly string[]).includes(key);
 /** A stored setting: its value, the day it holds from, its note, and the Clerk id that entered it. */
 export type Setting = { micro: number; asOf: string; note: string | null; by?: string };
 
@@ -80,12 +84,14 @@ export type CostRows = {
 /**
  * The Anthropic workspace row. `ledgerMicro` is this environment's own ledger: player plus
  * system, never the evals. Read, `elsewhereMicro` is the bill less that ledger, floored at 0, and
- * `ledgerAhead` says the ledger runs past the bill by more than the tolerance.
+ * `ledgerAhead` says the ledger runs past the bill by more than the tolerance. `otherMicro` and
+ * `orgMicro` are the org's other workspaces and the org, for the org cap row; `keys` the keys on
+ * The 99, read or not.
  */
 export type WorkspaceBlock = {
   ledgerMicro: number;
   read:
-    | { ok: true; asOf: string; totalMicro: number; elsewhereMicro: number; ledgerAhead: boolean }
+    | { ok: true; asOf: string; totalMicro: number; elsewhereMicro: number; ledgerAhead: boolean; otherMicro: number; orgMicro: number; keys: KeyList }
     | { ok: false; kind: CostUnread; count?: number };
 };
 
@@ -173,7 +179,16 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
   const read: WorkspaceBlock["read"] = a.ok
     ? (() => {
         const e = elsewhereOf(a.workspaceMicro, ledgerMicro);
-        return { ok: true, asOf: a.asOf, totalMicro: a.workspaceMicro, elsewhereMicro: e.micro, ledgerAhead: e.ledgerAhead };
+        return {
+          ok: true,
+          asOf: a.asOf,
+          totalMicro: a.workspaceMicro,
+          elsewhereMicro: e.micro,
+          ledgerAhead: e.ledgerAhead,
+          otherMicro: a.otherMicro,
+          orgMicro: a.orgMicro,
+          keys: a.keys,
+        };
       })()
     : a.count === undefined ? { ok: false, kind: a.kind } : { ok: false, kind: a.kind, count: a.count };
 
@@ -220,7 +235,8 @@ export type SettingRow = Setting & { key: SettingKey; month: string };
  * The settings that apply to `month`. A cap or a ceiling holds from its own month until a later
  * month's row, so the latest row at or before `month` applies. A ceiling with none yet but one set
  * for a later month is given that one, so the page can say when it starts (`startsAfter`).
- * An `elsewhere_usd` row is never read: the workspace figure is Anthropic's own.
+ * The org cap is held as the workspace cap is. A retired `elsewhere_usd` row is never read: the
+ * workspace figure is Anthropic's own.
  */
 export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): Partial<Record<SettingKey, Setting>> {
   const m = monthParam(month);
@@ -230,6 +246,8 @@ export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): 
   const out: Partial<Record<SettingKey, Setting>> = {};
   const cap = strip(heldAt("account_cap_usd"));
   if (cap) out.account_cap_usd = cap;
+  const org = strip(heldAt("org_cap_usd"));
+  if (org) out.org_cap_usd = org;
   const ceiling = strip(heldAt("system_ceiling_usd") ?? of("system_ceiling_usd").find((r) => r.month > m));
   if (ceiling) out.system_ceiling_usd = ceiling;
   return out;

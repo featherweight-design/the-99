@@ -81,10 +81,11 @@ describe("loadCosts", () => {
 describe("loadCosts, the Anthropic workspace", () => {
   it("hands the cached workspace read through to the summary, for the month and instant asked", async () => {
     workspace.calls.length = 0;
-    workspace.answer = () => Promise.resolve({ ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: 150_000_000 });
+    workspace.answer = () =>
+      Promise.resolve({ ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: 150_000_000, otherMicro: 40_000_000, orgMicro: 190_000_000, keys: { ok: true, rows: [] } });
     const { summary } = await loadCosts(OCT, NOW);
     expect(workspace.calls).toEqual([[OCT, NOW]]);
-    expect(summary.workspace.read).toMatchObject({ ok: true, totalMicro: 150_000_000, asOf: "2026-10-11T14:55:00.000Z" });
+    expect(summary.workspace.read).toMatchObject({ ok: true, totalMicro: 150_000_000, orgMicro: 190_000_000, asOf: "2026-10-11T14:55:00.000Z", keys: { ok: true, rows: [] } });
   });
 
   it("reads a rejection as upstream rather than throwing", async () => {

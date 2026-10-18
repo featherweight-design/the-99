@@ -10,7 +10,7 @@ import {
   startsAfter,
   usd,
   type CostRows,
-  type DayRow, settingsForMonth, type SettingRow, TREND_FLOOR_MICRO } from "./costs-rule";
+  type DayRow, isSettingKey, SETTING_KEYS, settingsForMonth, type SettingRow, TREND_FLOOR_MICRO } from "./costs-rule";
 import { usdToMicro } from "../model/spend-rule";
 
 const OCT = { year: 2026, month: 9 };
@@ -86,7 +86,7 @@ describe("costSummary, the rest", () => {
 
   it("ignores a stored elsewhere figure: the workspace is Anthropic's own", () => {
     const elsewhere = { micro: usdToMicro(18.4), asOf: "2026-10-09", note: null };
-    const s = costSummary(rows([p(1, 2)], { settings: { elsewhere_usd: elsewhere } }), OCT, NOW);
+    const s = costSummary(rows([p(1, 2)], { settings: { elsewhere_usd: elsewhere } as CostRows["settings"] }), OCT, NOW);
     expect(s.workspace).toEqual({ ledgerMicro: usdToMicro(2), read: { ok: false, kind: "no_key" } });
     expect(s).not.toHaveProperty("elsewhere");
   });
@@ -144,7 +144,9 @@ describe("settingsForMonth: a setting belongs to its month", () => {
     row("account_cap_usd", "2026-10", 250),
     row("account_cap_usd", "2026-11", 100),
     row("system_ceiling_usd", "2026-11", 15),
-    row("elsewhere_usd", "2026-10", 18.4),
+    row("org_cap_usd", "2026-10", 250),
+    // A retired key's row, as production holds one: never typed as a key, never read.
+    row("elsewhere_usd" as SettingRow["key"], "2026-10", 18.4),
   ];
 
   it("keeps an earlier month's cap when a later month's is set (October $250, November $100)", () => {
@@ -169,9 +171,22 @@ describe("settingsForMonth: a setting belongs to its month", () => {
     expect(settingsForMonth(both, { year: 2026, month: 11 }).system_ceiling_usd?.micro).toBe(15_000_000);
   });
 
+  it("holds the org cap from its month on, as the workspace cap is held", () => {
+    expect(settingsForMonth(rows, oct).org_cap_usd?.micro).toBe(250_000_000);
+    expect(settingsForMonth(rows, { year: 2027, month: 2 }).org_cap_usd?.micro).toBe(250_000_000);
+    expect(settingsForMonth(rows, { year: 2026, month: 8 }).org_cap_usd).toBeUndefined();
+  });
+
   it("never reads an elsewhere row, retired with the Anthropic workspace read", () => {
-    expect(settingsForMonth(rows, oct).elsewhere_usd).toBeUndefined();
-    expect(settingsForMonth(rows, nov).elsewhere_usd).toBeUndefined();
+    expect(Object.keys(settingsForMonth(rows, oct)).sort()).toEqual(["account_cap_usd", "org_cap_usd", "system_ceiling_usd"]);
+    expect(Object.keys(settingsForMonth(rows, nov))).not.toContain("elsewhere_usd");
+  });
+
+  it("names the keys a row may carry, and elsewhere_usd is not one", () => {
+    expect([...SETTING_KEYS]).toEqual(["account_cap_usd", "system_ceiling_usd", "org_cap_usd"]);
+    expect(isSettingKey("org_cap_usd")).toBe(true);
+    expect(isSettingKey("elsewhere_usd")).toBe(false);
+    expect(isSettingKey("toString")).toBe(false);
   });
 });
 
@@ -232,15 +247,32 @@ describe("costSummary, the system split", () => {
 });
 
 describe("costSummary, the Anthropic workspace", () => {
-  const read = (workspaceMicro: number) => ({ anthropic: { ok: true as const, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro } });
+  const KEYS = { ok: true as const, rows: [{ name: "Production app", hint: "sk-ant...igAA", status: "active" as const, statusWord: "active" as const }] };
+  const read = (workspaceMicro: number) => ({
+    anthropic: { ok: true as const, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro, otherMicro: usdToMicro(40), orgMicro: workspaceMicro + usdToMicro(40), keys: KEYS },
+  });
 
   it("is the bill against this environment's ledger, elsewhere the difference", () => {
     // Ledger: player $1 + system $0.75 + label batches $0.25 = $2. Evals are never in it.
     const s = costSummary(rows([p(2, 1), sys(3, 0.75)], { ...read(usdToMicro(150)), outside: { batchMicro: 250_000, evalsMicro: 9_000_000, labelCallsMicro: 0 } }), OCT, NOW);
     expect(s.workspace).toEqual({
       ledgerMicro: usdToMicro(2),
-      read: { ok: true, asOf: "2026-10-11T14:55:00.000Z", totalMicro: usdToMicro(150), elsewhereMicro: usdToMicro(148), ledgerAhead: false },
+      read: {
+        ok: true,
+        asOf: "2026-10-11T14:55:00.000Z",
+        totalMicro: usdToMicro(150),
+        elsewhereMicro: usdToMicro(148),
+        ledgerAhead: false,
+        otherMicro: usdToMicro(40),
+        orgMicro: usdToMicro(190),
+        keys: KEYS,
+      },
     });
+  });
+
+  it("hands a failed key list through beside the figures it leaves standing", () => {
+    const s = costSummary(rows([p(2, 1)], { anthropic: { ...read(usdToMicro(150)).anthropic, keys: { ok: false, kind: "refused" } } }), OCT, NOW);
+    expect(s.workspace.read).toMatchObject({ ok: true, totalMicro: usdToMicro(150), orgMicro: usdToMicro(190), keys: { ok: false, kind: "refused" } });
   });
 
   it("floors elsewhere at $0, and names a ledger past the bill only beyond the tolerance", () => {

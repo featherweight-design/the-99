@@ -12,7 +12,7 @@ import { parseDollars, type SettingKey } from "../../lib/admin/costs-rule";
 // the app's 404 (STATES D4); `actions.test.ts` reads this file and fails on an export that does
 // not. Each write is ONE transaction: the setting, then its `setting_set` row in `admin_events`.
 
-export type SettingResult = { ok: true } | { ok: false; error: "amount" | "date" | "month" | "note" | "failed" };
+export type SettingResult = { ok: true } | { ok: false; error: "amount" | "month" | "note" | "failed" };
 
 const NOTE_MAX = 500;
 
@@ -24,14 +24,6 @@ function noteOf(value: unknown): string | null | false {
 }
 
 const todayUtc = (now: Date) => now.toISOString().slice(0, 10);
-
-/** A real calendar day, written `YYYY-MM-DD`, no later than today (UTC). */
-function dayOf(value: unknown, now: Date): string | null {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const d = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value) return null;
-  return value > todayUtc(now) ? null : value;
-}
 
 /**
  * A month written `YYYY-MM`, this UTC month or a later one, as the first day it applies from
@@ -87,27 +79,25 @@ async function writeSetting(actorId: string, key: SettingKey, micro: number, asO
   return { ok: true };
 }
 
-/** What this ledger cannot see (the other environment, the other app), as read on `asOf`. */
-export async function setElsewhere(input: { amount: unknown; asOf: unknown; note?: unknown }): Promise<SettingResult> {
-  const { userId } = await requireAdmin();
-  const now = new Date();
+/** A cap typed in from Anthropic's console, as of today: an amount and a note. */
+async function writeCap(userId: string, key: "account_cap_usd" | "org_cap_usd", input: { amount: unknown; note?: unknown }): Promise<SettingResult> {
   const micro = typeof input?.amount === "string" ? parseDollars(input.amount) : null;
   if (micro === null) return { ok: false, error: "amount" };
-  const asOf = dayOf(input.asOf, now);
-  if (!asOf) return { ok: false, error: "date" };
   const note = noteOf(input.note);
   if (note === false) return { ok: false, error: "note" };
-  return writeSetting(userId, "elsewhere_usd", micro, asOf, note);
+  return writeSetting(userId, key, micro, todayUtc(new Date()), note);
 }
 
-/** The Anthropic account's monthly cap, as set in Anthropic's console. */
+/** The 99 workspace's monthly cap, as set in Anthropic's console (the key keeps its old name). */
 export async function setAccountCap(input: { amount: unknown; note?: unknown }): Promise<SettingResult> {
   const { userId } = await requireAdmin();
-  const micro = typeof input?.amount === "string" ? parseDollars(input.amount) : null;
-  if (micro === null) return { ok: false, error: "amount" };
-  const note = noteOf(input.note);
-  if (note === false) return { ok: false, error: "note" };
-  return writeSetting(userId, "account_cap_usd", micro, todayUtc(new Date()), note);
+  return writeCap(userId, "account_cap_usd", input);
+}
+
+/** The Anthropic org's monthly cap, as set in Anthropic's console: every workspace counts toward it. */
+export async function setOrgCap(input: { amount: unknown; note?: unknown }): Promise<SettingResult> {
+  const { userId } = await requireAdmin();
+  return writeCap(userId, "org_cap_usd", input);
 }
 
 /**

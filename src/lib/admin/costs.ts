@@ -10,6 +10,7 @@ import { cachedWorkspaceCost } from "./anthropic-cost";
 import type { WorkspaceCost } from "./anthropic-cost-rule";
 import {
   costSummary,
+  isSettingKey,
   settingsForMonth,
   monthStart,
   shiftMonth,
@@ -17,7 +18,6 @@ import {
   type CostSummary,
   type DayRow,
   type MonthKey,
-  type SettingKey,
 } from "./costs-rule";
 
 /**
@@ -248,7 +248,8 @@ export async function loadCosts(
     ownerShareMicro: ownerShareMicro(),
     previous: { runs: Number(figures?.previousRuns ?? 0), micro: Number(figures?.previousMicro ?? 0) },
     settings: settingsForMonth(
-      settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy })),
+      // A retired key's rows (`elsewhere_usd`) stay stored and are dropped here, never typed as a key.
+      settingRows.flatMap((r) => (isSettingKey(r.key) ? [{ key: r.key, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy }] : [])),
       month,
     ),
     anthropic: workspace,
