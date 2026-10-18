@@ -55,6 +55,8 @@ export const CALLERS = {
   "scripts/eval/labels-tiering.mts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/eval/measure-pool-list.mts": { note: "counts tokens of the intake list (catalog only)" },
   "scripts/eval/lib/batch.mts": { note: "the eval batch sender: sends what its caller built" },
+  "scripts/eval/lib/request.mts": { note: "the eval request shape and reply parse: types only, sends nothing" },
+  "scripts/probe-card-labels-waves.mts": { note: "a fake BatchClient for the labels probe: answers locally, sends nothing" },
   "scripts/eval/corpus.mts": { builders: ["src/lib/synopsis/prompt.ts", "src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning.mts": { builders: ["src/lib/tuning/prompt.ts"] },
   "scripts/eval/tuning-lists.mts": { builders: ["src/lib/tuning/prompt.ts"] },
@@ -88,8 +90,9 @@ const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth(\.[cm]?[jt]sx?)?$|\/social\/|\/adm
 const SENDS = [
   /\bcallModel\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/,
   /\.messages\.(create|stream|countTokens)\(/, /\.batches\.create\(/,
-  // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`).
-  /Anthropic\["messages"\]/,
+  // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`): the SDK's own types,
+  // and the app's two client types, which a new helper would import rather than respell.
+  /Anthropic\["messages"\]/, /from ["']@anthropic-ai\/sdk/, /\b(BatchClient|ModelDeps)\b/,
 ];
 
 /** Library types whose own members are not data a builder was handed. Utility types (`Pick`, `Omit`, `Partial`,

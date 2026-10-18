@@ -65,6 +65,7 @@ describe("the guard's failure paths", () => {
   put("src/lib/fx/extension-import.ts", "import { requireUserId } from \"../auth.js\";\nexport const p = () => requireUserId;\n");
   put("src/lib/fx/dynamic-import.ts", "export async function p() { const m = await import(\"../auth\"); return m.requireUserId; }\n");
   put("scripts/keep.mts", "export {};\n");
+  put("src/lib/fx/batch-helper.ts", "import type { BatchClient } from \"../../../scripts/lib/card-labels-build\";\nexport const send = (client: BatchClient, r: never) => client.create(r);\n");
   put("src/lib/fx/sender.ts", "declare function callModel<T>(r: unknown): T;\ntype Reply = { ok: true };\nexport const go = () => callModel<Reply>({});\n");
 
   it("finds identity fields nested, through Pick and Record, in a scalar parameter and in a function's return", () => {
@@ -90,8 +91,8 @@ describe("the guard's failure paths", () => {
     ]);
   });
 
-  it("finds an unregistered sender, a generic call included", async () => {
+  it("finds an unregistered sender: a generic call, and a helper handed the app's batch client", async () => {
     const gaps = registryGaps(await findCallers(fx), {}, []);
-    expect(gaps.unregistered).toEqual(["src/lib/fx/sender.ts"]);
+    expect(gaps.unregistered).toEqual(["src/lib/fx/batch-helper.ts", "src/lib/fx/sender.ts"]);
   });
 });
