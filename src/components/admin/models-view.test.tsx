@@ -94,7 +94,7 @@ describe("AdminHead on /admin/models", () => {
   it("selects Models, the fifth tab, and draws its title and sub", () => {
     render(<AdminHead env="staging" />);
     const tabs = screen.getAllByRole("link").filter((a) => a.closest("nav"));
-    expect(tabs.map((t) => [t.textContent, t.getAttribute("aria-current")]).at(-2)).toEqual(["Models", "page"]);
+    expect(tabs.map((t) => [t.textContent, t.getAttribute("aria-current")]).at(-3)).toEqual(["Models", "page"]);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(copy.title);
     expect(screen.getByText(copy.sub)).toBeTruthy();
   });

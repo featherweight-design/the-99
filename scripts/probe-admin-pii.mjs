@@ -187,6 +187,12 @@ try {
   report("accounts to open", accounts.length > 1, String(accounts.length));
   for (const href of accounts) await visit(href);
   await visit("/admin/invites");
+  // Payments (admin plan A2b): the grants table and the gifts list name accounts, and Grant credits' picker draws every
+  // account a search letter matches.
+  await visit("/admin/payments", async () => {
+    await onPage(page, "[data-testid='gift-form'] input[type='search']").fill("a");
+    report("Grant credits lists its account picker", (await onPage(page, "[data-testid='gift-form'] [role='radio']").count()) > 0);
+  });
   await visit("/admin/groups");
   // A saved group (members, pending and history) and a new one: the editor's member picker is drawn open in both.
   const group = await onPage(page, "a[href^='/admin/groups/']:not([href='/admin/groups/new'])").first().getAttribute("href");

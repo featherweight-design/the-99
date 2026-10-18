@@ -94,10 +94,10 @@ function Segs({ parts, scale, min }: { parts: { micro: number; ink: string }[]; 
   );
 }
 
-type Row = { cells: ReactNode[]; foot?: boolean; title: ReactNode; fig: ReactNode; meta: ReactNode };
+export type Row = { cells: ReactNode[]; foot?: boolean; title: ReactNode; fig: ReactNode; meta: ReactNode };
 
 /** A grid on desktop and a card per row on the phone (design table, Costs `tables`). */
-function Table({ head, right, grid, rows, label }: { head: string[]; right: number[]; grid: string; rows: Row[]; label: string }) {
+export function Table({ head, right, grid, rows, label }: { head: string[]; right: number[]; grid: string; rows: Row[]; label: string }) {
   const align = (i: number) => (right.includes(i) ? "text-right" : "text-left");
   return (
     <div className={CARD}>

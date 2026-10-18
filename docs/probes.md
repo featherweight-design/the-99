@@ -2481,6 +2481,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
   production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
   the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
+- `pnpm probe:admin-payments` proves the admin Payments tab (admin plan A2b) in a real browser at 1300 and 390,
+  signed in as the audit account (the server's `ADMIN_USER_IDS` must name it and `ADMIN_ENV_LABEL` be set): the
+  month bar, the four tiles (Paid, Tax, Net, Model spend) and the tab in the strip at both widths; then, at 1300,
+  Grant credits gives the audit account 3 credits through the form, and the database holds exactly one new
+  never-expiring gift lot of 3 and one `credits_granted` event with the probe's note, which a reload draws in Gifts
+  and Credits granted. It WRITES that lot and event, so it refuses anything but a scratch branch
+  (`assertScratchBranch`) and deletes both in a `finally`.
+  `PROBE_BASE=… PROBE_DATABASE_URL=… pnpm probe:admin-payments`, the server reading the same database.
 - `pnpm probe:delete-warning` proves the Manage account deletion warning (buying-credits §7, D1/D2; plan E6, U5) in a
   real browser at 1300 (the popover) and 390 (the sheet). On the signed-in test account it seeds lots and a
   `PAYMENTS_ENABLED` account override, presses Manage account, and records any navigation off the origin (Clerk's page)

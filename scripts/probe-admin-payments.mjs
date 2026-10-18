@@ -1,0 +1,140 @@
+// probe:admin-payments (admin plan A2b): the Payments tab in a real browser, at 1300 and at 390.
+//
+// Signs in as the audit account, which the server's ADMIN_USER_IDS must name (and ADMIN_ENV_LABEL must be set). At each
+// width it loads /admin/payments and checks the month bar, the four tiles (Paid, Tax, Net, Model spend) and the tab in
+// the strip; then, at 1300 only, it grants the audit account itself 3 credits through the form: the pending bar names the
+// account and the count, Grant answers `Gave …`, and the database holds exactly ONE new gift lot of 3 and ONE
+// `credits_granted` event carrying the probe's note. A reload draws the lot in Credits granted and the note in Gifts.
+//
+// It WRITES that lot and event, so it refuses any branch but a scratch one (`assertScratchBranch`) and deletes both in a
+// `finally` (the lot by its id, the event by the probe's marker note).
+//
+//   PROBE_BASE=http://localhost:3392 PROBE_DATABASE_URL=… pnpm probe:admin-payments
+// The server must read the same database (its `.env` `DATABASE_URL`). Point it at `next start`, never `next dev`.
+
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
+import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { onPage } from "./lib/surface.mjs";
+
+const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, PROBE_DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  "PROBE_DATABASE_URL",
+]);
+const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+{
+  const u = new URL(BASE);
+  if (u.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(u.hostname) || u.port === "" || u.pathname !== "/") {
+    throw new Error(`refusing PROBE_BASE ${BASE}: a loopback server with a port only`);
+  }
+}
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
+
+const sql = neon(PROBE_DATABASE_URL);
+const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+assertScratchBranch(branch, "probe:admin-payments");
+
+const MARK = `probe-admin-payments-${Date.now()}`;
+const SHOTS = process.env.PROBE_SHOTS;
+let failures = 0;
+const check = (ok, label, saw) => {
+  if (!ok) failures += 1;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${label}${saw === undefined ? "" : `  (${saw})`}`);
+};
+
+async function signIn(page) {
+  page.on("pageerror", (e) => console.log(`PAGE ERROR  ${String(e?.stack ?? e).slice(0, 900)}`));
+  await setupClerkTestingToken({ page });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
+  const failure = await page.evaluate(
+    async ([email, password]) => {
+      try {
+        const signIn = window.Clerk.client.signIn;
+        let attempt = email.includes("+clerk_test")
+          ? await signIn.create({ identifier: email })
+          : await signIn.create({ identifier: email, password });
+        if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
+          const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
+          if (!factor?.emailAddressId) return `${email} offers no usable email_code first factor.`;
+          await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor.emailAddressId });
+          attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
+        }
+        if (attempt.status !== "complete") return `sign-in status: ${attempt.status}`;
+        await window.Clerk.setActive({ session: attempt.createdSessionId });
+        return null;
+      } catch (error) {
+        return error?.errors?.[0]?.longMessage ?? String(error);
+      }
+    },
+    [EMAIL, PASSWORD ?? ""],
+  );
+  if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  await page.goto(`${BASE}/about`, { waitUntil: "load" });
+  await page.waitForFunction(() => window.Clerk?.loaded && window.Clerk.user?.id, null, { timeout: 30_000 });
+  return page.evaluate(() => ({ id: window.Clerk.user.id, first: window.Clerk.user.firstName ?? "" }));
+}
+
+let userId = null;
+let lotId = null;
+await clerkSetup();
+const browser = await chromium.launch();
+try {
+  for (const w of [{ name: "1300", width: 1300, height: 900, phone: false, grant: true }, { name: "390", width: 390, height: 844, phone: true, grant: false }]) {
+    console.log(`\n── ${w.name}`);
+    const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone, serviceWorkers: "block" });
+    try {
+      const page = await context.newPage();
+      const me = await signIn(page);
+      userId = me.id;
+      const res = await page.goto(`${BASE}/admin/payments`, { waitUntil: "load" });
+      check(res?.ok() === true && !page.url().includes("sign-in"), `${w.name} /admin/payments loads for the admin`, String(res?.status()));
+      await onPage(page, "[data-testid='payments-month']").waitFor({ timeout: 20_000 });
+      const named = await onPage(page, "[data-testid='payments-month']").textContent();
+      const now = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date());
+      check(named === now, `${w.name} the month bar names this UTC month`, named);
+      const tiles = await onPage(page, "[data-testid='payments-tiles'] > div > span:first-child").allTextContents();
+      check(JSON.stringify(tiles) === JSON.stringify(["Paid", "Tax", "Net", "Model spend"]), `${w.name} the four tiles`, tiles.join(", "));
+      check((await page.locator("a[href='/admin/payments']").count()) > 0, `${w.name} the tab strip lists Payments`);
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/admin-payments-${w.name}.png`, fullPage: true });
+      if (!w.grant) continue;
+
+      const before = await sql`select count(*)::int as n from credit_grants where user_id = ${userId} and source = 'gift'`;
+      const form = onPage(page, "[data-testid='gift-form']");
+      // The audit account picks itself by the first letters of its masked name.
+      await form.locator("input[type='search']").fill(me.first.slice(0, 3) || "a");
+      await form.locator(`[role='radio'][data-account='${userId}']`).click();
+      await form.getByRole("textbox", { name: /Credits/ }).fill("3");
+      await form.getByRole("textbox", { name: /Why/ }).fill(MARK);
+      const bar = onPage(page, "[data-testid='gift-pending']");
+      const sentence = await bar.textContent();
+      check(/gives .+ 3 credits/.test(sentence ?? ""), "the pending bar names the account and the count", sentence?.slice(0, 90));
+      await bar.getByRole("button", { name: "Grant" }).click();
+      await page.getByRole("status").filter({ hasText: "Gave" }).waitFor({ timeout: 20_000 });
+      check(true, "Grant answers Gave …");
+      const lots = await sql`select id, units from credit_grants where user_id = ${userId} and source = 'gift' and expires_at is null order by created_at desc`;
+      lotId = lots[0]?.id ?? null;
+      check(lots.length === before[0].n + 1 && lots[0].units === 3, "exactly one new gift lot of 3, never expiring", `${before[0].n} → ${lots.length}`);
+      const events = await sql`select count(*)::int as n from admin_events where kind = 'credits_granted' and user_id = ${userId} and note = ${MARK} and new_value = '3'`;
+      check(events[0].n === 1, "exactly one credits_granted event with the note", String(events[0].n));
+      await page.reload({ waitUntil: "load" });
+      // The page streams in behind its loading screen, so wait for what it draws rather than for `load`.
+      const note = onPage(page, "[data-testid='payments-gifts']").getByText(MARK);
+      check(await note.waitFor({ timeout: 20_000 }).then(() => true, () => false), "Gifts lists the note after a reload");
+      check((await page.getByRole("table", { name: "Credits granted" }).getByRole("cell", { name: "Gift" }).count()) >= 1, "Credits granted lists a Gift row");
+    } finally {
+      await context.close();
+    }
+  }
+} finally {
+  await browser.close();
+  if (lotId) await sql`delete from credit_grants where id = ${lotId} and source = 'gift'`;
+  await sql`delete from admin_events where kind = 'credits_granted' and note = ${MARK}`;
+}
+console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
+process.exit(failures === 0 ? 0 : 1);
