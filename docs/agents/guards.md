@@ -236,4 +236,6 @@ reviewed diff. The same test asserts the proxy's public list does not yet name a
   an email typed into a plain `string` (a player's own words go through `playerText` and are not identity fields). Audited 2026-10-18 before it was written: no prompt path carried one. Proved by its failure
   paths: an email nested in a cuts card, a display name on the tuning pack, a `viewerId` reached only through a
   `Pick`, an email in a variant's function return, a display name in a `Record` variant table, an auth import in a
-  builder, and an unregistered caller each fail it.
+  builder, and an unregistered caller each fail it. Those rejection cases are also standing fixture tests in the same
+  file (a scalar `email` parameter, a dynamic `import("../auth")` and a generic `callModel<Reply>(` among them), so a
+  guard that always answered clean would fail.

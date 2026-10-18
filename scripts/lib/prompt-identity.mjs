@@ -76,13 +76,16 @@ export const CALLERS = {
 export const IDENTITY =
   /(userid|clerkid|viewerid|ownerid|senderid|friendid|actorid|inviterid|inviteeid|accountid|playerid|email|displayname|publicid|firstname|lastname|fullname|username|friendname)/;
 
+/** Whether a property or parameter name is an identity field. */
+const named = (name) => IDENTITY.test(name.toLowerCase().replaceAll("_", ""));
+
 /** Imports a prompt builder may not take directly. */
 const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth$|\/social\/|\/admin\/accounts$/;
 
 // `buildParams(` is the eval harness's request: a script that builds one sends it through `eval/lib/batch.mts`.
 // The sending calls too, not only a client's construction: a module handed a client sends with it.
 const SENDS = [
-  /\bcallModel\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/,
+  /\bcallModel\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/,
   /\.messages\.(create|stream|countTokens)\(/, /\.batches\.create\(/,
   // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`).
   /Anthropic\["messages"\]/,
@@ -163,7 +166,9 @@ export function identityPaths(root, builders = BUILDERS) {
       if (sigs.length === 0) walk(type, `${b.file}#${fn}`, 0, new Set());
       for (const sig of sigs) {
         for (const p of sig.getParameters()) {
-          walk(checker.getTypeOfSymbolAtLocation(p, sf), `${b.file}#${fn}(${p.name})`, 0, new Set());
+          const at = `${b.file}#${fn}(${p.name})`;
+          if (named(p.name)) hits.push(at);
+          walk(checker.getTypeOfSymbolAtLocation(p, sf), at, 0, new Set());
         }
       }
     }
@@ -188,6 +193,7 @@ export function identityPaths(root, builders = BUILDERS) {
     // A function: what it is handed and what it hands back.
     for (const sig of type.getCallSignatures()) {
       for (const p of sig.getParameters()) {
+        if (named(p.name)) hits.push(`${path}(${p.name})`);
         const d = p.valueDeclaration ?? p.declarations?.[0];
         if (d) walk(checker.getTypeOfSymbolAtLocation(p, d), `${path}(${p.name})`, depth + 1, seen);
       }
@@ -196,7 +202,7 @@ export function identityPaths(root, builders = BUILDERS) {
     for (const info of checker.getIndexInfosOfType(type)) walk(info.type, `${path}[key]`, depth + 1, seen);
     for (const prop of checker.getPropertiesOfType(type)) {
       const at = `${path}.${prop.name}`;
-      if (IDENTITY.test(prop.name.toLowerCase().replaceAll("_", ""))) hits.push(at);
+      if (named(prop.name)) hits.push(at);
       const pdecl = prop.valueDeclaration ?? prop.declarations?.[0];
       if (!pdecl) continue;
       walk(checker.getTypeOfSymbolAtLocation(prop, pdecl), at, depth + 1, seen);
@@ -212,11 +218,19 @@ export async function identityImports(root, builders = BUILDERS) {
   for (const b of builders) {
     const text = await readFile(join(root, b.file), "utf8");
     const sf = ts.createSourceFile(b.file, text, ts.ScriptTarget.Latest, true);
-    for (const st of sf.statements) {
-      if (!ts.isImportDeclaration(st) && !ts.isExportDeclaration(st)) continue;
-      const spec = st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier) ? st.moduleSpecifier.text : null;
+    // Static imports and re-exports, and a literal `import("...")` or `require("...")` anywhere in the module.
+    const visit = (node) => {
+      let spec = null;
+      if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+        spec = node.moduleSpecifier.text;
+      } else if (ts.isCallExpression(node) && node.arguments.length > 0 && ts.isStringLiteralLike(node.arguments[0])
+        && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require"))) {
+        spec = node.arguments[0].text;
+      }
       if (spec && IDENTITY_IMPORT.test(spec)) out.push(`${b.file} imports ${spec}`);
-    }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
   }
   return out;
 }
