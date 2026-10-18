@@ -93,8 +93,11 @@ export function TableLive({
   const [swappedTo, setSwappedTo] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastId = useRef(0);
+  // One write at a time, for every caller: a toast's Undo holds the `seat` of an older render, so the guard is a ref.
+  const writing = useRef(false);
   async function seat(deckId: string | null, undoTo: { deckId: string | null } | null) {
-    if (swapping) return;
+    if (writing.current) return;
+    writing.current = true;
     setSwapping(true);
     const before = view.viewerDeckId;
     try {
@@ -114,6 +117,7 @@ export function TableLive({
     } catch {
       setToast({ id: ++toastId.current, text: swapCopy.failed });
     } finally {
+      writing.current = false;
       setSwapping(false);
     }
   }

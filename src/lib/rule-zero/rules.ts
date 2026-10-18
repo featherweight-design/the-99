@@ -222,13 +222,15 @@ export function suggestionsFor<Id extends string>(
   seatedDistance: number,
   own: readonly OwnDeck<Id>[],
   middle: number,
+  /** How many to keep: the offer's three, or every candidate for a caller that grades them further. */
+  limit: number = MAX_SUGGESTIONS,
 ): OwnDeck<Id>[] {
   return own
     .filter((d): d is OwnDeck<Id> & { value: SeatValue } => d.deckId !== seatedDeckId && d.value !== null)
     .map((d) => ({ d, distance: distanceFrom(d.value, middle) }))
     .filter((x) => x.distance < seatedDistance)
     .sort((a, b) => a.distance - b.distance || playedDesc(a.d.lastPlayedAt, b.d.lastPlayedAt))
-    .slice(0, MAX_SUGGESTIONS)
+    .slice(0, limit)
     .map((x) => x.d);
 }
 

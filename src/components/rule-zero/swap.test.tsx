@@ -11,6 +11,7 @@ vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
 import { TABLES, VIEWER_DECK_ID } from "../../lib/rule-zero/table-fixtures";
 import type { TableView } from "../../lib/social/rule-zero-table";
+import { TableBody } from "./table-body";
 import { TableLive } from "./table-live";
 
 const AT = new Date("2026-10-16T21:40:00Z");
@@ -99,6 +100,42 @@ describe("Swap in (S2, W2)", () => {
     await act(async () => answer(new Response(JSON.stringify({ kind: "open", view: S1 }), { status: 200 })));
     expect(within(seatOf("You")).getByText("Sai Thopters")).toBeTruthy();
     expect(screen.queryByTestId("seat-offer")).toBeNull();
+  });
+
+  it("holds an older toast's Undo while a newer swap is still in flight", async () => {
+    // The first swap lands on a deck that still leaves the seat flagged, so the offer stays.
+    const first = { ...swappedTo(S1, "Jace Clones", "deck-viewer-jace"), offer: S1.offer };
+    m.swap.mockResolvedValueOnce({ ok: true, view: first });
+    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Jace Clones` })));
+    const undo = within(screen.getByRole("status")).getByRole("button", { name: s.undo });
+    m.swap.mockImplementationOnce(() => new Promise(() => {}));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
+    await act(async () => fireEvent.click(undo));
+    expect(m.swap).toHaveBeenCalledTimes(2);
+  });
+
+  it("says the swap on a read that leaves a seat out, and keeps what it leaves out", () => {
+    // T8 leaves two seats out (86 and 101 cards); the viewer's own seat swapped this visit.
+    const deck = TABLES.T8.viewerDeckId!;
+    render(<TableBody view={TABLES.T8} gamesEnabled now={AT} swappedTo={deck} />);
+    const said = readCard().querySelector("p")?.textContent ?? "";
+    const you = TABLES.T8.seats.find((x) => x.you)!.deck!.name;
+    expect(said.startsWith(copy.read.youSwapped(you))).toBe(true);
+    expect(said).toContain("87 of 100");
+  });
+
+  it("says the swap above Since you looked", async () => {
+    const colinMoved: TableView = {
+      ...S1,
+      seenAt: AT,
+      seats: S1.seats.map((x) => (x.displayName === "Colin" ? { ...x, changedAt: new Date(AT.getTime() + 30_000) } : x)),
+    };
+    m.swap.mockResolvedValueOnce({ ok: true, view: { ...swappedTo(colinMoved, "Sai Thopters", "deck-viewer-sai") } });
+    render(<TableLive initial={colinMoved} gamesEnabled now={AT} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
+    expect(within(readCard()).getByTestId("since")).toBeTruthy();
+    expect(readCard().textContent).toContain(copy.read.youSwapped("Sai Thopters"));
   });
 
   it("says a refused swap aloud and keeps the table as it was", async () => {

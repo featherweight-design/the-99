@@ -89,6 +89,7 @@ describe("Closer to the table's decks (PR 7, decision 5)", () => {
   it("are the viewer's own, the seated one left out", () => {
     const q = new PgDialect().sqlToQuery(ownDecksQuery("user_viewer", "deck-seated"));
     expect(q.sql).toContain("where d.user_id = $1 and d.id <> $2");
+    expect(q.sql).toContain(`left join "deck_profiles" p on p.deck_id = d.id and p.user_id = d.user_id`);
     expect(q.params).toEqual(expect.arrayContaining(["user_viewer", "deck-seated"]));
   });
 });

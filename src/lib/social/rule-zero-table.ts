@@ -14,16 +14,16 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
 import { declarationAsk, type DeclarationAsk } from "../bracket/declaration-ask";
 import { findings, type FindingId } from "../bracket/findings";
 import { slotDeck } from "../bracket/slot";
 import type { Bracket, RuleId } from "../bracket/types";
-import { verdictSubLine, type VerdictSubLine } from "../bracket/verdict-head";
+import { isReachablePermits, verdictSubLine, type VerdictSubLine } from "../bracket/verdict-head";
 import { computeAndStoreProfile, deckLegality, readStoredReading, requestProfileDeps, seatReadingIn, type StoredProfileDeps } from "../profile/stored";
 import {
-  driversFor, inRead, seatState, seatValue, suggestionsFor, tableRead, tutorsReaching,
-  type Drivers, type OwnDeck, type ReadSeat, type SeatState, type SeatValue, type TableRead,
+  distanceFrom, driversFor, inRead, MAX_SUGGESTIONS, seatState, seatValue, suggestionsFor, tableRead, tutorsReaching,
+  type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { SEATS_MAX } from "./rule-zero";
@@ -199,32 +199,44 @@ async function gradeDeckIn(tx: Tx, deckId: string, owner: string) {
 /** The viewer's own decks but the seated one, never another player's (decision 5). Apart so a test can render it. */
 export function ownDecksQuery(viewerId: string, seatedDeckId: string) {
   return sql`
-    select d.id as "deckId", d.name, c.art_crop_uri as "artCropUri",
+    select d.id as "deckId", d.name, c.art_crop_uri as "artCropUri", d.declared_bracket as "declared", p.permits,
       (select max(g.played_at) from ${deckGames} g where g.deck_id = d.id) as "lastPlayed"
     from ${decks} d
     join ${cards} c on c.oracle_id = d.commander_oracle_id
+    left join ${deckProfiles} p on p.deck_id = d.id and p.user_id = d.user_id
     where d.user_id = ${viewerId} and d.id <> ${seatedDeckId}`;
 }
 
 async function offerIn(tx: Tx, viewerId: string, seatedDeckId: string, seatedDistance: number, middle: number): Promise<OfferDeck[]> {
-  const { rows } = await tx.execute<{ deckId: string; name: string; artCropUri: string | null; lastPlayed: string | Date | null }>(
+  // ONE read of every own deck with its stored permits: the candidates are the decks those permits place strictly
+  // nearer, in the offer's order. Stored permits hold over an edit, so each candidate is then graded as a seat is
+  // (legal now, a fresh or stale reading) before it is offered, and grading stops at the third: a poll pays four
+  // reads per candidate it needs, not per deck the player owns.
+  const { rows } = await tx.execute<{ deckId: string; name: string; artCropUri: string | null; declared: number | null; permits: number[] | null; lastPlayed: string | Date | null }>(
     ownDecksQuery(viewerId, seatedDeckId),
   );
-  const graded = new Map<string, { row: (typeof rows)[number]; permits: Bracket[]; declared: Bracket | null; answered: Bracket | null }>();
-  const own: OwnDeck[] = [];
-  for (const r of rows) {
-    const g = await gradeDeckIn(tx, r.deckId, viewerId);
-    const value = g?.verdict ? seatValue(g.verdict.permits, g.declared) : null;
-    if (g?.verdict) {
-      const ask = declarationAsk(g.verdict.permits, g.declared);
-      graded.set(r.deckId, { row: r, permits: [...g.verdict.permits], declared: g.declared, answered: ask.kind === "answered" ? ask.declared : null });
-    }
-    own.push({ deckId: r.deckId, value, lastPlayedAt: r.lastPlayed === null ? null : new Date(r.lastPlayed) });
+  const candidates = suggestionsFor(
+    seatedDeckId,
+    seatedDistance,
+    rows.map((r) => ({
+      deckId: r.deckId,
+      value: r.permits && isReachablePermits(r.permits) ? seatValue(r.permits, asBracket(r.declared)) : null,
+      lastPlayedAt: r.lastPlayed === null ? null : new Date(r.lastPlayed),
+    })),
+    middle,
+    rows.length,
+  );
+  const byId = new Map(rows.map((r) => [r.deckId, r]));
+  const offer: OfferDeck[] = [];
+  for (const c of candidates) {
+    if (offer.length === MAX_SUGGESTIONS) break;
+    const g = await gradeDeckIn(tx, c.deckId, viewerId);
+    if (!g?.verdict || distanceFrom(seatValue(g.verdict.permits, g.declared), middle) >= seatedDistance) continue;
+    const r = byId.get(c.deckId)!;
+    const ask = declarationAsk(g.verdict.permits, g.declared);
+    offer.push({ deckId: c.deckId, name: r.name, artCropUri: r.artCropUri, permits: [...g.verdict.permits], answered: ask.kind === "answered" ? ask.declared : null });
   }
-  return suggestionsFor(seatedDeckId, seatedDistance, own, middle).map((d) => {
-    const g = graded.get(d.deckId)!;
-    return { deckId: d.deckId, name: g.row.name, artCropUri: g.row.artCropUri, permits: g.permits, answered: g.answered };
-  });
+  return offer;
 }
 
 export async function loadTable(viewerId: string, tableId: unknown): Promise<TableView | null> {
