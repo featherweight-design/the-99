@@ -218,6 +218,8 @@ describe("ConfirmModal's capped column", () => {
     const body = scrollerOf(dialog);
     expect(body.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
     expect(body).toHaveTextContent("Now");
+    // It holds no control, so it is a tab stop of its own: the focus trap must reach it to scroll the clipped rest.
+    expect(body.getAttribute("tabindex")).toBe("0");
     const title = screen.getByRole("heading");
     expect(body.contains(title)).toBe(false);
     expect(title.className).toContain("flex-none");

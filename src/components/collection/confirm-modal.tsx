@@ -144,8 +144,10 @@ export function ConfirmModal({
         </h2>
 
         {/* The body scrolls inside the cap, so the title and the buttons stay in view. The 6px pad and its
-            negative margin keep a focus ring inside the scroller's clip. */}
-        <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
+            negative margin keep a focus ring inside the scroller's clip. It holds no control, so it is a tab stop
+            of its own: the dialog's focus trap counts only focusable elements, and a keyboard reader must be able to
+            reach it to scroll what the cap clips. */}
+        <div data-confirm-body tabIndex={0} className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
         {/* §1.5–1.9 The NOW → AFTER pair */}
         <div className="mt-[16px] md:mt-[18px] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[12px] md:gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px] md:p-[14px_16px]">
           <Figure
