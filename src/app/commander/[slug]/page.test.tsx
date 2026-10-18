@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../components/public/commander-page", () => ({ PublicCommanderPage: () => null }));
 
-import PublicCommanderRoute from "./page";
+import PublicCommanderRoute, { generateMetadata } from "./page";
 
 const route = (slug: string) => PublicCommanderRoute({ params: Promise.resolve({ slug }) });
 const commander = { name: "Zimone, Infinite Analyst", state: "ok" };
@@ -49,5 +49,38 @@ describe("the public commander route", () => {
     read.mockResolvedValue({ kind: "ok", commander, canonicalSlug: "zimone-infinite-analyst-0b3f2c9e6a41" });
     expect(await route("zimone-infinite-analyst-0b3f2c9e6a41")).toBeTruthy();
     expect(hit).toHaveBeenCalledTimes(1);
+  });
+
+  describe("its metadata (C2)", () => {
+    const meta = (slug: string) => generateMetadata({ params: Promise.resolve({ slug }) });
+    const zimone = {
+      name: "Zimone, Infinite Analyst", typeLine: "Legendary Creature — Human Wizard", state: "ok",
+      prose: "Zimone turns each X spell into a cheaper next one.", rank: 203, deckCount: 11687, tags: [],
+    };
+
+    it("is the commander's title, its sentence, its canonical address and a large-image card, from the same read", async () => {
+      read.mockResolvedValue({ kind: "ok", commander: zimone, canonicalSlug: "zimone-infinite-analyst-0b3f2c9e6a41" });
+      const m = await meta("zimone-0b3f2c9e6a41");
+      expect(m.title).toBe("Zimone, Infinite Analyst · Commander · The 99");
+      expect(m.description).toBe("Zimone turns each X spell into a cheaper next one.");
+      expect(m.alternates?.canonical).toBe("/commander/zimone-infinite-analyst-0b3f2c9e6a41");
+      expect(m.openGraph).toMatchObject({
+        title: "Zimone, Infinite Analyst · Commander · The 99", url: "/commander/zimone-infinite-analyst-0b3f2c9e6a41", type: "website", siteName: "The 99",
+      });
+      expect(m.twitter).toMatchObject({ card: "summary_large_image", title: "Zimone, Infinite Analyst · Commander · The 99" });
+      expect(read).toHaveBeenCalledWith("zimone-0b3f2c9e6a41");
+      expect(hit).not.toHaveBeenCalled();
+    });
+
+    it("says nothing about a commander while the switch is off, or for an address that does not resolve", async () => {
+      env.value = {};
+      expect(await meta("zimone-infinite-analyst-0b3f2c9e6a41")).toEqual({});
+      expect(read).not.toHaveBeenCalled();
+      env.value = { PUBLIC_PAGES_ENABLED: "true" };
+      for (const kind of ["not-found", "ambiguous"]) {
+        read.mockResolvedValue({ kind });
+        expect(await meta("x-0b3f2c9e6a41")).toEqual({});
+      }
+    });
   });
 });

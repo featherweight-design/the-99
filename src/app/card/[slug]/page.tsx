@@ -7,6 +7,7 @@ import { cardPagePath } from "../../../components/public/links";
 import { readPublicCard } from "../../../lib/public/cached-card";
 import { publicPagesEnabled } from "../../../lib/public/flag";
 import { cardDescription } from "../../../lib/public/preview";
+import { siteOrigin } from "../../../lib/public/site-origin";
 import { publicPagesCopy } from "../../../lib/copy/public-pages";
 import { observeAnonymousHit } from "../../../lib/rate/anon";
 import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
@@ -24,15 +25,6 @@ import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
  *   is read, and only to hand it over.
  */
 type Params = { params: Promise<{ slug: string }> };
-
-/**
- * The origin absolute URLs are built on: the deployment's own production domain, which Vercel sets on every deployment of
- * a project (the staging project's is the staging domain). Unset off Vercel, where Next falls back to localhost.
- */
-function siteOrigin(): URL | undefined {
-  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  return host ? new URL(`https://${host}`) : undefined;
-}
 
 /**
  * The link preview's tags (C2, README call 8), from the SAME read the page draws (`readPublicCard` is `React.cache`d, so the

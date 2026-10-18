@@ -2,7 +2,8 @@ import type { PublicCard } from "./card";
 
 /**
  * The card page's link preview (launch epic F3 PR 2b; handoff C2, README call 8): the words a link unfurls with. Pure: the
- * same card gives the same preview to every visitor, and nothing here reads a request.
+ * same card gives the same preview to every visitor, and nothing here reads a request. The commander's is
+ * `components/public/commander-preview.ts`, which draws on the copy module (a loader under `src/lib/public` may not).
  */
 
 /** Where the description is cut: at a word, at or under this many characters (C2's tag table, "near 155"). */

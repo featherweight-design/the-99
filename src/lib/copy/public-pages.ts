@@ -1,7 +1,6 @@
 // The public card and commander pages (launch epic F3), transcribed from the handoff's `public-pages · copy strings.ts`
 // (design/design_handoff_the99_public_pages, R1, audited GREEN). The shell's, the signed-out block's, the card page's,
-// the commander page's and the card's link preview's strings live here (the commander page's preview arrives with the PR
-// that first draws it), so no key ships without a caller. The unknown address (C3) draws the shipped not-found's own
+// the commander page's and both link previews' strings live here, so no key ships without a caller. The unknown address (C3) draws the shipped not-found's own
 // strings (`shellCopy.notFound`), minus `View decks`. Strings the handoff marks `shipped` are reused verbatim. Nothing here varies by
 // visitor. US English, no em dashes.
 
@@ -75,9 +74,17 @@ export const publicPagesCopy = {
     degradedTitle: "Deck figures aren’t available right now.",
     degradedBody: " They come from EDHREC, which didn’t answer the last time this page was built. They return with the next refresh.",
   },
-  /** The card page's link preview (C2, README call 8). */
+  /** Both pages' link previews (C2, README call 8). */
   linkPreview: {
     cardTitle: (name: string) => `${name} · The 99`,
+    commanderTitle: (name: string) => `${name} · Commander · The 99`,
+    /** The commander's description with no prose sentence. The handoff's form, its themes part left off when there are none. */
+    commanderFallback: (rank: string, deckCount: string, themes: string | null) =>
+      `#${rank} on EDHREC across ${deckCount} decks.${themes ? ` ${themes}.` : ""}`,
+    /** The commander image's figures line, as C2 draws it (`#203 on EDHREC · 11,687 decks`); a blank figure is left off. */
+    ogCommanderFigures: (rank: string | null, deckCount: string | null) =>
+      [rank !== null ? `#${rank} on EDHREC` : null, deckCount !== null ? `${deckCount} decks` : null].filter(Boolean).join(" · "),
     ogCardKicker: "Card",
+    ogCommanderKicker: "Commander",
   },
 } as const;
