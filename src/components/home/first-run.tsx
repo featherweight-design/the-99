@@ -2,7 +2,8 @@
 // whole page: step 1 live, steps 2 and 3 stated and locked. The import foot
 // that once sat under them is gone (first-run ruling 1, 2026-09-28); with
 // NO_COLLECTION_ENTRY_ENABLED, step 1's ways group is how a player with no file
-// reaches Precons I own, Import a deck and Add cards by hand.
+// reaches Precons I own, Import a deck and Add cards by hand. With
+// SOCIAL_FRIENDS_ENABLED an unnumbered Friends row sits last, under step 3.
 //
 // Property table: docs/superpowers/design-tables/ui-refresh-home.md
 // §HomeFirstRun. Where the plan and that table disagree on a value the table
@@ -14,6 +15,7 @@ import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { Lock } from "../ui/lock";
+import { FirstRunFriendsRow, type FirstRunFriendsProps } from "./first-run-friends";
 
 /**
  * Three overlapping cards, the front one carrying the numeral. Decorative:
@@ -97,6 +99,7 @@ export function FirstRunChecklist({
   about = null,
   ways = null,
   scan = false,
+  friends = null,
 }: {
   addByHand?: boolean;
   about?: AboutLine | null;
@@ -104,6 +107,8 @@ export function FirstRunChecklist({
   scan?: boolean;
   /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
   ways?: { precons: boolean } | null;
+  /** SOCIAL_FRIENDS_ENABLED, read: the Friends row after step 3 (Discovery R3·3). Null: no row. */
+  friends?: FirstRunFriendsProps | null;
 }) {
   const c = refreshCopy.firstRun;
 
@@ -155,6 +160,9 @@ export function FirstRunChecklist({
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
+        {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
+            stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
+        {friends && <FirstRunFriendsRow {...friends} />}
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the
             "Already have a deck elsewhere?" row and its `mt-auto` are deleted rather than
             replaced, so the stack closes up and the space below it stays page. Import is

@@ -28,6 +28,18 @@ export const socialCopy = {
     links: (n: number) => (n === 1 ? "Friend link open" : `${n} friend links open`),
     seeAll: "See them", // the › is drawn; to /friends
   },
+  // The first-run checklist's Friends row (Discovery R3·3; addendum-friends-home §3; /copy-review 2026-10-17): last,
+  // under step 3, never numbered. Shipped strings reused: home.links(1), invites.left(ms), invites.show, page.accepted.
+  checklist: {
+    title: "Add your friends",
+    body: "Any time, cards or not. A friend joins from a link you send.",
+    /** C2: the row's press is Show. `left` is `invites.left(ms)`, lower-cased here because it sits mid-sentence. */
+    rowAria: (left: string) => `Add your friends. Friend link open, ${left.charAt(0).toLowerCase()}${left.slice(1)}. Show the link`,
+    doneTitle: "Friends",
+    /** C3 at more than one friend; at one it is `page.accepted(name)`. */
+    doneMany: (n: number) => `You have ${friends(n)}.`,
+    doneAria: (line: string) => `Friends. ${line} Open Friends`,
+  },
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
   menu: { friends: "Friends" },
 
