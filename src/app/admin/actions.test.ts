@@ -167,11 +167,9 @@ describe("the settings writes", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("refuses an as-of day that is not a real past day", async () => {
-    for (const asOf of ["2026-02-30", "18 Nov", "2999-01-01"]) {
-      await expect(actions.setElsewhere({ amount: "18.40", asOf })).resolves.toEqual({ ok: false, error: "date" });
-    }
-    expect(transaction).not.toHaveBeenCalled();
+  it("has no elsewhere writer: the figure is Anthropic's own since the cost report (the plan's decision 3)", () => {
+    expect(actions).not.toHaveProperty("setElsewhere");
+    expect(Object.keys(actions).sort()).toEqual(["setAccountCap", "setOrgCap", "setSystemCeiling"]);
   });
 
   it("writes the setting, then its setting_set event, in one transaction", async () => {
@@ -191,16 +189,37 @@ describe("the settings writes", () => {
     });
   });
 
-  it("records elsewhere with the day it was read and no old value the first time", async () => {
-    await expect(actions.setElsewhere({ amount: "18.4", asOf: "2026-10-09", note: "" })).resolves.toEqual({ ok: true });
-    expect(writes[0].values).toMatchObject({ key: "elsewhere_usd", valueMicroUsd: 18_400_000, asOf: "2026-10-09", note: null });
-    expect(writes[1].values).toMatchObject({ settingKey: "elsewhere_usd", oldValue: null, newValue: "18.40 as of 2026-10-09" });
+  it("records the org cap as of today, with its setting_set row and no old value the first time", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    await expect(actions.setOrgCap({ amount: "250", note: "" })).resolves.toEqual({ ok: true });
+    expect(transaction).toHaveBeenCalledOnce();
+    expect(writes.map((w) => w.op)).toEqual(["admin_settings", "admin_events"]);
+    expect(writes[0].values).toMatchObject({ key: "org_cap_usd", month: thisMonth(), valueMicroUsd: 250_000_000, asOf: today, note: null, updatedBy: "user_admin" });
+    expect(writes[1].values).toEqual({
+      actorId: "user_admin",
+      kind: "setting_set",
+      settingKey: "org_cap_usd",
+      settingMonth: thisMonth(),
+      oldValue: null,
+      newValue: `250.00 as of ${today}`,
+      note: null,
+    });
+    expect(executed[0]).toContain(`admin_setting:org_cap_usd:${thisMonth()}`);
+  });
+
+  it("refuses an org cap that is not dollars, and a stranger, writing nothing", async () => {
+    for (const amount of ["-250", "250.001", "", 250, undefined]) {
+      await expect(actions.setOrgCap({ amount })).resolves.toEqual({ ok: false, error: "amount" });
+    }
+    gate.mockRejectedValueOnce(new Error("NEXT_NOT_FOUND"));
+    await expect(actions.setOrgCap({ amount: "250" })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it("records a change of the day alone, which the dollars by themselves would hide", async () => {
-    before = [{ valueMicroUsd: 18_400_000, asOf: "2026-10-09" }];
-    await expect(actions.setElsewhere({ amount: "18.40", asOf: "2026-10-12" })).resolves.toEqual({ ok: true });
-    expect(writes[1].values).toMatchObject({ oldValue: "18.40 as of 2026-10-09", newValue: "18.40 as of 2026-10-12" });
+    before = [{ valueMicroUsd: 150_000_000, asOf: "2026-01-02" }];
+    await expect(actions.setAccountCap({ amount: "150" })).resolves.toEqual({ ok: true });
+    expect(writes[1].values).toMatchObject({ oldValue: "150.00 as of 2026-01-02", newValue: `150.00 as of ${new Date().toISOString().slice(0, 10)}` });
   });
 
   it("refuses a ceiling start that is not this month or a later one, writing nothing", async () => {
@@ -231,7 +250,7 @@ describe("the settings writes", () => {
     const long = "x".repeat(501);
     await expect(actions.setAccountCap({ amount: "100", note: long })).resolves.toEqual({ ok: false, error: "note" });
     await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth(), note: long })).resolves.toEqual({ ok: false, error: "note" });
-    await expect(actions.setElsewhere({ amount: "18.40", asOf: new Date().toISOString().slice(0, 10), note: long })).resolves.toEqual({ ok: false, error: "note" });
+    await expect(actions.setOrgCap({ amount: "250", note: long })).resolves.toEqual({ ok: false, error: "note" });
     expect(writes).toHaveLength(0);
     await expect(actions.setAccountCap({ amount: "100", note: ` ${"x".repeat(500)} ` })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ note: "x".repeat(500) });

@@ -5,11 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import { costSummary, type CostRows, type DayRow } from "../../lib/admin/costs-rule";
 import { usdToMicro } from "../../lib/model/spend-rule";
 
-const setElsewhere = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
+const setOrgCap = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
 const setAccountCap = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
 const setSystemCeiling = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
 vi.mock("../../app/admin/actions", () => ({
-  setElsewhere: (i: unknown) => setElsewhere(i),
+  setOrgCap: (i: unknown) => setOrgCap(i),
   setAccountCap: (i: unknown) => setAccountCap(i),
   setSystemCeiling: (i: unknown) => setSystemCeiling(i),
 }));
@@ -27,8 +27,12 @@ const sys = (day: number, v: number, runs = 1): DayRow => ({ day, origin: "syste
 const rows = (days: DayRow[], over: Partial<CostRows> = {}): CostRows => ({
   days, playerAccounts: 1, ownerMicro: usdToMicro(0.884), ownerShareMicro: usdToMicro(5), previous: { runs: 19, micro: usdToMicro(0.813) }, settings: {}, anthropic: { ok: false, kind: "no_key" }, ...over,
 });
-/** Anthropic's bill for The 99, read at 14:55 UTC on the day `NOW` falls on. */
-const billed = (v: number): Pick<CostRows, "anthropic"> => ({ anthropic: { ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: usdToMicro(v) } });
+type Keys = Extract<CostRows["anthropic"], { ok: true }>["keys"];
+const PROD_KEY = { name: "Production app", hint: "sk-ant-api03-R2D...igAA", status: "active", statusWord: "active" } as const;
+/** Anthropic's bill for The 99 and the org's other workspaces, read at 14:55 UTC on the day `NOW` falls on. */
+const billed = (v: number, other = 40, keys: Keys = { ok: true, rows: [PROD_KEY] }): Pick<CostRows, "anthropic"> => ({
+  anthropic: { ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: usdToMicro(v), otherMicro: usdToMicro(other), orgMicro: usdToMicro(v + other), keys },
+});
 const HATCH = "repeating-linear-gradient(135deg, var(--fg-faint) 0 3px, transparent 3px 6px)";
 
 function draw(r: CostRows, month = OCT) {
@@ -53,17 +57,20 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.queryByText("$0.884 of $10")).toBeNull();
     expect(screen.queryByText(/hard stop|plan/)).toBeNull();
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
-    // One row each from code, from this page and from Anthropic; the source label sits LEFT of the row's name.
-    for (const source of ["in code", "recorded here", "from Anthropic"]) {
+    // One row from code, one from this page and two from Anthropic; the source label sits LEFT of the row's name.
+    for (const [source, n] of [["in code", 1], ["recorded here", 1], ["from Anthropic", 2]] as const) {
       const tags = screen.getAllByText(source);
-      expect(tags).toHaveLength(1);
-      expect(tags[0].previousElementSibling).toBeNull();
+      expect(tags).toHaveLength(n);
+      for (const tag of tags) expect(tag.previousElementSibling).toBeNull();
     }
     // No key here: the workspace row is this environment's ledger alone, and says why.
     expect(screen.getByText("$1.135 here · workspace not read")).toBeInTheDocument();
     expect(screen.getByText("ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
-    expect(screen.queryByText(/org cap|Other workspaces/)).toBeNull();
+    // The org row is read with the workspace, so it is not read either, and says so without repeating the reason.
+    expect(screen.getAllByText(/ANTHROPIC_ADMIN_KEY is not set/)).toHaveLength(1);
+    expect(capRow("Anthropic org cap").row).toHaveTextContent("not read");
+    expect(screen.getByText("The key list was not read.")).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
@@ -73,8 +80,8 @@ describe("CostsView, the current month (C1)", () => {
       settings: {
         account_cap_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: null },
         system_ceiling_usd: { micro: usdToMicro(15), asOf: "2026-10-01", note: null },
-        // Retired: a stored figure is never drawn.
-        elsewhere_usd: { micro: usdToMicro(99), asOf: "2026-10-09", note: "stale" },
+        // A retired elsewhere row never reaches the summary: `loadCosts` drops it (`isSettingKey`).
+        ...({ elsewhere_usd: { micro: usdToMicro(99), asOf: "2026-10-09", note: "stale" } } as object),
       },
     }));
     expect(screen.getByText("$19.40 of $150")).toBeInTheDocument();
@@ -244,14 +251,14 @@ describe("CostsView, other months", () => {
 describe("the settings actions belong to the current month", () => {
   it("offers no setting action on a past month, whose rows they could not change", () => {
     draw(rows([p(2, 1)]), { year: 2026, month: 8 });
-    for (const name of ["Change the cap", "Change the ceiling"]) {
+    for (const name of ["Change the cap", "Change the ceiling", "Change the org cap"]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
   });
 
-  it("offers both on the current month, and no elsewhere entry", () => {
+  it("offers all three on the current month, and no elsewhere entry", () => {
     draw(rows([p(2, 1)]));
-    for (const name of ["Change the cap", "Change the ceiling"]) {
+    for (const name of ["Change the cap", "Change the ceiling", "Change the org cap"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
     expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
@@ -303,6 +310,98 @@ describe("the workspace cap row", () => {
     expect(row).not.toHaveTextContent("Read from Anthropic");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
+  });
+});
+
+describe("the org cap row", () => {
+  const caps = {
+    account_cap_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: null },
+    org_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-17", note: "console, Oct" },
+  };
+
+  it("draws the org's month against its cap: The 99, then other workspaces hatched", () => {
+    draw(rows([p(2, 1)], { ...billed(124.54, 9), settings: caps }));
+    expect(screen.getByText("$133.54 of $250")).toBeInTheDocument();
+    const { row, segs, ticks } = capRow("Anthropic org cap");
+    expect(row).toHaveTextContent("from Anthropic");
+    expect(row).toHaveTextContent("The 99 $124.54, other workspaces $9.00 hatched, the default workspace included.");
+    expect(row).toHaveTextContent("Note: console, Oct");
+    expect(segs.map((el) => el.style.background)).toEqual(["var(--accent)", HATCH]);
+    expect(parseFloat(segs[0].style.width)).toBeCloseTo((124.54 / 250) * 100, 3);
+    expect(parseFloat(segs[1].style.width)).toBeCloseTo((9 / 250) * 100, 3);
+    expect(ticks).toHaveLength(1);
+    expect(ticks[0].style.left).toBe("100%");
+  });
+
+  it("names a credit on the other workspaces signed, and draws it as no width", () => {
+    // The 99 at $100, the rest of the org a $20 credit: an $80 org, and the line says so rather than $0.
+    draw(rows([p(2, 1)], { ...billed(100, -20), settings: caps }));
+    expect(screen.getByText("$80.00 of $250")).toBeInTheDocument();
+    const { row, segs } = capRow("Anthropic org cap");
+    expect(row).toHaveTextContent("The 99 $100.00, other workspaces −$20.00 hatched");
+    expect(segs.map((el) => el.style.width).at(-1)).toBe("0%");
+  });
+
+  it("draws the bare track with the figure not set when no org cap is stored", () => {
+    draw(rows([p(2, 1)], billed(12, 3)));
+    expect(screen.getByText("$15.00 · not set")).toBeInTheDocument();
+    const { segs, ticks } = capRow("Anthropic org cap");
+    expect(segs).toEqual([]);
+    expect(ticks).toEqual([]);
+  });
+
+  it("draws the bare track when the org is not read, naming the workspace row's reason once", () => {
+    draw(rows([p(2, 1)], { anthropic: { ok: false, kind: "refused" }, settings: caps }));
+    const { row, segs, ticks } = capRow("Anthropic org cap");
+    expect(row).toHaveTextContent("not read");
+    expect(row).not.toHaveTextContent("$250");
+    expect(segs).toEqual([]);
+    expect(ticks).toEqual([]);
+    expect(screen.getAllByText("Anthropic refused the admin key.")).toHaveLength(1);
+  });
+
+  it("saves the org cap through its own action", async () => {
+    draw(rows([p(2, 1)]));
+    fireEvent.click(screen.getByRole("button", { name: "Change the org cap" }));
+    const dialog = screen.getByRole("dialog", { name: "Change the org cap" });
+    expect(within(dialog).queryByLabelText("As of")).toBeNull();
+    expect(within(dialog).queryByLabelText("Starts")).toBeNull();
+    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "250" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(setOrgCap).toHaveBeenCalledWith({ amount: "250", note: "" }));
+    expect(setAccountCap).not.toHaveBeenCalledWith({ amount: "250", note: "" });
+  });
+});
+
+describe("the keys on The 99", () => {
+  const list = () => screen.getByRole("heading", { name: "Keys on The 99" }).parentElement!.nextElementSibling as HTMLElement;
+
+  it("lists each key's name, hint and status", () => {
+    const keys: Keys = {
+      ok: true,
+      rows: [PROD_KEY, { name: "GitHub workflows", hint: null, status: "other", statusWord: "expired" }],
+    };
+    draw(rows([p(2, 1)], billed(5, 0, keys)));
+    expect(screen.getByText("name and hint only")).toBeInTheDocument();
+    const items = within(list()).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Production app");
+    expect(items[0]).toHaveTextContent("sk-ant-api03-R2D...igAA");
+    expect(items[0]).toHaveTextContent("active");
+    expect(items[1]).toHaveTextContent("GitHub workflows");
+    expect(items[1]).toHaveTextContent("expired");
+  });
+
+  it("says when the workspace holds no keys", () => {
+    draw(rows([p(2, 1)], billed(5, 0, { ok: true, rows: [] })));
+    expect(within(list()).getByText("No keys on this workspace.")).toBeInTheDocument();
+    expect(within(list()).queryAllByRole("listitem")).toEqual([]);
+  });
+
+  it("says the list was not read, beside figures that were", () => {
+    draw(rows([p(2, 1)], billed(5, 2, { ok: false, kind: "upstream" })));
+    expect(within(list()).getByText("The key list was not read.")).toBeInTheDocument();
+    expect(screen.getByText("$7.00 · not set")).toBeInTheDocument();
   });
 });
 

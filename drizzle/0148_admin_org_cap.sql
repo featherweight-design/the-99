@@ -1,0 +1,2 @@
+ALTER TABLE "admin_settings" DROP CONSTRAINT "admin_settings_key_check";--> statement-breakpoint
+ALTER TABLE "admin_settings" ADD CONSTRAINT "admin_settings_key_check" CHECK ("admin_settings"."key" in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd', 'org_cap_usd'));

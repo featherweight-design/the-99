@@ -1,24 +1,29 @@
 import { unstable_cache } from "next/cache";
 import { DEPLOYMENT_ID } from "../cache/deployment";
 import {
+  apiKeysUrl,
   costReportUrl,
+  keyRows,
   MAX_PAGES,
   matchWorkspace,
   parseCostPage,
+  parseKeyPage,
   parseWorkspacePage,
   reportWindow,
-  workspaceMicro,
+  splitOrg,
   workspacesUrl,
   type CostRow,
   type CostUnread,
+  type KeyItem,
+  type KeyList,
   type WorkspaceCost,
   type WorkspaceItem,
 } from "./anthropic-cost-rule";
 import { monthOf, monthParam, type MonthKey } from "./costs-rule";
 
 /**
- * The Costs page's workspace figure, read from Anthropic's Usage and Cost Admin API (the admin
- * cost-report plan, 2026-10-17). SERVER-ONLY: it reads `ANTHROPIC_ADMIN_KEY`, and
+ * The Costs page's workspace and org figures, and the keys on The 99, read from Anthropic's Admin
+ * API (the admin cost-report plan, 2026-10-17). SERVER-ONLY: it reads `ANTHROPIC_ADMIN_KEY`, and
  * `src/lib/client-imports.test.ts` fails if any client component reaches this module. Read only.
  *
  * The key never leaves the request: it is read from `process.env` inside the read, sent in one
@@ -32,7 +37,7 @@ import { monthOf, monthParam, type MonthKey } from "./costs-rule";
 
 /** The one server line a read leaves, found by `vercel logs -q "[costs]"`. Never the key, a body or a URL. */
 export const COST_LOG = "[costs] anthropic cost_report";
-/** One timeout for the whole read: both lists, every page. */
+/** One timeout for the whole read: all three lists, every page. */
 export const ANTHROPIC_TIMEOUT_MS = 8_000;
 /** A failure is answered from memory for this long, so a broken key costs one call a minute. */
 export const NEGATIVE_MEMO_MS = 60_000;
@@ -74,8 +79,10 @@ function kindOf(status: number): Unread["kind"] {
 }
 
 /**
- * The month's workspace figure, uncached. The cost report and the workspace list are read in
- * parallel under one shared timeout, each followed to its end up to `MAX_PAGES`.
+ * The month's workspace and org figures, uncached. The cost report and the workspace list are
+ * read in parallel under one shared timeout, each followed to its end up to `MAX_PAGES`; once The
+ * 99 is matched, its key list is read under the same timeout. A failed key list is
+ * `keys: { ok: false }` beside figures that stand.
  */
 export async function readWorkspaceCost(month: MonthKey, now: Date, deps: AnthropicDeps = defaultDeps()): Promise<WorkspaceCost> {
   const key = deps.key?.trim();
@@ -123,6 +130,19 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
     }
   };
 
+  const keys = async (workspaceId: string): Promise<KeyItem[]> => {
+    const items: KeyItem[] = [];
+    let after: string | undefined;
+    for (let n = 1; ; n++) {
+      const parsed = parseKeyPage(await get(apiKeysUrl(workspaceId, after)), workspaceId);
+      if (!parsed) throw new Unread("shape");
+      items.push(...parsed.items);
+      if (!parsed.hasMore) return items;
+      if (n >= MAX_PAGES) throw new Unread("shape");
+      after = parsed.lastId ?? undefined;
+    }
+  };
+
   const unread = (kind: CostUnread, count?: number, status?: number): WorkspaceCost => {
     deps.log(`${COST_LOG} unread kind=${kind}${status === undefined ? "" : ` status=${status}`}`);
     return count === undefined ? { ok: false, kind } : { ok: false, kind, count };
@@ -138,8 +158,20 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
   }
   const match = matchWorkspace(items);
   if (!match.ok) return match.kind === "ambiguous_workspace" ? unread(match.kind, match.count) : unread(match.kind);
-  deps.log(`${COST_LOG} ok days=${days}`);
-  return { ok: true, asOf: deps.now().toISOString(), workspaceMicro: workspaceMicro(rows, match.id) };
+  let keyList: KeyList;
+  let keyLog: string;
+  try {
+    const rowsOfKeys = keyRows(await keys(match.id));
+    keyList = { ok: true, rows: rowsOfKeys };
+    keyLog = `keys=${rowsOfKeys.length}`;
+  } catch (error) {
+    // The figures stand; the key list says it was not read. Nothing of the error is kept.
+    const failed = error instanceof Unread ? error : new Unread("upstream");
+    keyList = { ok: false, kind: failed.kind };
+    keyLog = `keys=unread kind=${failed.kind}${failed.status === undefined ? "" : ` status=${failed.status}`}`;
+  }
+  deps.log(`${COST_LOG} ok days=${days} ${keyLog}`);
+  return { ok: true, asOf: deps.now().toISOString(), ...splitOrg(rows, match.id), keys: keyList };
 }
 
 /** Thrown out of the cached function so `unstable_cache` serves a failure without filing it. The kind alone. */
@@ -157,7 +189,8 @@ export function clearNegativeMemo(): void {
 }
 
 /**
- * The month's workspace figure as the page reads it. In order: no key is `no_key`; a failure
+ * The month's workspace read as the page reads it. A read whose key list failed is still a read
+ * and is filed with its figures: the key list is retried with the next bucket, never on every load. In order: no key is `no_key`; a failure
  * inside the last minute is answered from memory; otherwise `unstable_cache`, keyed on the
  * deployment, the month and (for the current month) the five-minute bucket. A failure is thrown
  * as `NotStored`, so it is served and never filed. Reads of one month that overlap share one

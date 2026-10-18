@@ -25,7 +25,9 @@ import { SettingAction } from "./setting-dialog";
 // allowance enforces, read by `loadCosts`. A cap row with no cap (or a ceiling that starts after the
 // viewed month) draws the bare track: a bar filled with spend against no cap reads as at the cap.
 // The workspace row's figure is Anthropic's own bill for The 99 (`anthropic-cost.ts`); unread, it
-// draws this environment's ledger alone on the bare track, with the reason.
+// draws this environment's ledger alone on the bare track, with the reason. The org row is the
+// same read against the org cap (The 99, then other workspaces hatched), and the key list under
+// the caps names each key on The 99 by its name, hint and status only.
 
 const copy = adminCopy.costs;
 
@@ -116,6 +118,27 @@ function CapRow({ label, source = "code", figure, children, sub, actions }: { la
       {children}
       <span className="text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{sub}</span>
       {actions && <div className="flex flex-wrap gap-[14px]">{actions}</div>}
+    </div>
+  );
+}
+
+/** The keys on The 99: the detail tables' row card, one row a key, the same at every width. */
+function KeyListCard({ read }: { read: WorkspaceBlock["read"] }) {
+  const k = copy.keys;
+  const empty = (text: string) => <p className="m-0 px-[14px] py-[12px] text-[13px] text-[color:var(--fg-muted)] md:px-[16px]">{text}</p>;
+  return (
+    <div className="overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
+      {!read.ok || !read.keys.ok ? empty(k.unread) : read.keys.rows.length === 0 ? empty(k.none) : (
+        <ul className="m-0 list-none p-0">
+          {read.keys.rows.map((key, i) => (
+            <li key={i} className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] pb-[13px] pt-[12px] first:border-t-0 md:px-[16px] md:pb-[14px] md:pt-[13px]">
+              <span className="min-w-0 flex-1 break-words text-[14px] font-medium text-[color:var(--fg)]">{key.name}</span>
+              <span className={`font-mono text-[11px] ${key.status === "active" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>{k.status[key.statusWord]}</span>
+              {key.hint && <span className="basis-full break-all font-mono text-[10.5px] text-[color:var(--fg-muted)]">{key.hint}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -222,6 +245,7 @@ export function CostsView({
       : copy.capSub.noCeiling;
   const share = s.ownerShareMicro;
   const cap = s.settings.account_cap_usd;
+  const orgCap = s.settings.org_cap_usd;
   const sys = s.systemSplit;
   const systemSegs: Seg[] = [
     { micro: sys.labels, ink: INK.labels },
@@ -320,8 +344,29 @@ export function CostsView({
               ticks={cap && wsRead.ok ? [{ micro: cap.micro, label: capMicro(cap.micro), ink: "var(--danger)" }] : []}
             />
           </CapRow>
+          <CapRow
+            label={copy.capRows.org}
+            source="anthropic"
+            figure={wsRead.ok ? (orgCap ? copy.of(usd(wsRead.orgMicro), capMicro(orgCap.micro)) : copy.notSet(usd(wsRead.orgMicro))) : copy.orgUnread}
+            sub={(wsRead.ok ? copy.capSub.org(usd(wsRead.totalMicro), usd(wsRead.otherMicro)) : copy.capSub.orgUnread) + note(orgCap?.note)}
+            actions={s.current && <SettingAction kind="org" label={copy.changeOrgCap} />}
+          >
+            <CapBar
+              scale={Math.max(orgCap?.micro ?? 0, wsRead.ok ? wsRead.orgMicro : 0, 1)}
+              segs={orgCap && wsRead.ok ? [
+                { micro: wsRead.totalMicro, ink: INK.player },
+                // A credit could take the rest of the org below zero; the bar draws none rather than a negative width,
+                // while the line beside it still names the signed figure.
+                { micro: Math.max(0, wsRead.otherMicro), ink: INK.elsewhere, hatch: true },
+              ] : []}
+              ticks={orgCap && wsRead.ok ? [{ micro: orgCap.micro, label: capMicro(orgCap.micro), ink: "var(--danger)" }] : []}
+            />
+          </CapRow>
         </div>
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.capsReference}</p>
+
+        <SectionHead title={copy.keys.title} meta={copy.keys.meta} />
+        <KeyListCard read={wsRead} />
 
         <SectionHead title={copy.trendPlayer} />
         <Trend s={s} month={month} />

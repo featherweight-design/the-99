@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  apiKeysUrl,
   centsToMicro,
   costReportUrl,
   elsewhere,
+  keyRows,
   LEDGER_AHEAD_FLOOR_MICRO,
   matchWorkspace,
   parseCost,
   parseCostPage,
+  parseKeyPage,
   parseWorkspacePage,
   reportWindow,
+  splitOrg,
   sumCents,
-  workspaceMicro,
   workspacesUrl,
 } from "./anthropic-cost-rule";
 
@@ -64,8 +67,34 @@ describe("sumCents: sum exactly, then round once per workspace", () => {
     expect(sums.get("ws_99")).toBe(1_002_500);
     expect(sums.get(null)).toBe(55_000);
     expect(sums.get("ws_other")).toBe(70_000);
-    expect(workspaceMicro(rows, "ws_99")).toBe(1_002_500);
-    expect(workspaceMicro(rows, "ws_none")).toBe(0);
+    expect(splitOrg(rows, "ws_99").workspaceMicro).toBe(1_002_500);
+    expect(splitOrg(rows, "ws_none").workspaceMicro).toBe(0);
+  });
+});
+
+describe("splitOrg: The 99, every other workspace, and the org", () => {
+  const rows = [
+    { workspaceId: "ws_99", cents: parseCost("12454")! },
+    { workspaceId: null, cents: parseCost("900")! },
+    { workspaceId: "ws_cc", cents: parseCost("3100.5")! },
+    { workspaceId: "ws_99", cents: parseCost("-54")! },
+  ];
+
+  it("counts every other workspace, the default workspace's null id included, as other", () => {
+    expect(splitOrg(rows, "ws_99")).toEqual({ workspaceMicro: 124_000_000, otherMicro: 40_005_000, orgMicro: 164_005_000 });
+  });
+
+  it("is all other when The 99 has no line, and all zero on an empty month", () => {
+    expect(splitOrg(rows, "ws_none")).toEqual({ workspaceMicro: 0, otherMicro: 164_005_000, orgMicro: 164_005_000 });
+    expect(splitOrg([], "ws_99")).toEqual({ workspaceMicro: 0, otherMicro: 0, orgMicro: 0 });
+  });
+
+  it("sums the org exactly and rounds once, so its parts always add up to it", () => {
+    // Two workspaces of 0.6 micro each: rounded apart they are 1 + 1, the org's exact 1.2 is 1.
+    const tiny = [{ workspaceId: "ws_99", cents: parseCost("0.00006")! }, { workspaceId: "ws_cc", cents: parseCost("0.00006")! }];
+    const split = splitOrg(tiny, "ws_99");
+    expect(split.orgMicro).toBe(1);
+    expect(split.workspaceMicro + split.otherMicro).toBe(split.orgMicro);
   });
 });
 
@@ -88,7 +117,7 @@ describe("parseCostPage", () => {
     expect(parsed.hasMore).toBe(true);
     expect(parsed.nextPage).toBe("page_2");
     expect(parsed.rows.map((r) => r.workspaceId)).toEqual(["ws_99", null]);
-    expect(workspaceMicro(parsed.rows, "ws_99")).toBe(1_205_000);
+    expect(splitOrg(parsed.rows, "ws_99").workspaceMicro).toBe(1_205_000);
   });
 
   it("reads a result with no workspace_id field as the default workspace", () => {
@@ -229,5 +258,89 @@ describe("the URLs", () => {
     expect(workspacesUrl()).toBe("https://api.anthropic.com/v1/organizations/workspaces?limit=1000");
     expect(workspacesUrl("ws_last")).toBe("https://api.anthropic.com/v1/organizations/workspaces?limit=1000&after_id=ws_last");
     expect(workspacesUrl("x")).not.toContain("include_archived");
+  });
+});
+
+describe("the key list: name, hint and status, and only The 99's", () => {
+  const key = (over: Record<string, unknown> = {}) => ({
+    type: "api_key",
+    id: "apikey_SECRET_ID",
+    created_at: "2026-10-01T00:00:00Z",
+    created_by: { id: "user_CREATOR", type: "user" },
+    expires_at: null,
+    name: "Production app",
+    partial_key_hint: "sk-ant-api03-R2D...igAA",
+    principal: { type: "user_actor", user_id: "user_PRINCIPAL" },
+    scope: { type: "workspace", workspace_id: "ws_99" },
+    status: "active",
+    workspace_id: "ws_99",
+    ...over,
+  });
+  const page = (data: unknown[], more: Record<string, unknown> = {}) => ({ data, has_more: false, first_id: null, last_id: null, ...more });
+
+  it("keeps name, hint and status, and nothing else of a key", () => {
+    const parsed = parseKeyPage(page([key()]), "ws_99")!;
+    expect(parsed.items).toEqual([{ name: "Production app", hint: "sk-ant-api03-R2D...igAA", status: "active" }]);
+    const out = JSON.stringify(keyRows(parsed.items));
+    for (const leak of ["apikey_SECRET_ID", "user_CREATOR", "user_PRINCIPAL", "ws_99", "2026-10-01"]) expect(out).not.toContain(leak);
+  });
+
+  it("drops a key whose scope is another workspace or the organization, whatever its deprecated workspace_id says", () => {
+    const parsed = parseKeyPage(
+      page([
+        key({ name: "Ours" }),
+        key({ name: "Concert Crawl", scope: { type: "workspace", workspace_id: "ws_cc" }, workspace_id: "ws_cc" }),
+        key({ name: "Org-bound", scope: { type: "organization" }, workspace_id: "ws_99" }),
+        key({ name: "Liar", scope: { type: "workspace", workspace_id: "ws_cc" }, workspace_id: "ws_99" }),
+      ]),
+      "ws_99",
+    )!;
+    expect(parsed.items.map((i) => i.name)).toEqual(["Ours"]);
+  });
+
+  it("keeps a hint only when it is redacted and short: anything that could be a whole key is dropped", () => {
+    const hints = [null, undefined, "sk-ant-api03-R2D...igAA", "sk-ant…igAA", "sk-ant-api03-WHOLEKEYWITHNOELLIPSISATALLxxxxxxxxxxxx", "sk-ant-api03-SHORTNOELLIPSIS", `sk-ant-api03-${"x".repeat(40)}...igAA`, 42];
+    const parsed = parseKeyPage(page(hints.map((h, i) => key({ name: `k${i}`, partial_key_hint: h }))), "ws_99")!;
+    expect(parsed.items.map((i) => i.hint)).toEqual([null, null, "sk-ant-api03-R2D...igAA", "sk-ant…igAA", null, null, null, null]);
+  });
+
+  it("reads every documented status, and refuses any other body as off the shape", () => {
+    const statuses = ["active", "archived", "expired", "inactive"];
+    expect(parseKeyPage(page(statuses.map((status) => key({ status }))), "ws_99")!.items.map((i) => i.status)).toEqual(statuses);
+    for (const bad of [
+      null,
+      { data: "x", has_more: false },
+      { data: [], has_more: true, last_id: null },
+      page([key({ status: "revoked" })]),
+      page([key({ name: 7 })]),
+      page([key({ scope: undefined })]),
+      page([key({ scope: { type: "workspace" } })]),
+    ]) {
+      expect(parseKeyPage(bad, "ws_99")).toBeNull();
+    }
+  });
+
+  it("pages by last_id", () => {
+    expect(parseKeyPage(page([key()], { has_more: true, last_id: "apikey_last" }), "ws_99")).toMatchObject({ hasMore: true, lastId: "apikey_last" });
+  });
+
+  it("lists active keys first, then by name, with each other status named", () => {
+    const rows = keyRows([
+      { name: "b old", hint: null, status: "archived" },
+      { name: "Zed", hint: "sk...a", status: "active" },
+      { name: "alpha", hint: null, status: "active" },
+      { name: "c", hint: null, status: "expired" },
+    ]);
+    expect(rows).toEqual([
+      { name: "alpha", hint: null, status: "active", statusWord: "active" },
+      { name: "Zed", hint: "sk...a", status: "active", statusWord: "active" },
+      { name: "b old", hint: null, status: "other", statusWord: "archived" },
+      { name: "c", hint: null, status: "other", statusWord: "expired" },
+    ]);
+  });
+
+  it("asks for The 99's keys alone, a thousand at a time", () => {
+    expect(apiKeysUrl("ws_99")).toBe("https://api.anthropic.com/v1/organizations/api_keys?workspace_id=ws_99&limit=1000");
+    expect(apiKeysUrl("ws 99", "apikey_last")).toBe("https://api.anthropic.com/v1/organizations/api_keys?workspace_id=ws%2099&limit=1000&after_id=apikey_last");
   });
 });

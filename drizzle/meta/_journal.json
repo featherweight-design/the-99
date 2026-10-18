@@ -1037,6 +1037,13 @@
       "when": 1792254656673,
       "tag": "0147_rule_zero_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1792284450555,
+      "tag": "0148_admin_org_cap",
+      "breakpoints": true
     }
   ]
 }

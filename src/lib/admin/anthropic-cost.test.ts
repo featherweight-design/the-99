@@ -31,18 +31,37 @@ const wsPage = (data: unknown[], more: { has_more?: boolean; last_id?: string | 
 const THE_99 = { id: "wrkspc_99", name: "The 99", archived_at: null };
 const OTHER = { id: "wrkspc_cc", name: "Concert Crawl", archived_at: null };
 
+/** One API key as the list returns it: every documented field, so a test can see which survive. */
+const apiKey = (over: Record<string, unknown> = {}) => ({
+  type: "api_key",
+  id: "apikey_SECRET_ID",
+  created_at: "2026-10-01T00:00:00Z",
+  created_by: { id: "user_CREATOR", type: "user" },
+  expires_at: null,
+  name: "Production app",
+  partial_key_hint: "sk-ant-api03-R2D...igAA",
+  principal: { type: "user_actor", user_id: "user_PRINCIPAL" },
+  scope: { type: "workspace", workspace_id: "wrkspc_99" },
+  status: "active",
+  workspace_id: "wrkspc_99",
+  ...over,
+});
+const PROD_KEY = { name: "Production app", hint: "sk-ant-api03-R2D...igAA", status: "active", statusWord: "active" };
+
+type Answer = () => Response | Promise<Response>;
 /** A fake Anthropic: each endpoint answers from its own queue, the last answer repeating. */
-function fake(answers: { cost?: (() => Response | Promise<Response>)[]; ws?: (() => Response | Promise<Response>)[] }) {
+function fake(answers: { cost?: Answer[]; ws?: Answer[]; keys?: Answer[] }) {
   const calls: Call[] = [];
   const queues = {
     cost: answers.cost ?? [() => json(costPage([{ amount: "12454", currency: "USD", workspace_id: "wrkspc_99" }, { amount: "900", currency: "USD", workspace_id: null }]))],
     ws: answers.ws ?? [() => json(wsPage([OTHER, THE_99]))],
+    keys: answers.keys ?? [() => json(wsPage([apiKey()]))],
   };
-  const seen = { cost: 0, ws: 0 };
+  const seen = { cost: 0, ws: 0, keys: 0 };
   const fetch = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     calls.push({ url, init: init ?? {} });
-    const which = url.includes("/cost_report") ? "cost" : "ws";
+    const which = url.includes("/cost_report") ? "cost" : url.includes("/api_keys") ? "keys" : "ws";
     const q = queues[which];
     const answer = q[Math.min(seen[which]++, q.length - 1)];
     return answer();
@@ -59,9 +78,16 @@ beforeEach(() => {
 describe("readWorkspaceCost", () => {
   it("reads The 99's month from the cost report", async () => {
     const f = fake({});
-    expect(await readWorkspaceCost(OCT, NOW, f.deps())).toEqual({ ok: true, asOf: NOW.toISOString(), workspaceMicro: 124_540_000 });
-    // One line on success too, so a deployed read can be confirmed from the logs: the days read, nothing else.
-    expect(f.log.mock.calls).toEqual([[expect.stringMatching(/^\[costs\] anthropic cost_report ok days=\d+$/)]]);
+    expect(await readWorkspaceCost(OCT, NOW, f.deps())).toEqual({
+      ok: true,
+      asOf: NOW.toISOString(),
+      workspaceMicro: 124_540_000,
+      otherMicro: 9_000_000,
+      orgMicro: 133_540_000,
+      keys: { ok: true, rows: [PROD_KEY] },
+    });
+    // One line on success too, so a deployed read can be confirmed from the logs: the days and keys read, nothing else.
+    expect(f.log.mock.calls).toEqual([[`${COST_LOG} ok days=1 keys=1`]]);
     for (const c of f.calls) {
       expect(c.init.cache).toBe("no-store");
       expect(c.init.headers).toEqual({ "x-api-key": KEY, "anthropic-version": "2023-06-01", "user-agent": "the-99-admin" });
@@ -155,10 +181,11 @@ describe("readWorkspaceCost", () => {
     ]);
   });
 
-  it("gives every request in one read the same signal", async () => {
+  it("gives every request in one read the same signal, the key list's included", async () => {
     const f = fake({ ws: [() => json(wsPage([OTHER], { has_more: true, last_id: "wrkspc_cc" })), () => json(wsPage([THE_99]))] });
     await readWorkspaceCost(OCT, NOW, f.deps());
-    expect(f.calls.length).toBe(3);
+    expect(f.calls.length).toBe(4);
+    expect(f.calls.filter((c) => c.url.includes("/api_keys"))).toHaveLength(1);
     const signal = f.calls[0].init.signal;
     expect(signal).toBeInstanceOf(AbortSignal);
     for (const c of f.calls) expect(c.init.signal).toBe(signal);
@@ -187,6 +214,8 @@ describe("readWorkspaceCost", () => {
       fake({ cost: [() => json({ error: KEY }, 401)] }),
       fake({ cost: [() => Promise.reject(new Error(KEY))] }),
       fake({ ws: [() => json(wsPage([OTHER]))] }),
+      fake({ keys: [() => json({ error: KEY }, 403)] }),
+      fake({ keys: [() => Promise.reject(new Error(KEY))] }),
     ];
     for (const f of outcomes) {
       const result = await readWorkspaceCost(OCT, NOW, f.deps());
@@ -198,6 +227,73 @@ describe("readWorkspaceCost", () => {
         expect(headers.filter((h) => h.includes(KEY))).toHaveLength(1);
       }
     }
+  });
+});
+
+describe("readWorkspaceCost: the keys on The 99", () => {
+  it("asks for The 99's keys by its id, after the workspace is matched, and pages by after_id = last_id", async () => {
+    const f = fake({
+      keys: [
+        () => json(wsPage([apiKey({ name: "First" })], { has_more: true, last_id: "apikey_page1" })),
+        () => json(wsPage([apiKey({ name: "Second", status: "archived" })])),
+      ],
+    });
+    const result = await readWorkspaceCost(OCT, NOW, f.deps());
+    expect(f.calls.filter((c) => c.url.includes("/api_keys")).map((c) => c.url)).toEqual([
+      "https://api.anthropic.com/v1/organizations/api_keys?workspace_id=wrkspc_99&limit=1000",
+      "https://api.anthropic.com/v1/organizations/api_keys?workspace_id=wrkspc_99&limit=1000&after_id=apikey_page1",
+    ]);
+    expect(result).toMatchObject({
+      ok: true,
+      keys: { ok: true, rows: [{ name: "First", status: "active" }, { name: "Second", status: "other", statusWord: "archived" }] },
+    });
+  });
+
+  it("keeps only keys scoped to The 99, and no id, creator, principal or scope reaches the result", async () => {
+    const f = fake({
+      keys: [() => json(wsPage([apiKey(), apiKey({ name: "Concert Crawl", scope: { type: "workspace", workspace_id: "wrkspc_cc" } })]))],
+    });
+    const result = await readWorkspaceCost(OCT, NOW, f.deps());
+    expect(result).toMatchObject({ ok: true, keys: { ok: true, rows: [PROD_KEY] } });
+    const out = JSON.stringify(result);
+    for (const leak of ["apikey_SECRET_ID", "user_CREATOR", "user_PRINCIPAL", "wrkspc_99", "wrkspc_cc", KEY]) expect(out).not.toContain(leak);
+  });
+
+  it("reads an empty list as none", async () => {
+    const f = fake({ keys: [() => json(wsPage([]))] });
+    expect(await readWorkspaceCost(OCT, NOW, f.deps())).toMatchObject({ ok: true, keys: { ok: true, rows: [] } });
+  });
+
+  it.each([
+    ["a 403", () => json({}, 403), "refused", " status=403"],
+    ["a 500", () => json({}, 500), "upstream", " status=500"],
+    ["a dropped connection", () => Promise.reject(new TypeError("fetch failed")), "upstream", ""],
+    ["a body off the shape", () => json({ data: [apiKey({ status: "revoked" })], has_more: false }), "shape", ""],
+  ] as const)("leaves the figures standing when the key list fails with %s", async (_what, answer, kind, status) => {
+    const f = fake({ keys: [answer] });
+    expect(await readWorkspaceCost(OCT, NOW, f.deps())).toEqual({
+      ok: true,
+      asOf: NOW.toISOString(),
+      workspaceMicro: 124_540_000,
+      otherMicro: 9_000_000,
+      orgMicro: 133_540_000,
+      keys: { ok: false, kind },
+    });
+    expect(f.log.mock.calls).toEqual([[`${COST_LOG} ok days=1 keys=unread kind=${kind}${status}`]]);
+  });
+
+  it("refuses an eleventh key page as shape, the figures standing", async () => {
+    const f = fake({ keys: [() => json(wsPage([apiKey()], { has_more: true, last_id: "again" }))] });
+    expect(await readWorkspaceCost(OCT, NOW, f.deps())).toMatchObject({ ok: true, workspaceMicro: 124_540_000, keys: { ok: false, kind: "shape" } });
+    expect(f.calls.filter((c) => c.url.includes("/api_keys"))).toHaveLength(MAX_PAGES);
+  });
+
+  it("never asks for keys when the figures were not read", async () => {
+    const f = fake({ cost: [() => json({}, 500)] });
+    await readWorkspaceCost(OCT, NOW, f.deps());
+    const none = fake({ ws: [() => json(wsPage([OTHER]))] });
+    await readWorkspaceCost(OCT, NOW, none.deps());
+    expect([...f.calls, ...none.calls].filter((c) => c.url.includes("/api_keys"))).toEqual([]);
   });
 });
 

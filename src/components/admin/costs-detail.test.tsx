@@ -6,7 +6,7 @@ import { costDetail, type CallRow, type DetailRows, type LabelRunRow } from "../
 import { costSummary, type CostRows } from "../../lib/admin/costs-rule";
 import { usdToMicro } from "../../lib/model/spend-rule";
 
-vi.mock("../../app/admin/actions", () => ({ setElsewhere: vi.fn(), setAccountCap: vi.fn(), setSystemCeiling: vi.fn() }));
+vi.mock("../../app/admin/actions", () => ({ setOrgCap: vi.fn(), setAccountCap: vi.fn(), setSystemCeiling: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin" }));
 
 const { CostsView } = await import("./costs-view");
@@ -48,7 +48,7 @@ describe("CostsDetail, a month with runs", () => {
   it("draws every block in the canvas's order", () => {
     draw({ calls, labelRuns: [labelRun] });
     expect(headings()).toEqual([
-      "Against the caps", "Player runs, month to date", "By model", "Player against system", "By feature and model",
+      "Against the caps", "Keys on The 99", "Player runs, month to date", "By model", "Player against system", "By feature and model",
       "Refunds", "Reserved against spent", "Per account", "Card label runs", "Eval ledgers",
     ]);
   });
@@ -252,7 +252,7 @@ describe("CostsDetail, an eval ledger that could not be read", () => {
 describe("CostsDetail, a month with no runs (C3)", () => {
   it("hides every table but the eval ledgers", () => {
     draw({});
-    expect(headings()).toEqual(["Against the caps", "Player runs, month to date", "Eval ledgers"]);
+    expect(headings()).toEqual(["Against the caps", "Keys on The 99", "Player runs, month to date", "Eval ledgers"]);
     expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
   });

@@ -6,7 +6,9 @@
  * M1 (whether a current month clamped to now is accepted) and how far back the report serves.
  *
  * It prints only the month, `ok` or the unread kind, the match count, the window it sent (and
- * whether `ending_at` was sent or omitted) and the figure in dollars. Never an id, a header or a body.
+ * whether `ending_at` was sent or omitted), the workspace, other-workspaces and org figures in
+ * dollars, and the key list as a count (or its unread kind). Never an id, a key's name or hint, a
+ * header or a body.
  *
  * THE KEY: `ANTHROPIC_ADMIN_KEY` is read from THIS SHELL only. This probe deliberately does not load
  * `.env`, and the key must never be put there: `scripts/lib/env.mjs` loads `.env` with
@@ -46,7 +48,9 @@ for (const month of months) {
   const result = await readWorkspaceCost(month, now);
   const sent = `window ${w.startingAt} to ${w.endingAt ?? "(ending_at omitted)"}`;
   if (result.ok) {
-    console.log(`${monthParam(month)}  ok  match 1  ${sent}  workspace ${usd(result.workspaceMicro)}`);
+    // The key list as a count and its statuses only: never a key's name, hint or id.
+    const keys = result.keys.ok ? `keys ${result.keys.rows.length} (${result.keys.rows.filter((k) => k.status === "active").length} active)` : `keys ${result.keys.kind}`;
+    console.log(`${monthParam(month)}  ok  match 1  ${sent}  workspace ${usd(result.workspaceMicro)}  other ${usd(result.otherMicro)}  org ${usd(result.orgMicro)}  ${keys}`);
   } else {
     unread++;
     const match = result.kind === "ambiguous_workspace" ? `match ${result.count}` : result.kind === "no_workspace" ? "match 0" : "match -";

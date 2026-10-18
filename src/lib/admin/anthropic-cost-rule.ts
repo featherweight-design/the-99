@@ -16,6 +16,7 @@ export const WORKSPACE_NAME = "The 99";
 export const MAX_PAGES = 10;
 export const COST_REPORT_URL = "https://api.anthropic.com/v1/organizations/cost_report";
 export const WORKSPACES_URL = "https://api.anthropic.com/v1/organizations/workspaces";
+export const API_KEYS_URL = "https://api.anthropic.com/v1/organizations/api_keys";
 /** $0.05: the least the ledger may run ahead of the bill before the page says so. */
 export const LEDGER_AHEAD_FLOOR_MICRO = 50_000;
 // BigInt(), never `10n`: the repo's TypeScript target is below ES2020, where bigint literals are refused.
@@ -33,9 +34,20 @@ function pow10(n: number): bigint {
 
 export type CostUnread = "no_key" | "refused" | "rejected" | "upstream" | "shape" | "no_workspace" | "ambiguous_workspace";
 
-/** What the page is handed: figures and an ISO instant, never an id, a key or upstream text. */
+/** An API key's status, as the list documents it. */
+export type KeyStatus = "active" | "archived" | "expired" | "inactive";
+/** One key on The 99 as the page draws it: its name, its redacted hint and its status. Never an id, a creator or a scope. */
+export type KeyRow = { name: string; hint: string | null; status: "active" | "other"; statusWord: KeyStatus };
+/** The keys on The 99, or why they were not read. A failed key list leaves the figures beside it standing. */
+export type KeyList = { ok: true; rows: KeyRow[] } | { ok: false; kind: Exclude<CostUnread, "no_key" | "no_workspace" | "ambiguous_workspace"> };
+
+/**
+ * What the page is handed: figures, an ISO instant and the key rows, never an id, a key or
+ * upstream text. `otherMicro` is every other workspace, the default workspace's `null` id
+ * included; `orgMicro` is the whole org, and the two parts always add up to it.
+ */
 export type WorkspaceCost =
-  | { ok: true; asOf: string; workspaceMicro: number }
+  | { ok: true; asOf: string; workspaceMicro: number; otherMicro: number; orgMicro: number; keys: KeyList }
   | { ok: false; kind: CostUnread; count?: number };
 
 /** An exact amount of cents: `units` × 10^-`scale`. */
@@ -86,9 +98,15 @@ export function sumCents(rows: readonly CostRow[]): Map<string | null, number> {
   return new Map([...sums].map(([id, x]) => [id, toMicro(x)]));
 }
 
-/** One workspace's month, in micro-dollars: 0 when no line names it. */
-export function workspaceMicro(rows: readonly CostRow[], workspaceId: string): number {
-  return sumCents(rows).get(workspaceId) ?? 0;
+/**
+ * The org's month split at The 99, in micro-dollars. The 99 is its own lines, summed exactly and
+ * rounded once (0 when none names it); the org is EVERY line, summed exactly and rounded once;
+ * other workspaces are the difference, so the two parts always add up to the org.
+ */
+export function splitOrg(rows: readonly CostRow[], workspaceId: string): { workspaceMicro: number; otherMicro: number; orgMicro: number } {
+  const workspace = sumCents(rows).get(workspaceId) ?? 0;
+  const org = rows.length ? toMicro(rows.map((r) => r.cents).reduce(add)) : 0;
+  return { workspaceMicro: workspace, otherMicro: org - workspace, orgMicro: org };
 }
 
 /**
@@ -121,6 +139,11 @@ export function costReportUrl(w: { startingAt: string; endingAt: string | null }
 /** One page of the workspace list. Never `include_archived=true`: an archived workspace is not The 99. */
 export function workspacesUrl(afterId?: string): string {
   return `${WORKSPACES_URL}?limit=1000${afterId ? `&after_id=${encodeURIComponent(afterId)}` : ""}`;
+}
+
+/** One page of The 99's keys, by its id: every status, a thousand at a time. */
+export function apiKeysUrl(workspaceId: string, afterId?: string): string {
+  return `${API_KEYS_URL}?workspace_id=${encodeURIComponent(workspaceId)}&limit=1000${afterId ? `&after_id=${encodeURIComponent(afterId)}` : ""}`;
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -182,4 +205,51 @@ export function matchWorkspace(
 export function elsewhere(workspaceMicro: number, ledgerMicro: number): { micro: number; ledgerAhead: boolean } {
   const tolerance = Math.max(Math.round(workspaceMicro / 100), LEDGER_AHEAD_FLOOR_MICRO);
   return { micro: Math.max(0, workspaceMicro - ledgerMicro), ledgerAhead: ledgerMicro - workspaceMicro > tolerance };
+}
+
+const KEY_STATUSES: readonly KeyStatus[] = ["active", "archived", "expired", "inactive"];
+const isKeyStatus = (v: unknown): v is KeyStatus => typeof v === "string" && (KEY_STATUSES as readonly string[]).includes(v);
+/** The longest hint kept. The documented hint is 23 characters; a whole key is over 100. */
+const HINT_MAX = 40;
+
+/**
+ * A key's hint, kept only when it reads as redacted: an ellipsis inside it and no longer than
+ * `HINT_MAX`. Anything else could be more of the key than a hint, and is dropped to null.
+ */
+function hintOf(v: unknown): string | null {
+  if (typeof v !== "string" || v.length > HINT_MAX) return null;
+  return v.includes("...") || v.includes("\u2026") ? v : null;
+}
+
+export type KeyItem = { name: string; hint: string | null; status: KeyStatus };
+
+/**
+ * One page of the key list, or null when the body is off the documented shape. Only keys whose
+ * `scope` is The 99's workspace survive (the request already asks for that workspace; the scope
+ * is checked again, never the deprecated top-level `workspace_id`). Each survivor keeps its name,
+ * hint and status; its id, creator, principal, scope and dates are dropped here, at the parse.
+ */
+export function parseKeyPage(body: unknown, workspaceId: string): { items: KeyItem[]; hasMore: boolean; lastId: string | null } | null {
+  if (!isObject(body) || !Array.isArray(body.data) || typeof body.has_more !== "boolean") return null;
+  const lastId = body.last_id ?? null;
+  if (lastId !== null && typeof lastId !== "string") return null;
+  if (body.has_more && lastId === null) return null;
+  const items: KeyItem[] = [];
+  for (const k of body.data) {
+    if (!isObject(k) || typeof k.name !== "string" || !isKeyStatus(k.status) || !isObject(k.scope)) return null;
+    const scope = k.scope;
+    if (scope.type === "workspace") {
+      if (typeof scope.workspace_id !== "string") return null;
+      if (scope.workspace_id !== workspaceId) continue;
+    } else continue;
+    items.push({ name: k.name, hint: hintOf(k.partial_key_hint), status: k.status });
+  }
+  return { items, hasMore: body.has_more, lastId };
+}
+
+/** The keys as the page lists them: active first, then by name, each other status by its word. */
+export function keyRows(items: readonly KeyItem[]): KeyRow[] {
+  return [...items]
+    .sort((a, b) => Number(b.status === "active") - Number(a.status === "active") || a.name.localeCompare(b.name, "en", { sensitivity: "base" }))
+    .map((k) => ({ name: k.name, hint: k.hint, status: k.status === "active" ? "active" : "other", statusWord: k.status }));
 }
