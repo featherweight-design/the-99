@@ -35,13 +35,13 @@ export type PaymentsMonth = {
   blocked: AdminBlock[];
 };
 
-/** A payment's refund, never more than the payment (K2 stores the charge's cumulative figure). */
-const refunded = sql`least(coalesce(${creditGrants.refundedCents}, 0), ${paymentRecords.amountCents})`;
-
 /**
- * Exported for its test. Grouped by currency, so two currencies are never added together. Each payment reaches its
- * refund through the lot it granted (`external_id` is the Checkout Session's id; an unattributed payment has none).
+ * A payment's refund, never more than the payment: the charge's cumulative figure, kept on the payment record itself
+ * (`reverseCharge`), so it survives the account's purge and covers a payment that granted no lot.
  */
+const refunded = sql`least(${paymentRecords.refundedCents}, ${paymentRecords.amountCents})`;
+
+/** Exported for its test. Grouped by currency, so two currencies are never added together. */
 export function revenueQuery(start: Date, end: Date) {
   return db
     .select({
@@ -54,7 +54,6 @@ export function revenueQuery(start: Date, end: Date) {
       refundedTaxCents: sql<number>`coalesce(sum(case when ${paymentRecords.amountCents} > 0 then round(${refunded}::numeric * ${paymentRecords.taxCents} / ${paymentRecords.amountCents}) else 0 end), 0)::int`,
     })
     .from(paymentRecords)
-    .leftJoin(creditGrants, eq(creditGrants.externalId, paymentRecords.checkoutSessionId))
     .where(and(gte(paymentRecords.createdAt, start), lt(paymentRecords.createdAt, end)))
     .groupBy(paymentRecords.currency);
 }

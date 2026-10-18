@@ -154,8 +154,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `/admin/payments` (`clearPurchaseBlock`, `src/lib/payments/clear-block.ts`, admin plan A3) nulls it under a row lock and
   writes one `purchase_block_cleared` event in the same transaction; a repeat clears and records nothing. The block is set
   when a dispute is created and again when one is lost, so clearing it while one is still open is allowed, and the press
-  says how many are and that losing one pauses buying again. Known gap: a refund is read through the payment's lot, which
-  the purge deletes, so a purged account's refunds and an unattributed payment's refund read as 0 on the tab. `createPackCheckout` (the one place a Session is made) refuses as
+  says how many are and that losing one pauses buying again. A payment's refund is read off its own
+  record (`payment_records.refunded_cents`, capped at the payment), so a purged account's refunds and an unattributed payment's refund still count on the tab. `createPackCheckout` (the one place a Session is made) refuses as
   `blocked`, and `buyPackAction` reads the same helper first; a Session made before a dispute still fulfils when paid; credits already held keep spending. Dashboard: add the three events to the
   endpoint. `pnpm reconcile:payments` is read-only and dry-run only: the last 72 hours of paid `the-99` PaymentIntents
   with no record, and records or pack lots with no paid PaymentIntent, as counts and ids; `RECONCILE_TARGET_BRANCH`
