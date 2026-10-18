@@ -46,9 +46,16 @@ export function ShowButton({
 
 /** D13: a failed Show, centre placement, `role="alert"`, with `Try again`. */
 export function RevealFailedToast({ failure, onRetry, onDone }: { failure: RevealFailure; onRetry: () => void; onDone: () => void }) {
+  return <FailedToast kind="reveal-failed" title={copy.failed(failure.masked)} onRetry={onRetry} onDone={onDone} />;
+}
+
+/**
+ * D13's toast, for a failed Show or a failed lookup: centre placement, `role="alert"`, `Try again`, and the shared
+ * window (call 5), held while it is hovered or holds focus. The caller keys it per failure, so a new one starts the
+ * whole window with no hold carried over.
+ */
+export function FailedToast({ kind, title, onRetry, onDone }: { kind: string; title: string; onRetry: () => void; onDone: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  // The shared window (call 5): it closes itself, held while it is hovered or holds focus. The caller keys it per
-  // failure, so a new one starts the whole window with no hold carried over.
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   useToastClock(ref, !hover && !focus, onDone);
@@ -57,9 +64,9 @@ export function RevealFailedToast({ failure, onRetry, onDone }: { failure: Revea
       frameRef={ref}
       role="alert"
       placement="center"
-      kind="reveal-failed"
-      onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
-      title={copy.failed(failure.masked)}
+      kind={kind}
+      onHold={(k, on) => (k === "hover" ? setHover : setFocus)(on)}
+      title={title}
       actions={
         <button
           type="button"

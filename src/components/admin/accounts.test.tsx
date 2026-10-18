@@ -15,7 +15,9 @@ const revealFn = vi.fn<(id: string) => Promise<import("../../lib/admin/reveal").
 vi.mock("../../app/admin/accounts/actions", () => ({
   moveAccountToGroup: (u: string, g: string | null, c?: number) => move(u, g, c),
   revealAccount: (id: string) => revealFn(id),
+  lookUpAccount: (email: string) => lookUpFn(email),
 }));
+const lookUpFn = vi.fn<(email: string) => Promise<import("../../lib/admin/lookup").LookUpResult>>();
 const setOverride = vi.fn();
 const clearOverride = vi.fn();
 vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: unknown) => setOverride(i), clearSwitchOverride: (i: unknown) => clearOverride(i) }));
@@ -71,6 +73,7 @@ const PAGE: AccountPage = {
 
 beforeEach(() => {
   revealFn.mockReset();
+  lookUpFn.mockReset();
   move.mockReset();
   refresh.mockReset();
 });
@@ -116,7 +119,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("searches the masked name through the shared search field, and says when nothing matches", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
+    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
     fireEvent.change(search, { target: { value: "ara q" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
     fireEvent.change(search, { target: { value: "zed" } });
@@ -126,11 +129,14 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("never matches an email or a Clerk id, which the client does not hold whole", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
-    for (const q of ["mara@", "example.com", "user_9", "9mara"]) {
+    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    for (const q of ["example.com", "user_9", "9mara"]) {
       fireEvent.change(search, { target: { value: q } });
       expect(screen.queryByTestId("account-rows")).toBeNull();
     }
+    // With an `@` it filters nothing: the address waits for Enter and the server's exact lookup (A8).
+    fireEvent.change(search, { target: { value: "mara@" } });
+    expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(3);
   });
 
   it("marks the owner and an account with no name with the diamond, and tags the owner (D4)", () => {
@@ -147,7 +153,7 @@ describe("AccountsList (A1 to A3)", () => {
   it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
     const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", email: null, owner: false, initials: null, group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList viewerId="user_2hugh" rows={[bare]} clerk="down" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Find an account by name" });
+    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
     fireEvent.change(search, { target: { value: "user_7" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
     fireEvent.change(search, { target: { value: "·bare" } });
@@ -208,6 +214,82 @@ describe("AccountsList (A1 to A3)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe("the one field: a name, or a whole email (D10 to D13)", () => {
+    const field = () => screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    const rowsShown = () => (screen.queryByTestId("account-rows") ? within(screen.getByTestId("account-rows")).getAllByRole("listitem") : []);
+    const list = () => render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
+
+    it("filters the masked names as you type without an @ (A7), and asks nothing", () => {
+      list();
+      fireEvent.change(field(), { target: { value: "mara" } });
+      expect(rowsShown()).toHaveLength(1);
+      fireEvent.change(field(), { target: { value: "zed" } });
+      expect(screen.getByText("No account matches zed.")).toBeInTheDocument();
+      fireEvent.keyDown(field(), { key: "Enter" });
+      expect(lookUpFn).not.toHaveBeenCalled();
+    });
+
+    it("leaves the list whole while an address waits for Enter (A8)", () => {
+      list();
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      expect(rowsShown()).toHaveLength(3);
+      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(lookUpFn).not.toHaveBeenCalled();
+    });
+
+    it("looks up once on Enter, and a hit shows its one row, masked, with its Show (A3)", async () => {
+      lookUpFn.mockResolvedValue({ kind: "hit", id: "user_9mara" });
+      list();
+      fireEvent.change(field(), { target: { value: "Mara@Example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(lookUpFn).toHaveBeenCalledTimes(1);
+      expect(lookUpFn).toHaveBeenCalledWith("Mara@Example.com");
+      expect(screen.getByText("One account holds this email.")).toBeInTheDocument();
+      const rows = rowsShown();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toHaveTextContent("m•••@e•••.com");
+      expect(within(rows[0]).getByRole("button", { name: /Show/ })).toBeInTheDocument();
+      // Typing on drops the answer: the list is whole again and waits for Enter.
+      fireEvent.change(field(), { target: { value: "Mara@Example.co" } });
+      expect(rowsShown()).toHaveLength(3);
+    });
+
+    it("draws no rows and no column head on a miss (A4)", async () => {
+      lookUpFn.mockResolvedValue({ kind: "miss" });
+      list();
+      fireEvent.change(field(), { target: { value: "nobody@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(screen.getByText("No account holds this email.")).toBeInTheDocument();
+      expect(screen.queryByTestId("account-rows")).toBeNull();
+      expect(screen.queryByText("Account")).toBeNull();
+    });
+
+    it("keeps the field and the whole list on a failure, and raises the toast with Try again (A5)", async () => {
+      lookUpFn.mockResolvedValueOnce({ kind: "failed" }).mockResolvedValueOnce({ kind: "hit", id: "user_9mara" });
+      list();
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(field()).toHaveValue("mara@example.com");
+      expect(rowsShown()).toHaveLength(3);
+      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      const toast = screen.getByRole("alert");
+      expect(toast).toHaveTextContent("Couldn’t look up that email.");
+      await act(async () => fireEvent.click(within(toast).getByRole("button", { name: "Try again" })));
+      expect(lookUpFn).toHaveBeenCalledTimes(2);
+      expect(rowsShown()).toHaveLength(1);
+    });
+
+    it("brings the whole list back on ✕", async () => {
+      lookUpFn.mockResolvedValue({ kind: "miss" });
+      list();
+      fireEvent.change(field(), { target: { value: "nobody@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+      expect(field()).toHaveValue("");
+      expect(rowsShown()).toHaveLength(3);
+    });
   });
 
   it("says the names did not load when Clerk is down", () => {

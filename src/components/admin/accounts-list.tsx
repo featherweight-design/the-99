@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { matchesAccount, type AccountRow } from "../../lib/admin/account-page-rule";
 import { invitedByName, phoneInviteMeta } from "../../lib/admin/invites-rule";
@@ -10,8 +10,10 @@ import { inviteCopy } from "../../lib/copy/invites";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SearchField } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
-import { RevealFailedToast, ShowButton } from "./show-button";
+import { FailedToast, RevealFailedToast, ShowButton } from "./show-button";
 import { useReveal, utcHourMinute, type Revealed } from "./use-reveal";
+import { lookUpAccount } from "../../app/admin/accounts/actions";
+import type { LookUpResult } from "../../lib/admin/lookup";
 
 // The Accounts list (admin STATES A1 to A3; design table, Accounts and the R2 deltas). As on Switches,
 // the shell scrolls the document: the search is pinned under the head at `--admin-head-h`, and the
@@ -20,6 +22,7 @@ import { useReveal, utcHourMinute, type Revealed } from "./use-reveal";
 const copy = adminCopy.accounts;
 const inv = adminCopy.invites;
 const maskCopy = adminMaskCopy.reveal;
+const maskAccounts = adminMaskCopy.accounts;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
 const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_104px_minmax(0,0.7fr)_52px] md:items-center md:gap-[14px]";
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5]";
@@ -136,12 +139,39 @@ export function AccountsList({
 }) {
   const [query, setQuery] = useState("");
   const reveal = useReveal();
+  // The one field (D10 to D13): without an `@` it filters the masked names as you type; with one it waits for Enter
+  // and looks up that exact address. An answer stands only while the field still holds what was looked up.
+  const email = query.includes("@");
+  const [lookup, setLookup] = useState<{ q: string; result: LookUpResult } | null>(null);
+  const [looking, setLooking] = useState(false);
+  const [lookFailed, setLookFailed] = useState<{ q: string; n: number } | null>(null);
+  const answer = email && lookup?.q === query ? lookup.result : null;
+  const lineId = useId();
+  const lookUp = async (q: string) => {
+    if (looking) return;
+    setLooking(true);
+    setLookFailed(null);
+    let result: LookUpResult;
+    try {
+      result = await lookUpAccount(q);
+    } catch {
+      result = { kind: "failed" };
+    }
+    setLooking(false);
+    // A failure keeps the field and the whole list as they were, and says so in the toast (A5).
+    if (result.kind === "failed") setLookFailed((prev) => ({ q, n: (prev?.n ?? 0) + 1 }));
+    else setLookup({ q, result });
+  };
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
-  const shown = useMemo(
-    () => rows.filter((r) => matchesAccount(r, query)),
-    [rows, query],
-  );
+  const shown = useMemo(() => {
+    if (!email) return rows.filter((r) => matchesAccount(r, query));
+    // A8: an address typed and not yet looked up leaves the list whole; a hit narrows it to its one row (A3).
+    if (answer?.kind === "hit") return rows.filter((r) => r.id === answer.id);
+    if (answer?.kind === "miss") return [];
+    return rows;
+  }, [rows, query, email, answer]);
+  const line = !email ? null : answer?.kind === "hit" ? maskAccounts.hit : answer?.kind === "miss" ? maskAccounts.miss : maskAccounts.enterToLookUp;
 
   return (
     <>
@@ -157,14 +187,35 @@ export function AccountsList({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery("")}
-          placeholder={copy.search}
-          aria-label={copy.search}
-          containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && email && query.trim()) {
+              e.preventDefault();
+              void lookUp(query);
+            }
+          }}
+          enterKeyHint="search"
+          placeholder={maskAccounts.search}
+          aria-label={maskAccounts.search}
+          aria-describedby={line ? lineId : undefined}
+          aria-busy={looking || undefined}
+          containerClassName={`h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] ${email ? "border-[color:var(--accent)]" : ""}`}
           className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
         />
+        {line && (
+          <p
+            id={lineId}
+            aria-live="polite"
+            data-lookup-line={answer?.kind ?? "enter"}
+            className={`m-0 text-[13px] leading-[1.55] ${answer?.kind === "hit" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-muted)]"}`}
+          >
+            {line}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">
         {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
+        {/* A4: a miss draws no rows and no column head, only the line above. */}
+        {answer?.kind !== "miss" && (
         <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
@@ -178,7 +229,7 @@ export function AccountsList({
             <span className="text-right">{month}</span>
           </div>
           {shown.length === 0 ? (
-            query.trim() && <p className="m-0 px-[14px] py-[14px] text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{copy.noMatch(query.trim())}</p>
+            !email && query.trim() && <p className="m-0 px-[14px] py-[14px] text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{copy.noMatch(query.trim())}</p>
           ) : (
             <ul data-testid="account-rows" className="m-0 list-none border-0 border-solid border-[color:var(--border)] p-0 md:[border-top-width:1px]">
               {shown.map((r) => (
@@ -198,8 +249,18 @@ export function AccountsList({
             </ul>
           )}
         </div>
+        )}
       </div>
       {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
+      {lookFailed && (
+        <FailedToast
+          key={`look-${lookFailed.n}`}
+          kind="lookup-failed"
+          title={maskAccounts.lookUpFailed}
+          onRetry={() => void lookUp(lookFailed.q)}
+          onDone={() => setLookFailed(null)}
+        />
+      )}
     </>
   );
 }
