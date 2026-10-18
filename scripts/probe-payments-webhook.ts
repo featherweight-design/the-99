@@ -356,7 +356,14 @@ async function run() {
     const q = await boughtPack();
     const did = newDispute();
     await reverseCharge(stripeReversing(q.pi, { refunded: 0 }), eventId(), "charge.dispute.created", did);
-    await purgeAccount(q.userId);
+    // The purge's step 0 deletes the account's Stripe Customer: a stand-in tagged as `ensureCustomer` tags it, so no network call.
+    const fakeForQ = {
+      customers: {
+        retrieve: async (id: string) => ({ id, metadata: { app: "the-99", user_id: q.userId } }),
+        del: async (id: string) => ({ id, deleted: true }),
+      },
+    } as unknown as import("stripe").default;
+    await purgeAccount(q.userId, { stripe: () => fakeForQ });
     check("q · the dispute row outlives the account", Number((await rows<{ n: string }>(sql`select count(*)::text as n from payment_disputes where dispute_id = ${did}`))[0].n), 1);
   }
 
