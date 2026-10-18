@@ -23,6 +23,7 @@ export const ADMIN_TABS = [
   { key: "accounts", href: "/admin/accounts", title: adminCopy.tabs.accounts, sub: null },
   { key: "models", href: "/admin/models", title: adminCopy.tabs.models, sub: adminCopy.models.sub },
   { key: "invites", href: "/admin/invites", title: adminCopy.tabs.invites, sub: adminCopy.invites.tree.sub },
+  { key: "payments", href: "/admin/payments", title: adminCopy.tabs.payments, sub: adminCopy.payments.sub },
 ] as const;
 
 /** A group's name and description, for the head's detail mode on its page. */

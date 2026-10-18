@@ -16,11 +16,11 @@ import { HistoryList } from "./switch-page";
 // borrow the group editor's controls: a numeric field with its help line, and the pending bar with Undo and Save.
 
 const inv = adminCopy.invites;
-const CARD = "flex flex-col gap-[10px] md:gap-[12px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[14px] md:px-[20px] md:py-[18px]";
+export const CARD = "flex flex-col gap-[10px] md:gap-[12px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[14px] md:px-[20px] md:py-[18px]";
 const FIELD =
   "h-[44px] w-full min-w-0 rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] md:w-[120px] [@media(pointer:fine)]:md:text-[14px]";
-const HELP = "text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-faint)]";
-const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
+export const HELP = "text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-faint)]";
+export const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
 const LINE = "flex min-h-[44px] items-center gap-[10px] border-0 border-t border-solid border-[color:var(--border)] py-[6px] text-[13px] text-[color:var(--fg-body)] md:min-h-[40px] md:text-[13.5px]";
 // Dates are desktop only (the phone frames draw none).
 const META = "hidden font-mono text-[11px] text-[color:var(--fg-faint)] md:inline";
@@ -28,7 +28,7 @@ const FACE = "flex h-[26px] w-[26px] flex-none items-center justify-center overf
 const TEXT_BUTTON = "inline-flex min-h-[44px] md:min-h-[32px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60";
 
 /** The numeric field, its label and its help line, as the group editor draws a field. */
-function NumberField({ label, help, helpPhone, value, onChange, invalid, disabled, edited }: { label: string; help: string; helpPhone?: string; value: string; onChange: (v: string) => void; invalid: boolean; disabled: boolean; edited: boolean }) {
+export function NumberField({ label, help, helpPhone, value, onChange, invalid, disabled, edited }: { label: string; help: string; helpPhone?: string; value: string; onChange: (v: string) => void; invalid: boolean; disabled: boolean; edited: boolean }) {
   return (
     <label className="flex min-w-0 flex-col gap-[6px]">
       <span className="text-[13px] font-semibold text-[color:var(--fg)]">{label}</span>
@@ -54,7 +54,7 @@ function NumberField({ label, help, helpPhone, value, onChange, invalid, disable
 }
 
 /** The group editor's pending bar: what the press will do, then Undo and the press. */
-function PendingBar({ testId, sentence, failure, press, onUndo, onPress, inFlight, pressDisabled = false }: {
+export function PendingBar({ testId, sentence, failure, press, onUndo, onPress, inFlight, pressDisabled = false }: {
   testId: string;
   sentence: string;
   failure: string | null;

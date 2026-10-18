@@ -82,6 +82,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   account, before and apart from the invite spend; either failing answers 500 for a retry. It takes the account's invite lock
   (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
   `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
+- **The admin Payments tab** (`/admin/payments`, admin plan A2b): a UTC month's revenue from `payment_records` per currency (gross, tax, net; refunds subtract in A3), the Costs page's own spend figure beside it, the month's plan, pack and gift lots, the `credits_granted` events, and Grant credits (`grantCredits` → `grantGift`, one `actionId` per grant). Reads in `src/lib/payments/admin-read.ts`. Proof: `pnpm probe:admin-payments`.
 - Spend order is free, welcome, plan, gift, pack (`SOURCE_RANK`). A gift (admin plan A-R5) never expires, so it goes after plan lots, which can lapse, and before packs, which were bought and can be refunded; /credits draws its Gift cell only while it holds a credit, like Welcome. `heldCredits` is the one definition of "holds a lot"; the 20-a-day
   paid limit applies to welcome runs. A group can set its own paid limit (`flag_groups.paid_daily_limit`, 1 to 1000, the
   admin group editor's "Daily paid runs"): `paidLimitFor` reads the largest among the player's groups, else

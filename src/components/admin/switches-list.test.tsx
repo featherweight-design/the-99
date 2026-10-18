@@ -186,6 +186,7 @@ describe("AdminHead on /admin/switches", () => {
       ["Accounts", null],
       ["Models", null],
       ["Invites", null],
+      ["Payments", null],
     ]);
   });
 });
