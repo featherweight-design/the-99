@@ -9,7 +9,7 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clearRecent } from "../../lib/card-search/recent";
@@ -31,6 +31,9 @@ import { usePendingPush } from "./pending-push";
 import { CreditChip } from "./credit-chip";
 import { chipAction } from "../../app/credits/actions";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { heldPaidAction } from "../../app/account/delete-warning-actions";
+import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
+import { DeleteWarning } from "../credits/delete-warning";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -421,6 +424,10 @@ export function AccountMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The deletion warning (plan E6): the paid credits held, read as the menu opens, and the warning while it is up.
+  const [held, setHeld] = useState<HeldPaid | null | undefined>(undefined);
+  const [warning, setWarning] = useState<HeldPaid | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { user } = useUser();
   const clerk = useClerk();
   const panelId = useId();
@@ -466,29 +473,69 @@ export function AccountMenu({
     setSeenProp(credits);
     setChip(credits);
   }
+  // This opening's read of the held paid credits: one request per opening, which a Manage account press made before
+  // it lands awaits rather than asking again. A failed read is null (no warning).
+  const heldRead = useRef<Promise<HeldPaid | null> | null>(null);
   useEffect(() => {
     if (!open) return;
     let live = true;
     chipAction().then((next) => { if (live) setChip(next); }, () => {});
-    return () => { live = false; };
+    const read = heldPaidAction().catch(() => null);
+    heldRead.current = read;
+    read.then((next) => { if (live) setHeld(next); });
+    return () => {
+      live = false;
+      heldRead.current = null;
+    };
   }, [open]);
   const onTour = () => go(TOUR_HREF);
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
   // prebuilt UI, so the press navigates away. The menu closes first all the same.
-  function onManage() {
-    // A navigation like `go`'s: without the mark, the sheet's release steps back off its history
-    // entry while Clerk's page is loading, and that Back cancels it.
+  //
+  // While paid credits are held (payments on or off), the press opens the deletion warning first (plan E6, D1/D2),
+  // whose one press continues here. The decision comes BEFORE the menu closes: going on to Clerk must mark the
+  // navigation first, or the sheet's release steps back off its history entry and that Back cancels the redirect. So
+  // a read still in flight is awaited with the menu open; a failed one goes straight on.
+  function toClerk() {
     leaveDialogsForNavigation();
-    close();
     void clerk.redirectToUserProfile();
+  }
+  // The press while the read is in flight belongs to the opening it was made in: one press per opening, and a
+  // dismissal (or unmount) ends that opening, so a press it left in flight does nothing when it resolves, even
+  // after the menu reopens. `opening` moves on every change of `open` and on unmount.
+  const opening = useRef(0);
+  const pressedIn = useRef<number | null>(null);
+  useEffect(() => () => {
+    opening.current++;
+  }, [open]);
+  async function onManage() {
+    const at = opening.current;
+    if (pressedIn.current === at) return;
+    pressedIn.current = at;
+    let now: HeldPaid | null;
+    try {
+      now = held !== undefined ? held : await (heldRead.current ?? heldPaidAction().catch(() => null));
+    } finally {
+      if (pressedIn.current === at) pressedIn.current = null;
+    }
+    if (opening.current !== at) return;
+    if (warnsBeforeDelete(now)) {
+      close();
+      setWarning(now);
+    } else {
+      toClerk();
+      close();
+    }
   }
 
   // A successful sign-out navigates away, so `busy` is only ever released on
   // failure — without that release the menu stays dead until a reload.
   function onSignOut() {
     setBusy(true);
+    // Signing out ends this opening for a Manage account press still awaiting its read: it must neither warn nor go on.
+    opening.current++;
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
     void clerk.signOut().catch(() => setBusy(false));
@@ -501,6 +548,15 @@ export function AccountMenu({
     eligible: friends && friendsMoment,
     copy: momentsCopy.friendsAfterGame,
   });
+  // The trigger carries the moment's anchor and is where the deletion warning hands focus back.
+  const anchorRef = afterGame.ref;
+  const triggerAnchor = useCallback(
+    (el: HTMLButtonElement | null) => {
+      triggerRef.current = el;
+      anchorRef(el);
+    },
+    [anchorRef],
+  );
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // The popover has no backdrop, so an outside press is what dismisses it
@@ -542,7 +598,12 @@ export function AccountMenu({
         // The contact sheet's `openAccount` step finds the trigger by this mark, as `openHelp` finds the ? by its own.
         data-account-trigger=""
         {...afterGame}
-        onClick={() => setOpen((v) => !v)}
+        ref={triggerAnchor}
+        onClick={() => {
+          // Each open reads the held credits afresh: a previous open's answer is never the press's.
+          if (!open) setHeld(undefined);
+          setOpen((v) => !v);
+        }}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.
         className="group relative block cursor-pointer p-[3px]"
@@ -575,6 +636,17 @@ export function AccountMenu({
             visual box stays the button's first child. */}
         <TargetBox id="tour:account" />
       </button>
+      {warning && (
+        <DeleteWarning
+          held={warning}
+          returnFocusRef={triggerRef}
+          onClose={() => setWarning(null)}
+          onContinue={() => {
+            setWarning(null);
+            toClerk();
+          }}
+        />
+      )}
       {open &&
         (isPopover ? (
           <AccountPopover
