@@ -7,8 +7,8 @@ import { legalCopy } from "../../lib/copy/legal/shared";
 /**
  * `On this page`: a real list of anchors, never hidden behind a toggle and never `fixed`. On the phone it is numbered
  * 44px rows in the flow; from `md` it is the sticky 220px column, with the brand diamond on the section in view.
- * The section in view is the last heading whose top has passed the reading line (`IntersectionObserver` on the headings),
- * so with no observer, or before the first scroll, the first row is the one marked.
+ * The section in view is the first section, in document order, whose heading is inside the top 30% of the screen
+ * (`IntersectionObserver`); between bands the last one stays marked. With no observer, or before the first scroll, the first row is marked.
  */
 export function LegalToc({ sections }: { sections: readonly LegalSection[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "");

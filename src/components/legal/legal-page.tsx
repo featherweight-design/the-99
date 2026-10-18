@@ -49,7 +49,7 @@ function Block({ block }: { block: LegalBlock }) {
  */
 export function LegalPage({ doc }: { doc: LegalDoc }) {
   return (
-    <article className="mx-auto grid w-full max-w-[356px] grid-cols-1 gap-y-[28px] px-[0px] py-[28px] md:max-w-[960px] md:grid-cols-[220px_minmax(0,680px)] md:gap-x-[48px] md:gap-y-[32px] md:px-[34px] md:py-[44px]">
+    <article className="mx-auto grid w-full max-w-[356px] grid-cols-1 gap-y-[28px] px-[0px] py-[28px] md:max-w-[1016px] md:grid-cols-[220px_minmax(0,680px)] md:gap-x-[48px] md:gap-y-[32px] md:px-[34px] md:py-[44px]">
       <header className="flex flex-col gap-[8px] md:col-start-2 md:row-start-1">
         <h1 className="m-0 font-display text-[28px] font-bold leading-[1.2] text-[color:var(--fg)] md:text-[36px]">{doc.title}</h1>
         <p className="m-0 font-mono text-[11.5px] text-[color:var(--fg-muted)]">{legalCopy.lastUpdated(doc.updated)}</p>
