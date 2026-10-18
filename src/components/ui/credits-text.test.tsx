@@ -42,4 +42,15 @@ describe("CreditsText", () => {
     render(<p><CreditsText text="4 of 5 left · reset at 2:01 AM" /></p>);
     expect(screen.queryByTestId("credit-expiring")).toBeNull();
   });
+
+  it("a tail appended after a spent line with Get more credits keeps the link last", () => {
+    const line = creditsCopy.withMore(creditsCopy.spent(5, null), true);
+    const joined = creditsCopy.afterLine(line, " · Nothing was changed");
+    expect(joined.endsWith(`\n${creditsCopy.getMore}`)).toBe(true);
+    render(<p><CreditsText text={joined} /></p>);
+    expect(screen.getByRole("link", { name: /Get more credits/ }).getAttribute("href")).toBe("/credits");
+    expect(screen.getByText(/Nothing was changed/)).toBeTruthy();
+    // Payments off: a plain append, no link.
+    expect(creditsCopy.afterLine(creditsCopy.spent(5, null), " · x").endsWith(" · x")).toBe(true);
+  });
 });

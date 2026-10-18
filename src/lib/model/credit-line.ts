@@ -74,7 +74,7 @@ export function creditCount(a: LineAllowance, now: Date = new Date()): string {
 export function creditSpent(a: LineAllowance): string {
   if (creditLineKind(a) === "limit") return creditsCopy.limit(a.paidLimit ?? 0, paidHeld(a), backAt(a));
   const line = creditsCopy.spent(a.limit, a.reopensAt ?? a.nextAt);
-  return a.payments === true ? `${line}\n${creditsCopy.getMore}` : line;
+  return creditsCopy.withMore(line, a.payments === true);
 }
 
 /** Beside a press that spends for the first time on a surface. */
@@ -82,7 +82,7 @@ export function creditFirst(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "free") return creditsCopy.first(freeCount(a), a.limit, a.nextAt);
-  return kind === "paidNext" ? creditsCopy.firstPaid(creditCount(a, now)) : `Uses a credit. ${creditCount(a, now)}.`;
+  return kind === "paidNext" ? creditsCopy.firstPaid(creditCount(a, now)) : creditsCopy.usesCredit(creditCount(a, now));
 }
 
 /** Beside a press that replaces what is on screen. */
@@ -90,7 +90,7 @@ export function creditAgain(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "free") return creditsCopy.again(freeCount(a), a.limit, a.nextAt);
-  return kind === "paidNext" ? creditsCopy.againPaid(creditCount(a, now)) : `Replaces these suggestions and uses a credit. ${creditCount(a, now)}.`;
+  return kind === "paidNext" ? creditsCopy.againPaid(creditCount(a, now)) : creditsCopy.replacesUsesCredit(creditCount(a, now));
 }
 
 /** The line standing alone (no lead): the count, or the spent/limit form. L3 reads "this run uses 1 of N paid". */

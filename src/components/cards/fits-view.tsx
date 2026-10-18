@@ -561,15 +561,15 @@ export function FitsView({
             {stale ? null : result.refunded ? (
               <div data-testid="read-thin" className="flex flex-col gap-[4px] rounded-[9px] px-[14px] py-[11px] border border-dashed border-[color:var(--border-dashed)]">
                 <p className="m-0 text-[12.5px] text-[color:var(--fg-body)]">{read.thin(result.picks.length)}</p>
-                <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{`${read.thinSub} · ${standing}`}</p>
+                <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]"><CreditsText text={`${read.thinSub} · ${standing}`} /></p>
               </div>
             ) : (
               <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {!isFresh(result)
+                <CreditsText text={!isFresh(result)
                   ? read.resultFootStored
                   : oneDeck
                     ? `${read.onlyOne(oneDeck, name)} · ${read.resultFootSpent} · ${standing}`
-                    : `${read.resultFootSpent} · ${standing}`}
+                    : `${read.resultFootSpent} · ${standing}`} />
               </p>
             )}
           </section>

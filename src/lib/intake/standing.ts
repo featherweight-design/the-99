@@ -94,5 +94,5 @@ export function formLine(s: Standing): string {
   // At the paid limit the words say so (L5); otherwise the form's own spent line, with `Get more credits` under it while payments are on (L4).
   if (creditLineKind(lineOf(s)) === "limit") return creditSpent(lineOf(s));
   const line = copy.intake.extra.spentLine(bareStanding(s));
-  return s.payments === true ? `${line}\n${creditsCopy.getMore}` : line;
+  return creditsCopy.withMore(line, s.payments === true);
 }

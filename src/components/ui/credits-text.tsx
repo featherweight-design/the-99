@@ -22,9 +22,9 @@ export function CreditsText({ text }: { text: string }) {
         <Phrases text={text.slice(0, -more.length)} />
         <Link
           href={BUY_HREF}
-          className="mt-[4px] block text-[color:var(--accent)] underline decoration-[color:var(--accent-shadow)] underline-offset-2"
+          className="mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent)] md:min-h-[32px]"
         >
-          {creditsCopy.getMore} {"→"}
+          {creditsCopy.getMore}<span aria-hidden="true" className="text-[10px]">→</span>
           <PendingReporter href={BUY_HREF} />
         </Link>
       </>

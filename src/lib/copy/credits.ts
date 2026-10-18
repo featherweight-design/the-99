@@ -35,6 +35,8 @@ export function monthName(at: Date): string {
 
 /** The phrase that ends a line about what shares the credits, drawn as a link to `CREDITS_HREF`. */
 const link = "What uses credits?";
+/** L4's own line under the spent line, a link to `/credits`. */
+const getMore = "Get more credits";
 /** The About entry that lists every feature spending credits, in the Reference tab (entries carry their own anchors). */
 export const CREDITS_HREF = "/about?tab=reference#credits";
 
@@ -90,13 +92,18 @@ export const creditsCopy = {
   /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
   expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?$)/,
   /** L4: its own line under the spent line, a link to `/credits`. Only while payments are on for the reader. */
-  getMore: "Get more credits",
-  /** The account menu's chip (M1b), by state. The count and the date are the server's read. */
-  chip: {
-    credits: (n: number) => `${n} credits`,
-    free: (n: number) => `${n} free credits`,
-    out: "Get more credits",
+  getMore,
+  /** L4's own line under a spent line, only while payments are on for the reader. */
+  withMore: (line: string, payments: boolean) => (payments ? `${line}\n${getMore}` : line),
+  /** `first` / `again` for the free-and-paid forms (L2, L6): the line is the form's own count. */
+  usesCredit: (line: string) => `Uses a credit. ${line}.`,
+  replacesUsesCredit: (line: string) => `Replaces these suggestions and uses a credit. ${line}.`,
+  /** Appends `tail` to a credit line that may end in the `getMore` line, keeping `getMore` last so `CreditsText` still links it. */
+  afterLine: (line: string, tail: string) => {
+    const more = `\n${getMore}`;
+    return line.endsWith(more) ? `${line.slice(0, -more.length)}${tail}${more}` : `${line}${tail}`;
   },
+
   /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
