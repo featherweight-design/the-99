@@ -35,4 +35,9 @@ describe("ExternalLink", () => {
     expect(className).toContain("focus-visible:outline-2");
     expect(className).not.toContain("focus:outline-2");
   });
+
+  it("takes a 44px-tall coarse-pointer hit that stays off its neighbours", () => {
+    render(<ExternalLink href="https://manapool.com" label="Buy it" />);
+    expect(screen.getByRole("link")).toHaveClass("pointer-coarse:after:h-[max(44px,100%)]", "pointer-coarse:after:w-[calc(100%+6px)]");
+  });
 });

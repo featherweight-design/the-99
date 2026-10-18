@@ -2293,7 +2293,8 @@ export function CardModal({
             onClick={onClose}
             aria-label="Close card details"
             // §Mobile: Art Close Button
-            className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
+            // The 32px plate drawn; a pseudo-element 6px past each edge takes its hit to 44px, as the back pill's does vertically.
+            className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)] before:absolute before:-inset-[6px] before:content-['']"
             style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
           >
             ✕

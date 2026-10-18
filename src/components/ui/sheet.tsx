@@ -50,6 +50,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useSheetHost } from "./sheet-host";
+import { TOUCH_HIT } from "./touch-hit";
 import { useVisualViewportFrame, VV_BOTTOM, VV_FRAME } from "./visual-viewport";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
@@ -396,7 +397,8 @@ export function SheetHeader({
         type="button"
         onClick={onDismiss}
         aria-label={closeLabel}
-        className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] text-[13px] text-[color:var(--fg-muted)]"
+        // The 30px plate keeps the handoff's size; a coarse pointer gets its 44px hit past it.
+        className={`${TOUCH_HIT} flex h-[30px] w-[30px] items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] text-[13px] text-[color:var(--fg-muted)]`}
       >
         ✕
       </button>
