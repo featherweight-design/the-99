@@ -122,7 +122,7 @@ function FromLine({ pod }: { pod: string }) {
   return (
     <div
       data-testid="log-from"
-      className="mt-[14px] flex min-h-[40px] items-center gap-[8px] rounded-[9px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_35%,transparent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)] px-[12px] text-[13px] text-fg-body"
+      className="mt-[14px] flex min-h-[40px] items-center gap-[8px] rounded-[9px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_35%,transparent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)] px-[12px] text-left text-[13px] text-fg-body"
     >
       <TableGlyph size={16} />
       <span>
