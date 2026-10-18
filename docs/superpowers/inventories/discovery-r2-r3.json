@@ -264,6 +264,33 @@
           "settle": 400
         }
       ]
+    },
+    {
+      "id": "help-over-card-details",
+      "label": "/collection — a card's details open, then the ? pressed over them: the panel beside the modal at 1300 (R2·9 #2040)",
+      "view": "src/components/cards/card-modal.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[type='search']",
+          "settle": 600
+        },
+        {
+          "click": "button[aria-busy]:visible",
+          "settle": 400
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 900
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
     }
   ],
   "needsFixture": [
@@ -374,15 +401,5 @@
       "why": "its locked captions need a decks-only account, which the sheet's audit account is not, and its stops and the menu row sit on the shell's own controls, which the sheet's verbs never reach (they reach page content only). The sheet photographs About's press as `tour-again-about`"
     }
   ],
-  "unmounted": [
-    {
-      "id": "help-over-card-details",
-      "mountedBy": "R2·9",
-      "goto": "a card's details at md and up",
-      "widths": [
-        "desktop"
-      ],
-      "shows": "the ? over card details: inert exemption, layering, Tab stop, focus hand-off, Escape"
-    }
-  ]
+  "unmounted": []
 }
