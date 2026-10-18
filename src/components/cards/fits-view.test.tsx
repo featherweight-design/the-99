@@ -287,6 +287,14 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(within(row).getByText(r.addOnlyToBuy)).toBeInTheDocument();
   });
 
+  it("the footer under a read counts the credits where they stand, never what the next run will spend (L3)", async () => {
+    const paidNext = { ...allowance, used: 5, pack: 114, paidUsedToday: 0, paidLimit: 20 } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paidNext }, { stored: stored({ refunded: true }) }));
+    const foot = screen.getByTestId("read-thin");
+    expect(foot).toHaveTextContent("114 paid");
+    expect(foot).not.toHaveTextContent("this run uses");
+  });
+
   it("a thin read says the credit came back (P4); a reopened current read is dated with no press (P9)", async () => {
     await draw(panel({}, { stored: stored({ refunded: true }) }));
     expect(screen.getByTestId("read-thin")).toHaveTextContent(r.thin(1));
