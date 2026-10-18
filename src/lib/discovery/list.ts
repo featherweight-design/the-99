@@ -16,6 +16,7 @@ import {
   byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
   unplayedTags, type DeckTagSet,
 } from "./novelty";
+import { perfRead } from "../perf/timing";
 
 export type DiscoveryItem = {
   slug: string;
@@ -470,16 +471,16 @@ export async function loadDiscoveryWithIds(
   // read is the classifier on both sides), so it cannot be left dangling.
   const labelsOn = labelRoleCountsEnabled(env);
   let basisStarted: ReturnType<typeof loadSharedPoolRoleBasis> | undefined;
-  const { collection, availability, availOk } = await loadDiscoveryPool(userId, env, (c) => {
+  const { collection, availability, availOk } = await perfRead("discovery.pool", () => loadDiscoveryPool(userId, env, (c) => {
     basisStarted = loadSharedPoolRoleBasis(userId, c, labelsOn);
-  });
+  }));
   const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection, labelsOn);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
-  const candidates = await loadCandidates(
+  const candidates = await perfRead("discovery.candidates", () => loadCandidates(
     userId,
     collection.map((c) => c.oracleId),
-  );
+  ));
 
   // The labels, then the targets they select: the targets follow the basis the labels come back
   // under, and the rollup counts the same pool by the same sets, so with the labels readable a row
@@ -487,14 +488,14 @@ export async function loadDiscoveryWithIds(
   // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
   // page until it is rebuilt. The prices and played tags do not wait on either read.
   const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }] = await Promise.all([
-    readPrices(candidates.map((c) => c.oracleId)),
-    loadPlayedTags(userId),
-    basisRead.then(async ({ basis, fellBack, roleSets }) => ({
+    perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId))),
+    perfRead("discovery.playedTags", () => loadPlayedTags(userId)),
+    perfRead("discovery.basisAndTargets", () => basisRead.then(async ({ basis, fellBack, roleSets }) => ({
       basis,
       fellBack,
       roleSets,
-      roleTargets: await loadRoleTargetsForCommanders(candidates, basis),
-    })),
+      roleTargets: await perfRead("discovery.targets", () => loadRoleTargetsForCommanders(candidates, basis)),
+    }))),
   ]);
 
   const { list, oracleIds } = assembleDiscoveryWithIds({
