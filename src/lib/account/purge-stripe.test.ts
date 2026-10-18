@@ -39,11 +39,11 @@ describe("purgeAccount and Stripe", () => {
     expect(st.transactions).toBe(0);
   });
 
-  it("purges nothing for a Customer that is not this app's", async () => {
+  it("leaves a Customer that is not this app's alone and still purges the database half", async () => {
     retrieve.mockResolvedValue({ id: "cus_1", metadata: { app: "concert-crawl", user_id: "user_a" } });
-    await expect(purgeAccount("user_a", { stripe: () => fake })).rejects.toThrow("not this app's");
+    await expect(purgeAccount("user_a", { stripe: () => fake })).rejects.toThrow("stop after");
     expect(del).not.toHaveBeenCalled();
-    expect(st.transactions).toBe(0);
+    expect(st.transactions).toBe(1);
   });
 
   it("purges nothing when a mapping exists and there is no usable key", async () => {

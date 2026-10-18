@@ -52,13 +52,14 @@ describe("deleteStripeCustomerFor", () => {
     expect(del).not.toHaveBeenCalled();
   });
 
-  it("refuses a Customer that is not this app's or not this account's: throws, deletes nothing, logs", async () => {
+  it("never deletes a Customer that is not this app's or not this account's, and does not throw: result foreign, logged", async () => {
     for (const metadata of [{}, { app: "concert-crawl", user_id: "user_a" }, { app: "the-99", user_id: "user_b" }, { app: "the-99" }]) {
       retrieve.mockResolvedValueOnce({ id: "cus_1", metadata });
-      await expect(deleteStripeCustomerFor("user_a", () => fake)).rejects.toThrow("not this app's");
+      expect(await deleteStripeCustomerFor("user_a", () => fake)).toBe("foreign");
     }
     expect(del).not.toHaveBeenCalled();
     expect(errors).toHaveLength(4);
+    for (const line of errors) expect(line).not.toMatch(/cus_|user_a/);
   });
 
   it("throws on any other Stripe failure, in fixed words that carry no id", async () => {

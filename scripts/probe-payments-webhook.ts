@@ -239,7 +239,15 @@ async function run() {
 
   // g · The purge.
   {
-    const report = await purgeAccount(a.userId);
+    // A stand-in for Stripe, so the purge's step 0 makes no network call and needs no key: the Customer is
+    // tagged as `ensureCustomer` tags it, and the delete resolves.
+    const fakeStripe = {
+      customers: {
+        retrieve: async (id: string) => ({ id, metadata: { app: "the-99", user_id: a.userId } }),
+        del: async (id: string) => ({ id, deleted: true }),
+      },
+    } as unknown as import("stripe").default;
+    const report = await purgeAccount(a.userId, { stripe: () => fakeStripe });
     check("g · the purge takes the customer mapping and the lot", [report.rows.stripe_customers, report.rows.credit_grants], [1, 1]);
     check("g · and keeps the payment record, which names no account", await record(sa.id), ["granted"]);
   }

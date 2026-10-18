@@ -13,7 +13,9 @@ import { PAYMENTS_APP } from "./packs";
  *   needs no key (`getStripe` is not even called).
  * - A row: the Customer is retrieved first and deleted ONLY when it is this app's and this account's
  *   (`metadata.app` and `metadata.user_id`, exactly what `ensureCustomer` tags). The Stripe account is shared
- *   with Concert Crawl, so anything else is refused: an error-level line and a throw, which stops the purge.
+ *   with Concert Crawl, so anything else is NEVER deleted: one error-level line, result `"foreign"`, and the purge goes on with
+ *   its database half (a throw here would repeat on every retry and sweep for ever and the account would never
+ *   be purged). The Customer is left in place for someone to check in Stripe.
  * - `customers.del` permanently deletes the Customer and "immediately cancels any active subscriptions on the
  *   customer" (the pinned SDK's own doc comment on `CustomersResource.del`), so a deleted account is never
  *   charged again.
@@ -22,14 +24,16 @@ import { PAYMENTS_APP } from "./packs";
  *   retries, and the sweep re-runs it. The mapping row is still there, so the retry finds the Customer.
  * - Idempotent. After the purge the mapping is gone, so a re-run (the sweep's, for a day) makes no call.
  *
- * Races with a late payment: between this delete and the purge's transaction, a `checkout.session.completed`
- * can still find the mapping and grant; the purge then deletes that lot (`credit_grants` follows
- * `stripe_customers` in `PURGE_ORDER`, and `fulfil.ts` reads the mapping FOR SHARE). Once the purge has
- * committed there is no mapping, so a later event for the deleted Customer is kept unattributed.
+ * Races with a late payment: between this delete and the purge's transaction the mapping still exists, so a
+ * `checkout.session.completed` can still grant, and the purge then deletes that lot with the account
+ * (`credit_grants` follows `stripe_customers` in `PURGE_ORDER`; `fulfil.ts` reads the mapping FOR SHARE). One
+ * completing AFTER the commit finds no mapping and is kept unattributed (refund by hand). A Checkout started
+ * in the instant between this delete and the transaction fails at `ensureCustomer`: the account is being
+ * deleted, and that is accepted.
  *
  * Logs are fixed words: never an id, an email or an amount. Reads no feature switch.
  */
-export async function deleteStripeCustomerFor(userId: string, getStripe: () => Stripe | null): Promise<"none" | "deleted" | "gone"> {
+export async function deleteStripeCustomerFor(userId: string, getStripe: () => Stripe | null): Promise<"none" | "deleted" | "gone" | "foreign"> {
   const [row] = await db.select({ id: stripeCustomers.stripeCustomerId }).from(stripeCustomers)
     .where(eq(stripeCustomers.userId, userId));
   if (!row) return "none";
@@ -47,8 +51,8 @@ export async function deleteStripeCustomerFor(userId: string, getStripe: () => S
   if ("deleted" in found && found.deleted) return "gone";
   const meta = (found as Stripe.Customer).metadata ?? {};
   if (meta.app !== PAYMENTS_APP || meta.user_id !== userId) {
-    console.error("[payments] account deletion: the mapped Stripe customer is not tagged as this app's and this account's; refused");
-    throw new Error("Stripe customer is not this app's");
+    console.error("[payments] account deletion: stripe customer not tagged as this app's; left in place, check Stripe");
+    return "foreign";
   }
   try {
     await stripe.customers.del(row.id);
