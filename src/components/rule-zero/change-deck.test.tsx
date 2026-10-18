@@ -119,9 +119,9 @@ describe("Change deck's failures and focus", () => {
       expect(dialog.style.visibility).toBe("visible");
       await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
       // The panel is capped by `useAnchoredPanel`'s room on the side it hangs: jsdom's link sits at 0 on a 768px
-      // viewport, so it hangs below with the viewport less the 4px gap and the 8px margin. The list scrolls inside,
+      // viewport, at the very edge, so it hangs from the top margin (8px) with 8px kept at the foot. The list scrolls inside,
       // and the head stays outside the scroller.
-      expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 4 - 8}px`);
+      expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 8 - 8}px`);
       const scroller = screen.getByRole("list", { name: s.decksList }).closest(".overflow-y-auto");
       expect(scroller?.className).toContain("min-h-0");
       expect(scroller?.textContent).not.toContain(s.sheetTitle);

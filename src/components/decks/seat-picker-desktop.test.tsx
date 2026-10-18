@@ -29,8 +29,8 @@ describe("SeatPicker at desktop width", () => {
     const dialog = screen.getByRole("dialog", { hidden: true });
     expect(dialog).toHaveAttribute("aria-label", gameSeatsCopy.picker.title);
     // Held to the room under its anchor (`useAnchoredPanel`): jsdom's anchor sits at 0 on a 768px viewport, so the
-    // viewport less the 4px gap and the 8px margin. Never the old whole-viewport cap, which covered the trigger.
-    await waitFor(() => expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 4 - 8}px`));
+    // panel hangs from the top margin (8px), with 8px kept at the foot. Never the old whole-viewport cap, which covered the trigger.
+    await waitFor(() => expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 8 - 8}px`));
     expect(dialog.className).toContain("flex-col");
     await waitFor(() => expect(screen.getByRole("searchbox")).toHaveFocus());
     anchor.remove();
