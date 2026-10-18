@@ -104,18 +104,22 @@ export function ConfirmModal({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         // §1.2 — phone: bottom sheet, 12/22/30/22, radius 22 22 0 0, top border only.
-        // Desktop: 520 modal, 30/34, radius 16, border all round.
-        className="w-full md:w-[520px] rounded-[22px_22px_0_0] md:rounded-2xl p-[12px_22px_30px] md:p-[30px_34px] [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)] outline-none"
+        // Desktop: 520 modal, 30/34, radius 16, border all round. Capped in dvh at both widths (an open
+        // keyboard shrinks it) as a column that never scrolls itself: the title and the buttons are pinned,
+        // `flex-none`, and the body between them is the one scroller.
+        className="flex max-h-[88dvh] w-full flex-col overflow-hidden md:w-[520px] rounded-[22px_22px_0_0] md:rounded-2xl p-[12px_22px_30px] md:p-[30px_34px] [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)] outline-none"
         style={{ background: "var(--surface-rail)" }}
       >
         {/* §1.3 Sheet handle, decorative */}
-        <div aria-hidden className="md:hidden mx-auto mb-[18px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
+        <div aria-hidden className="md:hidden mx-auto mb-[18px] flex-none h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
 
         {warning ? (
           // §E replaces the confirm's content inside this same dialog: one focus trap and one
           // back-button entry, where unmounting the confirm and mounting a second dialog left the
           // first one's history entry behind.
-          <>
+          // The warning is laid out for a capped column: its deck list shrinks and scrolls, and its title and
+          // buttons sit outside it, `flex-none`. Its root is told to fill this column (as GotItReceipt's).
+          <div className="flex min-h-0 flex-1 flex-col *:min-h-0 *:flex-1">
             <ShortDeckWarning
               titleId="confirm-title"
               source={warning.source}
@@ -128,17 +132,20 @@ export function ConfirmModal({
               onConfirm={warning.onConfirm}
               cancelRef={warningCancelRef}
             />
-          </>
+          </div>
         ) : (
           <>
         {/* §1.4 Title */}
         <h2
           id="confirm-title"
-          className="m-0 font-display font-bold text-[20px] md:text-[25px] leading-[1.15] text-[color:var(--fg)]"
+          className="m-0 flex-none font-display font-bold text-[20px] md:text-[25px] leading-[1.15] text-[color:var(--fg)]"
         >
           {words.title}
         </h2>
 
+        {/* The body scrolls inside the cap, so the title and the buttons stay in view. The 6px pad and its
+            negative margin keep a focus ring inside the scroller's clip. */}
+        <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
         {/* §1.5–1.9 The NOW → AFTER pair */}
         <div className="mt-[16px] md:mt-[18px] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[12px] md:gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px] md:p-[14px_16px]">
           <Figure
@@ -166,10 +173,11 @@ export function ConfirmModal({
         {error && (
           <p role="alert" className="m-0 mt-[10px] text-[13px] text-[color:var(--danger)]">{error}</p>
         )}
+        </div>
 
         {/* §1.12 Buttons. DOM order is [Keep][Replace], left to right on desktop; the phone
             stacks the primary on top with flex-col-reverse, as this dialog always has. */}
-        <div className="mt-[20px] md:mt-[24px] flex flex-col-reverse md:flex-row gap-[10px] md:gap-[12px]">
+        <div className="mt-[20px] md:mt-[24px] flex flex-none flex-col-reverse md:flex-row gap-[10px] md:gap-[12px]">
           <button
             ref={keepRef}
             type="button"

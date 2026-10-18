@@ -195,3 +195,64 @@ describe("ConfirmModal", () => {
     });
   });
 });
+
+// The modal rule: the box is capped in dvh and never scrolls itself; the body is its one scroller, `min-h-0` so it
+// can shrink; the title and the buttons sit outside it, so a short viewport or an open keyboard never hides them.
+describe("ConfirmModal's capped column", () => {
+  function scrollerOf(dialog: HTMLElement) {
+    const scrollers = [...dialog.querySelectorAll<HTMLElement>(".overflow-y-auto")];
+    expect(scrollers).toHaveLength(1);
+    return scrollers[0];
+  }
+
+  function expectCappedBox(dialog: HTMLElement) {
+    const cls = dialog.className.split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["flex", "flex-col", "overflow-hidden", "max-h-[88dvh]"]));
+    expect(cls).not.toContain("overflow-y-auto");
+  }
+
+  it("scrolls the confirm's body between a pinned title and pinned buttons", () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expectCappedBox(dialog);
+    const body = scrollerOf(dialog);
+    expect(body.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
+    expect(body).toHaveTextContent("Now");
+    const title = screen.getByRole("heading");
+    expect(body.contains(title)).toBe(false);
+    expect(title.className).toContain("flex-none");
+    for (const name of ["Keep current", "Replace with 120 cards"]) {
+      const button = screen.getByRole("button", { name });
+      expect(body.contains(button)).toBe(false);
+      expect(button.parentElement!.className).toContain("flex-none");
+    }
+  });
+
+  it("scrolls the warning's deck list between its pinned title and buttons, filling the column", () => {
+    render(
+      <ConfirmModal
+        preview={preview}
+        pending={false}
+        error={null}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+        warning={{
+          decks: [{ deckId: "d1", deckName: "Tithe and Tax", oracleId: "o1", cardName: "Smothering Tithe", short: 1 }],
+          changed: false,
+          fresh: new Set(),
+          onConfirm: vi.fn(),
+          source: "sync",
+        }}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expectCappedBox(dialog);
+    const list = scrollerOf(dialog);
+    expect(list.className).toContain("min-h-0");
+    expect(list.contains(screen.getAllByRole("heading")[0])).toBe(false);
+    expect(list.contains(screen.getByRole("button", { name: "Cancel" }))).toBe(false);
+    // The warning's root is told to fill the capped column, or its list never meets the cap.
+    const fill = dialog.querySelector<HTMLElement>(":scope > .flex-1")!;
+    expect(fill.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "*:min-h-0", "*:flex-1"]));
+  });
+});

@@ -113,3 +113,29 @@ describe("StartPrecon, a redirecting action", () => {
     expect(action.mock.calls.length).toBe(creates);
   });
 });
+
+// The modal rule: the box is capped in dvh and never scrolls itself; the body is its one scroller, `min-h-0` so it
+// can shrink; the title and the buttons sit outside it, so an open keyboard over the name field never hides them.
+describe("StartPrecon's capped column", () => {
+  it("scrolls the body between a pinned title and pinned buttons", () => {
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    const dialog = screen.getByRole("dialog");
+    const cls = dialog.className.split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["flex", "flex-col", "overflow-hidden", "max-h-[88dvh]"]));
+    expect(cls).not.toContain("overflow-y-auto");
+    const scrollers = [...dialog.querySelectorAll<HTMLElement>(".overflow-y-auto")];
+    expect(scrollers).toHaveLength(1);
+    const body = scrollers[0];
+    expect(body.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
+    expect(body.contains(screen.getByRole("textbox"))).toBe(true);
+    const title = screen.getByRole("heading");
+    expect(body.contains(title)).toBe(false);
+    expect(title.parentElement!.className).toContain("flex-none");
+    const start = screen.getByRole("button", { name: "Start the deck" });
+    expect(body.contains(start)).toBe(false);
+    expect(start.parentElement!.className).toContain("flex-none");
+    // The form between them is the column's flexing child, or the scroller never meets the cap.
+    expect(start.closest("form")!.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
+  });
+});
