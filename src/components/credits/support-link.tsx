@@ -7,5 +7,6 @@ export const SUPPORT_LINK_INK = { page: "text-[color:var(--accent)]", raised: "t
 
 export function SupportLink({ ground = "page" }: { ground?: keyof typeof SUPPORT_LINK_INK }) {
   const email = creditsPageCopy.supportEmail;
-  return <a href={`mailto:${email}`} className={`${SUPPORT_LINK_INK[ground]} underline`}>{email}</a>;
+  // Never broken across lines: a break at the address's hyphen reads as two addresses.
+  return <a href={`mailto:${email}`} className={`${SUPPORT_LINK_INK[ground]} whitespace-nowrap underline`}>{email}</a>;
 }

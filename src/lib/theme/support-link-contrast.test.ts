@@ -1,4 +1,4 @@
-// The support address wherever it sits on a raised ground: the deletion warning (buying-credits D1/D2, U5), a 13px mailto
+// The support address wherever it sits on a raised ground: the deletion warning (buying-credits D1/D2, U5), a 12.5px mailto
 // link in a SocialModal, which is --surface-raised as a popover and --surface as the phone sheet, and the /credits bands
 // on --surface (B1's pause band, R4's slow return band), 12.5px. It must clear WCAG's 4.5:1 on both grounds in every
 // theme, in the ink the component actually uses, read from its source so a change there is a change here.
@@ -30,6 +30,24 @@ describe("the support link on a raised ground", () => {
     const t = THEMES.get(name)!;
     for (const ground of ["surface-raised", "surface"]) {
       expect(contrast(t.get(m![1])!, t.get(ground)!), `${name}: --${m![1]} on --${ground}`).toBeGreaterThanOrEqual(FLOOR);
+    }
+  });
+});
+
+// The deletion warning's Plan and Packs labels name what deletion forfeits, so they take the same 4.5:1 floor on both
+// modal grounds, in the ink the component draws (the board's `--fg-faint` is under it in four themes).
+describe("the deletion warning's balance labels", () => {
+  const source = ON_SURFACE.find(([f]) => f === "delete-warning.tsx")![1];
+  const label = /tracking-\[0\.12em\] text-\[color:var\(--([a-z-]+)\)\]">\{cell\.label\}/.exec(source);
+
+  it("are drawn in an ink this test can read", () => {
+    expect(label, "delete-warning.tsx no longer draws the label as this test reads it").not.toBeNull();
+  });
+
+  it.each([...THEMES.keys()])("clear 4.5:1 on both modal grounds in %s", (name) => {
+    const t = THEMES.get(name)!;
+    for (const ground of ["surface-raised", "surface"]) {
+      expect(contrast(t.get(label![1])!, t.get(ground)!), `${name}: --${label![1]} on --${ground}`).toBeGreaterThanOrEqual(FLOOR);
     }
   });
 });
