@@ -23,7 +23,7 @@ import "./lib/env.mjs";
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 // (A signed-out request to an unknown path is sent to sign in by the proxy, so the signed-out 404 is not reachable to probe; the
 // signed-in 404 below is a SHORT page, which is what proves the fold.)
-const ROUTES = ["/", "/sign-up", "/join/probe-token", "/friend/probe-token", "/offline"];
+const ROUTES = ["/", "/sign-up", "/join/probe-token", "/friend/probe-token", "/offline", "/privacy", "/terms"];
 const WIDTHS = [
   { label: "390", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { label: "1300", viewport: { width: 1300, height: 900 } },
@@ -65,7 +65,7 @@ try {
       const context = await browser.newContext({ viewport: w.viewport, isMobile: w.isMobile, hasTouch: w.hasTouch });
       const page = await context.newPage();
       await signIn(page, process.env.E2E_AUDIT_USER_EMAIL);
-      for (const route of ["/", "/decks", "/collection", "/probe-missing"]) {
+      for (const route of ["/", "/decks", "/collection", "/privacy", "/terms", "/probe-missing"]) {
         const name = `signed in ${route} @${w.label}`;
         await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
         const g = await page.evaluate(() => {
