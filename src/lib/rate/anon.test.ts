@@ -1,0 +1,105 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const h = vi.hoisted(() => ({
+  env: { RATE_LIMIT_ENABLED: "true" } as Record<string, string | undefined>,
+  envThrows: false,
+  hits: 1,
+  recordThrows: false,
+  recorded: [] as [string, string][],
+  after: [] as (() => Promise<void>)[],
+}));
+vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.push(fn); } }));
+vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
+vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
+
+import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, UNKNOWN_KEY } from "./anon";
+
+const hdr = (o: Record<string, string>) => ({ get: (k: string) => o[k.toLowerCase()] ?? null });
+const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
+const DAY = new Date("2026-10-18T12:00:00Z");
+
+beforeEach(() => {
+  h.env = { RATE_LIMIT_ENABLED: "true" };
+  h.envThrows = false; h.hits = 1; h.recordThrows = false; h.recorded = []; h.after = [];
+  vi.restoreAllMocks();
+});
+
+describe("clientAddress", () => {
+  it("prefers x-real-ip, then x-vercel-forwarded-for, then the first hop of x-forwarded-for", () => {
+    expect(clientAddress(hdr({ "x-real-ip": "1.2.3.4", "x-forwarded-for": "9.9.9.9" }))).toBe("1.2.3.4");
+    expect(clientAddress(hdr({ "x-vercel-forwarded-for": "5.6.7.8", "x-forwarded-for": "9.9.9.9" }))).toBe("5.6.7.8");
+    expect(clientAddress(hdr({ "x-forwarded-for": " 9.9.9.9 , 10.0.0.1" }))).toBe("9.9.9.9");
+    expect(clientAddress(hdr({}))).toBeNull();
+    expect(clientAddress(hdr({ "x-forwarded-for": " " }))).toBeNull();
+  });
+});
+
+describe("networkOf and anonKey", () => {
+  it("reduces an IPv6 address to its /64 however it is written, and leaves IPv4 alone", () => {
+    expect(networkOf("203.0.113.9")).toBe("203.0.113.9");
+    const a = networkOf("2001:db8:abcd:12:1:2:3:4");
+    expect(a).toBe("2001:db8:abcd:12::/64");
+    expect(networkOf("2001:0DB8:abcd:0012:ffff:ffff:ffff:ffff")).toBe(a);
+    expect(networkOf("2001:db8:abcd:12::1")).toBe(a);
+    expect(networkOf("2001:db8::1")).toBe("2001:db8:0:0::/64");
+  });
+
+  it("is `anon:` plus 16 hex, the same within a UTC day and a /64, different across days and networks, and never the raw address", () => {
+    const k = anonKey("203.0.113.9", DAY);
+    expect(k).toMatch(/^anon:[0-9a-f]{16}$/);
+    expect(anonKey("203.0.113.9", new Date("2026-10-18T23:59:59Z"))).toBe(k);
+    expect(anonKey("203.0.113.9", new Date("2026-10-19T00:00:00Z"))).not.toBe(k);
+    expect(anonKey("203.0.113.10", DAY)).not.toBe(k);
+    expect(anonKey("2001:db8:abcd:12::1", DAY)).toBe(anonKey("2001:db8:abcd:12:9:9:9:9", DAY));
+    expect(k).not.toContain("203");
+    expect(k.startsWith(ANON_PREFIX)).toBe(true);
+  });
+
+  it("is one shared key when no address can be read", () => {
+    expect(anonKey(null, DAY)).toBe(UNKNOWN_KEY);
+  });
+});
+
+describe("observeAnonymousHit", () => {
+  it("writes nothing and schedules nothing while the switch is off", async () => {
+    h.env = {};
+    await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
+    expect(h.after).toHaveLength(0);
+    expect(h.recorded).toEqual([]);
+  });
+
+  it("swallows a failed switch read: counting never costs a visitor anything", async () => {
+    h.envThrows = true;
+    await expect(observeAnonymousHit(hdr({}))).resolves.toBeUndefined();
+    expect(h.after).toHaveLength(0);
+  });
+
+  it("counts after the response under the visitor's key in the public-read bucket", async () => {
+    await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
+    expect(h.recorded).toEqual([]);
+    await flush();
+    expect(h.recorded).toHaveLength(1);
+    expect(h.recorded[0][0]).toMatch(/^anon:[0-9a-f]{16}$/);
+    expect(h.recorded[0][1]).toBe("public-read");
+  });
+
+  it("over the limit only warns, with the bucket, count and limit and never the key", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.hits = 121;
+    await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
+    await flush();
+    expect(warn).toHaveBeenCalledWith("[rate] would refuse bucket=public-read hits=121 limit=120");
+    expect(String(warn.mock.calls[0][0])).not.toContain("anon:");
+  });
+
+  it("at the limit does not warn, and a failing write is swallowed", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.hits = 120;
+    await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
+    await flush();
+    expect(warn).not.toHaveBeenCalled();
+    h.recordThrows = true;
+    await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
+    await expect(flush()).resolves.toBeUndefined();
+  });
+});

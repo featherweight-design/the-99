@@ -60,3 +60,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   Enterprise-only and cannot be read. Never put the key in `.env` (`scripts/lib/env.mjs` loads it with
   `override: true`); `pnpm probe:anthropic-cost` reads it from the shell. Find the reads with
   `vercel logs -p the-99 -q "[costs]"`: one line per read, `ok days=‹n› keys=‹n›` or `unread kind=‹k›`.
+
+## Anonymous reads (launch epic F3 groundwork, PR 2)
+
+`observeAnonymousHit(headers)` (`src/lib/rate/anon.ts`) is the visitor-keyed twin of `observeHit`, for the public card and commander pages. Nothing calls it until those routes exist, and it is called from the route (after the response, through `after()`), never from `proxy.ts`. Observe-only under `RATE_LIMIT_ENABLED`, resolved with `resolveSwitchEnv(null)` (a plumbing switch, so only the app-wide override applies; `requestSwitchEnv` would look up a fake user), every failure swallowed.
+
+- Bucket `public-read`: 120 a minute, provisional. It counts ORIGIN hits, so a page the CDN serves from cache is not counted; limiting cached hits is the platform firewall's job.
+- Key: `anon:` + the first 16 hex of SHA-256(network address, UTC day). The address is `x-real-ip`, else `x-vercel-forwarded-for`, else the first hop of `x-forwarded-for`; an IPv6 address is reduced to its /64; none readable shares `anon:unknown`. **It is pseudonymous, not unlinkable**: the IPv4 space is small enough to enumerate and no secret is used, so the privacy page must say "a one-way hash of your network address, kept for up to an hour" and not claim anonymity. `RETAIN_MS` deletes every row older than an hour on the next hit by anyone.
+- `purgeAccount` deletes `rate_hits` by an account's id, which an `anon:` key never equals, so a visitor's rows are neither an account's data nor a purge's concern.
+
