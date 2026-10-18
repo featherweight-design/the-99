@@ -13,9 +13,9 @@ describe("the public loaders, as they stand", () => {
     expect(files).toBeGreaterThan(publicEntries().length);
   });
 
-  it("are wired to the two public routes alone (F3 PR 2a): the proxy names each with its slash, never the signed-in lists", () => {
+  it("are wired to the two public routes alone (F3 PR 2a): the proxy names each with its slash (once in `isPublic`, once in the matcher), never the signed-in lists", () => {
     const proxy = codeOnly(readFileSync("src/proxy.ts", "utf8"));
-    expect([...proxy.matchAll(/["']\/(card|commander)s?\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/commander/(.*)"']);
+    expect([...proxy.matchAll(/["']\/(card|commander)s?\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/card/(.*)"', '"/commander/(.*)"', '"/commander/(.*)"']);
   });
 });
 
