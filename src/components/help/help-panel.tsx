@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
+import { useCardDetailsIsUp } from "../../lib/a11y/help-over-dialog";
 import { firstSentence, restOfFirstParagraph } from "../../lib/about/caption";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import {
@@ -62,8 +63,11 @@ export function HelpPanel({
   // The sheet is the shell's sheet: modal, page held, Back closes it. The panel holds nothing (row 26).
   // Focus moves in to the ✕, the panel's first control, so a phone's keyboard does not rise on open.
   const closeRef = useRef<HTMLButtonElement | null>(null);
-  // The panel is not modal, so Tab is not held in it: the page beside it is the reader's to Tab through.
-  useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk, returnFocusRef, initialFocusRef: closeRef });
+  // The panel is not modal, so Tab is not held in it: the page beside it is the reader's to Tab through. Over card
+  // details (R2·9) it is its own dialog stacked on that one, so it takes the trap while it is open: one trap live.
+  const detailsUp = useCardDetailsIsUp();
+  const stacked = desk && detailsUp;
+  useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
 
@@ -228,11 +232,11 @@ export function HelpPanel({
       <section
         ref={ref}
         role="dialog"
-        aria-modal={desk ? "false" : "true"}
+        aria-modal={desk && !stacked ? "false" : "true"}
         aria-label={helpPanelCopy.button}
         tabIndex={-1}
         data-help-panel={desk ? "panel" : "sheet"}
-        className={`fixed z-50 box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
+        className={`fixed ${stacked ? "z-[51]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
           desk
             ? "right-0 top-0 h-dvh w-[400px] shadow-[-24px_0_60px_rgba(0,0,0,0.5)]"
             : "bottom-0 left-0 h-[684px] max-h-dvh w-full rounded-t-[18px] shadow-[0_-20px_60px_rgba(0,0,0,0.55)]"

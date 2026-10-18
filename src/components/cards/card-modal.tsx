@@ -39,6 +39,7 @@ import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { helpStop, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
@@ -1511,7 +1512,9 @@ export function CardModal({
   }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
-  useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
+  // The ? lifted over the backdrop at 1280 is one more stop in the cycle, and only while this card is in front.
+  useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef, extraStop: locked ? undefined : helpStop });
+  useCardDetailsUp(!locked);
 
 
   const gestures = useCardSheetGestures({
