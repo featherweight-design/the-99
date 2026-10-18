@@ -405,7 +405,7 @@ describe("CollectionFilterSheet", () => {
     // The complaint that moved the list here was that typing shrank the whole
     // shelf. A fixed panel height with one `flex-1 min-h-0` row is what stops it.
     const panel = (render(sheet()), openSets());
-    expect(panel.className).toContain("h-[86vh]");
+    expect(panel.className).toContain("h-[86dvh]");
     expect(panel.className).not.toContain("max-h-");
     const list = panel.querySelector("div.flex-1");
     expect(list?.className).toContain("min-h-0");

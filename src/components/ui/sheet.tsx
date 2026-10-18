@@ -47,7 +47,7 @@ import { useSheetHost } from "./sheet-host";
 const DRAG_DISMISS_PX = 80;
 
 const PANEL =
-  "fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in";
+  "fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in";
 
 const SCRIM = "fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]";
 
