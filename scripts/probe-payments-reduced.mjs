@@ -106,8 +106,9 @@ async function setLots(userId, { held, bought }) {
   // The account's own lots are parked (every unit revoked), never deleted: a spent lot is referenced by `model_calls`.
   await sql`update credit_grants set revoked_units = units where user_id = ${userId} and (external_id is null or external_id not like ${`${MARK}-%`})`;
   // "Never bought" means no history row at all, and history lists every paid lot however spent, so the account's own
-  // paid lots stand as gifts for that case (restored, source and all, in the `finally`).
-  if (!bought) await sql`update credit_grants set source = 'gift' where user_id = ${userId} and source in ('plan', 'pack') and (external_id is null or external_id not like ${`${MARK}-%`})`;
+  // paid lots stand as gifts for that case, with no expiry, since a gift never expires (restored, source, expiry and all,
+  // in the `finally`).
+  if (!bought) await sql`update credit_grants set source = 'gift', expires_at = null where user_id = ${userId} and source in ('plan', 'pack') and (external_id is null or external_id not like ${`${MARK}-%`})`;
   if (held) await sql`insert into credit_grants (user_id, source, units, external_id) values (${userId}, 'gift', 7, ${`${MARK}-gift`})`;
   if (bought) await sql`insert into credit_grants (user_id, source, units, revoked_units, external_id) values (${userId}, 'pack', 40, ${held ? 0 : 40}, ${`${MARK}-pack`})`;
 }
