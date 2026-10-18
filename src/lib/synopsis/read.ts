@@ -4,6 +4,7 @@ import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, modelCalls } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
+import { withPayments } from "../payments/flag";
 import { hasCredit, type Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
@@ -184,7 +185,7 @@ export async function readSynopsisState(
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint, origin: modelCalls.origin })
       .from(deckSynopses).innerJoin(modelCalls, eq(modelCalls.id, deckSynopses.modelCallId)).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
-    readAllowance(userId, now, "synopsis"),
+    readAllowance(userId, now, "synopsis").then((a) => withPayments(a, env)),
   ]);
 
   const status = synopsisStatus({

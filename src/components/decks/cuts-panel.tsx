@@ -26,7 +26,8 @@ import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { FailMark } from "../ui/credit-button";
-import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
+import { creditsCopy } from "../../lib/copy/credits";
+import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsFootStanding, cutsStanding } from "./cuts-free-count";
 import { ArtLayer } from "../ui/art-layer";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useTarget } from "../discovery/targets-provider";
@@ -335,12 +336,12 @@ export function CutsPanelView({
               <FailMark label={copy.deeper.failedTag} />{copy.deeper.failedHeading}
             </h3>
             <p className="mt-[6px] text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.failedBody}</p>
-            <CutsOffer panel={panel} variant="retry" blocked={blocked} standing={`${standing} · ${copy.deeper.untouched}`} onPress={() => void press()} />
+            <CutsOffer panel={panel} variant="retry" blocked={blocked} standing={creditsCopy.afterLine(standing, ` · ${copy.deeper.untouched}`)} onPress={() => void press()} />
           </CutsBand>
         ) : refusedRun ? (
           <CutsBand>
             <p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.deeper.refused}</p>
-            <CutsOffer panel={panel} variant="offer" blocked={blocked} standing={`${standing} · ${copy.deeper.refusedFoot}`} onPress={() => void press()} />
+            <CutsOffer panel={panel} variant="offer" blocked={blocked} standing={creditsCopy.afterLine(standing, ` · ${copy.deeper.refusedFoot}`)} onPress={() => void press()} />
           </CutsBand>
         ) : panel.allLocked ? (
           <CutsBand><p className="text-[13px]" style={{ color: "var(--fg-body)" }}>{copy.allLocked(panel.commander)}</p></CutsBand>
@@ -349,7 +350,7 @@ export function CutsPanelView({
           <>
             {over !== 0 && refused ? <MutationError message={refused} /> : null}
             {resultShown && !running ? (
-              <ResultBlock panel={panel} deps={deps} standing={standing} onSettled={verdictSettled} />
+              <ResultBlock panel={panel} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
             ) : null}
           </>
         )}

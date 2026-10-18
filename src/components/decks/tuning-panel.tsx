@@ -48,7 +48,8 @@ import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { hasCredit } from "../../lib/model/allowance-rule";
+import { creditAgain, creditFirst, creditSpent } from "../../lib/model/credit-line";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
@@ -648,7 +649,6 @@ export function TuningPanel({
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = !hasCredit(state.allowance);
-  const left = freeCount(state.allowance);
   // The owner's share disables the press exactly as a spent allowance does, and only the note
   // under it changes: the share first, then spent.
   // Every card but the commander locked (Locked, never cut): nothing to cut, so the press is
@@ -1050,10 +1050,10 @@ export function TuningPanel({
     : spent
       // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
       // more counted than the limit the reader still has none left at that time.
-      ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
+      ? creditSpent(state.allowance)
       : primary.again
-        ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
-        : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
+        ? creditAgain(state.allowance)
+        : creditFirst(state.allowance);
   // With every card locked, the CREDIT line gives way to the one fact that matters: nothing is spent.
   // The state's own note (a set's tally, a failure's note) stays. Outside the never-run lead, where
   // the sentence is the lead, it joins the note so every state says why the press is disabled.

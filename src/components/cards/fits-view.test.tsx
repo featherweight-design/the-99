@@ -287,6 +287,14 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(within(row).getByText(r.addOnlyToBuy)).toBeInTheDocument();
   });
 
+  it("the footer under a read counts the credits where they stand, never what the next run will spend (L3)", async () => {
+    const paidNext = { ...allowance, used: 5, pack: 114, paidUsedToday: 0, paidLimit: 20 } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paidNext }, { stored: stored({ refunded: true }) }));
+    const foot = screen.getByTestId("read-thin");
+    expect(foot).toHaveTextContent("114 paid");
+    expect(foot).not.toHaveTextContent("this run uses");
+  });
+
   it("a thin read says the credit came back (P4); a reopened current read is dated with no press (P9)", async () => {
     await draw(panel({}, { stored: stored({ refunded: true }) }));
     expect(screen.getByTestId("read-thin")).toHaveTextContent(r.thin(1));
@@ -401,6 +409,17 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(band).toHaveTextContent(r.failedHead);
     expect(within(band).getByRole("button", { name: `${r.retry}. Uses 1 credit.` })).toBeEnabled();
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+  });
+
+  it("a refusal before any credit counts the credits and never names a paid spend (L3)", async () => {
+    const paidNext = { ...allowance, used: 5, pack: 114, paidUsedToday: 0, paidLimit: 20 } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paidNext }));
+    readActions.pressFitsReadAction.mockResolvedValue({ ok: false, reason: "tooBig" });
+    fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+    await settle();
+    const band = screen.getByTestId("read-band-refused");
+    expect(band).toHaveTextContent("114 paid");
+    expect(band).not.toHaveTextContent("this run uses");
   });
 
   it("too many decks for one read: refused before any credit, with no Try again, the list open", async () => {

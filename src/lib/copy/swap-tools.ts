@@ -383,6 +383,8 @@ export const swapToolsCopy = {
       readAgain: "Run again",
       /** Beside Run again, in place of creditsCopy.again (which names suggestions). */
       again: (standing: string) => `Replaces this run and uses a credit. ${standing}.`,
+      /** `again` when the free allowance is spent and the press takes a paid credit (L3). */
+      againPaid: (standing: string) => `Replaces this run and uses a paid credit. ${standing}.`,
       // ── Where a row's plan came from (addendum, P3f) ──────────────────
       srcNoteOlder: "Read from an overview written the older way.",
       srcLinkOlder: "Update it on the deck page →",

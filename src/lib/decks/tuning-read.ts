@@ -15,6 +15,7 @@ import {
   deckVersions,
 } from "../../db/schema";
 import { readAllowance, settleModelCall } from "../model/allowance";
+import { withPayments } from "../payments/flag";
 import { cacheForUser } from "../cache/user-lists";
 import { switchBits } from "../switches/resolve";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
@@ -277,7 +278,7 @@ export async function readTuningState(
     opts.runId ? okRun(opts.runId) : Promise.resolve([]),
     db.select({ count: sql<number>`count(*)::int` }).from(deckGames)
       .where(and(eq(deckGames.deckId, deckId), eq(deckGames.userId, userId))),
-    readAllowance(userId, now, "tuning"),
+    readAllowance(userId, now, "tuning").then((a) => withPayments(a, env)),
   ]);
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;

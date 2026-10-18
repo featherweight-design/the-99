@@ -38,6 +38,7 @@ import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, PAST_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { GonePicks, PastRunMeta, PastRunNote, PastWontOpen } from "../../../../components/intake/past-run";
 import { completePastDeckNames, loadGonePicks } from "../../../../lib/intake/past-run";
+import { withPayments } from "../../../../lib/payments/flag";
 import { toStanding } from "../../../../lib/intake/standing";
 import { DimWhileReading, ReadAnnouncer, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
@@ -101,7 +102,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     // History is read FIRST: its read refunds abandoned reads, and an allowance read beside it could
     // count a credit the list has just returned, leaving the form saying nothing is left.
     const history = await loadChooseHistory(userId, { now }).catch(() => null);
-    const allowance = await readAllowance(userId, now, "intake").catch(() => null);
+    const allowance = await readAllowance(userId, now, "intake").then((a) => withPayments(a, env)).catch(() => null);
     const historyView = sp.get("v") === "history";
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
@@ -155,7 +156,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       const state = words && p.readId
         ? await loadTheRead(p.readId, userId, now).catch((): TheReadState => ({ kind: "pending", phase: null }))
         : null;
-      return [state, words ? await readAllowance(userId, now, "intake").catch(() => null) : null, null] as const;
+      return [state, words ? await readAllowance(userId, now, "intake").then((a) => withPayments(a, env)).catch(() => null) : null, null] as const;
     })(),
   ]);
   // A past run is one that settled with an answer; a run still in flight opens as the live page, and one

@@ -35,6 +35,8 @@ export function monthName(at: Date): string {
 
 /** The phrase that ends a line about what shares the credits, drawn as a link to `CREDITS_HREF`. */
 const link = "What uses credits?";
+/** L4's own line under the spent line, a link to `/credits`. */
+const getMore = "Get more credits";
 /** The About entry that lists every feature spending credits, in the Reference tab (entries carry their own anchors). */
 export const CREDITS_HREF = "/about?tab=reference#credits";
 
@@ -43,6 +45,14 @@ export const CREDITS_HREF = "/about?tab=reference#credits";
 function standing(left: number, total: number, next: Date | null): string {
   return next ? `${left} of ${total} left · reset at ${clockTime(next)}` : `${left} of ${total} left`;
 }
+
+/** `Nov 16`, read in UTC like the other dates the payments copy names (a plan's expiry is an instant, not a clock time). */
+function shortDay(at: Date): string {
+  return at.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+/** The paid count a line carries: one number, plan and packs together (`/credits` is where they split). */
+const paid = (n: number) => `${n} paid`;
 
 export const creditsCopy = {
   /**
@@ -59,6 +69,41 @@ export const creditsCopy = {
   /** Every credit is out: the press is disabled and this says when it comes back, then links to
    *  what uses them. */
   spent: (total: number, next: Date | null) => `${standing(0, total, next)} · ${link}`,
+  /**
+   * PLACEHOLDER wording, owed to /copy-review (buying credits R1, `buying-credits · copy strings.ts`).
+   * L2: free credits remain and paid ones are held. `left` becomes `free` once paid credits are held.
+   */
+  withPaid: (left: number, total: number, next: Date | null, paidTotal: number) =>
+    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${paid(paidTotal)}`,
+  /** L3: the free allowance is spent and the next run takes a paid credit. */
+  paidNext: (total: number, next: Date | null, paidTotal: number) =>
+    `${next ? `0 of ${total} free · reset at ${clockTime(next)}` : `0 of ${total} free`} · this run uses 1 of ${paidTotal} paid`,
+  /** `first` / `again` beside a press that will spend a paid credit; `line` is `withPaid`'s form. */
+  firstPaid: (line: string) => `Uses a paid credit. ${line}.`,
+  againPaid: (line: string) => `Replaces these suggestions and uses a paid credit. ${line}.`,
+  /** L5: today's paid limit is reached with the free allowance spent. `back` is the earlier of the next free credit and the limit's reset. */
+  limit: (paidLimit: number, banked: number, back: Date | null) =>
+    `Today’s ${paidLimit} paid credits are used. ${banked} more are banked${back ? ` · back at ${clockTime(back)}` : ""}`,
+  /** L6: the paid limit is reached but a free credit is ready. */
+  limitFree: (left: number, total: number, next: Date | null, paidBack: Date) =>
+    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · paid back at ${clockTime(paidBack)} (daily limit)`,
+  /** L7 and the menu chip's expiring line: a cancelled plan's credits, within three days of lapsing. */
+  expiring: (n: number, on: Date) => `${n} plan credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${shortDay(on)}`,
+  /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
+  expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?(?: · |\n|$))/,
+  /** L4: its own line under the spent line, a link to `/credits`. Only while payments are on for the reader. */
+  getMore,
+  /** L4's own line under a spent line, only while payments are on for the reader. */
+  withMore: (line: string, payments: boolean) => (payments ? `${line}\n${getMore}` : line),
+  /** `first` / `again` for the free-and-paid forms (L2, L6): the line is the form's own count. */
+  usesCredit: (line: string) => `Uses a credit. ${line}.`,
+  replacesUsesCredit: (line: string) => `Replaces these suggestions and uses a credit. ${line}.`,
+  /** Appends `tail` to a credit line that may end in the `getMore` line, keeping `getMore` last so `CreditsText` still links it. */
+  afterLine: (line: string, tail: string) => {
+    const more = `\n${getMore}`;
+    return line.endsWith(more) ? `${line.slice(0, -more.length)}${tail}${more}` : `${line}${tail}`;
+  },
+
   /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
