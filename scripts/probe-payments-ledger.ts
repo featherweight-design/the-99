@@ -36,6 +36,7 @@
 //     fails d.
 //   - `hasCredit` reduced to the free allowance (`freeRoom`): fails k.
 //   - `readAllowance` reading the default paid limit instead of `paidLimitFor`: fails n.
+//   - a gift ranked before plan lots (`SOURCE_RANK`): fails o.
 //
 // It writes `model_calls` and `credit_grants` rows under per-run `user_id`s, and case n's own
 // `flag_groups` and their members, and deletes them in a `finally`, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and

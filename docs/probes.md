@@ -2392,7 +2392,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   one `credits_granted` event for a double submit, is counted by `readAllowance` and `heldCredits`, is spent after the
   plan lot and before the pack, is no purchase history row, cannot carry an expiry, and is purged; and the purge takes
   the lots and the runs naming them. It WRITES (case n also its own `flag_groups`, case o `admin_events` it deletes), so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
-  reports, and staging and production are refused by id. Mutation-checked six ways (the window's lot filter, the
+  reports, and staging and production are refused by id. Mutation-checked seven ways (the window's lot filter, the
   per-player lock, the plan-before-pack order, a refunded run read as spend, `hasCredit` reduced to the free
   allowance, `readAllowance` ignoring the group's paid limit, a gift ranked before plan lots); each fails it.
 - `pnpm probe:precon-add` proves adding a precon to a collection against a real database, through the real
