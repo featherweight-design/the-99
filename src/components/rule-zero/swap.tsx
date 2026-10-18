@@ -26,7 +26,7 @@ export function SeatOffer() {
     <section
       data-testid="seat-offer"
       aria-label={copy.title}
-      className="relative mx-[12px] mb-[12px] flex flex-col gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px] [border:1px_solid_var(--border-strong)] xl:mb-[14px] xl:ml-[162px] xl:mr-[16px]"
+      className="relative mx-[12px] mb-[12px] flex flex-col gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[12px] [border:1px_solid_var(--border-strong)] xl:-mt-[4px] xl:mb-[14px] xl:ml-[162px] xl:mr-[16px]"
     >
       <div className="flex flex-col gap-[3px]">
         <b className="font-sans text-[14px] font-semibold text-[color:var(--fg)]">{copy.title}</b>
