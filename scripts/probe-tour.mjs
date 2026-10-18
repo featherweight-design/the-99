@@ -198,6 +198,17 @@ async function walk(browser, vp) {
     report("with no About line, step 6 lights nothing", (await page.locator("[data-tour-ring]").count()) === 0 && (await page.locator('[data-tour-card="whatsNew"]').count()) === 1);
     await page.keyboard.press("Escape");
     report("Esc ends the tour", (await card.count()) === 0);
+
+    // Two tabs on one first-run Home, both waiting: only the tab whose claim stamps the tour opens it.
+    await sql`update user_prefs set tour_seen_at = null where user_id = ${userId}`;
+    await page.evaluate((id) => sessionStorage.removeItem(`the99.tour.spent:${id}`), userId);
+    const second = await context.newPage();
+    await Promise.all([page.goto(`${BASE}/`, { waitUntil: "networkidle" }), second.goto(`${BASE}/`, { waitUntil: "networkidle" })]);
+    await Promise.all([page.bringToFront(), second.bringToFront()]);
+    await page.waitForTimeout(6_000);
+    const open = (await page.locator("[data-tour-card]").count()) + (await second.locator("[data-tour-card]").count());
+    report("two tabs on one first-run Home open the tour once between them", open === 1, `${open} open`);
+    await second.close();
   } finally {
     await restoreAboutSeen(about, sql);
     await context.close();

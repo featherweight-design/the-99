@@ -62,7 +62,7 @@ function markSpentHere(account: string | null | undefined) {
 /** Mounted on a first-run Home whose tour is due (`tourDue`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). */
 export function FirstRunTour({ precons }: { precons: boolean }) {
   const { userId: account } = useAuth();
-  const [phase, setPhase] = useState<"waiting" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
+  const [phase, setPhase] = useState<"waiting" | "claiming" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
   const [note, setNote] = useState(false);
 
   useEffect(() => {
@@ -83,12 +83,22 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
           setPhase("done");
           return;
         }
-        // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
-        void withVisitLock(() => takeVisit());
-        // The tour is spent as step 1 appears; a failed write shows it again on the next Home, which is the safe side.
-        markSpentHere(account);
-        void spendTourAction().catch(() => {});
-        setPhase("running");
+        // The tour opens only for the one tab whose claim stamps it: two tabs waiting on one first-run Home both ask,
+        // and the second gets nothing back. A claim that fails to answer opens it anyway, the safe side: the stamp is
+        // then written by nothing, and the next Home offers it again.
+        setPhase("claiming");
+        void spendTourAction()
+          .then(({ claimed }) => claimed, () => true)
+          .then((claimed) => {
+            markSpentHere(account);
+            if (!claimed) {
+              setPhase("done");
+              return;
+            }
+            // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
+            void withVisitLock(() => takeVisit());
+            setPhase("running");
+          });
       }, ARRIVE_MS);
     };
     const settled = () => arm();

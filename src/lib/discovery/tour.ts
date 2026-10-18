@@ -38,9 +38,13 @@ export function spendTourWrite(userId: string, q: Writer = db) {
       target: userPrefs.userId,
       set: { tourSeenAt: sql`now()` },
       setWhere: isNull(userPrefs.tourSeenAt),
-    });
+    })
+    // A row only when THIS write took the tour: an insert, or the update its null stamp allowed. A second tab whose
+    // write finds the stamp set gets nothing back, and so no tour.
+    .returning({ seenAt: userPrefs.tourSeenAt });
 }
 
-export async function spendTour(userId: string): Promise<void> {
-  await spendTourWrite(userId);
+/** Takes the tour for this reader, atomically: true only for the one call that stamped it. */
+export async function spendTour(userId: string): Promise<boolean> {
+  return (await spendTourWrite(userId)).length === 1;
 }
