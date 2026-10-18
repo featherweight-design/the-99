@@ -287,6 +287,29 @@ async function overDetails(browser, w, deckPath) {
     await page.waitForSelector(CARD, { state: "detached", timeout: 5_000 }).catch(() => {});
     check((await page.locator(CARD).count()) === 0, `${w.name} a second Escape closes card details`, `${await page.locator(CARD).count()}`);
     check((await lifted.count()) === 0, `${w.name} the ? goes back into the rail`, `${await lifted.count()}`);
+
+    // The other order: the panel first, then a card from the still-usable page. The card is in front.
+    await helpButton(page, w).click();
+    await page.waitForSelector(FILLED, { timeout: 15_000 });
+    await trigger.click();
+    await page.locator("#card-modal-title").waitFor({ timeout: 30_000 });
+    await page.waitForTimeout(400);
+    const front = await page.evaluate(([card, panel]) => {
+      const p = document.querySelector(panel);
+      const r = p?.getBoundingClientRect();
+      if (!p || !r) return "no panel";
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return p.contains(hit) ? "panel" : document.querySelector(card)?.parentElement?.contains(hit) ? "card's layer" : "other";
+    }, [CARD, PANEL]);
+    check(front === "card's layer", `${w.name} a card opened over the open panel is drawn in front of it`, front);
+    check((await focusPlace(page)) === "card", `${w.name} that card takes focus`, await focusPlace(page));
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(CARD, { state: "detached", timeout: 5_000 }).catch(() => {});
+    check(
+      (await page.locator(CARD).count()) === 0 && (await page.locator(PANEL).count()) === 1,
+      `${w.name} Escape closes that card, and the panel stays`,
+      `card ${await page.locator(CARD).count()}, panel ${await page.locator(PANEL).count()}`,
+    );
   } finally {
     await context.close();
   }

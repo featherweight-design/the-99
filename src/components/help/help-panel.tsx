@@ -66,7 +66,12 @@ export function HelpPanel({
   // The panel is not modal, so Tab is not held in it: the page beside it is the reader's to Tab through. Over card
   // details (R2·9) it is its own dialog stacked on that one, so it takes the trap while it is open: one trap live.
   const detailsUp = useCardDetailsIsUp();
-  const stacked = desk && detailsUp;
+  // Stacked only when it opened over card details, and only until that card closes: a card opened from the page while
+  // the panel is open is the dialog in front, drawn over the panel, holding focus and keys. Adjusted during render.
+  const [over, setOver] = useState(detailsUp);
+  if (over && !detailsUp) setOver(false);
+  const stacked = desk && over;
+  const under = desk && detailsUp && !over;
   usePanelBeside(stacked);
   useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
@@ -237,7 +242,7 @@ export function HelpPanel({
         aria-label={helpPanelCopy.button}
         tabIndex={-1}
         data-help-panel={desk ? "panel" : "sheet"}
-        className={`fixed ${stacked ? "z-[51]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
+        className={`fixed ${stacked ? "z-[51]" : under ? "z-[49]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
           desk
             ? "right-0 top-0 h-dvh w-[400px] shadow-[-24px_0_60px_rgba(0,0,0,0.5)]"
             : "bottom-0 left-0 h-[684px] max-h-dvh w-full rounded-t-[18px] shadow-[0_-20px_60px_rgba(0,0,0,0.55)]"

@@ -132,6 +132,27 @@ describe("the ? over card details at 1280", () => {
     expect(q().closest("[data-rail]")).not.toBeNull();
   });
 
+  it("leaves a card opened over the open panel in front, holding focus and keys", async () => {
+    stubViewport(1300);
+    const onClose = vi.fn();
+    const { rerender } = render(<Page details={false} onClose={onClose} />);
+    fireEvent.click(q());
+    const panel = await screen.findByRole("dialog", { name: helpPanelCopy.button });
+    rerender(<Page details onClose={onClose} />);
+    expect(panel.getAttribute("aria-modal")).toBe("false");
+    // Under the card's backdrop, and the card does not give the panel its room.
+    expect(panel.className).toContain("z-[49]");
+    expect(document.querySelector("[data-backdrop]")?.hasAttribute("data-beside")).toBe(false);
+    act(() => named("first").focus());
+    escape();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("dialog", { name: helpPanelCopy.button })).toBe(panel);
+    // A second card, opened while the panel is still open, is in front too.
+    rerender(<Page details={false} onClose={onClose} />);
+    rerender(<Page details onClose={onClose} />);
+    expect(panel.getAttribute("aria-modal")).toBe("false");
+  });
+
   it("adds nothing at 390: the ? is not lifted and card details takes no stop", () => {
     stubViewport(390);
     render(<Page details />);
