@@ -10,6 +10,7 @@ branch read this turn: main 2b0b760 (brief `2026-10-17-fan-content-notice.md`, P
 - **Fan Content notice R1, for Hugh's audit.** `design_handoff_the99_fan_content_notice/`: main board (five calls, locked items, gaps G1–G6, Q1–Q2 for Hugh), Signed-In (S1–S5, root mount R1–R2 rejected), Signed-Out (O1–O5 at 390 and desktop), Privacy-and-Terms (container spec, L1–L8), Themes (six themes measured, link states); README, STATES, READINESS, copy strings, canvas.json. Design canvas: "The 99 · Fan Content notice R1". Generator and render check in `scratch/fan-content-notice-gen/`. No PR until Hugh approves.
 - **Fan Content notice R2, for Hugh's sign-off.** Hugh approved R1 but for placement: present, never in the way. The notice now starts at or below the fold on every page (still mounted in the shell's column; signed-out pages keep `min-h-screen`). `The 99 - Fan Content Notice (R2)`, `R2 - Signed-In` (S1/S1b, S3/S3b, S4/S4b), `R2 - Signed-Out` (O1–O5 at rest and scrolled); README R2, STATES, READINESS, G1–G2 rewritten. `r2.py` beside the generator.
 - **Fan Content notice R2 approved by Hugh 2026-10-17.** Handoff PR #2065 adds `design/design_handoff_the99_fan_content_notice/`.
+- **Public card + commander pages R1 approved by Hugh 2026-10-17.** Handoff PR #2068 adds `design/design_handoff_the99_public_pages/`.
 
 ### Earlier entry
 date: 2026-10-17T20:10:00Z
