@@ -13,10 +13,10 @@ const NOW = new Date("2026-10-17T12:00:00Z");
 const world = {
   events: new Set<string>(), record: true as boolean, owner: true as boolean,
   grant: { id: "g1", userId: "user_a", units: 40, revokedUnits: 0, unrecoveredUnits: 0, refundedCents: 0 } as GrantRow,
-  ledger: [] as LedgerRow[], lotGone: false, disputes: new Map<string, DisputeRow & { pi: string }>(), blocked: false, locks: 0,
+  paid: { refundedCents: 0 }, ledger: [] as LedgerRow[], lotGone: false, disputes: new Map<string, DisputeRow & { pi: string }>(), blocked: false, locks: 0,
 };
 function reset() {
-  Object.assign(world, { record: true, owner: true, ledger: [], blocked: false, locks: 0, lotGone: false });
+  Object.assign(world, { paid: { refundedCents: 0 }, record: true, owner: true, ledger: [], blocked: false, locks: 0, lotGone: false });
   world.events = new Set();
   world.disputes = new Map();
   world.grant = { id: "g1", userId: "user_a", units: 40, revokedUnits: 0, unrecoveredUnits: 0, refundedCents: 0 };
@@ -26,6 +26,7 @@ const tx: ReverseTx = {
   async insertEvent(id) { if (world.events.has(id)) return false; world.events.add(id); return true; },
   async paymentRecord() { return world.record ? { checkoutSessionId: "cs_1" } : null; },
   async grantOwner() { return world.owner ? "user_a" : null; },
+  async recordRefund(_pi, cents) { world.paid.refundedCents = Math.max(world.paid.refundedCents, cents); },
   async lockPlayer() { world.locks += 1; },
   async blockPurchases() { world.blocked = true; },
   async lockGrant() { return world.owner && !world.lotGone ? world.grant : null; },
@@ -147,6 +148,42 @@ describe("reverseCharge: whose charge it is", () => {
   it("keeps an event on an unattributed payment, with no lot to take from", async () => {
     world.owner = false;
     expect((await refund(500)).outcome).toBe("no_grant");
+  });
+});
+
+describe("reverseCharge: the refund kept on the payment", () => {
+  it("records a full refund, and a partial one", async () => {
+    await refund(500);
+    expect(world.paid.refundedCents).toBe(500);
+    reset();
+    await refund(250);
+    expect(world.paid.refundedCents).toBe(250);
+  });
+
+  it("records a refund on a payment with no lot, and once the lot is gone (the purge)", async () => {
+    world.owner = false;
+    expect((await refund(300)).outcome).toBe("no_grant");
+    expect(world.paid.refundedCents).toBe(300);
+    reset();
+    world.lotGone = true;
+    await refund(500, "evt_gone");
+    expect(world.paid.refundedCents).toBe(500);
+  });
+
+  it("never lowers it: a replay or an older snapshot arriving late changes nothing", async () => {
+    await refund(400, "evt_a");
+    await refund(250, "evt_b");
+    expect((await refund(400, "evt_a")).outcome).toBe("duplicate");
+    expect(world.paid.refundedCents).toBe(400);
+  });
+
+  it("is written by a dispute event too, and not by a duplicate event", async () => {
+    charge.refunded = 200;
+    await disp("charge.dispute.created", "needs_response", "evt_d");
+    expect(world.paid.refundedCents).toBe(200);
+    world.events.add("evt_x");
+    await refund(500, "evt_x");
+    expect(world.paid.refundedCents).toBe(200);
   });
 });
 

@@ -128,7 +128,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   anything else is Concert Crawl's and is 200 ignored. One transaction: the `stripe_events` row first, the
   `model-allowance:<user>` advisory lock `reserveModelCall` takes, then the lot FOR UPDATE (after
   `stripe_customers`, the purge's order). A refund's target is `min(units, ceil(units * amount_refunded / amount))`
-  from the lot's stored MONOTONIC refund claim (`credit_grants.refunded_cents`, `greatest(stored, fetched)` written under the player lock, so a stale snapshot never lowers it or `unrecovered_units`), so replays and out-of-order partials converge; `revoked_units` only rises, and
+  from the lot's stored MONOTONIC refund claim (`credit_grants.refunded_cents`, `greatest(stored, fetched)` written under the player lock, so a stale snapshot never lowers it or `unrecovered_units`), so replays and out-of-order partials converge; the charge's cumulative refund is ALSO kept on `payment_records.refunded_cents` (`greatest`, written right after the `stripe_events` insert on every refund and dispute event, including `no_grant` paths), account-free so it survives the purge and covers a payment with no lot; `revoked_units` only rises, and
   never past what is unspent (`countsAgainstGrant`); only a WON dispute lowers it, and then to the refund target alone
   (recomputed, never `revoked - took`), unless another dispute on the payment is open OR lost. Every exit (no lot, lot gone mid-event, normal) moves the dispute row through one upsert (`advanceDispute`), so a dispute keeps closing after a purge. The spent part is NOT
   clawed back: the shortfall is `credit_grants.unrecovered_units`, set (not added) by each event, WRITTEN for the admin

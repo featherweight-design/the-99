@@ -2374,10 +2374,14 @@ export const paymentRecords = pgTable("payment_records", {
   currency: text("currency").notNull(),
   country: text("country"),
   status: text("status").notNull(),
+  // The charge's cumulative refund (`greatest` on every refund and dispute event), kept with NO account so it
+  // survives the purge and covers a payment with no lot. Admin revenue nets it off `amount_cents`.
+  refundedCents: integer("refunded_cents").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   check("payment_records_status_check", sql`${t.status} in ('granted', 'unattributed')`),
   check("payment_records_amounts_check", sql`${t.amountCents} >= 0 and ${t.taxCents} >= 0`),
+  check("payment_records_refunded_check", sql`${t.refundedCents} >= 0`),
 ]);
 
 /**
