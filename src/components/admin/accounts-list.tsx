@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { matchesAccount, type AccountRow } from "../../lib/admin/account-page-rule";
 import { invitedByName, phoneInviteMeta } from "../../lib/admin/invites-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
@@ -144,12 +145,25 @@ export function AccountsList({
   const email = query.includes("@");
   const [lookup, setLookup] = useState<{ q: string; result: LookUpResult } | null>(null);
   const [looking, setLooking] = useState(false);
-  const [lookFailed, setLookFailed] = useState<{ q: string; n: number } | null>(null);
+  const [lookFailed, setLookFailed] = useState<{ q: string; n: number; at: number } | null>(null);
   const answer = email && lookup?.q === query ? lookup.result : null;
   const lineId = useId();
+  const router = useRouter();
+  // Every edit and every Enter retires what came before: its answer, its failure, and any request still in flight,
+  // whose completion is then dropped. Retyping the same address asks again rather than restoring an old answer.
+  const revision = useRef(0);
+  const edit = (value: string) => {
+    revision.current += 1;
+    setQuery(value);
+    setLookup(null);
+    setLookFailed(null);
+    setLooking(false);
+  };
   const lookUp = async (q: string) => {
     if (looking) return;
+    const mine = ++revision.current;
     setLooking(true);
+    setLookup(null);
     setLookFailed(null);
     let result: LookUpResult;
     try {
@@ -157,11 +171,20 @@ export function AccountsList({
     } catch {
       result = { kind: "failed" };
     }
+    if (revision.current !== mine) return;
     setLooking(false);
     // A failure keeps the field and the whole list as they were, and says so in the toast (A5).
-    if (result.kind === "failed") setLookFailed((prev) => ({ q, n: (prev?.n ?? 0) + 1 }));
-    else setLookup({ q, result });
+    if (result.kind === "failed") {
+      setLookFailed((prev) => ({ q, n: (prev?.n ?? 0) + 1, at: Date.now() }));
+      return;
+    }
+    setLookup({ q, result });
+    // A hit on an account this page's list does not hold (it was read before the account existed, or while Clerk was
+    // down): the page reads the list again, and the row draws when it lands.
+    if (result.kind === "hit" && !rows.some((r) => r.id === result.id)) router.refresh();
   };
+  // One toast at a time: a failed Show and a failed lookup in one window draw only the newer.
+  const toast = !lookFailed ? (reveal.failure ? "reveal" : null) : !reveal.failure || lookFailed.at >= reveal.failure.at ? "lookup" : "reveal";
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
   const shown = useMemo(() => {
@@ -185,8 +208,8 @@ export function AccountsList({
       >
         <SearchField
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClear={() => setQuery("")}
+          onChange={(e) => edit(e.target.value)}
+          onClear={() => edit("")}
           onKeyDown={(e) => {
             if (e.key === "Enter" && email && query.trim()) {
               e.preventDefault();
@@ -214,8 +237,8 @@ export function AccountsList({
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">
         {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
-        {/* A4: a miss draws no rows and no column head, only the line above. */}
-        {answer?.kind !== "miss" && (
+        {/* A4: a miss draws no rows and no column head; nor does a hit whose row the list does not hold yet. */}
+        {answer?.kind !== "miss" && !(answer?.kind === "hit" && shown.length === 0) && (
         <div data-testid="account-card" className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
@@ -251,8 +274,8 @@ export function AccountsList({
         </div>
         )}
       </div>
-      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
-      {lookFailed && (
+      {toast === "reveal" && reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
+      {toast === "lookup" && lookFailed && (
         <FailedToast
           key={`look-${lookFailed.n}`}
           kind="lookup-failed"

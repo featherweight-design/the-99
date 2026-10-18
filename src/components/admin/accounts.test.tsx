@@ -281,6 +281,66 @@ describe("AccountsList (A1 to A3)", () => {
       expect(rowsShown()).toHaveLength(1);
     });
 
+    it("asks again when the same address is retyped, rather than restoring the old answer", async () => {
+      lookUpFn.mockResolvedValue({ kind: "miss" });
+      list();
+      fireEvent.change(field(), { target: { value: "nobody@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(screen.getByText("No account holds this email.")).toBeInTheDocument();
+      fireEvent.change(field(), { target: { value: "" } });
+      fireEvent.change(field(), { target: { value: "nobody@example.com" } });
+      expect(screen.queryByText("No account holds this email.")).toBeNull();
+      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(rowsShown()).toHaveLength(3);
+    });
+
+    it("drops the old answer when a new lookup fails, and the whole list comes back with the hint", async () => {
+      lookUpFn.mockResolvedValueOnce({ kind: "hit", id: "user_9mara" }).mockResolvedValueOnce({ kind: "failed" });
+      list();
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(rowsShown()).toHaveLength(1);
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(rowsShown()).toHaveLength(3);
+      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+    });
+
+    it("drops an answer for an address edited away while it was asked", async () => {
+      let answer!: (r: import("../../lib/admin/lookup").LookUpResult) => void;
+      lookUpFn.mockImplementationOnce(() => new Promise((r) => (answer = r)));
+      list();
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      fireEvent.keyDown(field(), { key: "Enter" });
+      fireEvent.change(field(), { target: { value: "theo@example.com" } });
+      await act(async () => answer({ kind: "failed" }));
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(rowsShown()).toHaveLength(3);
+    });
+
+    it("reads the list again for a hit the page does not hold, and draws no empty card meanwhile", async () => {
+      lookUpFn.mockResolvedValue({ kind: "hit", id: "user_new" });
+      list();
+      fireEvent.change(field(), { target: { value: "new@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("One account holds this email.")).toBeInTheDocument();
+      expect(screen.queryByTestId("account-card")).toBeNull();
+    });
+
+    it("draws one failure toast at a time: a failed lookup after a failed Show replaces it", async () => {
+      revealFn.mockResolvedValue({ ok: false, error: "failed" });
+      lookUpFn.mockResolvedValue({ kind: "failed" });
+      list();
+      const mara = within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
+      await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
+      expect(screen.getByRole("alert")).toHaveTextContent("Nothing was shown.");
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+    });
+
     it("brings the whole list back on ✕", async () => {
       lookUpFn.mockResolvedValue({ kind: "miss" });
       list();

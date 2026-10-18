@@ -11,7 +11,8 @@ import type { RevealResult } from "../../lib/admin/reveal";
 
 export type Revealed = { name: string | null; email: string | null; id: string; hidesAt: Date };
 /** The failed Show the view's toast names, by the account's masked name. */
-export type RevealFailure = { id: string; masked: string; n: number };
+/** `at`: when it failed, so a view with a second failure toast draws only the newer of the two. */
+export type RevealFailure = { id: string; masked: string; n: number; at: number };
 
 /** `onShown`: after a Show lands, for a view that draws its own log (the account page's History, D8). */
 export function useReveal(reveal: (id: string) => Promise<RevealResult> = revealAccount, onShown?: () => void) {
@@ -98,7 +99,7 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
         return next;
       });
       if (!answer.ok) {
-        setFailure({ id, masked, n: ++failures.current });
+        setFailure({ id, masked, n: ++failures.current, at: Date.now() });
         return;
       }
       const hidesAt = new Date(answer.hidesAt);
