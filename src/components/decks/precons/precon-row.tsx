@@ -9,15 +9,17 @@ import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CommanderThumb } from "../../ui/commander-thumb";
+import { TOUCH_HIT_INLINE } from "../../ui/touch-hit";
 
 const copy = preconsCopy.row;
 const linkedClause = preconsCopy.link.linked.rowClause;
 
-function DeckLink({ deckId, deckName }: { deckId: string; deckName: string }) {
+/** `hit`: a 44px coarse-pointer hit, for a lone link only; stacked or listed links sit too close for each to take one. */
+function DeckLink({ deckId, deckName, hit = false }: { deckId: string; deckName: string; hit?: boolean }) {
   return (
     <Link
       href={`/decks/${deckId}`}
-      className="relative z-[1] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]"
+      className={`${hit ? TOUCH_HIT_INLINE : "relative"} z-[1] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]`}
     >
       {deckName}
       <PendingReporter href={`/decks/${deckId}`} />
@@ -72,7 +74,7 @@ export function PreconRow({ row, href, eager = false }: {
             summary's order), and replaces R6's single `your decks A and B` line. */}
         {built.some((b) => b.linked) ? built.map((b) => (
           <span key={b.deckId} className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-            {copy.built} <DeckLink deckId={b.deckId} deckName={b.deckName} />
+            {copy.built} <DeckLink deckId={b.deckId} deckName={b.deckName} hit={built.length === 1} />
             {b.linked && linkedClause}
             {copy.builtShared(b.shared)}
           </span>
@@ -82,7 +84,7 @@ export function PreconRow({ row, href, eager = false }: {
             {built.map((b, i) => (
               <span key={b.deckId}>
                 {i > 0 && (i === built.length - 1 ? copy.builtAnd : ", ")}
-                <DeckLink deckId={b.deckId} deckName={b.deckName} />
+                <DeckLink deckId={b.deckId} deckName={b.deckName} hit={built.length === 1} />
                 {/* Each deck carries its own figure: two decks rarely share the same count. */}
                 {copy.builtShared(b.shared)}
               </span>

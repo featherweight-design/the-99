@@ -12,7 +12,6 @@ import { colorNames } from "../../../lib/copy/color-labels";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../../ui/card-tile-caption";
 import { HydratedImg } from "../../ui/hydrated-art";
-import { TOUCH_HIT_INLINE } from "../../ui/touch-hit";
 
 const copy = preconsCopy.tile;
 const rowCopy = preconsCopy.row;
@@ -139,12 +138,13 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
       {hasFoot && (
         <div className="mt-auto flex flex-col border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)]" data-testid="tile-foot">
           {row.built.map((b) => (
-            <div key={b.deckId} className="flex min-h-[44px] min-w-0 flex-col justify-center gap-[2px] p-[5px_9px] md:min-h-[34px] md:p-[5px_10px]">
-              {/* The truncation and underline sit on the inner span, so the link itself clips nothing and its
-                  coarse-pointer hit (44px tall, within the 44px foot row) can reach past the 15px line. */}
+            <div key={b.deckId} className="relative flex min-h-[44px] min-w-0 flex-col justify-center gap-[2px] p-[5px_9px] md:min-h-[34px] md:p-[5px_10px]">
+              {/* On a coarse pointer the link's hit is its whole foot row (44px on the phone): the link goes static
+                  and its pseudo-element fills the `relative` row above the tile's own link, so rows never share a
+                  hit. The truncation and underline sit on the inner span, so nothing clips that pseudo-element. */}
               <Link
                 href={`/decks/${b.deckId}`}
-                className={`${TOUCH_HIT_INLINE} z-[1] block min-w-0 text-[11.5px] leading-[1.3] text-[color:var(--fg)] md:text-[12px]`}
+                className="relative z-[1] block min-w-0 text-[11.5px] leading-[1.3] text-[color:var(--fg)] md:text-[12px] pointer-coarse:static pointer-coarse:after:absolute pointer-coarse:after:inset-0 pointer-coarse:after:z-[1] pointer-coarse:after:content-['']"
               >
                 <span className="block truncate underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]">
                   {b.deckName}
