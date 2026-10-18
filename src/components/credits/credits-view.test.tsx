@@ -15,7 +15,7 @@ import { CreditsView } from "./credits-view";
 const allowance = (over: Partial<AllowanceFacts> = {}): AllowanceFacts => ({ used: 2, limit: 5, nextAt: null, ...over });
 const row: CreditHistoryRow = { id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1", amountCents: 531, currency: "usd" };
 
-function model(over: { switchOn?: boolean; allowance?: AllowanceFacts; history?: CreditHistoryRow[]; offers?: ReturnType<typeof packOffers> } = {}) {
+function model(over: { switchOn?: boolean; allowance?: AllowanceFacts; history?: CreditHistoryRow[]; offers?: ReturnType<typeof packOffers>; blocked?: boolean } = {}) {
   const r = buildCreditsModel({ switchOn: true, allowance: allowance(), history: [], offers: packOffers(), ...over });
   if (!r.sees) throw new Error("not seen");
   return r.model;
@@ -61,6 +61,25 @@ describe("the page", () => {
     expect(screen.getByText("Purchase history")).toBeTruthy();
     expect(screen.getByText(/^Refunds: email/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "support@the-99.dev" }).getAttribute("href")).toBe("mailto:support@the-99.dev");
+  });
+
+  it("B1: a paused reader keeps balances and history, and the band stands where the offers were, with the address", () => {
+    const { container } = render(<CreditsView model={model({ allowance: allowance({ pack: 12 }), history: [row], blocked: true })} ret={null} />);
+    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
+    const band = container.querySelector("[data-pause-band]")!;
+    expect(band.textContent).toBe("Buying is pausedEmail support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual.");
+    expect(band.querySelector("a")?.getAttribute("href")).toBe("mailto:support@the-99.dev");
+    // Between the balance and the history, as the offers sit.
+    expect(band.previousElementSibling?.querySelector("[data-cell]")).not.toBeNull();
+    expect(screen.getByText("Purchase history")).toBeTruthy();
+    expect(screen.getByTestId("credits-total").textContent).toBe("15");
+  });
+
+  it("O2 to O4 with a pause: the switch off draws no band, there being nothing to buy", () => {
+    const { container } = render(<CreditsView model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row], blocked: true })} ret={null} />);
+    expect(container.querySelector("[data-pause-band]")).toBeNull();
+    expect(screen.queryByText("Get more credits")).toBeNull();
   });
 
   it("P8: a second pack is one more card in the same column under one heading", () => {
@@ -155,6 +174,15 @@ describe("the Buy press", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("Buying credits isn’t available right now.");
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
     expect(screen.queryByText("Get more credits")).toBeNull();
+  });
+
+  it("a pause set after the page was read: says so, and puts the pause band where the offer was", async () => {
+    m.buy.mockResolvedValue({ ok: false, reason: "blocked" });
+    const { container } = render(<CreditsView model={model()} ret={null} />);
+    press();
+    expect((await screen.findByRole("alert")).textContent).toMatch(/^Buying is paused on this account/);
+    expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
+    expect(container.querySelector("[data-pause-band]")).not.toBeNull();
   });
 
   it("a thrown action reads as failed", async () => {

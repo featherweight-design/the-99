@@ -1,7 +1,7 @@
 import { freeCount, heldCredits } from "../model/allowance-rule";
 import type { CreditHistoryRow } from "./return";
 import { paidToday, type PaidToday } from "./paid-today-rule";
-import { readerSeesCredits, readerSeesOffers } from "./visible-rule";
+import { readerSeesCredits, readerSeesOffers, readerSeesPause } from "./visible-rule";
 import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/credits-page";
 
 /**
@@ -9,8 +9,9 @@ import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/cre
  *
  * - VISIBLE (`readerSeesCredits`, plan E3): the switch is on, or credits are held, or the account has ever
  *   bought (any `credit_grants` row). Otherwise the page is `notFound()`.
- * - OFFERS only while the switch is on (`readerSeesOffers`). With it off the page keeps balances, history and the
- *   refund line and draws NO offers section (O4): `offers` is null, never an empty list.
+ * - OFFERS only while the switch is on and buying is not paused (`readerSeesOffers`). With the switch off the page
+ *   keeps balances, history and the refund line and draws NO offers section (O4): `offers` is null, never an empty
+ *   list. With buying paused by a dispute (B1) the offers go the same way and the pause band stands in their place.
  * - CELLS in spend order, free first. Free is always drawn. A Plan or Packs cell is drawn only for a source the
  *   reader holds now or has held once (a grant row of that source), never an empty one for a reader who never
  *   bought. The total is the sum of every source, drawn or not.
@@ -37,6 +38,8 @@ export type CreditsModel = {
   nextAtMs: number | null;
   cells: BalanceCell[];
   offers: PackOffer[] | null;
+  /** B1: a dispute paused this reader's buying, so the pause band stands where the offers would (`readerSeesPause`). */
+  paused: boolean;
   history: HistoryItem[];
   /** P5 / P5b: the daily paid line, or null below 15 paid runs (or with no paid lot). */
   paidToday: PaidToday | null;
@@ -52,6 +55,8 @@ export function buildCreditsModel(input: {
   offers: readonly PackOffer[];
   /** A valid return from a Checkout of this reader's own (`ReturnProp` of kind `done` with a read), switch state aside. */
   returning?: boolean;
+  /** Whether a dispute paused this reader's buying (`purchaseBlocked`, K2). */
+  blocked?: boolean;
 }): { sees: false } | { sees: true; model: CreditsModel } {
   const { allowance: a, history } = input;
   const welcome = a.welcome ?? 0;
@@ -80,7 +85,8 @@ export function buildCreditsModel(input: {
       freeLimit: a.limit,
       nextAtMs: a.nextAt ? a.nextAt.getTime() : null,
       cells,
-      offers: readerSeesOffers({ switchOn: input.switchOn }) ? [...input.offers] : null,
+      offers: readerSeesOffers({ switchOn: input.switchOn, blocked: input.blocked ?? false }) ? [...input.offers] : null,
+      paused: readerSeesPause({ switchOn: input.switchOn, blocked: input.blocked ?? false }),
       history: history.map(historyItem),
       paidToday: paidToday(a),
     },

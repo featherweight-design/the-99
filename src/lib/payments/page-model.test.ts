@@ -37,6 +37,14 @@ describe("buildCreditsModel: offers (O4)", () => {
     expect(model({ switchOn: true, allowance: allowance(), history: [], offers }).offers).toEqual(offers);
     expect(model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row()], offers }).offers).toBeNull();
   });
+
+  it("B1: a pause takes the offers away and raises the band, and only while the switch is on", () => {
+    const paused = model({ switchOn: true, allowance: allowance({ pack: 12 }), history: [row()], offers, blocked: true });
+    expect([paused.offers, paused.paused]).toEqual([null, true]);
+    const off = model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row()], offers, blocked: true });
+    expect([off.offers, off.paused]).toEqual([null, false]);
+    expect(model({ switchOn: true, allowance: allowance(), history: [], offers }).paused).toBe(false);
+  });
 });
 
 describe("buildCreditsModel: cells", () => {

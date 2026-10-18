@@ -114,6 +114,12 @@ export const creditsPageCopy = {
     failed: "We couldn’t load your credits.",
     retry: "Try again",
   },
+  /** B1: the band in place of the offers while a dispute pauses buying. The address is drawn as the support link. */
+  pause: {
+    title: "Buying is paused",
+    before: "Email ",
+    after: " and we’ll sort it out. Your free credits and everything else work as usual.",
+  },
   ret: {
     procTitle: (units: number) => `Adding your ${units} credits`,
     procSays: "Payment received. Credits usually land in a second or two.",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readerSeesCredits, readerSeesOffers } from "./visible-rule";
+import { readerSeesCredits, readerSeesOffers, readerSeesPause } from "./visible-rule";
 
 describe("readerSeesCredits", () => {
   it("is every combination, and false only with the switch off, nothing held, nothing ever bought and no return", () => {
@@ -9,9 +9,20 @@ describe("readerSeesCredits", () => {
   });
 });
 
-describe("readerSeesOffers", () => {
-  it("follows the switch alone: holdings and purchases never open a sale", () => {
-    expect(readerSeesOffers({ switchOn: true })).toBe(true);
-    expect(readerSeesOffers({ switchOn: false })).toBe(false);
+describe("readerSeesOffers and readerSeesPause", () => {
+  it("draws offers only with the switch on and buying not paused; holdings and purchases never open a sale", () => {
+    expect(readerSeesOffers({ switchOn: true, blocked: false })).toBe(true);
+    expect(readerSeesOffers({ switchOn: true, blocked: true })).toBe(false);
+    expect(readerSeesOffers({ switchOn: false, blocked: false })).toBe(false);
+    expect(readerSeesOffers({ switchOn: false, blocked: true })).toBe(false);
+  });
+
+  it("draws the pause band exactly where a pause took the offers away, never with the switch off (B1, O2 to O4)", () => {
+    for (const switchOn of [true, false]) for (const blocked of [true, false]) {
+      expect(readerSeesPause({ switchOn, blocked })).toBe(switchOn && blocked);
+      // Never both, and never neither while the switch is on.
+      expect(readerSeesPause({ switchOn, blocked }) && readerSeesOffers({ switchOn, blocked })).toBe(false);
+      if (switchOn) expect(readerSeesPause({ switchOn, blocked }) || readerSeesOffers({ switchOn, blocked })).toBe(true);
+    }
   });
 });
