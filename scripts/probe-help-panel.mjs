@@ -22,7 +22,8 @@
 //     Tab stop in card details' cycle, and Tab reaches nothing else outside the dialog; pressed, the panel opens as a
 //     stacked dialog (`aria-modal` true) titled `Collection · Card details` over the open card, holds Tab, and Escape
 //     closes the panel only (focus back on the ?), then a second Escape closes card details. While the panel is open
-//     the dialog sits beside it, in the room left of it (H3's note), and centres again when it closes;
+//     the dialog sits beside it, in the room left of it (H3's note), from 1280 (at 1100 it keeps its centre and the
+//     panel stacks over its edge), is inert (a press on it takes nothing), and centres again when the panel closes;
 //   - at 390 nothing is added: no ? is lifted, and Tab never reaches one.
 //
 // IT WRITES NOTHING: no database connection, and every press is a read (the panel, its search, Show me's halo). So it
@@ -228,7 +229,19 @@ async function overDetails(browser, w, deckPath) {
       const p = document.querySelector(panel)?.getBoundingClientRect();
       return c && p ? { cardRight: Math.round(c.right), panelLeft: Math.round(p.left), cardLeft: Math.round(c.left) } : null;
     }, [CARD, PANEL]);
-    check(room !== null && room.cardRight <= room.panelLeft + 2, `${w.name} the panel opens beside card details`, JSON.stringify(room));
+    if (w.width >= 1280) {
+      check(room !== null && room.cardRight <= room.panelLeft + 2, `${w.name} the panel opens beside card details`, JSON.stringify(room));
+    } else {
+      // Too narrow for both: the dialog keeps its centre and the panel stacks over its right edge.
+      const off = room === null ? null : Math.round((room.cardLeft + room.cardRight) / 2 - w.width / 2);
+      check(off !== null && Math.abs(off) <= 1, `${w.name} too narrow to sit beside, card details keeps its centre`, `offset ${off}`);
+    }
+    // The card is inert under the panel: a press on it moves nothing, and Escape still closes the panel first.
+    const cardBox = await page.locator(CARD).boundingBox();
+    if (cardBox) await page.mouse.click(cardBox.x + 40, cardBox.y + cardBox.height - 40);
+    check((await focusPlace(page)) !== "card", `${w.name} a press on card details under the panel takes no focus`, await focusPlace(page));
+    check((await page.locator(PANEL).count()) === 1, `${w.name} the panel stays open after a press on the card`, `${await page.locator(PANEL).count()}`);
+    await page.locator(`${PANEL} button`).first().focus();
     // The backdrop still covers the rail: what sits at a rail link's centre is not the link (only the ? is lifted).
     const railHit = await page.evaluate(() => {
       const link = document.querySelector("aside a[href]");
@@ -478,7 +491,7 @@ try {
   await page.close();
   console.log(`deck: ${deckPath ?? "none"}`);
   for (const w of WIDTHS) await walk(browser, w, deckPath);
-  for (const w of WIDTHS) {
+  for (const w of [...WIDTHS, { name: "1100", width: 1100, height: 900, phone: false, place: "rail" }]) {
     console.log(`\n── ${w.name} over card details`);
     await overDetails(browser, w, deckPath);
   }

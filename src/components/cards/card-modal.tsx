@@ -537,6 +537,8 @@ const PLATE_WIDTH = 168;
  * move of the dialog's width moves it too; `card-modal-geometry.test.ts` pins the dialog's
  * `md:w-[…]` class to `DIALOG_HALF_WIDTH`, the half a Tailwind literal cannot read.
  */
+/** The narrowest viewport where card details moves beside the open ? panel (R2·9): 62 + 400 + 820, less two. */
+const BESIDE_HELP_MIN_WIDTH = 1280;
 export const NEIGHBOR_MIN_WIDTH = 2 * (DIALOG_HALF_WIDTH + PLATE_GAP + PLATE_WIDTH + 24);
 
 const NeighborPlate = React.forwardRef<
@@ -1516,9 +1518,14 @@ export function CardModal({
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef, extraStop: locked ? undefined : helpStop });
   useCardDetailsUp(!locked);
   // The ? panel open over this card (R2·9): the backdrop still covers the whole viewport, rail included, but pads out the
-  // rail and the panel's 400px, so the dialog centres beside the panel rather than under its edge. The neighbor plates
-  // are anchored from the backdrop's centre and would land under the rail or the panel, so they are not drawn meanwhile.
-  const besideHelp = usePanelIsBeside() && !locked;
+  // rail and the panel's 400px, so the dialog centres beside the panel rather than under its edge.
+  // Only where both fit: the rail, the panel's 400px and the dialog's 820px come to 1282px at the fine rail, so from
+  // 1280 (a pixel each side under the panel and the rail). Narrower, the panel stacks over the dialog's right edge.
+  // Either way the dialog is inert under the panel, which holds focus and keys alone (one trap live), and the neighbor
+  // plates, anchored from the backdrop's centre, are not drawn.
+  const helpStacked = usePanelIsBeside() && !locked;
+  const roomBeside = useMinWidth(`(min-width: ${BESIDE_HELP_MIN_WIDTH}px)`);
+  const besideHelp = helpStacked && roomBeside;
 
 
   const gestures = useCardSheetGestures({
@@ -2137,7 +2144,9 @@ export function CardModal({
       }
       inert={locked}
       role="presentation"
-      onClick={locked ? undefined : onClose}
+      // Under the ? panel the backdrop still catches every press (an inert one would let them through to the page),
+      // and closes nothing: the panel is the dialog in front.
+      onClick={locked || helpStacked ? undefined : onClose}
       style={{
         // A stand-in over a sheet over its original draws its own lighter scrim (addendum §3), so the
         // two layers under it read as two steps down; any other stacked card leaves the sheet's.
@@ -2156,7 +2165,7 @@ export function CardModal({
           threshold is built from — so the dialog never moves, with a neighbor on one side,
           both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
           browser" — a visible, clickable plate behind the zoom could still page past it). */}
-      {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen && !besideHelp ? (
+      {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen && !helpStacked ? (
         <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
       ) : null}
       <div
@@ -2164,6 +2173,7 @@ export function CardModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        inert={helpStacked || undefined}
         onClick={(e) => e.stopPropagation()}
         // A swipe that began on a peek, the grip or the turn plate ends in that control's click;
         // a drag that locked an axis is not a press, so the gestures swallow it here.
@@ -3142,7 +3152,7 @@ export function CardModal({
           </div>
         )}
       </div>
-      {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen && !besideHelp ? (
+      {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen && !helpStacked ? (
         <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
       ) : null}
     </div>
