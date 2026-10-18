@@ -1,0 +1,88 @@
+{
+  "feature": "Launch epic F3: the public card and commander pages, signed out (PR 2a/2b: the card page and its not-found)",
+  "note": "No sign-in: `signedOut` photographs the pages as a visitor gets them. Their CONTENT is the same signed in (nothing in it reads a session), but the shell around it is not, so these rows are signed out. Each card is addressed by its bare 12-hex id, which 308s to the canonical address before the wait. Serve with PUBLIC_PAGES_ENABLED=true. The commander page's rows (B1 to B4) belong to F3 PR 3.",
+  "out": "contact-sheets/launch-epic",
+  "signedOut": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "card-a1-rootha",
+      "label": "A1 /card Rootha: one face, its image over its own wash, rules, facts, one printing, the signed-out block",
+      "view": "src/components/public/card-page.tsx",
+      "steps": [
+        {
+          "goto": "/card/348c67ef9ccc",
+          "wait": "[data-testid='public-facts']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "card-a2-valki",
+      "label": "A2 /card Valki: two faces, both names and type lines, the // rule in the rules text, the turn control under the card",
+      "view": "src/components/public/card-page.tsx",
+      "steps": [
+        {
+          "goto": "/card/907ae51722d5",
+          "wait": "[data-testid='public-facts']",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "card-a3-ghalta",
+      "label": "A3 /card Ghalta: many printings; at 390 the chips collapse to 8 and end in Show all",
+      "view": "src/components/public/printings.tsx",
+      "steps": [
+        {
+          "goto": "/card/b0b6be0c41cf",
+          "wait": "[data-testid='public-facts']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='public-printings']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "card-a4-sol-ring",
+      "label": "A4 /card Sol Ring: capped printings (first 40); at 390 Show all 40 here, at 1300 all 40 and More on Scryfall",
+      "view": "src/components/public/printings.tsx",
+      "steps": [
+        {
+          "goto": "/card/6ad8011d3471",
+          "wait": "[data-testid='public-facts']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-testid='public-printings']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "card-c3-unknown",
+      "label": "C3 /card unknown id: the top bar with the Scryfall link, 404, the shipped heading and caption, ONE Back home, no View decks",
+      "view": "src/components/public/not-found.tsx",
+      "steps": [
+        {
+          "goto": "/card/000000000000",
+          "wait": "h1",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}

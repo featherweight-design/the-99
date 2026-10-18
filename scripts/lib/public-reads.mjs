@@ -150,6 +150,16 @@ export const PAGE_ONLY_MODULES = new Map([
   ["src/lib/switches/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
 ]);
 
+const isImageRouteFile = (file) => /^src\/app\/.*\/opengraph-image\.tsx?$/.test(file);
+
+/**
+ * Modules a link-preview image route (`opengraph-image.tsx`, F3 PR 2b) may import unwalked: only the switch, decided the
+ * way the page decides it. Not the anonymous counter, and an image route may not call `headers()` (it is not a page file).
+ */
+export const IMAGE_ROUTE_MODULES = new Map([
+  ["src/lib/switches/snapshot.ts", "decides the image's plumbing switch app-wide, with no account, as the page does"],
+]);
+
 function filesUnder(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { recursive: true }).map((f) => posix.join(dir, String(f).split("\\").join("/")))
@@ -181,6 +191,7 @@ export function surfaceFiles(entries, read = (f) => readFileSync(f, "utf8"), res
       const next = resolveFn(file, spec);
       if (!next || seen.has(next)) continue;
       if (isPageFile(file) && PAGE_ONLY_MODULES.has(next)) continue;
+      if (isImageRouteFile(file) && IMAGE_ROUTE_MODULES.has(next)) continue;
       if (next.startsWith("src/app/")) { stack.push(next); continue; }
       // The database entry and the schema are terminal: the schema declares every table and imports app modules, and
       // what a caller reads from it is judged in the CALLER (its bindings and SQL), as the loader guard does.

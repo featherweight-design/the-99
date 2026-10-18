@@ -234,6 +234,10 @@ file under `src/app/card`, `src/app/commander` and `src/components/public`. From
 - a table off the allowlist, checked only in files that import the schema or write SQL (so a copy string naming "decks" is
   not a read).
 
+A page file imports two modules unwalked (`PAGE_ONLY_MODULES`: the anonymous counter and the switch resolver); a link-preview
+image route (`opengraph-image.tsx`) imports only the switch resolver unwalked (`IMAGE_ROUTE_MODULES`), and may not call
+`headers()`.
+
 This is why the WUBRG palette lives in `lib/cards/colors.ts` and `identityGradient` in `lib/cards/gradients.ts`: mana pips
 used to reach `lib/decks/availability` through `lib/collection/browse`. Proved by its failure path: pointing `cost-pips.tsx`
 back at `lib/collection/browse` fails the standing test.

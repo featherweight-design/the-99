@@ -1,10 +1,13 @@
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { PublicCardPage } from "../../../components/public/card-page";
 import { cardPagePath } from "../../../components/public/links";
 import { readPublicCard } from "../../../lib/public/cached-card";
 import { publicPagesEnabled } from "../../../lib/public/flag";
+import { cardDescription } from "../../../lib/public/preview";
+import { publicPagesCopy } from "../../../lib/copy/public-pages";
 import { observeAnonymousHit } from "../../../lib/rate/anon";
 import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
 
@@ -20,7 +23,42 @@ import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
  * - `observeAnonymousHit` counts the read after the response (observe only). This file is the one place a request header
  *   is read, and only to hand it over.
  */
-export default async function PublicCardRoute({ params }: { params: Promise<{ slug: string }> }) {
+type Params = { params: Promise<{ slug: string }> };
+
+/**
+ * The origin absolute URLs are built on: the deployment's own production domain, which Vercel sets on every deployment of
+ * a project (the staging project's is the staging domain). Unset off Vercel, where Next falls back to localhost.
+ */
+function siteOrigin(): URL | undefined {
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return host ? new URL(`https://${host}`) : undefined;
+}
+
+/**
+ * The link preview's tags (C2, README call 8), from the SAME read the page draws (`readPublicCard` is `React.cache`d, so the
+ * request reads once). The image is the colocated `opengraph-image.tsx`, which Next adds to these tags itself. Off, or for an
+ * address that does not resolve, nothing about a card: the page answers 404. No request API is read here.
+ */
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
+  if (!publicPagesEnabled(env)) return {};
+  const result = await readPublicCard(slug);
+  if (result.kind !== "ok") return {};
+  const { card } = result;
+  const title = publicPagesCopy.linkPreview.cardTitle(card.name);
+  const description = cardDescription(card);
+  const url = cardPagePath(result.canonicalSlug);
+  return {
+    metadataBase: siteOrigin(),
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: "website", siteName: publicPagesCopy.shell.wordmarkPhone },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
+export default async function PublicCardRoute({ params }: Params) {
   const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
   if (!publicPagesEnabled(env)) notFound();
   const result = await readPublicCard(slug);

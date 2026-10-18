@@ -21,6 +21,10 @@ const ALLOWED = new Set([
   "components/social/add-friend-dialog.tsx",
   // The invite QR (invites PR 4) is drawn on the same light plate with the same ink, for the same camera.
   "components/social/invite-qr.tsx",
+  // The card page's link-preview image (F3 PR 2b) is drawn once into a PNG by `next/og`, which reads no stylesheet, so
+  // its colours are literals. A visitor always gets the default theme, and `og-card-image.test.tsx` pins every ink to
+  // that theme's tokens read out of globals.css, so it cannot drift.
+  "components/public/og-card-image.tsx",
   // The theme library's own tests are about hex values, so they contain them.
   "lib/theme/color.test.ts",
   "lib/theme/parse-css.test.ts",
