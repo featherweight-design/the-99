@@ -9,7 +9,7 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clearRecent } from "../../lib/card-search/recent";
@@ -31,6 +31,9 @@ import { usePendingPush } from "./pending-push";
 import { CreditChip } from "./credit-chip";
 import { chipAction } from "../../app/credits/actions";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { heldPaidAction } from "../../app/account/delete-warning-actions";
+import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
+import { DeleteWarning } from "../credits/delete-warning";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -421,6 +424,10 @@ export function AccountMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The deletion warning (plan E6): the paid credits held, read as the menu opens, and the warning while it is up.
+  const [held, setHeld] = useState<HeldPaid | null | undefined>(undefined);
+  const [warning, setWarning] = useState<HeldPaid | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { user } = useUser();
   const clerk = useClerk();
   const panelId = useId();
@@ -470,6 +477,7 @@ export function AccountMenu({
     if (!open) return;
     let live = true;
     chipAction().then((next) => { if (live) setChip(next); }, () => {});
+    heldPaidAction().then((next) => { if (live) setHeld(next); }, () => { if (live) setHeld(null); });
     return () => { live = false; };
   }, [open]);
   const onTour = () => go(TOUR_HREF);
@@ -477,12 +485,24 @@ export function AccountMenu({
 
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
   // prebuilt UI, so the press navigates away. The menu closes first all the same.
-  function onManage() {
-    // A navigation like `go`'s: without the mark, the sheet's release steps back off its history
-    // entry while Clerk's page is loading, and that Back cancels it.
+  //
+  // While paid credits are held (payments on or off), the press opens the deletion warning first (plan E6, D1/D2),
+  // whose one press continues here. The decision comes BEFORE the menu closes: going on to Clerk must mark the
+  // navigation first, or the sheet's release steps back off its history entry and that Back cancels the redirect. So
+  // a read still in flight is awaited with the menu open; a failed one goes straight on.
+  function toClerk() {
     leaveDialogsForNavigation();
-    close();
     void clerk.redirectToUserProfile();
+  }
+  async function onManage() {
+    const now = held === undefined ? await heldPaidAction().catch(() => null) : held;
+    if (warnsBeforeDelete(now)) {
+      close();
+      setWarning(now);
+    } else {
+      toClerk();
+      close();
+    }
   }
 
   // A successful sign-out navigates away, so `busy` is only ever released on
@@ -501,6 +521,15 @@ export function AccountMenu({
     eligible: friends && friendsMoment,
     copy: momentsCopy.friendsAfterGame,
   });
+  // The trigger carries the moment's anchor and is where the deletion warning hands focus back.
+  const anchorRef = afterGame.ref;
+  const triggerAnchor = useCallback(
+    (el: HTMLButtonElement | null) => {
+      triggerRef.current = el;
+      anchorRef(el);
+    },
+    [anchorRef],
+  );
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // The popover has no backdrop, so an outside press is what dismisses it
@@ -542,6 +571,7 @@ export function AccountMenu({
         // The contact sheet's `openAccount` step finds the trigger by this mark, as `openHelp` finds the ? by its own.
         data-account-trigger=""
         {...afterGame}
+        ref={triggerAnchor}
         onClick={() => setOpen((v) => !v)}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.
@@ -575,6 +605,17 @@ export function AccountMenu({
             visual box stays the button's first child. */}
         <TargetBox id="tour:account" />
       </button>
+      {warning && (
+        <DeleteWarning
+          held={warning}
+          returnFocusRef={triggerRef}
+          onClose={() => setWarning(null)}
+          onContinue={() => {
+            setWarning(null);
+            toClerk();
+          }}
+        />
+      )}
       {open &&
         (isPopover ? (
           <AccountPopover

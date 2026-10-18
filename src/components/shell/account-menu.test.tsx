@@ -10,6 +10,8 @@ const signOut = vi.fn(() => Promise.resolve());
 
 const chipAction = vi.hoisted(() => vi.fn());
 vi.mock("../../app/credits/actions", () => ({ chipAction }));
+const heldPaidAction = vi.hoisted(() => vi.fn());
+vi.mock("../../app/account/delete-warning-actions", () => ({ heldPaidAction }));
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -49,6 +51,8 @@ afterAll(() => rects.mockRestore());
 beforeEach(() => {
   chipAction.mockReset();
   chipAction.mockResolvedValue(null);
+  heldPaidAction.mockReset();
+  heldPaidAction.mockResolvedValue({ plan: 0, pack: 0 });
   redirectToUserProfile.mockClear();
   signOut.mockClear();
 });
@@ -345,12 +349,70 @@ describe("AccountMenu items", () => {
     expect(screen.queryByRole("menu")).not.toBeNull();
   });
 
-  it("dismisses the menu and sends the reader to Clerk's hosted account page", () => {
+  it("dismisses the menu and sends the reader to Clerk's hosted account page", async () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
-    expect(screen.queryByRole("menu")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
     expect(redirectToUserProfile).toHaveBeenCalledOnce();
+  });
+
+  describe("the deletion warning (plan E6, D1/D2)", () => {
+    const manage = async () => {
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      await act(async () => {});
+    };
+
+    it("opens first while paid credits are held, splitting them by source, and Continue goes on to Clerk", async () => {
+      heldPaidAction.mockResolvedValue({ plan: 74, pack: 40 });
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      await manage();
+      const dialog = await screen.findByRole("dialog", { name: "You have 114 paid credits" });
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+      expect([...dialog.querySelectorAll("[data-held]")].map((n) => n.getAttribute("data-held"))).toEqual(["plan", "pack"]);
+      expect(dialog).toHaveTextContent("Deleting your account forfeits them: 74 plan credits and 40 pack credits.");
+      expect(within(dialog).getByRole("link", { name: "support@the-99.dev" })).toHaveAttribute("href", "mailto:support@the-99.dev");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Continue to Manage account" }));
+      expect(redirectToUserProfile).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("dialog", { name: "You have 114 paid credits" })).toBeNull();
+    });
+
+    it("draws only what is held (D2: packs only), and ✕ stays", async () => {
+      heldPaidAction.mockResolvedValue({ plan: 0, pack: 40 });
+      render(<AccountMenu panel="sheet" theme="amonkhet" />);
+      await manage();
+      const dialog = await screen.findByRole("dialog", { name: "You have 40 paid credits" });
+      expect([...dialog.querySelectorAll("[data-held]")].map((n) => n.getAttribute("data-held"))).toEqual(["pack"]);
+      expect(dialog).toHaveTextContent("Deleting your account forfeits them. Nothing else in Manage account touches them.");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+      expect(screen.queryByRole("dialog", { name: "You have 40 paid credits" })).toBeNull();
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+    });
+
+    it("never opens without paid credits, nor when the read fails", async () => {
+      for (const answer of [{ plan: 0, pack: 0 }, null]) {
+        heldPaidAction.mockResolvedValue(answer);
+        redirectToUserProfile.mockClear();
+        const { unmount } = render(<AccountMenu panel="popover" theme="amonkhet" />);
+        await manage();
+        await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
+        expect(screen.queryByRole("dialog")).toBeNull();
+        unmount();
+      }
+    });
+
+    it("waits for a read still in flight before deciding", async () => {
+      let answer: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+      await act(async () => answer({ plan: 3, pack: 0 }));
+      expect(await screen.findByRole("dialog", { name: "You have 3 paid credits" })).toBeInTheDocument();
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+    });
   });
 
   it("from the phone sheet, leaves the sheet's history entry alone so the redirect is not cancelled", async () => {
@@ -363,7 +425,7 @@ describe("AccountMenu items", () => {
       fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
       // The sheet releases its entry one task after it unmounts.
       await act(async () => new Promise((r) => setTimeout(r, 20)));
-      expect(redirectToUserProfile).toHaveBeenCalledOnce();
+      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
       expect(back).not.toHaveBeenCalled();
     } finally {
       back.mockRestore();

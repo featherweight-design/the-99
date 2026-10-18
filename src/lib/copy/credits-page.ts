@@ -36,6 +36,23 @@ export const creditsPageCopy = {
   subLink: creditsCopy.link,
   supportEmail: "support@the-99.dev",
   /** The refunds line around the address, so it can be drawn as a mailto link (`SupportLink`). */
+  /** D1/D2: the Manage account interstitial while paid credits are held (plan E6). */
+  del: {
+    title: (total: number) => `You have ${total} paid ${total === 1 ? "credit" : "credits"}`,
+    plan: "Plan",
+    packs: "Packs",
+    planSub: "roll over while subscribed",
+    packsSub: "never expire",
+    /** Both sources held: the sentence names each; one source: the split above already says it. */
+    says: (plan: number, pack: number) =>
+      plan > 0 && pack > 0
+        ? `Deleting your account forfeits them: ${plan} plan ${plan === 1 ? "credit" : "credits"} and ${pack} pack ${pack === 1 ? "credit" : "credits"}. Nothing else in Manage account touches them.`
+        : "Deleting your account forfeits them. Nothing else in Manage account touches them.",
+    refundBefore: "Bought a pack in the last 14 days and not used it? Email ",
+    refundAfter: " for a refund before you delete.",
+    go: "Continue to Manage account",
+    close: "Close",
+  },
   refunds: {
     before: "Refunds: email ",
     after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",

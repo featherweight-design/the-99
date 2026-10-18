@@ -2473,6 +2473,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
   production are refused by id. Mutation-checked five ways (the event row's conflict, the lot's conflict target,
   the attribution check, the mapping read without `FOR SHARE`, a payment-record conflict let through to the grant).
+- `pnpm probe:delete-warning` proves the Manage account deletion warning (buying-credits §7, D1/D2; plan E6, U5) in a
+  real browser at 1300 (the popover) and 390 (the sheet). On the signed-in test account it seeds lots and a
+  `PAYMENTS_ENABLED` account override, presses Manage account, and records any navigation off the origin (Clerk's page)
+  without following it. It asserts: no paid credits, or a welcome lot only, goes straight to Clerk; a pack opens the
+  warning (`You have 40 paid credits`, the Packs cell alone) and Continue goes on; plan plus pack with payments OFF still
+  opens it (114, both cells) and ✕ stays put; at 390 it is the sheet. It WRITES the account's `credit_grants` and that
+  override, so it refuses anything but a scratch branch (`assertScratchBranch`) and restores both tables for the account
+  in a `finally`, every column through `json_populate_record`. It visits a light page (`PROBE_PAGE`, default `/about`)
+  and waits for `load`: leaving a page mid-stream cuts it, and React's reveal script then throws on the half document.
+  `PROBE_BASE=… PROBE_DATABASE_URL=… pnpm probe:delete-warning`, the server reading the same database.
+
 - `pnpm probe:credits-return` proves the Checkout return's read and the purchase history (buying-credits E1, E8, G5)
   against a real database, through the real `readReturn`, `listCreditHistory` and `fulfilCheckoutSession`, with Stripe a
   stand-in whose `checkout.sessions.retrieve` serves a crafted Session or throws: a paid pack Session of the viewer with no

@@ -290,6 +290,7 @@
     "probe:deck-own": "tsx scripts/probe-deck-own.ts",
     "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
     "probe:credits-return": "tsx scripts/probe-credits-return.ts",
+    "probe:delete-warning": "node scripts/probe-delete-warning.mjs",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",
