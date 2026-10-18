@@ -40,7 +40,7 @@ export function SeatOffer() {
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-[4px]">
             <b className="truncate whitespace-nowrap font-sans text-[13.5px] font-semibold text-[color:var(--fg)]">{d.name}</b>
-            <OfferChip permits={d.permits} answered={d.answered} />
+            <DeckRowChip permits={d.permits} answered={d.answered} />
           </span>
           <button
             type="button"
@@ -58,11 +58,11 @@ export function SeatOffer() {
 }
 
 /**
- * The offer's bracket chip. An unanswered range names both brackets, which is wider than the row's text column on a
- * phone (the art, the padding and `Swap in` leave about 130px at 390). Below 480px a range draws its marks alone, the
+ * A Rule 0 deck row's bracket chip: the offer's and `Change deck`'s. An unanswered range names both brackets, which is
+ * wider than the row's text column on a phone (in the offer, the art, the padding and `Swap in` leave about 130px at 390). Below 480px a range draws its marks alone, the
  * phone header's own yield (F18), with the name for a screen reader; one bracket, or a wider page, draws the whole chip.
  */
-function OfferChip({ permits, answered }: Pick<OfferDeck, "permits" | "answered">) {
+export function DeckRowChip({ permits, answered }: Pick<OfferDeck, "permits" | "answered">) {
   const head = verdictHead(permits, answered);
   if (!head.split) {
     return (

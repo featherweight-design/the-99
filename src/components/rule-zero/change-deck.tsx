@@ -11,12 +11,11 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { faceInitials } from "../../lib/social/initials";
 import type { DeckChoice } from "../../lib/social/rule-zero-table";
-import { BracketChip } from "../decks/bracket-chip";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { FadingImg } from "../ui/hydrated-art";
 import { Sheet, SheetHeader } from "../ui/sheet";
 import { useMinWidth } from "../ui/use-min-width";
-import { useSwap } from "./swap";
+import { DeckRowChip, useSwap } from "./swap";
 
 const copy = ruleZeroCopy.swap;
 const PANEL_WIDTH = 420;
@@ -24,9 +23,11 @@ const PANEL_WIDTH = 420;
 export function ChangeDeck({ tableId }: { tableId: string }) {
   const [choices, setChoices] = useState<DeckChoice[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
-  async function press() {
+  // The pressed link, held as state (not a ref read during render) for the panel to hang from.
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  async function press(at: HTMLElement) {
     if (busy) return;
+    setAnchor(at);
     setBusy(true);
     try {
       // Null when the seat grant has lapsed: the page's next check draws the closed table.
@@ -38,16 +39,15 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
   return (
     <>
       <button
-        ref={trigger}
         type="button"
         aria-busy={busy || undefined}
         aria-haspopup="dialog"
-        onClick={() => (choices ? setChoices(null) : void press())}
+        onClick={(e) => (choices ? setChoices(null) : void press(e.currentTarget))}
         className="inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]"
       >
         {ruleZeroCopy.seat.changeDeck}
       </button>
-      {choices && trigger.current ? <Choices anchor={trigger.current} choices={choices} onClose={() => setChoices(null)} /> : null}
+      {choices && anchor ? <Choices anchor={anchor} choices={choices} onClose={() => setChoices(null)} /> : null}
     </>
   );
 }
@@ -80,7 +80,7 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
     if (!c.seated) swap?.swap(c.deckId);
   };
   const list = (
-    <ul aria-label={copy.decksList} className="m-0 flex list-none flex-col gap-[2px] p-0">
+    <ul aria-label={copy.decksList} className={`m-0 flex list-none flex-col p-0 ${desktop ? "" : "gap-[2px]"}`}>
       {choices.map((c) => (
         <li key={c.deckId}>
           <Row choice={c} onPick={() => pick(c)} />
@@ -132,7 +132,7 @@ function Row({ choice: c, onPick }: { choice: DeckChoice; onPick: () => void }) 
         <b className="truncate whitespace-nowrap text-[14px] font-semibold">{c.name}</b>
         <span className="truncate whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
       </span>
-      {c.ready ? <BracketChip permits={c.ready.permits} answered={c.ready.answered} /> : null}
+      {c.ready ? <DeckRowChip permits={c.ready.permits} answered={c.ready.answered} /> : null}
       {c.seated ? <span className="ml-[6px] flex-none font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.seatedTag}</span> : null}
     </button>
   );
