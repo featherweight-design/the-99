@@ -2,13 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import type { DeckView } from "../../lib/copy/about";
-import { helpPanelCopy } from "../../lib/copy/discovery";
+import { helpPanelCopy, referenceCopy } from "../../lib/copy/discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { usePublishBuilderScreen } from "../decks/builder-screen";
 import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "../discovery/targets-provider";
 import { HelpButton, HelpRoot } from "./help-root";
 import { reveal } from "../../lib/ui/reveal";
 import { Report } from "../shell/pending-report";
+import { aboutEntries } from "../../lib/copy/about-entries";
+import { referenceScreens } from "../../lib/about/reference";
+import { ReferenceTab } from "../about/reference/reference-tab";
 import { ARRIVE_MS, MomentsProvider, useMomentAnchor } from "../moments/moments-provider";
 
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: vi.fn(async () => {}) }));
@@ -385,7 +388,7 @@ describe("a link press", () => {
     expect(screen.queryByRole("dialog")).not.toBeNull();
   });
 
-  it("only closes on a press to the page already open, a fragment on it included, and pushes nothing", async () => {
+  it("only closes on a press to the page already open, and pushes nothing", async () => {
     stubViewport(1300);
     pathname = "/about";
     window.history.replaceState(null, "", "/about?tab=reference");
@@ -492,5 +495,77 @@ describe("Show me and the moments", () => {
     act(() => notify!([{ target: control, isIntersecting: true }]));
     await advance(ARRIVE_MS);
     expect(screen.getByRole("note", { name: "Stand-ins, a tip" })).toBeTruthy();
+  });
+});
+
+describe("an entry link on the Reference already up", () => {
+  const screens = referenceScreens(aboutEntries, [], undefined);
+  const target = screens[1].entries[0];
+  // The ? reads the same entries the Reference draws.
+  const HELP: EntryPayload[] = screens.flatMap((x) =>
+    x.entries.map((e) => ({ id: e.id, title: e.title, caption: e.caption, keys: [...e.keys], screen: "collection" as const })),
+  );
+  const openOf = () => document.querySelector("[data-entry-open]")?.getAttribute("data-entry-open") ?? null;
+  const refField = () => screen.getByRole("searchbox", { name: referenceCopy.search }) as HTMLInputElement;
+
+  const drawAbout = () =>
+    render(
+      <TargetsProvider>
+        <HelpRoot on>
+          <HelpButton place="rail" />
+          <ReferenceTab screens={screens} whatsNew={[]} how={null} howCount={0} />
+        </HelpRoot>
+      </TargetsProvider>,
+    );
+
+  beforeEach(() => {
+    pathname = "/about";
+    fetchMock.mockImplementation(async () => ({ ok: true, json: async () => ({ entries: HELP }) }));
+    Element.prototype.scrollIntoView ??= () => {};
+  });
+  afterEach(() => {
+    window.history.replaceState(null, "", "/collection");
+  });
+
+  // Repro (round 2): load the entry's own fragment, shut the entry, then pick it again in the ?. The fragment does not
+  // move, so no `hashchange` fires, and the Reference's own repeat-press rule reads only `#<id>` links.
+  for (const width of [1300, 390]) {
+    it(`opens the entry again at ${width}, its fragment unchanged, and clears a Reference search that hid it`, async () => {
+      stubViewport(width);
+      const scrolled: string[] = [];
+      vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(function (this: Element) {
+        scrolled.push(this.id);
+      });
+      window.history.replaceState(null, "", `/about?tab=reference#${target.id}`);
+      drawAbout();
+      expect(openOf()).toBe(target.id);
+      // Shut it, then hide it behind a search for something else.
+      fireEvent.click(document.getElementById(target.id)!.querySelector("button[aria-expanded]")!);
+      expect(openOf()).toBeNull();
+      fireEvent.change(refField(), { target: { value: "zzzz-none" } });
+      await openIt();
+      fireEvent.change(within(panel()).getByRole("searchbox"), { target: { value: target.title } });
+      const hit = panel().querySelector(`[data-help-hit="${target.id}"]`) as HTMLElement;
+      expect(hit.getAttribute("href")).toBe(`/about?tab=reference#${target.id}`);
+      scrolled.length = 0;
+      fireEvent.click(hit, { button: 0 });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(refField().value).toBe("");
+      expect(openOf()).toBe(target.id);
+      expect(window.location.hash).toBe(`#${target.id}`);
+      // And brought into view, once the sheet has stepped off its entry and the page's scroll is put back.
+      await waitFor(() => expect(scrolled).toContain(target.id), { timeout: 2000 });
+    });
+  }
+
+  it("moves the address to an entry it names on this page, and opens that one", async () => {
+    stubViewport(1300);
+    window.history.replaceState(null, "", "/about?tab=reference");
+    drawAbout();
+    await openIt();
+    fireEvent.change(within(panel()).getByRole("searchbox"), { target: { value: target.title } });
+    fireEvent.click(panel().querySelector(`[data-help-hit="${target.id}"]`)!, { button: 0 });
+    expect(openOf()).toBe(target.id);
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe(`/about?tab=reference#${target.id}`);
   });
 });

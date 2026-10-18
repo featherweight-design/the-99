@@ -16,6 +16,8 @@ import { referenceCopy } from "../../../lib/copy/discovery";
 import { HOW_IT_WORKS_ID } from "../../../lib/copy/how-it-works-links";
 import { searchEntries } from "../../../lib/about/search";
 import { noteAppScroll } from "../../../lib/ui/reveal";
+import { afterDialogsReleased, afterScrollRestored } from "../../../lib/a11y/dialog";
+import { REVEAL_ENTRY_EVENT } from "../../../lib/about/reveal-entry";
 import type { ReferenceEntry, ReferenceScreen } from "../../../lib/about/reference";
 import { SearchField } from "../../ui/text-field";
 import { SearchIcon } from "../../ui/search-icon";
@@ -178,12 +180,41 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
       const a = (e.target as Element | null)?.closest?.("a[href^='#']");
       if (a && a.getAttribute("href") === window.location.hash) window.setTimeout(follow, 0);
     };
+    // A press elsewhere on this page that names an entry by its whole URL (the ? panel's results and rows), its
+    // fragment the same as the address's or not: open it as a hash would. The scroll waits for the sheet that sent it
+    // to have stepped off its history entry and the page's scroll to have been put back, or that restoration would
+    // carry the page straight back off the entry. A task later first, so the sheet's release is queued ahead.
+    let unscroll = () => {};
+    const revealed = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (typeof id !== "string" || !reveal(id)) return;
+      setQuery("");
+      unscroll();
+      let unrelease = () => {};
+      let unpin = () => {};
+      const t = window.setTimeout(() => {
+        unrelease = afterDialogsReleased(() => {
+          unpin = afterScrollRestored(() => {
+            noteAppScroll();
+            document.getElementById(id)?.scrollIntoView({ block: "start" });
+          });
+        });
+      }, 0);
+      unscroll = () => {
+        window.clearTimeout(t);
+        unrelease();
+        unpin();
+      };
+    };
     follow();
     window.addEventListener("hashchange", follow);
+    window.addEventListener(REVEAL_ENTRY_EVENT, revealed);
     document.addEventListener("click", again);
     return () => {
       window.removeEventListener("hashchange", follow);
+      window.removeEventListener(REVEAL_ENTRY_EVENT, revealed);
       document.removeEventListener("click", again);
+      unscroll();
     };
     // `reveal` reads `screenOf`, which follows `screens`.
     // eslint-disable-next-line react-hooks/exhaustive-deps

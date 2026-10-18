@@ -19,6 +19,7 @@ import {
   placeName,
   type HelpPlace,
 } from "../../lib/about/help-panel";
+import { entryOfHref, revealReferenceEntry } from "../../lib/about/reveal-entry";
 import { screenForPath } from "../../lib/about/screen-for-path";
 import { searchEntries } from "../../lib/about/search";
 import type { DeckView } from "../../lib/copy/about";
@@ -26,6 +27,7 @@ import { helpPanelCopy } from "../../lib/copy/discovery";
 import { ENTRY_TARGETS } from "../../lib/discovery/entry-targets";
 import type { TargetId } from "../../lib/discovery/targets";
 import { useMomentHold } from "../../lib/moments/hold";
+import { mirrorUrl } from "../../lib/url/mirror";
 import { useTargets } from "../discovery/targets-provider";
 import { usePendingPush } from "../shell/pending-push";
 import { SearchIcon } from "../ui/search-icon";
@@ -87,13 +89,23 @@ export function HelpPanel({
   // loading screen. So the navigation runs from the pending provider, which stays mounted and reports it, as the
   // account menu's rows do; the link's own navigation is cancelled so it does not run twice. The sheet's history entry
   // stays under the new page rather than stepping back, which would cancel the navigation. A press to the page
-  // already open (a fragment on it included) just closes and lets the link move to its fragment; a modified press is
-  // the browser's own.
+  // already open just closes, and one to an entry on it opens that entry in the Reference; a modified press is the
+  // browser's own.
   const { go } = usePendingPush();
   const leave = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const now = window.location.pathname + window.location.search;
     if (href.split("#")[0] === now) {
+      // An entry on the Reference already up: the address and the entry move here, since a fragment already in the
+      // address fires no `hashchange` and the Reference's search would hide it anyway.
+      const entry = entryOfHref(href);
+      if (entry !== null) {
+        e.preventDefault();
+        mirrorUrl(href, window.history.state);
+        onClose();
+        revealReferenceEntry(entry);
+        return;
+      }
       onClose();
       return;
     }

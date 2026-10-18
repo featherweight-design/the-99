@@ -161,6 +161,11 @@ const PLACE = {
   },
 } as const;
 
+/** Whether the ? is drawn for this reader: the phone header's install slot makes room for it. */
+export function useHelpOn(): boolean {
+  return useContext(HelpContext) !== null;
+}
+
 /** The ? itself, in the rail or the header. Nothing without the root, so a switched-off reader gets no ?. */
 export function HelpButton({ place }: { place: keyof typeof PLACE }) {
   const help = useContext(HelpContext);
