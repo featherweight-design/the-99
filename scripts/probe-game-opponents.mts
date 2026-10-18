@@ -62,7 +62,8 @@ async function main() {
     if (asked === null || !(await opp.opponentCommandersValid(asked))) return null;
     // No table seat here (plan §PR 8's are `rule-zero-log.test.ts`'s): the parse passes through as it is.
     const parsed = opp.withTableSeats(asked, []);
-    if (parsed === null) return null;
+    // No table seat here, so no friend can be seated twice: "twice" is the table path's alone.
+    if (parsed === null || parsed === "twice") return null;
     try {
       return await db.transaction(async (tx) => {
         const facts = await opp.resolveOpponentsIn(tx, viewer, parsed);
@@ -206,7 +207,7 @@ async function main() {
     const gate = new Promise<void>((r) => { release = r; });
     let wrote!: () => void;
     const written = new Promise<void>((r) => { wrote = r; });
-    const parsed = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId, deck: fay2 }], { podSize: 4, result: "draw" })!, [])!;
+    const parsed = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId, deck: fay2 }], { podSize: 4, result: "draw" })!, [])! as import("../src/lib/decks/game-opponents").ResolvedOpponent[];
     let heldGame = "";
     const holding = db.transaction(async (tx) => {
       const facts = await opp.resolveOpponentsIn(tx, V, parsed);
@@ -252,7 +253,7 @@ async function main() {
     const gateW = new Promise<void>((r) => { releaseW = r; });
     let wroteW!: () => void;
     const writtenW = new Promise<void>((r) => { wroteW = r; });
-    const seatF = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId }], { podSize: 4, result: "win" })!, [])!;
+    const seatF = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId }], { podSize: 4, result: "win" })!, [])! as import("../src/lib/decks/game-opponents").ResolvedOpponent[];
     const logging = db.transaction(async (tx) => {
       const facts = await opp.resolveOpponentsIn(tx, W, seatF);
       const { rows: g } = await tx.execute<{ id: string }>(sql`

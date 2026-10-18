@@ -62,6 +62,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -1263,6 +1264,7 @@ export async function logGame(
       // A table seat is read under the table's grant and becomes a friend ask or anyone by the deck's commanders.
       const seated = withTableSeats(opponents, table === null ? [] : await resolveTableSeatsIn(tx, userId, table, tableSeats));
       if (seated === null) throw new SeatRefused();
+      if (seated === "twice") throw new SeatRefused(true);
       const friends = await resolveOpponentsIn(tx, userId, seated);
       const [game] = await tx
         .insert(deckGames)
@@ -1286,7 +1288,7 @@ export async function logGame(
     });
   } catch (err) {
     // A seat that no longer resolves (not a friend now, or not their deck) is a refusal, not a failure.
-    if (err instanceof SeatRefused) return refuse;
+    if (err instanceof SeatRefused) return err.twice ? { ok: false as const, message: ruleZeroCopy.log.seatedTwice } : refuse;
     // The player sees one generic refusal by design, so the underlying failure
     // has nowhere else to surface.
     console.error("logGame failed", err);

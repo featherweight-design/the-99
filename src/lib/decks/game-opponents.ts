@@ -158,7 +158,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * the table seats appear), or null to refuse: the table refused, or a friend now sits twice (once picked, once from
  * the table). The seat keeps its place and its `won`.
  */
-export function withTableSeats(parsed: readonly ParsedOpponent[], table: readonly TableSeatResolution[] | null): ResolvedOpponent[] | null {
+export function withTableSeats(parsed: readonly ParsedOpponent[], table: readonly TableSeatResolution[] | null): ResolvedOpponent[] | "twice" | null {
   const asked = parsed.filter((o) => o.kind === "tableSeat").length;
   if (asked > 0 && (table === null || table.length !== asked)) return null;
   let t = 0;
@@ -169,8 +169,10 @@ export function withTableSeats(parsed: readonly ParsedOpponent[], table: readonl
     if (r.deck !== null) return { kind: "friendDeck", friend: r.friend, deck: r.deck, won: o.won };
     return { kind: "friend", friend: r.friend, commander: null, partner: null, won: o.won };
   });
+  // A friend picked by hand AND seated from the table: the form cannot see it (a table seat carries no public id), so
+  // the save says so in its own words rather than the generic refusal.
   const friends = out.flatMap((o) => (o.kind === "other" ? [] : [o.friend]));
-  return new Set(friends).size === friends.length ? out : null;
+  return new Set(friends).size === friends.length ? out : "twice";
 }
 
 /**
@@ -195,8 +197,9 @@ export function opponentRows(gameId: string, parsed: readonly ResolvedOpponent[]
 
 /** Thrown inside the game's transaction, to roll it back, when a friend seat or a table seat no longer resolves. */
 export class SeatRefused extends Error {
-  constructor() {
-    super("a friend seat no longer resolves");
+  /** `twice`: one friend in two seats (a hand pick and a table seat), a refusal the form names. */
+  constructor(readonly twice = false) {
+    super(twice ? "a friend is seated twice" : "a friend seat no longer resolves");
   }
 }
 

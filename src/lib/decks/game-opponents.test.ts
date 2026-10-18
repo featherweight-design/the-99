@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents, withTableSeats } from "./game-opponents";
+import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents, withTableSeats, type ResolvedOpponent } from "./game-opponents";
 
 const A = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
 const B = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -125,7 +125,7 @@ describe("withTableSeats", () => {
 
   it("refuses a friend seated twice, once picked and once from the table", () => {
     const twice = parseOpponents([{ friend: A }, { tableSeat: 2 }], loss)!;
-    expect(withTableSeats(twice, [{ kind: "friend", friend: A, deck: null }])).toBeNull();
+    expect(withTableSeats(twice, [{ kind: "friend", friend: A, deck: null }])).toBe("twice");
   });
 
   it("passes a parse with no table seat through", () => {
@@ -136,7 +136,7 @@ describe("withTableSeats", () => {
 
 describe("opponentRows", () => {
   it("numbers seats from 1 and lays each friend's facts on its own seat", () => {
-    const parsed = withTableSeats(parseOpponents([{ label: "Sam", won: true }, { friend: A, deck: B }, { friend: C, commander: A }], loss)!, [])!;
+    const parsed = withTableSeats(parseOpponents([{ label: "Sam", won: true }, { friend: A, deck: B }, { friend: C, commander: A }], loss)!, [])! as ResolvedOpponent[];
     const facts = (id: string, deck: string | null) => ({
       friendUserId: id, friendNameThen: id, friendDeckId: deck, deckNameThen: deck && "Yuriko",
       commanderOracleId: deck && C, partnerOracleId: null,

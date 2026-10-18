@@ -42,8 +42,6 @@ const prefill: TablePrefill = {
     { seat: 4, name: "Max", deckName: "Gisa Zombies", commanderName: "Gisa, Glorious Resurrector", artCropUri: null, friend: false },
   ],
 };
-// What the server holds and the client must never be sent: every other seat's deck and profile ids.
-const SERVER_IDS = ["dec0dec0-0000-4000-8000-0000000000c0", "c01c01c0-0000-4000-8000-000000000001", "dec0dec0-0000-4000-8000-0000000000a0"];
 
 function mount(withPrefill = true) {
   render(
@@ -53,10 +51,14 @@ function mount(withPrefill = true) {
 const result = (label: string) => fireEvent.click(screen.getByRole("radio", { name: label }));
 const save = () => fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.save }));
 const sent = () => logGame.mock.calls[0][1];
+// The prefill holds no id to send (`rule-zero-log.test.ts` asserts that on the server's own output), so what this
+// side can break is the wire's SHAPE: a table seat names its number and nothing else, and no seat names a friend or
+// a deck. The `toEqual`s above each call pin the exact entries; this pins the keys whatever the entries.
 const assertNoServerIds = () => {
-  const wire = JSON.stringify(sent());
-  for (const id of SERVER_IDS) expect(wire).not.toContain(id);
-  expect(JSON.stringify(sent().opponents)).not.toMatch(/friend|deck/);
+  for (const o of sent().opponents as Record<string, unknown>[]) {
+    expect(Object.keys(o).filter((k) => k === "friend" || k === "deck")).toEqual([]);
+    if ("tableSeat" in o) expect(Object.keys(o).every((k) => k === "tableSeat" || k === "won")).toBe(true);
+  }
 };
 
 beforeEach(() => logGame.mockClear());

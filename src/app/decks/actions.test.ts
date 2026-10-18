@@ -512,6 +512,7 @@ import type { LogGameInput } from "./actions";
 import type { OpponentInput } from "../../lib/decks/game-opponents";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,
@@ -1512,6 +1513,11 @@ describe("logGame", () => {
       it("refuses, writing nothing, when the table was reseated since the prefill", async () => {
         tableRows.rows = tableRows.rows.map((r) => (r.seat === 2 ? { ...r, seat: 4 } : r.seat === 4 ? { ...r, seat: 2 } : r));
         expect((await log([{ tableSeat: 2 }])).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
+      it("says so, writing nothing, when a friend picked by hand is also seated from the table", async () => {
+        expect(await log([{ friend: COLIN }, { tableSeat: 2 }])).toEqual({ ok: false, message: ruleZeroCopy.log.seatedTwice });
         expect(stub.state.insertCalls).toHaveLength(0);
       });
 

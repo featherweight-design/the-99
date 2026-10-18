@@ -203,6 +203,7 @@ export const ruleZeroCopy = {
     from: (podTable: string) => `From ${podTable}. Seats filled; change anything.`,
     fromPod: (pod: string) => `${pod}’s table`,
     fromTable: "from the table", // tag on a seat who isn't your friend
+    seatedTwice: "A friend is in two seats. Clear one and save again.", // the save, when a hand pick repeats a table seat
   },
   expired: {
     title: "This table has closed",
