@@ -30,6 +30,11 @@ describe("placeCard, against the boards' step geometry", () => {
     expect(placeCard("below-end", { x: 90, y: 186, w: 1162, h: 304 }, card, { w: 1280, h: 900 })).toEqual({ x: 912, y: 504 });
   });
 
+  it("keeps the card inside the frame when the lit card sits below it", () => {
+    const p = placeCard("below-end", { x: 90, y: 1000, w: 1162, h: 304 }, card, FRAME);
+    expect(p.y + card.h).toBeLessThanOrEqual(FRAME.h - 14);
+  });
+
   it("puts it above the lit card when the frame has no room below, never over it", () => {
     const p = placeCard("below-end", { x: 90, y: 400, w: 1162, h: 304 }, card, FRAME);
     expect(p.y + card.h).toBeLessThanOrEqual(400 - 14);

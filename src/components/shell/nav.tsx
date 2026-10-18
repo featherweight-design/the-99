@@ -24,6 +24,7 @@ import type { ThemeKey } from "../../lib/theme/themes";
 import { reveal } from "../../lib/ui/reveal";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { useMomentHold } from "../../lib/moments/hold";
 import { HelpButton } from "../help/help-root";
 import type { ChipState } from "../../lib/payments/chip-rule";
 import { TargetBox } from "../discovery/targets-provider";
@@ -160,6 +161,8 @@ type OpenNote = { href: NavHref; x: number; y: number } | null;
  */
 function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
   const [open, setOpen] = useState<OpenNote>(null);
+  // A note locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(open !== null);
   const slots = useRef(new Map<NavHref, HTMLButtonElement>());
   const notes = useRef(new Map<NavHref, HTMLDivElement>());
 

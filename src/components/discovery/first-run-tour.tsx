@@ -18,8 +18,8 @@ import { useInertPage } from "../../lib/a11y/inert-page";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
 import { CARD_W, FRAME, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, tourPictureSrc, type Box } from "../../lib/discovery/tour-steps";
-import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
-import { takeVisit } from "../../lib/moments/visit";
+import { overPageCount, subscribeOverPage, useMomentHold } from "../../lib/moments/hold";
+import { takeVisit, withVisitLock } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
 import { prefersReducedMotion } from "../../lib/ui/motion";
 import { noteAppScroll } from "../../lib/ui/reveal";
@@ -35,9 +35,29 @@ const SCRIM = "rgba(6,5,8,.66)";
 const collectionPrecons = collectionEditCopy.ways.precons;
 const noteTitle = creatorNoteCopy.title;
 
+/**
+ * This tab spent the tour. Back can restore a Home whose payload still says the tour is due (the router keeps it), and
+ * that remount must not run it again; a reload reads the server, which has the stamp.
+ */
+const SPENT_KEY = "the99.tour.spent";
+function spentHere(): boolean {
+  try {
+    return sessionStorage.getItem(SPENT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSpentHere() {
+  try {
+    sessionStorage.setItem(SPENT_KEY, "1");
+  } catch {
+    // not a fallback: without storage a restored Home can show the tour once more, as before this guard.
+  }
+}
+
 /** Mounted on a first-run Home whose tour is due (`tourDue`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). */
 export function FirstRunTour({ precons }: { precons: boolean }) {
-  const [phase, setPhase] = useState<"waiting" | "running" | "done">("waiting");
+  const [phase, setPhase] = useState<"waiting" | "running" | "done">(() => (spentHere() ? "done" : "waiting"));
   const [note, setNote] = useState(false);
 
   useEffect(() => {
@@ -53,8 +73,10 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       if (!clear()) return;
       timer = window.setTimeout(() => {
         if (!clear()) return;
-        takeVisit();
+        // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
+        void withVisitLock(() => takeVisit());
         // The tour is spent as step 1 appears; a failed write shows it again on the next Home, which is the safe side.
+        markSpentHere();
         void spendTourAction().catch(() => {});
         setPhase("running");
       }, ARRIVE_MS);
@@ -151,8 +173,25 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   // So once the card shows, and on every step, focus Next when focus is not in the card already.
   const shown = cardH !== null;
   useEffect(() => {
-    if (shown && !cardRef.current?.contains(document.activeElement)) nextRef.current?.focus();
+    if (shown && !cardRef.current?.contains(document.activeElement)) nextRef.current?.focus({ preventScroll: true });
   }, [shown, index]);
+  // A card scrolled to its foot on a short screen opens the next step from its top.
+  useLayoutEffect(() => {
+    if (cardRef.current) cardRef.current.scrollTop = 0;
+  }, [index]);
+  // Focus stays on Next or Back as the step changes, so the new stop is announced: its place and title, once per
+  // change (the dialog's own label covers the opening).
+  const [announce, setAnnounce] = useState("");
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!opened.current) {
+      opened.current = true;
+      return;
+    }
+    setAnnounce(`${c.kicker(index + 1, STEPS.length, c.steps[STEPS[index].key].place)}. ${c.steps[STEPS[index].key].title}`);
+  }, [index]);
+  // While it runs, nothing else arrives over the page.
+  useMomentHold(true);
 
   // At 390 the docked card covers the page's foot, so the page gets that much room to scroll under it while the tour
   // runs: a short first-run page could not otherwise bring step 1's controls clear of the card. Restored on the way out.
@@ -257,6 +296,9 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
           </p>
         )}
         {!fallback && <span id={litId} className="sr-only">{c.litAria(c.lit[step.lit])}</span>}
+        <span aria-live="polite" aria-atomic="true" className="sr-only" data-tour-announce>
+          {announce}
+        </span>
 
         {step.key === "collection" && (
           <>
@@ -272,7 +314,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
 
         {picture && "picture" in copy && (
           <>
-            <div className="mt-[12px] h-[128px] overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[118px]">
+            <div className="mt-[12px] h-[128px] shrink-0 overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[118px]">
               {/* eslint-disable-next-line @next/next/no-img-element -- a checked-in capture, sized by its box */}
               <img src={picture.src} alt={copy.pictureAlt} className="block h-full w-full object-cover" style={{ objectPosition: step.picture ? PICTURE_FOCUS[step.picture] : undefined }} />
             </div>

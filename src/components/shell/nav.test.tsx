@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 import { setAboutSheetUp } from "./about-sheet-presence";
 import { reveal } from "../../lib/ui/reveal";
+import { overPageCount } from "../../lib/moments/hold";
 // The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
@@ -355,6 +356,19 @@ describe("The lock, desktop rail", () => {
     act(() => (document.activeElement as HTMLElement).blur());
     fireEvent.click(discover);
     expect(isOpen(discover)).toBe(true);
+  });
+
+  it("holds moments and the tour off while a note is open, in the rail and in the tab bar", () => {
+    const { unmount } = render(<NavRail locked theme="amonkhet" />);
+    expect(overPageCount().holds).toBe(0);
+    fireEvent.pointerEnter(slot("Decks"));
+    expect(overPageCount().holds).toBe(1);
+    fireEvent.pointerDown(document.body);
+    expect(overPageCount().holds).toBe(0);
+    unmount();
+    render(<TabBar locked />);
+    fireEvent.click(slot("Decks"));
+    expect(overPageCount().holds).toBe(1);
   });
 
   it("does not close when the pointer leaves the slot, so it can travel onto the note", () => {

@@ -62,6 +62,7 @@ const card = () => screen.getByRole("dialog");
 const next = () => fireEvent.click(within(card()).getByRole("button", { name: /^(Next|Finish)$/ }));
 
 beforeEach(() => {
+  sessionStorage.clear();
   vi.useFakeTimers();
   spend.mockClear();
   takeVisit.mockClear();
@@ -69,7 +70,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("FirstRunTour", () => {
-  it("opens once the page settles plus ARRIVE_MS, spends the tour and takes the visit", () => {
+  it("opens once the page settles plus ARRIVE_MS, spends the tour and takes the visit", async () => {
     render(<Home />);
     expect(screen.queryByRole("dialog")).toBeNull();
     act(() => vi.advanceTimersByTime(ARRIVE_MS - 50));
@@ -77,6 +78,8 @@ describe("FirstRunTour", () => {
     arrive();
     expect(card()).toHaveAccessibleName("Start with what you own");
     expect(spend).toHaveBeenCalledTimes(1);
+    // The visit is taken under the shared visit lock, a microtask later.
+    await act(async () => {});
     expect(takeVisit).toHaveBeenCalledTimes(1);
   });
 
@@ -135,6 +138,32 @@ describe("FirstRunTour", () => {
     expect(within(card()).getByRole("button", { name: "Next" })).toHaveFocus();
   });
 
+  it("announces each new stop, and not the opening", () => {
+    render(<Home />);
+    arrive();
+    const live = () => document.querySelector("[data-tour-announce]")!;
+    expect(live().textContent).toBe("");
+    next();
+    expect(live().textContent).toBe("2 of 6 · Commanders. See what you could build");
+  });
+
+  it("opens each step at the card's top, however far the last one was scrolled", () => {
+    render(<Home />);
+    arrive();
+    card().scrollTop = 200;
+    next();
+    expect(card().scrollTop).toBe(0);
+  });
+
+  it("holds moments off while it runs", async () => {
+    const { overPageCount } = await import("../../lib/moments/hold");
+    render(<Home />);
+    arrive();
+    expect(overPageCount().holds).toBe(1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(overPageCount().holds).toBe(0);
+  });
+
   it("holds the app inert while it runs, and lets it go when it ends", () => {
     render(<Home />);
     arrive();
@@ -149,12 +178,12 @@ describe("FirstRunTour", () => {
     arrive();
     const kickers = [];
     for (let i = 0; i < 6; i++) {
-      kickers.push(within(card()).getByText(/ of 6 · /).textContent);
+      kickers.push(within(card()).getByText(/^\d of 6 · [^.]+$/).textContent);
       if (i < 5) next();
     }
     expect(kickers).toEqual(["1 of 6 · Collection", "2 of 6 · Commanders", "3 of 6 · Decks", "4 of 6 · Buying", "5 of 6 · Your look", "6 of 6 · What’s new"]);
     fireEvent.click(within(card()).getByRole("button", { name: "Back" }));
-    expect(within(card()).getByText("5 of 6 · Your look")).toBeInTheDocument();
+    expect(within(card()).getAllByText("5 of 6 · Your look")).toHaveLength(1);
     next();
     expect(within(card()).getByRole("button", { name: "Finish" })).toBeInTheDocument();
     next();
@@ -181,6 +210,7 @@ describe("FirstRunTour", () => {
     arrive();
     expect(card()).toHaveTextContent("No file? Precons I own adds every card");
     unmount();
+    sessionStorage.clear();
     render(<Home precons={false} />);
     arrive();
     expect(card()).not.toHaveTextContent("Precons I own");
@@ -202,6 +232,7 @@ describe("FirstRunTour", () => {
     expect(card()).toHaveTextContent("one line on Home says so");
     expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
     unmount();
+    sessionStorage.clear();
     render(<Home banner={false} />);
     arrive();
     for (let i = 0; i < 5; i++) next();
@@ -218,5 +249,16 @@ describe("FirstRunTour", () => {
     const note = screen.getByRole("dialog");
     expect(note).toHaveAccessibleName("A note from the creator");
     expect(document.querySelector("[data-tour-card]")).toBeNull();
+  });
+
+  it("never runs again in this tab once spent, when Back restores a Home whose payload still says it is due", () => {
+    const first = render(<Home />);
+    arrive();
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    first.unmount();
+    render(<Home />);
+    arrive();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(spend).not.toHaveBeenCalledTimes(2);
   });
 });

@@ -103,7 +103,9 @@ export function placeCard(place: Placement, rect: Box | null, card: { w: number;
       const below = rect.y + rect.h + FRAME;
       // Below when it fits, else above, else as low as the frame allows.
       const y = below + card.h <= frame.h - FRAME ? below : rect.y - FRAME - card.h >= FRAME ? rect.y - FRAME - card.h : maxY;
-      return { x: clamp(rect.x + rect.w - card.w, FRAME, maxX), y };
+      // Clamped too: a lit card pushed below the frame (Home's table cards above step 1) must not take the card's
+      // foot, and its Next, off screen.
+      return { x: clamp(rect.x + rect.w - card.w, FRAME, maxX), y: clamp(y, FRAME, maxY) };
     }
   }
 }
