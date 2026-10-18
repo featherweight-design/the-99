@@ -133,7 +133,7 @@ describe("readIdentity", () => {
 
   it("answers the whole name and email of one account", async () => {
     const out = await readIdentity("user_colin", deps(async () => user("user_colin", "Colin Reyes", "colin@gmail.com")));
-    expect(out).toEqual({ id: "user_colin", fullName: "Colin Reyes", email: "colin@gmail.com" });
+    expect(out).toEqual({ id: "user_colin", name: "Colin Reyes", email: "colin@gmail.com" });
   });
 
   it("is null for a user Clerk does not hold, and throws when Clerk fails", async () => {

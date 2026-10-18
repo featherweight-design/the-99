@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "../../../lib/admin/access";
 import { moveAccount, type MoveResult } from "../../../lib/admin/group-writes";
+import { revealAccountIn, type RevealResult } from "../../../lib/admin/reveal";
 
 // The Accounts page's one write (admin plan 9b): `Change group`. Every export calls `requireAdmin()` on
 // its first line, so a stranger's press is the app's 404 (STATES D4); `actions.test.ts` reads every
@@ -13,4 +14,10 @@ export async function moveAccountToGroup(accountId: string, groupId: string | nu
   const count = typeof confirmed === "number" && Number.isInteger(confirmed) ? confirmed : null;
   // `accountId` is the account moved, never the reader: the actor is the gate's own `userId`.
   return moveAccount(userId, typeof accountId === "string" ? accountId : "", groupId === null || typeof groupId === "string" ? groupId : "", count);
+}
+
+/** Show (Admin R3, D5): one account's whole name and email, logged as `account_revealed` before it answers. */
+export async function revealAccount(accountId: string): Promise<RevealResult> {
+  const { userId } = await requireAdmin();
+  return revealAccountIn(userId, accountId);
 }
