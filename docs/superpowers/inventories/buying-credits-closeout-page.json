@@ -1,0 +1,15 @@
+{
+  "feature": "Buying credits close-out: /credits in one seeded state (never, paused, off)",
+  "note": "Run once per state, reseeded between runs (see `buying-credits-closeout.json`): `never` draws the offer and Free alone (P2); `paused` draws the pause band in the offers' place (B1); `off` with a pack held draws no offers section (O4). The viewport holds the balance and whatever stands below it (offers, band or history).",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "closeout-state",
+      "label": "/credits, whole page, as seeded",
+      "view": "src/components/credits/credits-view.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 1500 }
+      ]
+    }
+  ]
+}

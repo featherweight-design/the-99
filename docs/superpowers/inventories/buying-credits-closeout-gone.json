@@ -1,0 +1,15 @@
+{
+  "feature": "Buying credits close-out: /credits with the switch off and nothing held or bought (G6, O1)",
+  "note": "Seeded `gone`. The route streams behind its loading screen, so the status is 200 and the wait is the not-found page's own heading.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "closeout-gone",
+      "label": "/credits: the not-found page",
+      "view": "src/app/not-found.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "h1:has-text(\"There’s no page here.\")", "settle": 800 }
+      ]
+    }
+  ]
+}
