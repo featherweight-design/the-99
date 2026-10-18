@@ -239,8 +239,15 @@ async function overDetails(browser, w, deckPath) {
     // The card is inert under the panel: a press on it moves nothing, and Escape still closes the panel first.
     const cardBox = await page.locator(CARD).boundingBox();
     if (cardBox) await page.mouse.click(cardBox.x + 40, cardBox.y + cardBox.height - 40);
-    check((await focusPlace(page)) !== "card", `${w.name} a press on card details under the panel takes no focus`, await focusPlace(page));
     check((await page.locator(PANEL).count()) === 1, `${w.name} the panel stays open after a press on the card`, `${await page.locator(PANEL).count()}`);
+    check((await focusPlace(page)) === "panel", `${w.name} a press on the card leaves focus in the panel`, await focusPlace(page));
+    // The arrows page card details only while it is in front: under the panel, the card does not move.
+    const before = await page.locator("#card-modal-title").textContent();
+    await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(400);
+    const after = await page.locator("#card-modal-title").textContent();
+    check(after === before, `${w.name} an arrow does not page the card under the panel`, `${before} → ${after}`);
     await page.locator(`${PANEL} button`).first().focus();
     // The backdrop still covers the rail: what sits at a rail link's centre is not the link (only the ? is lifted).
     const railHit = await page.evaluate(() => {

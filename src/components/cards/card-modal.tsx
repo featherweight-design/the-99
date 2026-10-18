@@ -1726,7 +1726,8 @@ export function CardModal({
   // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1 || locked || viewOpen) return;
+    // Not under the ? panel either (R2·9): the card is inert there, and the arrows are the panel's.
+    if (!backdrop || total <= 1 || locked || viewOpen || helpStacked) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.defaultPrevented) return;
@@ -1754,7 +1755,7 @@ export function CardModal({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked, viewOpen]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked, viewOpen, helpStacked]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -2147,6 +2148,8 @@ export function CardModal({
       // Under the ? panel the backdrop still catches every press (an inert one would let them through to the page),
       // and closes nothing: the panel is the dialog in front.
       onClick={locked || helpStacked ? undefined : onClose}
+      // ...and leaves focus in the panel, rather than dropping it to the body behind every dialog.
+      onMouseDown={helpStacked ? (e) => e.preventDefault() : undefined}
       style={{
         // A stand-in over a sheet over its original draws its own lighter scrim (addendum §3), so the
         // two layers under it read as two steps down; any other stacked card leaves the sheet's.
