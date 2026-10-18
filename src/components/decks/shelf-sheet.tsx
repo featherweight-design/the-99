@@ -88,7 +88,7 @@ export function ShelfSheet({
         // Bounded, and the ROWS are what scrolls: a player with a dozen shelves
         // would otherwise push `New folder…` and `Done` off the bottom of a
         // sheet that has no scroll of its own.
-        className="relative z-10 flex max-h-[80vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] pb-[16px]"
+        className="relative z-10 flex max-h-[80dvh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] pb-[16px]"
       >
         <div
           aria-hidden="true"

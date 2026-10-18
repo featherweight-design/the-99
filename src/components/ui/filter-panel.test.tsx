@@ -355,6 +355,10 @@ describe("FilterPanel", () => {
     // "254 sets owned" under "no matches" contradicts itself — the whole footer goes.
     expect(screen.queryByText(/sets owned/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
+    // In a short popover the message and Clear search scroll rather than being clipped by the capped box.
+    const wrapper = screen.getByText(collectionFilterCopy.set.emptyTitle).parentElement!;
+    expect(wrapper.className).toMatch(/(?<![\w-])min-h-0(?![\w-])/);
+    expect(wrapper.className).toMatch(/(?<![\w-])overflow-y-auto(?![\w-])/);
   });
 
   it("keeps the sheet's Done bar in the no-results state", () => {

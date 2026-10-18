@@ -193,7 +193,7 @@ export function ModalChrome({
       className={
         "fixed inset-0 z-50 flex items-end justify-center "
         // Over a card, the sheet's top sits 40px under the card's, which is centred at its own height.
-        + (onCard ? "md:items-start md:pt-[calc((100vh-min(620px,85vh))/2+40px)]" : "md:items-center")
+        + (onCard ? "md:items-start md:pt-[calc((100dvh-min(620px,85dvh))/2+40px)]" : "md:items-center")
         // Fading under the card's rise, and back under its drop (stacked sheets R1, motion).
         + (hidden ? " motion-safe:transition-opacity motion-safe:duration-[240ms]" : " motion-safe:transition-opacity motion-safe:duration-200")
       }
@@ -221,7 +221,7 @@ export function ModalChrome({
           "flex flex-col w-full rounded-t-[14px] border-t h-[calc(100%-52px)] "
           + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
           // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
-          + (onCard ? "md:max-h-[calc((100vh+min(620px,85vh))/2-60px)] " : "md:max-h-[85vh] ")
+          + (onCard ? "md:max-h-[calc((100dvh+min(620px,85dvh))/2-60px)] " : "md:max-h-[85dvh] ")
           + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")

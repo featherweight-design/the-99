@@ -51,7 +51,7 @@ export type SetListSheetCopy = {
  *
  * It holds a FIXED height rather than a cap: the complaint that moved it here
  * was that narrowing the list resized the surface under the reader's thumb, and
- * a `max-h` list inside a growing sheet does exactly that. At 86vh with the list
+ * a `max-h` list inside a growing sheet does exactly that. At 86dvh with the list
  * as the only flexible row, typing narrows the list and moves nothing else.
  *
  * It carries its own live region because it is `aria-modal`: the sheet's region
@@ -158,7 +158,7 @@ export function SetListSheet({
         aria-modal="true"
         aria-label={copy.panelAriaLabel}
         tabIndex={-1}
-        className="relative z-10 flex h-[86vh] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+        className="relative z-10 flex h-[86dvh] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
       >
         <div
           aria-hidden="true"

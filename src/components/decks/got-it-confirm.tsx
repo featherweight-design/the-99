@@ -276,10 +276,11 @@ export function GotItConfirmForm<F>({
         aria-busy={pending || undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        // Phone: the bottom sheet, 16px top corners, top border only. Desktop: the 520px modal.
-        className="relative flex max-h-[92vh] w-full flex-col gap-[18px] overflow-y-auto overscroll-contain rounded-[16px_16px_0_0] bg-[color:var(--surface)] px-[18px] pb-[18px] pt-[10px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[20px] md:pt-[24px] md:[border:1px_solid_var(--border-strong)] md:[box-shadow:var(--modal-shadow)]"
+        // Phone: the bottom sheet, 16px top corners, top border only. Desktop: the 520px modal, centered.
+        // Capped at 92dvh: the title and the buttons stay put and the form between them scrolls.
+        className="relative flex max-h-[92dvh] w-full flex-col gap-[18px] overflow-hidden rounded-[16px_16px_0_0] bg-[color:var(--surface)] px-[18px] pb-[18px] pt-[10px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[20px] md:pt-[24px] md:[border:1px_solid_var(--border-strong)] md:[box-shadow:var(--modal-shadow)]"
       >
-        <span aria-hidden className="mb-[2px] h-[4px] w-[36px] self-center rounded-[2px] bg-[color:var(--border-dashed)] md:hidden" />
+        <span aria-hidden className="mb-[2px] h-[4px] w-[36px] flex-none self-center rounded-[2px] bg-[color:var(--border-dashed)] md:hidden" />
         <button
           type="button"
           aria-label={c.close}
@@ -290,147 +291,150 @@ export function GotItConfirmForm<F>({
           ✕
         </button>
 
-        <div className="flex flex-col gap-[6px] md:pr-[44px]">
+        <div className="flex flex-none flex-col gap-[6px] md:pr-[44px]">
           <h3 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.25] text-[color:var(--fg)] md:text-[21px]">{c.title}</h3>
           <span id={nameId} className="text-[15px] leading-[1.4] text-[color:var(--fg-body)]">{cardName}</span>
         </div>
-        {typeof children === "function" ? children(form) : children}
+        {/* The 6px inset keeps a chip's or a tile's focus ring inside this clip. */}
+        <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain p-[6px]">
+          {typeof children === "function" ? children(form) : children}
 
-        {notice === "stale" || notice === "staleRemoved" ? (
-          <div ref={bannerRef} role="status" tabIndex={-1} className={BANNER}>
-            <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
-            <span>
-              <b className="font-semibold text-[color:var(--fg)]">{c.staleTitle}</b>{" "}
-              {notice === "staleRemoved"
-                ? null
-                : need > 0 ? (staleLine?.owed ?? c.staleBody)(need) : staleLine?.done ?? c.staleBodyDone}
-            </span>
-          </div>
-        ) : null}
-
-        <div className="flex flex-col gap-[18px]" style={{ opacity: pending ? 0.6 : 1 }}>
-          <div className="flex flex-col gap-[10px]">
-            <div className="flex items-baseline justify-between gap-[10px]">
-              <span className={MONO_LABEL}>{c.printing}</span>
-              {choices ? (
-                <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{c.printingCount(choices.length)}</span>
-              ) : null}
+          {notice === "stale" || notice === "staleRemoved" ? (
+            <div ref={bannerRef} role="status" tabIndex={-1} className={BANNER}>
+              <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
+              <span>
+                <b className="font-semibold text-[color:var(--fg)]">{c.staleTitle}</b>{" "}
+                {notice === "staleRemoved"
+                  ? null
+                  : need > 0 ? (staleLine?.owed ?? c.staleBody)(need) : staleLine?.done ?? c.staleBodyDone}
+              </span>
             </div>
-            {choices === null ? (
-              // The choices are read when the form opens: what the player holds of each printing is
-              // the count the write is checked against.
-              <p aria-busy={!loadFailed} className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">
-                {loadFailed ? null : `${c.choosePrinting}…`}
-              </p>
-            ) : single ? (
-              <SinglePrinting choice={choices[0]} />
-            ) : (
-              <PrintingRegion
-                role="choose"
-                tiles="confirm"
-                source="catalog"
-                layout="row"
-                id={`${titleId}-printings`}
-                printings={choices}
-                selected={selected}
-                cardName={cardName}
-                colorIdentity={[]}
-                onPick={pick}
-                autoFocus
-              />
-            )}
-          </div>
+          ) : null}
 
-          <div className="flex flex-col gap-[18px]" style={{ opacity: ready ? 1 : 0.4 }}>
-            <div className="flex flex-col gap-[8px]">
-              <span id={`${titleId}-finish`} className={MONO_LABEL}>{c.finish}</span>
-              <div role="radiogroup" aria-labelledby={`${titleId}-finish`} className="flex flex-wrap items-center gap-[6px]">
-                {chips.map((f) => {
-                  const on = ready && f === finish;
-                  const isOff = f === off;
-                  const usable = ready && !isOff && !pending;
-                  return (
+          <div className="flex flex-col gap-[18px]" style={{ opacity: pending ? 0.6 : 1 }}>
+            <div className="flex flex-col gap-[10px]">
+              <div className="flex items-baseline justify-between gap-[10px]">
+                <span className={MONO_LABEL}>{c.printing}</span>
+                {choices ? (
+                  <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{c.printingCount(choices.length)}</span>
+                ) : null}
+              </div>
+              {choices === null ? (
+                // The choices are read when the form opens: what the player holds of each printing is
+                // the count the write is checked against.
+                <p aria-busy={!loadFailed} className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">
+                  {loadFailed ? null : `${c.choosePrinting}…`}
+                </p>
+              ) : single ? (
+                <SinglePrinting choice={choices[0]} />
+              ) : (
+                <PrintingRegion
+                  role="choose"
+                  tiles="confirm"
+                  source="catalog"
+                  layout="row"
+                  id={`${titleId}-printings`}
+                  printings={choices}
+                  selected={selected}
+                  cardName={cardName}
+                  colorIdentity={[]}
+                  onPick={pick}
+                  autoFocus
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-[18px]" style={{ opacity: ready ? 1 : 0.4 }}>
+              <div className="flex flex-col gap-[8px]">
+                <span id={`${titleId}-finish`} className={MONO_LABEL}>{c.finish}</span>
+                <div role="radiogroup" aria-labelledby={`${titleId}-finish`} className="flex flex-wrap items-center gap-[6px]">
+                  {chips.map((f) => {
+                    const on = ready && f === finish;
+                    const isOff = f === off;
+                    const usable = ready && !isOff && !pending;
+                    return (
+                      <button
+                        key={f}
+                        id={`${titleId}-finish-${f}`}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        aria-disabled={!usable || undefined}
+                        tabIndex={usable && (on || (finish === null && f === offered[0])) ? 0 : -1}
+                        onClick={() => {
+                          if (!usable || on) return;
+                          changed();
+                          setFinish(f);
+                        }}
+                        onKeyDown={(e) => usable && onFinishKey(e, f)}
+                        className={`inline-flex h-[44px] items-center rounded-full border px-[13px] text-[12.5px] md:h-[32px] ${
+                          isOff ? "border-dashed" : "border-solid"
+                        } border-[color:var(--border-strong)] ${usable ? "cursor-pointer" : "cursor-default"} ${
+                          on
+                            ? "bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
+                            : isOff
+                              ? "bg-transparent text-[color:var(--fg-locked)]"
+                              : "bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                        }`}
+                      >
+                        {c.finishes[f]}
+                      </button>
+                    );
+                  })}
+                  {ready && finishNote ? <span className="text-[12px] text-[color:var(--fg-muted)]">{finishNote}</span> : null}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-[8px]">
+                <span id={howManyId} className={MONO_LABEL}>{c.howMany}</span>
+                <div role="group" aria-labelledby={howManyId} className="flex flex-wrap items-center gap-[12px]">
+                  <span className="flex items-center gap-[6px]">
                     <button
-                      key={f}
-                      id={`${titleId}-finish-${f}`}
                       type="button"
-                      role="radio"
-                      aria-checked={on}
-                      aria-disabled={!usable || undefined}
-                      tabIndex={usable && (on || (finish === null && f === offered[0])) ? 0 : -1}
-                      onClick={() => {
-                        if (!usable || on) return;
-                        changed();
-                        setFinish(f);
-                      }}
-                      onKeyDown={(e) => usable && onFinishKey(e, f)}
-                      className={`inline-flex h-[44px] items-center rounded-full border px-[13px] text-[12.5px] md:h-[32px] ${
-                        isOff ? "border-dashed" : "border-solid"
-                      } border-[color:var(--border-strong)] ${usable ? "cursor-pointer" : "cursor-default"} ${
-                        on
-                          ? "bg-[color:var(--accent)] font-semibold text-[color:var(--bg)]"
-                          : isOff
-                            ? "bg-transparent text-[color:var(--fg-locked)]"
-                            : "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                      }`}
+                      aria-label={c.fewer}
+                      disabled={!ready || pending || qty <= 1}
+                      onClick={() => { changed(); setQty((q) => Math.max(1, q - 1)); }}
+                      className={step}
                     >
-                      {c.finishes[f]}
+                      −
                     </button>
-                  );
-                })}
-                {ready && finishNote ? <span className="text-[12px] text-[color:var(--fg-muted)]">{finishNote}</span> : null}
+                    <output
+                      aria-live="polite"
+                      className="inline-flex h-[44px] min-w-[48px] items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] font-mono text-[15px] text-[color:var(--fg)] md:h-[32px] md:min-w-[44px]"
+                    >
+                      {qty}
+                    </output>
+                    <button
+                      type="button"
+                      aria-label={c.more}
+                      disabled={!ready || pending || qty >= MARK_BOUGHT_MAX}
+                      onClick={() => { changed(); setQty((q) => Math.min(MARK_BOUGHT_MAX, q + 1)); }}
+                      className={step}
+                    >
+                      +
+                    </button>
+                  </span>
+                  <span className="text-[12.5px] text-[color:var(--fg-body)]">
+                    {needLine ? needLine(need) : c.need(need)}
+                    {spare > 0 ? <span className="text-[color:var(--fg-muted)]">{` · ${c.spare(spare)}`}</span> : null}
+                  </span>
+                </div>
+                {typeof footer === "function" ? footer(form) : footer}
               </div>
-            </div>
-
-            <div className="flex flex-col gap-[8px]">
-              <span id={howManyId} className={MONO_LABEL}>{c.howMany}</span>
-              <div role="group" aria-labelledby={howManyId} className="flex flex-wrap items-center gap-[12px]">
-                <span className="flex items-center gap-[6px]">
-                  <button
-                    type="button"
-                    aria-label={c.fewer}
-                    disabled={!ready || pending || qty <= 1}
-                    onClick={() => { changed(); setQty((q) => Math.max(1, q - 1)); }}
-                    className={step}
-                  >
-                    −
-                  </button>
-                  <output
-                    aria-live="polite"
-                    className="inline-flex h-[44px] min-w-[48px] items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] font-mono text-[15px] text-[color:var(--fg)] md:h-[32px] md:min-w-[44px]"
-                  >
-                    {qty}
-                  </output>
-                  <button
-                    type="button"
-                    aria-label={c.more}
-                    disabled={!ready || pending || qty >= MARK_BOUGHT_MAX}
-                    onClick={() => { changed(); setQty((q) => Math.min(MARK_BOUGHT_MAX, q + 1)); }}
-                    className={step}
-                  >
-                    +
-                  </button>
-                </span>
-                <span className="text-[12.5px] text-[color:var(--fg-body)]">
-                  {needLine ? needLine(need) : c.need(need)}
-                  {spare > 0 ? <span className="text-[color:var(--fg-muted)]">{` · ${c.spare(spare)}`}</span> : null}
-                </span>
-              </div>
-              {typeof footer === "function" ? footer(form) : footer}
             </div>
           </div>
+
+          {notice === "failed" || loadFailed ? (
+            <div role="alert" className={BANNER}>
+              <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
+              <span>
+                <b className="font-semibold text-[color:var(--fg)]">{loadFailed ? c.loadFailedTitle : c.failedTitle}</b> {loadFailed ? c.loadFailedBody : c.failedBody}
+              </span>
+            </div>
+          ) : null}
         </div>
 
-        {notice === "failed" || loadFailed ? (
-          <div role="alert" className={BANNER}>
-            <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
-            <span>
-              <b className="font-semibold text-[color:var(--fg)]">{loadFailed ? c.loadFailedTitle : c.failedTitle}</b> {loadFailed ? c.loadFailedBody : c.failedBody}
-            </span>
-          </div>
-        ) : null}
-
-        <div className="mt-[2px] flex gap-[10px] md:mt-0 md:justify-end md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:pt-[16px]">
+        <div className="mt-[2px] flex flex-none gap-[10px] md:mt-0 md:justify-end md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:pt-[16px]">
           <button
             type="button"
             onClick={onClose}

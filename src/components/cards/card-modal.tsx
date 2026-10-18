@@ -2198,9 +2198,9 @@ export function CardModal({
         // dialog would dismiss the zoom instead of reaching the backdrop.
         className={""
           // 80px down, or as far as the room under a centred card allows on a short window.
-          + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
+          + (dropped ? "md:translate-y-[min(80px,calc((100dvh-min(620px,85dvh))/2-8px))] " : "")
           + (rise ? "anim-stack-rise " : "")
-          + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
+          + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85dvh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",
         }}
@@ -2398,15 +2398,15 @@ export function CardModal({
               // box ahead of it, down to an 11px gap where the other three edges
               // show 28.
               //
-              //   innerH = min(620px, 85vh) - 2px - 56px   (content box height)
+              //   innerH = min(620px, 85dvh) - 2px - 56px   (content box height)
               //   (innerH - artH) / 2 >= stack             (bottom slack holds it)
               //
               // Solving for the height gives `artH <= innerH - 2 * stack`, i.e.
-              // `min(620px, 85vh) - 2px - 56px - 2 * stack` — the column's own
+              // `min(620px, 85dvh) - 2px - 56px - 2 * stack` — the column's own
               // padding (56, once) already removed from `innerH`, plus the stack
               // doubled because shrinking the art by any amount only buys back
               // HALF of it on each side. The defect this replaces used the full
-              // `min(620px, 85vh) - 2px` as if it were the content box, so the
+              // `min(620px, 85dvh) - 2px` as if it were the content box, so the
               // column's own padding was never subtracted and the stack could
               // finish exactly on the column's outer edge.
               //
@@ -2418,7 +2418,7 @@ export function CardModal({
               // The extra 2px is the dialog's own 1px border, top and bottom: the
               // box-sizing is border-box, so `h-[620px]` is 618px of padding box —
               // the height the column actually stretches to.
-              width: `min(264px, calc((min(620px, 85vh) - 2px - ${artWidthReservePx(underCardHeight)}px) * 0.7159))`,
+              width: `min(264px, calc((min(620px, 85dvh) - 2px - ${artWidthReservePx(underCardHeight)}px) * 0.7159))`,
               aspectRatio: "63/88",
             }}
           >
@@ -3058,7 +3058,7 @@ export function CardModal({
                 // — 63/88 is 0.7159 — and the height is always the ratio's answer.
                 //
                 // The subtracted room is the caption, the ✕'s slot and the layer's own
-                // breathing space; the desktop dialog is `min(620px, 85vh)` tall, which
+                // breathing space; the desktop dialog is `min(620px, 85dvh)` tall, which
                 // is what a landscape laptop can make shorter than the card.
                 // The turn control sits UNDER the card now rather than on it, so a
                 // two-faced card has to give back its 44px and the 12px above it.
@@ -3066,8 +3066,8 @@ export function CardModal({
                   ? "min(318px, calc(100vw - 32px), calc((100vh - 196px) * 0.7159))"
                   : "min(318px, calc(100vw - 32px), calc((100vh - 140px) * 0.7159))",
                 "--zoom-w-md": twoFaced
-                  ? "min(372px, calc((min(620px, 85vh) - 128px) * 0.7159))"
-                  : "min(372px, calc((min(620px, 85vh) - 72px) * 0.7159))",
+                  ? "min(372px, calc((min(620px, 85dvh) - 128px) * 0.7159))"
+                  : "min(372px, calc((min(620px, 85dvh) - 72px) * 0.7159))",
                 aspectRatio: "63/88",
                 // A one-faced card is its own picture; a two-faced one draws both faces
                 // inside and this box only turns them.

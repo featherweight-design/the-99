@@ -241,7 +241,7 @@ describe("SocialModal on a phone with a keyboard up", () => {
     expect(frame.style.getPropertyValue("--social-vv-top")).toBe("120px");
     // The sheet and the frame read those values at phone width alone; the desktop dialog reads neither.
     expect(frame.className).toContain("max-md:h-[var(--social-vv-h,100%)]");
-    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100vh)*0.86)]");
+    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100dvh)*0.86)]");
     expect(screen.getByRole("dialog").className).not.toMatch(/(^|\s)h-\[86vh\]/);
     unmount();
     expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
@@ -322,5 +322,37 @@ describe("SocialModal shell against the invites handoff (Dialog / sheet shell)",
     expect(screen.getByRole("heading", { name: "T" }).className).not.toMatch(/pt-\[/);
     expect(screen.getByRole("dialog").querySelector("span.rounded-full")!.className).toContain("mb-[4px]");
     expect(document.querySelector("[data-social-modal-body]")!.className).toContain("pb-[24px]");
+  });
+});
+
+// Hugh's modal rule: the box fits the viewport. At the desktop the box hangs under the frame's top pad, so the pad
+// plus the box's cap must stay within 100dvh, or the footer sits under the fold of a frame that cannot scroll
+// (92vh under 10vh was 102vh: Rule 0 setup's footer lost its bottom 18px at 900px tall).
+describe("SocialModal at the desktop fits the viewport", () => {
+  /** A length class's value in px at viewport height `h`: `10dvh`, `80vh`, `calc(90dvh-24px)`. */
+  const px = (value: string, h: number) =>
+    [...value.replace(/^calc\((.*)\)$/, "$1").matchAll(/([+-]?)\s*(\d+(?:\.\d+)?)(dvh|vh|px)/g)].reduce(
+      (sum, [, sign, n, unit]) => sum + (sign === "-" ? -1 : 1) * (unit === "px" ? Number(n) : (Number(n) * h) / 100),
+      0,
+    );
+  const md = (className: string, prop: string) => {
+    const m = className.match(new RegExp(`(?:^|\\s)md:${prop}-\\[([^\\]]+)\\]`));
+    expect(m, `md:${prop} on ${className}`).not.toBeNull();
+    return m![1];
+  };
+
+  it.each([false, true])("keeps the frame's top pad plus the box's cap at or under 100dvh (tall %s)", (tall) => {
+    render(
+      <SocialModal title="T" closeLabel="Close" onClose={() => {}} tall={tall} footer={<button type="button">Go</button>}>
+        <p>body</p>
+      </SocialModal>,
+    );
+    const pad = md(document.querySelector("[data-social-modal-frame]")!.className, "pt");
+    const cap = md(screen.getByRole("dialog").className, "max-h");
+    for (const h of [600, 768, 900, 1200]) expect(px(pad, h) + px(cap, h)).toBeLessThanOrEqual(h);
+    // The footer is the box's own child, outside the scrolling body.
+    const footer = document.querySelector("[data-social-modal-footer]")!;
+    expect(footer.parentElement).toBe(screen.getByRole("dialog"));
+    expect(document.querySelector("[data-social-modal-body]")!.contains(footer)).toBe(false);
   });
 });

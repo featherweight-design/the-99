@@ -25,7 +25,7 @@
 // components: a nested component is a new type on every render, so React would
 // remount the search input and it would lose focus on the first keystroke.
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useBackDismiss, useScrollLock } from "../../lib/a11y/dialog";
 import { useSheetHost } from "./sheet-host";
@@ -86,6 +86,26 @@ const POPOVER_GUTTER = 16;
 function popoverShift(triggerLeft: number, viewportWidth: number, width = POPOVER_WIDTH): number {
   const overflow = Math.max(0, triggerLeft + width + POPOVER_GUTTER - viewportWidth);
   return Math.max(-overflow, POPOVER_GUTTER - triggerLeft);
+}
+
+/** The popover's gap from its trigger: `top-[calc(100%+6px)]` below, `bottom-[calc(100%+6px)]` above. */
+const POPOVER_DROP = 6;
+
+export type PopoverPlacement = { side: "below" | "above"; maxHeight: number };
+
+/**
+ * Which side of its trigger the popover opens on, and its `max-height` in px there. The side is chosen the way
+ * `useAnchoredPanel` chooses: below when the popover's natural height fits, otherwise whichever side has more room.
+ * The cap is that side's real room (less the gap and the gutter), with no floor, so the box never runs past the
+ * viewport: a page scroll dismisses the popover, so whatever ran past the fold could never be reached. Capped, the
+ * option list scrolls inside it and the search and footer stay in view. `wanted` is 0 before the box is measured,
+ * and an unmeasured box takes the side with more room.
+ */
+export function popoverPlacement(triggerTop: number, triggerBottom: number, viewportHeight: number, wanted: number): PopoverPlacement {
+  const below = Math.max(0, Math.floor(viewportHeight - triggerBottom - POPOVER_DROP - POPOVER_GUTTER));
+  const above = Math.max(0, Math.floor(triggerTop - POPOVER_DROP - POPOVER_GUTTER));
+  if ((wanted > 0 && wanted <= below) || below >= above) return { side: "below", maxHeight: below };
+  return { side: "above", maxHeight: above };
 }
 
 /**
@@ -248,6 +268,8 @@ export function FilterPanel({
   const [scrollable, setScrollable] = useState(false);
   // Desktop popover `left`, measured against the viewport. See popoverShift.
   const [popoverLeft, setPopoverLeft] = useState(0);
+  // Desktop popover side and `max-height`, measured against the viewport. See popoverPlacement.
+  const [popoverPlace, setPopoverPlace] = useState<PopoverPlacement | undefined>(undefined);
   const dragStartY = useRef<number | null>(null);
 
   // The sheet — never the popover. A phone sheet is `aria-modal` over a scrim,
@@ -288,11 +310,16 @@ export function FilterPanel({
         first = pinnedFirst?.code ?? options[0]?.code ?? null;
       }
       setActiveCode(first);
-      // Measured here rather than in a layout effect: the trigger is already
-      // mounted, so the placement is known before the popover paints. A layout
-      // effect would either flash at the wrong offset or warn under SSR.
+      // Measured here: the trigger is already mounted, so the offset is known
+      // before the popover paints. The side and the cap need the box's own
+      // height, so the layout effect (placePopover) settles them, still before paint.
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
+      if (rect) {
+        setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
+        // Unmeasured yet: below unless there is no room there at all. The layout effect below re-places it
+        // against the box's measured height before it paints.
+        setPopoverPlace(popoverPlacement(rect.top, rect.bottom, document.documentElement.clientHeight, 0));
+      }
       setOpen(true);
     },
     [options, selected, searchable, widthPx],
@@ -343,7 +370,7 @@ export function FilterPanel({
   useEffect(() => {
     const el = listRef.current;
     setScrollable(el ? el.scrollHeight > el.clientHeight : false);
-  }, [open, options, matches]);
+  }, [open, options, matches, popoverPlace]);
 
   // Outside click and page scroll dismiss the desktop popover. (The sheet has a
   // backdrop instead, and closes on tap.)
@@ -379,16 +406,31 @@ export function FilterPanel({
     };
   }, [open, isDesktop, close]);
 
-  // Re-place the popover if the window is resized while it is open.
+  // Place the popover against its measured natural height: once it can be measured (a layout effect, so a box
+  // that has to flip never paints on the wrong side), whenever its contents change, and on a window resize.
+  // The natural height is read with the cap lifted for one synchronous reflow, so it does not depend on the cap.
+  const placePopover = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    const node = panelRef.current;
+    if (!rect || !node) return;
+    const cap = node.style.maxHeight;
+    node.style.maxHeight = "none";
+    const wanted = node.offsetHeight;
+    node.style.maxHeight = cap;
+    setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
+    const next = popoverPlacement(rect.top, rect.bottom, document.documentElement.clientHeight, wanted);
+    setPopoverPlace((prev) => (prev?.side === next.side && prev.maxHeight === next.maxHeight ? prev : next));
+  }, [widthPx]);
+
+  useLayoutEffect(() => {
+    if (open && isDesktop) placePopover();
+  }, [open, isDesktop, placePopover, options, matches, noResults]);
+
   useEffect(() => {
     if (!open || !isDesktop) return;
-    const place = () => {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
-    };
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [open, isDesktop, widthPx]);
+    window.addEventListener("resize", placePopover);
+    return () => window.removeEventListener("resize", placePopover);
+  }, [open, isDesktop, placePopover]);
 
   // Keep the active row in view. No wrap at the ends, so this only ever nudges.
   useEffect(() => {
@@ -692,7 +734,9 @@ export function FilterPanel({
     const setSize = flat.length;
     const posOf = new Map(flat.map((o, i) => [o.code, i + 1]));
     return (
-      <div className="relative">
+      // A flex column that may shrink, so the list gives up height when the panel meets its cap: the popover's
+      // measured room, or the sheet's 78dvh, where the list takes whatever the header and footer leave.
+      <div className={`relative flex min-h-0 flex-col ${bp("", "flex-1")}`}>
         <ul
           ref={listRef}
           id={listId}
@@ -712,7 +756,7 @@ export function FilterPanel({
           // list to either end lets the gesture chain into the page behind the sheet —
           // the same wheel-chaining useScrollLock's own listener blocks over the scrim,
           // but reachable here too since this region IS legitimately scrollable.
-          className={`m-0 list-none overflow-y-auto overscroll-contain p-0 ${bp("max-h-[384px]", "max-h-[60vh]")}`}
+          className={`m-0 min-h-0 list-none overflow-y-auto overscroll-contain p-0 ${bp("max-h-[384px]", "flex-1")}`}
         >
           {groupList.map((group, gi) => (
             // role=group (not presentation) so the label `<p>` is not a bare
@@ -747,7 +791,7 @@ export function FilterPanel({
         {isDesktop && scrollable && (
           <div
             aria-hidden
-            className="pointer-events-none -mt-[22px] h-[22px] bg-gradient-to-b from-transparent to-[color:var(--surface-rail)]"
+            className="pointer-events-none -mt-[22px] h-[22px] flex-none bg-gradient-to-b from-transparent to-[color:var(--surface-rail)]"
           />
         )}
       </div>
@@ -757,7 +801,8 @@ export function FilterPanel({
   function renderEmptyState() {
     const emptyBody = copy.emptyBody(query.trim());
     return (
-      <div className={`${bp("px-[20px] pt-[20px]", "px-[22px] pt-[26px]")} pb-[22px] text-center`}>
+      // Shrinkable and scrolling: in a short popover the message and Clear search scroll here rather than being cut.
+      <div className={`${bp("px-[20px] pt-[20px]", "px-[22px] pt-[26px]")} min-h-0 overflow-y-auto overscroll-contain pb-[22px] text-center`}>
         <div
           aria-hidden
           className={`${bp("mb-[12px] gap-[6px]", "mb-[14px] gap-[7px]")} flex justify-center`}
@@ -1069,11 +1114,11 @@ export function FilterPanel({
             // z-30: above the page's own positioned content and below the tab bar (z-40) and the
             // sheets (z-50). At z-10 it TIED with a deck tile's overflow wrapper, which comes later
             // in the document and so won: a ⋯ drew over the open Status list (probe:deck-menu-stack).
-            className="absolute top-[calc(100%+6px)] z-30 overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            className={`absolute ${popoverPlace?.side === "above" ? "bottom-[calc(100%+6px)]" : "top-[calc(100%+6px)]"} z-30 flex flex-col overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]`}
             // A measured per-pixel offset, so it cannot be a class. Not color
             // or border — the inline-style rule is about styles that outrank
             // hover: utilities.
-            style={{ left: popoverLeft, width: widthPx }}
+            style={{ left: popoverLeft, width: widthPx, maxHeight: popoverPlace?.maxHeight }}
           >
             {renderBody()}
           </div>
@@ -1093,7 +1138,7 @@ export function FilterPanel({
               tabIndex={-1}
               aria-label={copy.panelAriaLabel}
               onKeyDown={onPanelKeyDown}
-              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
+              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
               // The drag offset is per-pixel and only exists mid-gesture, so it
               // cannot be a class. Not color or border — the inline-style rule
               // is about styles that outrank hover: utilities.

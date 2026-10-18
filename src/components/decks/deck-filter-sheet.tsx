@@ -209,7 +209,7 @@ function SheetBody({
       // anchored panel and not the sheet, so the 22px/`--surface-inset` pair
       // here and the 16px/`--surface-rail` pair on `/commanders` are an undrawn
       // detail answered twice. Collapsing them is a design ruling.
-      panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+      panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
     >
       <div className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[16px]">
         <div className="flex items-baseline gap-[10px]">

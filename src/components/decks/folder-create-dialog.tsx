@@ -94,7 +94,7 @@ export function FolderCreateDialog({
         aria-modal="true"
         aria-label={folderCopy.create.heading}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px]"
+        className="relative z-10 mx-auto flex max-h-[calc(100dvh-32px)] w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px]"
       >
         <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
           {folderCopy.create.heading}

@@ -616,7 +616,7 @@ function ChoosePrintings({ guess, choices, phone, onChoose }: { guess: ScanGuess
     <>
       {/* The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card out of
           the scanner's panel, which clips; the phone's one row scrolls sideways. */}
-      <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40vh)] min-h-0 overflow-y-auto"}>
+      <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40dvh)] min-h-0 overflow-y-auto"}>
         <PrintingRegion
           role="choose"
           source="catalog"

@@ -1593,7 +1593,7 @@ export function BuilderShell({
             shorter than the screen. The bar is `sticky`, so it pins to whichever
             scrollport contains it — the document serves that just as well. */}
         <div
-          className="flex flex-col min-h-screen"
+          className="flex flex-col min-h-dvh"
           style={{ background: "var(--bg)" }}
         >
           <span className="sr-only" aria-live="polite" aria-atomic="true">

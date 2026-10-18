@@ -218,7 +218,7 @@ export function FilterSheet({
         aria-label={filterCopy.sheet.title}
         onKeyDown={onKeyDown}
         inert={layered}
-        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
+        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
         // The drag offset is per-pixel and only exists mid-gesture, so it cannot
         // be a class. Not colour or border — the inline-style rule is about
         // styles that outrank hover: utilities.
@@ -253,7 +253,7 @@ export function FilterSheet({
           </span>
         </div>
 
-        {/* min-h-0 so the section stack scrolls inside the 78vh cap rather than
+        {/* min-h-0 so the section stack scrolls inside the 78dvh cap rather than
             pushing the footer off the bottom of the sheet. `overscroll-contain`
             (Hugh, 2026-10-03) stops a scroll of this list at either end from
             chaining into the page behind the sheet. */}
