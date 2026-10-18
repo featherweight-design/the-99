@@ -12,6 +12,7 @@ import { colorNames } from "../../../lib/copy/color-labels";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../../ui/card-tile-caption";
 import { HydratedImg } from "../../ui/hydrated-art";
+import { TOUCH_HIT_INLINE } from "../../ui/touch-hit";
 
 const copy = preconsCopy.tile;
 const rowCopy = preconsCopy.row;
@@ -139,11 +140,15 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
         <div className="mt-auto flex flex-col border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)]" data-testid="tile-foot">
           {row.built.map((b) => (
             <div key={b.deckId} className="flex min-h-[44px] min-w-0 flex-col justify-center gap-[2px] p-[5px_9px] md:min-h-[34px] md:p-[5px_10px]">
+              {/* The truncation and underline sit on the inner span, so the link itself clips nothing and its
+                  coarse-pointer hit (44px tall, within the 44px foot row) can reach past the 15px line. */}
               <Link
                 href={`/decks/${b.deckId}`}
-                className="relative z-[1] min-w-0 truncate text-[11.5px] leading-[1.3] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px] md:text-[12px]"
+                className={`${TOUCH_HIT_INLINE} z-[1] block min-w-0 text-[11.5px] leading-[1.3] text-[color:var(--fg)] md:text-[12px]`}
               >
-                {b.deckName}
+                <span className="block truncate underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]">
+                  {b.deckName}
+                </span>
                 <PendingReporter href={`/decks/${b.deckId}`} />
               </Link>
               <span className={`${FOOT_META} text-[color:var(--fg-muted)]`}>
