@@ -39,9 +39,9 @@ it, and which therefore holds a welcome lot. Everyone else sees nothing new.
 - **1 credit is 1 run of any tool** (`credits-page.ts:34`). Welcome runs count toward the 20-a-day paid limit like any
   lot (`allowance-rule.ts:78`; D1 plan decision 4).
 - **The switch gates the write only** (`flag.ts:21-29`). A lot already granted is spent whatever the switch later says.
-- **L6** (launch plan `:50`): copy sells AI runs, states that every card, deck and collection view stays free, and
-  **never says "unlock"**. Applied here as the orchestrator stated it: reading, browsing and seeing a result costs
-  nothing; only running a model tool spends a credit. The shipped free lines already say so for the bracket and a past
+- **L6** (launch plan `:50`): copy sells AI runs, states that every card, deck and collection view stays free,
+  **never says "unlock"**, and leads with the pack. Confirmed by the orchestrator (2026-10-18) as binding here: reading,
+  browsing and seeing a result costs nothing; only running a model tool spends a credit. The shipped free lines already say so for the bracket and a past
   Help me choose (`discovery.ts:126-128`).
 - **Required content** (orchestrator, and the D2 row `:78`): which tools spend credits, the grant and its expiry, and a
   conversion teaser to `/credits`.
@@ -114,14 +114,14 @@ Ask for anything else and engineering will say whether it can be read.
      never sees the stop.
 2. **What `Try it` does** where no landing exists (Overview, the fits read) or the tool needs a deck a new player does
    not have yet. The showcase's answer for a tool with no fitting deck is a reason line (`NEEDS_A_DECK`,
-   `discovery.ts:69`); reuse it or call another.
+   `discovery.ts:69`). Ruled: that reason line, with no second landing (below). Open for Design: only how it sits.
 3. **How welcome credits are named on the credit line and the chip.** The line counts them in `N paid`
    (`credit-line.ts:28`, `credits.ts:54-58`), untrue for a gift; D1 left this to D2 (D1 plan `:64`). Draw whether
    welcome joins the one number under another word or takes its own segment, keeping plan and packs as one number.
    The chip counts free plus held as `N credits` (`chip-rule.ts:31`, `:40`).
 4. **The `Welcome` cell on `/credits`.** It has no line under it (`balance.tsx:61-63`: only Free, Plan and Packs
    carry one). Draw its expiry line.
-5. **The expiring state.** Its lead time (the open question below) and which surfaces turn `--warning`: the plan's
+5. **The expiring state.** Its lead time is 3 days (ruled, below). Which surfaces turn `--warning`: the plan's
    version turns the plan card, the Plan cell and every credit line (README `:71`), and the chip separately
    (`chip-rule.ts:12`, `:38-39`).
 6. **The conversion teaser.** Its form and where it sits, and that it goes to `/credits`. Not drawn while payments
@@ -136,7 +136,7 @@ Ask for anything else and engineering will say whether it can be read.
 | Held, unused | lot exists, not expired, `welcome === 15` | the section: the five tools, the grant line with its date, the teaser |
 | Partly spent | not expired, `0 < welcome < 15` | as above, with the count left |
 | Used up | lot exists, not expired, `welcome === 0` | the grant line says so; the teaser stays (payments on) |
-| Expiring | not expired, `welcome > 0`, expiry within N days | the expiring form, in `--warning` |
+| Expiring | not expired, `welcome > 0`, expiry within 3 days | the expiring form, in `--warning` |
 | Expired | lot exists, `expiresAt <= now` | Design calls: one last line, or nothing |
 | No lot | no welcome row (switch was off at sign-up, an account older than 30 days, or a missed webhook) | nothing new anywhere |
 | Switch off, lot held | `welcomeCreditsEnabled` false, lot exists | the lot still spends (`flag.ts:24-25`); Design calls whether the section still draws |
@@ -175,20 +175,19 @@ welcome credits: one `ABOUT_VERSION` bump at the end of the launch. Design draws
 - Invite credits and the value recap at the wall (research board §3, ideas 2 and 3).
 - Email reminders: the research board's reminder is in-app only (`:57`).
 
-## Open questions for eng and the orchestrator
+## Ruled by the orchestrator (2026-10-18; Hugh can override)
 
-1. **"A Try it link per tool"** (D2 row `:78`) is backed for three of five: the Overview has no `?tool=` landing,
-   the fits read has none of its own, and four of five need a deck a new sign-up does not have. Build two landings,
-   or accept a reason line?
-2. **A missed webhook** grants nothing, and D1 left the in-page fallback to D2 (D1 plan `:55-57`). The plan row for D1
-   still says "and on first signed-in load" (`:77`). Is the fallback in D2's scope?
-3. **The expiry lead time.** The shipped plan warning is 3 days (`credit-line.ts:26`); the research board proposed a
-   reminder at day 23, 7 days out (`:57`), which nothing rules. Which N?
-4. **Whose date.** Dates are formatted in UTC (`credits.ts:49-52`), and the lot expires at an instant, so a US reader
-   in the evening can be shown the next day's date. Keep UTC, or show the reader's own day?
-5. **Will the lot be reached?** The free allowance is spent first, and defaults to five a day when
-   `MODEL_DAILY_ALLOWANCE` is unset (`allowance.ts:57`); the research board sized the grant on a free allowance of
-   one (`:33`). At five a day a new player may never spend a welcome credit inside 30 days. What free allowance does a
-   new sign-up's group get?
-6. **The orchestrator's reading of L6** (reading, browsing and results cost nothing) extends the written ruling, which
-   is about pricing copy. This brief applies it as binding; confirm.
+The six questions this brief raised, as d9 ruled them. Design draws to these.
+
+1. **One `Try it` landing, not two.** Where a tool has no landing of its own, or the player has no deck yet, the line
+   says the tool needs a deck instead of linking. No second landing is built.
+2. **No in-page fallback for a missed webhook.** The grant is written by Clerk's `user.created` only, as decided on D1.
+3. **The expiry warning shows 3 days out**, the same lead as a plan's (`credit-line.ts:26`). The research board's
+   day-23 reminder is not taken: the teaser research says avoid nagging.
+4. **Stored in UTC, shown as the player's own day.** The expiry instant stays UTC; the date a screen draws is the
+   player's local day, so an evening US reader is never shown tomorrow's date.
+5. **The spend order stays: the free daily run first, then the welcome lot.** Production's free allowance is one run
+   a day (`MODEL_DAILY_ALLOWANCE=1`), not the code's default of five (`allowance.ts:57`), so a player who runs more
+   than one tool a day reaches the welcome lot. Whether welcome credits should be spent before the free run is a money
+   rule on Hugh's list, not a Design question.
+6. **L6 as above is confirmed**: lead with the pack, every view stays free, never "unlock".
