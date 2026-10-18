@@ -118,7 +118,7 @@ export function ConfirmModal({
           // back-button entry, where unmounting the confirm and mounting a second dialog left the
           // first one's history entry behind.
           // The warning is laid out for a capped column: its deck list shrinks and scrolls, and its title and
-          // buttons sit outside it, `flex-none`. Its root is told to fill this column (as GotItReceipt's).
+          // buttons sit outside it, `flex-none`. Its root is told to fill this column (as RevertConfirm's).
           <div className="flex min-h-0 flex-1 flex-col *:min-h-0 *:flex-1">
             <ShortDeckWarning
               titleId="confirm-title"
