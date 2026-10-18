@@ -1,0 +1,49 @@
+{
+  "feature": "Buying credits: the credit line, the chip and the paid-today meter (U2b)",
+  "note": "Plan `2026-10-17-buying-credits-ui.md`, PR U2b; extends `buying-credits.json` (U1). ONE account STATE per run: the sheet reads whatever the signed-in account holds, so a run is repeated with the account reseeded between runs (never bought; a pack of 114 with 0 paid runs today; 17 paid runs; 20 paid runs with the free allowance spent, L5; a pack held and the free allowance spent, L3; a cancelled plan lot with 74 credits expiring in 2 days, L7). PRECONDITION: `PAYMENTS_ENABLED` and `HELP_ME_CHOOSE_ENABLED` on for the account, and `scripts/contact-sheet.mjs`'s `openAccount` step (shell, not page: it presses the header or rail avatar and waits for the credit chip the menu draws). `credits-u2-paid-today` waits for the daily line, which draws only from 15 paid runs in the rolling day: in any state below that it times out, and that time-out IS the evidence the line is absent (P5). `credits-u2-chip-line` waits for the line under the chip and draws only for a cancelled plan within three days (the expiring state). The credit-line surface is Help me choose's submit press, pre-filled so its words are written (the line draws only then); the tuning panel, read band, Fits, Suggested changes and synopsis carry the same `CreditsText` and are in their own inventories. The Low Sun pass is the same rows with the account's theme at Low Sun (Amonkhet), which is the app's default (the `the99_theme` cookie unset); the sheet has no theme option of its own.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "credits-u2-page",
+      "label": "/credits: balance, cells, history (state as seeded)",
+      "view": "src/components/credits/credits-view.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "credits-u2-paid-today",
+      "label": "/credits: the paid-today line and meter (from 15 paid runs; warning fill at the limit)",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"paid-today\"]", "scrollTo": "[data-testid=\"paid-today\"]", "settle": 1000 }
+      ]
+    },
+    {
+      "id": "credits-u2-chip",
+      "label": "Account menu open: the credit chip (popover at 1300, sheet at 390)",
+      "view": "src/components/shell/credit-chip.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 800 },
+        { "openAccount": true }
+      ]
+    },
+    {
+      "id": "credits-u2-chip-line",
+      "label": "Account menu open: the line under an expiring chip (cancelled plan, within 3 days)",
+      "view": "src/components/shell/credit-chip.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 800 },
+        { "openAccount": true, "chipLine": true }
+      ]
+    },
+    {
+      "id": "credits-u2-line",
+      "label": "Help me choose, words written: the credit line beside the press (L1 to L7 by state)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        { "goto": "/decks/new/choose?w=big+dumb+lizards+that+stomp&c=r,g&t=dinosaurs&b=150&k=3", "wait": "textarea", "settle": 3000, "scrollTo": "button:has-text(\"Find commanders\"):visible" }
+      ]
+    }
+  ]
+}

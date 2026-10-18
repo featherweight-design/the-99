@@ -246,6 +246,22 @@ async function run(page, steps) {
       // an empty one is never counted as reached.
       await page.locator("[data-help-panel] :is([data-help-here], [data-help-empty])").first().waitFor({ state: "visible", timeout: 15_000 });
     }
+    // The account menu is shell, not page: its trigger is the one visible `aria-expanded` button in the header (390) or
+    // the rail (1300) that opens a menu or dialog. `openAccount` presses it and waits for the credit chip the menu draws
+    // (or, with `"chip": false`, for the menu's own panel), so a menu that opened without its chip fails the row.
+    if (step.openAccount) {
+      // Under `next dev` the framework's own indicator sits over the rail's foot, where the avatar is, and takes the press.
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+      await page.locator(':is(header, aside) button[aria-expanded][aria-haspopup]:visible').first().click({ timeout: 15_000 });
+      if (step.chip !== false) {
+        await page.locator('[data-testid="credit-chip"]:visible').first().waitFor({ state: "visible", timeout: 15_000 });
+      }
+      // `"chipLine": true` also waits for the line under an expiring chip, which only that state draws.
+      if (step.chipLine === true) {
+        await page.locator('[data-testid="credit-chip-line"]:visible').first().waitFor({ state: "visible", timeout: 15_000 });
+      }
+      await page.waitForTimeout(400);
+    }
     if (step.searchType !== undefined) {
       await searchSheet.getByRole("combobox").fill(step.searchType, { timeout: 15_000 });
     }
