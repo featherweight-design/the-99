@@ -12,7 +12,6 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { ACTION_SIZE, GhostButton, PrimaryButton } from "../ui/button";
-import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/decks/price";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
@@ -193,13 +192,9 @@ export function ProxyListView({
                           key={deck.id}
                           href={`/decks/${deck.id}`}
                           aria-label={proxyCopy.row.deckAria(deck.name)}
-                          // A lone deck link takes a 44px coarse-pointer hit; wrapped links sit 2px apart, so theirs would cover
-                          // each other. The truncation moves to the inner span so the link clips nothing.
-                          className={`${row.decks.length === 1 ? TOUCH_HIT_INLINE : "relative"} group z-[1] min-w-0 max-w-full text-[color:var(--fg-muted)]`}
+                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
                         >
-                          <span className="block truncate underline underline-offset-2 decoration-[color:var(--border-strong)] group-hover:decoration-current transition-colors">
-                            {deck.name}
-                          </span>
+                          {deck.name}
                         </Link>
                       ))}
                       {/* Ruling 3's case is otherwise invisible here — a legend
