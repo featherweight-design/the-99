@@ -187,6 +187,15 @@ export function useTarget(id: TargetId | null): (el: HTMLElement | null) => void
   return setEl;
 }
 
+/**
+ * A target drawn as a box over its parent (which must be positioned): for a control whose own ref is already taken by
+ * a callback, or that renders in a list where a hook per item cannot run. `null` registers nothing.
+ */
+export function TargetBox({ id }: { id: TargetId | null }) {
+  const ref = useTarget(id);
+  return <span ref={ref} aria-hidden data-target={id ?? undefined} className="pointer-events-none absolute inset-0" />;
+}
+
 /** The consumer API, or null outside the provider. */
 export function useTargets(): Targets | null {
   const ctx = useContext(TargetsContext);

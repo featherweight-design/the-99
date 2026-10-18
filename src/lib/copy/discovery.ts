@@ -203,3 +203,68 @@ export const helpPanelCopy = {
   footAll: 'All of About ›',
   close: 'Close',
 } as const;
+
+/**
+ * The first-run tour (discovery R3·1b; handoff `discovery-r3 · copy strings.ts`, `tourCopy`). The card is a modal
+ * dialog labelled by its title; `lit` names what each step points at, for the dialog's description.
+ */
+export const tourCopy = {
+  kicker: (n: number, of: number, place: string) => `${n} of ${of} · ${place}`,
+  progressAria: (n: number, of: number) => `Step ${n} of ${of}`,
+  skip: 'Skip the tour',
+  back: 'Back',
+  next: 'Next',
+  finish: 'Finish',
+  litAria: (control: string) => `Pointing at ${control}.`,
+  lit: {
+    collection: 'Add your collection',
+    commanders: 'Commanders',
+    decks: 'Decks',
+    account: 'the account menu',
+    banner: 'the line on Home',
+  },
+  steps: {
+    collection: {
+      place: 'Collection',
+      title: 'Start with what you own',
+      body: 'Everything here is built from your collection. Drop in a file from ManaBox, Moxfield, Archidekt or Deckbox.',
+      /** `PRECONS_ENABLED`; the middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
+      precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
+      foot: 'Six stops · about a minute · ✕ skips the tour',
+    },
+    commanders: {
+      place: 'Commanders',
+      title: 'See what you could build',
+      body: 'Every commander your cards can lead, ranked by how much of the 99 you already own. It opens once your cards are in.',
+      picture: 'Commanders, once your cards are in',
+      pictureAlt: 'Commanders, on a real collection',
+    },
+    decks: {
+      place: 'Decks',
+      title: 'Build it, tune it, play it',
+      body: 'Pick a commander and the 99 is assembled from your cards. Then tune it, track it and log the games it plays.',
+      picture: 'A deck, once you build one',
+      pictureAlt: 'A deck page, on a real deck',
+    },
+    buying: {
+      place: 'Buying',
+      title: 'Know what it’s missing',
+      body: 'Each deck’s Shopping lists the cards you still need and what they cost, with one link to buy them. It lives inside Decks.',
+      picture: 'Shopping, inside every deck',
+      pictureAlt: 'A deck’s Shopping, on a real deck',
+    },
+    look: {
+      place: 'Your look',
+      title: 'Pick your look',
+      body: 'Six themes, one for every playmat. Change it any time in your account menu, under Theme.',
+    },
+    whatsNew: {
+      place: 'What’s new',
+      title: 'New things land here',
+      /** Dropped when Home draws no line to light (R3 gap 6). */
+      body: 'When the app learns something, one line on Home says so. This one opens About: every tool, mark and figure, by screen.',
+      noteLead: 'There are a lot of Magic: The Gathering apps out there and a lot of them do really great things…',
+      notePress: 'Read the note ›',
+    },
+  },
+} as const;

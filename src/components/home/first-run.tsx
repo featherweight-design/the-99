@@ -13,6 +13,7 @@
 import { ArrivalsBanner } from "./arrivals-banner";
 import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
+import { FirstRunTour } from "../discovery/first-run-tour";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { Lock } from "../ui/lock";
 import { FirstRunFriendsRow, type FirstRunFriendsProps } from "./first-run-friends";
@@ -101,8 +102,11 @@ export function FirstRunChecklist({
   scan = false,
   friends = null,
   tables = null,
+  tour = false,
 }: {
   addByHand?: boolean;
+  /** `tourDue`: the first-run tour runs over this page once (discovery R3·1b). */
+  tour?: boolean;
   about?: AboutLine | null;
   /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
   scan?: boolean;
@@ -167,6 +171,8 @@ export function FirstRunChecklist({
         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
         {friends && <FirstRunFriendsRow {...friends} />}
+        {/* The tour's precon line follows the ways group: off with it, and with PRECONS_ENABLED. */}
+        {tour && <FirstRunTour precons={ways?.precons ?? false} />}
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the
             "Already have a deck elsewhere?" row and its `mt-auto` are deleted rather than
             replaced, so the stack closes up and the space below it stays page. Import is

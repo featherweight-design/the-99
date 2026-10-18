@@ -51,6 +51,16 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+describe("Edit copies, over the page", () => {
+  it("holds moments and the tour off while it is open, since it locks no scroll", async () => {
+    const { overPageCount } = await import("../../lib/moments/hold");
+    await mount();
+    expect(overPageCount().holds).toBe(1);
+    cleanup();
+    expect(overPageCount().holds).toBe(0);
+  });
+});
+
 describe("Edit copies, at rest", () => {
   it("draws one line per holding, names the card and its totals, and cannot save with no change", async () => {
     await mount();

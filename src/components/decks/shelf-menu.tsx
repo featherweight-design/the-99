@@ -20,6 +20,7 @@ import { deleteFolderAction, renameFolderAction } from "../../app/decks/folder-a
 import { DeleteConfirm } from "../ui/delete-confirm";
 import { FOLDER_NAME_MAX } from "../../lib/decks/folder-name";
 import { stripControlChars } from "./folder-create-dialog";
+import { useMomentHold } from "../../lib/moments/hold";
 
 const ROW =
   "flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-t border-solid "
@@ -255,6 +256,8 @@ function Panel({
   // outside press dismisses it — so freezing the page behind it is the account
   // menu's own exemption, for the same reason.
   useDialogA11y(ref, onDismiss, { lockScroll: false });
+  // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(true);
 
   // The hook focuses on MOUNT, and this panel swaps its contents without
   // unmounting — so the button a reader pressed to get here is removed while

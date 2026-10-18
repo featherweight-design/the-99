@@ -24,8 +24,11 @@ import type { ThemeKey } from "../../lib/theme/themes";
 import { reveal } from "../../lib/ui/reveal";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { useMomentHold } from "../../lib/moments/hold";
 import { HelpButton } from "../help/help-root";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { TargetBox } from "../discovery/targets-provider";
+import type { TargetId } from "../../lib/discovery/targets";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -158,6 +161,8 @@ type OpenNote = { href: NavHref; x: number; y: number } | null;
  */
 function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
   const [open, setOpen] = useState<OpenNote>(null);
+  // A note locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(open !== null);
   const slots = useRef(new Map<NavHref, HTMLButtonElement>());
   const notes = useRef(new Map<NavHref, HTMLDivElement>());
 
@@ -200,17 +205,24 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
       if (!nowhere && !inLock(active, href)) return;
       close(href, true);
     };
-    const onResize = () => show(href);
+    // Re-placed on a resize or scroll; closed when its slot is no longer drawn (the window crossed the breakpoint
+    // into the other navigation), so a hidden note holds nothing off the page.
+    const onResize = () => {
+      const slot = slots.current.get(href);
+      if (!slot || slot.getClientRects().length === 0) setOpen(null);
+      else show(href);
+    };
+    const onScroll = () => show(href);
     // The touch rail's nav scrolls on a short screen, and the note is `fixed`, so a scroll there
     // re-places it the way a resize does (audit V-E3). Scroll does not bubble: listen in capture.
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("scroll", onResize, true);
+    document.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("scroll", onResize, true);
+      document.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
   }, [open, inLock, close, show]);
@@ -270,6 +282,9 @@ function tabPlace(slot: HTMLElement) {
  * slot, so the pointer can travel onto it (WCAG 1.4.13); it closes on Escape,
  * on focus leaving slot and note, and on a press outside both.
  */
+/** The tour's stops on a locked slot (discovery R3·1b): Commanders, and Decks for steps 3 and 4. */
+const tourSlot = (href: NavHref): TargetId | null => (href === "/commanders" ? "tour:commanders" : href === "/decks" ? "tour:decks" : null);
+
 function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock }) {
   const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
   const action = useNoteAction(openLock);
@@ -307,8 +322,9 @@ function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock
               onFocus={() => show(href)}
               onClick={() => show(href)}
               onBlur={onBlur(href)}
-              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none ${RAIL_TOUCH_SLOT}`}
+              className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none ${RAIL_TOUCH_SLOT}`}
             >
+              <TargetBox id={tourSlot(href)} />
               <NavIcon href={href} />
               <RailLabel label={label} />
             </button>
@@ -422,10 +438,11 @@ function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; live
               aria-current={isActive(pathname, href) ? "page" : undefined}
               onClick={() => (waiting ? close(href, false) : show(href))}
               // Tapped: an inset outline, never a fill (4a.7).
-              className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
+              className={`relative flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
                 isOpen ? "shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""
               }`}
             >
+              <TargetBox id={tourSlot(href)} />
               <NavIcon href={href} />
               <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
                 {label}

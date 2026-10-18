@@ -51,6 +51,16 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+describe("AddCardsSheet holds moments and the tour off while it is open", () => {
+  it("counts as over the page, since it locks no scroll (Edit copies: edit-copies-sheet.test)", async () => {
+    const { overPageCount } = await import("../../lib/moments/hold");
+    const add = render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} />);
+    expect(overPageCount().holds).toBe(1);
+    add.unmount();
+    expect(overPageCount().holds).toBe(0);
+  });
+});
+
 describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
   it("draws no Scan press without the switch", () => {
     render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} />);

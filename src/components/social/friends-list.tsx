@@ -18,6 +18,7 @@ import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { Face } from "./face";
 import { PendingReporter } from "../shell/pending-reporter";
+import { useMomentHold } from "../../lib/moments/hold";
 
 const f = socialCopy.friends;
 
@@ -214,6 +215,8 @@ function MenuPanel({ label, onDismiss, children }: { label: string; onDismiss: (
   const ref = useRef<HTMLDivElement>(null);
   // A popover with no backdrop: Escape and focus are the dialog hook's, the page keeps its scroll.
   useDialogA11y(ref, onDismiss, { lockScroll: false });
+  // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(true);
   return (
     <div
       ref={ref}

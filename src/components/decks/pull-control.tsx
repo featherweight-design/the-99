@@ -31,6 +31,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
 import { Chevron, CHEVRON_GAP_CLASS } from "../ui/chevron";
+import { useMomentHold } from "../../lib/moments/hold";
 
 const copy = deckVersioningCopy.review;
 const sourceCopy = copy.source;
@@ -494,6 +495,8 @@ function Popover({
   // dismisses it (above), the same exemption the account menu and the deck ⋯
   // menu's own panel take.
   useDialogA11y(ref, onDismiss, { lockScroll: false, returnFocusRef });
+  // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(true);
   return (
     <div
       ref={ref}
