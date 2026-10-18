@@ -1,0 +1,76 @@
+{
+  "feature": "/privacy and /terms, signed out (launch epic B1): LegalPage with the legal header, bare",
+  "note": "No sign-in: `signedOut` skips it. The legal header sits outside <main>, so the top row shows it through the page's own first screen.",
+  "out": "contact-sheets/legal-pages-signed-out",
+  "signedOut": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "legal-out-privacy",
+      "label": "/privacy signed out: title, Last updated, On this page and the first section",
+      "view": "src/components/legal/legal-page.tsx",
+      "steps": [
+        {
+          "goto": "/privacy",
+          "wait": "article",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "legal-out-privacy-end",
+      "label": "/privacy signed out: scrolled to the last section (Questions), the diamond on it at the desktop width",
+      "view": "src/components/legal/legal-toc.tsx",
+      "steps": [
+        {
+          "goto": "/privacy",
+          "wait": "article",
+          "settle": 900
+        },
+        {
+          "scrollTo": "#questions",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "legal-out-terms",
+      "label": "/terms signed out: title, Last updated, On this page and the first section",
+      "view": "src/components/legal/legal-page.tsx",
+      "steps": [
+        {
+          "goto": "/terms",
+          "wait": "article",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "legal-out-terms-end",
+      "label": "/terms signed out: scrolled to the last section (Questions), the diamond on it at the desktop width",
+      "view": "src/components/legal/legal-toc.tsx",
+      "steps": [
+        {
+          "goto": "/terms",
+          "wait": "article",
+          "settle": 900
+        },
+        {
+          "scrollTo": "#questions",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

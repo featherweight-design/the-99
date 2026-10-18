@@ -55,3 +55,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   both 180ms — because a box measured mid-transform reads as hanging below the fold.
   `scripts/lib/surface.test.mts` parses every `probe-*.mjs` and sweeps its string literals for
   the unscoped forms, the same way `env.test.mts` enforces the env convention.
+
+## `"signedOut": true`: photographing a public surface
+
+An inventory with `"signedOut": true` skips the Clerk sign-in, so a page that answers a reader with no session (`/privacy`, `/terms`) is photographed as that reader sees it, with the shell's bare signed-out branch around it. It cannot be combined with `clearAbout` (the run refuses). `legal-pages.json` (signed in) and `legal-pages-signed-out.json` are the pair for the legal pages (launch epic B1); the notice after the article is outside `<main>`, so a sheet cannot reach it and `pnpm probe:fan-content-notice` measures it on both pages.

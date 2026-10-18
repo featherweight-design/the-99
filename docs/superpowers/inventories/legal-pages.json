@@ -1,0 +1,76 @@
+{
+  "feature": "/privacy and /terms, signed in (launch epic B1): LegalPage inside the shell, no tab lit",
+  "note": "Signed in as the audit account. The Fan Content notice that follows the article is outside <main>, so a sheet cannot reach it; pnpm probe:fan-content-notice measures it on both pages.",
+  "out": "contact-sheets/legal-pages",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "legal-in-privacy",
+      "label": "/privacy signed in: title, Last updated, On this page and the first section",
+      "view": "src/components/legal/legal-page.tsx",
+      "steps": [
+        {
+          "goto": "/privacy",
+          "wait": "article",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "legal-in-privacy-end",
+      "label": "/privacy signed in: scrolled to the last section (Questions), the diamond on it at the desktop width",
+      "view": "src/components/legal/legal-toc.tsx",
+      "steps": [
+        {
+          "goto": "/privacy",
+          "wait": "article",
+          "settle": 900
+        },
+        {
+          "scrollTo": "#questions",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "legal-in-terms",
+      "label": "/terms signed in: title, Last updated, On this page and the first section",
+      "view": "src/components/legal/legal-page.tsx",
+      "steps": [
+        {
+          "goto": "/terms",
+          "wait": "article",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "legal-in-terms-end",
+      "label": "/terms signed in: scrolled to the last section (Questions), the diamond on it at the desktop width",
+      "view": "src/components/legal/legal-toc.tsx",
+      "steps": [
+        {
+          "goto": "/terms",
+          "wait": "article",
+          "settle": 900
+        },
+        {
+          "scrollTo": "#questions",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}
