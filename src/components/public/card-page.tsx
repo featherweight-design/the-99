@@ -177,9 +177,10 @@ export function PublicCardPage({
         data-testid="public-card-page"
         className="flex-1 md:px-[40px] md:pt-[52px] md:pb-[80px]"
       >
-        <div className="mx-auto grid max-w-[1104px] grid-cols-1 md:grid-cols-[384px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[64px]">
+        {/* Two columns from `lg`: below it the catalog column would be too narrow for a long cost (ten pips, 305px). */}
+        <div className="mx-auto grid max-w-[1104px] grid-cols-1 lg:grid-cols-[384px_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-[64px]">
           {/* The card. On the phone, a band washed with its own art. */}
-          <div className="relative flex flex-col items-center overflow-hidden bg-[color:var(--surface-sunken)] pt-[28px] pb-[22px] md:col-start-1 md:row-start-1 md:gap-[18px] md:overflow-visible md:bg-transparent md:p-0">
+          <div className="relative flex flex-col items-center overflow-hidden bg-[color:var(--surface-sunken)] pt-[28px] pb-[22px] lg:col-start-1 lg:row-start-1 md:gap-[18px] md:overflow-visible md:bg-transparent md:p-0">
             <span
               aria-hidden="true"
               data-testid="public-card-wash"
@@ -210,24 +211,25 @@ export function PublicCardPage({
           </div>
 
           {/* The catalog, in the order a stranger reads it (README call 1). */}
-          <div className="min-w-0 px-[16px] pt-[22px] md:col-start-2 md:row-span-2 md:row-start-1 md:max-w-[640px] md:px-0 md:pt-[8px]">
-            <div className="grid md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-[24px]">
-              <h1 className="m-0 font-display font-bold text-[25px] md:text-[34px] leading-[1.12] text-[color:var(--fg)] [text-wrap:balance] md:col-start-1">
+          <div className="min-w-0 px-[16px] pt-[22px] lg:col-start-2 lg:row-span-2 lg:row-start-1 md:max-w-[640px] md:px-0 md:pt-[8px]">
+            {/* The cost beside the title only from `xl`: at `lg` a ten-pip cost (305px) would leave the title too little room. */}
+            <div className="grid xl:grid-cols-[minmax(0,1fr)_auto] xl:gap-x-[24px]">
+              <h1 className="m-0 font-display font-bold text-[25px] md:text-[34px] leading-[1.12] text-[color:var(--fg)] [text-wrap:balance] xl:col-start-1">
                 {card.faces[0]?.name ?? card.name}
               </h1>
               {twoFaces ? (
                 <p
                   data-testid="public-card-back-name"
-                  className="m-0 mt-[4px] font-display font-semibold text-[17px] md:text-[20px] leading-[1.2] text-[color:var(--fg-muted)] md:col-start-1"
+                  className="m-0 mt-[4px] font-display font-semibold text-[17px] md:text-[20px] leading-[1.2] text-[color:var(--fg-muted)] xl:col-start-1"
                 >
                   <span aria-hidden="true" className="mr-[6px] font-mono text-[13px] text-[color:var(--fg-faint)]">{"//"}</span>
                   {card.faces[1].name}
                 </p>
               ) : null}
-              <div className="mt-[10px] md:col-start-2 md:row-span-3 md:row-start-1 md:mt-0 md:pt-[6px]">
+              <div className="mt-[10px] xl:col-start-2 xl:row-span-3 xl:row-start-1 xl:mt-0 xl:pt-[6px]">
                 <ManaCost cost={card.manaCost} />
               </div>
-              <p className="m-0 mt-[8px] text-[14px] md:mt-[10px] md:text-[15px] leading-[1.45] text-[color:var(--fg-muted)] md:col-start-1">
+              <p className="m-0 mt-[8px] text-[14px] md:mt-[10px] md:text-[15px] leading-[1.45] text-[color:var(--fg-muted)] xl:col-start-1">
                 {card.faces.map((f) => f.typeLine).join(" // ")}
               </p>
             </div>
@@ -245,7 +247,7 @@ export function PublicCardPage({
           </div>
 
           {/* The signed-out block: under the card from `md`, last before the footer on the phone (README call 4). */}
-          <div className="mt-[32px] px-[16px] pb-[36px] md:col-start-1 md:row-start-2 md:mt-[40px] md:p-0">
+          <div className="mt-[32px] px-[16px] pb-[36px] lg:col-start-1 lg:row-start-2 md:mt-[40px] md:p-0">
             <SignedOutBlock />
           </div>
         </div>
