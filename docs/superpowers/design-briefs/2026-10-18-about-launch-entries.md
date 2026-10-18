@@ -7,7 +7,7 @@ and `docs/superpowers/plans/2026-10-16-rule-zero.md:243-247`, "Its entry is owed
 together, with one `ABOUT_VERSION` bump at the end of the launch.
 
 **What this brief asks.** One per-entry artboard for each of the three new entries, at 390 and 1300, and the call on what
-each entry's picture shows; entries 4 and 5 reuse the artboards their handoffs already carry and need only their halo. It proposes one Design round and one addendum folder.
+each entry's picture shows; entries 4 to 6 reuse the artboards their handoffs already carry and need only their halo (entry 6's words also need the copy fixes in Draft vs code 13). It proposes one Design round and one addendum folder.
 
 The drafts come from two of the orchestrator's boards, which live outside this repository. Each draft is quoted in
 full below, so nothing here needs those files open; their line numbers are kept only for the orchestrator.
@@ -96,7 +96,7 @@ measured on a phone capture:
   `public/about/shots/<theme>/friends.webp`. What the frame lacks is the count line under it, because it was taken with
   invites off.
 - `card-search`: the header's search icon. The entry's route is "any page", so it has no screen of its own; Design picks
-  which screen's frame carries the box (Open 4). No current frame shows the icon, because the capture ran with the
+  which screen's frame carries the box (Open 6). No current frame shows the icon, because the capture ran with the
   switch off.
 
 The recapture is engineering's, in the batch PR (Out of scope).
@@ -119,7 +119,7 @@ Added by the orchestrator (2026-10-18) on the same footing as entries 4 and 5: o
 `STATES-card-scan.md`, row A1). Switch `CARD_SCAN_ENABLED` (`src/lib/switches/registry.ts:33`, needs
 `COLLECTION_EDIT_ENABLED`). The handoff's `since: 15` (its G8) is superseded: `since: 16`, as for the rest of the batch.
 
-Only its halo is new: the Scan press in Add cards. No current capture opens Add cards, so its screen is Open 5, and the
+Only its halo is new on the board (its words need the copy fixes in Draft vs code 13): the Scan press in Add cards. No current capture opens Add cards, so its screen is Open 7, and the
 recapture (engineering's, in the batch PR) needs `CARD_SCAN_ENABLED` and `COLLECTION_EDIT_ENABLED` on.
 
 ## What an entry draws today (read from the shipped code)
@@ -194,9 +194,9 @@ is captured in. Each is constrained by "Decided" 5 and 6.
 5. **The template's dead slots.** Whether the artboard keeps `width`, specimen, fixture props and phone reduction,
    which the reshape no longer reads, or replaces them with frame, locator and capture state.
 
-4. **`card-search`'s screen.** Which screen's capture carries the header search icon's box: any frame drawn with the
+6. **`card-search`'s screen.** Which screen's capture carries the header search icon's box: any frame drawn with the
    header (for example `collection`), since the entry's route is any page.
-5. **`card-scan`'s screen.** Which capture carries the Scan press's box: a new frame of `/collection` with Add cards open
+7. **`card-scan`'s screen.** Which capture carries the Scan press's box: a new frame of `/collection` with Add cards open
    at 390, or another screen that opens the same sheet.
 
 ## Per entry
@@ -207,7 +207,7 @@ is captured in. Each is constrained by "Decided" 5 and 6.
 | `about-rebuilt` | `/about` (Tools), `/about?tab=reference`; screen `account` | `src/components/about/tools/about-tabs.tsx`, `tools-tab.tsx`, `tool-card.tsx`, `src/components/about/reference/reference-tab.tsx` | Open 2: the menu's `About The 99` row; Tools as context | Shipped to everyone, no switch (`onboarding-flag.ts:4`; #2013). Lines behind `HELP_PANEL_ENABLED`, `HELP_ME_CHOOSE_ENABLED` (`registry.ts:45`), `FIRST_RUN_TOUR_ENABLED` |
 | `rule-zero` | `/friends` (pod row), `/friends/table/[id]` (the table) | `src/components/rule-zero/pod-row.tsx`; table: `table-body.tsx`, `read-card.tsx`, `swap.tsx`, `change-deck.tsx` | Open 3: the pod card with its `Rule 0 check` row | Behind `RULE_ZERO_ENABLED` (`registry.ts:63`, needs `SOCIAL_FRIENDS_ENABLED`): staging `'true'`, production unset (`src/lib/social/flag.ts:20-24`). Log lines behind `SOCIAL_GAMES_ENABLED` (`registry.ts:67`) |
 | `invites` | `/friends` (Add a friend) | `src/components/social/invite-sheet.tsx`, `invite-new.tsx`, `invite-count-line.tsx` | The Add a friend press with its count line (existing artboard) | Behind `SOCIAL_INVITES_ENABLED` (`registry.ts:68`, needs `SOCIAL_FRIENDS_ENABLED`) |
-| `card-search` | any page; the box goes on a phone frame's header search icon (Open 4) | `src/components/card-search/card-search.tsx`, `search-desktop.tsx` | The header search icon at rest (existing artboard) | Behind `CARD_SEARCH_ENABLED` (`registry.ts:34`) |
+| `card-search` | any page; the box goes on a phone frame's header search icon (Open 6) | `src/components/card-search/card-search.tsx`, `search-desktop.tsx` | The header search icon at rest (existing artboard) | Behind `CARD_SEARCH_ENABLED` (`registry.ts:34`) |
 | `card-scan` | `/collection`, Add cards (the Scan press) | `src/components/collection/add-cards-sheet.tsx`, `src/components/collection/scan/scanner-view.tsx` | The Scan press in Add cards (existing board) | Behind `CARD_SCAN_ENABLED` (`registry.ts:33`, needs `COLLECTION_EDIT_ENABLED`) |
 
 ## Draft vs code
@@ -248,6 +248,16 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
     (`src/lib/copy/help-me-choose.ts:27`), and an entry of its own (`src/lib/copy/about-entries.ts:482`).
 12. **Holds, with a nuance:** entry 2's tour line ("the first time you open Home") is true of accounts made after the
     tour ships only: an account past first run is never due (`src/lib/discovery/tour.ts:8-15`).
+
+13. **`card-scan`'s drafted words predate server matching and the Auto rename** (`design/design_handoff_the99_card_scan/about · scanning your cards.ts`), for the copy lane:
+    - "The first scan downloads a card index of about 27 MB, once. After that it works offline." Matching is on the
+      server (`POST /api/card-scan/match`, `src/lib/card-scan/flag.ts`), and the shipped offline line says scanning needs
+      a connection (`src/lib/copy/collection-edit.ts`, `scan.offlineBody`).
+    - The mode it calls "Fast" shipped as "Auto" (`scan.fast`), and "Normal has you choose each printing on the list"
+      is now chosen in the camera as you scan (`scan.normalLine`).
+    - "A second copy takes its own press" is now: take the card out of the frame first (`scan.takeOut`).
+    - The caption's "one press puts it on the list" is untrue of Auto, where a card goes on as soon as it reads
+      (`scan.fastLine`).
 
 Every other claim in both drafts was checked against this tree (88f7e00f6, which contains every Rule 0 PR the board
 cites) and holds.
