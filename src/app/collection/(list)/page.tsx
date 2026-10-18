@@ -6,6 +6,7 @@
 // "no results" case is triggered when filters return zero (Task 5).
 
 import { cookies } from "next/headers";
+import { perfRoute } from "../../../lib/perf/timing";
 import { requireUserId } from "../../../lib/auth";
 import {
   COLLECTION_SORT_COOKIE,
@@ -48,6 +49,8 @@ export default async function CollectionPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // Per-request spans for `pnpm measure:load`: off (a bare pass-through) unless PERF_TIMING=1.
+  const perf = perfRoute("/collection");
   const userId = await requireUserId();
   // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
   const env = await requestSwitchEnv(userId);
@@ -61,7 +64,7 @@ export default async function CollectionPage({
     sort: parseSortCookie(jar.get(COLLECTION_SORT_COOKIE)?.value),
   };
   const [stats, { cards, pricesFailed }, ownedSets, availability] = await Promise.all([
-    getCollectionStats(userId),
+    perf.timed("stats", () => getCollectionStats(userId)),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
     // The version is history: since the deployment joined every `cacheForUser` key
@@ -85,13 +88,13 @@ export default async function CollectionPage({
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    loadCollectionList(userId),
+    perf.timed("list", () => loadCollectionList(userId)),
     // Set names + release dates for the Set ▾ panel (#86).
-    loadOwnedSetMeta(userId),
+    perf.timed("ownedSets", () => loadOwnedSetMeta(userId)),
     // One aggregate for the whole page — never per row (Addendum 2).
     // Quiet failure: /collection shows no banner, the markers simply do not
     // appear and the Availability ▾ trigger disables (Task 10).
-    loadAvailability(userId, { env }).catch(() => null),
+    perf.timed("availability", () => loadAvailability(userId, { env })).catch(() => null),
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
@@ -125,7 +128,7 @@ export default async function CollectionPage({
   }
   const strip = receipt ? <PreconPickReceipt receipt={receipt} /> : null;
   const keep = pageWindowIds(cards, availability, withStoredSort((key) => query.get(key), viewHint.sort));
-  const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
+  const wire = await perf.timed("encode", async () => cutCollectionWindow(encodeCollection(cards, availability), keep));
 
   // Empty collection — the shell's state, kept intact, under the group's place head (shared
   // `(list)/layout.tsx`) same as every other state of this route. The head's strip is how

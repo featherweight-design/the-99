@@ -15,7 +15,7 @@ import { scopeRedirectTarget } from "./scope-redirect";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { lanePrintedInFor, loadCommanderPrintings } from "../../lib/sets/lane-printed-in";
-import { perfRead } from "../../lib/perf/timing";
+import { perfRead, perfRoute } from "../../lib/perf/timing";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 
@@ -24,6 +24,7 @@ export default async function CommandersPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const perf = perfRoute("/commanders");
   const userId = await requireUserId();
   const sp = await searchParams;
   // Before any read: the `?scope=` toggle became two routes, and a bookmark that
@@ -33,7 +34,7 @@ export default async function CommandersPage({
   // target never carries it — one 308 and the parameter is gone for good.
   const target = scopeRedirectTarget(searchParamsToQuery(sp));
   if (target) permanentRedirect(target);
-  const stats = await getCollectionStats(userId);
+  const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
   if (stats.uniqueCards === 0) {
     // No cards: nothing can be ranked without a collection to rank it against. The words follow the no-collection
@@ -54,9 +55,9 @@ export default async function CommandersPage({
   const [rankings, decks, savedAvail] = await Promise.all([
     // A ranking counted by the classifier only because the label read failed is served and never
     // filed under the labels key (admin PR 6d-2).
-    cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env), {
+    perf.timed("rankings", () => cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env), {
       store: (r) => !r.labelFallback,
-    }),
+    })),
     perfRead("commanders.recentDeck", () => listRecentDecks(userId, 1)),
     perfRead("commanders.availPref", () => readCommandersAvail(userId)),
   ]);
@@ -64,7 +65,7 @@ export default async function CommandersPage({
   const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
   // `Printed in ▾`'s index, aligned to these rows. The free ranking re-orders the same
   // commanders, so one index covers both lists.
-  const printedIn = await lanePrintedInFor(items, printings);
+  const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(items, printings));
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
