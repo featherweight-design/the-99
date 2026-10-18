@@ -353,7 +353,7 @@ function RenameFolder({
         aria-label={folderCopy.rename.fieldAria}
         aria-invalid={error ? true : undefined}
         readOnly={pending}
-        className="w-full rounded-[6px] px-[10px] py-[7px] font-sans text-[13px]"
+        className="w-full rounded-[6px] px-[10px] py-[7px] font-sans text-[16px] [@media(pointer:fine)]:text-[13px]"
       />
       {error && (
         <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>

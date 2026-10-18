@@ -182,7 +182,7 @@ export function SetListSheet({
           placeholder={copy.searchPlaceholder}
           aria-label={copy.searchAriaLabel}
           containerClassName="shrink-0 gap-[8px] px-[12px] py-[9px] min-h-[44px]"
-          className="text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:text-[14px]"
         />
 
         {note && (

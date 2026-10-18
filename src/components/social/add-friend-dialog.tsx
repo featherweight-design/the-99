@@ -129,7 +129,7 @@ export function AddFriendBody({ url, expiresAt, now, timeZone }: LinkProps) {
           value={url}
           aria-label={d.linkAria}
           onFocus={(e) => e.currentTarget.select()}
-          className={`h-[44px] min-w-0 flex-1 rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[12.5px] text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:rounded-[6px] ${canShare && !manual ? "max-md:hidden" : ""}`}
+          className={`h-[44px] min-w-0 flex-1 rounded-[8px] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] [@media(pointer:fine)]:text-[12.5px] text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:h-[40px] md:rounded-[6px] ${canShare && !manual ? "max-md:hidden" : ""}`}
         />
         {copyButton(!canShare)}
       </div>

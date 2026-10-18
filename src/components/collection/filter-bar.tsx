@@ -356,7 +356,7 @@ export function FilterBar({
             <>
               <SearchField
                 containerClassName="gap-[10px] flex-1 px-[14px] py-[10px]"
-                className="text-[14px]"
+                className="text-[16px] [@media(pointer:fine)]:text-[14px]"
                 value={filters.search}
                 onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
                 onClear={() => onFiltersChange({ ...filters, search: "" })}

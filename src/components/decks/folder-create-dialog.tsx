@@ -120,7 +120,7 @@ export function FolderCreateDialog({
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
             readOnly={pending}
-            className={`w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[14px] ${
+            className={`w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[16px] [@media(pointer:fine)]:text-[14px] ${
               error ? "border-[color:var(--danger)]" : ""
             }`}
           />

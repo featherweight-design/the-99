@@ -446,7 +446,7 @@ export function CreatePicker(props: CreatePickerProps) {
             /* §Search input: mobile border var(--border-strong) p 9px 12px gap 8; desktop border var(--accent) p 12px 15px gap 10 */
             <SearchField
               containerClassName="md:rounded-[9px] mb-[16px] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] md:border-[color:var(--accent)]"
-              className="text-[14px] md:text-[15px]"
+              className="text-[16px] [@media(pointer:fine)]:text-[14px] [@media(pointer:fine)]:md:text-[15px]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onClear={() => setQuery("")}

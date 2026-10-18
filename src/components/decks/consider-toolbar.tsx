@@ -45,7 +45,7 @@ export function ConsiderToolbar({
           value={sort}
           onChange={(e) => onSortChange(e.target.value as SortKey)}
           aria-label={addPanelCopy.consider.sortAria}
-          className="rounded-[8px] px-[11px] py-[7px] md:px-[12px] text-[12px] md:text-[12.5px] font-medium cursor-pointer order-1 md:order-2"
+          className="rounded-[8px] px-[11px] py-[7px] md:px-[12px] text-[16px] [@media(pointer:fine)]:text-[12px] [@media(pointer:fine)]:md:text-[12.5px] font-medium cursor-pointer order-1 md:order-2"
           style={{
             background: "var(--elevated)",
             border: "1px solid var(--border-strong)",

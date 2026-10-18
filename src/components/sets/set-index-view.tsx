@@ -261,7 +261,7 @@ export function SetIndexView({
       <div>
         <SearchField
           containerClassName="px-[12px] py-[10px] mb-[14px]"
-          className="text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:text-[14px]"
           value={query}
           onChange={(e) => search(e.target.value)}
           onClear={() => search("")}
@@ -281,7 +281,7 @@ export function SetIndexView({
       <div>
         <SearchField
           containerClassName="px-[12px] py-[10px] mb-[14px]"
-          className="text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:text-[14px]"
           value={query}
           onChange={(e) => search(e.target.value)}
           onClear={() => search("")}
@@ -310,7 +310,7 @@ export function SetIndexView({
     <div>
       <SearchField
         containerClassName="px-[12px] py-[10px] mb-[14px]"
-        className="text-[14px]"
+        className="text-[16px] [@media(pointer:fine)]:text-[14px]"
         value={query}
         onChange={(e) => search(e.target.value)}
         onClear={() => search("")}
