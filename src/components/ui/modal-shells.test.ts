@@ -306,6 +306,13 @@ describe("modal shells: a field's keyboard does not cover the shell", () => {
     expect(missing.map((s) => s.name)).toEqual([]);
   });
 
+  it("frames a sheet that stays a bottom sheet past md at its own stop (the deck filter sheet, to 999px)", () => {
+    const src = read("src/components/decks/deck-filter-sheet.tsx");
+    expect(src).toContain("max-[999px]:top-[var(--vv-top,0px)]");
+    expect(src).toContain("max-[999px]:h-[var(--vv-h,100%)]");
+    expect(src).toContain("max-[999px]:max-h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))]");
+  });
+
   it("names a shell that skips the hook, reads no value, or sets it nowhere", () => {
     const shell = { file: "f.tsx" };
     expect(keyboardFailures(shell, "const visible = useVisualViewportFrame(); <div style={visible} className={VV_FRAME} />")).toEqual([]);

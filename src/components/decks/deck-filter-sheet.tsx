@@ -197,7 +197,9 @@ function SheetBody({
       // CSS hid it, leaving the filters unreachable across that whole band.
       // `max-[999px]:flex` rather than a `sm:` utility, because the chassis owns
       // the breakpoint and Tailwind has no stop at 1000.
-      frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex"
+      // The sheet is a bottom sheet to 999px, past `md`, so its keyboard framing (the visible window's top and
+      // height, `VV_FRAME`'s rule) is held to the same stop rather than the shared `max-md:` one.
+      frameClassName="fixed inset-0 z-50 hidden flex-col justify-end max-[999px]:flex max-[999px]:bottom-auto max-[999px]:top-[var(--vv-top,0px)] max-[999px]:h-[var(--vv-h,100%)]"
       scrimClassName="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
       // This route's handle and its offset, to the pixel. The shell's default is
       // 36px round in a 9px/4px wrapper; this is 38px at 2px radius under 12px
@@ -209,7 +211,7 @@ function SheetBody({
       // anchored panel and not the sheet, so the 22px/`--surface-inset` pair
       // here and the 16px/`--surface-rail` pair on `/commanders` are an undrawn
       // detail answered twice. Collapsing them is a design ruling.
-      panelClassName="relative z-10 flex max-h-[86dvh] max-md:max-h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+      panelClassName="relative z-10 flex max-h-[86dvh] max-[999px]:max-h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
     >
       <div className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[16px]">
         <div className="flex items-baseline gap-[10px]">
