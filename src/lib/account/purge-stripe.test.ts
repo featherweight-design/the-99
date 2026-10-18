@@ -20,7 +20,10 @@ vi.mock("../../db", async () => {
             const text = dialect.sqlToQuery(q).sql;
             st.ran.push(text);
             if (/delete from "stripe_customers"/.test(text)) {
-              return { rowCount: st.rowsForMapping.length, rows: st.rowsForMapping.map((id) => ({ stripe_customer_id: id })) };
+              // Postgres returns the ids only when the statement asks for them: without RETURNING the purge could not
+              // see a mapping it never handled.
+              const returning = /returning\s+"?stripe_customer_id/i.test(text);
+              return { rowCount: st.rowsForMapping.length, rows: returning ? st.rowsForMapping.map((id) => ({ stripe_customer_id: id })) : [] };
             }
             return { rowCount: 0, rows: [] };
           },
