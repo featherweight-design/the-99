@@ -53,6 +53,12 @@ describe("the paid forms (U2b)", () => {
     expect(formLine(at)).not.toContain("Get more credits");
   });
 
+  it("L5: the results lines (bareStanding) say the limit too, with the paid reset earlier than the free one", () => {
+    const at = s({ pack: 94, paidUsedToday: 20, paidLimit: 20, paidBackAt: "2026-10-17T14:00:00.000Z", nextAt: "2026-10-17T20:01:00.000Z", reopensAt: "2026-10-17T20:01:00.000Z" });
+    expect(bareStanding(at)).toMatch(/^Today’s 20 paid credits are used\. 94 more are banked · back at /);
+    expect(bareStanding(at)).not.toMatch(/of 5/);
+  });
+
   it("L4: spent with payments on puts Get more credits under the form's line; off, it is as shipped", () => {
     expect(formLine(s({ payments: true }))).toMatch(/\nGet more credits$/);
     expect(formLine(s({ payments: false }))).not.toContain("Get more credits");

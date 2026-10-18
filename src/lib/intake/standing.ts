@@ -80,8 +80,11 @@ export function standingLine(s: Standing): string {
  * leaving, which is later than the next one's then.
  */
 export function bareStanding(s: Standing): string {
+  const line = lineOf(s);
+  // At the paid limit the count would hide the banked paid credits and show the free reset (L5 says both).
+  if (creditLineKind(line) === "limit") return creditSpent(line);
   // The FREE count and its reset time (and, once paid credits are held, the paid total): what this line counts.
-  return creditCount(lineOf(s), new Date(s.now));
+  return creditCount(line, new Date(s.now));
 }
 
 /**

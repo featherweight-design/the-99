@@ -38,6 +38,12 @@ describe("CreditsText", () => {
     expect(mark).toHaveStyle({ color: "var(--warning)" });
   });
 
+  it("L7: the phrase keeps --warning when a caller appends a tail after it", () => {
+    const line = creditsCopy.afterLine("4 of 5 free · reset at 2:01 AM · 114 paid · 74 plan credits expire Nov 16", " · Nothing was changed");
+    render(<p><CreditsText text={line} /></p>);
+    expect(screen.getByTestId("credit-expiring")).toHaveTextContent("74 plan credits expire Nov 16");
+  });
+
   it("a line with no expiry draws no warning", () => {
     render(<p><CreditsText text="4 of 5 left · reset at 2:01 AM" /></p>);
     expect(screen.queryByTestId("credit-expiring")).toBeNull();

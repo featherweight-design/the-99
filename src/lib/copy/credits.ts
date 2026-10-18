@@ -90,7 +90,7 @@ export const creditsCopy = {
   /** L7 and the menu chip's expiring line: a cancelled plan's credits, within three days of lapsing. */
   expiring: (n: number, on: Date) => `${n} plan credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${shortDay(on)}`,
   /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
-  expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?$)/,
+  expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?(?: · |\n|$))/,
   /** L4: its own line under the spent line, a link to `/credits`. Only while payments are on for the reader. */
   getMore,
   /** L4's own line under a spent line, only while payments are on for the reader. */
