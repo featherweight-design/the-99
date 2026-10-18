@@ -19,6 +19,7 @@ import { availabilityState, drawsMarker } from "../../lib/decks/availability";
 import { BuyTag } from "../decks/buy-tag";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
+import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 
@@ -231,18 +232,20 @@ export function SynergyRow({
           siblings={siblings}
           imageUri={card.imageUri}
           preview
+          // A 44px-tall coarse-pointer hit past the ~20px name line (the 52px phone row has the room). The ellipsis
+          // sits on the inner span so the button clips nothing.
+          className={TOUCH_HIT_INLINE}
           style={{
             display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
             fontSize: 13.5,
             color: "var(--fg)",
             textAlign: "left",
             width: "100%",
           }}
         >
-          {card.name}
+          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {card.name}
+          </span>
         </CardDetailTrigger>
 
         {/* Phone meta line: synergy pts · edhrec N% — only shown on phone, hidden on desktop */}

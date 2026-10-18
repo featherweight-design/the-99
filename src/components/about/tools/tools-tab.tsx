@@ -10,6 +10,7 @@ import { aboutShapeCopy, showcaseCopy, writtenForYouCopy } from "../../../lib/co
 import { shotFor, toolShotId } from "../../../lib/about/shots";
 import type { ShowcaseGroup, WrittenRow } from "../../../lib/discovery/showcase";
 import { entryHref, ToolCard } from "./tool-card";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 const GROUP_HEAD = "m-0 font-display text-[19px] font-semibold text-[color:var(--fg)] md:text-[21px]";
 const SUB = "font-mono text-[12px] text-[color:var(--fg-faint)]";
@@ -73,7 +74,7 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
           <span className="text-[13.5px] text-[color:var(--fg-muted)]">{free}</span>
           <Link
             href={entryHref("credits")}
-            className="py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] hover:underline"
+            className={`${TOUCH_HIT} py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] hover:underline`}
           >
             {writtenForYouCopy.how}
             <PendingReporter href={entryHref("credits")} />
@@ -105,7 +106,7 @@ export function ToolsTab({ groups, written, allowance, theme }: ToolsTabProps) {
         <span className="text-[14px] text-[color:var(--fg-muted)]">{aboutShapeCopy.toReference}</span>
         <Link
           href="/about?tab=reference"
-          className="py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline"
+          className={`${TOUCH_HIT} py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline`}
         >
           {aboutShapeCopy.toReferencePress}
           <PendingReporter href="/about?tab=reference" />
