@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../marks";
+import { PendingReporter } from "../shell/pending-reporter";
 import { GhostButton } from "../ui/button";
 import { legalCopy } from "../../lib/copy/legal/shared";
 
@@ -14,6 +15,7 @@ export function LegalHeader() {
       <Link href="/" aria-label={legalCopy.homeLabel} className="flex items-end gap-[3px] no-underline">
         <span aria-hidden className="pb-1 text-[9px] tracking-[0.4em] text-[color:var(--accent)]" style={{ fontFamily: "var(--font-mono)" }}>THE</span>
         <Crowned99 variant="mobile-header" />
+        <PendingReporter href="/" />
       </Link>
       <SignInButton mode="redirect">
         <GhostButton type="button" className="h-[40px] rounded-[8px] px-[16px] text-[13px]">{legalCopy.signIn}</GhostButton>
