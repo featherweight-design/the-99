@@ -1,0 +1,130 @@
+{
+  "feature": "F3 PR 3: the public commander page (B1 to B4, C4's figure fragments), drawn to a stranger",
+  "note": "Run signed out against a scratch branch of local-dev whose commander_support rows were set to each state: Sai's prose cleared (B2), Ashling absent (B3), Dina degraded (B4), Krenko's rank cleared, Kozilek's rank and deck count cleared. PUBLIC_PAGES_ENABLED=true.",
+  "out": "contact-sheets/f3-commander-page",
+  "signedOut": true,
+  "fullPage": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "label": "laptop",
+      "width": 1024,
+      "height": 900
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "b1-full",
+      "label": "/commander/[slug] B1: support data and prose (Zimone)",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/zimone-infinite-analyst-977f9390e01d",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "b2-noprose",
+      "label": "/commander/[slug] B2: no prose (Sai); On EDHREC leads",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/sai-master-thopterist-52241b9c7a69",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "b3-absent",
+      "label": "/commander/[slug] B3: absent (Ashling); the grey note alone",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/ashling-the-limitless-77a9e7cf76e9",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "b4-degraded",
+      "label": "/commander/[slug] B4: degraded (Dina); the warning note alone",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/dina-essence-brewer-f61c1dc42f09",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "c4-rank-blank",
+      "label": "/commander/[slug] C4: rank blank (Krenko); Decks stands alone",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/krenko-mob-boss-68418069f615",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "c4-both-blank",
+      "label": "/commander/[slug] C4: both figures blank (Kozilek); On EDHREC unmounts",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/kozilek-the-great-distortion-4c1c1537e519",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "two-faced",
+      "label": "/commander/[slug] a two-faced commander (Esika): the shipped flip under the card",
+      "view": "src/components/public/commander-page.tsx",
+      "steps": [
+        {
+          "goto": "/commander/esika-god-of-the-tree-the-prismatic-bridge-92023a5da143",
+          "wait": "[data-testid=\"public-commander-sections\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "card-crosslink",
+      "label": "/card/[slug] the card page's commander cross-link, now live (Zimone)",
+      "view": "src/components/public/card-page.tsx",
+      "steps": [
+        {
+          "goto": "/card/zimone-infinite-analyst-977f9390e01d",
+          "wait": "[data-testid=\"public-commander-link\"]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=\"public-commander-link\"]"
+        }
+      ]
+    }
+  ]
+}

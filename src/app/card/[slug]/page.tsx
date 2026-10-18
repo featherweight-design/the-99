@@ -27,6 +27,5 @@ export default async function PublicCardRoute({ params }: { params: Promise<{ sl
   if (result.kind !== "ok") notFound();
   if (slug !== result.canonicalSlug) permanentRedirect(cardPagePath(result.canonicalSlug));
   await observeAnonymousHit(await headers());
-  // `/commander/[slug]` ships in F3 PR 3; until then the cross-link would lead to a 404.
-  return <PublicCardPage card={result.card} commanderLinks={false} />;
+  return <PublicCardPage card={result.card} commanderLinks />;
 }
