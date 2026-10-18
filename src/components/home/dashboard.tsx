@@ -240,7 +240,8 @@ export function Dashboard(props: DashboardProps) {
             leaves rather than guessing — and an empty column reserving 316px
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
-        {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
+        {/* It renders when Commitments, Friends or Rule 0's table card does (G7): with Commitments absent, Friends (or the
+            card alone, when the friends read failed) tops the column. */}
         {(props.commitments !== null || props.friends || tableCards) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
             {props.commitments !== null && (

@@ -139,7 +139,7 @@ async function main() {
     check("the read names the setter and the reader's own seated deck", forC[0].setterName === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
     await db.execute(sql`update social_profiles set commander_oracle_id = ${CMD} where user_id in (${A}, ${B})`);
     const faced = (await rz.openTablesFor(C))[0]?.seats ?? [];
-    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => f.displayName === "Ava")?.commander !== null && faced.find((f) => f.displayName === "Bo")?.commander === null);
+    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => f.displayName === "Ava")?.commander != null && faced.find((f) => f.displayName === "Bo")?.commander === null);
     check("Home's read lists the table for its setter", (await loadHomeTables(A)).some((t) => t.tableId === T1 && t.setByYou));
 
     // A seat's own deck.

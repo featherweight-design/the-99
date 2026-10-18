@@ -85,5 +85,20 @@ describe("Home's table card (E3, F3)", () => {
     // A setter whose profile is gone names nobody, never the pod as if it were a person.
     render(<HomeTableCard table={{ ...TABLE, setterName: null }} now={NOW} />);
     expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES));
+    cleanup();
+    render(<HomeTableCard table={{ ...TABLE, setterName: null, yourDeck: null }} now={NOW} />);
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyWaiting(null, 6, CLOSES));
+    expect(screen.getByRole("region").querySelector("p")?.textContent).not.toContain("You set");
+    cleanup();
+    render(<HomeTableCard table={{ ...TABLE, setByYou: true, yourDeck: null }} now={NOW} />);
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyWaitingOwn(6, CLOSES));
+  });
+
+  it("bolds the deck even when the setter's name contains it", () => {
+    render(<HomeTableCard table={{ ...TABLE, setterName: "Maxine", yourDeck: "Max" }} now={NOW} />);
+    const p = screen.getByRole("region").querySelector("p")!;
+    expect(p.textContent).toBe(e.homeBody("Maxine", "Max", 6, CLOSES));
+    expect(p.querySelector("b")?.textContent).toBe("Max");
+    expect(p.firstChild?.textContent).toBe("Maxine seated you with ");
   });
 });

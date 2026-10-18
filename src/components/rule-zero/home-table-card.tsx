@@ -18,16 +18,17 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
   const closes = closesWhen(table.closesAt, now, useHydrated() ? undefined : "UTC");
   const n = table.seats.length;
   const deck = table.yourDeck;
-  // A setter with no profile left names nobody: the sentence reads as your own.
-  const setter = table.setByYou ? null : table.setterName;
+  // A setter with no profile left names nobody, and never reads as you.
+  const setter = table.setterName;
   const body = deck === null
-    ? copy.homeBodyWaiting(setter, n, closes)
-    : setter === null
+    ? table.setByYou ? copy.homeBodyWaitingOwn(n, closes) : copy.homeBodyWaiting(setter, n, closes)
+    : table.setByYou || setter === null
       ? copy.homeBodyOwn(deck, n, closes)
       : copy.homeBody(setter, deck, n, closes);
   const art = table.seats.flatMap((s) => (s.commander?.artCropUri ? [s.commander.artCropUri] : []));
-  // The deck's name is bold in the sentence (E3): split around its one occurrence.
-  const at = deck === null ? -1 : body.indexOf(deck);
+  // The deck's name is bold in the sentence (E3). Every sentence names the deck after the setter, so its LAST
+  // occurrence is the deck even when the setter's name contains it.
+  const at = deck === null ? -1 : body.lastIndexOf(deck);
   return (
     <section
       aria-label={copy.homeKicker}

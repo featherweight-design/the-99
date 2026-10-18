@@ -21,9 +21,10 @@ export const ruleZeroCopy = {
     homeBody: (setter: string, deck: string, n: number, closes: string) =>
       `${setter} seated you with ${deck}. ${seated(n)}, open until ${closes}.`,
     homeBodyOwn: (deck: string, n: number, closes: string) => `You’re seated with ${deck}. ${seated(n)}, open until ${closes}.`,
-    // Not drawn: your seat waits for a deck. `setter` is null when you set it.
+    // Not drawn: your seat waits for a deck. `setter` is null when their profile is gone, so the sentence names nobody.
     homeBodyWaiting: (setter: string | null, n: number, closes: string) =>
-      `${setter === null ? "You set the table. Pick your deck there." : `${setter} seated you. Pick your deck at the table.`} ${seated(n)}, open until ${closes}.`,
+      `${setter === null ? "You’re seated." : `${setter} seated you.`} Pick your deck at the table. ${seated(n)}, open until ${closes}.`,
+    homeBodyWaitingOwn: (n: number, closes: string) => `You set the table. Pick your deck there. ${seated(n)}, open until ${closes}.`,
     homeOpen: "Open the table",
   },
 
