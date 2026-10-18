@@ -238,7 +238,8 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
   // in any way this function can express.
-  const attached = await perfRead("browse.combos", async () => attachComboPartners(userId, await perfRead("browse.bracketFacts", () => attachBracketFacts(aggregated))));
+  const withFacts = await perfRead("browse.bracketFacts", () => attachBracketFacts(aggregated));
+  const attached = await perfRead("browse.combos", () => attachComboPartners(userId, withFacts));
   const read = await perfRead("browse.pricesWait", () => prices);
   const cards = toListCards(attached);
   attachPrices(attached, cards, read);
