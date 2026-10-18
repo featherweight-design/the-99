@@ -7,7 +7,7 @@
 // `credits_granted` event carrying the probe's note. A reload draws the lot in Credits granted and the note in Gifts.
 //
 // It WRITES that lot and event, so it refuses any branch but a scratch one (`assertScratchBranch`) and deletes both in a
-// `finally` (the lot by its id, the event by the probe's marker note).
+// `finally`: the lot by the external id `gift:<actionId>` the probe hands the form, the event by the probe's note.
 //
 //   PROBE_BASE=http://localhost:3392 PROBE_DATABASE_URL=… pnpm probe:admin-payments
 // The server must read the same database (its `.env` `DATABASE_URL`). Point it at `next start`, never `next dev`.
@@ -40,6 +40,9 @@ const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as
 assertScratchBranch(branch, "probe:admin-payments");
 
 const MARK = `probe-admin-payments-${Date.now()}`;
+// The grant's `actionId`, handed to the form (its next `crypto.randomUUID()`), so the lot is known by its external id
+// before the press, and cleaned up by it whether or not the page ever says so.
+const ACTION = crypto.randomUUID();
 const SHOTS = process.env.PROBE_SHOTS;
 let failures = 0;
 const check = (ok, label, saw) => {
@@ -81,7 +84,6 @@ async function signIn(page) {
 }
 
 let userId = null;
-let lotId = null;
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -111,15 +113,24 @@ try {
       await form.locator(`[role='radio'][data-account='${userId}']`).click();
       await form.getByRole("textbox", { name: /Credits/ }).fill("3");
       await form.getByRole("textbox", { name: /Why/ }).fill(MARK);
+      await page.evaluate((id) => {
+        const own = crypto.randomUUID.bind(crypto);
+        let next = id;
+        crypto.randomUUID = () => {
+          const v = next ?? own();
+          next = null;
+          return v;
+        };
+      }, ACTION);
       const bar = onPage(page, "[data-testid='gift-pending']");
       const sentence = await bar.textContent();
       check(/gives .+ 3 credits/.test(sentence ?? ""), "the pending bar names the account and the count", sentence?.slice(0, 90));
       await bar.getByRole("button", { name: "Grant" }).click();
       await page.getByRole("status").filter({ hasText: "Gave" }).waitFor({ timeout: 20_000 });
       check(true, "Grant answers Gave …");
-      const lots = await sql`select id, units from credit_grants where user_id = ${userId} and source = 'gift' and expires_at is null order by created_at desc`;
-      lotId = lots[0]?.id ?? null;
-      check(lots.length === before[0].n + 1 && lots[0].units === 3, "exactly one new gift lot of 3, never expiring", `${before[0].n} → ${lots.length}`);
+      const lots = await sql`select units, expires_at from credit_grants where user_id = ${userId} and source = 'gift'`;
+      const mine = await sql`select units, expires_at from credit_grants where external_id = ${`gift:${ACTION}`}`;
+      check(lots.length === before[0].n + 1 && mine.length === 1 && mine[0].units === 3 && mine[0].expires_at === null, "exactly one new gift lot of 3, never expiring, keyed on the form's action id", `${before[0].n} → ${lots.length}`);
       const events = await sql`select count(*)::int as n from admin_events where kind = 'credits_granted' and user_id = ${userId} and note = ${MARK} and new_value = '3'`;
       check(events[0].n === 1, "exactly one credits_granted event with the note", String(events[0].n));
       await page.reload({ waitUntil: "load" });
@@ -133,7 +144,7 @@ try {
   }
 } finally {
   await browser.close();
-  if (lotId) await sql`delete from credit_grants where id = ${lotId} and source = 'gift'`;
+  await sql`delete from credit_grants where external_id = ${`gift:${ACTION}`} and source = 'gift'`;
   await sql`delete from admin_events where kind = 'credits_granted' and note = ${MARK}`;
 }
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);

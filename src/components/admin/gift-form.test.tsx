@@ -64,6 +64,36 @@ describe("GiftForm", () => {
     expect(pending()).toBeNull();
   });
 
+  it("keeps the id when the account is picked again before a retry, and takes a new one for a different grant", async () => {
+    grant.mockRejectedValueOnce(new Error("lost")).mockRejectedValueOnce(new Error("lost")).mockRejectedValueOnce(new Error("lost"));
+    render(<GiftForm accounts={ACCOUNTS} clerkDown={false} />);
+    fill();
+    const press = () => act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Grant" })));
+    await press();
+    fireEvent.click(screen.getByRole("radio", { name: /Mara K\./ }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Credits/ }), { target: { value: "10" } });
+    await press();
+    fireEvent.change(screen.getByRole("textbox", { name: /Credits/ }), { target: { value: "11" } });
+    await press();
+    const ids = grant.mock.calls.map(([i]) => i.actionId);
+    expect(ids[1]).toBe(ids[0]);
+    expect(ids[2]).not.toBe(ids[0]);
+  });
+
+  it("moves through the accounts with the arrow keys, one tab stop for the group, and picks with Enter or a press", () => {
+    render(<GiftForm accounts={[...ACCOUNTS, { id: "u_marco", name: "Marco", email: null }]} clerkDown={false} />);
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "mar" } });
+    const [mara, marco] = screen.getAllByRole("radio");
+    expect([mara.tabIndex, marco.tabIndex]).toEqual([0, -1]);
+    mara.focus();
+    fireEvent.keyDown(mara, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(marco);
+    expect([mara.tabIndex, marco.tabIndex]).toEqual([-1, 0]);
+    expect(marco).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(marco);
+    expect(marco).toHaveAttribute("aria-checked", "true");
+  });
+
   it("presses once while a grant is in flight", async () => {
     let answer: (r: GiftResult) => void = () => {};
     grant.mockReturnValueOnce(new Promise((r) => { answer = r; }));

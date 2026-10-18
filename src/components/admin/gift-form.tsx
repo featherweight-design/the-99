@@ -1,18 +1,21 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { grantCredits } from "../../app/admin/payments/actions";
 import { GIFT_NOTE_MAX, GIFT_UNITS_MAX, GIFT_UNITS_MIN, type GiftRefusal, type GiftResult } from "../../lib/admin/gift-rule";
 import { adminCopy } from "../../lib/copy/admin";
+import { onSegmentKeys } from "../ui/segment-keys";
 import { SearchField } from "../ui/text-field";
 import { SectionHead } from "./costs-detail";
 import { CARD, ERROR, HELP, NumberField, PendingBar } from "./invites-section";
 
 // Grant credits (admin plan A2b, A-R4): built from the admin handoff's own controls, no new layout. The account is
 // picked from the group editor's member rows (one at a time, so a radio), the count is the invites top-up's number
-// field, and the press is the group editor's pending bar with Undo. A press sends one `actionId`, kept until the grant
-// lands, so a double press or a retry after a lost reply writes one lot (`grant_gift`'s `gift:<actionId>`).
+// field, and the press is the group editor's pending bar with Undo. A press sends one `actionId` per grant: the same id
+// for as long as the account, the count and the why are the same, so a double press or a retry after a lost reply
+// writes one lot (`grantGift`'s `gift:<actionId>`) whatever was clicked or retyped in between. A different grant takes
+// a new id.
 
 const f = adminCopy.payments.form;
 export type PickAccount = { id: string; name: string; email: string | null };
@@ -31,8 +34,11 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
   const [inFlight, setInFlight] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  // One id per grant: made on the first press, kept across a retry, dropped once the grant lands or the form clears.
-  const actionId = useRef<string | null>(null);
+  // One id per grant, keyed on what the grant is: kept across a retry, dropped once the grant lands or the form clears.
+  const action = useRef<{ key: string; id: string } | null>(null);
+  // The radio group's roving tab stop (as `override-controls.tsx`): arrows move focus, Enter or Space picks.
+  const [focused, setFocused] = useState<string | null>(null);
+  const base = useId();
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -45,6 +51,9 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
   const n = unitsOf(units);
   const unitsBad = units.trim() !== "" && !(n !== null && n >= GIFT_UNITS_MIN && n <= GIFT_UNITS_MAX);
   const noteBad = note.trim().length > GIFT_NOTE_MAX;
+  const idOf = (id: string) => `${base}-account-${id}`;
+  // The tab stop: the option the keys last focused, else the picked one, else the first.
+  const stop = [focused, accountId].find((id) => id !== null && rows.some((r) => r.id === id)) ?? rows[0]?.id ?? null;
   const ready = picked !== null && n !== null && !unitsBad && note.trim() !== "" && !noteBad;
 
   function clear() {
@@ -53,18 +62,20 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
     setNote("");
     setQuery("");
     setFailure(null);
-    actionId.current = null;
+    action.current = null;
   }
 
   async function press() {
     if (!ready || !picked || n === null) return;
-    actionId.current ??= crypto.randomUUID();
+    const key = JSON.stringify([picked.id, n, note.trim()]);
+    if (action.current?.key !== key) action.current = { key, id: crypto.randomUUID() };
+    const actionId = action.current.id;
     setFailure(null);
     setDone(null);
     setInFlight(true);
     let result: GiftResult;
     try {
-      result = await grantCredits({ accountId: picked.id, units: n, note: note.trim(), actionId: actionId.current });
+      result = await grantCredits({ accountId: picked.id, units: n, note: note.trim(), actionId });
     } catch {
       // A rejected action may have committed before its reply was lost: the id is kept, so pressing again is safe.
       setInFlight(false);
@@ -101,21 +112,28 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
           <span className={HELP}>{clerkDown ? f.clerkDown : f.accountHelp}</span>
           {query.trim() && matches.length === 0 && <span className={HELP}>{f.noMatch}</span>}
           {rows.length > 0 && (
-            <div role="radiogroup" aria-label={f.account} className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
+            <div
+              role="radiogroup"
+              aria-label={f.account}
+              onKeyDown={(e) => onSegmentKeys(e, rows.map((r) => r.id), idOf, () => {}, () => inFlight)}
+              className="overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]"
+            >
               {rows.map((a) => {
                 const on = a.id === accountId;
                 return (
                   <button
                     key={a.id}
+                    id={idOf(a.id)}
                     type="button"
                     role="radio"
                     aria-checked={on}
+                    tabIndex={a.id === stop ? 0 : -1}
+                    onFocus={() => setFocused(a.id)}
                     data-account={a.id}
                     disabled={inFlight}
                     onClick={() => {
                       setAccountId(a.id);
                       setDone(null);
-                      actionId.current = null;
                     }}
                     className={`flex w-full min-h-[52px] items-center gap-[12px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] py-[8px] text-left first:border-t-0 md:min-h-[44px] md:px-[16px] ${
                       on ? "bg-[color:var(--surface-raised)]" : "bg-transparent"
@@ -141,7 +159,6 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
           onChange={(v) => {
             setUnits(v);
             setDone(null);
-            actionId.current = null;
           }}
           invalid={unitsBad}
           disabled={inFlight}
@@ -155,7 +172,6 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
             onChange={(e) => {
               setNote(e.target.value);
               setDone(null);
-              actionId.current = null;
             }}
             autoComplete="off"
             maxLength={GIFT_NOTE_MAX}
