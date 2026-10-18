@@ -407,7 +407,8 @@ export const collectionEditCopy = {
   add: {
     title: "Add cards",
     closeAria: "Close",
-    searchPlaceholder: "Search any card by name",
+    // Short enough to show whole beside the Scan press at 360px; the field's name keeps the full sentence.
+    searchPlaceholder: "Search any card",
     searchAria: "Search any card by name",
     resultsAria: "Cards matching your search",
     emptyBody:
