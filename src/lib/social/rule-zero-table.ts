@@ -14,15 +14,15 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { cards, deckGames, deckProfiles, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
 import { declarationAsk, type DeclarationAsk } from "../bracket/declaration-ask";
 import { findings, type FindingId } from "../bracket/findings";
 import { slotDeck } from "../bracket/slot";
 import type { Bracket, RuleId } from "../bracket/types";
-import { verdictSubLine, type VerdictSubLine } from "../bracket/verdict-head";
+import { isReachablePermits, verdictSubLine, type VerdictSubLine } from "../bracket/verdict-head";
 import { computeAndStoreProfile, deckLegality, readStoredReading, requestProfileDeps, seatReadingIn, type StoredProfileDeps } from "../profile/stored";
 import {
-  driversFor, inRead, seatState, seatValue, tableRead, tutorsReaching,
+  distanceFrom, driversFor, inRead, MAX_SUGGESTIONS, seatState, seatValue, suggestionsFor, tableRead, tutorsReaching,
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
@@ -88,7 +88,15 @@ export type TableView = {
   seenAt: Date | null;
   read: { kind: "notEnough"; read: number } | { kind: "read"; middle: number; band: boolean };
   seats: TableSeat[];
+  /**
+   * `Closer to the table` (G6, plan PR 7): the viewer's own decks that read nearer the middle than their flagged seat,
+   * at most three, nearest first. Empty unless the viewer's own seat is flagged. Each carries the viewer's own deck id
+   * only (decision 5).
+   */
+  offer: OfferDeck[];
 };
+
+export type OfferDeck = { deckId: string; name: string; artCropUri: string | null; permits: Bracket[]; answered: Bracket | null };
 
 const viewerSeat = alias(ruleZeroSeats, "viewer_seat");
 const viewerIn = alias(podMembers, "viewer_in");
@@ -166,6 +174,71 @@ const asBracket = (n: number | null): Bracket | null => (n !== null && n >= 1 &&
  * The table as the viewer sees it, or null: not found, expired, not seated, or no longer in the pod. The grant is
  * one statement; the seats and every reading follow in the same repeatable-read snapshot.
  */
+/** One deck graded as a seat is: its legality and reading as `seatState` sees them, and its verdict when in the read. */
+async function gradeDeckIn(tx: Tx, deckId: string, owner: string) {
+  const stored = await seatReadingIn(tx, deckId, owner);
+  if (!stored) return null;
+  const { head, reading } = stored;
+  const legality = deckLegality(head);
+  const declared = asBracket(head.declaredBracket);
+  const state = seatState({
+    built: legality.built,
+    size: legality.size,
+    // An older reading over the same list is the rebuild `readOnTheSpot` makes, so it reads as unread here.
+    reading: reading === "none" || reading === "rebuildable" ? "none" : reading === "unreadable" ? "unreadable" : { fresh: reading.fresh },
+  });
+  const verdict = typeof reading === "object" && inRead(state) ? slotDeck(reading.profile, declared) : null;
+  return { legality, declared, state, verdict, profile: typeof reading === "object" ? reading.profile : null };
+}
+
+/**
+ * The viewer's own decks nearer the middle than their flagged seat (G6): every own deck graded as a seat is (legal
+ * now, with a reading), handed to `suggestionsFor`. Read only while the viewer's seat is flagged, inside the table's
+ * snapshot, so the offer and the read agree.
+ */
+/** The viewer's own decks but the seated one, never another player's (decision 5). Apart so a test can render it. */
+export function ownDecksQuery(viewerId: string, seatedDeckId: string) {
+  return sql`
+    select d.id as "deckId", d.name, c.art_crop_uri as "artCropUri", d.declared_bracket as "declared", p.permits,
+      (select max(g.played_at) from ${deckGames} g where g.deck_id = d.id) as "lastPlayed"
+    from ${decks} d
+    join ${cards} c on c.oracle_id = d.commander_oracle_id
+    left join ${deckProfiles} p on p.deck_id = d.id and p.user_id = d.user_id
+    where d.user_id = ${viewerId} and d.id <> ${seatedDeckId}`;
+}
+
+async function offerIn(tx: Tx, viewerId: string, seatedDeckId: string, seatedDistance: number, middle: number): Promise<OfferDeck[]> {
+  // ONE read of every own deck with its stored permits: the candidates are the decks those permits place strictly
+  // nearer, in the offer's order. Stored permits hold over an edit, so each candidate is then graded as a seat is
+  // (legal now, a fresh or stale reading) before it is offered, and grading stops at the third: a poll pays four
+  // reads per candidate it needs, not per deck the player owns.
+  const { rows } = await tx.execute<{ deckId: string; name: string; artCropUri: string | null; declared: number | null; permits: number[] | null; lastPlayed: string | Date | null }>(
+    ownDecksQuery(viewerId, seatedDeckId),
+  );
+  const candidates = suggestionsFor(
+    seatedDeckId,
+    seatedDistance,
+    rows.map((r) => ({
+      deckId: r.deckId,
+      value: r.permits && isReachablePermits(r.permits) ? seatValue(r.permits, asBracket(r.declared)) : null,
+      lastPlayedAt: r.lastPlayed === null ? null : new Date(r.lastPlayed),
+    })),
+    middle,
+    rows.length,
+  );
+  const byId = new Map(rows.map((r) => [r.deckId, r]));
+  const offer: OfferDeck[] = [];
+  for (const c of candidates) {
+    if (offer.length === MAX_SUGGESTIONS) break;
+    const g = await gradeDeckIn(tx, c.deckId, viewerId);
+    if (!g?.verdict || distanceFrom(seatValue(g.verdict.permits, g.declared), middle) >= seatedDistance) continue;
+    const r = byId.get(c.deckId)!;
+    const ask = declarationAsk(g.verdict.permits, g.declared);
+    offer.push({ deckId: c.deckId, name: r.name, artCropUri: r.artCropUri, permits: [...g.verdict.permits], answered: ask.kind === "answered" ? ask.declared : null });
+  }
+  return offer;
+}
+
 export async function loadTable(viewerId: string, tableId: unknown): Promise<TableView | null> {
   if (!isUuid(tableId)) return null;
   return db.transaction(async (tx) => {
@@ -186,21 +259,12 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
         read: null,
         drivers: null,
       };
-      const stored = r.deckId === null ? null : await seatReadingIn(tx, r.deckId, r.userId);
-      if (r.deckId === null || r.deckName === null || r.commanderName === null || !stored) {
+      const graded = r.deckId === null ? null : await gradeDeckIn(tx, r.deckId, r.userId);
+      if (r.deckId === null || r.deckName === null || r.commanderName === null || !graded) {
         built.push({ ...base, deck: null, state: seatState(null), value: null, verdict: null });
         continue;
       }
-      const { head, reading } = stored;
-      const legality = deckLegality(head);
-      const declared = asBracket(head.declaredBracket);
-      const state = seatState({
-        built: legality.built,
-        size: legality.size,
-        // An older reading over the same list is the rebuild `readOnTheSpot` makes, so it reads as unread here.
-        reading: reading === "none" || reading === "rebuildable" ? "none" : reading === "unreadable" ? "unreadable" : { fresh: reading.fresh },
-      });
-      const verdict = typeof reading === "object" && inRead(state) ? slotDeck(reading.profile, declared) : null;
+      const { legality, declared, state, verdict, profile } = graded;
       built.push({
         ...base,
         deck: {
@@ -209,7 +273,7 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
           commander: { name: r.commanderName, artCropUri: r.commanderArt },
           partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt } : null,
           cards: legality.built + (100 - legality.size),
-          reading: verdict && typeof reading === "object" ? readingOf(verdict, reading.profile, declared) : null,
+          reading: verdict && profile ? readingOf(verdict, profile, declared) : null,
         },
         state,
         value: verdict ? seatValue(verdict.permits, declared) : null,
@@ -228,17 +292,22 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
       };
     });
     const revision = new Date(Math.max(0, ...seats.map((s) => s.changedAt.getTime())));
+    const mine = seats.find((x) => x.you);
+    const offer = read.kind === "read" && mine?.read?.flag && mine.deck?.deckId
+      ? await offerIn(tx, viewerId, mine.deck.deckId, mine.read.distance, read.middle)
+      : [];
     return {
       tableId,
       podName: table.podName,
       closesAt: table.closesAt,
       setByYou: table.setBy === viewerId,
       setBy: table.setByName,
-      viewerDeckId: seats.find((x) => x.you)?.deck?.deckId ?? null,
+      viewerDeckId: mine?.deck?.deckId ?? null,
       revision,
       seenAt: seen ? new Date(seen.seen_at) : null,
       read: read.kind === "read" ? { kind: "read", middle: read.middle, band: read.band } : read,
       seats,
+      offer,
     };
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });

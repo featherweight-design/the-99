@@ -10,7 +10,16 @@ import { ToastFrame, useToastClock } from "../collection/edit-toast";
 
 export type SocialToastState = { id: number; text: string; retry?: { label: string; run: () => void } };
 
-export function SocialToast({ toast, onDone }: { toast: SocialToastState | null; onDone: () => void }) {
+export function SocialToast({
+  toast,
+  onDone,
+  role = "alert",
+}: {
+  toast: SocialToastState | null;
+  onDone: () => void;
+  /** `status` for a receipt with an action (Rule 0's `Swapped to …` with Undo); a refusal stays `alert`. */
+  role?: "alert" | "status";
+}) {
   const ref = useRef<HTMLDivElement>(null);
   // Hover and focus hold the window separately, and it runs again only once both have let go.
   const [hover, setHover] = useState(false);
@@ -37,7 +46,7 @@ export function SocialToast({ toast, onDone }: { toast: SocialToastState | null;
     <ToastFrame
       key={toast.id}
       frameRef={ref}
-      role="alert"
+      role={role}
       onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
       title={toast.text}
       actions={toast.retry ? (

@@ -21,6 +21,7 @@ export function BracketChip({
   permits,
   answered = null,
   face = true,
+  compact = false,
 }: {
   permits: readonly Bracket[];
   /** The declaration, passed only when `declarationAsk` read it as answered. See `lib/bracket/chip-answer`. */
@@ -31,6 +32,11 @@ export function BracketChip({
    * mark is 28px wide and a range 55px, hairline included. Every other mount keeps the default.
    */
   face?: boolean;
+  /**
+   * True keeps the phone's 22px chip and 10px name at every width: Rule 0's deck rows (boards W1 and W3 draw the
+   * 22px chip beside a 14px name). Every other mount grows to 24/11 on desktop.
+   */
+  compact?: boolean;
 }) {
   const head = verdictHead(permits, answered);
   const low = head.chip;
@@ -40,7 +46,7 @@ export function BracketChip({
     <span
       data-testid="bracket-chip"
       data-bracket={head.split ? permits.join("-") : low}
-      className={`inline-flex h-[22px] flex-none items-center gap-[5px] whitespace-nowrap rounded-[6px] border pl-[2px] ${face ? "pr-[8px]" : "pr-[2px]"} md:h-[24px]`}
+      className={`inline-flex h-[22px] flex-none items-center gap-[5px] whitespace-nowrap rounded-[6px] border pl-[2px] ${face ? "pr-[8px]" : "pr-[2px]"} ${compact ? "" : "md:h-[24px]"}`}
       style={{
         background: `color-mix(in srgb, ${ink} 12%, var(--bg))`,
         borderColor: `color-mix(in oklab, ${ink} 55%, transparent)`,
@@ -52,7 +58,7 @@ export function BracketChip({
         <BracketMark key={b} bracket={b} px={CHIP_MARK_PX} dim={i > 0} />
       ))}
       {face && (
-        <span className="font-mono text-[10px] md:text-[11px]" style={{ color: ink }}>
+        <span className={`font-mono text-[10px] ${compact ? "" : "md:text-[11px]"}`} style={{ color: ink }}>
           {head.face}
         </span>
       )}

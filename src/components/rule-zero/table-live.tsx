@@ -22,13 +22,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
-import { markTableSeen } from "../../app/friends/table/actions";
+import { markTableSeen, swapSeatDeckAction } from "../../app/friends/table/actions";
+import { bracketPhrase } from "../../lib/copy/deck-analysis";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { middleBrackets } from "../../lib/rule-zero/table-view";
+import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { SwapContext } from "./swap";
 import { reviveTableView } from "../../lib/rule-zero/live";
 import type { TableView } from "../../lib/rule-zero/table-view";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
 
 export const POLL_MS = 20_000;
+
+const swapCopy = ruleZeroCopy.swap;
 
 type Closed = Extract<TablePoll, { kind: "closed" }>["closed"];
 
@@ -55,6 +62,9 @@ export function TableLive({
 }) {
   const router = useRouter();
   const [view, setView] = useState(initial);
+  // Every answer, a check's or a swap's, is adopted only if it is no older than what the page shows: the two race,
+  // and either can land second with the earlier snapshot.
+  const adopt = (next: TableView) => setView((cur) => (next.revision.getTime() < cur.revision.getTime() ? cur : next));
   // A fresh server draw (the router's refresh after `Seats` saves) wins over what the page shows, adopted during
   // render so the old seats never paint once more. The visit's `seenAt` stays its first check's.
   const [drawn, setDrawn] = useState(initial);
@@ -78,6 +88,49 @@ export function TableLive({
   useEffect(() => {
     routerRef.current = router;
   });
+  // The swap (PR 7). `swaps` counts the swaps answered this visit: a check that started before one lands is dropped,
+  // so a poll in flight never draws the seat as it was before the swap.
+  const swaps = useRef(0);
+  const [swapping, setSwapping] = useState(false);
+  // The deck this visit's own swap seated; an Undo clears it.
+  const [swappedTo, setSwappedTo] = useState<string | null>(null);
+  const [toast, setToast] = useState<SocialToastState | null>(null);
+  const toastId = useRef(0);
+  // One write at a time, for every caller: a toast's Undo holds the `seat` of an older render, so the guard is a ref.
+  const writing = useRef(false);
+  async function seat(deckId: string | null, undoTo: { deckId: string | null } | null) {
+    if (writing.current) return;
+    writing.current = true;
+    setSwapping(true);
+    const before = view.viewerDeckId;
+    try {
+      const out = await swapSeatDeckAction(tableId, deckId);
+      if (!out.ok) {
+        setToast({ id: ++toastId.current, text: swapCopy.failed });
+        return;
+      }
+      swaps.current += 1;
+      adopt(out.view);
+      // A swap answered before the visit's first check stands in for it: the check it drops would have set the
+      // visit's baseline, and `recordSeen` waits on `arrived`.
+      if (!firstAnswered.current) {
+        firstAnswered.current = true;
+        setLookedAt(out.view.seenAt);
+        setArrived(true);
+      }
+      setSwappedTo(undoTo === null ? deckId : null);
+      const name = out.view.seats.find((x) => x.you)?.deck?.name ?? null;
+      // An Undo answers with no toast of its own: it put back what the reader had.
+      if (undoTo === null && name !== null) {
+        setToast({ id: ++toastId.current, text: swapCopy.toast(name), retry: { label: swapCopy.undo, run: () => void seat(before, { deckId: before }) } });
+      } else setToast(null);
+    } catch {
+      setToast({ id: ++toastId.current, text: swapCopy.failed });
+    } finally {
+      writing.current = false;
+      setSwapping(false);
+    }
+  }
 
   useEffect(() => {
     let stopped = false;
@@ -85,6 +138,7 @@ export function TableLive({
     const check = async () => {
       if (stopped || inFlight || document.visibilityState !== "visible") return;
       inFlight = true;
+      const swapsAtStart = swaps.current;
       try {
         const res = await fetch(`/api/rule-zero/tables/${tableId}`, { cache: "no-store" });
         if (stopped) return;
@@ -94,11 +148,11 @@ export function TableLive({
         }
         if (!res.ok) return;
         const poll = (await res.json()) as TablePoll;
-        if (stopped) return;
+        if (stopped || swaps.current !== swapsAtStart) return;
         if (poll.kind === "closed") setClosed(poll.closed);
         else {
           const next = reviveTableView(poll.view);
-          setView(next);
+          adopt(next);
           if (!firstAnswered.current) {
             firstAnswered.current = true;
             setLookedAt(next.seenAt);
@@ -138,5 +192,11 @@ export function TableLive({
   });
 
   if (closed) return <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />;
-  return <TableBody view={{ ...view, seenAt: lookedAt }} gamesEnabled={gamesEnabled} now={now} updated={updated} />;
+  const middle = view.read.kind === "read" ? bracketPhrase(middleBrackets(view.read.middle)) : null;
+  return (
+    <SwapContext.Provider value={{ offer: view.offer, middle, busy: swapping, swap: (deckId) => void seat(deckId, null) }}>
+      <TableBody view={{ ...view, seenAt: lookedAt }} gamesEnabled={gamesEnabled} now={now} updated={updated} swappedTo={swappedTo} />
+      <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.retry ? "status" : "alert"} />
+    </SwapContext.Provider>
+  );
 }

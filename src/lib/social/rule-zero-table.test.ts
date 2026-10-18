@@ -2,7 +2,8 @@
 // their own pod membership, in one statement. Only the emitted SQL shows that; `probe:rule-zero` proves the answers.
 import { describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
-import { ON_THE_SPOT_MAX, loadTable, readOnTheSpot, seatTargetQuery, tableGrantQuery } from "./rule-zero-table";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { ON_THE_SPOT_MAX, loadTable, ownDecksQuery, readOnTheSpot, seatTargetQuery, tableGrantQuery } from "./rule-zero-table";
 
 const VIEWER = "user_viewer";
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -81,5 +82,14 @@ describe("readOnTheSpot holds at most ON_THE_SPOT_MAX of the pool's connections"
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("Closer to the table's decks (PR 7, decision 5)", () => {
+  it("are the viewer's own, the seated one left out", () => {
+    const q = new PgDialect().sqlToQuery(ownDecksQuery("user_viewer", "deck-seated"));
+    expect(q.sql).toContain("where d.user_id = $1 and d.id <> $2");
+    expect(q.sql).toContain(`left join "deck_profiles" p on p.deck_id = d.id and p.user_id = d.user_id`);
+    expect(q.params).toEqual(expect.arrayContaining(["user_viewer", "deck-seated"]));
   });
 });

@@ -16,6 +16,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { socialCopy } from "../../lib/copy/social";
 import { changedLine } from "../../lib/rule-zero/live";
+import { SeatOffer } from "./swap";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
 import { faceInitials } from "../../lib/social/initials";
@@ -164,6 +165,8 @@ export function TableSeat({ draw, now }: { draw: SeatDraw; /** The clock the cha
       </div>
 
       <SeatMore draw={draw} why={why} />
+      {/* `Closer to the table` (PR 7): only on the viewer's own flagged seat, under its reason. */}
+      {draw.seat.you && draw.read?.flag ? <SeatOffer /> : null}
       {draw.changed ? (
         // The phone's seat line (S5: `.ln`) and the desktop row's control strip under the text column (W5: `.ctl`).
         <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px] xl:-mt-[8px] xl:gap-[10px] xl:pb-[8px] xl:pl-[162px] xl:pr-[16px]">

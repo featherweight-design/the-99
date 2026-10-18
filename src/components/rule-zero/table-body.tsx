@@ -25,6 +25,7 @@ export function TableBody({
   gamesEnabled,
   now,
   updated,
+  swappedTo = null,
 }: {
   view: TableView;
   /** `socialGamesEnabled(env)` for the reader. */
@@ -33,8 +34,10 @@ export function TableBody({
   now: Date;
   /** `updated just now`'s when, once the poll lands (PR 4). */
   updated?: string;
+  /** The deck this visit's own swap seated (PR 7): the seat says `changed just now` and the read says so. */
+  swappedTo?: string | null;
 }) {
-  const draw = drawTable(view);
+  const draw = drawTable(view, swappedTo);
   // The server's draw is in UTC, the reader's own zone after hydration, so the two first renders agree (`when.ts`).
   const closes = closesWhen(view.closesAt, now, useHydrated() ? undefined : "UTC");
   const log = gamesEnabled ? logGameHref(view) : null;

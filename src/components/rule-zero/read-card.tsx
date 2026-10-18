@@ -45,6 +45,12 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
       <h2 className="m-0 font-display text-[19px] font-bold leading-[1.3] [text-wrap:pretty]">
         <Inked text={title} ink={ink} />
       </h2>
+      {draw.since.length > 0 && draw.youSwapped !== null ? (
+        // The viewer's own swap is said even while others' changes take the sentence's place.
+        <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
+          <Emphasized text={copy.read.youSwapped(em(draw.youSwapped))} />
+        </p>
+      ) : null}
       {draw.since.length > 0 ? (
         // S5, W5: a change since the viewer last looked takes the sentence's place, as the boards draw it.
         <p data-testid="since" className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
@@ -183,7 +189,9 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       // T7: a drifted declaration replaces the closing line; T3: a low seat closes on its own line.
       const body = line?.kind === "drifted"
         ? `${r.sitsAt(middle, deck, reads)} ${r.driftNote(who, BRACKET_NAMES[line.declared])}`
-        : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
+        : h.seat.seat.you && draw.closer > 0
+          ? `${r.sitsAt(middle, deck, reads)} ${r.closer(draw.closer)}`
+          : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
       out = h.dir === "high"
         ? { title: r.high(who, deck), ink: { phrase: copy.seat.above, kind: "high" }, body }
         : { title: r.low(who, deck), ink: { phrase: copy.seat.below, kind: "low" }, body };
@@ -201,7 +209,8 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       const c = compared(draw);
       const name = h.seat.seat.displayName;
       const body = c.reads ? r.readingBody(c.names, c.both, c.reads, name) : r.readingMixed(c.names, name);
-      return { title: r.reading(name), ink: null, body };
+      out = { title: r.reading(name), ink: null, body };
+      break;
     }
     case "leftOut": {
       const c = compared(draw);
@@ -210,12 +219,17 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       );
       const comparing = c.reads ? r.comparing(c.names, c.both, c.reads) : r.comparingMixed(c.names);
       const body = [comparing, leftOutCards(sized)].filter(Boolean).join(" ");
-      return { title: r.leftOut(h.n), ink: null, body };
+      out = { title: r.leftOut(h.n), ink: null, body };
+      break;
     }
   }
+  // S2: the viewer's own swap this visit replaces the sentence, until the visit ends. A read that says a seat is still
+  // being read, or which seats it leaves out, keeps that after it: the swap does not make it untrue.
+  const keeps = h.kind === "reading" || h.kind === "leftOut";
+  if (draw.youSwapped !== null) out.body = [r.youSwapped(em(draw.youSwapped)), keeps ? out.body : null].filter(Boolean).join(" ");
   // The headline says it leaves seats out (decision 3): the sentence that follows says so whenever the headline
   // itself does not.
-  if (draw.leftOut > 0) out.body = [out.body, r.leftOut(draw.leftOut)].filter(Boolean).join(" ");
+  if (draw.leftOut > 0 && !keeps) out.body = [out.body, r.leftOut(draw.leftOut)].filter(Boolean).join(" ");
   return out;
 }
 

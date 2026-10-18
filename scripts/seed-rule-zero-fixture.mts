@@ -58,6 +58,12 @@ const TABLE_IDS = {
   W5: "7a0e0000-0000-4000-8000-000000000015",
   /** PR 5: a table the viewer set, You and Colin seated, for `Seats` (U1 to U4, V1 to V3). */
   U: "7a0e0000-0000-4000-8000-000000000016",
+  /** PR 7: your deck reads above two Core decks; your Core decks are offered, these two clones among them (S1, S2). */
+  S1: "7a0e0000-0000-4000-8000-000000000017",
+  /** The same for desktop (W1, W2): a swap mutates its table, so each width has its own. */
+  W1: "7a0e0000-0000-4000-8000-000000000018",
+  /** Your deck reads below two Upgraded decks; your Upgraded decks are offered, the account's own among them (S6). */
+  S6: "7a0e0000-0000-4000-8000-000000000019",
 } as const;
 const PREFIX = "rz-fixture-";
 const VIEWER_DECK_NAME = "Rule 0 fixture: Blood Rites";
@@ -66,7 +72,7 @@ const VIEWER_DECK_NAME = "Rule 0 fixture: Blood Rites";
 // to the viewer), the viewer's fixture deck, then the fixture players with everything they hold.
 await db.execute(sql`delete from rule_zero_tables where id in (${sql.join(Object.values(TABLE_IDS).map((id) => sql`${id}::uuid`), sql`, `)})`);
 await db.execute(sql`delete from pods where id in (select pod_id from pod_members where user_id like ${`${PREFIX}%`})`);
-await db.execute(sql`delete from decks where user_id = ${viewer} and name = ${VIEWER_DECK_NAME}`);
+await db.execute(sql`delete from decks where user_id = ${viewer} and name like ${"Rule 0 fixture:%"}`);
 const { rows: old } = await db.execute<{ user_id: string }>(sql`select user_id from social_profiles where user_id like ${`${PREFIX}%`}`);
 for (const o of old) await purgeAccount(o.user_id);
 
@@ -151,6 +157,10 @@ const editList = async (deckId: string) => {
 
 // The viewer's deck, bracket 3, and the fixture players' decks.
 const you3 = await clone(viewer, source("HD Tune - Blood Rites"), VIEWER_DECK_NAME);
+// PR 7's own decks: two that read Core, for the offer on a high seat, and the low seat's deck.
+const you2a = await clone(viewer, source("HD - Yuriko"), "Rule 0 fixture: Yuriko Ninjas");
+const you2b = await clone(viewer, source("HD - Yuriko"), "Rule 0 fixture: Ninja Tricks");
+const colin2 = await clone(ID.colin, source("HD - Yuriko"), "Yuriko Shadows");
 const colin3 = await clone(ID.colin, source("HD - Kratos"), "Kratos Value");
 const colin4 = await clone(ID.colin, source("HD - Brago"), "Brago Blink");
 const colin45d4 = await clone(ID.colin, source("HD - Gods"), "Gods Partners", { declared: 4 });
@@ -166,7 +176,7 @@ const max3 = await clone(ID.max, source("HD Tune - Counter Intelligence"), "Coun
 const maxOver = await clone(ID.max, source("HD Tune - Counter Intelligence"), "Counter Intelligence (one over)", { body: "over" });
 
 for (const [d, u] of [
-  [you3, viewer], [colin3, ID.colin], [colin4, ID.colin], [colin45d4, ID.colin], [colin45d1, ID.colin], [colinStale, ID.colin],
+  [you3, viewer], [you2a, viewer], [you2b, viewer], [colin2, ID.colin], [colin3, ID.colin], [colin4, ID.colin], [colin45d4, ID.colin], [colin45d1, ID.colin], [colinStale, ID.colin],
   [peter3, ID.peter], [peter2, ID.peter], [peter12, ID.peter], [peterNeeds, ID.peter], [max3, ID.max],
 ] as const) await analyze(d, u);
 await editList(colinStale);
@@ -192,6 +202,9 @@ const tables: [keyof typeof TABLE_IDS, setBy: string, open: boolean, Seat[]][] =
   ["S5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
   ["W5", ID.colin, true, [[viewer, you3], [ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]]],
   ["U", viewer, true, [[viewer, you3], [ID.colin, colin3]]],
+  ["S1", ID.colin, true, [[viewer, you3], [ID.colin, colin2], [ID.peter, peter2]]],
+  ["W1", ID.colin, true, [[viewer, you3], [ID.colin, colin2], [ID.peter, peter2]]],
+  ["S6", ID.colin, true, [[viewer, you2a], [ID.colin, colin3], [ID.peter, peter3]]],
 ];
 // Inserted directly, not through `setTable`: a setup deletes its pod's expired tables, and these share one pod.
 for (const [state, setBy, open, seats] of tables) {
