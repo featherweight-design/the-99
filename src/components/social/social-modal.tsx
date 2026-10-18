@@ -101,6 +101,9 @@ export function SocialModal({
   // Rule 0's setup (640) keeps its board's rhythm: 24px sides from md, lined up with its footer, and its own gaps.
   const setup = width === 640;
 
+  // The desktop box sits under the frame's 10dvh top pad, so its cap is what is left less a 24px foot: the pad plus
+  // the cap stays inside 100dvh and the footer is never under the fold (92vh under 10vh was 102vh). The phone is
+  // capped against the visual viewport, which the keyboard shrinks. modals.test.tsx asserts the sum.
   const frame = (
     <div
       role="presentation"
@@ -109,7 +112,7 @@ export function SocialModal({
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className={`fixed inset-0 ${raised ? "z-[60]" : "z-50"} flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10vh]`}
+      className={`fixed inset-0 ${raised ? "z-[60]" : "z-50"} flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10dvh]`}
     >
       <div
         ref={panel}
@@ -118,7 +121,7 @@ export function SocialModal({
         aria-labelledby={`${id}-title`}
         data-social-modal=""
         tabIndex={-1}
-        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--social-vv-h,100vh)*0.86)] md:max-h-[80vh]" : "max-md:max-h-[calc(var(--social-vv-h,100vh)*0.92)] md:max-h-[92vh]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
+        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--social-vv-h,100vh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--social-vv-h,100vh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
       >
         <div aria-hidden className="flex justify-center pt-[9px] md:hidden">
           <span className="mb-[4px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />

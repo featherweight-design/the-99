@@ -49,12 +49,17 @@ function useLinkWrite(onDone: () => void) {
   return { pending, failed, run };
 }
 
-function Shell({ title, pending, onDismiss, initialFocusRef, children }: {
+/**
+ * The three dialogs' shell. The box is capped at 90dvh; the title row and the `footer` (the failed line and the
+ * buttons) stay put while `children` scroll between them.
+ */
+function Shell({ title, pending, onDismiss, initialFocusRef, children, footer }: {
   title: string;
   pending: boolean;
   onDismiss: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
+  footer: ReactNode;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -70,10 +75,10 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children }: {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex max-h-[90dvh] w-full flex-col gap-[16px] overflow-y-auto rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
+        className="relative z-10 mx-auto flex max-h-[90dvh] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[36px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
-        <div className="flex items-start justify-between gap-[12px]">
+        <div className="flex flex-none items-start justify-between gap-[12px]">
           <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{title}</h2>
           <button
             type="button"
@@ -85,7 +90,9 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children }: {
             ✕
           </button>
         </div>
-        {children}
+        {/* The 6px inset keeps a row's focus ring, and the picker list's own -5px bleed, inside this clip. */}
+        <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">{children}</div>
+        <div className="flex flex-none flex-col gap-[16px]">{footer}</div>
       </div>
     </div>
   );
@@ -138,7 +145,20 @@ export function ConfirmLinkDialog({ deckId, deckName, match, onDismiss }: {
   const c = copy.confirm;
   const { pending, failed, run } = useLinkWrite(onDismiss);
   return (
-    <Shell title={c.title(deckName, match.name)} pending={pending} onDismiss={onDismiss}>
+    <Shell
+      title={c.title(deckName, match.name)} pending={pending} onDismiss={onDismiss}
+      footer={
+        <>
+          {failed && <Failed text={c.failed} />}
+          <Actions
+            pending={pending}
+            onDismiss={onDismiss}
+            submit={() => run(() => linkPrecon(deckId, match.fileName))}
+            submitLabel={pending ? c.pending : c.submit}
+          />
+        </>
+      }
+    >
       <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{c.lead}</p>
       <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
         <CommanderThumb imageUri={match.leadImage} colorIdentity={null} size="list" />
@@ -154,13 +174,6 @@ export function ConfirmLinkDialog({ deckId, deckName, match, onDismiss }: {
         <Fact k={c.factLabels.shared} v={c.facts.shared(match.shared, match.of)} />
         <Fact k={c.factLabels.v1} v={c.facts.v1} />
       </div>
-      {failed && <Failed text={c.failed} />}
-      <Actions
-        pending={pending}
-        onDismiss={onDismiss}
-        submit={() => run(() => linkPrecon(deckId, match.fileName))}
-        submitLabel={pending ? c.pending : c.submit}
-      />
     </Shell>
   );
 }
@@ -187,18 +200,24 @@ export function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss
   const c = copy.unlink;
   const { pending, failed, run } = useLinkWrite(onDismiss);
   return (
-    <Shell title={c.title(deckName, preconName)} pending={pending} onDismiss={onDismiss}>
+    <Shell
+      title={c.title(deckName, preconName)} pending={pending} onDismiss={onDismiss}
+      footer={
+        <>
+          {failed && <Failed text={c.failed} />}
+          <Actions
+            pending={pending}
+            onDismiss={onDismiss}
+            submit={() => run(() => unlinkPrecon(deckId, fileName))}
+            submitLabel={pending ? c.pending : c.submit}
+          />
+        </>
+      }
+    >
       <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{c.lead}</p>
       <div className="flex flex-col">
         <Fact k={c.factLabels.history} v={c.facts.history} />
       </div>
-      {failed && <Failed text={c.failed} />}
-      <Actions
-        pending={pending}
-        onDismiss={onDismiss}
-        submit={() => run(() => unlinkPrecon(deckId, fileName))}
-        submitLabel={pending ? c.pending : c.submit}
-      />
     </Shell>
   );
 }
@@ -251,7 +270,23 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
   const chosen = items.find((i) => i.id === selected) ?? null;
 
   return (
-    <Shell title={title} pending={pending} onDismiss={onDismiss} initialFocusRef={search}>
+    <Shell
+      title={title} pending={pending} onDismiss={onDismiss} initialFocusRef={search}
+      footer={
+        <>
+          {/* The foot names what the button will do, so it stays beside the button. */}
+          <p className="m-0 font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{chosen ? foot : footNone}</p>
+          {failed && <Failed text={copy.confirm.failed} />}
+          <Actions
+            pending={pending}
+            onDismiss={onDismiss}
+            disabled={chosen === null}
+            submit={() => { if (chosen) run(() => onLink(chosen.id)); }}
+            submitLabel={pending ? copy.confirm.pending : chosen ? submit(chosen.name) : copy.confirm.submit}
+          />
+        </>
+      }
+    >
       <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{lead}</p>
       <SearchField
         ref={search}
@@ -309,15 +344,6 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
           })}
         </div>
       </div>
-      <p className="m-0 font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)]">{chosen ? foot : footNone}</p>
-      {failed && <Failed text={copy.confirm.failed} />}
-      <Actions
-        pending={pending}
-        onDismiss={onDismiss}
-        disabled={chosen === null}
-        submit={() => { if (chosen) run(() => onLink(chosen.id)); }}
-        submitLabel={pending ? copy.confirm.pending : chosen ? submit(chosen.name) : copy.confirm.submit}
-      />
     </Shell>
   );
 }

@@ -69,39 +69,43 @@ export function ModelConfirm({
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-lead`}
         tabIndex={-1}
-        className="flex max-h-[100dvh] w-full flex-col gap-[14px] overflow-y-auto rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
+        className="flex max-h-[100dvh] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
-        <h2 id={`${id}-title`} className="m-0 font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">
+        <h2 id={`${id}-title`} className="m-0 flex-none font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">
           {copy.title(context.switchLabel, preview.count)}
         </h2>
-        <p id={`${id}-lead`} className="m-0 text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-          {lead(context, preview, leadText)}
-        </p>
-        <dl className="m-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
-          {facts.map(([k, v], i) => (
-            <div
-              key={k}
-              className={`grid grid-cols-[74px_minmax(0,1fr)] gap-[10px] px-[12px] py-[10px] md:grid-cols-[92px_minmax(0,1fr)] ${i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""}`}
-            >
-              <dt className="pt-[2px] font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{k}</dt>
-              <dd className="m-0 text-pretty text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        {noted && (
-          <label className="flex flex-col gap-[6px] text-[12.5px] text-[color:var(--fg-muted)]">
-            {copy.note}
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              maxLength={500}
-              autoComplete="off"
-              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]"
-            />
-          </label>
-        )}
-        <div className="flex gap-[10px] md:justify-end">
+        {/* The title above and the buttons below stay put; only this scrolls when the box meets its cap. The 6px
+            inset keeps a field's focus ring inside the scroller's clip. */}
+        <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto overscroll-contain p-[6px]">
+          <p id={`${id}-lead`} className="m-0 text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            {lead(context, preview, leadText)}
+          </p>
+          <dl className="m-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
+            {facts.map(([k, v], i) => (
+              <div
+                key={k}
+                className={`grid grid-cols-[74px_minmax(0,1fr)] gap-[10px] px-[12px] py-[10px] md:grid-cols-[92px_minmax(0,1fr)] ${i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""}`}
+              >
+                <dt className="pt-[2px] font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{k}</dt>
+                <dd className="m-0 text-pretty text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {noted && (
+            <label className="flex flex-col gap-[6px] text-[12.5px] text-[color:var(--fg-muted)]">
+              {copy.note}
+              <input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={500}
+                autoComplete="off"
+                className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]"
+              />
+            </label>
+          )}
+        </div>
+        <div className="flex flex-none gap-[10px] md:justify-end">
           <button
             ref={cancelRef}
             type="button"
