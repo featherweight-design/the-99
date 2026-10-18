@@ -4,9 +4,9 @@
 // account is revealed. 32 tall from `md`, 44 on the phone. A Show still in flight holds its pressed state and leaves
 // the row masked; a failed one raises the view's toast (D13).
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { adminMaskCopy } from "../../lib/copy/admin";
-import { ToastFrame } from "../collection/edit-toast";
+import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import type { RevealFailure } from "./use-reveal";
 
 const copy = adminMaskCopy.reveal;
@@ -45,14 +45,20 @@ export function ShowButton({
 }
 
 /** D13: a failed Show, centre placement, `role="alert"`, with `Try again`. */
-export function RevealFailedToast({ failure, onRetry }: { failure: RevealFailure; onRetry: () => void }) {
+export function RevealFailedToast({ failure, onRetry, onDone }: { failure: RevealFailure; onRetry: () => void; onDone: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  // The shared window (call 5): it closes itself, held while it is hovered or holds focus. The caller keys it per
+  // failure, so a new one starts the whole window with no hold carried over.
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
+  useToastClock(ref, !hover && !focus, onDone);
   return (
     <ToastFrame
       frameRef={ref}
       role="alert"
       placement="center"
       kind="reveal-failed"
+      onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
       title={copy.failed(failure.masked)}
       actions={
         <button

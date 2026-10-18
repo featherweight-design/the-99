@@ -11,13 +11,15 @@ import type { RevealResult } from "../../lib/admin/reveal";
 
 export type Revealed = { name: string | null; email: string | null; id: string; hidesAt: Date };
 /** The failed Show the view's toast names, by the account's masked name. */
-export type RevealFailure = { id: string; masked: string };
+export type RevealFailure = { id: string; masked: string; n: number };
 
 /** `onShown`: after a Show lands, for a view that draws its own log (the account page's History, D8). */
 export function useReveal(reveal: (id: string) => Promise<RevealResult> = revealAccount, onShown?: () => void) {
   const [revealed, setRevealed] = useState<ReadonlyMap<string, Revealed>>(new Map());
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [failure, setFailure] = useState<RevealFailure | null>(null);
+  // Numbers each failure, so its toast is a new one with a whole window.
+  const failures = useRef(0);
   const timers = useRef(new Map<string, number>());
   const mounted = useRef(true);
   // A Show asked again, or a Hide, retires the answer still in flight for that account.
@@ -72,7 +74,7 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
       });
       if (asked.current.get(id) !== ticket) return;
       if (!answer.ok) {
-        setFailure({ id, masked });
+        setFailure({ id, masked, n: ++failures.current });
         return;
       }
       const hidesAt = new Date(answer.hidesAt);

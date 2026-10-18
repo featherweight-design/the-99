@@ -82,17 +82,25 @@ describe("useReveal", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("names a failed Show by the masked name, reveals nothing, and clears on the next Show (D13)", async () => {
-    const reveal = vi.fn<(id: string) => Promise<RevealResult>>().mockResolvedValueOnce({ ok: false, error: "failed" }).mockRejectedValueOnce(new Error("network"));
+  it("names a failed Show by the masked name, reveals nothing, and clears once a Show lands (D13)", async () => {
+    const reveal = vi
+      .fn<(id: string) => Promise<RevealResult>>()
+      .mockResolvedValueOnce({ ok: false, error: "failed" })
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(ok("u1"));
     const { result } = renderHook(() => useReveal(reveal));
     await act(() => result.current.show("u1", "Colin R."));
-    expect(result.current.failure).toEqual({ id: "u1", masked: "Colin R." });
+    expect(result.current.failure).toMatchObject({ id: "u1", masked: "Colin R." });
     expect(result.current.revealed.has("u1")).toBe(false);
-    // A thrown action is a failure too, never a reveal.
+    const first = result.current.failure!.n;
+    // A thrown action is a failure too, never a reveal, and a new one (its toast gets a whole window).
     await act(() => result.current.show("u1", "Colin R."));
-    expect(result.current.failure).toEqual({ id: "u1", masked: "Colin R." });
-    act(() => result.current.dismissFailure());
+    expect(result.current.failure).toMatchObject({ id: "u1", masked: "Colin R." });
+    expect(result.current.failure!.n).not.toBe(first);
+    // The next Show that lands clears it.
+    await act(() => result.current.show("u1", "Colin R."));
     expect(result.current.failure).toBeNull();
+    expect(result.current.revealed.has("u1")).toBe(true);
   });
 
   it("reads the hide time on the UTC clock", () => {

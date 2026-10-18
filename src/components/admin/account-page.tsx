@@ -367,7 +367,7 @@ export function AccountPageView({ page }: { page: AccountPage }) {
           ) : (
             page.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{page.email}</span>
           )}
-          {/* D3: the id appears only here, under the email, where it is the thing to copy into Clerk. */}
+          {/* D3: the id appears only on a revealed account, under the email, where it is the thing to copy into Clerk. */}
           {rev && <span className="break-all font-mono text-[10.5px] text-[color:var(--fg-faint)]">{rev.id}</span>}
           <span className="text-pretty text-[12.5px] text-[color:var(--fg-body)]">{page.role}</span>
           {rev && <span className="font-mono text-[10.5px] text-[color:var(--accent)]">{adminMaskCopy.reveal.shown(utcHourMinute(rev.hidesAt))}</span>}
@@ -383,7 +383,7 @@ export function AccountPageView({ page }: { page: AccountPage }) {
       <GroupSection key={page.group?.id ?? ""} page={page} />
       <Switches page={page} />
       <FeatureSpendTable page={page} />
-      {reveal.failure && <RevealFailedToast failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} />}
+      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
     </div>
   );
 }

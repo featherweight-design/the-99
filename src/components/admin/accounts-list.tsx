@@ -199,7 +199,7 @@ export function AccountsList({
           )}
         </div>
       </div>
-      {reveal.failure && <RevealFailedToast failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} />}
+      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
     </>
   );
 }

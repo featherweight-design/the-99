@@ -195,6 +195,21 @@ describe("AccountsList (A1 to A3)", () => {
     expect(revealFn).toHaveBeenCalledTimes(2);
   });
 
+  it("closes the failed-Show toast on its own once its window runs out", async () => {
+    revealFn.mockResolvedValue({ ok: false, error: "failed" });
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
+    vi.useFakeTimers();
+    try {
+      const mara = within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
+      await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(30_000));
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("says the names did not load when Clerk is down", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="down" month="October" env="staging" />);
     expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();

@@ -6,8 +6,9 @@
 // users from the instance CLERK_SECRET_KEY names and fails when any response holds one's whole email or last name
 // (three letters or more; a first name is the masked name's own first word, D1). Then it presses Show once, on one
 // account page (D5 to D8): the whole email reaches the browser in that action's response and nowhere else, one
-// `account_revealed` event is written, Hide masks the head, and a reload draws the History line and no email. That
-// Show is the probe's one write, so it refuses any branch but a scratch one (`assertScratchBranch`) before pressing.
+// `account_revealed` event is written, Hide masks the head, and a reload draws the History line and no email. Then it
+// presses Show a second time with the action's request aborted (A6): the toast, nothing revealed, nothing logged. The
+// Shows are the probe's only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before them.
 //
 //   PROBE_BASE=http://localhost:3313 pnpm probe:admin-pii
 //
