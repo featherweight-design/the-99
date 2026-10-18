@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -23,7 +24,7 @@ vi.mock("./near-miss", () => ({
 
 import { inDeckPartnersKey, loadInDeckPartnersCached } from "./in-deck-cache";
 
-const base = { deckId: "d1", deckOracleIds: ["b", "a", "c"], commanderOracleIds: ["k"], generation: "100.5" };
+const base = { deckId: "d1", deckOracleIds: ["b", "a", "c"], commanderOracleIds: ["k"] };
 
 beforeEach(() => {
   m.store.clear();
@@ -36,14 +37,13 @@ describe("inDeckPartnersKey: a content-addressed key", () => {
     expect(inDeckPartnersKey({ ...base, deckOracleIds: ["c", "a", "b", "a"] })).toEqual(inDeckPartnersKey(base));
   });
 
-  it("changes with the card list, the commanders, the deck and the combo generation", () => {
+  it("changes with the card list, the commanders and the deck", () => {
     const k = (over: Partial<typeof base>) => inDeckPartnersKey({ ...base, ...over }).join("/");
     const same = k({});
     expect(k({ deckOracleIds: ["a", "b", "c", "d"] })).not.toBe(same);
     expect(k({ deckOracleIds: ["a", "b"] })).not.toBe(same);
     expect(k({ commanderOracleIds: ["k", "p"] })).not.toBe(same);
     expect(k({ deckId: "d2" })).not.toBe(same);
-    expect(k({ generation: "200.5" })).not.toBe(same);
   });
 
   it("tells a card in the list from the same card in the command zone (rule 3: a commander counts as held)", () => {
@@ -66,17 +66,28 @@ describe("loadInDeckPartnersCached", () => {
     expect(m.loads).toBe(1);
   });
 
-  it("misses when the card list changes, and when the combo index generation changes", async () => {
+  it("misses when the card list changes; the combo index generation is `cacheForUser`'s catalog generation, proved in its own suite", async () => {
     await ask();
     await ask({ deckOracleIds: ["a", "b", "c", "d"] });
     expect(m.loads).toBe(2);
-    await ask({ generation: "999.9" });
-    expect(m.loads).toBe(3);
   });
 
   it("keeps two readers' entries apart", async () => {
     await ask();
     await ask({ userId: "u2" });
     expect(m.loads).toBe(2);
+  });
+});
+
+describe("the combo index generation the key relies on", () => {
+  // The key carries no combo stamp of its own: it relies on `cacheForUser`'s catalog generation, which holds only while BOTH combo
+  // publishers stamp `catalog_refreshes` after their variants. If either stops, a combo refresh would no longer retire these entries.
+  it("is stamped by the seed after it publishes the variants, and by the copy harness inside its publish transaction", () => {
+    const seed = readFileSync("src/lib/spellbook/seed.ts", "utf8");
+    expect(seed.indexOf("await stampCatalogRefresh()")).toBeGreaterThan(seed.indexOf("await publishVariants("));
+    const copy = readFileSync("scripts/lib/catalog-copy.ts", "utf8");
+    const publish = copy.slice(copy.indexOf("export function publishOnTarget"));
+    expect(publish.slice(0, publish.indexOf("\n}\n"))).toContain("stampCatalogRefreshIn(tx)");
+    expect(readFileSync("scripts/copy-combos.ts", "utf8")).toContain("runCopyCli(");
   });
 });

@@ -24,7 +24,6 @@ import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
-import { comboGeneration } from "../../../lib/cache/combo-generation";
 import { loadInDeckPartnersCached } from "../../../lib/combos/in-deck-cache";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
@@ -211,16 +210,14 @@ export default async function DeckBuilderPage({
   // THE ROW'S COMBO MARKS start the moment the detail resolves, beside the suggestions read, not after it: the statement needs only
   // the deck's own card and commander ids. It used to start with the candidate-keyed reads below and, at ~390ms, was the last to
   // finish. Cached by its inputs (`in-deck-cache.ts`); a read that fails answers null, as it did inline.
-  const comboGenRead = early(comboGeneration());
   const inDeckCombosRead = early(
-    Promise.all([detailRead, comboGenRead]).then(([d, generation]) =>
+    detailRead.then((d) =>
       d
         ? perf.timed("inDeckCombos", () => loadInDeckPartnersCached({
             userId,
             deckId: id,
             deckOracleIds: d.cards.map((c) => c.oracleId),
             commanderOracleIds: [d.commander.oracleId, ...(d.partner ? [d.partner.oracleId] : [])],
-            generation,
           })).catch(() => null)
         : null,
     ),
