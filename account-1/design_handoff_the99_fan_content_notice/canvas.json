@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-18T04:37:58Z"
+ },
+ "title": "The 99 \u00b7 Fan Content notice R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "The 99 - Fan Content Notice (R1).dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2543,
+   "title": "R1 \u00b7 the five calls, locked items, gaps"
+  },
+  "R1 - Signed-In.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 1500,
+   "h": 4321,
+   "title": "Signed in \u00b7 short, long, locked; desktop"
+  },
+  "R1 - Signed-Out.dc.html": {
+   "x": 3360,
+   "y": 0,
+   "w": 1860,
+   "h": 5065,
+   "title": "Signed out \u00b7 landing, sign-up, join, friend, offline"
+  },
+  "R1 - Privacy-and-Terms.dc.html": {
+   "x": 5300,
+   "y": 0,
+   "w": 1520,
+   "h": 13372,
+   "title": "/privacy and /terms \u00b7 one prose page"
+  },
+  "R1 - Themes.dc.html": {
+   "x": 6900,
+   "y": 0,
+   "w": 2660,
+   "h": 3183,
+   "title": "The notice in six themes, measured"
+  }
+ },
+ "order": [
+  "The 99 - Fan Content Notice (R1).dc.html",
+  "R1 - Signed-In.dc.html",
+  "R1 - Signed-Out.dc.html",
+  "R1 - Privacy-and-Terms.dc.html",
+  "R1 - Themes.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

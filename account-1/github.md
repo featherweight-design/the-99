@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-18T04:45:00Z
+branch read this turn: main 2b0b760 (brief `2026-10-17-fan-content-notice.md`, PR #2030; `app/layout.tsx`, `components/shell/shell.tsx`, `shell/nav.tsx` TabBar, TabBracket, NavRail, MobileHeader; `app/offline/page.tsx`, `app/page.tsx`, `app/sign-up/page.tsx`, `app/join/[token]/page.tsx`, `app/friend/[token]/page.tsx`, `components/join/newcomer-column.tsx`, `social/friend-card.tsx`, `social/friend-landing.tsx`, `pwa/try-again.tsx`, `copy/pwa.ts`, `copy/refresh.ts`, `theme/themes.ts`, `app/globals.css` six theme blocks; handoffs buying_credits, linkout)
+
+### Updated in this project
+- **Fan Content notice R1, for Hugh's audit.** `design_handoff_the99_fan_content_notice/`: main board (five calls, locked items, gaps G1–G6, Q1–Q2 for Hugh), Signed-In (S1–S5, root mount R1–R2 rejected), Signed-Out (O1–O5 at 390 and desktop), Privacy-and-Terms (container spec, L1–L8), Themes (six themes measured, link states); README, STATES, READINESS, copy strings, canvas.json. Design canvas: "The 99 · Fan Content notice R1". Generator and render check in `scratch/fan-content-notice-gen/`. No PR until Hugh approves.
+
+### Earlier entry
 date: 2026-10-17T20:10:00Z
 branch read this turn: docs/admin-pii-brief (brief `2026-10-17-admin-pii-masking.md`, PR #2001); main e8d2868 (`components/admin/accounts-list.tsx`, `account-page.tsx`, `invites-section.tsx`, `invite-tree.tsx`, `group-editor.tsx`, `override-picker.tsx`, `admin-head.tsx`, `collection/edit-toast.tsx` ToastFrame, `lib/admin/names.ts`, `copy/admin.ts`, `app/globals.css` themes; admin handoff R2)
 
