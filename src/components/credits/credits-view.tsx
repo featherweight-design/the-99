@@ -52,7 +52,7 @@ export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: 
           onReceiptFailed={() => say(c.hist.receiptFailed)}
         />
       ) : null}
-      <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} />
+      <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} />
       {model.offers && onSale ? <PackOffers offers={model.offers} onFailure={buyFailed} /> : null}
       <History items={model.history} onReceiptFailed={() => say(c.hist.receiptFailed)} />
       <CreditsToast toast={toast} onDone={() => setToast(null)} />

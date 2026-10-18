@@ -26,6 +26,9 @@ import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity"
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { usePendingPush } from "./pending-push";
+import { CreditChip } from "./credit-chip";
+import { chipAction } from "../../app/credits/actions";
+import type { ChipState } from "../../lib/payments/chip-rule";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -67,6 +70,10 @@ type MenuItemsProps = {
   friends: boolean;
   /** Leaves for /friends, as `onAbout` leaves for /about. */
   onFriends: () => void;
+  /** The credit chip (M1b), or null: absent for a reader who does not see credits. */
+  chip: ChipState | null;
+  /** Leaves for /credits, as `onAbout` leaves for /about. */
+  onCredits: () => void;
 };
 
 /**
@@ -241,6 +248,7 @@ function AccountPopover(props: PanelProps) {
               {props.identity.email}
             </div>
           )}
+          {props.chip && <CreditChip chip={props.chip} sheet={false} onGo={props.onCredits} />}
         </div>
       </div>
       {/* Neither the identity header nor the picker is a menu item, so both sit
@@ -330,6 +338,7 @@ function AccountSheet(props: PanelProps) {
                 {props.identity.email}
               </div>
             )}
+            {props.chip && <CreditChip chip={props.chip} sheet onGo={props.onCredits} />}
           </div>
         </div>
         <ThemePicker current={props.theme} panel="sheet" selectedChipRef={chipRef} />
@@ -383,6 +392,7 @@ export function AccountMenu({
   adminDoor = false,
   adminEnv,
   friends = false,
+  credits = null,
   friendsMoment = false,
 }: {
   panel: PanelKind;
@@ -393,6 +403,8 @@ export function AccountMenu({
   adminEnv?: string;
   /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
   friends?: boolean;
+  /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
+  credits?: ChipState | null;
   /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
   friendsMoment?: boolean;
 }) {
@@ -434,6 +446,21 @@ export function AccountMenu({
   const onAbout = () => go("/about");
   const onAdmin = () => go("/admin");
   const onFriends = () => go("/friends");
+  const onCredits = () => go("/credits");
+  // The chip is re-read each time the menu opens (plan E10): the layout does not re-render on navigation, so the
+  // shell's value is only the first paint. A failed read keeps what is drawn.
+  const [chip, setChip] = useState<ChipState | null>(credits);
+  const [seenProp, setSeenProp] = useState(credits);
+  if (seenProp !== credits) {
+    setSeenProp(credits);
+    setChip(credits);
+  }
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    chipAction().then((next) => { if (live) setChip(next); }, () => {});
+    return () => { live = false; };
+  }, [open]);
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
@@ -548,6 +575,8 @@ export function AccountMenu({
             friends={friends}
             onFriends={onFriends}
             onAdmin={onAdmin}
+            chip={chip}
+            onCredits={onCredits}
           />
         ) : (
           <AccountSheet
@@ -565,6 +594,8 @@ export function AccountMenu({
             friends={friends}
             onFriends={onFriends}
             onAdmin={onAdmin}
+            chip={chip}
+            onCredits={onCredits}
           />
         ))}
     </div>

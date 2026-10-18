@@ -30,6 +30,8 @@ const EXEMPT: Record<string, string> = {
   "components/help/help-panel.tsx :: REFERENCE_HREF": HELP_PANEL,
   "components/help/help-panel.tsx :: TOOLS_HREF": HELP_PANEL,
   "components/help/help-panel.tsx :: href": HELP_PANEL,
+  "components/shell/credit-chip.tsx :: \"/credits\"":
+    "its press closes the menu, which unmounts the chip, so the navigation runs through usePendingPush and the provider reports it",
   "components/collection/short-deck-warning.tsx :: `/decks/${row.deckId}`":
     "opens in a new tab, so this page and its warning stay where they are",
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,

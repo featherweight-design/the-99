@@ -226,7 +226,7 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
   const paid = balances.length > 0 ? allowanceFrom(await ledgerRows(db, userId, now, true), now, PAID_DAILY_LIMIT) : null;
   const allowance: Allowance = {
     ...allowanceFrom(rows, now, limit),
-    ...(paid ? { ...creditTotals(balances), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt } : {}),
+    ...(paid ? { ...creditTotals(balances), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt, paidNextAt: paid.nextAt } : {}),
   };
   const refusal = spendRefusal({
     ownerMonthMicro: spend,

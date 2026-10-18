@@ -186,3 +186,29 @@ describe("Receipt", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("the daily paid line (P5, P5b)", () => {
+  const held = { plan: 34, pack: 40 };
+  it("is absent below 15 paid runs", () => {
+    render(<CreditsView model={model({ allowance: allowance({ ...held, paidUsedToday: 14, paidLimit: 20 }) })} ret={null} />);
+    expect(screen.queryByTestId("paid-today")).toBeNull();
+  });
+
+  it("P5: from 15, a neutral meter and the near line", () => {
+    render(<CreditsView model={model({ allowance: allowance({ ...held, paidUsedToday: 17, paidLimit: 20, paidBackAt: new Date("2026-10-18T08:01:00Z") }) })} ret={null} />);
+    const line = screen.getByTestId("paid-today");
+    expect(line).toHaveAttribute("data-at-limit", "false");
+    expect(line).toHaveTextContent(/17 of 20 paid credits used today/);
+    expect(line).toHaveTextContent(/Free credits still run\./);
+    expect(screen.getByTestId("paid-today-fill")).toHaveStyle({ width: "85%", background: "var(--fg-muted)" });
+  });
+
+  it("P5b: at the limit, the warning meter and nothing banked is lost, never --danger", () => {
+    render(<CreditsView model={model({ allowance: allowance({ ...held, paidUsedToday: 20, paidLimit: 20 }) })} ret={null} />);
+    const line = screen.getByTestId("paid-today");
+    expect(line).toHaveAttribute("data-at-limit", "true");
+    expect(line).toHaveTextContent(/nothing banked is lost/);
+    expect(screen.getByTestId("paid-today-fill")).toHaveStyle({ width: "100%", background: "var(--warning)" });
+    expect(line.innerHTML).not.toContain("--danger");
+  });
+});

@@ -1,5 +1,6 @@
 import { freeCount } from "../model/allowance-rule";
 import type { CreditHistoryRow } from "./return";
+import { paidToday, type PaidToday } from "./paid-today-rule";
 import { readerSeesCredits, readerSeesOffers } from "./visible-rule";
 import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/credits-page";
 
@@ -37,9 +38,11 @@ export type CreditsModel = {
   cells: BalanceCell[];
   offers: PackOffer[] | null;
   history: HistoryItem[];
+  /** P5 / P5b: the daily paid line, or null below 15 paid runs (or with no paid lot). */
+  paidToday: PaidToday | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; plan?: number; pack?: number };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; plan?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;
@@ -71,6 +74,7 @@ export function buildCreditsModel(input: {
       cells,
       offers: readerSeesOffers({ switchOn: input.switchOn }) ? [...input.offers] : null,
       history: history.map(historyItem),
+      paidToday: paidToday(a),
     },
   };
 }
