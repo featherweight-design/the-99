@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C1 · The signed-out block · both widths</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#14110E}
+
+:root{
+--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;
+--elevated:#29241F;--elevated-hover:#201C17;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;
+--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#8B8270;--fg-locked:#6E6654;
+--accent:#CF8745;--accent-hover:#DE9757;--accent-strong:#AB6E37;--accent-shadow:#6B482A;--accent-dim:#6B482A;--accent-mid:#AB6E37;
+--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;
+--bracket-1:#8A857C;--bracket-2:#A89A74;--bracket-3:#C9AC62;--bracket-4:#E6D08A;--bracket-5:#FBEFC6;
+--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46;
+--display:'Cinzel',serif;--sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+
+a{color:#DE9757}a:hover{color:#EDE6D8}
+</style>
+</helmet>
+<div style="width: 1300px; min-height: 400px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased">
+<div style="padding: 48px 56px; display: flex; gap: 72px; align-items: flex-start">
+<div style="width: 384px"><div style="font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--fg-faint); margin-bottom: 12px">DESKTOP &middot; 384 column, under the card</div><section aria-label="About The 99" style="border-radius: 12px; border: 1px solid var(--border); background: var(--surface-rail); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 14px; align-items: flex-start">
+<svg width="30" height="30" viewBox="8 6 48 48" aria-hidden="true" style="display: block; flex: none"><rect x="12.007" y="11.703" width="7.381" height="7.381" transform="rotate(45 15.697 15.393)" fill="#CF8745"></rect><rect x="26.772" y="10.165" width="10.456" height="10.456" transform="rotate(45 32.000 15.393)" fill="#CF8745"></rect><rect x="44.612" y="11.703" width="7.381" height="7.381" transform="rotate(45 48.303 15.393)" fill="#CF8745"></rect><path transform="translate(12.903 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"></path><path transform="translate(32.000 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="font-family: var(--display); font-weight: 600; font-size: 16px; line-height: 1.25; color: var(--fg)">This is The 99</div>
+<p style="margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--fg-body)">A Commander companion: it reads the cards you own and builds decks from them. It&rsquo;s invite-only, so the way in is a friend who already plays.</p>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-left: 44px">
+<a href="/sign-in" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--fg); font-size: 14px; font-weight: 600; text-decoration: none">Sign in</a>
+<span style="font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--fg-faint)">Have an invitation? Open its link.</span>
+</div>
+</section></div>
+<div style="width: 358px"><div style="font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--fg-faint); margin-bottom: 12px">390 &middot; last thing before the footer</div><section aria-label="About The 99" style="border-radius: 12px; border: 1px solid var(--border); background: var(--surface-rail); padding: 18px 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 14px; align-items: flex-start">
+<svg width="30" height="30" viewBox="8 6 48 48" aria-hidden="true" style="display: block; flex: none"><rect x="12.007" y="11.703" width="7.381" height="7.381" transform="rotate(45 15.697 15.393)" fill="#CF8745"></rect><rect x="26.772" y="10.165" width="10.456" height="10.456" transform="rotate(45 32.000 15.393)" fill="#CF8745"></rect><rect x="44.612" y="11.703" width="7.381" height="7.381" transform="rotate(45 48.303 15.393)" fill="#CF8745"></rect><path transform="translate(12.903 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"></path><path transform="translate(32.000 49.849) scale(0.028293 -0.028293)" fill="#EDE6D8" d="M116 -38 112 -31Q219 2 279.5 43.0Q340 84 368.0 136.0Q396 188 403.0 253.5Q410 319 410 402Q410 485 406.0 540.5Q402 596 386.5 623.5Q371 651 334 651Q297 651 278.0 626.5Q259 602 252.0 563.0Q245 524 245 478Q245 421 251.5 389.0Q258 357 269.5 341.5Q281 326 295 320Q318 311 337.5 317.0Q357 323 370 331L377 323Q363 292 333.0 272.0Q303 252 264.0 246.0Q225 240 185.0 249.5Q145 259 111.5 285.5Q78 312 58.0 357.0Q38 402 40 467Q42 534 73.0 589.0Q104 644 168.0 677.0Q232 710 331 711Q478 713 556.5 633.0Q635 553 635 381Q635 274 603.0 189.5Q571 105 506.0 49.0Q441 -7 344.0 -30.5Q247 -54 116 -38Z"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="font-family: var(--display); font-weight: 600; font-size: 16px; line-height: 1.25; color: var(--fg)">This is The 99</div>
+<p style="margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--fg-body)">A Commander companion: it reads the cards you own and builds decks from them. It&rsquo;s invite-only, so the way in is a friend who already plays.</p>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-left: 44px">
+<a href="/sign-in" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--fg); font-size: 14px; font-weight: 600; text-decoration: none">Sign in</a>
+<span style="font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--fg-faint)">Have an invitation? Open its link.</span>
+</div>
+</section></div>
+<div style="width: 340px"><div style="font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--fg-faint); margin-bottom: 12px">THE SAME BLOCK, BOTH PAGES</div>
+<ul style="margin: 0; padding: 0 0 0 18px; font-size: 13.5px; line-height: 1.7; color: var(--fg-body)">
+<li>One link: <b style="color: var(--fg); font-weight: 600">Sign in</b>. No field, no email, no form.</li>
+<li>&ldquo;Ask a friend&rdquo; is the only route in that exists today; there is no request flow to link to.</li>
+<li>Never &ldquo;Sign up&rdquo;. Never a banner, modal or sticky bar.</li>
+<li>Identical for every visitor, so it caches with the page.</li>
+</ul></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
