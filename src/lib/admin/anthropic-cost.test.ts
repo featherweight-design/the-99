@@ -105,6 +105,17 @@ describe("readWorkspaceCost", () => {
     expect(abort.log.mock.calls).toEqual([[`${COST_LOG} unread kind=upstream`]]);
   });
 
+  it("reads a body that breaks or times out mid-read as upstream, and only a body that is not JSON as shape", async () => {
+    const broken = () => {
+      const body = new ReadableStream({ start: (c) => c.error(new DOMException("The operation timed out.", "TimeoutError")) });
+      return Promise.resolve(new Response(body, { status: 200, headers: { "content-type": "application/json" } }));
+    };
+    const midBody = fake({ cost: [broken] });
+    expect(await readWorkspaceCost(OCT, NOW, midBody.deps())).toEqual({ ok: false, kind: "upstream" });
+    const notJson = fake({ cost: [() => Promise.resolve(new Response("<html>", { status: 200 }))] });
+    expect(await readWorkspaceCost(OCT, NOW, notJson.deps())).toEqual({ ok: false, kind: "shape" });
+  });
+
   it("reads a bad body, a body that is not JSON and a non-USD line as shape", async () => {
     for (const answer of [
       () => json({ nope: true }),
@@ -209,10 +220,14 @@ describe("cachedWorkspaceCost", () => {
     expect(JSON.stringify(cache.calls)).not.toContain(KEY);
   });
 
-  it("keys a past month as closed, revalidated hourly", async () => {
+  it("keys a past month by the hour, so an expired figure is read in the foreground", async () => {
     const f = fake({});
     await cachedWorkspaceCost(SEP, NOW, f.deps());
-    expect(cache.calls).toEqual([{ keyParts: ["anthropic-cost", DEPLOYMENT_ID, "2026-09", "closed"], opts: { revalidate: 3600 } }]);
+    const hour = Math.floor(NOW.getTime() / 3_600_000);
+    expect(cache.calls).toEqual([{ keyParts: ["anthropic-cost", DEPLOYMENT_ID, "2026-09", String(hour)], opts: { revalidate: 3600 } }]);
+    // The next hour is a new key: a miss, never a stale entry refreshed (and failing) behind the reader's back.
+    await cachedWorkspaceCost(SEP, new Date(NOW.getTime() + 3_600_000), f.deps());
+    expect(cache.calls[1].keyParts.at(-1)).toBe(String(hour + 1));
   });
 
   it("serves a failure unstored, holds it 60 seconds per month, then asks again", async () => {

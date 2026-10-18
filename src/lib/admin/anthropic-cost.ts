@@ -38,6 +38,10 @@ export const ANTHROPIC_TIMEOUT_MS = 8_000;
 export const NEGATIVE_MEMO_MS = 60_000;
 /** The current month's cache bucket: the workspace figure is never older than this against the live ledger. */
 const BUCKET_MS = 300_000;
+/** A past month's bucket. Bucketed rather than one fixed key so an expired figure is a MISS, read in the foreground,
+ *  where a failure reaches the negative memo: a fixed key would serve the stale figure while a background refresh
+ *  failed unseen, retrying the API on every load. */
+const CLOSED_BUCKET_MS = 3_600_000;
 const ANTHROPIC_VERSION = "2023-06-01";
 
 export type AnthropicDeps = {
@@ -84,8 +88,10 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
     if (!res.ok) throw new Unread(kindOf(res.status), res.status);
     try {
       return await res.json();
-    } catch {
-      throw new Unread("shape");
+    } catch (error) {
+      // Only a body that is not JSON is a shape this page cannot read. The shared timeout firing mid-body, or the
+      // stream breaking, is the network: upstream.
+      throw new Unread(error instanceof SyntaxError ? "shape" : "upstream");
     }
   };
 
@@ -170,7 +176,7 @@ export async function cachedWorkspaceCost(month: MonthKey, now: Date, deps: Anth
   };
   let result: WorkspaceCost;
   try {
-    result = await unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, m, current ? String(Math.floor(now.getTime() / BUCKET_MS)) : "closed"], {
+    result = await unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, m, String(Math.floor(now.getTime() / (current ? BUCKET_MS : CLOSED_BUCKET_MS)))], {
       revalidate: current ? 300 : 3600,
     })();
   } catch (error) {
