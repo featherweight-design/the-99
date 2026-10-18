@@ -405,7 +405,7 @@ export function IssueInspector({
         handleClassName="flex touch-none justify-center pt-[12px] pb-0"
         handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-strong)]"
         // The collection filter sheet's box (filter-sheet.tsx), which D8 names.
-        panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+        panelClassName="relative z-10 flex max-h-[86dvh] max-md:max-h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
       >
         {content}
       </Sheet>

@@ -29,6 +29,7 @@ import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "./add-line";
+import { useVisualViewportFrame } from "../ui/visual-viewport";
 import { SHEET_FOOT_CLASS, SHEET_PANEL_CLASS } from "./sheet-frame";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { ArrivalOrder } from "../ui/arrival-queue";
@@ -161,6 +162,8 @@ export function EditCopiesSheet({
   }, [saving, warning, discarding, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: addRef, lockScroll: false, returnFocusRef });
+  // The phone sheet is the visible window, which the keyboard shrinks (sheet-frame.ts).
+  const visible = useVisualViewportFrame(phone);
   // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
   useMomentHold(true);
   useBackDismiss(true, requestClose);
@@ -268,6 +271,7 @@ export function EditCopiesSheet({
       aria-modal="true"
       aria-labelledby={titleId}
       className={SHEET_PANEL_CLASS}
+      style={visible}
     >
       <div inert={discarding || warning !== null || undefined} className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-start gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">

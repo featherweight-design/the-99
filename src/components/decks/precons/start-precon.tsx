@@ -10,6 +10,7 @@ import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createDeckFromPrecon, startPreconOwned } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
@@ -123,6 +124,8 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   // A dismissal mid-flight would leave a deck the reader thinks they cancelled.
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef: input });
+  // Its field raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
   useEffect(() => { input.current?.select(); }, []);
 
   const trimmed = name.trim();
@@ -190,7 +193,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
+    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
       <div aria-hidden="true" onClick={dismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}
@@ -200,7 +203,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
         tabIndex={-1}
         // Capped in dvh at both widths (an open keyboard shrinks it; the frame has no vertical padding) as a
         // column that never scrolls itself: the title and the buttons are pinned, the body between them scrolls.
-        className="relative z-10 mx-auto flex max-h-[88dvh] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
+        className="relative z-10 mx-auto flex max-h-[88dvh] max-md:max-h-[min(88dvh,calc(var(--vv-h,100dvh)*0.88))] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[36px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
         <div className="flex flex-none items-start justify-between gap-[12px]">

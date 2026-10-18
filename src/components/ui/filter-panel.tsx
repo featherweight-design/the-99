@@ -29,6 +29,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import { useBackDismiss, useScrollLock } from "../../lib/a11y/dialog";
 import { useSheetHost } from "./sheet-host";
+import { useVisualViewportFrame, VV_BOTTOM } from "./visual-viewport";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
@@ -279,6 +280,9 @@ export function FilterPanel({
   // `useDialogA11y`, which moves focus to the first focusable and wraps Tab
   // around it, cannot own this panel.
   useScrollLock(open && !isDesktop);
+  // The phone sheet opens on its search, so the keyboard is up from the first frame: it sits on the visible
+  // window, not the layout one (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame(open && !isDesktop);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1138,11 +1142,11 @@ export function FilterPanel({
               tabIndex={-1}
               aria-label={copy.panelAriaLabel}
               onKeyDown={onPanelKeyDown}
-              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
+              className={`fixed inset-x-0 bottom-0 ${VV_BOTTOM} z-50 flex max-h-[78dvh] max-md:max-h-[min(78dvh,calc(var(--vv-h,100dvh)*0.78))] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in`}
               // The drag offset is per-pixel and only exists mid-gesture, so it
               // cannot be a class. Not color or border — the inline-style rule
               // is about styles that outrank hover: utilities.
-              style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+              style={dragY > 0 ? { ...visible, transform: `translateY(${dragY}px)` } : visible}
             >
               {/* Drag handle — drag-to-dismiss (§Sheet Dismiss), tracked live and
                   snapping back under the threshold. aria-hidden and unfocusable

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import { useCardDetailsIsOpen, useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
+import { useVisualViewportFrame } from "../ui/visual-viewport";
 import { firstSentence, restOfFirstParagraph } from "../../lib/about/caption";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import {
@@ -89,6 +90,9 @@ export function HelpPanel({
   const hold = !desk && (holds || !under);
   if (hold !== holds) setHolds(hold);
   useDialogA11y(ref, onClose, { lockScroll: hold, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
+  // The phone sheet's search raises the keyboard: the sheet sits on the visible window's bottom and is capped by
+  // its height, not the layout viewport's (ui/visual-viewport.ts). The desk panel is a full-height side column.
+  const visible = useVisualViewportFrame(!desk);
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
 
@@ -270,12 +274,12 @@ export function HelpPanel({
         className={`fixed ${over ? "z-[52]" : under ? "z-[49]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
           desk
             ? "right-0 top-0 h-dvh w-[400px] shadow-[-24px_0_60px_rgba(0,0,0,0.5)]"
-            : "bottom-0 left-0 h-[684px] max-h-dvh w-full rounded-t-[18px] shadow-[0_-20px_60px_rgba(0,0,0,0.55)]"
+            : "bottom-[calc(100%_-_var(--vv-top,0px)_-_var(--vv-h,100%))] left-0 h-[684px] max-h-[min(100dvh,var(--vv-h,100dvh))] w-full rounded-t-[18px] shadow-[0_-20px_60px_rgba(0,0,0,0.55)]"
         }`}
         style={
           desk
             ? { borderLeft: "1px solid var(--border-strong)" }
-            : { border: "1px solid var(--border-strong)", borderBottom: 0 }
+            : { ...visible, border: "1px solid var(--border-strong)", borderBottom: 0 }
         }
       >
         {!desk && (

@@ -39,15 +39,24 @@
 // search field by design, and the collection sheet takes `useDialogA11y`
 // wholesale. A shell that imposed one would break at least one of them, so it
 // takes the `panelRef` and `onKeyDown` a caller has already decided on.
+//
+// THE KEYBOARD (Hugh's modal rule, part D). Every open sheet frames the VISIBLE window on the phone
+// (`useVisualViewportFrame`, ui/visual-viewport.ts), not only those whose body holds a field. The seat picker,
+// the deck filter sheet and the issue inspector carry a search, and a field could arrive in any body later; with
+// no keyboard the visual viewport is the layout one, so the framing draws nothing different, and its cost is
+// two listeners while the sheet is open. Opting in per caller would leave the next sheet to grow a field with its
+// actions behind the keyboard. The default panel is lifted to the visual viewport's bottom (`VV_BOTTOM`) and
+// capped by it; a caller's frame is made the visible window (`VV_FRAME`) and its panel keeps its own cap.
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useSheetHost } from "./sheet-host";
+import { useVisualViewportFrame, VV_BOTTOM, VV_FRAME } from "./visual-viewport";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
 
 const PANEL =
-  "fixed inset-x-0 bottom-0 z-50 flex max-h-[78dvh] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in";
+  `fixed inset-x-0 bottom-0 ${VV_BOTTOM} z-50 flex max-h-[78dvh] max-md:max-h-[min(78dvh,calc(var(--vv-h,100dvh)*0.78))] flex-col rounded-t-[16px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in`;
 
 const SCRIM = "fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]";
 
@@ -163,6 +172,8 @@ export function Sheet({
 }: SheetProps) {
   // Called on every render, open or not: a hook cannot sit behind the `open` early return.
   const host = useSheetHost(portal && open);
+  // The visible window, while open: on the caller's frame when it has one, else on the panel (above).
+  const visible = useVisualViewportFrame(open);
   // Live offset under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
   // Whether this sheet has been TOUCHED since it opened — not whether a drag is
@@ -262,9 +273,10 @@ export function Sheet({
   };
 
   const panelStyle: React.CSSProperties | undefined =
-    height === undefined && !gestured
+    height === undefined && !gestured && (frameClassName || !visible)
       ? undefined
       : {
+          ...(frameClassName ? null : visible),
           ...(height !== undefined ? { height: `${height}px` } : null),
           ...(gestured ? { transform: `translateY(${dragY}px)`, animation: "none" } : null),
         };
@@ -335,7 +347,13 @@ export function Sheet({
     </>
   );
 
-  const node = frameClassName ? <div className={frameClassName}>{body}</div> : body;
+  const node = frameClassName ? (
+    <div className={`${frameClassName} ${VV_FRAME}`} style={visible} data-sheet-frame="">
+      {body}
+    </div>
+  ) : (
+    body
+  );
   if (!portal) return node;
   // The host exists on the client from the first render; it is null only on the server,
   // which never opens a sheet.

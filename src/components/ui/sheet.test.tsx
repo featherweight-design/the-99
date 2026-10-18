@@ -348,3 +348,56 @@ describe("Sheet — held height (opt-in)", () => {
     expect(panel().getAttribute("style")).toBeNull();
   });
 });
+
+describe("Sheet with a phone keyboard up", () => {
+  const stub = (top: number, height: number) => {
+    const vv = Object.assign(new EventTarget(), { offsetTop: top, height, offsetLeft: 0, width: 390 });
+    vi.stubGlobal("visualViewport", vv);
+    return vv;
+  };
+  const vvOf = (el: HTMLElement) => ({ top: el.style.getPropertyValue("--vv-top"), h: el.style.getPropertyValue("--vv-h") });
+
+  it("lifts the default panel to the visible window's bottom and caps it by that window, at the phone", () => {
+    stub(60, 420);
+    try {
+      render(<Sheet {...props} open />);
+      const panel = screen.getByRole("dialog");
+      expect(vvOf(panel)).toEqual({ top: "60px", h: "420px" });
+      expect(panel.className).toContain("max-md:bottom-[calc(100%_-_var(--vv-top,0px)_-_var(--vv-h,100%))]");
+      expect(panel.className).toContain("max-md:max-h-[min(78dvh,calc(var(--vv-h,100dvh)*0.78))]");
+      // The desktop cap is the dvh one alone.
+      expect(panel.className).toMatch(/(^|\s)max-h-\[78dvh\]/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps the frame on the panel under a drag, alongside the offset", () => {
+    stub(0, 500);
+    try {
+      render(<Sheet {...props} open />);
+      fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle(), { clientY: 30, pointerId: 1 });
+      expect(offset()).toBe(30);
+      expect(vvOf(screen.getByRole("dialog")).h).toBe("500px");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("makes a caller's frame the visible window instead, and its panel reads the frame's height", () => {
+    stub(40, 380);
+    try {
+      render(<Sheet {...props} open frameClassName="fixed inset-0 z-50 flex flex-col justify-end" panelClassName="relative flex max-h-[86dvh] flex-col" />);
+      const frame = document.querySelector<HTMLElement>("[data-sheet-frame]")!;
+      expect(vvOf(frame)).toEqual({ top: "40px", h: "380px" });
+      expect(frame.className).toContain("max-md:top-[var(--vv-top,0px)]");
+      expect(frame.className).toContain("max-md:h-[var(--vv-h,100%)]");
+      expect(frame.className).toContain("fixed inset-0 z-50");
+      // Set once, on the frame: the panel inherits the values rather than carrying a second copy.
+      expect(vvOf(screen.getByRole("dialog"))).toEqual({ top: "", h: "" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

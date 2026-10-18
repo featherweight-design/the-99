@@ -34,6 +34,7 @@ import { AddedReceipt, type WentInputs } from "./added-receipt";
 import { AddLine } from "./add-line";
 import { ReplaceIcon } from "./replace-icon";
 import { EditCopiesSheet, type EditResult } from "./edit-copies-sheet";
+import { useVisualViewportFrame } from "../ui/visual-viewport";
 import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
 import type { AddOutcome, ScanCapture, ScanPicked } from "./scan/use-card-scan";
@@ -278,6 +279,8 @@ function AddMode({
   }, [saving, swapping, scanning, closeScanner, discarding, fixing, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
+  // The phone sheet is the visible window, which the keyboard shrinks (sheet-frame.ts).
+  const visible = useVisualViewportFrame(phone);
   // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
   useMomentHold(true);
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
@@ -519,6 +522,7 @@ function AddMode({
       aria-modal="true"
       aria-labelledby={titleId}
       className={SHEET_PANEL_CLASS}
+      style={visible}
     >
       <div inert={discarding || undefined} className="flex min-h-0 flex-1 flex-col">
         <div inert={covered} className="flex items-center gap-[12px] px-[18px] pb-[12px] pt-[16px] md:px-[22px] md:pb-[14px] md:pt-[20px]">

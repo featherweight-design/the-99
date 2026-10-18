@@ -14,6 +14,7 @@
 import { startTransition, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { linkPrecon, unlinkPrecon } from "../../../app/decks/precon-link-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
+import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconMonth, preconsCopy } from "../../../lib/copy/precons";
 import type { PreconMatch } from "../../../lib/precons/link";
 import type { PreconDeckChoice } from "../../../lib/precons/open-read";
@@ -66,8 +67,10 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children, footer }:
   // A dismissal mid-flight would hide a write the reader thinks they cancelled.
   const dismiss = () => { if (!pending) onDismiss(); };
   useDialogA11y(dialog, dismiss, { initialFocusRef });
+  // Its search raises the keyboard: on the phone the frame is the visible window (ui/visual-viewport.ts).
+  const visible = useVisualViewportFrame();
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:px-[16px]">
+    <div className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
       <div aria-hidden="true" onClick={dismiss} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
       <div
         ref={dialog}
@@ -75,7 +78,7 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children, footer }:
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex max-h-[90dvh] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
+        className="relative z-10 mx-auto flex max-h-[90dvh] max-md:max-h-[min(90dvh,calc(var(--vv-h,100dvh)*0.9))] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[36px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
         <div className="flex flex-none items-start justify-between gap-[12px]">
