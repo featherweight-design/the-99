@@ -69,7 +69,7 @@ export function TuningNotesField({ value, onChange }: { value: string; onChange:
           placeholder={desktop ? copy.placeholder : copy.placeholderPhone}
           aria-label={copy.label}
           // 16px below `md`, same iOS Safari zoom-on-focus reason as the description field.
-          className="w-full resize-none overflow-hidden rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
+          className="w-full resize-none overflow-hidden rounded-[8px] font-sans text-[16px] leading-[1.5] [@media(pointer:fine)]:md:text-[13.5px]"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border-strong)",

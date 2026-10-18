@@ -239,7 +239,7 @@ export function ResolutionExpander({
             ref={fieldRef}
             containerClassName="mt-[14px] md:mt-0 gap-[10px] px-[13px] py-[11px] rounded-[8px] bg-[color:var(--bg)] border-[color:var(--accent)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]"
             // 16px at phone width so Safari does not zoom the page on focus.
-            className="text-[16px] md:text-[14.5px]"
+            className="text-[16px] [@media(pointer:fine)]:md:text-[14.5px]"
             role="combobox"
             aria-expanded={open}
             aria-controls={open ? listId : undefined}

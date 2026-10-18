@@ -192,7 +192,7 @@ export function InviteNew({
                 setEmail(e.target.value);
                 if (bad) setBad(!isEmailShape(e.target.value));
               }}
-              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending || emailHeld ? "text-[color:var(--fg-muted)]" : ""}`}
+              className={`h-[48px] min-w-0 px-[12px] text-[16px] md:h-[40px] md:flex-1 md:rounded-[6px] [@media(pointer:fine)]:md:text-[14px] focus:border-[color:var(--accent)] ${bad ? "!border-[color:var(--danger)]" : ""} ${sending || emailHeld ? "text-[color:var(--fg-muted)]" : ""}`}
             />
             <button
               type="submit"

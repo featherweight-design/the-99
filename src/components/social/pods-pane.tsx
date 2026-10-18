@@ -261,7 +261,7 @@ export function PodsPane({ pods, sharedIds, friends }: { pods: Pod[]; sharedIds:
                 value={name}
                 onChange={(e) => setName(capName(e.target.value, POD_NAME_MAX))}
                 autoComplete="off"
-                className={`h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] md:text-[14px] ${AFFIX_INPUT}`}
+                className={`h-full w-full min-w-0 px-[12px] text-[16px] text-[color:var(--fg)] [@media(pointer:fine)]:md:text-[14px] ${AFFIX_INPUT}`}
               />
             </div>
             <div className="flex gap-[8px] max-md:order-last">

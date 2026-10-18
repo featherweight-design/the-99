@@ -1226,7 +1226,7 @@ function DescribingInPlace({
           rows={2}
           placeholder={descCopy.placeholder}
           aria-label={descCopy.fieldAria}
-          className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
+          className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] [@media(pointer:fine)]:md:text-[13.5px]"
           style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
         />
         {picker.open && <CardTagList {...picker.list} />}

@@ -369,7 +369,7 @@ export function ImportEntry({ compact = false, canOwn = false }: {
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}
             aria-describedby={failure ? "import-failure" : undefined}
-            className={`${compact ? "h-[92px]" : "h-[300px]"} w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-placeholder)]`}
+            className={`${compact ? "h-[92px]" : "h-[300px]"} w-full rounded-lg p-[14px_16px] font-mono text-[16px] [@media(pointer:fine)]:md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-placeholder)]`}
           />
         </div>
       ) : (
@@ -460,7 +460,7 @@ export function ImportEntry({ compact = false, canOwn = false }: {
         value={deckName}
         onChange={(e) => setDeckName(e.target.value)}
         maxLength={DECK_NAME_MAX}
-        className="block w-full rounded-[8px] p-[12px_14px] text-[16px] md:text-[14.5px]"
+        className="block w-full rounded-[8px] p-[12px_14px] text-[16px] [@media(pointer:fine)]:md:text-[14.5px]"
       />
 
       {/* S8: under Deck name, above the import button. A 44px row on the phone, centred there as drawn. */}

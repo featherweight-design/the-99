@@ -233,7 +233,7 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
               readOnly={pending}
               aria-invalid={!valid ? true : undefined}
               aria-describedby={!valid || failed ? errorId : undefined}
-              className="w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[16px] md:text-[14px]"
+              className="w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[16px] [@media(pointer:fine)]:md:text-[14px]"
             />
           </label>
 
