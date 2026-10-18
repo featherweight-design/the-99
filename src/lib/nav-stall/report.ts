@@ -17,7 +17,7 @@ export const MAX_STALL_BYTES = 2_048;
 
 /** Every literal path segment the app routes on. Anything else is an id, a slug or a code. */
 const KNOWN_SEGMENTS = new Set([
-  "about", "accounts", "admin", "changes", "choose", "collection", "commanders", "decks", "discover",
+  "about", "accounts", "admin", "changes", "choose", "collection", "commanders", "credits", "decks", "discover",
   "friend", "friends", "groups", "history", "import", "models", "new", "precons", "proxies", "replace", "sets", "shopping",
   "summary", "switches", "wishlist",
 ]);
@@ -41,8 +41,12 @@ function isPattern(value: unknown): value is string {
 
 /** Which loading screen is up: the pending overlay, the in-page Suspense card, both, or neither. */
 export const LOADERS = ["overlay", "fallback", "both", "none"] as const;
-/** What started the report: a navigation still pending, or a page that committed into its fallback. */
-export const KINDS = ["pending", "fallback"] as const;
+/**
+ * What started the report: a navigation still pending, a page that committed into its fallback, or an
+ * `orphan` (the pending overlay found up with no navigation running, sent at once because nothing is left
+ * to wait on, and taken down by the same check).
+ */
+export const KINDS = ["pending", "fallback", "orphan"] as const;
 /** `navigator.connection.effectiveType`, where the browser has it. */
 export const CONNECTIONS = ["slow-2g", "2g", "3g", "4g", "unknown"] as const;
 /**

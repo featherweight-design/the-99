@@ -15,6 +15,8 @@ describe("pathPattern", () => {
     // Social R1: /friends and a friend link, whose token is an id like any other.
     expect(pathPattern("/friends?accepted=p-1")).toBe("/friends");
     expect(pathPattern("/friend/AbCdEfGhIjKlMnOpQrStUv")).toBe("/friend/[x]");
+    // The credits page, the first place a stuck press was seen.
+    expect(pathPattern("/credits?checkout=done&session_id=cs_test_1")).toBe("/credits");
   });
   it("drops the query and the hash", () => {
     expect(pathPattern("/decks/shopping?d=a,b#top")).toBe("/decks/shopping");
@@ -26,6 +28,11 @@ describe("parseStall", () => {
   it("takes a well-formed report as it is", () => {
     expect(parseStall(JSON.parse(JSON.stringify(good)))).toEqual(good);
     expect(parseStall({ ...good, deployment: null })).toEqual({ ...good, deployment: null });
+  });
+  it("takes an orphan report: the overlay found up with no navigation running", () => {
+    const orphan = { ...good, kind: "orphan" as const, from: "/credits", to: "/credits", at: "/credits", moved: true };
+    expect(parseStall(JSON.parse(JSON.stringify(orphan)))).toEqual(orphan);
+    expect(stallLine(orphan, "same")).toContain("kind=orphan from=/credits to=/credits");
   });
   it("refuses a raw path, a slug or a query in any path field", () => {
     for (const field of ["from", "to", "at"] as const) {

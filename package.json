@@ -47,6 +47,7 @@
     "probe:deck-hero-wash": "node scripts/probe-deck-hero-wash.mjs",
     "probe:pwa-offline": "node scripts/probe-pwa-offline.mjs",
     "probe:pwa-install": "node scripts/probe-pwa-install.mjs",
+    "probe:stuck-overlay": "node scripts/probe-stuck-overlay.mjs",
     "probe:commander-carousel": "node scripts/probe-commander-carousel.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",
     "probe:token-printings": "tsx scripts/probe-token-printings.ts",
