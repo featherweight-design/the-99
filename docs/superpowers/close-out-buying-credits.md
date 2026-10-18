@@ -46,9 +46,11 @@ and `buying-credits-closeout-admin.json`. Every cell of every run reached its su
 
 | Surface | Frames | Route | 390 | 1300 | Evidence |
 |---|---|---|---|---|---|
-| Balance, cells, the pack offer | P1, P3/P4, P8 layout | `/credits` | ☑ | ☑ | contact sheet `rich` |
+| Balance, cells, the pack offer | P1, P3/P4 | `/credits` | ☑ | ☑ | contact sheet `rich` |
+| A second pack card | P8 | `/credits` | ☐ | ☐ | not photographed: the registry holds one pack (`pack40`); the layout is covered by the component tests |
 | Never bought | P2 | `/credits` | ☑ | ☑ | contact sheet `never` |
-| Paid-today line and meter | P5, P5b | `/credits` | ☑ | ☑ | contact sheet `rich` |
+| Paid-today line and meter | P5 (17 of 20) | `/credits` | ☑ | ☑ | contact sheet `rich` |
+| The meter at the limit | P5b (20 of 20, warning fill) | `/credits` | ☐ | ☐ | not photographed (the fixture holds 17 runs); the component tests and U2b's inventory run |
 | History, Receipt, refund line, legal links | P1 | `/credits` | ☑ | ☑ | contact sheet `rich` |
 | Checkout closed | R5 | `/credits?checkout=cancelled` | ☑ | ☑ | contact sheet `rich` |
 | Processing, added, still processing | R1, R2, R4 | `/credits?checkout=done&session_id=` | ☐ | ☐ | not photographed: needs a Session of the account's own; `probe:credits-return` and the component tests |
@@ -57,7 +59,8 @@ and `buying-credits-closeout-admin.json`. Every cell of every run reached its su
 | Switch off, held | O4 | `/credits` | ☑ | ☑ | contact sheet `off`; `probe:payments-reduced` |
 | Switch off, nothing held | G6, O1 | `/credits` | ☑ | ☑ | contact sheet `gone` (the not-found page) |
 | Account-menu chip | M1b | account menu | ☑ sheet | ☑ popover | contact sheet `rich` |
-| Credit line, paid states | L1 to L6, L8 | Help me choose (one of six spend surfaces) | ☑ | ☑ | contact sheet `rich`; the other surfaces share the component (below) |
+| Credit line, first paid run | L3 | Help me choose (one of six spend surfaces) | ☑ | ☑ | contact sheet `rich`; the other surfaces share the component (below) |
+| Credit line, other states | L1, L2, L4 to L6, L8 | spend surfaces | ☐ | ☐ | not photographed here: `credit-line.test.ts` and U2b's per-state runs (`buying-credits-u2.json`) |
 | Deletion warning | D1, D2 | Manage account | ☑ sheet | ☑ popover | `probe:delete-warning` with `PROBE_SHOTS` |
 | Admin Payments tab | A2b, A3 | `/admin/payments` | ☑ | ☑ | contact sheet `admin` |
 | Plan card, plan offer, plan started | K1 to K6, R3 | `/credits` | ☐ | ☐ | **U3b, not merged** |
@@ -98,7 +101,7 @@ radius, borders, what each width draws), then each mismatch was checked in the c
 - The menu shows an Admin row: the walked account is an admin. Readers see About, Friends, Manage account, Sign out.
 
 **Matches:** P1 page with cells, total and spend order; P2 never bought (one Free cell, no "Spent in this order", the
-empty history); P5/P5b paid-today line and meter; history rows, refund line and support link; R5 cancelled band
+empty history); P5 paid-today line and meter; history rows, refund line and support link; R5 cancelled band
 (`.band.quiet`); M1b chip (popover at 1300, a 44px press in the sheet at 390); the credit line (L3, `Uses a paid
 credit.`); B1 pause band (`.band`, `.hold`), in the offers' place; O4 (no offers section); O1/G6 not-found.
 
@@ -139,7 +142,8 @@ These need Hugh's Stripe steps first, from `boards/hugh-todos.md`:
   webhook endpoint; give the restricted key Charges: read and Disputes: read. Until then a refund in Stripe never reaches
   the app.
 - **6i** (the monthly plan): add `invoice.paid`, `customer.subscription.updated` and `customer.subscription.deleted`;
-  give the key Invoices: read and Subscriptions: read. Until then the plan cannot be walked live (and U3b's card has
+  give the key Invoices: read and Subscriptions: read. Cancel and keep (U3a) also need Subscriptions **write** and Customer
+  portal write, plus `STRIPE_PORTAL_CONFIG` (`docs/agents/payments.md`). Until then the plan cannot be walked live (and U3b's card has
   nothing to draw).
 
 Then: buy a pack with Stripe's test card (R1, R2), refund it (its unspent credits leave the balance), and, once U3b
