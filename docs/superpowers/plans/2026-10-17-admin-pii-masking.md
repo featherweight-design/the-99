@@ -52,20 +52,22 @@ Each PR merges before the next is cut from `main` (no stacking). PR 1 alone alre
 
 `docs/superpowers/inventories/admin-masking.json`, one row per cell, photographed on a scratch branch with `ADMIN_USER_IDS` naming the signed-in account. Ticked per PR against the running app.
 
+Walked at close-out, 2026-10-18: every row loaded at both widths (`docs/superpowers/close-out-admin-r3-masking.md`).
+
 | Route | State | 390 | 1300 | PR |
 |---|---|---|---|---|
-| `/admin/accounts` | A1 masked list | ☐ | ☐ | 1, 2 |
-| `/admin/accounts` | A7 name filter, A8 `@` typed | ☐ | ☐ | 4 |
-| `/admin/accounts` | A2 one row revealed | ☐ | ☐ | 3 |
-| `/admin/accounts` | A3 hit, A4 miss, A5 lookup failed | ☐ | ☐ | 4 |
-| `/admin/accounts` | A6 reveal failed | ☐ | ☐ | 3 |
-| `/admin/accounts/[clerkId]` | B1 masked head, Invites, History | ☐ | ☐ | 1, 2 |
-| `/admin/accounts/[clerkId]` | B2 revealed, History line | ☐ | ☐ | 3 |
-| `/admin/invites` | C1 tree masked | ☐ | ☐ | 1, 2 |
-| `/admin/groups` | Y1 member line masked | ☐ | ☐ | 1 |
-| `/admin/groups/[id]` | C2 members, pending, history | ☐ | ☐ | 1, 2 |
-| `/admin/switches/[name]` | C3 overrides, picker, check, Y2 result, history | ☐ | ☐ | 1, 2 |
-| `/admin/costs` | C5 per account, cap set by | ☐ | ☐ | 2 |
+| `/admin/accounts` | A1 masked list | ☑ | ☑ | 1, 2 |
+| `/admin/accounts` | A7 name filter, A8 `@` typed | ☑ | ☑ | 4 |
+| `/admin/accounts` | A2 one row revealed | ☑ | ☑ | 3 |
+| `/admin/accounts` | A3 hit, A4 miss, A5 lookup failed | ☑ | ☑ | 4 |
+| `/admin/accounts` | A6 reveal failed | ☑ | ☑ | 3 |
+| `/admin/accounts/[clerkId]` | B1 masked head, Invites, History | ☑ | ☑ | 1, 2 |
+| `/admin/accounts/[clerkId]` | B2 revealed, History line | ☑ | ☑ | 3 |
+| `/admin/invites` | C1 tree masked | ☑ | ☑ | 1, 2 |
+| `/admin/groups` | Y1 member line masked | ☑ | ☑ | 1 |
+| `/admin/groups/[id]` | C2 members, pending, history | ☑ | ☑ | 1, 2 |
+| `/admin/switches/[name]` | C3 overrides, picker, check, Y2 result, history | ☑ | ☑ | 1, 2 |
+| `/admin/costs` | C5 per account, cap set by | ☑ | ☑ | 2 |
 
 The existing `admin.json` and `invites-admin.json` rows keep running; PR 2 updates any row whose `wait` selector named an email.
 
