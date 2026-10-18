@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 // render to send a confirmed upload on to /collection. Outside an app-router
 // tree that throws, and none of these tests navigates.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("../discovery/first-run-tour", () => ({ FirstRunTour: ({ precons }: { precons: boolean }) => <div data-testid="tour" data-precons={String(precons)} /> }));
 
 // The review is reached through the real paste path; only the server read is stubbed.
 const previewPaste = vi.fn();
@@ -224,5 +225,13 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     render(<FirstRunChecklist addByHand scan />);
     fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
     expect(sheet?.scan).toBe(true);
+  });
+
+  it("mounts the first-run tour only when it is due, its precon line following the ways group", () => {
+    const { unmount } = render(<FirstRunChecklist />);
+    expect(screen.queryByTestId("tour")).toBeNull();
+    unmount();
+    render(<FirstRunChecklist tour ways={{ precons: true }} />);
+    expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
   });
 });

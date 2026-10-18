@@ -1,0 +1,163 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TargetId } from "../../lib/discovery/targets";
+
+const spend = vi.fn(() => Promise.resolve());
+vi.mock("../../app/tour-actions", () => ({ spendTourAction: () => spend() }));
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+const takeVisit = vi.fn();
+vi.mock("../../lib/moments/visit", async (orig) => ({ ...(await orig<object>()), takeVisit: () => takeVisit() }));
+
+const { FirstRunTour } = await import("./first-run-tour");
+const { TargetsProvider, useTarget } = await import("./targets-provider");
+const { useScrollLock } = await import("../../lib/a11y/dialog");
+const { ARRIVE_MS } = await import("../moments/moments-provider");
+
+function Lit({ id, label }: { id: TargetId; label: string }) {
+  return (
+    <button type="button" ref={useTarget(id)}>
+      {label}
+    </button>
+  );
+}
+
+function Sheet({ open }: { open: boolean }) {
+  useScrollLock(open);
+  return null;
+}
+
+/** A first-run Home: the app (every target but, optionally, the banner) and the tour beside it. */
+function Home({ banner = true, sheet = false, precons = true }: { banner?: boolean; sheet?: boolean; precons?: boolean }) {
+  return (
+    <TargetsProvider>
+      <div data-testid="app">
+        <Lit id="tour:step-one" label="Upload" />
+        <Lit id="tour:commanders" label="Commanders" />
+        <Lit id="tour:decks" label="Decks" />
+        <Lit id="tour:account" label="Account" />
+        {banner && <Lit id="tour:banner" label="About" />}
+        <Sheet open={sheet} />
+      </div>
+      <FirstRunTour precons={precons} />
+    </TargetsProvider>
+  );
+}
+
+const arrive = () => act(() => vi.advanceTimersByTime(ARRIVE_MS + 10));
+const card = () => screen.getByRole("dialog");
+const next = () => fireEvent.click(within(card()).getByRole("button", { name: /^(Next|Finish)$/ }));
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  spend.mockClear();
+  takeVisit.mockClear();
+});
+afterEach(() => vi.useRealTimers());
+
+describe("FirstRunTour", () => {
+  it("opens once the page settles plus ARRIVE_MS, spends the tour and takes the visit", () => {
+    render(<Home />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    act(() => vi.advanceTimersByTime(ARRIVE_MS - 50));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    arrive();
+    expect(card()).toHaveAccessibleName("Start with what you own");
+    expect(spend).toHaveBeenCalledTimes(1);
+    expect(takeVisit).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits while a sheet is open over Home, and opens once it closes", () => {
+    const { rerender } = render(<Home sheet />);
+    arrive();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(spend).not.toHaveBeenCalled();
+    rerender(<Home sheet={false} />);
+    arrive();
+    expect(card()).toBeInTheDocument();
+  });
+
+  it("holds the app inert while it runs, and lets it go when it ends", () => {
+    render(<Home />);
+    arrive();
+    expect(screen.getByTestId("app").closest("[inert]")).not.toBeNull();
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByTestId("app").closest("[inert]")).toBeNull();
+  });
+
+  it("walks six steps, Back and Next, and Finish ends it", () => {
+    render(<Home />);
+    arrive();
+    const kickers = [];
+    for (let i = 0; i < 6; i++) {
+      kickers.push(within(card()).getByText(/ of 6 · /).textContent);
+      if (i < 5) next();
+    }
+    expect(kickers).toEqual(["1 of 6 · Collection", "2 of 6 · Commanders", "3 of 6 · Decks", "4 of 6 · Buying", "5 of 6 · Your look", "6 of 6 · What’s new"]);
+    fireEvent.click(within(card()).getByRole("button", { name: "Back" }));
+    expect(within(card()).getByText("5 of 6 · Your look")).toBeInTheDocument();
+    next();
+    expect(within(card()).getByRole("button", { name: "Finish" })).toBeInTheDocument();
+    next();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(spend).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts focus on Next and has no Back on step 1", () => {
+    render(<Home />);
+    arrive();
+    expect(within(card()).getByRole("button", { name: "Next" })).toHaveFocus();
+    expect(within(card()).queryByRole("button", { name: "Back" })).toBeNull();
+  });
+
+  it("ends on Escape", () => {
+    render(<Home />);
+    arrive();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("names Precons I own on step 1 only with the precons line on", () => {
+    const { unmount } = render(<Home />);
+    arrive();
+    expect(card()).toHaveTextContent("No file? Precons I own adds every card");
+    unmount();
+    render(<Home precons={false} />);
+    arrive();
+    expect(card()).not.toHaveTextContent("Precons I own");
+  });
+
+  it("draws the shipped theme picker on step 5", () => {
+    render(<Home />);
+    arrive();
+    for (let i = 0; i < 4; i++) next();
+    expect(within(card()).getByRole("radiogroup")).toBeInTheDocument();
+    expect(within(card()).getAllByRole("radio")).toHaveLength(6);
+    expect(within(card()).getByRole("status")).toHaveTextContent(/applied\.$/);
+  });
+
+  it("lights the banner on step 6, and without one stands the card centred and drops the line's sentence (R3 gap 6)", () => {
+    const { unmount } = render(<Home />);
+    arrive();
+    for (let i = 0; i < 5; i++) next();
+    expect(card()).toHaveTextContent("one line on Home says so");
+    expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
+    unmount();
+    render(<Home banner={false} />);
+    arrive();
+    for (let i = 0; i < 5; i++) next();
+    expect(card()).not.toHaveTextContent("one line on Home says so");
+    expect(card()).toHaveTextContent("Read the note ›");
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+  });
+
+  it("ends and opens the creator's note from step 6", () => {
+    render(<Home />);
+    arrive();
+    for (let i = 0; i < 5; i++) next();
+    fireEvent.click(within(card()).getByRole("button", { name: "Read the note ›" }));
+    const note = screen.getByRole("dialog");
+    expect(note).toHaveAccessibleName("A note from the creator");
+    expect(document.querySelector("[data-tour-card]")).toBeNull();
+  });
+});

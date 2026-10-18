@@ -26,6 +26,8 @@ import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
 import { HelpButton } from "../help/help-root";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { TargetBox } from "../discovery/targets-provider";
+import type { TargetId } from "../../lib/discovery/targets";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -270,6 +272,9 @@ function tabPlace(slot: HTMLElement) {
  * slot, so the pointer can travel onto it (WCAG 1.4.13); it closes on Escape,
  * on focus leaving slot and note, and on a press outside both.
  */
+/** The tour's stops on a locked slot (discovery R3·1b): Commanders, and Decks for steps 3 and 4. */
+const tourSlot = (href: NavHref): TargetId | null => (href === "/commanders" ? "tour:commanders" : href === "/decks" ? "tour:decks" : null);
+
 function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock }) {
   const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
   const action = useNoteAction(openLock);
@@ -307,8 +312,9 @@ function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock
               onFocus={() => show(href)}
               onClick={() => show(href)}
               onBlur={onBlur(href)}
-              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none ${RAIL_TOUCH_SLOT}`}
+              className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none ${RAIL_TOUCH_SLOT}`}
             >
+              <TargetBox id={tourSlot(href)} />
               <NavIcon href={href} />
               <RailLabel label={label} />
             </button>
@@ -422,10 +428,11 @@ function TabLockSlots({ pathname, liveHome, openLock }: { pathname: string; live
               aria-current={isActive(pathname, href) ? "page" : undefined}
               onClick={() => (waiting ? close(href, false) : show(href))}
               // Tapped: an inset outline, never a fill (4a.7).
-              className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
+              className={`relative flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
                 isOpen ? "shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""
               }`}
             >
+              <TargetBox id={tourSlot(href)} />
               <NavIcon href={href} />
               <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
                 {label}

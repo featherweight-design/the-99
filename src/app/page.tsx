@@ -210,7 +210,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       perf.timed("tourSeen", () => readTourSeenFor(userId, env)),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
-      // `tourDue` waits for R3·1b, the tour itself, which is its one reader.
+      // `tourDue` is the first-run tour's (R3·1b) one reader.
       const due = tourSeen !== undefined && tourDue(env, true, tourSeen);
       return { value: { firstRun: true, aboutSeen: seen, tourDue: due }, store: true };
     }
@@ -322,6 +322,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         scan={cardScanEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
+        tour={data.tourDue}
       />
     );
   }

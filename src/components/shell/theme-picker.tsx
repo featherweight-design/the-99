@@ -18,6 +18,7 @@
 
 import { useRef, useState, type RefObject } from "react";
 import { themeCopy } from "../../lib/copy/theme";
+import { useIsDesktop } from "../ui/use-is-desktop";
 import {
   RETIRED_THEMES,
   THEME_COOKIE,
@@ -29,7 +30,11 @@ import {
   type ThemeKey,
 } from "../../lib/theme/themes";
 
-type PanelKind = "popover" | "sheet";
+/**
+ * `tour`: the first-run tour's step 5 (discovery R3·1b, R3 gap 14), the picker itself rather than a copy. The popover's
+ * 3×2 grid from `md` and the sheet's 2×3 below, no section label (the card's title names it), and the status line drawn.
+ */
+type PanelKind = "popover" | "sheet" | "tour";
 
 /**
  * The miniature: canvas, panel with "99" set in the theme's display face, an
@@ -141,15 +146,20 @@ export function ThemePicker({
    */
   selectedChipRef?: RefObject<HTMLElement | null>;
 }) {
+  const tour = panel === "tour";
+  const isDesktop = useIsDesktop();
   const [selected, setSelected] = useState<ThemeKey>(() => themeInForce(current));
-  const [announcement, setAnnouncement] = useState("");
+  // The tour draws its status line, so it opens saying what is in force; elsewhere it is a live region only.
+  const [announcement, setAnnouncement] = useState(() =>
+    tour ? themeCopy.applied(THEMES.find((t) => t.key === themeInForce(current))?.name ?? "") : "",
+  );
   // Read at mount rather than in an effect. The account menu renders this only
   // once `open` is true, which is client state starting false — so the picker
   // never appears in server output and there is no hydration pass to mismatch.
   const [notice, setNotice] = useState(retirementNotice);
   const ownChipRef = useRef<HTMLElement | null>(null);
   const chipRef = selectedChipRef ?? ownChipRef;
-  const compact = panel === "sheet";
+  const compact = panel === "sheet" || (tour && !isDesktop);
 
   function choose(key: ThemeKey, name: string) {
     setSelected(key);
@@ -188,9 +198,11 @@ export function ThemePicker({
 
   return (
     <div>
-      <p className="m-0 px-1 pb-[6px] pt-[10px] font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
-        {themeCopy.label}
-      </p>
+      {!tour && (
+        <p className="m-0 px-1 pb-[6px] pt-[10px] font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
+          {themeCopy.label}
+        </p>
+      )}
       {notice && (
         <div className="mx-1 mb-2 flex items-start gap-2 rounded-[8px] bg-[color:var(--surface-raised)] p-[10px] text-[11.5px] leading-[1.35] text-[color:var(--fg-body)]">
           <p className="m-0 min-w-0 flex-1">
@@ -216,7 +228,9 @@ export function ThemePicker({
       <div
         role="radiogroup"
         aria-label={themeCopy.groupLabel}
-        className={`grid ${compact ? "grid-cols-2 gap-[10px]" : "grid-cols-3 gap-2"}`}
+        className={`grid ${
+          tour ? (compact ? "mt-[12px] grid-cols-2 gap-x-[8px] gap-y-[6px]" : "mt-[12px] grid-cols-3 gap-[8px]") : compact ? "grid-cols-2 gap-[10px]" : "grid-cols-3 gap-2"
+        }`}
       >
         {THEMES.map(({ key, name, plane, short }, i) => {
           const isSelected = key === selected;
@@ -237,13 +251,17 @@ export function ThemePicker({
               tabIndex={isSelected ? 0 : -1}
               onClick={() => choose(key, name)}
               onKeyDown={(e) => onKeyDown(e, i)}
-              className={`rounded-[10px] text-left transition-colors duration-[120ms] ${
-                compact
-                  ? "flex min-h-[44px] items-center gap-[11px] p-[10px]"
-                  : "flex flex-col gap-[5px] p-[5px]"
+              className={`text-left transition-colors duration-[120ms] ${
+                tour
+                  ? compact
+                    ? "flex min-h-[48px] items-center gap-[10px] rounded-[9px] p-[5px_6px]"
+                    : "flex flex-col gap-[5px] rounded-[9px] p-[5px]"
+                  : compact
+                    ? "flex min-h-[44px] items-center gap-[11px] rounded-[10px] p-[10px]"
+                    : "flex flex-col gap-[5px] rounded-[10px] p-[5px]"
               } ${
                 isSelected
-                  ? "bg-[color:var(--elevated)] outline outline-1 outline-[color:var(--accent)]"
+                  ? `bg-[color:var(--elevated)] outline ${tour ? "outline-[1.5px]" : "outline-1"} outline-[color:var(--accent)]`
                   : "hover:bg-[color:var(--surface-raised)] transition-colors"
               }`}
             >
@@ -271,7 +289,11 @@ export function ThemePicker({
           );
         })}
       </div>
-      <p role="status" aria-live="polite" className="sr-only">
+      <p
+        role="status"
+        aria-live="polite"
+        className={tour ? "m-0 mt-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]" : "sr-only"}
+      >
         {announcement}
       </p>
     </div>

@@ -17,6 +17,7 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { WaysGroup } from "../collection/ways-group";
+import { useTarget } from "../discovery/targets-provider";
 
 export function FirstRunStepOne({
   fan,
@@ -40,6 +41,8 @@ export function FirstRunStepOne({
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
   const [reviewing, setReviewing] = useState<{ file: string; rows: number } | null>(null);
+  // The tour's step 1 lights this card (discovery R3·1b).
+  const tourTarget = useTarget("tour:step-one");
   const openAdd = (el: HTMLElement) => {
     trigger.current = el;
     saved.current = false;
@@ -60,6 +63,7 @@ export function FirstRunStepOne({
       data-reviewing={reviewing ? "" : undefined}
       // The nav's "Go to step 1" lands here when the review has replaced the upload entry.
       data-step1-card=""
+      ref={tourTarget}
       tabIndex={-1}
     >
       {/* `sm:items-start` on the card above keeps this pinned while the text

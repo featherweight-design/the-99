@@ -23,6 +23,7 @@ import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 import { sheetTitles } from "../shell/about-sheet";
 import { aboutAcknowledged, arrivalsAcknowledged } from "./arrivals-seen";
 import { PendingReporter } from "../shell/pending-reporter";
+import { useTarget } from "../discovery/targets-provider";
 
 /** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
 export const HOME_HEADING_ID = "home-heading";
@@ -137,6 +138,8 @@ export function ArrivalsBanner({
   const arrivals = data && data.lines.length > 0 && !arrivalsAcknowledged(data.keys) ? data : null;
   const aboutShown = about && !aboutAcknowledged(about.ids) ? about : null;
   const [phase, setPhase] = useState<"open" | "closing" | "gone">(() => (dismissed.has(id) ? "gone" : "open"));
+  // The tour's step 6 lights the band (discovery R3·1b); unregistered while it is gone, so the step falls back.
+  const tourTarget = useTarget("tour:banner");
 
   useEffect(() => {
     if (phase !== "closing") return;
@@ -182,6 +185,7 @@ export function ArrivalsBanner({
       <div className={`min-h-0 ${closing ? "overflow-hidden" : ""}`} inert={closing}>
         {single ? (
           <section
+            ref={tourTarget}
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] flex items-start gap-[10px] py-[10px] pl-[14px] ` +
@@ -220,6 +224,7 @@ export function ArrivalsBanner({
           // first, each with its own link. Several arrivals keep `sheetTitles`' cap, and their one Precons link
           // closes the last of their lines.
           <section
+            ref={tourTarget}
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] flex flex-col pt-[2px] pr-[4px] pb-[6px] pl-[14px] ` +
@@ -271,6 +276,7 @@ export function ArrivalsBanner({
           // on a grid so the DOM reads heading, lines, link, ✕ (Tab: the link, then ✕) while the link sits on the
           // heading line at desktop and on its own 44px line last at 390.
           <section
+            ref={tourTarget}
             aria-label={copy.regionLabel}
             className={
               `${SHELL} mx-[16px] mt-[14px] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[10px] pt-[6px] pr-[4px] pb-[4px] pl-[14px] ` +

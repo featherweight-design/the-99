@@ -10,7 +10,7 @@ import { aboutCopy } from "../../../lib/copy/about";
 import { creatorNoteCopy } from "../../../lib/copy/discovery";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 
-function NoteDialog({ onClose }: { onClose: () => void }) {
+export function NoteDialog({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLElement>(null);
   useDialogA11y(ref, onClose);
   const paragraphs = aboutCopy.pageIntro.split("\n\n");

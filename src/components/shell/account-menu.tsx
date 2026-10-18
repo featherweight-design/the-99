@@ -17,6 +17,7 @@ import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog"
 import { useMomentHold } from "../../lib/moments/hold";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { TargetBox } from "../discovery/targets-provider";
 import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
@@ -531,8 +532,10 @@ export function AccountMenu({
         onClick={() => setOpen((v) => !v)}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.
-        className="group block cursor-pointer p-[3px]"
+        className="group relative block cursor-pointer p-[3px]"
       >
+        {/* The tour's step 5 lights this button, in the rail or the header (discovery R3·1b). */}
+        <TargetBox id="tour:account" />
         {/* Hover and pressed are one state (N2): colour only, no scale. Open
             wins over hover, so its classes are applied instead of alongside.
 

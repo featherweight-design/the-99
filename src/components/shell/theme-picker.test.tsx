@@ -206,4 +206,15 @@ describe("ThemePicker retirement notice", () => {
     expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
     expect(document.cookie).toContain("the99_theme=ixalan");
   });
+
+  it("draws the tour's panel: no section label, the status line shown with the theme in force (R3 gap 14)", () => {
+    render(<ThemePicker current="amonkhet" panel="tour" />);
+    expect(screen.queryByText("Theme")).not.toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).not.toHaveClass("sr-only");
+    expect(status).toHaveTextContent("Low Sun applied.");
+    fireEvent.click(screen.getByRole("radio", { name: "Canopy, Ixalan" }));
+    expect(status).toHaveTextContent("Canopy applied.");
+    expect(document.cookie).toContain("the99_theme=ixalan");
+  });
 });
