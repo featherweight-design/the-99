@@ -321,6 +321,51 @@ describe("Show me", () => {
     await waitFor(() => expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull(), { timeout: 2000 });
   });
 
+  // PR #2054 round 1: with the entries already fetched, the panel opened in the same update that took `hidden` off a
+  // registered control rendered against the old DOM, and its subscription then recorded the control as drawn, so the
+  // look-again never moved: Show me stayed absent until something else rendered the panel.
+  it("is offered for a control shown in the same update that opens the panel, the entries already fetched", async () => {
+    pathname = "/decks/d1";
+    function Page() {
+      const [shown, setShown] = useState(false);
+      return (
+        <>
+          {/* One press, one update: the ? opens the panel and the page shows its control. */}
+          <div onClick={() => setShown(true)}>
+            <HelpButton place="rail" />
+          </div>
+          <Builder view="shopping" />
+          <div hidden={!shown}>
+            <Control id="stand-ins" />
+          </div>
+        </>
+      );
+    }
+    render(
+      <TargetsProvider>
+        <HelpRoot on>
+          <Page />
+        </HelpRoot>
+      </TargetsProvider>,
+    );
+    fireEvent.pointerEnter(q());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Let the prefetch land, so the panel opens on ready entries in the press's own render.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    act(() => {
+      fireEvent.click(q());
+    });
+    expect(panel().querySelector("[data-help-here]")).not.toBeNull();
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
+    // And it stays offered past the look-again.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 450));
+    });
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
+  });
+
   it("appears while the panel is open when a control registers, with nothing else pressed", async () => {
     pathname = "/decks/d1";
     const late: { show: (on: boolean) => void } = { show: () => {} };

@@ -94,6 +94,11 @@ export function TargetsProvider({ children }: { children: ReactNode }) {
       c.listeners.add(listener);
       if (c.listeners.size === 1) {
         c.seen = drawnNow();
+        // A subscription attaches after commit, so the first reader rendered against the DOM before it: mounted in the
+        // same update that took `hidden` off a control already registered, it read the control as not drawn, and
+        // `seen`, read now, already holds it drawn, so no look-again would ever move the count for it. The bump makes
+        // the store's own post-subscribe check render that reader again, against the committed DOM (PR #2054, round 1).
+        c.version += 1;
         c.look = window.setInterval(() => {
           if (drawnNow() !== c.seen) bump();
         }, LOOK_AGAIN_MS);

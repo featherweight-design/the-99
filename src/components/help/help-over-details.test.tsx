@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRef, type ReactNode } from "react";
 import { useDialogA11y, visibleFocusables } from "../../lib/a11y/dialog";
-import { HELP_STOP_ID, helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
+import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
@@ -29,12 +29,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Card details as it wires the two hooks: modal, trapping, with the lifted ? as its extra stop. `back`: holding the
- *  page and a history entry, as the card modal does (the hook's default). */
-function Details({ onClose, back = false }: { onClose: () => void; back?: boolean }) {
+/** Card details as it wires the hooks: modal, trapping, with the lifted ? as its extra stop. `back`: holding the
+ *  page and a history entry, as the card modal does (the hook's default). `covered`: a picker it opened is over it, so
+ *  it is open but not in front, as the card modal under Fits your decks is. */
+function Details({ onClose, back = false, covered = false }: { onClose: () => void; back?: boolean; covered?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  useDialogA11y(ref, onClose, { lockScroll: back, extraStop: helpStop });
-  useCardDetailsUp(true);
+  useDialogA11y(ref, onClose, { lockScroll: back, extraStop: covered ? undefined : helpStop });
+  useCardDetailsUp(!covered);
+  useCardDetailsOpen(true);
   const beside = usePanelIsBeside();
   return (
     <div data-backdrop data-beside={beside || undefined} style={{ position: "fixed", inset: 0, zIndex: 50 }}>
@@ -53,15 +55,29 @@ function At({ desk, children }: { desk: boolean; children: ReactNode }) {
   return <div style={d === desk ? undefined : { display: "none" }}>{children}</div>;
 }
 
+/** A sheet card details opened over itself (Fits your decks): modal, holding the page and its own history entry. */
+function Picker({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogA11y(ref, onClose);
+  return (
+    <div ref={ref} role="dialog" aria-modal="true" aria-label="picker" style={{ position: "fixed", inset: 0, zIndex: 50 }}>
+      <button type="button">pick</button>
+    </div>
+  );
+}
+
 function Page({
   details,
   onClose = () => {},
   back = false,
   header = false,
+  picker,
 }: {
   details: boolean;
   onClose?: () => void;
   back?: boolean;
+  /** Fits your decks open over the card: the card stays mounted, covered. */
+  picker?: () => void;
   /** The shell's two ?s, each drawn at its own width; without it, the rail's alone, drawn at every width. */
   header?: boolean;
 }) {
@@ -85,7 +101,8 @@ function Page({
         ) : (
           rail
         )}
-        {details && <Details onClose={onClose} back={back} />}
+        {details && <Details onClose={onClose} back={back} covered={picker !== undefined} />}
+        {details && picker && <Picker onClose={picker} />}
       </HelpRoot>
     </TargetsProvider>
   );
@@ -236,6 +253,44 @@ describe("the ? over card details at 1280", () => {
     expect(sheet()).not.toBeNull();
     act(() => window.history.back());
     await waitFor(() => expect(sheet()).toBeNull());
+    expect(onClose).toHaveBeenCalledTimes(1);
+    await settle();
+  });
+
+  // PR #2054 round 1: Help, then a card over it, then the window narrowed to the sheet, then Fits your decks from the
+  // card. The picker covers the card, which then is no longer in front, and the sheet took its hold above the picker's
+  // entry, so Back closed the hidden sheet instead of the picker.
+  it("leaves Back to a picker the card opened after the window narrows, the card covered but not closed", async () => {
+    const view = stubViewport(1300);
+    const onClose = vi.fn();
+    const onPicker = vi.fn();
+    const { rerender } = render(<Page details={false} onClose={onClose} back />);
+    fireEvent.click(q());
+    await screen.findByRole("dialog", { name: helpPanelCopy.button });
+    rerender(<Page details onClose={onClose} back />);
+    act(() => view.resizeTo(390));
+    const sheet = () => screen.queryByRole("dialog", { name: helpPanelCopy.button, hidden: true });
+    await waitFor(() => expect(sheet()?.getAttribute("data-help-panel")).toBe("sheet"));
+    await settle();
+    rerender(<Page details onClose={onClose} back picker={onPicker} />);
+    await settle();
+    // Drawn under the picker, as under the card it covers.
+    expect(sheet()?.className).toContain("z-[49]");
+    act(() => window.history.back());
+    await waitFor(() => expect(onPicker).toHaveBeenCalledTimes(1));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(sheet()).not.toBeNull();
+    // The picker goes and the card is in front again: Back closes it, then the sheet.
+    rerender(<Page details onClose={onClose} back />);
+    await settle();
+    act(() => window.history.back());
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(sheet()).not.toBeNull();
+    rerender(<Page details={false} onClose={onClose} back />);
+    await settle();
+    act(() => window.history.back());
+    await waitFor(() => expect(sheet()).toBeNull());
+    expect(onPicker).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
     await settle();
   });

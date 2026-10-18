@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
-import { useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
+import { useCardDetailsIsOpen, useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
 import { firstSentence, restOfFirstParagraph } from "../../lib/about/caption";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import {
@@ -71,8 +71,13 @@ export function HelpPanel({
   const [over, setOver] = useState(detailsUp);
   if (over && !detailsUp) setOver(false);
   const stacked = desk && over;
-  // At either width: a resize to the sheet keeps the card in front of a panel it opened over.
-  const under = detailsUp && !over;
+  // At either width: a resize to the sheet keeps the card in front of a panel it opened over. Held until that card
+  // closes, not only while it is in front: covered by a sheet or picker it opened (Fits your decks, the stand-ins
+  // sheet), it is still over the panel, and the surface over it is in front of both (PR #2054, round 1).
+  const cardOpen = useCardDetailsIsOpen();
+  const [cardOver, setCardOver] = useState(false);
+  const under = cardOpen && (cardOver || (detailsUp && !over));
+  if (under !== cardOver) setCardOver(under);
   // Held on `over`, not on the width: a window narrowed below `md` turns the panel into the sheet, and the card under
   // it stays inert. The sheet and its scrim then sit above the card's layer too.
   usePanelBeside(over);

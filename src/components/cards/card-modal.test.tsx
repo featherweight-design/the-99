@@ -1482,3 +1482,29 @@ describe("CardModal desktop art column reserves the door's room (pre-open review
     expect(source).toMatch(/artWidthReservePx\(underCardHeight\)/);
   });
 });
+
+// PR #2054 round 1: a card covered by a picker it opened (Fits your decks, the stand-ins sheet) is not in front, but it
+// has not closed, and the ? sheet under it keeps waiting for it to close before taking its history entry.
+describe("CardModal tells the ? whether it is in front and whether it is open", () => {
+  it("is open and in front; covered, open and not in front; leaving, neither", async () => {
+    const { useCardDetailsIsOpen, useCardDetailsIsUp } = await import("../../lib/a11y/help-over-dialog");
+    const seen: { up: boolean; open: boolean }[] = [];
+    function Read() {
+      seen.push({ up: useCardDetailsIsUp(), open: useCardDetailsIsOpen() });
+      return null;
+    }
+    const at = (covered: boolean, dropping: boolean) => (
+      <>
+        <Read />
+        <CardModal card={card} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} covered={covered} dropping={dropping} />
+      </>
+    );
+    const { rerender, unmount } = render(at(false, false));
+    expect(seen.at(-1)).toEqual({ up: true, open: true });
+    rerender(at(true, false));
+    expect(seen.at(-1)).toEqual({ up: false, open: true });
+    rerender(at(false, true));
+    expect(seen.at(-1)).toEqual({ up: false, open: false });
+    unmount();
+  });
+});

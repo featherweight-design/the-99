@@ -327,4 +327,31 @@ describe("useTargetsVersion", () => {
     );
     expect(stop).toHaveBeenCalled();
   });
+
+  // PR #2054 round 1: a reader mounted in the same update that takes `hidden` off a control already registered rendered
+  // against the old DOM; its subscription then recorded the control as drawn, so no look-again ever moved the count.
+  it("renders a reader mounted with a control's `hidden` coming off again, against the committed DOM", () => {
+    const drawn: boolean[] = [];
+    function Asker() {
+      useTargetsVersion();
+      const t = useTargets();
+      drawn.push(t?.targetRect("stand-ins") != null);
+      return null;
+    }
+    const at = (shown: boolean) => (
+      <TargetsProvider>
+        <div hidden={!shown}>
+          <Control id="stand-ins" name="a" />
+        </div>
+        {shown && <Asker />}
+      </TargetsProvider>
+    );
+    const { rerender } = render(at(false));
+    rerender(at(true));
+    // Its first render read the DOM before the commit; the next reads it after.
+    expect(drawn[0]).toBe(false);
+    expect(drawn.at(-1)).toBe(true);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(drawn.at(-1)).toBe(true);
+  });
 });

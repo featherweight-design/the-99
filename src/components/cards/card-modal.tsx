@@ -39,7 +39,7 @@ import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { HELP_STOP_ID, helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
+import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
@@ -1517,6 +1517,8 @@ export function CardModal({
   // The ? lifted over the backdrop at 1280 is one more stop in the cycle, and only while this card is in front.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef, extraStop: locked ? undefined : helpStop });
   useCardDetailsUp(!locked);
+  // Open, in front or not: covered by a sheet or picker it opened, it has not closed (a ? sheet under it keeps waiting).
+  useCardDetailsOpen(!dropping);
   // The ? panel open over this card (R2·9): the backdrop still covers the whole viewport, rail included, but pads out the
   // rail and the panel's 400px, so the dialog centres beside the panel rather than under its edge.
   // Only where both fit: the rail, the panel's 400px and the dialog's 820px come to 1282px at the fine rail, so from

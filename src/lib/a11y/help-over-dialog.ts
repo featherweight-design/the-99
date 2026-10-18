@@ -44,6 +44,7 @@ function counter() {
 }
 
 const details = counter();
+const open = counter();
 const beside = counter();
 let stop: HTMLElement | null = null;
 
@@ -52,6 +53,16 @@ export const useCardDetailsUp = details.useHold;
 
 /** Whether a card details dialog is up and in front. */
 export const useCardDetailsIsUp = details.useIsHeld;
+
+/**
+ * Card details calls this: `active` while it is open at all, in front or covered by a sheet or picker it opened (the
+ * stand-ins sheet, Fits your decks), and not while it is leaving. A covered card has not closed: it comes back to the
+ * front when the sheet over it goes.
+ */
+export const useCardDetailsOpen = open.useHold;
+
+/** Whether a card details dialog is open, in front or covered by a surface it opened. */
+export const useCardDetailsIsOpen = open.useIsHeld;
 
 /**
  * The panel calls this while it is open stacked over card details, which then centres itself in the room between the
