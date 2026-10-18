@@ -88,7 +88,7 @@ const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth(\.[cm]?[jt]sx?)?$|\/social\/|\/adm
 // `buildParams(` is the eval harness's request: a script that builds one sends it through `eval/lib/batch.mts`.
 // The sending calls too, not only a client's construction: a module handed a client sends with it.
 const SENDS = [
-  /\bcallModel\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/,
+  /\bcallModel\s*(<[^()]*>)?\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\s*(<[^()]*>)?\(/,
   /\.messages\.(create|stream|countTokens)\(/, /\.batches\.create\(/,
   // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`): the SDK's own types,
   // and the app's two client types, which a new helper would import rather than respell.
@@ -109,7 +109,7 @@ async function walkFiles(root, dir, out) {
     if (e.isDirectory()) {
       if (e.name === "node_modules" || e.name.startsWith(".")) continue;
       await walkFiles(root, rel, out);
-    } else if (/\.(ts|tsx|mts|mjs)$/.test(e.name) && !/\.test\.(ts|tsx|mts|mjs)$/.test(e.name)) {
+    } else if (/\.([cm]?[jt]sx?)$/.test(e.name) && !/\.test\.([cm]?[jt]sx?)$/.test(e.name)) {
       out.push(rel.split(sep).join("/"));
     }
   }
