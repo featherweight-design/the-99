@@ -129,18 +129,16 @@ export function PaymentsView({
 
         <section className="flex flex-col gap-[10px]">
           <SectionHead title={copy.blockedHead} meta={copy.blockedMeta} />
-          {payments.blocked.length === 0 ? (
-            <p className={EMPTY}>{copy.noBlocked}</p>
-          ) : (
-            <BlockedList
-              rows={payments.blocked.map((b) => ({
-                userId: b.userId,
-                name: nameOf(b.userId),
-                since: day(b.at),
-                openDisputes: payments.disputes.filter((d) => d.status === "open" && d.userId === b.userId).length,
-              }))}
-            />
-          )}
+          {/* Mounted even when empty, so clearing the last account keeps its "can buy again" line. */}
+          <BlockedList
+            emptyClassName={EMPTY}
+            rows={payments.blocked.map((b) => ({
+              userId: b.userId,
+              name: nameOf(b.userId),
+              since: day(b.at),
+              openDisputes: payments.disputes.filter((d) => d.status === "open" && d.userId === b.userId).length,
+            }))}
+          />
         </section>
 
         <GiftForm accounts={accounts} clerkDown={clerk === "down"} />

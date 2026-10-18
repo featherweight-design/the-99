@@ -16,7 +16,7 @@ export type BlockedRow = { userId: string; name: string; since: string; openDisp
 const LINE = "flex min-h-[44px] flex-wrap items-center justify-between gap-[10px] border-0 border-t border-solid border-[color:var(--border)] py-[8px] first:border-t-0";
 const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60 md:min-h-[32px]";
 
-export function BlockedList({ rows }: { rows: readonly BlockedRow[] }) {
+export function BlockedList({ rows, emptyClassName }: { rows: readonly BlockedRow[]; emptyClassName: string }) {
   const router = useRouter();
   const [open, setOpen] = useState<string | null>(null);
   const [inFlight, setInFlight] = useState(false);
@@ -49,6 +49,7 @@ export function BlockedList({ rows }: { rows: readonly BlockedRow[] }) {
   return (
     <div className="flex flex-col gap-[8px]">
       {said && <p role="status" className="m-0 text-[13px] text-[color:var(--success)]">{said}</p>}
+      {rows.length === 0 && <p className={emptyClassName}>{c.noBlocked}</p>}
       <ul data-testid="payments-blocked" className="m-0 flex list-none flex-col p-0">
         {rows.map((r) => (
           <li key={r.userId} className="flex flex-col gap-[8px]">

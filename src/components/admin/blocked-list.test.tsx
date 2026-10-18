@@ -23,7 +23,7 @@ beforeEach(() => {
 
 describe("BlockedList", () => {
   it("names the open disputes a clear leaves standing, and says nothing of them when none are open", () => {
-    render(<BlockedList rows={ROWS} />);
+    render(<BlockedList rows={ROWS} emptyClassName="" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Let them buy" })[0]);
     expect(pending()).toHaveTextContent("Saving lets Mara K. buy again. 1 dispute is still open, and nothing pauses buying again until a new one.");
     fireEvent.click(within(pending()!).getByRole("button", { name: "Undo" }));
@@ -34,7 +34,7 @@ describe("BlockedList", () => {
 
   it("clears the account it names, and words a clear, a repeat and a failure", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: true, cleared: true });
-    render(<BlockedList rows={ROWS} />);
+    render(<BlockedList rows={ROWS} emptyClassName="" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Let them buy" })[0]);
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Let them buy" })));
     expect(within(pending()!).getByRole("alert")).toHaveTextContent("Couldn't clear the pause, so nothing changed.");
@@ -44,9 +44,19 @@ describe("BlockedList", () => {
     expect(pending()).toBeNull();
   });
 
+  it("keeps the confirmation when the cleared account was the last one paused", async () => {
+    clear.mockResolvedValueOnce({ ok: true, cleared: true });
+    const { rerender } = render(<BlockedList rows={ROWS.slice(0, 1)} emptyClassName="" />);
+    fireEvent.click(screen.getByRole("button", { name: "Let them buy" }));
+    await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Let them buy" })));
+    rerender(<BlockedList rows={[]} emptyClassName="" />); // the revalidated page: nobody paused
+    expect(screen.getByRole("status")).toHaveTextContent("Mara K. can buy again.");
+    expect(screen.getByText("No account has buying paused.")).toBeInTheDocument();
+  });
+
   it("says a lost reply may have cleared, and refreshes", async () => {
     clear.mockRejectedValueOnce(new Error("lost"));
-    render(<BlockedList rows={ROWS} />);
+    render(<BlockedList rows={ROWS} emptyClassName="" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Let them buy" })[1]);
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Let them buy" })));
     expect(within(pending()!).getByRole("alert")).toHaveTextContent("Lost touch with the server, so it may have cleared.");
