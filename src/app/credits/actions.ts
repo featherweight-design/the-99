@@ -14,6 +14,7 @@ import { requireUserId } from "../../lib/auth";
 import { readChip } from "../../lib/payments/chip";
 import type { ChipState } from "../../lib/payments/chip-rule";
 import { createPackCheckout } from "../../lib/payments/checkout";
+import { purchaseBlocked } from "../../lib/payments/blocked";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { isPackId } from "../../lib/payments/packs";
 import { readReturn, receiptUrlFor } from "../../lib/payments/return";
@@ -26,17 +27,23 @@ import { isUuid } from "../../lib/uuid";
  * A purchase press's outcome. `url`: send the reader to Stripe's Checkout there. `off`: payments are off for
  * this reader. `invalid`: not a pack this app sells, or a malformed press id. `unverified`: the reader has no
  * verified email (§5.6, card testing). `throttled`: ten Sessions already this hour. `unconfigured`: this
- * deployment cannot sell (no usable key, Price or origin). `failed`: Stripe or the database did not answer.
+ * deployment cannot sell (no usable key, Price or origin). `blocked`: a dispute opened against this account's
+ * payment and buying is paused (the account's purchase block; held credits still spend). `failed`: Stripe or the database did not answer.
  */
 export type CheckoutOutcome =
   | { ok: true; url: string }
-  | { ok: false; reason: "off" | "invalid" | "unverified" | "throttled" | "unconfigured" | "failed" };
+  | { ok: false; reason: "off" | "invalid" | "unverified" | "throttled" | "unconfigured" | "failed" | "blocked" };
 
 /** Buy a pack. `actionId` is a uuid the press mints once, so a double-tap or a retry makes one Session. */
 export async function buyPackAction(packId: unknown, actionId: unknown): Promise<CheckoutOutcome> {
   const userId = await requireUserId();
   if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   if (!isPackId(packId) || !isUuid(actionId)) return { ok: false, reason: "invalid" };
+
+  // Before any Stripe call. A database that cannot answer fails closed: no Session is made on a guess.
+  const blocked = await purchaseBlocked(userId).catch(() => null);
+  if (blocked === null) return { ok: false, reason: "failed" };
+  if (blocked) return { ok: false, reason: "blocked" };
 
   const user = await currentUser();
   const email = user?.primaryEmailAddress;

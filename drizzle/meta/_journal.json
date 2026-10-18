@@ -1072,6 +1072,13 @@
       "when": 1792305472318,
       "tag": "0152_gift_credits",
       "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1792306856329,
+      "tag": "0153_sticky_shape",
+      "breakpoints": true
     }
   ]
 }

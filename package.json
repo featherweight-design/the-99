@@ -289,6 +289,7 @@
     "probe:precon-start-owned": "tsx scripts/probe-precon-start-owned.ts",
     "probe:deck-own": "tsx scripts/probe-deck-own.ts",
     "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
+    "reconcile:payments": "tsx scripts/reconcile-payments.ts",
     "probe:credits-return": "tsx scripts/probe-credits-return.ts",
     "probe:delete-warning": "node scripts/probe-delete-warning.mjs",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
