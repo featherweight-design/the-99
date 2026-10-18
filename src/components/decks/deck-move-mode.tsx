@@ -63,11 +63,15 @@ export function MoveMode({
     ...folders.map((f) => ({ id: f.id, name: f.name, label: f.name })),
   ];
 
+  // A column whose heading stays put while the destinations scroll under it: the panel is held to the
+  // room beside its trigger, and a long shelf list must not push the heading out of view.
   return (
-    <div>
-      <p className="m-0 px-[13px] pt-[10px] pb-[6px] font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+    <div className="flex min-h-0 flex-col">
+      <p className="m-0 shrink-0 px-[13px] pt-[10px] pb-[6px] font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {folderCopy.move.heading}
       </p>
+
+      <div className="min-h-0 overflow-y-auto">
 
       {destinations.map((destination, index) => {
         const current = destination.id === currentId;
@@ -118,6 +122,7 @@ export function MoveMode({
         <span aria-hidden className="h-[12px] w-[12px] flex-none" />
         <span>{folderCopy.create.actionFromMove}</span>
       </button>
+      </div>
 
       <span className="sr-only">{deckName}</span>
     </div>

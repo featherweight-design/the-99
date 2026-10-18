@@ -357,9 +357,10 @@ export function SeatPicker({
       ref={placedRef}
       role="dialog"
       aria-label={copy.title}
-      // Held to the viewport and a column, so the list inside it scrolls instead of running off a short window.
+      // Held to the room on the side it hangs (`useAnchoredPanel`'s `maxHeight`) and a column, so the list inside it
+      // scrolls under its field instead of running off a short window or covering its own trigger.
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
-      style={{ width: PANEL_WIDTH, maxHeight: "calc(100dvh - 16px)", top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+      style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
       <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
     </div>

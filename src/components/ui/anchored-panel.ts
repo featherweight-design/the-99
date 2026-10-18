@@ -2,6 +2,27 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+export type AnchoredAt = {
+  top: number;
+  left: number;
+  /** The room on the side the panel hangs, in px: the caller's `maxHeight`, its list scrolling inside. */
+  maxHeight: number;
+};
+
+/**
+ * The panel's height with no cap: the caller applies `maxHeight` inline, so its rendered height is
+ * already capped, and a capped height would always "fit" the side it was capped to and never flip.
+ * The cap is lifted for one synchronous read and put back, so no frame is painted without it.
+ */
+function naturalHeight(node: HTMLElement | null): number {
+  if (!node) return 0;
+  const capped = node.style.maxHeight;
+  node.style.maxHeight = "none";
+  const height = node.offsetHeight;
+  node.style.maxHeight = capped;
+  return height;
+}
+
 /**
  * A popover panel FIXED to viewport coordinates computed from its trigger's rect, rather than
  * `absolute` inside the thing it opens from. Lifted out of `deck-card-overflow.tsx` so the game
@@ -36,7 +57,7 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
    * Null only before the first open. `place()` runs in the same batch as the open, so there is no
    * paint with `at === null`; a caller's absolute classes are a fallback for a trigger that has gone.
    */
-  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
+  const [at, setAt] = useState<AnchoredAt | null>(null);
   const triggerRef = useRef<T>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const widthRef = useRef(width);
@@ -52,7 +73,7 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
     const w = widthRef.current;
     const margin = 8;
     const gap = window.innerWidth >= 640 ? 4 : 6;
-    const height = panelRef.current?.offsetHeight ?? 0;
+    const height = naturalHeight(panelRef.current);
 
     const wanted = box.right - w;
     const left = Math.min(Math.max(margin, wanted), window.innerWidth - w - margin);
@@ -65,22 +86,25 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
       parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h")) || 0;
     const floor = window.innerHeight - (window.innerWidth < 768 ? tabbar : 0);
 
-    // FLIP WHEN THERE IS NO ROOM BELOW. A fixed box cannot be scrolled into view (scrolling re-runs
-    // this and carries the panel with its trigger), so a panel hanging past the fold is not awkward,
-    // it is UNREACHABLE. `height` is 0 on the first placement, before the panel has rendered; the
-    // layout effect below re-places once it can be measured.
-    const below = box.bottom + gap;
-    const fitsBelow = height === 0 || below + height + margin <= floor;
-    const above = box.top - gap - height;
-    const top = fitsBelow
-      ? below
-      : above >= margin
-        ? above
-        : // Neither side has room: a viewport shorter than the panel. Pin to the top margin so the
-          // panel's HEAD is readable.
-          margin;
+    // A PANEL ALWAYS HANGS FROM ITS TRIGGER AND SCROLLS INSIDE (Hugh's modal rule: a max height
+    // within the viewport, the list in a scroll container, the head kept visible). A fixed box cannot
+    // be scrolled into view (scrolling re-runs this and carries the panel with its trigger), so a
+    // panel hanging past the fold is not awkward, it is UNREACHABLE. Each side's ROOM is measured on
+    // every placement, so a scroll, a resize or a moved anchor re-caps it:
+    //  - below when the panel fits there;
+    //  - otherwise the side with more room, so it flips above only when above has MORE room.
+    // The choice reads the panel's NATURAL height, not its capped one, so it is a pure function of
+    // the geometry and cannot flip-flop between frames. `maxHeight` is the chosen side's room; the
+    // caller applies it and makes its list the scroll container. `height` is 0 on the first
+    // placement, before the panel has rendered; the layout effect below re-places once it can be
+    // measured. There is no "pin to the top margin" any more: that branch covered the trigger.
+    const roomBelow = Math.max(0, floor - box.bottom - gap - margin);
+    const roomAbove = Math.max(0, box.top - gap - margin);
+    const side = height <= roomBelow || roomBelow >= roomAbove ? "below" : "above";
+    const maxHeight = side === "below" ? roomBelow : roomAbove;
+    const top = side === "below" ? box.bottom + gap : box.top - gap - Math.min(height, maxHeight);
 
-    setAt({ top, left });
+    setAt({ top, left, maxHeight });
   }
 
   // Resize only. Scrolling and any other movement of the anchor are covered by the frame loop

@@ -190,12 +190,15 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
             onKeyDown={(e) => {
               if (e.key === "Escape" && !isPending) keep();
             }}
+            // Held to the room on the side it hangs, the confirm scrolling inside, so a short
+            // window never puts its buttons past the fold or under the tab bar.
             style={{
               width: DELETE_CONFIRM_WIDTH,
-              ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0 } : {}),
+              ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0, maxHeight: at.maxHeight } : {}),
             }}
-            className={`absolute right-0 top-full mt-[6px] sm:mt-[4px] ${ANCHORED_PANEL_CLASS}`}
+            className={`absolute right-0 top-full mt-[6px] sm:mt-[4px] flex flex-col ${ANCHORED_PANEL_CLASS}`}
           >
+            <div className="min-h-0 overflow-y-auto">
             <DeleteConfirm
               heading={gameLogCopy.history.confirm}
               body={gameLogCopy.history.confirmBody}
@@ -207,6 +210,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
               onCancel={keep}
               onConfirm={confirm}
             />
+            </div>
           </div>
         )}
       </div>

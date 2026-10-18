@@ -25,7 +25,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
-import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+import { ANCHORED_PANEL_CLASS, useAnchoredPanel, type AnchoredAt } from "../ui/anchored-panel";
 import { Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { draftAnnouncer } from "./draft-announcer";
@@ -485,7 +485,7 @@ function Popover({
   children,
 }: {
   ref: React.RefObject<HTMLDivElement | null>;
-  at: { top: number; left: number } | null;
+  at: AnchoredAt | null;
   titleId: string;
   onDismiss: () => void;
   returnFocusRef: React.RefObject<HTMLElement | null>;
@@ -504,8 +504,9 @@ function Popover({
       aria-modal="true"
       aria-labelledby={`${titleId}-title`}
       tabIndex={-1}
-      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left } : {}) }}
-      className={`absolute top-full right-0 mt-[6px] p-[14px] ${ANCHORED_PANEL_CLASS}`}
+      // Held to the room on the side it hangs; the body's source list scrolls inside, under its title.
+      style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left, maxHeight: at.maxHeight } : {}) }}
+      className={`absolute top-full right-0 mt-[6px] flex flex-col p-[14px] ${ANCHORED_PANEL_CLASS}`}
     >
       {children}
     </div>
@@ -645,17 +646,20 @@ function SourcePickerBody({
     }
   }
 
+  // A column whose title, order line, consequence and buttons stay put while the sources scroll: the
+  // popover is held to the room beside its trigger. In the phone sheet nothing caps it, so the
+  // sheet's own body scrolls as before.
   return (
-    <div className="flex flex-col gap-[12px]">
-      <p id={`${titleId}-title`} className="m-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
+    <div className="flex min-h-0 flex-col gap-[12px]">
+      <p id={`${titleId}-title`} className="m-0 shrink-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
         {nameOpens ? <TitleOpeningCard card={card} /> : sourceCopy.title(card.name)}
       </p>
       {/* Found missing by Copilot's round-2 review: `sourceCopy.order` was defined for exactly
           this line (the handoff draws it under the title in both shells) and never rendered. */}
-      <p className="m-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
+      <p className="m-0 shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
         {sourceCopy.order}
       </p>
-      <div role="radiogroup" aria-labelledby={`${titleId}-title`} className="flex flex-col gap-[6px]">
+      <div role="radiogroup" aria-labelledby={`${titleId}-title`} className="flex min-h-0 flex-col gap-[6px] overflow-y-auto">
         {claims.map((claim, i) => {
           const disabled = claim.commander || claim.locked;
           const checked = claim.id === selectedId;
@@ -709,12 +713,12 @@ function SourcePickerBody({
           );
         })}
       </div>
-      <p className="m-0 font-sans text-[11.5px] leading-[1.4] text-[color:var(--fg-body)]">
+      <p className="m-0 shrink-0 font-sans text-[11.5px] leading-[1.4] text-[color:var(--fg-body)]">
         {chosenPending
           ? sourceCopy.consequenceJoins(chosenName, card.name)
           : sourceCopy.consequenceNew(chosenName, card.name)}
       </p>
-      <div className="flex gap-[8px]">
+      <div className="flex shrink-0 gap-[8px]">
         <button
           type="button"
           disabled={pending}
