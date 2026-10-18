@@ -39,3 +39,14 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the hash and the time remain, and nothing can be purged by them. A failed re-purge keeps its raw id for the next
   sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
   write erased by the sweep and the raw id retired after the day.
+
+  **Stripe first, database second** (payments PR R, scope §6.3). `purgeAccount` step 0, before the transaction, is
+  `deleteStripeCustomerFor` (`src/lib/payments/delete-customer.ts`): no `stripe_customers` row means no Stripe call and
+  no key needed; a row means the Customer is retrieved, checked to carry `metadata.app = the-99` and this account's
+  `user_id` (the Stripe account is shared with Concert Crawl; anything else is refused, never deleted), then deleted,
+  which also cancels its subscriptions. 404 or already-deleted is done. Any other failure, or a mapping with no usable
+  key, THROWS before anything is purged, so the webhook answers 500, Clerk retries, and the sweep re-runs the purge
+  (the mapping row is still there). A late `checkout.session.completed` between the Stripe delete and the transaction
+  is granted and then deleted with the lots; after the commit there is no mapping, so it is kept unattributed
+  (`fulfil.ts` reads the mapping FOR SHARE). The restricted key needs Customers write, which it already has. The
+  purge reads no feature switch. `src/lib/account/purge-stripe.test.ts` pins the order and the refusals.

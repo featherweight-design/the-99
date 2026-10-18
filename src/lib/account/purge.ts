@@ -21,6 +21,11 @@
  * Rows ABOUT the account go: `admin_events.user_id`, its own switch overrides (`flag_overrides.user_id`) and its
  * group memberships (`flag_group_members.user_id`).
  *
+ * Step 0, before the transaction: the account's Stripe Customer is deleted (`deleteStripeCustomerFor`), which also
+ * cancels its subscriptions. A Stripe failure, or a Customer that is not this app's, THROWS with nothing purged, so the
+ * webhook answers 500 and Clerk and the sweep retry; the mapping row is still there for the retry. Stripe first, database
+ * second: the other order would delete the mapping and strand the Customer.
+ *
  * Idempotent: an account with no rows purges to all zeros, so a retried webhook is harmless.
  *
  * The account's TOMBSTONE is not written here: `recordDeletion` writes it, and the webhook calls that FIRST,
@@ -33,6 +38,8 @@ import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
 import { invitationIdsIn, revokeAfterPurge, unlinkInvitesIn } from "../invites/purge";
 import { ownedSupportLock } from "../discovery/owned-support-lock";
+import { deleteStripeCustomerFor } from "../payments/delete-customer";
+import { stripeClient } from "../payments/stripe";
 
 /**
  * Every non-social table holding a row by `user_id`, in delete order. Rows that point at `model_calls`
@@ -87,9 +94,12 @@ export async function purgeAccount(
   deps: {
     revoke?: (invitationId: string) => Promise<boolean>;
     revokeFor?: (email: string, reservationId: string) => Promise<boolean>;
+    /** The Stripe client, resolved only when the account has a Customer mapping. Tests pass a fake. */
+    stripe?: Parameters<typeof deleteStripeCustomerFor>[1];
   } = {},
 ): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
+  await deleteStripeCustomerFor(userId, deps.stripe ?? stripeClient);
   const { report, invitationIds } = await db.transaction(async (tx) => {
     // Waits out a refresh of the reader's owned-support store, which would otherwise write rows back
     // after this commits; a refresh that takes the lock after it finds no collection and writes none.

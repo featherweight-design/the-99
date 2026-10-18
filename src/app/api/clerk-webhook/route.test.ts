@@ -90,6 +90,19 @@ describe("POST /api/clerk-webhook", () => {
     }
   });
 
+  it("answers 500 and logs fixed words when the purge is stopped by a Stripe failure, so Clerk retries", async () => {
+    verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone" } });
+    purge.mockRejectedValue(new Error("Stripe customer deletion failed"));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect((await POST(req())).status).toBe(500);
+      expect(record).toHaveBeenCalledWith("user_gone");
+      expect(logged.mock.calls.flat().map(String).join(" ")).not.toContain("user_gone");
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
   describe("user.created (an invited sign-up, invites plan R8)", () => {
     const RES = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
     const created = (public_metadata: unknown, extra: object = {}) =>
