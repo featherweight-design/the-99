@@ -43,8 +43,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   finds the trigger by `data-account-trigger`, as `openHelp` finds the ? by `data-help-button`.
 - **`THEME=<key>`** draws every row in one theme (`amonkhet`, `kamigawa`, `ixalan`, `phyrexia`, `eldraine`,
   `kaldheim`). It sets the `the99_theme` cookie the server reads, on the context before the first page loads, and
-  writes the run into `<out>/<key>/`, so one theme's pass never overwrites another's. Unset, the account's own theme
-  draws, which is Low Sun (`amonkhet`) unless the account picked another.
+  writes the run into `<out>/<key>/`, so one theme's pass never overwrites another's. Unset, every run draws Low Sun
+  (`amonkhet`): the theme lives only in that cookie, and each run's browser starts without one.
 - Browser scripts reach the page through `scripts/lib/surface.mjs` — `onPage()` and `openSheet()`
   — never a bare selector. The shell renders `NavRail`, `MobileHeader` and `TabBar` around
   `<main>`, and its account menu is a `button[aria-haspopup="dialog"]` at phone width, first in

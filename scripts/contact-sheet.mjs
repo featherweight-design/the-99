@@ -399,8 +399,8 @@ try {
       });
     }
     await signIn(page);
-    // The server ignores a key it does not know and draws the account's own theme, so a typo would photograph
-    // the wrong theme under the right folder name. Read back what the page actually drew.
+    // The server draws Low Sun for a key it does not know and a survivor for a retired one (`themeFor`), so a typo
+    // would photograph another theme under the asked-for folder name. Read back what the page actually drew.
     if (THEME) {
       const drawn = await page.evaluate(() => document.documentElement.dataset.theme ?? null);
       if (drawn !== THEME) throw new Error(`THEME=${THEME}, but the page drew data-theme="${drawn}".`);
