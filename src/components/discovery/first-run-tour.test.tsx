@@ -64,6 +64,10 @@ const arrive = async () => {
   await act(async () => {
     vi.advanceTimersByTime(ARRIVE_MS + 10);
   });
+  // A claim that lands re-arms the wait at zero; one more tick opens it.
+  await act(async () => {
+    vi.advanceTimersByTime(1);
+  });
 };
 const card = () => screen.getByRole("dialog");
 const next = () => fireEvent.click(within(card()).getByRole("button", { name: /^(Next|Finish)$/ }));
@@ -276,7 +280,26 @@ describe("FirstRunTour", () => {
     await arrive();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByTestId("app").closest("[inert]")).toBeNull();
+    // The visit is taken a microtask after opening, under the visit lock: flush it before saying it was not.
+    await act(async () => {});
     expect(takeVisit).not.toHaveBeenCalled();
+  });
+
+  it("holds the claimed tour while a sheet opened during the claim is up, then opens it without asking again", async () => {
+    let answer!: (r: { claimed: boolean }) => void;
+    spend.mockImplementationOnce(() => new Promise((r) => (answer = r)));
+    const { rerender } = render(<Home />);
+    await arrive();
+    rerender(<Home sheet />);
+    await act(async () => answer({ claimed: true }));
+    await arrive();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    rerender(<Home sheet={false} />);
+    await act(async () => {
+      vi.advanceTimersByTime(10);
+    });
+    expect(card()).toBeInTheDocument();
+    expect(spend).toHaveBeenCalledTimes(1);
   });
 
   it("still runs for another account signed in in the same tab", async () => {
