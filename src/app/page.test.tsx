@@ -10,6 +10,8 @@ const stub = vi.hoisted(() => ({
   decks: [] as unknown[],
   arrivals: vi.fn(),
   receipt: vi.fn(),
+  homeFriends: vi.fn(),
+  inviteCount: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
@@ -35,6 +37,8 @@ vi.mock("../lib/commanders/in-use", () => ({ receiptCountsByCommander: () => new
 vi.mock("../lib/home/commitments", () => ({ commitmentFigures: () => null }));
 vi.mock("../lib/precons/banner", () => ({ loadArrivalsBanner: stub.arrivals }));
 vi.mock("../lib/precons/pick-receipt-read", () => ({ readPickReceipt: stub.receipt }));
+vi.mock("../lib/social/home-friends", () => ({ loadHomeFriends: stub.homeFriends }));
+vi.mock("../lib/invites/read", () => ({ loadInviteCount: stub.inviteCount }));
 
 const { default: HomePage } = await import("./page");
 const { Dashboard } = await import("../components/home/dashboard");
@@ -51,6 +55,8 @@ beforeEach(() => {
   stub.arrivals.mockReset();
   stub.arrivals.mockResolvedValue(BANNER);
   stub.receipt.mockReset();
+  stub.homeFriends.mockReset();
+  stub.inviteCount.mockReset();
 });
 
 describe("Home's arrivals banner", () => {
@@ -177,5 +183,61 @@ describe("Home's No decks yet door (discovery R3 E1)", () => {
     stub.env = { ...ON };
     const off = (await HomePage()) as ReactElement<{ helpMeChoose?: boolean }>;
     expect(off.props.helpMeChoose).toBe(false);
+  });
+});
+
+describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
+  const FRIENDS = {
+    you: null,
+    friends: [{ publicId: "pub-colin", displayName: "Colin", commander: null }],
+    links: [{ token: "t1", createdAt: new Date("2026-10-16T00:00:00Z"), expiresAt: new Date("2026-10-23T00:00:00Z") }],
+  };
+  type Row = { friends: unknown[]; links: unknown[]; now: string; invites: unknown } | null;
+  const visit = async () => (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{ friends?: Row }>;
+
+  it("hands first run the friends and links read per request, with SOCIAL_FRIENDS_ENABLED on", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+    stub.homeFriends.mockResolvedValue(FRIENDS);
+    const page = await visit();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(stub.homeFriends).toHaveBeenCalledWith("user_1", expect.any(Date));
+    expect(page.props.friends).toMatchObject({ friends: FRIENDS.friends, links: FRIENDS.links, invites: null });
+    expect(typeof page.props.friends?.now).toBe("string");
+    // Invites off: no count is read, and the row's press makes a link.
+    expect(stub.inviteCount).not.toHaveBeenCalled();
+  });
+
+  it("hands first run the invite count with SOCIAL_INVITES_ENABLED on (addendum G4), and none when it cannot be read", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true" };
+    stub.homeFriends.mockResolvedValue(FRIENDS);
+    const count = { left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false };
+    stub.inviteCount.mockResolvedValue(count);
+    expect((await visit()).props.friends?.invites).toBe(count);
+    stub.inviteCount.mockRejectedValue(new Error("down"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect((await visit()).props.friends?.invites).toBeNull();
+    warn.mockRestore();
+  });
+
+  it("draws no row with the switch off, and reads nothing", async () => {
+    stub.uniqueCards = 0;
+    stub.env = {};
+    const page = await visit();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(page.props.friends).toBeNull();
+    expect(stub.homeFriends).not.toHaveBeenCalled();
+  });
+
+  it("draws no row when the read fails", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+    stub.homeFriends.mockRejectedValue(new Error("down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const page = await visit();
+    err.mockRestore();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(page.props.friends).toBeNull();
   });
 });

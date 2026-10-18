@@ -168,6 +168,42 @@
       "wait": "[data-about-link]",
       "shows": "the banner's Show me to `/about?tab=reference#new` for a returning reader and `/about` (Tools) for a new account (E14), its words unchanged",
       "why": "About's line draws only for a reader behind on About, and `clearAbout` marks the account seen before the first row; run it on an account with an unseen entry (or a first-run account), and press Show me to land on the Reference's what's new"
+    },
+    {
+      "id": "friends-on-checklist-todo",
+      "mergedIn": "R3·3",
+      "goto": "/",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "wait": "[data-friends-row=\"todo\"]",
+      "shows": "C1/CP1: the Friends row last under step 3, unnumbered, the dashed + slot, `Add your friends` and its line; the kicker still `Step 1 of 3`; the wider gap above it (20 / 18); a press opens Add a friend (the chooser with invites on)",
+      "why": "the checklist draws only for a first-run account (collection unread, no decks) with SOCIAL_FRIENDS_ENABLED on; the audit account has a collection, so Home draws the dashboard. Run it on a first-run fixture account with no friends and no open friend link"
+    },
+    {
+      "id": "friends-on-checklist-link",
+      "mergedIn": "R3·3",
+      "goto": "/",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "wait": "[data-friends-row=\"link\"]",
+      "shows": "C2/CP2: the accent diamond in the slot, `Friend link open · 6 days left` in mono, `Show ›` trailing; a press opens the dialog on that link",
+      "why": "the checklist draws only for a first-run account (collection unread, no decks) with SOCIAL_FRIENDS_ENABLED on; the audit account has a collection, so Home draws the dashboard. Run it on a first-run fixture account with no friends and one unexpired friend link it made"
+    },
+    {
+      "id": "friends-on-checklist-done",
+      "mergedIn": "R3·3",
+      "goto": "/",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "wait": "[data-friends-row=\"done\"]",
+      "shows": "C3/CP3: the ✓ in --success on its 14% tint, `Friends` in --fg-body, `You and Colin are friends.`, the friend's 26 disc; the row links /friends",
+      "why": "the checklist draws only for a first-run account (collection unread, no decks) with SOCIAL_FRIENDS_ENABLED on; the audit account has a collection, so Home draws the dashboard. Run it on a first-run fixture account holding exactly one friend (a friend_links pair)"
     }
   ],
   "unmounted": [
@@ -219,16 +255,6 @@
         "desktop"
       ],
       "shows": "the replay on an account with data; the Take the tour presses at /about's head and in the account menu"
-    },
-    {
-      "id": "friends-on-checklist",
-      "mountedBy": "R3·3",
-      "goto": "/ on a first-run account",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "the Friends row last, under step 3 and unnumbered (addendum-friends-home README §3, line 110); step 6 keeps its one light per Design's G1"
     }
   ]
 }

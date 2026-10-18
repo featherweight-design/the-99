@@ -275,34 +275,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // The no-collection entry (S1, S12): step 1's ways group, and the dashboard's zero-card header for an account with
   // decks and no cards. Decided per request from the resolved switches, outside the cached payload.
   const noCollectionEntry = noCollectionEntryEnabled(env);
-  if (data.firstRun) {
-    return (
-      <FirstRunChecklist
-        addByHand={collectionEditEnabled(env)}
-        about={about}
-        ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
-        scan={cardScanEnabled(env)}
-      />
-    );
-  }
-
-  // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
-  // and only when the address claims one, with the pick's switches on (the line's and precons'). A failed read draws
-  // no strip.
-  let receipt: PickReceipt | null = null;
-  const claim = noCollectionEntry && preconsEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
-  if (claim !== undefined) {
-    try {
-      receipt = await readPickReceipt(userId, claim);
-    } catch (error) {
-      // not a fallback: the receipt is an extra, and the dashboard below draws whether or not it was read.
-      console.error("home: the precon receipt could not be read", error);
-    }
-  }
-
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
-  // section, as a failed Commitments read draws no card.
+  // section, as a failed Commitments read draws no card. Read before the first-run return, so the checklist's Friends
+  // row (Discovery R3·3) draws from the same read, and a failed read draws no row there either.
   let homeFriends: HomeFriends | null = null;
   if (socialFriendsEnabled(env)) {
     try {
@@ -322,6 +298,32 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         return null;
       })
     : null;
+
+  if (data.firstRun) {
+    return (
+      <FirstRunChecklist
+        addByHand={collectionEditEnabled(env)}
+        about={about}
+        ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
+        scan={cardScanEnabled(env)}
+        friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
+      />
+    );
+  }
+
+  // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
+  // and only when the address claims one, with the pick's switches on (the line's and precons'). A failed read draws
+  // no strip.
+  let receipt: PickReceipt | null = null;
+  const claim = noCollectionEntry && preconsEnabled(env) ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;
+  if (claim !== undefined) {
+    try {
+      receipt = await readPickReceipt(userId, claim);
+    } catch (error) {
+      // not a fallback: the receipt is an extra, and the dashboard below draws whether or not it was read.
+      console.error("home: the precon receipt could not be read", error);
+    }
+  }
 
   const dashboard = (
     <Dashboard

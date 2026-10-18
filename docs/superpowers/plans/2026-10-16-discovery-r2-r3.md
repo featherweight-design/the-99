@@ -23,8 +23,9 @@ About as a reference with a "?" on every screen, the first-run tour, and tools w
    R3 gap 2 already applied it to the tour).
 2. **The tour can be taken again** from a `Take the tour` press at `/about`'s head and in the account menu. On an account
    with data it runs on the real app (PR 11 below says how).
-3. **Friends appears on the first-run checklist Home** (answers G25, R3 gap 5). Step 6 gains one sentence and a second
-   light.
+3. **Friends appears on the first-run checklist Home** (answers G25, R3 gap 5). The Friends addendum
+   (`addendum-friends-home`, README §3 and G1, closed in R2b) settles it: an unnumbered row, last under step 3, and the
+   kicker stays `Step 1 of 3`. Step 6 keeps its one light, on the banner, and gains no sentence.
 4. **The tour shows only on a first-run Home, with no back-fill** (G24, as R3 gap 1 resolved it). E18's migration fill is
    dropped.
 5. **Cost chips stay as shipped** (G13): a card carries a chip only where the app already shows a cost, verbatim (R2 gap
@@ -99,7 +100,8 @@ Each of these closes a choice the handoff and the audits leave to engineering.
    - Reading an image picks the reader's theme from the same cookie the shell reads. An unknown theme reads the
      default's.
 5. **The tour's scrim is one SVG mask, not a box shadow.** The property table's `box-shadow: …, 0 0 0 3000px` draws one
-   hole, and ruling 3 puts two lights on step 6. The overlay draws the scrim as an SVG `<mask>` holding one rounded rect
+   hole, and ruling 3 put two lights on step 6 (the Friends addendum's G1 has since closed step 6 to one light, on the
+   banner; the mask stands, and holds one rect per lit target however many there are). The overlay draws the scrim as an SVG `<mask>` holding one rounded rect
    per lit target, and each ring (R1's halo) as its own element at its rect. Every other value in R3's spotlight table
    holds.
 6. **The tour taken again** (ruling 2). `Take the tour` navigates to `/?tour=1`. Home starts the tour when
@@ -112,18 +114,19 @@ Each of these closes a choice the handoff and the audits leave to engineering.
      whenever `uniqueCards === 0` (`src/components/shell/shell.tsx`). So the captions follow the shell's own `locked`,
      handed to the tour. Locked, they keep the `once your cards are in` captions. Unlocked, they take the replay
      captions. `probe:tour` covers a decks-only account.
-   - Step 5 is unchanged. Step 6 lights the banner when its target is registered, else the centred fallback (R3 gap 6),
-     and the Friends section when it is drawn.
+   - Step 5 is unchanged. Step 6 lights the banner when its target is registered, else the centred fallback (R3 gap 6).
+     That is its one light: the Friends section and the checklist's Friends row are never lit (addendum G1).
    - The replay's own strings (step 1's body and the three captions) go to `/copy-review` with the rest. They are copy
      and need no Design round.
    - **The two presses:** the account menu's row sits directly under `About The 99`, drawn as that row is. At About's
      head it is a text press in the accent after the subtitle, drawn as R2·5's `Open the Reference →` press is. Both are absent with the
      switch off.
-7. **Friends on the checklist** (ruling 3) needs the permanent Friends Home section, which is its own PR outside this
-   plan, waiting on a Design addendum (moments plan, "Changes after approval"). That addendum must also say where the
-   section sits on the checklist, because no board draws it there. **This is the one item that goes back to Design**,
-   and d9 carries it. R3·3 mounts the shipped section and adds step 6's sentence and second light, and it waits for
-   both.
+7. **Friends on the checklist** (ruling 3). The Design addendum (`design/design_handoff_the99_social_r3/
+   addendum-friends-home/`, approved R2b) draws it: one unnumbered row, last under step 3 with a wider gap above it,
+   in the shipped `LockedStep` box but live. Not done, it opens Add a friend; with a link open, its press is Show; done
+   at one friend, it opens /friends and stays (README §3, boards C1 to C3 and CP1 to CP3). The kicker stays `Step 1 of
+   3`, and step 6 keeps its one light, on the banner (G1, closed). R3·3 builds that row on the shipped Friends Home
+   section's add-a-friend logic (#1974, merged), so it waits on nothing.
 
 ## Architecture, by layer
 
@@ -215,7 +218,7 @@ copy gaps (R2 gaps 2 and 14, R3 gaps 9, 10 and 16).
 | R3·1a · Tour state | the switch in the registry; migration `tour_seen_at`; the spend action (written only when null); `tourDue` in Home's payload, with the cache-key test | R2·1b | ~8 |
 | R3·1b · The tour | the SVG overlay; `TourCard`; steps 1 to 6 on first-run Home, with step 6's fallback; `ThemePicker` `panel="tour"`; the visit taken; `pnpm probe:tour` (below) | R3·1a, R2·4, R2·6b | ~14 |
 | R3·2 · The tour again | `/?tour=1`; the real-app stops (decision 6); both `Take the tour` presses, About's head and the account menu row; `probe:tour` extended to the replay | R3·1b | ~8 |
-| R3·3 · Friends on the checklist | the shipped Friends section on the checklist where the addendum places it; step 6's sentence and second light | R3·1b, the Friends Home PR | ~5 |
+| R3·3 · Friends on the checklist | the addendum's unnumbered Friends row, last under step 3 (C1 to C3), sharing the Friends section's add-a-friend logic; the kicker stays `Step 1 of 3`; step 6 unchanged (one light, on the banner) | none (Friends Home #1974 is merged) | ~5 |
 | R3·4 · Doors | E1 on `/decks` and Home, E2 on `/commanders`, M12's anchor moved to E2's door, and the moments plan's M12 row updated | R2·1b | ~8 |
 | R3·5 · Nudges | N1, N2 and N2b on their own switches, N3 with its no-wrap test at 390 | R2·2 | ~12 |
 
@@ -230,7 +233,7 @@ row's semicolons, unstacked.
 3. Then R2·3, R2·5, R2·6a and R2·6b in turn.
 4. Then R2·7 and R2·8 in parallel, then R2·9.
 5. R3·1b follows R2·4, R2·6b and R3·1a. R3·2 follows R3·1b.
-6. R3·3 follows R3·1b and the Friends Home PR, whichever lands last.
+6. R3·3 can run any time: Friends Home (#1974) is merged, and with step 6 unchanged it no longer waits on R3·1b.
 
 R3·4 can run any time after R2·1b, and R3·5 any time after R2·2 (R3 gap 11: its landings come from R2·2).
 
