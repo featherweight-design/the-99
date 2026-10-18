@@ -457,7 +457,7 @@ export const SHOTS = {
     "home": {
       "width": 780,
       "height": 1688,
-      "bytes": 66904,
+      "bytes": 63850,
       "quality": 75,
       "entries": {
         "ready-to-build": [

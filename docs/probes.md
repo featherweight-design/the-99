@@ -668,7 +668,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) on, and
   `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to `off`, so the frames show the ?, the account menu's `Take the
   tour` row and the pod's `Rule 0 check` row, and no bubble or sheet. A screen frame missing what it
-  must draw (the ? on every screen frame, the tour row on `account`, the Rule 0 row on `friends`) is refused
+  must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
+  the top and its header scrolled away; the tour row on `account`; the Rule 0 row on `friends`) is refused
   (`REQUIRED_ON_FRAME`); the tool crops and tour pictures are not checked. It refuses any database but a scratch branch (`assertScratchBranch`)
   before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
   upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync

@@ -481,16 +481,28 @@ async function attempt(page, theme, id, run) {
  * is refused rather than shipped.
  */
 const REQUIRED_ON_FRAME = {
+  // Every screen frame but a deck view's (shot with the tabs at the top, its header scrolled away).
   "*": ["[data-help-button]:visible", "the ? (start the server with HELP_PANEL_ENABLED on)"],
   account: ["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row (FIRST_RUN_TOUR_ENABLED on)"],
   friends: ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (RULE_ZERO_ENABLED on)"],
 };
 
+/** True when some match of `selector` has a box inside the 390x844 frame: drawn where the photograph will see it. */
+async function inFrame(page, selector) {
+  for (const el of await page.locator(selector).all()) {
+    const r = await el.boundingBox().catch(() => null);
+    if (r && r.width > 0 && r.height > 0 && r.x < VIEW.width && r.y < VIEW.height && r.x + r.width > 0 && r.y + r.height > 0) return true;
+  }
+  return false;
+}
+
 async function requireOnFrame(page, id) {
-  for (const key of ["*", id]) {
+  // A deck's views are shot with its tabs at the top (`scrollToTabs`), which scrolls the phone header and its ? off the
+  // frame by design; every other screen in the same run proves the ? is drawn.
+  for (const key of id.startsWith("deck-") ? [id] : ["*", id]) {
     const need = REQUIRED_ON_FRAME[key];
     if (!need) continue;
-    if ((await page.locator(need[0]).count()) === 0) throw new Error(`the frame does not draw ${need[1]}`);
+    if (!(await inFrame(page, need[0]))) throw new Error(`the frame does not show ${need[1]}`);
   }
 }
 
