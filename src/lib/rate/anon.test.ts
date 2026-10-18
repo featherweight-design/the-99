@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
@@ -44,6 +45,23 @@ describe("networkOf and anonKey", () => {
     expect(networkOf("2001:db8::1")).toBe("2001:db8:0:0::/64");
   });
 
+  it("handles the compressed and decorated forms without crashing or merging unrelated visitors", () => {
+    expect(networkOf("::")).toBe("0:0:0:0::/64");
+    expect(networkOf("::1")).toBe("0:0:0:0::/64");
+    expect(networkOf("2001:db8::")).toBe("2001:db8:0:0::/64");
+    expect(networkOf("2001:db8:1::")).toBe("2001:db8:1:0::/64");
+    expect(networkOf("fe80::1%eth0")).toBe("fe80:0:0:0::/64");
+    expect(networkOf("[2001:DB8::1]")).toBe("2001:db8:0:0::/64");
+    // Different /64s stay different.
+    expect(networkOf("2001:db8:0:1::1")).not.toBe(networkOf("2001:db8:0:2::1"));
+  });
+
+  it("reads an IPv4-mapped IPv6 address as the IPv4 it carries, in any case", () => {
+    expect(networkOf("::ffff:1.2.3.4")).toBe("1.2.3.4");
+    expect(networkOf("::FFFF:1.2.3.4")).toBe("1.2.3.4");
+    expect(anonKey("::ffff:1.2.3.4", DAY)).toBe(anonKey("1.2.3.4", DAY));
+  });
+
   it("is `anon:` plus 16 hex, the same within a UTC day and a /64, different across days and networks, and never the raw address", () => {
     const k = anonKey("203.0.113.9", DAY);
     expect(k).toMatch(/^anon:[0-9a-f]{16}$/);
@@ -51,7 +69,8 @@ describe("networkOf and anonKey", () => {
     expect(anonKey("203.0.113.9", new Date("2026-10-19T00:00:00Z"))).not.toBe(k);
     expect(anonKey("203.0.113.10", DAY)).not.toBe(k);
     expect(anonKey("2001:db8:abcd:12::1", DAY)).toBe(anonKey("2001:db8:abcd:12:9:9:9:9", DAY));
-    expect(k).not.toContain("203");
+    // The documented digest, so the key cannot drift into carrying the address or losing the day.
+    expect(k).toBe(`anon:${createHash("sha256").update("203.0.113.9|2026-10-18").digest("hex").slice(0, 16)}`);
     expect(k.startsWith(ANON_PREFIX)).toBe(true);
   });
 
