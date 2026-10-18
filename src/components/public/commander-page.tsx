@@ -259,7 +259,9 @@ function Sections({ commander, short }: { commander: PublicCommander; short: str
  */
 export function PublicCommanderPage({ commander }: { commander: PublicCommander }) {
   const short = shortName(commander.name);
-  const faces = [{ name: commander.name }];
+  // The catalog joins a two-faced card's names with ` // `, as the card page's loader splits them: the flip's labels name
+  // each face, so a screen reader hears The Prismatic Bridge rather than "the back".
+  const faces = commander.name.split(" // ").map((name) => ({ name }));
   return (
     <div className="flex min-h-dvh flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
       <PublicTopBar />

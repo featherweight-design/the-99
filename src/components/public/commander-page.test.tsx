@@ -111,6 +111,11 @@ describe("the public commander page", () => {
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
   });
 
+  it("names each face of a two-faced commander on the flip", () => {
+    draw({ name: "Esika, God of the Tree // The Prismatic Bridge", backImageUri: "https://cards.example/bridge.jpg" });
+    expect(screen.getByRole("button", { name: /The Prismatic Bridge/ })).toBeTruthy();
+  });
+
   it("names a colorless identity with no pips", () => {
     draw({ colorIdentity: [] });
     expect(screen.getByTestId("public-commander-identity").textContent).toBe("Colorless");
