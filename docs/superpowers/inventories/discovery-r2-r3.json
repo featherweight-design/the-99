@@ -1,7 +1,7 @@
 {
   "feature": "Discovery R2 and R3 — the landing on a deck, the doors, and (as each mounts) Tools, Reference, the ?, the tour",
   "clearAbout": true,
-  "note": "Plan `2026-10-16-discovery-r2-r3.md`. `rows` are what is MERGED and drawn on a route today (R2·2b #1975, R3·4 #1984; R3·5 #1988 is merged but fixture-bound, so it sits in `needsFixture`); `unmounted` lists every surface the plan claims that no route renders yet, each with the PR that mounts it and the row it adds, so a close-out cannot pass while one has no photograph. Move an entry from `unmounted` into `rows` in the PR that mounts it.\n\nPRECONDITIONS. Env: `DISCOVERY_DECK` is a deck id of the signed-in account with a legal 100-card list (the landing rows expand it). Switches on for that account: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, SWAP_TOOLS_ENABLED, MOMENTS_ENABLED, SOCIAL_GAMES_ENABLED (with SOCIAL_FRIENDS_ENABLED), HELP_ME_CHOOSE_ENABLED. The two `door-*-zero` rows need an account holding NO decks; every other row needs one that does, so run those two as their own pass on a deckless account (`--only` is not a runner option: split the inventory or use a second account). `door-commanders-*` needs the guided banner's state (a collection read, no decks). A landing whose target is not drawn on that deck strips `?tool=` with no halo, so its `wait` times out: that is the honest failure, not a skip. The four landings the fixture decides (Top off, Matchups, Cheaper stand-ins, A friend has a spare) are in `needsFixture` for that reason: move one into `rows` with a deck that draws it.\n\nWRITES. `clearAbout` marks the About gate seen (the runner restores only the About columns). The `landing-*` rows also spend each tool's moment: a successful landing takes the visit through `useToolLanding` and `spendMomentAction`, adding the tool's id to `user_prefs.moments_spent`, and the runner does NOT put it back. Run on a scratch branch or a probe account, never a reader's; `pnpm probe:tool-landing` removes the id first and restores the row exactly in a `finally`, which this runner does not. A second pass over the same account lands without the halo for a tool whose moment is already spent.\n\nNo `shares` block: `check:shared` requires every row to share one component and these rows are different surfaces. The one real share, the door group, is `DecksZeroActions` (`decks-zero.tsx`), drawn by `/decks` through `DecksZero` and by Home through `HomeDecksZero` (both import it; the `/commanders` banner draws its own line).",
+  "note": "Plan `2026-10-16-discovery-r2-r3.md`. `rows` are what is MERGED and drawn on a route today (R2·2b #1975, R2·3's page landings #1995, R2·6b #2013, R3·4 #1984; R3·5 #1988 is merged but fixture-bound, so it sits in `needsFixture`); `unmounted` lists every surface the plan claims that no route renders yet, each with the PR that mounts it and the row it adds, so a close-out cannot pass while one has no photograph. Move an entry from `unmounted` into `rows` in the PR that mounts it.\n\nPRECONDITIONS. Env: `DISCOVERY_DECK` is a deck id of the signed-in account with a legal 100-card list (the landing rows expand it). Switches on for that account: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, SWAP_TOOLS_ENABLED, MOMENTS_ENABLED, SOCIAL_GAMES_ENABLED (with SOCIAL_FRIENDS_ENABLED), HELP_ME_CHOOSE_ENABLED, and for the `landing-page-*` rows PRECONS_ENABLED, SOCIAL_WISHLIST_ENABLED, COLLECTION_SYNC_ENABLED (with COLLECTION_EDIT_ENABLED) and LINEUP_ENABLED: a page tool whose switch is off lands nothing, so its `wait` times out. The `help-panel` row needs HELP_PANEL_ENABLED: without it no ? is drawn and `openHelp` times out. Pass the switches to `next start` as separate words (in zsh, `${=SW}` for a variable holding them, or they arrive as one malformed value). The two `door-*-zero` rows need an account holding NO decks; every other row needs one that does, so run those two as their own pass on a deckless account (`--only` is not a runner option: split the inventory or use a second account). `door-commanders-*` needs the guided banner's state (a collection read, no decks). A landing whose target is not drawn on that deck strips `?tool=` with no halo, so its `wait` times out: that is the honest failure, not a skip. The four landings the fixture decides (Top off, Matchups, Cheaper stand-ins, A friend has a spare) are in `needsFixture` for that reason: move one into `rows` with a deck that draws it.\n\nWRITES. `clearAbout` marks the About gate seen (the runner restores only the About columns). The `landing-*` rows also spend each tool's moment: a successful landing takes the visit through `useToolLanding` and `spendMomentAction`, adding the tool's id to `user_prefs.moments_spent`, and the runner does NOT put it back. Run on a scratch branch or a probe account, never a reader's; `pnpm probe:tool-landing` removes the id first and restores the row exactly in a `finally`, which this runner does not. A second pass over the same account still haloes (the halo never reads the spent set) and takes the visit again. `landing-page-friends` spends nothing: `friends` is no moment id.\n\nNo `shares` block: `check:shared` requires every row to share one component and these rows are different surfaces. The one real share, the door group, is `DecksZeroActions` (`decks-zero.tsx`), drawn by `/decks` through `DecksZero` and by Home through `HomeDecksZero` (both import it; the `/commanders` banner draws its own line).",
   "rows": [
     {
       "id": "landing-proposed-cuts",
@@ -116,6 +116,142 @@
           "settle": 600
         }
       ]
+    },
+    {
+      "id": "landing-page-help-me-choose",
+      "label": "/decks/new/choose — Try it's landing on Help me choose: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?tool=help-me-choose",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-precons",
+      "label": "/decks/precons — Try it's landing on Precons: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/decks/precons/(list)/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?tool=precons",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-wishlist",
+      "label": "/collection/wishlist — Try it's landing on Wishlist: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/collection/(list)/wishlist/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/wishlist?tool=wishlist",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-collection-sync",
+      "label": "/collection/replace — Try it's landing on Collection Sync: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/collection/replace/page.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace?tool=collection-sync",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-lineup",
+      "label": "/decks — Try it's landing on Stats for your decks: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/decks/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats&tool=lineup",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-friends",
+      "label": "/friends — Try it's landing on Add a friend: the halo on the tool's own control (R2·3 #1995)",
+      "view": "src/app/friends/page.tsx",
+      "steps": [
+        {
+          "goto": "/friends?tool=friends",
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-find-a-deck-desktop",
+      "label": "/collection?avail=free — Find a deck's landing, deferred until a card is opened: the halo on the card's Find a deck door, in the pinned row (R2·3 #1995)",
+      "view": "src/app/collection/(list)/page.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?avail=free&tool=find-a-deck",
+          "wait": "button.art-lift-host:visible",
+          "settle": 600
+        },
+        {
+          "click": "button.art-lift-host:visible"
+        },
+        {
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "landing-page-find-a-deck-phone",
+      "label": "/collection?avail=free — Find a deck's landing at 390: the card opens as its peek sheet, and the door, under All details, haloes once All details is opened (R2·3 #1995)",
+      "view": "src/app/collection/(list)/page.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?avail=free&tool=find-a-deck",
+          "wait": "button[aria-busy]:visible",
+          "settle": 600
+        },
+        {
+          "click": "button[aria-busy]:visible"
+        },
+        {
+          "clickRole": "button",
+          "name": "All details"
+        },
+        {
+          "wait": "[data-target-halo]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "help-panel",
+      "label": "/collection — the ? opened: the panel at 1300 and the sheet at 390, with this screen's entries (R2·8 #2023)",
+      "view": "src/components/help/help-root.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[type='search']",
+          "settle": 600
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
     }
   ],
   "needsFixture": [
@@ -207,26 +343,6 @@
     }
   ],
   "unmounted": [
-    {
-      "id": "landing-on-pages",
-      "mountedBy": "R2·3 (not merged)",
-      "goto": "/discover or the page each tool lives on, with ?tool=",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "the landing on Help me choose, Precons, Wishlist, Upload, Friends, /collection (Find a deck) and /decks?view=stats (Stats for your decks); loadToolFits and each tool's fits"
-    },
-    {
-      "id": "help-panel",
-      "mountedBy": "R2·8",
-      "goto": "any screen with HELP_PANEL_ENABLED",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "the ? in the rail and header; the panel (1300) and the sheet (390); Elsewhere chips; Show me; search; the none state"
-    },
     {
       "id": "help-over-card-details",
       "mountedBy": "R2·9",
