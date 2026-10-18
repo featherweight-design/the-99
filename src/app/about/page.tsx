@@ -33,6 +33,7 @@ import { ReferenceTab } from "../../components/about/reference/reference-tab";
 import { HowItWorks } from "../../components/about/how-it-works";
 import { RecordVisit } from "../../components/about/record-visit";
 import { GateDismiss } from "../../components/about/gate-dismiss";
+import { LegalLinks } from "../../components/legal/legal-links";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -151,6 +152,8 @@ export default async function AboutRoute({
             : undefined
         }
       />
+      {/* Launch A2: the same quiet line /credits and /sign-up carry, under both tabs. Placement awaits Design's confirmation (boards/design-followups-2026-10-18). */}
+      <LegalLinks className="mt-[32px] px-[16px] md:px-0" />
       {offerDismiss && <GateDismiss destination={destination} shown={shown} />}
     </div>
   );

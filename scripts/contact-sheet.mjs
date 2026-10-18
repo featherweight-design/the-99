@@ -398,7 +398,10 @@ try {
         }
       });
     }
-    await signIn(page);
+    // `"signedOut": true` on the inventory photographs a public surface with no session: no sign-in, and nothing that needs one.
+    if (!inventory.signedOut) await signIn(page);
+    // Signed in, `signIn` has loaded a page; signed out, nothing has, and the theme read-back below needs a document.
+    else await page.goto(`${BASE}/offline`, { waitUntil: "domcontentloaded" });
     // The server draws Low Sun for a key it does not know and a survivor for a retired one (`themeFor`), so a typo
     // would photograph another theme under the asked-for folder name. Read back what the page actually drew.
     if (THEME) {
@@ -410,6 +413,7 @@ try {
     // the first row of every width failed on the redirect). Opt-in, because the /about inventory
     // photographs the gate itself. Both About columns are captured first and put back in the `finally`
     // (the ids `clearAboutSheet` adds included), once, from the first width's capture.
+    if (inventory.clearAbout && inventory.signedOut) throw new Error("clearAbout needs a signed-in account; the inventory is signedOut.");
     if (inventory.clearAbout) {
       const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
       if (!userId) throw new Error("clearAbout: signed in, but Clerk reports no user.");
