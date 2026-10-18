@@ -57,7 +57,7 @@ export function SetupSheet({
     Object.fromEntries(setup.members.map((m) => [m.publicId, m.start])),
   );
   const [screen, setScreen] = useState<Screen>({ kind: "who" });
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<"failed" | "occupied" | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
 
@@ -79,13 +79,13 @@ export function SetupSheet({
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const out = await onSave(ordered.map((p) => ({ member: p, deck: kept.has(p) ? null : seatable(byId.get(p)) ? picks[p] ?? null : null })));
       if (out.ok) onDone(out.tableId);
-      else setFailed(true);
+      else setFailed(out.reason === "occupied" ? "occupied" : "failed");
     } catch {
-      setFailed(true);
+      setFailed("failed");
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -177,7 +177,7 @@ export function SetupSheet({
           })}
           {failed ? (
             <p role="alert" className="m-0 text-[13px] leading-[1.55] text-[color:var(--warning)]">
-              {copy.failed}
+              {failed === "occupied" ? copy.occupied : copy.failed}
             </p>
           ) : null}
         </div>

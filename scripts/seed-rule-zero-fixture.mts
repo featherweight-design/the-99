@@ -12,6 +12,10 @@
 // SCRATCH BRANCH ONLY: it names its target and refuses anything else (`assertScratchBranch`). A rerun starts clean.
 // The table ids are fixed, so the inventory can name each route.
 //   RZ_FIXTURE_BRANCH=br-... RZ_FIXTURE_USER=user_... pnpm tsx scripts/seed-rule-zero-fixture.mts
+//
+// `RZ_FIXTURE_ENTRY=1` seeds the same and then closes every table but T1, so `/friends` and Home draw the way in as
+// a reader at one table sees it (E1 to E3, F1 to F3, `docs/superpowers/inventories/rule-zero-entry.json`). Reseed
+// without it before photographing the table pages again.
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
@@ -208,6 +212,20 @@ for (const state of ["S4", "S5", "W5"] as const) {
   await db.execute(sql`update rule_zero_seats set changed_at = now() - interval '1 minute' where table_id = ${id} and user_id = ${ID.colin}`);
   await db.execute(sql`insert into rule_zero_seen (table_id, user_id, seen_at)
     values (${id}, ${viewer}, ${state === "S4" ? sql`now()` : sql`now() - interval '5 minutes'`})`);
+}
+
+// PR 6's way in: a second pod with no table (E1's `Rule 0 check`), and faces for the fixture players, taken from a
+// deck each already holds, so the pod row and Home's card draw art where the boards do.
+const sunday = await pods.createPod(viewer, "Sunday league");
+if (!sunday) throw new Error("createPod refused");
+if (!(await pods.addMember(viewer, sunday.id, pub[ID.peter]))) throw new Error("addMember refused peter");
+for (const [u, d] of [[ID.colin, colin3], [ID.peter, peter3], [ID.max, max3]] as const) {
+  await db.execute(sql`update social_profiles set commander_oracle_id = (select commander_oracle_id from decks where id = ${d}) where user_id = ${u}`);
+}
+if (process.env.RZ_FIXTURE_ENTRY === "1") {
+  await db.execute(sql`update rule_zero_tables set expires_at = now() - interval '1 hour'
+    where id in (${sql.join(Object.values(TABLE_IDS).filter((id) => id !== TABLE_IDS.T1).map((id) => sql`${id}::uuid`), sql`, `)})`);
+  console.log("entry mode: every fixture table but T1 is closed");
 }
 
 // What each seat reads as, from the same reads the loader makes.

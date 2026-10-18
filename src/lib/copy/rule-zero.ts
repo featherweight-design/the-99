@@ -23,7 +23,7 @@ export const ruleZeroCopy = {
     homeBodyOwn: (deck: string, n: number, closes: string) => `You’re seated with ${deck}. ${seated(n)}, open until ${closes}.`,
     // Not drawn: your seat waits for a deck. `setter` is null when you set it.
     homeBodyWaiting: (setter: string | null, n: number, closes: string) =>
-      `${setter === null ? "You set the table" : `${setter} seated you`}. Pick your deck there. ${seated(n)}, open until ${closes}.`,
+      `${setter === null ? "You set the table. Pick your deck there." : `${setter} seated you. Pick your deck at the table.`} ${seated(n)}, open until ${closes}.`,
     homeOpen: "Open the table",
   },
 
@@ -64,6 +64,8 @@ export const ruleZeroCopy = {
     // Not drawn by the boards: a Set the table or Seats the server refused (the table closed, a member left), in the
     // warning slot, role alert. The sheet stays open with the seats kept.
     failed: "We couldn’t set the table. Try again.",
+    // Not drawn: the pod already has an open table you were not seated at (one per pod, G7).
+    occupied: "This pod already has a table tonight.",
   },
 
   // The page and the read (T1 to T10)
