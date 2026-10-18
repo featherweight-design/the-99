@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   spendFriendLinkAction: vi.fn(),
   currentUser: vi.fn(),
   ensureProfile: vi.fn(),
+  profileAgeMs: vi.fn(),
   listOpenInvites: vi.fn(),
   listFriends: vi.fn(),
   listPods: vi.fn(),
@@ -39,7 +40,7 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../lib/social/friends", () => ({
-  readInvite: m.readInvite, ensureProfile: m.ensureProfile, friendPublicId: m.friendPublicId,
+  readInvite: m.readInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, friendPublicId: m.friendPublicId,
   loadFriendsAndLinks: async (userId: string, now: Date) => ({ friends: await m.listFriends(userId), links: await m.listOpenInvites(userId, now) }),
 }));
 vi.mock("../../lib/invites/spend", async (orig) => ({
@@ -79,6 +80,8 @@ beforeEach(() => {
   m.spendFriendLinkAction.mockResolvedValue({ ok: true, spent: true });
   m.currentUser.mockResolvedValue({ firstName: "Hugh" });
   m.ensureProfile.mockResolvedValue({ publicId: PUB, displayName: "Hugh", commander: null });
+  // No profile yet unless a test says otherwise: the page asks Clerk, as it always did.
+  m.profileAgeMs.mockResolvedValue(null);
   m.listOpenInvites.mockResolvedValue([]);
   m.listFriends.mockResolvedValue([DAVE]);
   m.listPods.mockResolvedValue([]);
@@ -122,6 +125,30 @@ describe("/friends", () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       await FriendsPage({ searchParams: query() });
       expect(m.spendInviteOnSignUp).toHaveBeenCalledWith("user_1", RES, "Ana");
+    });
+
+    it("a MISSING or YOUNG profile still asks Clerk and still runs the invite spend", async () => {
+      for (const age of [null, 0, 5 * 60_000, 14 * 60_000]) {
+        m.currentUser.mockClear();
+        m.spendInviteOnSignUp.mockClear();
+        m.profileAgeMs.mockResolvedValue(age);
+        m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+        await FriendsPage({ searchParams: query() });
+        expect(m.currentUser, `age ${age}`).toHaveBeenCalledTimes(1);
+        expect(m.spendInviteOnSignUp, `age ${age}`).toHaveBeenCalledWith("user_1", RES, "Ana");
+        expect(m.ensureProfile).toHaveBeenLastCalledWith("user_1", "Ana");
+      }
+    });
+
+    it("a profile older than the newcomer window skips the Clerk Backend call, and with it the spend", async () => {
+      m.profileAgeMs.mockResolvedValue(16 * 60_000);
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      render(await FriendsPage({ searchParams: query() }));
+      expect(m.currentUser).not.toHaveBeenCalled();
+      expect(m.spendInviteOnSignUp).not.toHaveBeenCalled();
+      // The stored profile is read as always; no name is offered because none is needed.
+      expect(m.ensureProfile).toHaveBeenCalledWith("user_1", undefined);
+      expect(screen.getByText(DAVE.displayName)).toBeTruthy();
     });
 
     it("spends nothing for an account with no reservation, or a forged-looking one", async () => {

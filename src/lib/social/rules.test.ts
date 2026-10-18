@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  NEWCOMER_WINDOW_MS,
+  profileNeedsClerk,
   cleanDisplayName, cleanPodName, friendshipRows, inviteState, isUuid, newInviteToken, nextPodOwner,
 } from "./rules";
 
@@ -81,5 +83,15 @@ describe("ids and tokens", () => {
     const token = newInviteToken();
     expect(token).toMatch(/^[A-Za-z0-9_-]{22}$/);
     expect(newInviteToken()).not.toBe(token);
+  });
+});
+
+describe("profileNeedsClerk", () => {
+  it("is true for no profile and for one inside the newcomer window, false from the window's edge on", () => {
+    expect(profileNeedsClerk(null)).toBe(true);
+    expect(profileNeedsClerk(0)).toBe(true);
+    expect(profileNeedsClerk(NEWCOMER_WINDOW_MS - 1)).toBe(true);
+    expect(profileNeedsClerk(NEWCOMER_WINDOW_MS)).toBe(false);
+    expect(profileNeedsClerk(24 * 60 * 60_000)).toBe(false);
   });
 });

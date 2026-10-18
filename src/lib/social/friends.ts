@@ -36,6 +36,18 @@ export async function ensureProfile(viewerId: string, offeredName: unknown): Pro
   return { publicId: row.publicId, displayName: row.displayName, commander: toCommander(row) };
 }
 
+/**
+ * How old the viewer's profile is, in ms by the DATABASE's clock (the column is zone-less, so the age is taken where it was
+ * written, not in this process's zone), or null when they have none yet.
+ */
+export async function profileAgeMs(viewerId: string): Promise<number | null> {
+  const [row] = await db
+    .select({ ms: sql<number>`(extract(epoch from (now() - ${socialProfiles.createdAt})) * 1000)::float8` })
+    .from(socialProfiles)
+    .where(eq(socialProfiles.userId, viewerId));
+  return row ? Number(row.ms) : null;
+}
+
 export async function setDisplayName(viewerId: string, raw: unknown): Promise<boolean> {
   const displayName = cleanDisplayName(raw);
   if (displayName === null) return false;
