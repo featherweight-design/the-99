@@ -1,4 +1,5 @@
 {
+  "clearAbout": true,
   "feature": "Quick return for the phone header (card search plan PR B): away on the way down, back over the page on 12px up, sticky heads riding under it",
   "note": "Photographed at 360, 375 and 390 on a scratch branch of local-dev, whose audit account holds Gishath under the staging deck id. Scrolls are window.scrollTo jumps after the 300ms a navigation settles for, so the 30px back up reads as the reader's.",
   "widths": [

@@ -1,4 +1,5 @@
 {
+  "clearAbout": true,
   "feature": "Card search, PR D: the desktop (rail slot R-A, the 540 field and dropdown beside the rail, the shortcut, the handover)",
   "note": "Photographed at 1300 against a dev server with CARD_SEARCH_ENABLED, SWAP_TOOLS_ENABLED and FIND_A_DECK_READ_ENABLED on, local-dev's audit account. CARD_SEARCH_DECK is a deck id of that account. S6 (failed) cannot be forced from a browser without breaking the server, so D6 is proved in search-layer.test.tsx.",
   "widths": [
