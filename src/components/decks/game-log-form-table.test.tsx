@@ -2,6 +2,7 @@
 // size and every other seat filled, the non-friend's marked `from the table`. Decision 5: nothing the form sends
 // names another player's deck or profile, before an edit or after one.
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GameLogForm } from "./game-log-form";
 import { GamesPanel } from "./games-panel";
@@ -137,21 +138,43 @@ describe("opened from a table", () => {
   });
 });
 
-describe("the Games panel spends the prefill", () => {
+// The holder is `BuilderShell`'s contract, drawn small: it keeps the prefill across the panel's remounts (a tab change)
+// and stops offering it when a form says it is spent. The panel itself holds nothing.
+function Holder({ games, shown = true }: { games: DeckGame[]; shown?: boolean }) {
+  const [offered, setOffered] = useState<TablePrefill | null>(prefill);
+  return shown ? (
+    <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} opponents={{ you }} prefill={offered ?? undefined} onPrefillSpent={() => setOffered(null)} />
+  ) : null;
+}
+const SAVED: DeckGame = { id: "g1", result: "win", podSize: 4, playedAt: new Date("2026-10-17"), versionNumber: null, note: null, worked: [], hurt: [] };
+
+describe("the prefill is spent once", () => {
   it("takes `table` off the address on arrival, and the list's form opens plain after the first save", async () => {
     window.history.replaceState(null, "", `/decks/deck_1?tab=games&table=${prefill.table.id}`);
-    const panel = (games: DeckGame[]) => (
-      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} opponents={{ you }} prefill={prefill} />
-    );
-    const { rerender } = render(panel([]));
+    const { rerender } = render(<Holder games={[]} />);
     expect(window.location.search).toBe("?tab=games");
     expect(screen.getByTestId("log-from")).toBeTruthy();
     result(gameLogCopy.form.won);
     save();
     await waitFor(() => expect(logGame).toHaveBeenCalledTimes(1));
     // The save revalidates the page: the panel now draws the list, whose form is a second mount.
-    const saved: DeckGame = { id: "g1", result: "win", podSize: 4, playedAt: new Date("2026-10-17"), versionNumber: null, note: null, worked: [], hurt: [] };
-    rerender(panel([saved]));
+    rerender(<Holder games={[SAVED]} />);
+    expect(screen.queryByTestId("log-from")).toBeNull();
+  });
+
+  it("stays spent after a Cancel, through a tab change and back", () => {
+    const { rerender } = render(<Holder games={[SAVED]} />);
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.cancel }));
+    rerender(<Holder games={[SAVED]} shown={false} />);
+    rerender(<Holder games={[SAVED]} />);
+    expect(screen.queryByTestId("log-from")).toBeNull();
+  });
+
+  it("stays spent after a Cancel when the empty state's form mounts again", () => {
+    const { rerender } = render(<Holder games={[SAVED]} />);
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.cancel }));
+    // The last game deleted: the empty state's form is a fresh mount.
+    rerender(<Holder games={[]} />);
     expect(screen.queryByTestId("log-from")).toBeNull();
   });
 });

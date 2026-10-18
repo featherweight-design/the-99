@@ -29,6 +29,7 @@ export interface GamesPanelProps {
   gameOpponents?: DeckOpponentsWire | null;
   /** A Rule 0 table's seats, for the form to open with (plan §PR 8). Passed to whichever form this panel draws. */
   prefill?: GameLogFormProps["prefill"];
+  onPrefillSpent?: GameLogFormProps["onPrefillSpent"];
 }
 
 type GameRecord = GameSummary["record"];
@@ -240,13 +241,11 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill, onPrefillSpent }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
-  // The table's prefill is spent by one save: the empty state's form and the list's are two mounts, so the first save
-  // would otherwise open the list's form on the same seats again. Its `table` parameter leaves the address on arrival,
-  // so a reload opens the Games tab plain.
-  const [offered, setOffered] = useState(prefill);
+  // The table's prefill is held, and spent, by `BuilderShell` (a save or a Cancel in either form mount): this panel
+  // remounts on every tab change. Its `table` parameter leaves the address on arrival, so a reload opens it plain.
   useEffect(() => {
     if (!prefill) return;
     const url = new URL(window.location.href);
@@ -295,14 +294,12 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
               tuned={tuned}
               isFirstGame
               onAnnounce={setAnnouncement}
-              onSaved={() => {
-                setOffered(undefined);
-                setAnnouncement(gameLogCopy.announce.savedFirst);
-              }}
+              onSaved={() => setAnnouncement(gameLogCopy.announce.savedFirst)}
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
               opponents={opponents}
-              prefill={offered}
+              prefill={prefill}
+              onPrefillSpent={onPrefillSpent}
             />
           </div>
         </div>
@@ -324,13 +321,14 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         tuned={tuned}
         isFirstGame={games.length === 0}
         opponents={opponents}
-        prefill={offered}
+        prefill={prefill}
+              onPrefillSpent={onPrefillSpent}
         onAnnounce={setAnnouncement}
-        onSaved={(isFirst, result) => {
-          setOffered(undefined);
-          if (isFirst) setAnnouncement(gameLogCopy.announce.savedFirst);
-          else announceShift(result, 1, gameLogCopy.announce.saved);
-        }}
+        onSaved={(isFirst, result) =>
+          isFirst
+            ? setAnnouncement(gameLogCopy.announce.savedFirst)
+            : announceShift(result, 1, gameLogCopy.announce.saved)
+        }
       />
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}

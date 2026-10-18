@@ -62,6 +62,11 @@ export interface GameLogFormProps {
    * beside `opponents`: the page passes it only while Rule 0 and `SOCIAL_GAMES_ENABLED` are both on.
    */
   prefill?: TablePrefill;
+  /**
+   * Told when the prefill is spent: a save, or a Cancel. The holder (`BuilderShell`, which outlives the Games tab and
+   * both of the panel's form mounts) then stops offering it, so no remount draws the table's seats again.
+   */
+  onPrefillSpent?: () => void;
 }
 
 /** The slot `ruleZeroCopy.log.from` is filled with, then split on, so the pod's phrase can be bold. */
@@ -148,6 +153,7 @@ export function GameLogForm({
   tuned = false,
   opponents,
   prefill: offered,
+  onPrefillSpent,
 }: GameLogFormProps) {
   // A table's seats are only drawn where the row is.
   const prefill = opponents ? offered : undefined;
@@ -254,6 +260,7 @@ export function GameLogForm({
   // and populated through a refusal, and only a successful save or a cancel
   // brings it back through this path.
   function collapse() {
+    if (prefill) onPrefillSpent?.();
     wantsOpenFocus.current = true;
     setOpen(false);
     setResult(null);
@@ -346,6 +353,7 @@ export function GameLogForm({
         return;
       }
       onSaved(isFirstGame, result);
+      if (prefill) onPrefillSpent?.();
       if (isFirstGame) setHolding(true);
       else collapse();
     });

@@ -382,6 +382,14 @@ export function BuilderShell({
   landing = null,
   landingRequest = null,
 }: BuilderShellProps) {
+  // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change: a save or
+  // a Cancel spends it, and a fresh server draw (the refresh after a save, a new arrival) is adopted during render.
+  const [offeredPrefill, setOfferedPrefill] = useState(gamePrefill);
+  const [drawnPrefill, setDrawnPrefill] = useState(gamePrefill);
+  if (gamePrefill !== drawnPrefill) {
+    setDrawnPrefill(gamePrefill);
+    setOfferedPrefill(gamePrefill);
+  }
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
   const [filter, setFilter] = useState<"all" | "shopping">(
     landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
@@ -2000,7 +2008,8 @@ export function BuilderShell({
                   onOpenAnalysis={() => setView("analysis")}
                   gameOpponents={gameOpponents}
                   opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
-                  prefill={gamePrefill ?? undefined}
+                  prefill={offeredPrefill ?? undefined}
+                  onPrefillSpent={() => setOfferedPrefill(null)}
                 />
               </div>
             ) : view === "versions" ? (
