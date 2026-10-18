@@ -255,7 +255,9 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
       a connection (`src/lib/copy/collection-edit.ts`, `scan.offlineBody`).
     - The mode it calls "Fast" shipped as "Auto" (`scan.fast`), and "Normal has you choose each printing on the list"
       is now chosen in the camera as you scan (`scan.normalLine`).
-    - "A second copy takes its own press" is now: take the card out of the frame first (`scan.takeOut`).
+    - "A second copy takes its own press" still holds in Normal, which offers Add another copy while the card stays in
+      frame (`src/components/collection/scan/scanner-view.tsx:396-405`). Only Auto asks for the card to be taken out of
+      the frame first (`scan.takeOut`), so the line needs an Auto clause, not a rewrite.
     - The caption's "one press puts it on the list" is untrue of Auto, where a card goes on as soon as it reads
       (`scan.fastLine`).
 
