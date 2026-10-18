@@ -44,7 +44,21 @@ the onboarding surface and the credit line's wording are D2 and wait for Design.
   expires and stops funding at 30 days, second grant writes nothing, purge deletes it. Run on a scratch branch.
 - `purge.test.ts` already computes coverage; no change needed, and the probe's purge step asserts it.
 
-## Open question
+## Review outcome (subagent, 2026-10-18) and what changed
 
-The first-signed-in-load fallback needs an "account is new" signal that costs nothing per load. Candidates:
-`user_prefs.created_at` (does the row exist before the first load?), or webhook-only with the fallback dropped.
+- **Written under the purge's lock.** `grantWelcome` takes `pg_advisory_xact_lock(hashtext('invites:' || user id))`, the
+  lock `purgeAccount` and `spendInviteOnSignUp` take, then reads the tombstone, then inserts, in one transaction. A plain
+  read-then-insert could orphan a lot after a purge.
+- **Expiry is born from the account's creation time**, the Clerk event's `created_at`, not `now`: `expires_at = created
+  + 30 days`, and nothing is inserted when that is already past. A redelivery cannot extend a lot, and an old account's
+  lot would be born expired.
+- **No in-page fallback in D1.** `user_prefs` carries no creation time, so it is not a "new account" signal. D1 ships the
+  webhook plus `scripts/backfill-welcome.ts` (Clerk users created in the last 30 days, dry-run by default). An in-page
+  fallback is a D2 decision.
+- **Third source, every site.** `CreditSource`, `spendOrder`, an exhaustive `creditTotals`, `Allowance.welcome`,
+  `heldCredits`, the credit line's `paidHeld`, the `/credits` page model (a welcome row is not "ever bought" and is not
+  drawn as a pack), `return.ts`, the ledger probe.
+- **The switch** is a full registry entry: flag function, the `flag_overrides_switch_check` rewrite in the same migration,
+  admin label, docs. It keeps `needs: PAYMENTS_ENABLED` (L5 ships after payments U2a).
+- **Accepted:** 15 credits per Clerk account with no per-email dedupe; a deleted account that signs up again gets another.
+- **For D2:** a welcome holder with payments off would be drawn paid-credit lines by the credit line; D2 owns the wording.
