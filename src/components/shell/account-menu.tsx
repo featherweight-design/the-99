@@ -473,12 +473,20 @@ export function AccountMenu({
     setSeenProp(credits);
     setChip(credits);
   }
+  // This opening's read of the held paid credits: one request per opening, which a Manage account press made before
+  // it lands awaits rather than asking again. A failed read is null (no warning).
+  const heldRead = useRef<Promise<HeldPaid | null> | null>(null);
   useEffect(() => {
     if (!open) return;
     let live = true;
     chipAction().then((next) => { if (live) setChip(next); }, () => {});
-    heldPaidAction().then((next) => { if (live) setHeld(next); }, () => { if (live) setHeld(null); });
-    return () => { live = false; };
+    const read = heldPaidAction().catch(() => null);
+    heldRead.current = read;
+    read.then((next) => { if (live) setHeld(next); });
+    return () => {
+      live = false;
+      heldRead.current = null;
+    };
   }, [open]);
   const onTour = () => go(TOUR_HREF);
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
@@ -508,7 +516,7 @@ export function AccountMenu({
     pressedIn.current = at;
     let now: HeldPaid | null;
     try {
-      now = held === undefined ? await heldPaidAction().catch(() => null) : held;
+      now = held !== undefined ? held : await (heldRead.current ?? heldPaidAction().catch(() => null));
     } finally {
       if (pressedIn.current === at) pressedIn.current = null;
     }

@@ -98,16 +98,17 @@ async function snapshot(userId) {
 
 // The account's own lots are PARKED, never deleted: a lot a model call spent is referenced by
 // `model_calls.credit_grant_id` (no cascade), so a delete would abort. Parking revokes every unit, which empties the lot
-// for `remaining`; the `finally` puts `revoked_units` and `expires_at` back. Only the probe's own lots are deleted.
+// for `remaining`; the `finally` puts `units`, `revoked_units` and `expires_at` back. Only the probe's own lots are deleted.
 const dropProbeLots = (userId) => sql`delete from credit_grants where user_id = ${userId} and external_id like ${`${MARK}-%`}`;
 
 async function setCase(userId, { plan = 0, pack = 0, welcome = 0, payments }) {
   await dropProbeLots(userId);
   await sql`update credit_grants set revoked_units = units where user_id = ${userId} and (external_id is null or external_id not like ${`${MARK}-%`})`;
   const future = new Date(Date.now() + 20 * 86_400_000);
-  // One welcome lot per account (`credit_grants_welcome_once`): an account that already has one lends it to the case.
+  // One welcome lot per account (`credit_grants_welcome_once`): an account that already has one lends it to the case,
+  // topped up by `welcome` units with nothing revoked, so whatever its runs spent it holds at least that many.
   const [own] = welcome ? await sql`select id from credit_grants where user_id = ${userId} and source = 'welcome'` : [];
-  if (own) await sql`update credit_grants set revoked_units = greatest(units - ${welcome}, 0), expires_at = ${future} where id = ${own.id}`;
+  if (own) await sql`update credit_grants set units = units + ${welcome}, revoked_units = 0, expires_at = ${future} where id = ${own.id}`;
   if (plan) await sql`insert into credit_grants (user_id, source, units, expires_at, external_id) values (${userId}, 'plan', ${plan}, ${future}, ${`${MARK}-plan`})`;
   if (pack) await sql`insert into credit_grants (user_id, source, units, external_id) values (${userId}, 'pack', ${pack}, ${`${MARK}-pack`})`;
   if (welcome && !own) await sql`insert into credit_grants (user_id, source, units, expires_at, external_id) values (${userId}, 'welcome', ${welcome}, ${future}, ${`${MARK}-welcome`})`;
@@ -149,6 +150,13 @@ async function run(browser, userId, w) {
     await signIn(page);
     for (const c of w.cases) {
       await setCase(userId, c.seed);
+      if (c.seed.welcome) {
+        // The welcome case proves nothing unless the lot really holds credits: units left after every run that named it.
+        const [lot] = await sql`select coalesce(sum(g.units - g.revoked_units - (select count(*) from model_calls m
+          where m.credit_grant_id = g.id and m.status in ('spent', 'reserved'))), 0)::int as held
+          from credit_grants g where g.user_id = ${userId} and g.source = 'welcome' and g.expires_at > now() at time zone 'utc'`;
+        check(lot.held >= c.seed.welcome, `${w.name} ${c.label}: the welcome lot holds credits`, `held ${lot.held}`);
+      }
       await pressManage(page, left);
       const dialog = page.locator(DIALOG);
       const shown = (await dialog.count()) > 0;
@@ -213,10 +221,10 @@ try {
   await browser.close();
   if (userId && saved) {
     // Put the account back as it was found: the probe's lots go, and each parked lot takes back the two columns
-    // parking and a lent welcome lot moved, read through the table's own record type so the timestamp is exact.
+    // parking and a lent welcome lot moved (`units` too), read through the table's own record type so the timestamp is exact.
     await dropProbeLots(userId);
     for (const g of saved.grants) {
-      await sql`update credit_grants c set revoked_units = r.revoked_units, expires_at = r.expires_at
+      await sql`update credit_grants c set units = r.units, revoked_units = r.revoked_units, expires_at = r.expires_at
         from json_populate_record(null::credit_grants, ${g}::json) r where c.id = r.id`;
     }
     await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;

@@ -434,13 +434,13 @@ describe("AccountMenu items", () => {
 
     it("drops a press from a dismissed opening even after the menu reopens, and the new opening presses for itself", async () => {
       let first: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValue(new Promise((r) => { first = r; }));
+      heldPaidAction.mockReturnValueOnce(new Promise((r) => { first = r; }));
       render(<AccountMenu panel="popover" theme="amonkhet" />);
       fireEvent.click(trigger());
       fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
       fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
       let second: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValue(new Promise((r) => { second = r; }));
+      heldPaidAction.mockReturnValueOnce(new Promise((r) => { second = r; }));
       fireEvent.click(trigger()); // reopened before the first read landed
       await act(async () => first({ plan: 3, pack: 0 }));
       await act(async () => {});
@@ -450,11 +450,13 @@ describe("AccountMenu items", () => {
       fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
       await act(async () => second({ plan: 0, pack: 0 }));
       await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
+      expect(heldPaidAction).toHaveBeenCalledTimes(2); // one read per opening
     });
 
-    it("waits for a read still in flight before deciding", async () => {
+    it("waits for the opening's own read still in flight before deciding, asking only once", async () => {
       let answer: (v: unknown) => void = () => {};
-      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
+      // Any second request would answer "none held" and go straight on to Clerk.
+      heldPaidAction.mockReturnValueOnce(new Promise((r) => { answer = r; }));
       render(<AccountMenu panel="popover" theme="amonkhet" />);
       fireEvent.click(trigger());
       fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
@@ -462,6 +464,7 @@ describe("AccountMenu items", () => {
       await act(async () => answer({ plan: 3, pack: 0 }));
       expect(await screen.findByRole("dialog", { name: "You have 3 paid credits" })).toBeInTheDocument();
       expect(redirectToUserProfile).not.toHaveBeenCalled();
+      expect(heldPaidAction).toHaveBeenCalledOnce();
     });
   });
 
