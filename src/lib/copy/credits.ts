@@ -52,7 +52,9 @@ function shortDay(at: Date): string {
 }
 
 /** The paid count a line carries: one number, plan and packs together (`/credits` is where they split). */
-const paid = (n: number) => `${n} paid`;
+// A no-break space: `114 paid.` ends every line it is on, and a narrow line (Help me choose's 380px) otherwise leaves
+// `paid.` alone on the last line (design follow-ups 2026-10-18, item 9). It reads and matches as a space.
+const paid = (n: number) => `${n}\u00a0paid`;
 
 export const creditsCopy = {
   /**

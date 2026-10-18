@@ -43,7 +43,7 @@ describe("the paid forms (U2b)", () => {
 
   it("L3: free spent with paid held opens the press and says it uses a paid credit", () => {
     expect(closedBy(s({ pack: 114, paidUsedToday: 0, paidLimit: 20 }))).toBeNull();
-    expect(standingLine(s({ pack: 114, paidUsedToday: 0, paidLimit: 20 }))).toMatch(/^Uses a paid credit\. 0 of 5 free · reset at .+ · 114 paid\.$/);
+    expect(standingLine(s({ pack: 114, paidUsedToday: 0, paidLimit: 20 }))).toMatch(/^Uses a paid credit\. 0 of 5 free · reset at .+ · 114 paid\.$/);
   });
 
   it("L5: at the paid limit the form closes and says the limit, not Get more credits", () => {

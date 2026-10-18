@@ -9,7 +9,7 @@ const paidNext = { used: 5, limit: 5, nextAt: null, reopensAt: null, pack: 114, 
 describe("the credit line under a finished Look deeper result", () => {
   it("counts where the credits stand; the offer's line names what the next run will spend (L3)", () => {
     expect(cutsStanding(panel(paidNext))).toContain("this run uses 1 of 114 paid");
-    expect(cutsFootStanding(panel(paidNext))).toContain("114 paid");
+    expect(cutsFootStanding(panel(paidNext))).toContain("114\u00a0paid");
     expect(cutsFootStanding(panel(paidNext))).not.toContain("this run uses");
   });
 
