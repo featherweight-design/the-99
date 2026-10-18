@@ -17,7 +17,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
-import { CARD_W, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, tourPictureSrc, type Box } from "../../lib/discovery/tour-steps";
+import { CARD_W, FRAME, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, tourPictureSrc, type Box } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { takeVisit } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
@@ -43,7 +43,8 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
   useEffect(() => {
     if (phase !== "waiting") return;
     let timer: number | undefined;
-    const clear = () => overPageCount().locks === 0 && overPageCount().holds === 0;
+    // Clear means the page has settled (`load`) and nothing stands over Home; every path into `arm` checks both.
+    const clear = () => document.readyState === "complete" && overPageCount().locks === 0 && overPageCount().holds === 0;
     // Each time the page might be clear, start the wait again; anything opening over Home cancels it.
     const arm = () => {
       window.clearTimeout(timer);
@@ -57,8 +58,8 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       }, ARRIVE_MS);
     };
     const settled = () => arm();
-    if (document.readyState === "complete") arm();
-    else window.addEventListener("load", settled, { once: true });
+    arm();
+    if (document.readyState !== "complete") window.addEventListener("load", settled, { once: true });
     const off = subscribeOverPage(arm);
     return () => {
       window.clearTimeout(timer);
@@ -135,6 +136,13 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     return () => ro.disconnect();
   }, []);
 
+  // The card is hidden until measured, and a browser ignores focus on a hidden control, so the dialog's own first
+  // focus can land while Next is still invisible. Once the card shows, focus Next if focus is not in the card already.
+  const shown = cardH !== null;
+  useEffect(() => {
+    if (shown && !cardRef.current?.contains(document.activeElement)) nextRef.current?.focus();
+  }, [shown]);
+
   // At 390 the docked card covers the page's foot, so the page gets that much room to scroll under it while the tour
   // runs: a short first-run page could not otherwise bring step 1's controls clear of the card. Restored on the way out.
   useLayoutEffect(() => {
@@ -175,6 +183,8 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   const theme = themeInForce(DEFAULT_THEME);
   const picture = step.picture ? { src: tourPictureSrc(theme, step.picture) } : null;
   const copy = c.steps[step.key];
+  // The card never runs past the screen: on a short viewport (a phone on its side) its content scrolls inside it.
+  const maxHeight = frame.h - FRAME * 2 - (!desktop && !fallback ? PHONE_DOCK - FRAME : 0);
   const glide = "transition-[x,y,width,height,rx] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
 
   return createPortal(
@@ -203,15 +213,16 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
         aria-labelledby={titleId}
         aria-describedby={fallback ? undefined : `${bodyId} ${litId}`}
         data-tour-card={step.key}
-        className="fixed z-[71] flex flex-col rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] text-left text-[color:var(--fg-body)] shadow-[0_24px_60px_rgba(0,0,0,.55)] max-md:left-[16px] max-md:right-[16px] md:w-[340px] md:p-[14px_16px_14px_18px]"
-        style={
-          place
+        className="fixed z-[71] flex flex-col overflow-y-auto overscroll-contain rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] text-left text-[color:var(--fg-body)] shadow-[0_24px_60px_rgba(0,0,0,.55)] max-md:left-[16px] max-md:right-[16px] md:w-[340px] md:p-[14px_16px_14px_18px]"
+        style={{
+          maxHeight,
+          ...(place
             ? { left: place.x, top: place.y, visibility: cardH === null ? "hidden" : "visible" }
             : // At 390 the card is docked above the tab bar, or centred when there is nothing to light (R3 gap 6).
               fallback
-              ? { top: Math.max(14, (frame.h - (cardH ?? 0)) / 2), visibility: cardH === null ? "hidden" : "visible" }
-              : { bottom: PHONE_DOCK }
-        }
+              ? { top: Math.max(FRAME, (frame.h - (cardH ?? 0)) / 2), visibility: cardH === null ? "hidden" : "visible" }
+              : { bottom: PHONE_DOCK }),
+        }}
       >
         <div className="flex items-center justify-between gap-[10px]">
           <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[color:var(--accent)]">

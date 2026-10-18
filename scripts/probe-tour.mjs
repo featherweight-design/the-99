@@ -114,6 +114,9 @@ async function walk(browser, vp) {
     report("the tour opens on a first-run Home", await card.waitFor({ timeout: 15_000 }).then(() => true, () => false));
     const first = await seenAt(userId);
     report("tour_seen_at is written as step 1 appears", first !== null);
+    // The card is hidden until measured; focus must still land on Next once it shows, so Enter advances at once.
+    await page.waitForTimeout(300);
+    report("Next holds focus as step 1 appears", await page.evaluate(() => document.activeElement?.closest("[data-tour-card]") !== null && document.activeElement?.textContent === "Next"));
     report("the app is inert under the scrim", await page.evaluate(() => document.querySelector("main")?.closest("[inert]") !== null));
 
     for (const key of ["collection", "commanders", "decks", "buying", "look", "whatsNew"]) {
@@ -141,6 +144,17 @@ async function walk(browser, vp) {
         const pick = card.getByRole("radio", { name: /^Canopy/ });
         await pick.click();
         report("step 5 applies a theme at once", (await page.evaluate(() => document.documentElement.dataset.theme)) === "ixalan");
+        // The tallest step on a short screen (a phone on its side): the card stays on screen and scrolls inside.
+        await page.setViewportSize({ width: vp.width, height: 375 });
+        await page.waitForTimeout(300);
+        const fits = await page.evaluate(() => {
+          const el = document.querySelector("[data-tour-card]");
+          const r = el?.getBoundingClientRect();
+          return !!r && r.top >= 0 && r.bottom <= window.innerHeight && (el.scrollHeight <= el.clientHeight || getComputedStyle(el).overflowY === "auto");
+        });
+        report("on a 375-tall screen the card stays on screen and scrolls inside", fits);
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.waitForTimeout(300);
       }
       if (key !== "whatsNew") await card.getByRole("button", { name: "Next", exact: true }).click();
     }

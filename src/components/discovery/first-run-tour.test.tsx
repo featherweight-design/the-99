@@ -76,6 +76,20 @@ describe("FirstRunTour", () => {
     expect(card()).toBeInTheDocument();
   });
 
+  it("never opens before the page has loaded, even when a sheet closes first", () => {
+    const ready = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const { rerender } = render(<Home sheet />);
+    rerender(<Home sheet={false} />);
+    arrive();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(spend).not.toHaveBeenCalled();
+    ready.mockReturnValue("complete");
+    act(() => window.dispatchEvent(new Event("load")));
+    arrive();
+    expect(card()).toBeInTheDocument();
+    ready.mockRestore();
+  });
+
   it("holds the app inert while it runs, and lets it go when it ends", () => {
     render(<Home />);
     arrive();
