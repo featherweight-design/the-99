@@ -38,6 +38,7 @@ import AboutRoute from "./page";
 import { AboutTabs } from "../../components/about/tools/about-tabs";
 import { RecordVisit } from "../../components/about/record-visit";
 import { GateDismiss } from "../../components/about/gate-dismiss";
+import { LegalLinks } from "../../components/legal/legal-links";
 import { TOOLS } from "../../lib/discovery/tools";
 
 type El = ReactElement<Record<string, unknown>>;
@@ -73,6 +74,18 @@ beforeEach(() => {
   for (const s of DECK_SWITCHES) vi.stubEnv(s, "");
 });
 afterEach(() => vi.unstubAllEnvs());
+
+describe("/about, the legal links (launch A2)", () => {
+  it("draws the Terms and Privacy line after both tabs, whichever opens", async () => {
+    for (const query of [{} as Record<string, string>, { tab: "reference" }]) {
+      const root = await draw(query);
+      expect(find(root, LegalLinks)).not.toBeNull();
+      const kids = root.props.children as ReactNode[];
+      const order = kids.filter(isValidElement).map((k) => (k as El).type);
+      expect(order.indexOf(LegalLinks)).toBeGreaterThan(order.indexOf(AboutTabs));
+    }
+  });
+});
 
 describe("/about, the tab", () => {
   it("opens on Tools with no ?tab, and on anything but reference", async () => {

@@ -400,6 +400,8 @@ try {
     }
     // `"signedOut": true` on the inventory photographs a public surface with no session: no sign-in, and nothing that needs one.
     if (!inventory.signedOut) await signIn(page);
+    // Signed in, `signIn` has loaded a page; signed out, nothing has, and the theme read-back below needs a document.
+    else await page.goto(`${BASE}/offline`, { waitUntil: "domcontentloaded" });
     // The server draws Low Sun for a key it does not know and a survivor for a retired one (`themeFor`), so a typo
     // would photograph another theme under the asked-for folder name. Read back what the page actually drew.
     if (THEME) {
