@@ -243,6 +243,11 @@ describe("Sheet", () => {
 describe("SheetHeader", () => {
   const header = { title: "Filters", closeLabel: "Close filters", onDismiss: () => {} };
 
+  it("keeps the 30px close plate and gives it a 44px coarse-pointer hit", () => {
+    render(<SheetHeader {...header} />);
+    expect(screen.getByRole("button", { name: "Close filters" })).toHaveClass("h-[30px]", "pointer-coarse:after:h-[max(44px,100%)]");
+  });
+
   it("shows a count beside the title, and hides a zero", () => {
     const { rerender } = render(<SheetHeader {...header} badge={3} />);
     expect(screen.getByRole("heading")).toHaveTextContent("Filters3");

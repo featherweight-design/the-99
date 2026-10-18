@@ -156,4 +156,16 @@ describe("SegmentedSwitch keys when focus is not the selection", () => {
     fireEvent.keyDown(b, { key: "End" });
     expect(change).toHaveBeenCalledWith("b");
   });
+
+  // The phone sweep (2026-10-18) measured the compact segment at 40px tall: a coarse pointer gets TOUCH_HIT's 44px past
+  // it, except under `scroll`, whose well would clip the pseudo-element and scroll on it.
+  it("gives a compact segment a coarse-pointer hit, but not inside a scrolling well", () => {
+    const hit = "pointer-coarse:after:h-[max(44px,100%)]";
+    const { rerender } = render(
+      <SegmentedSwitch kind="tabs" ariaLabel="P" size="compact" segments={SEGMENTS} value="a" onChange={() => {}} />,
+    );
+    for (const t of screen.getAllByRole("tab")) expect(t).toHaveClass(hit);
+    rerender(<SegmentedSwitch kind="tabs" ariaLabel="P" size="compact" scroll segments={SEGMENTS} value="a" onChange={() => {}} />);
+    for (const t of screen.getAllByRole("tab")) expect(t).not.toHaveClass(hit);
+  });
 });

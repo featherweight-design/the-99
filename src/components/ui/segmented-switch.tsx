@@ -39,10 +39,11 @@ const SEGMENT_BASE =
 /**
  * The compact segment (the /decks `Tiles · Stats` switch's own, handoff R2): 40px tall at phone and 30px from `md:`, in
  * a well with a 2px inset and normal weight at rest. Equal shares of the well under `fill`, content width otherwise.
- * A coarse pointer gets a 44px hit past the drawn 40px (`TOUCH_HIT`), so the well keeps its height.
+ * A coarse pointer gets a 44px hit past the drawn segment (`TOUCH_HIT`), so the well keeps its height; not under
+ * `scroll`, whose well clips a pseudo-element past its padding box and would scroll on it.
  */
 const SEGMENT_COMPACT =
-  `${TOUCH_HIT} inline-flex h-[40px] items-center justify-center whitespace-nowrap rounded-[7px] px-[13px] text-[13px] md:h-[30px]`;
+  "inline-flex h-[40px] items-center justify-center whitespace-nowrap rounded-[7px] px-[13px] text-[13px] md:h-[30px]";
 
 const SIZES = {
   default: { well: "p-[3px]", segment: SEGMENT_BASE, fill: "", rest: "font-medium" },
@@ -101,7 +102,7 @@ export function SegmentedSwitch<T extends string>({
   // base ring sits 2px outside the element, so it lost its top, bottom and the end segments' outer edges.
   const segment = scroll
     ? `${sized.segment.replace(/(^| )flex-1( |$)/, "$1$2")} flex-none focus-visible:outline-offset-[-2px]`
-    : sized.segment;
+    : size === "compact" ? `${TOUCH_HIT} ${sized.segment}` : sized.segment;
   const share = fill && !scroll ? sized.fill : "";
   const base = useId();
   const idOf = (v: T) => (ids ? ids.tab(v) : `${base}-${v}`);
