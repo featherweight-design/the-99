@@ -1,12 +1,10 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
-import { PROPOSED_CUTS } from "../../lib/about/fixtures";
+import type { CutsPanel } from "../../lib/tuning/cuts-state";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
 import { CutsFrame, CutsFreeCount } from "./cuts-free-count";
 
@@ -31,7 +29,38 @@ vi.mock("./cuts-free-count", async (orig) => {
 });
 
 const copy = deckCutsCopy.panel;
-const { panel } = PROPOSED_CUTS;
+// Staging's HD - Zombies (110 cards, 10 over the 99), Zul Ashur, Lich Lord: no partner, no locked cards, no run,
+// read 2026-10-14 through the panel's own read functions and counted by `cutFacts` and `cutCounts`. A full
+// allowance with no reset time.
+const panel: CutsPanel = {
+  run: null,
+  items: [],
+  itemsReport: null,
+  lastOkFingerprint: null,
+  lastOkAt: null,
+  modelVersionMoved: false,
+  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  review: null,
+  total: 110,
+  bodySize: 99,
+  over: 10,
+  commander: "Zul Ashur, Lich Lord",
+  allLocked: false,
+  lockedCount: 0,
+  keyCount: 8,
+  declaredBracket: 2,
+  edhrecDecks: 3309,
+  thin: false,
+  rows: [
+    { key: "role:draw", source: "role", label: "Card draw", figure: 8, note: "rec 7 · 1 over" },
+    { key: "role:removal", source: "role", label: "Removal", figure: 9, note: "rec 7 · 2 over" },
+    { key: "curve:2", source: "curve", label: "Cost 2", figure: 25, note: "the fullest slot" },
+    { key: "edhrec", source: "edhrec", label: "In under 10% of Zul Ashur, Lich Lord decks", figure: 3, note: "your median card 46%" },
+  ],
+  chips: { medianPct: 46, flagCounts: {}, declared: 2 },
+  resultCurrent: false,
+  asked: 0,
+};
 const press = () => screen.getByRole("button", { name: "Look deeper. Uses 1 credit." });
 
 afterEach(() => {
@@ -76,29 +105,14 @@ describe("CutsFreeCount", () => {
   });
 });
 
-describe("one tree, two mounts", () => {
-  it("the About figure renders CutsFreeCount in the panel's own frame, and draws exactly what the two draw", async () => {
-    const { FIGURES } = await import("../about/figures");
-    const Figure = FIGURES["proposed-cuts"]!;
-    const { container } = render(<Figure width="plate" creditLimit={5} />);
-    expect(spy.calls).toBeGreaterThan(0);
-    const figure = container.querySelector('[data-specimen="proposed-cuts"]')!;
-    expect(figure.hasAttribute("inert")).toBe(true);
-    const drawn = figure.innerHTML;
-    cleanup();
-    const direct = render(<CutsFrame><CutsFreeCount panel={panel} /></CutsFrame>);
-    // The frame is the panel's, without its top margin (handoff: the margin stays with CutsPanelView).
-    const frame = direct.container.firstElementChild!;
+describe("CutsFrame and the panel's mount", () => {
+  it("CutsFrame is the panel's frame, without its top margin (the margin stays with CutsPanelView)", () => {
+    const { container } = render(<CutsFrame><CutsFreeCount panel={panel} /></CutsFrame>);
+    const frame = container.firstElementChild!;
     expect(frame.tagName).toBe("SECTION");
     expect(frame.className).toContain("rounded-[11px]");
     expect(frame.className).not.toContain("mt-");
-    expect(drawn).toBe(direct.container.innerHTML);
-
-    // And by its source: the figure imports the panel's own component, never a copy of it.
-    const source = readFileSync(join(process.cwd(), "src/components/about/figures.tsx"), "utf8");
-    expect(source).toMatch(/import \{ CutsFrame, CutsFreeCount \} from "\.\.\/decks\/cuts-free-count";/);
-    expect(source).toMatch(/<CutsFreeCount panel=/);
-  }, 60_000);
+  });
 
   it("CutsPanelView renders CutsFreeCount for its count", async () => {
     const { CutsPanelView } = await import("./cuts-panel");

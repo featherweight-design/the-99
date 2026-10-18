@@ -1875,7 +1875,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **Expected to fail from 2026-10-15 until PR B of `2026-10-15-about-on-the-banner.md` (due on or after
   2026-10-22).** With `ABOUT_SHEET_ENABLED` on, About's notice is a line on Home's banner (#1780) and the sheet never
   draws, so every sheet step fails. `pnpm probe:about-banner` proves the notice meanwhile; PR B rewrites or retires this
-  probe along with the sheet's code.
+  probe along with the sheet's code. Its what's-new jump (check 5) and contents search (check 6) also walk the page
+  Discovery R2·7 retired (the R6 contents, the jump mark, the chapters): those steps go with that rewrite.
 
   It WRITES the account's `user_prefs` row — `about_version_seen` and `about_seen_ids` — HELD ON
   DISK before the first write and restored in a `finally`, the `profile-hold.mjs` rule. "Behind"
@@ -1890,7 +1891,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   worktree first. It proves the cookie a browser held from before a flip does not hide the sheet,
   that the sheet names only the entry just switched on, that the visit records it by id, and that a
   later flip names only the second entry and a third only the third, while a fourth names BOTH
-  of swap tools' entries in page order and a fifth both of the Analysis tab's; it also measures all seven figures at 390 and 1300. Keying the
+  of swap tools' entries in page order and a fifth both of the Analysis tab's; it also measured all seven figures at 390 and 1300 (F5, `figureFacts`). Discovery R2·7 retired those figures, so F5 fails at both widths until PR B's rewrite. Keying the
   sheet cookie on `<user>.<version>` alone fails it at F2 and F4. It needs migration 0066
   (`about_seen_ids`), so point the worktree's `.env` at a migrated database.
 
@@ -1911,27 +1912,6 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   presses Later if a card is already up. `about-clear.test.mts` sweeps every
   probe that writes the column and fails one that does not call it, and pins the ids it reads
   out of `about.ts` against `aboutEntries`.
-
-- `pnpm probe:about-numerals` walks every keyed figure on `/about` at 390x844 and 1300x900 and
-  proves each key line's numeral is PLACED on its figure: one per line, measured onto its part,
-  inside the figure's box, not on another numeral, and painted on top. `about-page.test.tsx`
-  counts the numerals in jsdom, and that count cannot tell a placed numeral from one that never
-  found its part, because every numeral is in the document from the first render.
-
-  Numerals on a MOUNTED app component are placed by `AnchoredNumerals` (`about/numeral.tsx`),
-  which finds each part after layout and measures against its box rather than a fixed offset.
-  The offsets it replaced were right at one width and wrong at the other. Its finders prefer a
-  laid-out match, because many components draw a phone and a desktop copy and hide one, and a
-  hidden copy measures as a zero box at the origin: three figures read "outside" until that
-  rule went in.
-
-  **The painted-on-top check is the one a count cannot replace.** The export figure's numerals
-  measured placed and inside while sitting under the dialog's own layer; with the numeral's
-  `z-[60]` put back to `z-10` the check fails at both widths. It reads through the figure's
-  `inert` and `pointer-events: none` for that one hit test, since both hide an element from
-  `elementFromPoint`. It writes the account's About row through `clearAboutSheet`, captured and
-  restored with `captureAboutSeen`. Needs a server with every About switch on. Point it at
-  `local-dev`, **never production**.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

@@ -28,10 +28,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
  *   a churning caller and a stable one both read 1.
  *
  * Identity churn is therefore invisible to any count-based check short of a
- * parent that re-renders in response to each settle. The defence is the two
- * module constants in `ch01-figures.tsx`, not this file, and the comment there
- * says so. Left as a guard against the one class it does catch, and honest
- * about the rest.
+ * parent that re-renders in response to each settle. The defence was the two
+ * module constants in the old About page's figure module (retired in discovery
+ * R2·7), not this file. Left as a guard against the one class it does catch,
+ * and honest about the rest.
  */
 describe("the add-cards figure's search", () => {
   it("runs once, and does not re-fire on its own result", async () => {

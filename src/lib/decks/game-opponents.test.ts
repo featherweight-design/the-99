@@ -160,11 +160,9 @@ describe("who reads the opponents table", () => {
     // `deck-opponents-read.ts` is the deck page's Games tab read (R3 PR 1). `game-seats.ts` (PR 2) takes only the
     // `OpponentInput` TYPE. The four below (PR 4) take the seat and matchup TYPES to DRAW the snapshot: the History
     // row, its `vs` line, the Matchups section and its row rules. Each reads no opponent and sends no name to a model.
-    // `about/social-figures.tsx` builds the About page's Matchups figure from a fixture: no read, no model.
     const IMPORTERS = new Set([
       "src/app/decks/actions.ts", "src/lib/decks/matchups.ts", "src/lib/decks/deck-opponents-read.ts", "src/lib/decks/game-seats.ts",
       "src/components/decks/game-history-row.tsx", "src/components/decks/game-matchups.tsx", "src/components/decks/game-vs-line.tsx", "src/lib/decks/matchup-rows.ts",
-      "src/components/about/social-figures.tsx",
     ]);
     const importers = walk("src").filter((p) => /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/.test(readFileSync(p, "utf8")));
     expect(importers).toContain("src/app/decks/actions.ts");

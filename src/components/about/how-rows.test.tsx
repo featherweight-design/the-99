@@ -37,6 +37,15 @@ describe("HowItWorks", () => {
     }
   });
 
+  // Admin PR 9c: the written-text row states the READER'S own daily limit, read once by the route (`dailyLimitFor`).
+  it.each([1, 5, 12])("states a credit limit of %i in Written text and credits", (limit) => {
+    render(<HowItWorks entries={aboutEntries} creditLimit={limit} />);
+    fireEvent.click(document.querySelector<HTMLButtonElement>("[aria-controls='how-written-body']")!);
+    const body = document.getElementById("how-written-body")!.textContent ?? "";
+    expect(body).toContain(`Credits: you have ${limit} in any 24 hours`);
+    expect(body).not.toContain("{allowance}");
+  });
+
   it("opens and closes a row on a press, and keeps others open", () => {
     render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     const roles = copy.rows.find((r) => r.id === "how-roles")!;

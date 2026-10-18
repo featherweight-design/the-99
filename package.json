@@ -194,7 +194,6 @@
     "probe:list-stamp": "tsx scripts/probe-list-stamp.ts",
     "list-stamp:triggers": "tsx scripts/list-stamp-triggers.ts",
     "probe:about": "node scripts/probe-about.mjs",
-    "probe:about-numerals": "node scripts/probe-about-numerals.mjs",
     "probe:about-how-it-works": "node scripts/probe-about-how-it-works.mjs",
     "probe:arrivals-banner": "node scripts/probe-arrivals-banner.mjs",
     "probe:about-banner": "tsx scripts/probe-about-banner.mts",

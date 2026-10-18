@@ -138,7 +138,7 @@ export function useQuickReturn(header: RefObject<HTMLElement | null>): QuickRetu
       schedule();
     };
     window.addEventListener("scroll", schedule, { passive: true });
-    // A link to the fragment already in the address bar scrolls with no `hashchange` (as `about/jump-mark.tsx` knows),
+    // A link to the fragment already in the address bar scrolls with no `hashchange` (as the old About page's jump mark knew),
     // so a press on any same-page fragment link marks the scroll it starts as the app's.
     const onClick = (e: MouseEvent) => {
       const link = (e.target as Element | null)?.closest?.("a[href*='#']") as HTMLAnchorElement | null;

@@ -194,7 +194,6 @@ export interface AboutEntry {
 }
 
 export const aboutCopy = {
-  pageTitle: 'Welcome to The 99',
   // Hugh's own story (option A, 2026-10-06): why the app exists, what it does and who it's for.
   // Paragraphs split on a blank line, as an entry's caption does (`EntryCaption`).
   pageIntro:
@@ -213,56 +212,11 @@ export const aboutCopy = {
     'Cheers nerds,' +
     '\n\n' +
     'Hugh',
-  // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
-  // new version still redirects here, and there is no note to speak of.
-
-  contentsLabel: 'Contents',
-  newBadge: 'NEW',
-  newBadgeSr: 'New in this version',
   newSinceEyebrow: (n: number) =>
     n === 1 ? '1 new since your last visit' : `${n} new since your last visit`,
-  newInChapter: (n: number) => `${n} new`,
-  // The contents row’s figure when nothing in that chapter is new, which is
-  // every chapter for every reader at launch. A row that carried a count only
-  // when something was new would be blank for everyone on day one.
-  entriesInChapter: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
-
-  // The contents list and its search (About R6 §Q, §R), verbatim from §R8.
-  contents: {
-    searchPlaceholder: 'Find an entry',
-    searchLabel: 'Find an entry by title',
-    count: (m: number, n: number) => `${m} of ${n}`,
-    none: (q: string) => `Nothing titled “${q}”.`,
-    noneNote: 'Search reads entry titles only.',
-    clear: 'Clear search',
-    newRow: 'new',
-    // The disclosure's name on a phone chapter row; the visible figure beside it
-    // is not a name on its own.
-    toggle: (chapter: string) => `Entries in ${chapter}`,
-  },
-
   dismiss: 'Got it',
   dismissDestination: (route: string) => `takes you to ${route}`,
   dismissDestinationHome: 'takes you home',
-
-  chapters: {
-    '01': {
-      title: 'Your Collection',
-      sub: 'The Foundation: figure out how The 99 helps you manage your Collection.',
-    },
-    '02': {
-      title: 'Finding a commander',
-      sub: 'Something you already own, something new, something borrowed, something mono-blue.',
-    },
-    '03': {
-      title: 'Building the 99',
-      sub: 'The meat and potatoes of the app helping you build your deck before you show it off.',
-    },
-    '04': {
-      title: 'Playing and tuning',
-      sub: 'Bells and whistles to enhance your play and fine-tune your decks.',
-    },
-  },
 } as const;
 
 // ---- How the app reaches its answers (handoff about_how_it_works, R1) -----
