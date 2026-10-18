@@ -1,8 +1,9 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "../../db";
 import { creditGrants, paymentRecords } from "../../db/schema";
 import { decideReturn, isSessionId, type ReturnRead } from "./return-rule";
+import { PAID_SOURCES } from "../model/credit-rule";
 import { isOurSession } from "./packs";
 
 /**
@@ -84,8 +85,9 @@ export function creditHistoryQuery(userId: string) {
   }).from(creditGrants)
     // The record has no account id (kept through the purge), so it is reached THROUGH the viewer's own grant.
     .leftJoin(paymentRecords, eq(creditGrants.externalId, paymentRecords.checkoutSessionId))
-    // A welcome lot is a gift, not a purchase: it is no history row and never makes a reader "someone who has bought".
-    .where(and(eq(creditGrants.userId, userId), ne(creditGrants.source, "welcome"))).orderBy(desc(creditGrants.createdAt)).limit(HISTORY_LIMIT);
+    // Purchases only (`PAID_SOURCES`): a welcome lot or an admin's gift is no history row and never makes a reader
+    // "someone who has bought".
+    .where(and(eq(creditGrants.userId, userId), inArray(creditGrants.source, [...PAID_SOURCES]))).orderBy(desc(creditGrants.createdAt)).limit(HISTORY_LIMIT);
 }
 
 export async function listCreditHistory(userId: string): Promise<CreditHistoryRow[]> {

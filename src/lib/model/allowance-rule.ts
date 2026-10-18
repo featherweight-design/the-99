@@ -140,6 +140,8 @@ export type Allowance = {
    *  first, then pack credits. OPTIONAL like `ownerShare`, and absent while the player holds no lot. */
   welcome?: number;
   plan?: number;
+  /** An admin's support grant (admin plan A-R5): held and spent like a lot, never bought. */
+  gift?: number;
   pack?: number;
   /** Paid runs counted in the window (`PAID_DAILY_LIMIT`'s counter), present with `plan`/`pack`. */
   paidUsedToday?: number;
@@ -174,9 +176,12 @@ export function freeCount(a: { used: number; limit: number }): number {
   return Math.max(0, a.limit - a.used);
 }
 
-/** Credits held in lots (welcome, plan, pack): the one definition of "holds a lot", so no caller sums the sources itself. */
-export function heldCredits(a: { welcome?: number | null; plan?: number | null; pack?: number | null }): number {
-  return (a.welcome ?? 0) + (a.plan ?? 0) + (a.pack ?? 0);
+/** Credits held in lots, of any source. */
+export type HeldLots = { welcome?: number | null; plan?: number | null; gift?: number | null; pack?: number | null };
+
+/** Credits held in lots (welcome, plan, gift, pack): the one definition of "holds a lot", so no caller sums the sources itself. */
+export function heldCredits(a: HeldLots): number {
+  return (a.welcome ?? 0) + (a.plan ?? 0) + (a.gift ?? 0) + (a.pack ?? 0);
 }
 
 /**
@@ -193,13 +198,13 @@ export function paidRoom(a: { paidUsed: number; paidLimit: number }): boolean {
  * `paidLimit`. The credit line asks this to say "the limit" (L5, L6) instead of "out of credits", so the
  * comparison stays here with `paidRoom`. A player with no lot, or an Allowance without the counter, is never at it.
  */
-export function paidAtLimit(a: { welcome?: number | null; plan?: number | null; pack?: number | null; paidUsedToday?: number | null; paidLimit?: number | null }): boolean {
+export function paidAtLimit(a: HeldLots & { paidUsedToday?: number | null; paidLimit?: number | null }): boolean {
   if (heldCredits(a) <= 0) return false;
   return a.paidUsedToday != null && a.paidLimit != null && !paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
-export function hasCredit(a: {
-  used: number; limit: number; welcome?: number | null; plan?: number | null; pack?: number | null;
+export function hasCredit(a: HeldLots & {
+  used: number; limit: number;
   paidUsedToday?: number | null; paidLimit?: number | null;
 }): boolean {
   if (freeRoom(a)) return true;

@@ -11,13 +11,22 @@
  * Spend order across lots (Hugh, 2026-10-13): plan credits before pack credits, because plan credits
  * can expire after a cancel and pack credits never do. Among plan lots the soonest to expire goes
  * first, then the oldest; among packs, the oldest. The welcome lot (D1, 2026-10-18) goes before
- * both: it expires soonest and cannot be bought, so spending it first loses the player nothing.
+ * both: it expires soonest and cannot be bought, so spending it first loses the player nothing. A gift lot
+ * (a support credit an admin grants, admin plan A-R5) never expires, so it goes after plan lots, which can,
+ * and before packs, which were bought and can be refunded.
  *
  * `src/lib/model/allowance.ts` is the ledger this reads.
  */
 import { RESERVATION_TTL_MS, type LedgerRow } from "./allowance-rule";
 
-export type CreditSource = "plan" | "pack" | "welcome";
+export type CreditSource = "plan" | "pack" | "welcome" | "gift";
+
+/**
+ * The sources a player BUYS. "Paid" means one of these everywhere (purchase history, "has bought", the deletion
+ * warning), never "not welcome": a welcome lot and an admin's gift are held and spent, but neither was bought.
+ */
+export const PAID_SOURCES = ["plan", "pack"] as const satisfies readonly CreditSource[];
+export const isPaidSource = (source: string): boolean => (PAID_SOURCES as readonly string[]).includes(source);
 
 export type CreditGrant = {
   id: string;
@@ -58,7 +67,7 @@ export function remaining(grant: CreditGrant, usage: GrantUsage, now: Date): num
 
 export type GrantBalance = { grant: CreditGrant; remaining: number };
 
-const SOURCE_RANK: Record<CreditSource, number> = { welcome: 0, plan: 1, pack: 2 };
+const SOURCE_RANK: Record<CreditSource, number> = { welcome: 0, plan: 1, gift: 2, pack: 3 };
 
 function spendOrder(a: CreditGrant, b: CreditGrant): number {
   if (a.source !== b.source) return SOURCE_RANK[a.source] - SOURCE_RANK[b.source];
@@ -76,9 +85,9 @@ export function pickGrant(balances: readonly GrantBalance[]): CreditGrant | null
   return open[0] ?? null;
 }
 
-/** Credits left per source, for the `Allowance`'s `welcome`, `plan` and `pack`. */
-export function creditTotals(balances: readonly GrantBalance[]): { welcome: number; plan: number; pack: number } {
-  const totals = { welcome: 0, plan: 0, pack: 0 };
+/** Credits left per source, for the `Allowance`'s `welcome`, `plan`, `gift` and `pack`. */
+export function creditTotals(balances: readonly GrantBalance[]): Record<CreditSource, number> {
+  const totals = { welcome: 0, plan: 0, gift: 0, pack: 0 };
   for (const b of balances) totals[b.grant.source] += b.remaining;
   return totals;
 }
