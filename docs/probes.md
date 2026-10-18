@@ -615,6 +615,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   connection (the deck is read off `/decks`), so it needs no scratch branch. Run against `next start` with
   `HELP_PANEL_ENABLED=true`. Card details under the panel is R2·9's extension.
 
+- `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
+  the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) against a server with
+  `FIRST_RUN_TOUR_ENABLED=true` and `ABOUT_SHEET_ENABLED=true` (off, the proxy sends an account with unread About to
+  `/about` before Home). It proves every step's cutout sits on its real control (the ring's box is the control's box
+  plus its room, within 2px), the app is inert under the scrim and a press on a locked slot opens no note, the tour is
+  spent once as step 1 appears (`tour_seen_at` written, a reload shows nothing, the date unmoved), a theme chosen at
+  step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Each width
+  resets the account's `tour_seen_at` and About state, and restores the About state after. It refuses staging and
+  production by `neon.branch_id`, and an account holding cards or decks. `PROBE_SHOTS=<dir>` photographs every step
+  and the fallback: the tour's contact sheet (`discovery-r2-r3.json`, `needsFixture`).
+
 - `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its
   commander, one twelve short, one six over and one whole and COMMITTED through `commitVersion` (an unowned card over

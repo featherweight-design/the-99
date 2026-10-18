@@ -6,10 +6,13 @@
 // survives a skip, and step 6 stands centred with no cutout when Home draws no About line (R3 gap 6).
 //
 // FIXTURE. The dedicated empty account on Clerk's development instance (`onboard-probe+clerk_test@the99.app`), which
-// first-run Home is drawn for. The server must run with FIRST_RUN_TOUR_ENABLED=true. Each width resets the account's
+// first-run Home is drawn for. The server must run with FIRST_RUN_TOUR_ENABLED=true and ABOUT_SHEET_ENABLED=true. Each width resets the account's
 // `tour_seen_at` to null and writes nothing else of the account's but its About seen-state, which it captures first and
 // restores after. It refuses staging and production by `neon.branch_id`, and refuses an account that holds cards or
 // decks (`assertDisposableAccount`), whose first run it would not see.
+//
+// PROBE_SHOTS=<dir> also photographs every step at each width, and step 6's fallback: the tour's contact sheet, since
+// the shared one signs in as an account with data, which never sees a first run.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tour
 import { neon } from "@neondatabase/serverless";
@@ -17,11 +20,13 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertDisposableAccount, ONBOARD_PROBE_EMAIL } from "./lib/probe-account.mjs";
-import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen, sheetCookie } from "./lib/about-clear.mjs";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const sql = neon(DATABASE_URL);
+const SHOTS = process.env.PROBE_SHOTS;
+const shot = async (page, vp, name) => SHOTS && page.screenshot({ path: `${SHOTS}/tour-${name}-${vp.width < 768 ? "phone" : "desktop"}.png` });
 const REFUSED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess"]);
 
 let failures = 0;
@@ -57,20 +62,23 @@ async function signIn(page) {
 
 const seenAt = async (userId) => (await sql`select tour_seen_at from user_prefs where user_id = ${userId}`)[0]?.tour_seen_at ?? null;
 
-/** Each step's real control, drawn at this width, and the room its cutout keeps around it. */
-const CONTROLS = {
-  collection: { sel: "[data-step1-card]", pad: 8 },
+/**
+ * Each step's real control at this width, and the room its cutout keeps around it. At 390 step 1 lights the card's
+ * controls under the fan, and the header's account button is its 38px square inside a 3px pad (1px past the button).
+ */
+const controls = (phone) => ({
+  collection: phone ? { sel: "[data-step1-controls]", pad: 8 } : { sel: "[data-step1-card]", pad: 8 },
   // A slot and the account button carry their target as a box over the control (`TargetBox`, `data-target`).
   commanders: { sel: '[data-target="tour:commanders"]', pad: 5 },
   decks: { sel: '[data-target="tour:decks"]', pad: 5 },
   buying: { sel: '[data-target="tour:decks"]', pad: 5 },
-  look: { sel: '[data-target="tour:account"]', pad: 4 },
+  look: { sel: '[data-target="tour:account"]', pad: phone ? 1 : 4 },
   whatsNew: { sel: "[data-arrivals-banner] section", pad: 8 },
-};
+});
 
 /** The ring's box against the first drawn match of the step's control, padded by its room. */
-async function ringOnControl(page, key) {
-  const { sel, pad } = CONTROLS[key];
+async function ringOnControl(page, key, phone) {
+  const { sel, pad } = controls(phone)[key];
   // The ring glides for 240ms; read it settled.
   await page.waitForTimeout(400);
   return page.evaluate(
@@ -97,8 +105,9 @@ async function walk(browser, vp) {
   const about = await captureAboutSeen(userId, sql);
   try {
     // About's line stays on Home for step 6; the cookie keeps its sheet from opening over the page first.
-    await sql`update user_prefs set tour_seen_at = null where user_id = ${userId}`;
-    await context.addCookies([sheetCookie(userId, BASE)]);
+    // A brand-new account's About state, so Home draws About's first-run line for step 6 (the server must run with
+    // ABOUT_SHEET_ENABLED=true; off, the proxy sends a reader with unread About to /about first). Restored in the `finally`.
+    await sql`update user_prefs set tour_seen_at = null, about_version_seen = 0, about_seen_ids = '{}' where user_id = ${userId}`;
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     const card = page.locator("[data-tour-card]");
     report("the tour opens on a first-run Home", await card.waitFor({ timeout: 15_000 }).then(() => true, () => false));
@@ -108,7 +117,17 @@ async function walk(browser, vp) {
 
     for (const key of ["collection", "commanders", "decks", "buying", "look", "whatsNew"]) {
       await page.waitForFunction((k) => document.querySelector(`[data-tour-card="${k}"]`), key, { timeout: 5_000 });
-      const at = await ringOnControl(page, key);
+      const at = await ringOnControl(page, key, vp.width < 768);
+      await shot(page, vp, key);
+      if (key === "collection" && vp.width < 768) {
+        // At 390 the page scrolls so the lit controls clear the docked card.
+        const clear = await page.evaluate(() => {
+          const ring = document.querySelector("[data-tour-ring]")?.getBoundingClientRect();
+          const box = document.querySelector("[data-tour-card]")?.getBoundingClientRect();
+          return !!ring && !!box && ring.bottom <= box.top;
+        });
+        report("step 1 at 390: the lit controls clear the docked card", clear);
+      }
       report(`step ${key}: the cutout sits on its control`, at.ok, at.why);
       if (key === "commanders") {
         // A press where the locked slot is: the scrim and the inert app take nothing, so no note opens.
@@ -141,6 +160,7 @@ async function walk(browser, vp) {
     await card.waitFor({ timeout: 15_000 });
     for (let i = 0; i < 5; i++) await card.getByRole("button", { name: "Next", exact: true }).click();
     await page.waitForTimeout(300);
+    await shot(page, vp, "whatsNew-fallback");
     report("with no About line, step 6 lights nothing", (await page.locator("[data-tour-ring]").count()) === 0 && (await page.locator('[data-tour-card="whatsNew"]').count()) === 1);
     await page.keyboard.press("Escape");
     report("Esc ends the tour", (await card.count()) === 0);

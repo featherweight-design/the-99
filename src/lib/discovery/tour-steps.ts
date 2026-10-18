@@ -10,6 +10,12 @@ export type CutoutKind = "card" | "slot" | "account" | "banner";
 /** Where the card sits at desktop, relative to the lit control. */
 export type Placement = "below-end" | "beside" | "beside-foot" | "below-start";
 export type Picture = "tour-commanders" | "tour-decks" | "tour-shopping";
+/** Where each capture is cropped in the card's 118px (128 at 390) box, as the boards draw it. */
+export const PICTURE_FOCUS: Record<Picture, string> = {
+  "tour-commanders": "center 80%",
+  "tour-decks": "center 24%",
+  "tour-shopping": "center 64%",
+};
 
 export type Step = {
   key: StepKey;
@@ -41,8 +47,12 @@ const ROOM: Record<CutoutKind, { pad: number; r: number | "round" }> = {
   banner: { pad: 8, r: 16 },
 };
 
-export function cutoutFor(rect: Box, kind: CutoutKind): Cutout {
-  const { pad, r } = ROOM[kind];
+/**
+ * `phone`: the header's account button is a 38px square inside the button's 3px pad, lit with 4px of room and a 15
+ * corner; the rail's is a circle, lit round.
+ */
+export function cutoutFor(rect: Box, kind: CutoutKind, phone = false): Cutout {
+  const { pad, r } = kind === "account" && phone ? { pad: 1, r: 15 } : ROOM[kind];
   const box = { x: rect.x - pad, y: rect.y - pad, w: rect.w + pad * 2, h: rect.h + pad * 2 };
   return { ...box, r: r === "round" ? Math.min(box.w, box.h) / 2 : r };
 }
@@ -60,7 +70,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Ma
 /**
  * The card's top-left at desktop, from the lit control's own box (not the cutout), clamped 14px inside the frame and
  * never over the control where the frame has room. Reproduces the boards' geometry: a slot at (12, 163, 38) puts the
- * card at (74, 132), the banner at (90, 120, 1162 x 46) at (90, 184), step 1's card at (90, 186, 1162 x 304) at
+ * card at (74, 131) (the boards: 132, and 214 for Decks at 247), the banner at (90, 120, 1162 x 46) at (90, 184), step 1's card at (90, 186, 1162 x 304) at
  * (912, 504). `rect` null is step 6 with no line to light (R3 gap 6): the card stands centred.
  */
 export function placeCard(place: Placement, rect: Box | null, card: { w: number; h: number }, frame: { w: number; h: number }): { x: number; y: number } {
@@ -69,7 +79,8 @@ export function placeCard(place: Placement, rect: Box | null, card: { w: number;
   if (!rect) return { x: clamp((frame.w - card.w) / 2, FRAME, maxX), y: clamp((frame.h - card.h) / 2, FRAME, maxY) };
   switch (place) {
     case "beside":
-      return { x: clamp(rect.x + rect.w + BESIDE, FRAME, maxX), y: clamp(rect.y - 31, FRAME, maxY) };
+      // 32 above the slot: the boards draw 31 at Commanders and 33 at Decks.
+      return { x: clamp(rect.x + rect.w + BESIDE, FRAME, maxX), y: clamp(rect.y - 32, FRAME, maxY) };
     case "beside-foot":
       // The account button sits at the rail's foot: the card's foot is 14px above the frame's.
       return { x: clamp(rect.x + rect.w + BESIDE, FRAME, maxX), y: clamp(maxY, FRAME, maxY) };

@@ -254,8 +254,8 @@ export function ThemePicker({
               className={`text-left transition-colors duration-[120ms] ${
                 tour
                   ? compact
-                    ? "flex min-h-[48px] items-center gap-[10px] rounded-[9px] p-[5px_6px]"
-                    : "flex flex-col gap-[5px] rounded-[9px] p-[5px]"
+                    ? "relative flex min-h-[48px] items-center gap-[10px] rounded-[9px] p-[5px_6px]"
+                    : "relative flex flex-col gap-[5px] rounded-[9px] p-[5px]"
                   : compact
                     ? "flex min-h-[44px] items-center gap-[11px] rounded-[10px] p-[10px]"
                     : "flex flex-col gap-[5px] rounded-[10px] p-[5px]"
@@ -265,11 +265,21 @@ export function ThemePicker({
                   : "hover:bg-[color:var(--surface-raised)] transition-colors"
               }`}
             >
-              <ThemeMiniature theme={key} compact={compact} selected={isSelected} />
-              <span className="flex min-w-0 flex-col gap-[2px]">
+              {/* The tour draws the tick on the cell's corner, not the miniature's (R3, step 5). */}
+              <ThemeMiniature theme={key} compact={compact} selected={isSelected && !tour} />
+              {tour && isSelected && (
+                <span
+                  aria-hidden
+                  data-selected-tick
+                  className="absolute -right-[5px] -top-[5px] flex h-[13px] w-[13px] items-center justify-center rounded-full bg-[color:var(--accent)] text-[8.5px] font-bold leading-none text-[color:var(--bg)]"
+                >
+                  ✓
+                </span>
+              )}
+              <span className={`flex min-w-0 flex-col ${tour ? "gap-[1px]" : "gap-[2px]"}`}>
                 <span
                   className={`truncate font-medium leading-[1.25] ${
-                    isSelected ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
+                    isSelected || tour ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
                   }`}
                   style={{ fontSize: compact ? 12.5 : 10.5 }}
                 >

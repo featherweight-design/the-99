@@ -16,6 +16,8 @@ describe("cutoutFor", () => {
   it("gives a slot 5px of room and a 14 corner, the account button 4px and a round one, a card 8 and 20", () => {
     expect(cutoutFor({ x: 12, y: 163, w: 38, h: 38 }, "slot")).toEqual({ x: 7, y: 158, w: 48, h: 48, r: 14 });
     expect(cutoutFor({ x: 13, y: 750, w: 36, h: 36 }, "account")).toEqual({ x: 9, y: 746, w: 44, h: 44, r: 22 });
+    // The header's 38px square, inside the button's 3px pad: 4px of room and a 15 corner at 390.
+    expect(cutoutFor({ x: 326, y: 20, w: 44, h: 44 }, "account", true)).toEqual({ x: 325, y: 19, w: 46, h: 46, r: 15 });
     expect(cutoutFor({ x: 90, y: 186, w: 1162, h: 304 }, "card").r).toBe(20);
     expect(cutoutFor({ x: 90, y: 120, w: 1162, h: 46 }, "banner")).toMatchObject({ x: 82, w: 1178, r: 16 });
   });
@@ -32,7 +34,8 @@ describe("placeCard, against the boards' step geometry", () => {
   });
 
   it("puts a slot's card beside the rail, its head level with the slot", () => {
-    expect(placeCard("beside", { x: 12, y: 163, w: 38, h: 38 }, card, FRAME)).toEqual({ x: 74, y: 132 });
+    expect(placeCard("beside", { x: 12, y: 163, w: 38, h: 38 }, card, FRAME)).toEqual({ x: 74, y: 131 });
+    expect(placeCard("beside", { x: 12, y: 247, w: 38, h: 38 }, card, FRAME)).toEqual({ x: 74, y: 215 });
   });
 
   it("stands the account step's card on the frame's foot, 14 above it", () => {

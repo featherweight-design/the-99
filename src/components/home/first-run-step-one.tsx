@@ -18,6 +18,7 @@ import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { WaysGroup } from "../collection/ways-group";
 import { useTarget } from "../discovery/targets-provider";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 export function FirstRunStepOne({
   fan,
@@ -41,8 +42,10 @@ export function FirstRunStepOne({
   const saved = useRef(false);
   const trigger = useRef<HTMLElement | null>(null);
   const [reviewing, setReviewing] = useState<{ file: string; rows: number } | null>(null);
-  // The tour's step 1 lights this card (discovery R3·1b).
+  // The tour's step 1 lights this card at desktop, and at 390 its controls under the fan, which stays above the fold
+  // (discovery R3·1b, "Each step").
   const tourTarget = useTarget("tour:step-one");
+  const desktop = useIsDesktop();
   const openAdd = (el: HTMLElement) => {
     trigger.current = el;
     saved.current = false;
@@ -63,7 +66,7 @@ export function FirstRunStepOne({
       data-reviewing={reviewing ? "" : undefined}
       // The nav's "Go to step 1" lands here when the review has replaced the upload entry.
       data-step1-card=""
-      ref={tourTarget}
+      ref={desktop ? tourTarget : undefined}
       tabIndex={-1}
     >
       {/* `sm:items-start` on the card above keeps this pinned while the text
@@ -72,6 +75,8 @@ export function FirstRunStepOne({
           Hugh ruled on 2026-09-28 that the fan stays top-aligned throughout. */}
       <div className={reviewing ? "hidden md:contents" : "contents"}>{fan}</div>
       <div
+        ref={desktop ? undefined : tourTarget}
+        data-step1-controls=""
         className={`flex w-full min-w-0 flex-col gap-[12px] sm:w-auto sm:flex-auto sm:items-stretch sm:gap-[7px] ${
           reviewing ? "items-stretch" : "items-center"
         }`}

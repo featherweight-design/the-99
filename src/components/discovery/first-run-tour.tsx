@@ -18,7 +18,7 @@ import { useInertPage } from "../../lib/a11y/inert-page";
 import { shotFor } from "../../lib/about/shots";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
-import { CARD_W, PHONE_DOCK, STEPS, cutoutFor, placeCard, type Box } from "../../lib/discovery/tour-steps";
+import { CARD_W, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, type Box } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { takeVisit } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
@@ -119,18 +119,13 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     return () => window.cancelAnimationFrame(raf);
   }, [targets, step.target]);
 
-  // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top.
-  useLayoutEffect(() => {
-    const r = !desktop && step.key === "collection" ? targets?.targetRect(step.target) : null;
-    window.scrollTo({ top: r ? window.scrollY + r.top - 14 : 0, behavior: "instant" });
-  }, [desktop, step.key, step.target, targets]);
-
   const cardRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   // Esc skips. The tour scrolls the page itself, so the body is never locked.
   useDialogA11y(cardRef, () => onEnd(false), { initialFocusRef: nextRef, lockScroll: false });
 
-  const [cardH, setCardH] = useState(0);
+  // Null until the card has been measured once; it is hidden only until then.
+  const [cardH, setCardH] = useState<number | null>(null);
   useLayoutEffect(() => {
     const el = cardRef.current;
     if (!el) return;
@@ -139,6 +134,24 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     setCardH(el.offsetHeight);
     return () => ro.disconnect();
   }, []);
+
+  // At 390 the docked card covers the page's foot, so the page gets that much room to scroll under it while the tour
+  // runs: a short first-run page could not otherwise bring step 1's controls clear of the card. Restored on the way out.
+  useLayoutEffect(() => {
+    if (desktop) return;
+    const body = document.body;
+    const was = body.style.paddingBottom;
+    body.style.paddingBottom = `${PHONE_DOCK + (cardH ?? 0)}px`;
+    return () => {
+      body.style.paddingBottom = was;
+    };
+  }, [desktop, cardH]);
+
+  // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top.
+  useLayoutEffect(() => {
+    const r = !desktop && step.key === "collection" ? targets?.targetRect(step.target) : null;
+    window.scrollTo({ top: r ? window.scrollY + r.top - 14 : 0, behavior: "instant" });
+  }, [desktop, step.key, step.target, targets, cardH]);
 
   // The card crossfades between steps; reduced motion cuts.
   const first = useRef(true);
@@ -154,14 +167,14 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   const titleId = useId();
   const bodyId = useId();
   const litId = useId();
-  const cut = rect ? cutoutFor(rect, step.kind) : null;
+  const cut = rect ? cutoutFor(rect, step.kind, !desktop) : null;
   // Step 6 with no line on Home to light (R3 gap 6): the card stands centred and drops the line's sentence.
   const fallback = !rect;
-  const place = desktop ? placeCard(step.place, rect, { w: CARD_W, h: cardH }, frame) : null;
+  const place = desktop ? placeCard(step.place, rect, { w: CARD_W, h: cardH ?? 0 }, frame) : null;
   const theme = themeInForce(DEFAULT_THEME);
   const picture = step.picture ? shotFor(theme, step.picture) : null;
   const copy = c.steps[step.key];
-  const glide = "transition-[x,y,width,height] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
+  const glide = "transition-[x,y,width,height,rx] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
 
   return createPortal(
     <>
@@ -169,7 +182,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
         <defs>
           <mask id={maskId}>
             <rect width="100%" height="100%" fill="white" />
-            {cut && <rect className={glide} style={{ x: cut.x, y: cut.y, width: cut.w, height: cut.h }} rx={cut.r} fill="black" />}
+            {cut && <rect className={glide} style={{ x: cut.x, y: cut.y, width: cut.w, height: cut.h, rx: cut.r }} fill="black" />}
           </mask>
         </defs>
         <rect width="100%" height="100%" fill={SCRIM} mask={`url(#${maskId})`} />
@@ -178,7 +191,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
         <div
           aria-hidden
           data-tour-ring
-          className="pointer-events-none fixed z-[70] shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_75%,transparent),0_0_0_6px_color-mix(in_oklab,var(--accent)_20%,transparent)] transition-[left,top,width,height] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none"
+          className="pointer-events-none fixed z-[70] shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_75%,transparent),0_0_0_6px_color-mix(in_oklab,var(--accent)_20%,transparent)] transition-[left,top,width,height,border-radius] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none"
           style={{ left: cut.x, top: cut.y, width: cut.w, height: cut.h, borderRadius: cut.r }}
         />
       )}
@@ -189,11 +202,15 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
         aria-labelledby={titleId}
         aria-describedby={fallback ? undefined : `${bodyId} ${litId}`}
         data-tour-card={step.key}
-        className="fixed z-[71] flex flex-col rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] text-left text-[color:var(--fg-body)] shadow-[0_24px_60px_rgba(0,0,0,.55)] max-md:bottom-[var(--tour-dock)] max-md:left-[16px] max-md:right-[16px] md:w-[340px] md:p-[14px_16px_14px_18px]"
-        style={{
-          ["--tour-dock" as string]: `${PHONE_DOCK}px`,
-          ...(place ? { left: place.x, top: place.y, visibility: cardH ? "visible" : "hidden" } : {}),
-        }}
+        className="fixed z-[71] flex flex-col rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] text-left text-[color:var(--fg-body)] shadow-[0_24px_60px_rgba(0,0,0,.55)] max-md:left-[16px] max-md:right-[16px] md:w-[340px] md:p-[14px_16px_14px_18px]"
+        style={
+          place
+            ? { left: place.x, top: place.y, visibility: cardH === null ? "hidden" : "visible" }
+            : // At 390 the card is docked above the tab bar, or centred when there is nothing to light (R3 gap 6).
+              fallback
+              ? { top: Math.max(14, (frame.h - (cardH ?? 0)) / 2), visibility: cardH === null ? "hidden" : "visible" }
+              : { bottom: PHONE_DOCK }
+        }
       >
         <div className="flex items-center justify-between gap-[10px]">
           <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[color:var(--accent)]">
@@ -234,7 +251,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
           <>
             <div className="mt-[12px] h-[128px] overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[118px]">
               {/* eslint-disable-next-line @next/next/no-img-element -- a checked-in capture, sized by its box */}
-              <img src={picture.src} alt={copy.pictureAlt} className="block h-full w-full object-cover" />
+              <img src={picture.src} alt={copy.pictureAlt} className="block h-full w-full object-cover" style={{ objectPosition: step.picture ? PICTURE_FOCUS[step.picture] : undefined }} />
             </div>
             <span className="mt-[6px] font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.picture}</span>
           </>
