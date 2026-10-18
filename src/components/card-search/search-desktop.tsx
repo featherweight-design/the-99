@@ -13,7 +13,7 @@ import { dialogIsUp, isMacPlatform, isSearchShortcut } from "../../lib/card-sear
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
-import { SearchGlyph, SearchOffline, SearchProgress, useCardSearch } from "./card-search";
+import { CARD_SEARCH_CLEAR_DESKTOP, SearchGlyph, SearchOffline, SearchProgress, useCardSearch } from "./card-search";
 
 const noSubscribe = () => () => {};
 /** Whether this device takes ⌘ (read after hydration, so the server's render and the first paint agree). */
@@ -141,8 +141,8 @@ function DesktopFrame() {
               query === "" ? (
                 <kbd
                   aria-hidden
-                  // The field reserves its hidden 24px clear button and a 12px gap after this: take both back, so the chip sits 10px in.
-                  className="-mr-[36px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] px-[6px] py-[2px] font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
+                  // The field reserves its hidden 28px clear button and a 12px gap after this: take both back, so the chip sits 10px in.
+                  className="-mr-[40px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] px-[6px] py-[2px] font-mono text-[10.5px] font-medium text-[color:var(--fg-faint)]"
                 >
                   {shortcut.label}
                 </kbd>
@@ -165,6 +165,7 @@ function DesktopFrame() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onFieldKey}
             onClear={() => setQuery("")}
+            clearClassName={CARD_SEARCH_CLEAR_DESKTOP}
           />
         </div>
         {/* The dropdown: its own box under the field, the Wishlist panel's look (`.dres`). */}

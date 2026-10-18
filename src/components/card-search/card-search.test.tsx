@@ -1,6 +1,7 @@
 import * as React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 
 const searchAllCardsAction = vi.fn(async (_q: string) => []);
 const cardSignalsAction = vi.fn(async (_ids: string[]) => ({}));
@@ -36,6 +37,13 @@ afterEach(() => {
   cardSignalsAction.mockClear();
   window.localStorage.clear();
 });
+
+// The board's `.clr`: a bare ✕, none of the shared field's filled circle (`rounded-full`, `bg-[color:var(--border)]`).
+function expectBareClear(clear: HTMLElement, size: readonly string[]) {
+  const cls = clear.className.split(/\s+/);
+  for (const c of [...size, "rounded-none", "bg-transparent", "text-[13px]", "text-[color:var(--fg-faint)]"]) expect(cls).toContain(c);
+  for (const c of ["rounded-full", "bg-[color:var(--border)]", "h-[24px]", "w-[24px]", "text-[12px]"].filter((c) => !size.includes(c))) expect(cls).not.toContain(c);
+}
 
 describe("the search sheet (phone)", () => {
   it("is no dialog in the DOM until it opens (the swap receipt waits for none to exist)", async () => {
@@ -90,6 +98,17 @@ describe("the search sheet (phone)", () => {
     await act(async () => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
     expect(searchAllCardsAction).toHaveBeenCalledWith("sol");
     online.mockRestore();
+  });
+
+  it("draws the clear as the board's bare ✕, which still empties the field and keeps focus there", async () => {
+    const icon = mount();
+    await act(async () => fireEvent.click(icon));
+    await type("sol");
+    const clear = screen.getByRole("button", { name: searchFieldCopy.clear });
+    expectBareClear(clear, ["h-8", "w-8"]);
+    await act(async () => fireEvent.click(clear));
+    expect((field() as HTMLInputElement).value).toBe("");
+    expect(document.activeElement).toBe(field());
   });
 
   it("Escape clears the query first, then closes, and focus goes back to the icon", async () => {

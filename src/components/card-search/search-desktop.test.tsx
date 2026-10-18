@@ -1,6 +1,7 @@
 import * as React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 
 vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: async () => [],
@@ -39,6 +40,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
   window.localStorage.clear();
 });
+
+// The board's `.clr`: a bare ✕, none of the shared field's filled circle (`rounded-full`, `bg-[color:var(--border)]`).
+function expectBareClear(clear: HTMLElement, size: readonly string[]) {
+  const cls = clear.className.split(/\s+/);
+  for (const c of [...size, "rounded-none", "bg-transparent", "text-[13px]", "text-[color:var(--fg-faint)]"]) expect(cls).toContain(c);
+  for (const c of ["rounded-full", "bg-[color:var(--border)]", "h-[24px]", "w-[24px]", "text-[12px]"].filter((c) => !size.includes(c))) expect(cls).not.toContain(c);
+}
 
 describe("the search on the desktop", () => {
   it("opens on ⌘K on a Mac, from inside a page field, and returns focus there on Escape", async () => {
@@ -116,6 +124,17 @@ describe("the search on the desktop", () => {
       });
       expect(inField()).toBe(true);
     }
+  });
+
+  it("draws the clear as the board's bare ✕, which still empties the field and keeps focus there", async () => {
+    mount("MacIntel");
+    await press({ metaKey: true });
+    await act(async () => void fireEvent.change(combobox(), { target: { value: "sol" } }));
+    const clear = screen.getByRole("button", { name: searchFieldCopy.clear });
+    expectBareClear(clear, ["w-[28px]", "h-[24px]"]);
+    await act(async () => fireEvent.click(clear));
+    expect((combobox() as HTMLInputElement).value).toBe("");
+    expect(document.activeElement).toBe(combobox());
   });
 
   it("is not modal and shows the shortcut until typing starts, with no foot line before results", async () => {

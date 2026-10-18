@@ -36,6 +36,30 @@ describe("the result row", () => {
     expect(opt.getAttribute("aria-label")).toBe("Ashling, the Limitless, 2 owned, in HD - Elementals and 1 more deck, on your wishlist");
   });
 
+  it("says the bookmark once: its copy key closes the row's name, and the box itself is hidden and unnamed", () => {
+    const opt = draw(row());
+    const name = opt.getAttribute("aria-label") ?? "";
+    expect(name.endsWith(`, ${cardSearchCopy.row.wishlistAria}`)).toBe(true);
+    expect(name.split(cardSearchCopy.row.wishlistAria).length - 1).toBe(1);
+    const box = opt.querySelector("[data-card-search-wishlist]");
+    expect(box?.getAttribute("aria-hidden")).toBe("true");
+    expect(box?.hasAttribute("aria-label")).toBe(false);
+    expect(box?.hasAttribute("role")).toBe(false);
+    expect(opt.querySelectorAll("[aria-label]").length).toBe(0);
+    expect(cardSearchCopy.row.aria("X", 0, [], false)).not.toContain(cardSearchCopy.row.wishlistAria);
+  });
+
+  it("reads the bookmark's words from the copy key, not a second literal", () => {
+    const row_ = cardSearchCopy.row as { wishlistAria: string };
+    const was = row_.wishlistAria;
+    row_.wishlistAria = "kept for later";
+    try {
+      expect(draw(row()).getAttribute("aria-label")).toMatch(/, kept for later$/);
+    } finally {
+      row_.wishlistAria = was;
+    }
+  });
+
   it("draws ownership, the first deck and how many more", () => {
     const opt = draw(row());
     expect(opt.textContent).toContain("×2 owned");

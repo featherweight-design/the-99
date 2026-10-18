@@ -114,7 +114,11 @@ export function SearchRow({
           ) : null}
         </span>
       </span>
+      {/* The bookmark's `row.wishlistAria` is already the last clause of the row's own name (an option's
+          contents are presentational), so the box stays hidden from the tree: a label here would say it twice. */}
       <span
+        aria-hidden
+        data-card-search-wishlist
         className={`flex h-7 w-7 flex-none items-center justify-center text-[color:var(--accent)] ${row.wishlist ? "" : "invisible"}`}
       >
         <Bookmark />
