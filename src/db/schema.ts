@@ -2365,6 +2365,8 @@ export const stripeEvents = pgTable("stripe_events", {
  */
 export const paymentRecords = pgTable("payment_records", {
   paymentIntentId: text("payment_intent_id").primaryKey(),
+  // The Stripe object that paid for the lot: a Checkout Session id for a pack, the INVOICE id for a plan month
+  // (the same value as that lot's `credit_grants.external_id`, which is how a refund finds its lot).
   checkoutSessionId: text("checkout_session_id").notNull().unique(),
   amountCents: integer("amount_cents").notNull(),
   taxCents: integer("tax_cents").notNull(),
@@ -2396,6 +2398,26 @@ export const paymentDisputes = pgTable("payment_disputes", {
 ]);
 
 /**
+ * THE PLAN SUBSCRIPTIONS (payments, the subscription PR). One row per Stripe subscription the app created,
+ * written by the signed webhook from the subscription AS RETRIEVED from Stripe (`src/lib/payments/subscribe.ts`),
+ * never from an event's own copy. It exists so Checkout can refuse a second live subscription and so the
+ * billing page can read the plan without a Stripe call. `status` is Stripe's own word; `ended` subscriptions
+ * (`canceled`, `incomplete_expired`) are terminal for their id: a resubscribe is a NEW subscription. Per-user,
+ * so the account purge deletes it (`PURGE_ORDER`).
+ */
+export const subscriptions = pgTable("subscriptions", {
+  stripeSubscriptionId: text("stripe_subscription_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  status: text("status").notNull(),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  index("subscriptions_user_idx").on(t.userId),
+]);
+
+/**
  * PAID CREDITS, one row per lot (payments plan, PR L, 2026-10-13). A `plan` lot is a subscription
  * period's credits and a `pack` lot a one-time purchase. A lot is spent by the `model_calls` rows that
  * name it (`credit_grant_id`), counted by the same rule as the allowance minus its 24-hour window
@@ -2423,6 +2445,13 @@ export const creditGrants = pgTable("credit_grants", {
   refundedCents: integer("refunded_cents").notNull().default(0),
   expiresAt: timestamp("expires_at"),
   externalId: text("external_id").unique(),
+  // Stripe's `billing_reason` on the invoice that paid for a plan lot, stored at fulfilment (`subscription_create`
+  // for a subscription's first invoice, `subscription_cycle` for a renewal): history labels "first month" by it
+  // and never by a later guess. Null for a pack and a welcome lot.
+  billingReason: text("billing_reason"),
+  // The Stripe subscription a plan lot belongs to (null for a pack and a welcome lot). Every expiry the webhook writes
+  // is scoped to it, so a late event of an old subscription never moves a newer subscription's lots.
+  subscriptionId: text("subscription_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   check("credit_grants_source_check", sql`${t.source} in ('plan', 'pack', 'welcome', 'gift')`),
@@ -2433,6 +2462,7 @@ export const creditGrants = pgTable("credit_grants", {
   // A pack and an admin's gift never expire, a welcome lot always does, a plan lot may (while subscribed it does not).
   check("credit_grants_pack_never_expires_check", sql`${t.source} = 'plan' or (${t.source} in ('pack', 'gift') and ${t.expiresAt} is null) or (${t.source} = 'welcome' and ${t.expiresAt} is not null)`),
   index("credit_grants_user_idx").on(t.userId),
+  index("credit_grants_subscription_idx").on(t.subscriptionId),
   // One welcome lot per account, ever (D1): the write is `on conflict do nothing`, so every path is idempotent.
   uniqueIndex("credit_grants_welcome_once").on(t.userId).where(sql`${t.source} = 'welcome'`),
 ]);

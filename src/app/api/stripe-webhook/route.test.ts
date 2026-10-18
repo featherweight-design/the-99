@@ -7,6 +7,10 @@ vi.mock("../../../lib/payments/fulfil", () => ({ fulfilCheckoutSession: fulfil, 
 
 const reverse = vi.hoisted(() => vi.fn());
 vi.mock("../../../lib/payments/reverse", () => ({ reverseCharge: reverse }));
+const invoice = vi.hoisted(() => vi.fn());
+const syncSub = vi.hoisted(() => vi.fn());
+const planOn = vi.hoisted(() => ({ value: true }));
+vi.mock("../../../lib/payments/subscribe", () => ({ fulfilInvoice: invoice, syncSubscription: syncSub, planConfigured: () => planOn.value }));
 
 import { POST } from "./route";
 
@@ -14,9 +18,9 @@ import { POST } from "./route";
 const SECRET = "whsec_test_fixture";
 const signer = new Stripe("sk_test_fixture");
 
-function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null; id?: string } = {}) {
+function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null; id?: string; mode?: string } = {}) {
   const metadata = opts.metadata === undefined ? { app: "the-99" } : opts.metadata;
-  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: opts.id ?? "cs_1", object: "checkout.session", metadata } } });
+  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: opts.id ?? "cs_1", object: "checkout.session", metadata, ...(opts.mode ? { mode: opts.mode } : {}) } } });
   const header = opts.signature !== undefined
     ? opts.signature
     : signer.webhooks.generateTestHeaderString({ payload, secret: opts.secret ?? SECRET, timestamp: opts.timestamp });
@@ -32,7 +36,10 @@ beforeEach(() => {
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
   fulfil.mockReset();
   reverse.mockReset();
+  invoice.mockReset();
+  syncSub.mockReset();
   configured.value = true;
+  planOn.value = true;
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -98,6 +105,24 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
     // One fixed info line each, and nothing louder: a Session of ours that lost its tag still shows.
     expect(vi.mocked(console.info).mock.calls.flat()).toEqual(Array(9).fill("[stripe-webhook] checkout.session.completed: not this app's Session; ignored"));
     expect([console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls)).toEqual([]);
+  });
+
+  // A plan's Checkout completes too; the invoice grants. It must not need a pack Price nor be judged as a pack.
+  it("answers 200 and ignores a completed plan Checkout of ours, even while no pack Price is set or no key is usable", async () => {
+    configured.value = false;
+    vi.stubEnv("STRIPE_SECRET_KEY", "");
+    expect((await POST(delivery("checkout.session.completed", { mode: "subscription" }))).status).toBe(200);
+    expect(fulfil).not.toHaveBeenCalled();
+    expect(vi.mocked(console.info).mock.calls.flat()).toEqual(["[stripe-webhook] checkout.session.completed: a plan's Checkout; the invoice grants; ignored"]);
+    expect(vi.mocked(console.error).mock.calls).toEqual([]);
+  });
+
+  it("still judges a pack's payment-mode Session as before", async () => {
+    fulfil.mockResolvedValue({ outcome: "grant" });
+    expect((await POST(delivery("checkout.session.completed", { mode: "payment" }))).status).toBe(200);
+    expect(fulfil).toHaveBeenCalledTimes(1);
+    configured.value = false;
+    expect((await POST(delivery("checkout.session.completed", { mode: "payment" }))).status).toBe(503);
   });
 
   it("acknowledges an event type it does not handle, and acts on none", async () => {
@@ -184,5 +209,63 @@ describe("POST /api/stripe-webhook: refunds and disputes", () => {
     expect(errors).toContain("dispute_opened");
     expect(errors).toContain("shortfall");
     expect(errors).not.toContain("dp_secret");
+  });
+});
+
+// The monthly plan's three events. An invoice carries its subscription's metadata under parent.subscription_details.
+function planDelivery(type: string, app: string | null = "the-99", over: { subscription?: unknown } = {}) {
+  const meta = app ? { app } : {};
+  const object = type === "invoice.paid"
+    ? { id: "in_1", object: "invoice", parent: { subscription_details: { subscription: "subscription" in over ? over.subscription : "sub_1", metadata: meta } } }
+    : { id: "sub_1", object: "subscription", metadata: meta };
+  const payload = JSON.stringify({ id: "evt_p", object: "event", type, data: { object } });
+  const header = signer.webhooks.generateTestHeaderString({ payload, secret: SECRET });
+  return new Request("http://localhost/api/stripe-webhook", { method: "POST", body: payload, headers: new Headers({ "stripe-signature": header }) }) as never;
+}
+
+describe("POST /api/stripe-webhook: the plan's events", () => {
+  it("hands an invoice's and a subscription's ids to their handlers, never the event's copy", async () => {
+    invoice.mockResolvedValue({ outcome: "grant" });
+    syncSub.mockResolvedValue({ outcome: "applied" });
+    expect((await POST(planDelivery("invoice.paid"))).status).toBe(200);
+    expect(invoice).toHaveBeenCalledWith(expect.anything(), "evt_p", "invoice.paid", "in_1", "sub_1");
+    for (const type of ["customer.subscription.updated", "customer.subscription.deleted"]) {
+      expect((await POST(planDelivery(type))).status).toBe(200);
+      expect(syncSub).toHaveBeenLastCalledWith(expect.anything(), "evt_p", type, "sub_1");
+    }
+    expect(fulfil).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges another app's objects, and an invoice with no subscription, with 200 and touches nothing, whatever the config", async () => {
+    for (const type of ["invoice.paid", "customer.subscription.updated", "customer.subscription.deleted"]) {
+      for (const app of ["concert-crawl", null]) {
+        planOn.value = false;
+        vi.stubEnv("STRIPE_SECRET_KEY", "");
+        expect((await POST(planDelivery(type, app))).status).toBe(200);
+      }
+    }
+    expect((await POST(planDelivery("invoice.paid", "the-99", { subscription: null }))).status).toBe(200);
+    expect(invoice).not.toHaveBeenCalled();
+    expect(syncSub).not.toHaveBeenCalled();
+  });
+
+  it("answers 503 for one of ours while the plan's Price is unset or there is no usable key, so it is retried", async () => {
+    planOn.value = false;
+    expect((await POST(planDelivery("invoice.paid"))).status).toBe(503);
+    planOn.value = true;
+    vi.stubEnv("STRIPE_SECRET_KEY", "");
+    expect((await POST(planDelivery("customer.subscription.updated"))).status).toBe(503);
+    expect(invoice).not.toHaveBeenCalled();
+  });
+
+  it("answers 200 to a refusal, an unattributed payment and a duplicate, and 500 when Stripe or the database fails", async () => {
+    for (const result of [{ outcome: "refuse", reason: "amount" }, { outcome: "unattributed" }, { outcome: "duplicate" }]) {
+      invoice.mockResolvedValueOnce(result);
+      expect((await POST(planDelivery("invoice.paid"))).status).toBe(200);
+    }
+    invoice.mockRejectedValueOnce(Object.assign(new Error("db down for cus_1"), { code: "08006" }));
+    expect((await POST(planDelivery("invoice.paid"))).status).toBe(500);
+    const logged = [console.info, console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls.flat()).map(String).join("\n");
+    for (const leak of ["in_1", "sub_1", "evt_p", "cus_1"]) expect(logged).not.toContain(leak);
   });
 });

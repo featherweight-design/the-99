@@ -25,6 +25,19 @@
 //   o  a charge of another app is ignored; one of ours with no payment record yet asks for a retry
 //   p  two concurrent deliveries of one refund event revoke once
 //   q  the purge keeps the dispute record, which names no account
+//   The monthly plan (the subscription PR), by `fulfilInvoice` and `syncSubscription` with a stand-in Stripe
+//   whose invoice and subscription are crafted and mutable:
+//   P1  the first invoice grants one 60-credit plan lot labelled `subscription_create`, stores the subscription
+//      and a payment record under the INVOICE id, and `readAllowance` reports plan 60 with no planExpiresAt
+//   P2  a renewal invoice grants a second lot labelled `subscription_cycle`
+//   P3  cancel_at_period_end sets every live plan lot to the period end, and `readAllowance` reports it
+//   P4  keeping the plan clears it again
+//   P5  a deleted subscription ends the row and expires the lots
+//   P6  a replayed invoice (same event, then a new event) grants once
+//   P7  another app's subscription is refused: no row, no lot
+//   P8  two concurrent deliveries of one invoice event grant once
+//   P9  a late invoice.paid for an ENDED subscription grants a lot that expires at the ended period end
+//   P10 S1 cancelled, S2 subscribed and granted, a late S1 event: S2's lot keeps no expiry
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
@@ -49,6 +62,7 @@ import type Stripe from "stripe";
 
 import { fulfilCheckoutSession } from "../src/lib/payments/fulfil";
 import { reverseCharge } from "../src/lib/payments/reverse";
+import { fulfilInvoice, syncSubscription } from "../src/lib/payments/subscribe";
 import { readAllowance } from "../src/lib/model/allowance";
 import { purgeAccount } from "../src/lib/account/purge";
 
@@ -61,6 +75,8 @@ const fixture = drizzle(pool);
 const RUN = `probe-pw-${Date.now()}`;
 const PRICE = `price_${RUN}`;
 process.env.STRIPE_PRICE_PACK_40 = PRICE;
+const PLAN_PRICE = `price_plan_${RUN}`;
+process.env.STRIPE_PRICE_PLAN_60 = PLAN_PRICE;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -142,6 +158,7 @@ async function cleanup() {
     try {
       await fixture.execute(sql`delete from model_calls where user_id = ${u}`);
       await fixture.execute(sql`delete from credit_grants where user_id = ${u}`);
+      await fixture.execute(sql`delete from subscriptions where user_id = ${u}`);
       await fixture.execute(sql`delete from stripe_customers where user_id = ${u}`);
     } catch (err) { failures += 1; console.error(`cleanup failed for ${u}`, err); }
   }
@@ -231,6 +248,119 @@ async function run() {
     await fixture.execute(sql`insert into stripe_customers (user_id, stripe_customer_id) values (${ghost}, ${customerId})`);
     check("i · seen again with a mapping, it is a duplicate", (await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", si.id)).outcome, "duplicate");
     check("i · and grants nothing", await lots(ghost), 0);
+  }
+
+  // P1-P10 · The monthly plan.
+  const PERIOD1 = new Date(Date.now() + 30 * 86_400_000);
+  const planStripe = (state: { sub: unknown; invoices: Record<string, unknown> }) =>
+    ({ invoices: { retrieve: async (i: string) => state.invoices[i] }, subscriptions: { retrieve: async () => state.sub } }) as unknown as Stripe;
+  const subObj = (customerId: string, userId: string, over: { cancel?: boolean; status?: string; end?: Date; app?: string } = {}) => ({
+    id: subId, status: over.status ?? "active", customer: customerId, cancel_at_period_end: over.cancel ?? false,
+    metadata: { app: over.app ?? "the-99", plan: "plan60", user_id: userId },
+    items: { data: [{ current_period_end: Math.floor((over.end ?? PERIOD1).getTime() / 1000), price: { id: PLAN_PRICE } }] },
+  });
+  const invObj = (iid: string, customerId: string, userId: string, reason: string) => {
+    sessions.push(iid);
+    return {
+      id: iid, status: "paid", billing_reason: reason, currency: "usd", amount_paid: 500, total: 500, total_excluding_tax: 500,
+      customer: customerId, customer_address: { country: "US" },
+      parent: { subscription_details: { subscription: subId, metadata: { app: "the-99", plan: "plan60", user_id: userId } } },
+      lines: { data: [{ quantity: 1, pricing: { price_details: { price: PLAN_PRICE } } }] },
+      payments: { data: [{ status: "paid", payment: { type: "payment_intent", payment_intent: id("pi") } }] },
+    };
+  };
+  let subId = id("sub");
+  const planLots = async (userId: string) => rows<{ reason: string | null; units: number; exp: string | null }>(sql`
+    select billing_reason as reason, units, expires_at::text as exp from credit_grants where user_id = ${userId} and source = 'plan' order by created_at, external_id`);
+  const subRow = async () => (await rows<{ status: string; cancel: boolean }>(sql`select status, cancel_at_period_end as cancel from subscriptions where stripe_subscription_id = ${subId}`))[0] ?? null;
+  const j = await account();
+  const inv1 = id("in");
+  const inv2 = id("in");
+  const state = { sub: subObj(j.customerId, j.userId), invoices: { [inv1]: invObj(inv1, j.customerId, j.userId, "subscription_create"), [inv2]: invObj(inv2, j.customerId, j.userId, "subscription_cycle") } as Record<string, unknown> };
+  const ps = planStripe(state);
+  const ej = eventId();
+  check("P1 · the first invoice grants", (await fulfilInvoice(ps, ej, "invoice.paid", inv1, subId)).outcome, "grant");
+  check("P1 · one 60-credit lot labelled subscription_create, not expiring", (await planLots(j.userId)).map((l) => [l.reason, l.units, l.exp]), [["subscription_create", 60, null]]);
+  check("P1 · the payment is recorded under the invoice id", await record(inv1), ["granted"]);
+  check("P1 · the subscription is stored", await subRow(), { status: "active", cancel: false });
+  {
+    const al = await readAllowance(j.userId);
+    check("P1 · readAllowance reports plan 60 and no expiry", [al.plan, al.planExpiresAt ?? null], [60, null]);
+  }
+  check("P2 · a renewal grants a second lot", (await fulfilInvoice(ps, eventId(), "invoice.paid", inv2, subId)).outcome, "grant");
+  check("P2 · labelled subscription_cycle", (await planLots(j.userId)).map((l) => l.reason).sort(), ["subscription_create", "subscription_cycle"]);
+  state.sub = subObj(j.customerId, j.userId, { cancel: true });
+  check("P3 · cancel at period end is applied", (await syncSubscription(ps, eventId(), "customer.subscription.updated", subId)).outcome, "applied");
+  check("P3 · every live plan lot expires at the period end", (await planLots(j.userId)).every((l) => l.exp !== null), true);
+  {
+    const al = await readAllowance(j.userId);
+    check("P3 · readAllowance reports the expiry", al.planExpiresAt instanceof Date && Math.abs(al.planExpiresAt.getTime() - PERIOD1.getTime()) < 1000, true);
+  }
+  state.sub = subObj(j.customerId, j.userId, { cancel: false });
+  await syncSubscription(ps, eventId(), "customer.subscription.updated", subId);
+  check("P4 · keeping the plan clears every expiry", (await planLots(j.userId)).map((l) => l.exp), [null, null]);
+  state.sub = subObj(j.customerId, j.userId, { status: "canceled" });
+  await syncSubscription(ps, eventId(), "customer.subscription.deleted", subId);
+  check("P5 · a deleted subscription ends the row", (await subRow())?.status, "canceled");
+  check("P5 · and expires the lots at the period end", (await planLots(j.userId)).every((l) => l.exp !== null), true);
+  {
+    subId = id("sub");
+    const o = await account();
+    const oi = id("in");
+    const os = { sub: subObj(o.customerId, o.userId), invoices: { [oi]: invObj(oi, o.customerId, o.userId, "subscription_create") } as Record<string, unknown> };
+    const eo = eventId();
+    await fulfilInvoice(planStripe(os), eo, "invoice.paid", oi, subId);
+    check("P6 · the same event again is a duplicate", (await fulfilInvoice(planStripe(os), eo, "invoice.paid", oi, subId)).outcome, "duplicate");
+    check("P6 · a new event for the same invoice is a duplicate", (await fulfilInvoice(planStripe(os), eventId(), "invoice.paid", oi, subId)).outcome, "duplicate");
+    check("P6 · one lot", await lots(o.userId), 1);
+  }
+  {
+    subId = id("sub");
+    const p = await account();
+    const pi = id("in");
+    const pst = { sub: subObj(p.customerId, p.userId, { app: "concert-crawl" }), invoices: { [pi]: invObj(pi, p.customerId, p.userId, "subscription_create") } as Record<string, unknown> };
+    const r = await fulfilInvoice(planStripe(pst), eventId(), "invoice.paid", pi, subId);
+    check("P7 · another app's subscription is refused", [r.outcome, r.reason], ["refuse", "not_ours"]);
+    check("P7 · no lot", await lots(p.userId), 0);
+  }
+  {
+    subId = id("sub");
+    const q = await account();
+    const qi = id("in");
+    const qs = { sub: subObj(q.customerId, q.userId), invoices: { [qi]: invObj(qi, q.customerId, q.userId, "subscription_create") } as Record<string, unknown> };
+    const eq = eventId();
+    const got = (await Promise.all([1, 2].map(() => fulfilInvoice(planStripe(qs), eq, "invoice.paid", qi, subId)))).map((r) => r.outcome).sort();
+    check("P8 · two concurrent deliveries of one invoice event: one grant, one duplicate", got, ["duplicate", "grant"]);
+    check("P8 · one lot", await lots(q.userId), 1);
+  }
+
+  {
+    subId = id("sub");
+    const r = await account();
+    const ri = id("in");
+    const rs = { sub: subObj(r.customerId, r.userId, { status: "canceled" }), invoices: { [ri]: invObj(ri, r.customerId, r.userId, "subscription_cycle") } as Record<string, unknown> };
+    await syncSubscription(planStripe(rs), eventId(), "customer.subscription.deleted", subId);
+    check("P9 · a late invoice for an ended subscription still grants", (await fulfilInvoice(planStripe(rs), eventId(), "invoice.paid", ri, subId)).outcome, "grant");
+    check("P9 · and its lot expires at the ended period end", (await planLots(r.userId)).every((l) => l.exp !== null && Math.abs(new Date(l.exp + "Z").getTime() - PERIOD1.getTime()) < 5000), true);
+  }
+  {
+    const t = await account();
+    const s1 = id("sub");
+    const s2 = id("sub");
+    const i1 = id("in");
+    const i2 = id("in");
+    subId = s1;
+    const first = { sub: subObj(t.customerId, t.userId), invoices: { [i1]: invObj(i1, t.customerId, t.userId, "subscription_create") } as Record<string, unknown> };
+    await fulfilInvoice(planStripe(first), eventId(), "invoice.paid", i1, s1);
+    first.sub = subObj(t.customerId, t.userId, { status: "canceled" });
+    await syncSubscription(planStripe(first), eventId(), "customer.subscription.deleted", s1);
+    subId = s2;
+    const second = { sub: subObj(t.customerId, t.userId), invoices: { [i2]: invObj(i2, t.customerId, t.userId, "subscription_create") } as Record<string, unknown> };
+    await fulfilInvoice(planStripe(second), eventId(), "invoice.paid", i2, s2);
+    subId = s1;
+    await syncSubscription(planStripe(first), eventId(), "customer.subscription.deleted", s1);
+    const bySub = await rows<{ sid: string; exp: string | null }>(sql`select subscription_id as sid, expires_at::text as exp from credit_grants where user_id = ${t.userId} order by created_at`);
+    check("P10 · the old subscription's lot expires, the new one's does not, after a late old event", bySub.map((l) => [l.sid === s1 ? "s1" : "s2", l.exp !== null]), [["s1", true], ["s2", false]]);
   }
 
   // h · A purge holding the account's mapping when the grant arrives: the grant waits on the mapping

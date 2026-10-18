@@ -1,4 +1,4 @@
-import { isOurSession, isPackId, PACKS } from "./packs";
+import { isOurSession, isPackId, isPlanId, PACKS, PLANS } from "./packs";
 
 /**
  * What a reader's return from Checkout reads as (buying-credits plan E1, G5). Pure. The Session is
@@ -28,11 +28,13 @@ export function decideReturn(session: ReturnSession, viewerId: string, grantUnit
   if (!isOurSession(session.metadata)) return { kind: "none" };
   if (!viewerId || session.metadata?.user_id !== viewerId) return { kind: "none" };
   const pack = session.metadata?.pack;
-  if (!isPackId(pack)) return { kind: "none" };
+  const plan = session.metadata?.plan;
+  // A pack Session, or a plan's: the plan's lot is found by its first INVOICE (`readReturn`), and `grantUnits` is that lot's.
+  if (!isPackId(pack) && !isPlanId(plan)) return { kind: "none" };
   if (grantUnits !== null) return { kind: "added", units: grantUnits };
   // Cards only, so a Session the reader came back from is paid; one that is not has nothing to wait for.
   if (session.paymentStatus !== "paid") return { kind: "none" };
-  return { kind: "processing", units: PACKS[pack].units };
+  return { kind: "processing", units: isPackId(pack) ? PACKS[pack].units : PLANS[plan as keyof typeof PLANS].units };
 }
 
 /** A Checkout Session id as Stripe writes it: bounded and shaped before it reaches a request or a query. */

@@ -91,3 +91,17 @@ export function creditTotals(balances: readonly GrantBalance[]): Record<CreditSo
   for (const b of balances) totals[b.grant.source] += b.remaining;
   return totals;
 }
+
+/**
+ * The earliest `expires_at` among the plan lots that still hold a credit, or null when none expires (a held plan's
+ * lots roll over). It is the `Allowance`'s `planExpiresAt`: when the plan credits the player holds begin to lapse.
+ */
+export function earliestPlanExpiry(balances: readonly GrantBalance[]): Date | null {
+  let earliest: Date | null = null;
+  for (const b of balances) {
+    const at = b.grant.expiresAt;
+    if (b.grant.source !== "plan" || b.remaining <= 0 || !at) continue;
+    if (!earliest || at.getTime() < earliest.getTime()) earliest = at;
+  }
+  return earliest;
+}

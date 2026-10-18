@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { keyAllowed } from "./key-mode";
-import { PACKS } from "./packs";
+import { PACKS, PLANS } from "./packs";
 
 /**
  * The one Stripe client (payments scope §5.2). SERVER-ONLY: it reads `STRIPE_SECRET_KEY`, a
@@ -40,4 +40,9 @@ export function webhookSecrets(): string[] {
 /** The Price ids the packs name, by member read: the registry's own variables and nothing else. */
 export function packPriceEnv(): Record<string, string | undefined> {
   return Object.fromEntries(Object.values(PACKS).map((p) => [p.priceEnv, process.env[p.priceEnv]]));
+}
+
+/** The Price ids the plans name, by member read, like `packPriceEnv`. */
+export function planPriceEnv(): Record<string, string | undefined> {
+  return Object.fromEntries(Object.values(PLANS).map((p) => [p.priceEnv, process.env[p.priceEnv]]));
 }

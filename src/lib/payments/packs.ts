@@ -48,3 +48,35 @@ export function packForPrice(priceId: string, env: Record<string, string | undef
   }
   return null;
 }
+
+/**
+ * The monthly plan, the second sellable product: "a credit bundle that renews" (never a membership). It is a
+ * SEPARATE registry from `PACKS` on purpose: `isPackId` is the one-time Buy's closed set and `packsConfigured`
+ * gates every pack payment, and an unset plan Price must make the plan "not on sale", never stop pack payments.
+ * `mode: "subscription"` is what Checkout is created with. $5 a month for 60 credits that roll over, with no
+ * cap, while the plan is held (Hugh, the payments plan, K2). The webhook judges an invoice against this entry.
+ */
+export const PLANS = {
+  plan60: { units: 60, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PLAN_60", mode: "subscription" },
+} as const;
+
+export type PlanId = keyof typeof PLANS;
+export type Plan = (typeof PLANS)[PlanId] & { id: PlanId };
+
+export function isPlanId(value: unknown): value is PlanId {
+  return typeof value === "string" && Object.hasOwn(PLANS, value);
+}
+
+/** The plan a Stripe Price id is for, or null when the Price is none of ours (or its variable is unset). */
+export function planForPrice(priceId: string, env: Record<string, string | undefined>): Plan | null {
+  for (const id of Object.keys(PLANS) as PlanId[]) {
+    const configured = env[PLANS[id].priceEnv]?.trim();
+    if (configured && configured === priceId) return { ...PLANS[id], id };
+  }
+  return null;
+}
+
+/** Whether every plan's Price variable is set. Unset: the plan is not on sale and the webhook cannot judge one (503, retried). */
+export function plansConfigured(env: Record<string, string | undefined>): boolean {
+  return Object.values(PLANS).every((p) => (env[p.priceEnv]?.trim() ?? "") !== "");
+}

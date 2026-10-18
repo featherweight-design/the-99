@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appOrigin, packCheckoutParams, priceIdFor } from "./checkout-rule";
+import { appOrigin, packCheckoutParams, planCheckoutParams, planPriceIdFor, priceIdFor } from "./checkout-rule";
 import { decideFulfilment } from "./fulfil-rule";
 import { PAYMENTS_APP } from "./packs";
 
@@ -78,5 +78,35 @@ describe("priceIdFor", () => {
     expect(priceIdFor("pack40", { STRIPE_PRICE_PACK_40: " price_x " })).toBe("price_x");
     expect(priceIdFor("pack40", { STRIPE_PRICE_PACK_40: " " })).toBeNull();
     expect(priceIdFor("pack40", {})).toBeNull();
+  });
+});
+
+describe("planCheckoutParams", () => {
+  const p = planCheckoutParams({ userId: "user_a", customerId: "cus_1", planId: "plan60", priceId: "price_plan60", origin: "https://the-99.dev" });
+
+  it("is a subscription Session of the registry's Price, on the same customer, cards only, with tax", () => {
+    expect(p.mode).toBe("subscription");
+    expect(p.line_items).toEqual([{ price: "price_plan60", quantity: 1 }]);
+    expect(p.customer).toBe("cus_1");
+    expect(p.client_reference_id).toBe("user_a");
+    expect(p.payment_method_types).toEqual(["card"]);
+    expect(p.automatic_tax).toEqual({ enabled: true });
+  });
+
+  // An invoice carries a snapshot of the SUBSCRIPTION's metadata, so that is where the tag must be.
+  it("tags the Session and the subscription it creates as this app's, naming the plan and the account", () => {
+    const tag = { app: PAYMENTS_APP, plan: "plan60", user_id: "user_a" };
+    expect(p.metadata).toEqual(tag);
+    expect(p.subscription_data?.metadata).toEqual(tag);
+  });
+
+  it("returns where the pack's Checkout does", () => {
+    expect(p.success_url).toBe("https://the-99.dev/credits?checkout=done&session_id={CHECKOUT_SESSION_ID}");
+    expect(p.cancel_url).toBe("https://the-99.dev/credits?checkout=cancelled");
+  });
+
+  it("names its Price from STRIPE_PRICE_PLAN_60, or null while unset", () => {
+    expect(planPriceIdFor("plan60", { STRIPE_PRICE_PLAN_60: " price_plan60 " })).toBe("price_plan60");
+    expect(planPriceIdFor("plan60", {})).toBeNull();
   });
 });

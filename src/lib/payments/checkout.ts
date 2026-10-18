@@ -1,14 +1,15 @@
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "../../db";
-import { stripeCustomers } from "../../db/schema";
+import { stripeCustomers, subscriptions } from "../../db/schema";
 import { isTombstoned } from "../account/tombstone";
 import { recordHit } from "../rate/observe";
 import { overLimit, RATE_RULES } from "../rate/rules";
 import { purchaseBlocked } from "./blocked";
-import { appOrigin, packCheckoutParams, priceIdFor } from "./checkout-rule";
-import { PAYMENTS_APP, type PackId } from "./packs";
-import { packPriceEnv } from "./stripe";
+import { appOrigin, packCheckoutParams, planCheckoutParams, planPriceIdFor, priceIdFor } from "./checkout-rule";
+import { PAYMENTS_APP, type PackId, type PlanId } from "./packs";
+import { packPriceEnv, planPriceEnv } from "./stripe";
+import { holdsPlan } from "./subscription-rule";
 
 /**
  * Creating a Checkout Session for a pack (payments scope §5.4, K1b). SERVER-ONLY. The caller (the action)
@@ -55,6 +56,47 @@ export async function createPackCheckout(
   );
   if (!session.url) throw new Error("Checkout Session has no URL");
   return { ok: true, url: session.url };
+}
+
+export type PlanCheckoutResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: "unconfigured" | "throttled" | "already" | "blocked" };
+
+/**
+ * Creating a Checkout Session for the monthly plan, the twin of `createPackCheckout`: the same configuration
+ * check (the plan's Price variable unset means the plan is not on sale: `unconfigured`), the same hourly limit,
+ * the same Customer, the same idempotency from the press's own id. It also refuses a SECOND live subscription
+ * (`already`), by our own table first and then by Stripe's list for the Customer, because the webhook may not
+ * have written the row yet when a second tab presses. Nothing is granted here.
+ */
+export async function createPlanCheckout(
+  stripe: Stripe,
+  input: { userId: string; email: string | null; planId: PlanId; actionId: string },
+): Promise<PlanCheckoutResult> {
+  // The same purchase block as a pack's (K2), in the one place a plan Session is made: a disputed account cannot subscribe.
+  if (await purchaseBlocked(input.userId)) return { ok: false, reason: "blocked" };
+  const priceId = planPriceIdFor(input.planId, planPriceEnv());
+  const origin = appOrigin(process.env.APP_ORIGIN, process.env.ADMIN_ENV_LABEL);
+  if (!priceId || !origin) return { ok: false, reason: "unconfigured" };
+
+  const hits = await recordHit(input.userId, "checkout");
+  if (overLimit(hits, RATE_RULES.checkout)) return { ok: false, reason: "throttled" };
+
+  if (await holdsLivePlan(input.userId)) return { ok: false, reason: "already" };
+  const customerId = await ensureCustomer(stripe, input.userId, input.email);
+  const theirs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
+  if (theirs.data.some((s) => s.metadata?.app === PAYMENTS_APP && holdsPlan(s.status))) return { ok: false, reason: "already" };
+  const session = await stripe.checkout.sessions.create(
+    planCheckoutParams({ userId: input.userId, customerId, planId: input.planId, priceId, origin }),
+    { idempotencyKey: `${PAYMENTS_APP}:plan-checkout:${input.userId}:${input.actionId}` },
+  );
+  if (!session.url) throw new Error("Checkout Session has no URL");
+  return { ok: true, url: session.url };
+}
+
+async function holdsLivePlan(userId: string): Promise<boolean> {
+  const rows = await db.select({ status: subscriptions.status }).from(subscriptions).where(eq(subscriptions.userId, userId));
+  return rows.some((r) => holdsPlan(r.status));
 }
 
 /**

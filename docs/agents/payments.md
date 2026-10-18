@@ -73,6 +73,30 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - **Account deletion reaches Stripe** (`src/lib/payments/delete-customer.ts`, called by `purgeAccount` as step 0, before its transaction). With a `stripe_customers` mapping it retrieves the Customer and deletes it ONLY when `metadata.app` is `the-99` and `metadata.user_id` is the account (the Stripe account is shared); a Customer not so tagged is left in place, logged, and the purge goes on. Deleting cancels its subscriptions. **A 404 from Stripe counts as done**, so a deployment keyed to the wrong Stripe mode or account would drop the mapping and strand the Customer; the guard against that is `keyAllowed` tying key mode to the environment (production = live key only), not this code. Any other failure or no usable key throws and the purge does nothing. A Checkout started between the Stripe delete and the purge transaction fails at `ensureCustomer` (the account is being deleted; accepted). Needs only Customers write, which the restricted key already has.
 
 
+- **The monthly plan** (payments, the subscription PR; worded in the product as a credit bundle that renews, never
+  a membership). `STRIPE_PRICE_PLAN_60` (plain env var, $5 a month for 60 credits) names the Price; unset, the plan
+  is not on sale and `createPlanCheckout` answers `unconfigured`. It lives in `PLANS` beside `PACKS`, NOT in it:
+  `isPackId` is the pack Buy's closed set and `packsConfigured` gates every pack payment. Checkout is mode
+  `subscription` with `subscription_data.metadata` (app, plan, user_id), because an invoice carries a snapshot of the
+  SUBSCRIPTION's metadata and the session's own tag stops at the session; a second live plan is refused (`already`),
+  by `subscriptions` and by Stripe's list for the Customer. The webhook takes three more events: `invoice.paid`,
+  `customer.subscription.updated`, `customer.subscription.deleted`. Each is a trigger: the invoice and the
+  subscription are retrieved and judged (`decideInvoice`, `decideSubscription`, `subscription-rule.ts`), under a
+  transaction advisory lock per SUBSCRIPTION taken before the retrieve, so events for one subscription run in order
+  and the state written is the state as it stands, never an older event's. An invoice grants a `plan` lot of 60 for
+  `subscription_create` and `subscription_cycle` only, `external_id` = the invoice id, with the invoice's
+  `billing_reason` stored on the lot (`credit_grants.billing_reason`, which history labels "first month" by). Its
+  `payment_records` row stores the INVOICE id in `checkout_session_id` (the column means "the Stripe object that paid
+  for the lot"), which is how a refund of a plan charge finds its lot through `external_id`. `planExpiry` is the one
+  rule for the lots: a held, not-cancelling subscription CLEARS the expiry of every live plan lot (a keep, a
+  renewal, a resubscribe); `cancel_at_period_end` SETS it to the period end; an ended subscription sets it to the
+  period end if ahead, else now. An already expired lot is never revived. `supersedes` makes an ended subscription
+  terminal for its id and a period end monotone. `readAllowance` fills `planExpiresAt` from the earliest expiry of
+  the plan lots that still hold credits. The webhook runs whatever `PAYMENTS_ENABLED` says; another app's objects are
+  200 and ignored; a paid invoice whose customer maps to no account is `unattributed` (refund by hand). Stripe setup:
+  add the three events to the endpoint, the Price id as `STRIPE_PRICE_PLAN_60`, and the restricted key needs
+  Subscriptions read (Checkout's duplicate-plan list; write arrives with in-app cancel, U3).
+
 ## The welcome lot (launch epic D1, ruling L5)
 
 - `credit_grants.source = 'welcome'`: 15 units, `expires_at` required (the migration rewrites
