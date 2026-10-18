@@ -54,7 +54,8 @@ export type SwitchPageInput = {
 export type RungKey = "account" | "group" | "app" | "env" | "needs";
 export type Rung = { key: RungKey; value: string; tone: "none" | "plain" | "mono" | "danger"; decides: string; deciding: boolean };
 export type OverrideItem = { key: string; title: string; sub: string; value: OverrideValue; note: string | null; meta: string; refused: boolean };
-export type HistoryItem = { when: string; what: string; note: string | null };
+/** `reveal`: a Show's log line (Admin R3, D8), marked with the accent diamond. */
+export type HistoryItem = { when: string; what: string; note: string | null; reveal?: true };
 export type Explanation = { id: string; label: string; on: boolean; source: string; kill: boolean };
 export type Banner = { kind: "kill"; title: string; body: string } | { kind: "compound"; title: string; body: string; link: string; parent: SwitchName };
 

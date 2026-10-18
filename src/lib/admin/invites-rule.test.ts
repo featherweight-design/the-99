@@ -98,6 +98,25 @@ describe("an account's Invites section (M2)", () => {
     ]);
   });
 
+  it("logs each Show as a reveal line, naming the account masked, marked for the diamond (D8)", () => {
+    const s = accountInvites({
+      ...base,
+      events: [
+        { at: day(21, 19), actorId: "u_hugh", kind: "account_revealed", userId: "u_colin", oldValue: null, newValue: null },
+        { at: day(15, 21), actorId: "u_admin2", kind: "account_revealed", userId: "u_colin", oldValue: null, newValue: null },
+        ...base.events,
+      ],
+    });
+    const reveals = s.history.filter((h) => h.reveal);
+    expect(reveals.map((h) => [h.when, h.what])).toEqual([
+      ["21 Oct · 19:00", "You showed Colin’s name and email"],
+      ["15 Oct · 21:00", "Account ·min2 showed Colin’s name and email"],
+    ]);
+    // The other lines carry no mark.
+    expect(s.history.filter((h) => !h.reveal)).toHaveLength(5);
+    expect(s.history.find((h) => h.what.startsWith("You set"))).not.toHaveProperty("reveal");
+  });
+
   it("merges the events, the sends and the joins newest first, says You for the viewer, and cuts at the limit", () => {
     const s = accountInvites(base);
     expect(s.history.map((h) => [h.when, h.what, h.note])).toEqual([

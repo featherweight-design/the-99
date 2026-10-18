@@ -257,6 +257,17 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(screen.getByTestId("account-invites")).not.toHaveTextContent("Mara Quinn");
   });
 
+  it("marks a Show's log line in History with the accent diamond, and no other line (D8)", () => {
+    const history = [
+      { when: "17 Oct · 19:37", what: "You showed Mara Q.’s name and email", note: null, reveal: true as const },
+      { when: "12 Oct · 17:31", what: "You set Mara Q.’s invites: 1 → 2", note: null },
+    ];
+    render(<AccountPageView page={{ ...PAGE, invites: { ...PAGE.invites, history } }} />);
+    const [shown, set] = within(screen.getByTestId("account-invites-history")).getAllByRole("listitem");
+    expect(shown.querySelector("[data-reveal-mark]")).not.toBeNull();
+    expect(set.querySelector("[data-reveal-mark]")).toBeNull();
+  });
+
   it("draws no Show on the owner's or the viewer's own page", () => {
     render(<AccountPageView page={{ ...PAGE, canShow: false }} />);
     expect(screen.queryByRole("button", { name: /^Show / })).toBeNull();

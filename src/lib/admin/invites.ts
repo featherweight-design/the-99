@@ -82,7 +82,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     coalesce((select json_agg(json_build_object(
       'at', a.at, 'actorId', a.actor_id, 'kind', a.kind, 'userId', a.user_id, 'oldValue', a.old_value, 'newValue', a.new_value
     ) order by a.at desc, a.id desc) from (
-      select * from admin_events where user_id = ${userId} and kind in ('invites_set', 'invite_revoked')
+      select * from admin_events where user_id = ${userId} and kind in ('invites_set', 'invite_revoked', 'account_revealed')
       order by at desc, id desc limit ${limit + 1}
     ) a), '[]'::json) as events,
     coalesce((select json_agg(s.holds_until order by s.holds_until desc) from (
