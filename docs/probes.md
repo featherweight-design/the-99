@@ -624,7 +624,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `/about` before Home). It proves every step's cutout sits on its real control (the ring's box is the control's box
   plus its room, within 2px), the app is inert under the scrim and a press on a locked slot opens no note, the tour is
   spent once as step 1 appears (`tour_seen_at` written, a reload shows nothing, the date unmoved), a theme chosen at
-  step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Each width
+  step 5 survives a skip, and with every About entry seen step 6 lights nothing (R3 gap 6) and Esc ends it. Last, two
+  tabs on one first-run Home open the tour once between them: only the tab whose claim stamps `tour_seen_at` runs it. Each width
   resets the account's `tour_seen_at` and About state, and restores the About state after. It refuses staging and
   production by `neon.branch_id`, and an account holding cards or decks. `PROBE_SHOTS=<dir>` photographs every step
   and the fallback: the tour's contact sheet (`discovery-r2-r3.json`, `needsFixture`).
