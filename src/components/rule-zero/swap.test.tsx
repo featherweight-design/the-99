@@ -63,6 +63,7 @@ describe("Closer to the table (S1, S6, W1)", () => {
   it("draws nothing when no deck is nearer, and the flag stays", () => {
     render(<TableLive initial={{ ...S1, offer: [] }} gamesEnabled now={AT} />);
     expect(screen.queryByTestId("seat-offer")).toBeNull();
+    expect(within(seatOf("You")).getByText(copy.seat.above)).toBeTruthy();
     expect(readCard().textContent).not.toContain(copy.read.closer(2));
   });
 });
@@ -108,8 +109,4 @@ describe("Swap in (S2, W2)", () => {
     expect(screen.getByTestId("seat-offer")).toBeTruthy();
   });
 
-  it("carries no deck id in the offer but the viewer's own (decision 5)", () => {
-    const ids = JSON.stringify(TABLES.S1).match(/deck-[a-z-]+/g) ?? [];
-    expect(new Set(ids)).toEqual(new Set([VIEWER_DECK_ID, "deck-viewer-sai", "deck-viewer-jace"]));
-  });
 });

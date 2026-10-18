@@ -196,13 +196,20 @@ async function gradeDeckIn(tx: Tx, deckId: string, owner: string) {
  * now, with a reading), handed to `suggestionsFor`. Read only while the viewer's seat is flagged, inside the table's
  * snapshot, so the offer and the read agree.
  */
-async function offerIn(tx: Tx, viewerId: string, seatedDeckId: string, seatedDistance: number, middle: number): Promise<OfferDeck[]> {
-  const { rows } = await tx.execute<{ deckId: string; name: string; artCropUri: string | null; lastPlayed: string | Date | null }>(sql`
+/** The viewer's own decks but the seated one, never another player's (decision 5). Apart so a test can render it. */
+export function ownDecksQuery(viewerId: string, seatedDeckId: string) {
+  return sql`
     select d.id as "deckId", d.name, c.art_crop_uri as "artCropUri",
       (select max(g.played_at) from ${deckGames} g where g.deck_id = d.id) as "lastPlayed"
     from ${decks} d
     join ${cards} c on c.oracle_id = d.commander_oracle_id
-    where d.user_id = ${viewerId} and d.id <> ${seatedDeckId}`);
+    where d.user_id = ${viewerId} and d.id <> ${seatedDeckId}`;
+}
+
+async function offerIn(tx: Tx, viewerId: string, seatedDeckId: string, seatedDistance: number, middle: number): Promise<OfferDeck[]> {
+  const { rows } = await tx.execute<{ deckId: string; name: string; artCropUri: string | null; lastPlayed: string | Date | null }>(
+    ownDecksQuery(viewerId, seatedDeckId),
+  );
   const graded = new Map<string, { row: (typeof rows)[number]; permits: Bracket[]; declared: Bracket | null; answered: Bracket | null }>();
   const own: OwnDeck[] = [];
   for (const r of rows) {

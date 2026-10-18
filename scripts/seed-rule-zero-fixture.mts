@@ -58,11 +58,11 @@ const TABLE_IDS = {
   W5: "7a0e0000-0000-4000-8000-000000000015",
   /** PR 5: a table the viewer set, You and Colin seated, for `Seats` (U1 to U4, V1 to V3). */
   U: "7a0e0000-0000-4000-8000-000000000016",
-  /** PR 7: your deck reads above two Core decks, with two Core decks of your own offered (S1, S2 on the phone). */
+  /** PR 7: your deck reads above two Core decks; your Core decks are offered, these two clones among them (S1, S2). */
   S1: "7a0e0000-0000-4000-8000-000000000017",
   /** The same for desktop (W1, W2): a swap mutates its table, so each width has its own. */
   W1: "7a0e0000-0000-4000-8000-000000000018",
-  /** Your deck reads below two Upgraded decks, with an Upgraded deck of your own offered (S6). */
+  /** Your deck reads below two Upgraded decks; your Upgraded decks are offered, the account's own among them (S6). */
   S6: "7a0e0000-0000-4000-8000-000000000019",
 } as const;
 const PREFIX = "rz-fixture-";
