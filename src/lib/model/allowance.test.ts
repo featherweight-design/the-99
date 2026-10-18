@@ -333,7 +333,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       expect(f.executed.some((t) => t.includes("paid_daily_limit"))).toBe(false);
     });
 
-    it("takes the group's paid limit, read inside the lock, the larger of two groups winning", async () => {
+    it("takes the group's paid limit, read inside the lock", async () => {
       const three = reserve([paidRows(3)], [3]);
       expect(await three.got).toEqual({ refused: "allowance" });
       const lock = three.f.executed.findIndex((t) => t.includes("pg_advisory_xact_lock"));
@@ -341,7 +341,6 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       expect(lock).toBeGreaterThanOrEqual(0);
       expect(read).toBeGreaterThan(lock);
       expect(await reserve([paidRows(2)], [3]).got).toEqual({ id: "call-1" });
-      expect(await reserve([paidRows(3)], [3, 30]).got).toEqual({ id: "call-1" });
       // A group's limit above the default lets the twenty-first run through.
       expect(await reserve([paidRows(20)], [25]).got).toEqual({ id: "call-1" });
     });

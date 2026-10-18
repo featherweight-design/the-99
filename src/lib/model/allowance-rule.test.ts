@@ -87,7 +87,7 @@ describe("allowanceFrom", () => {
 });
 
 describe("paidLimit", () => {
-  it("is the default with no group limit, else the largest a group sets, ignoring anything off the column's range", () => {
+  it("is the default with no group limit, else the group's, ignoring anything off the column's range", () => {
     expect(paidLimit({ groupLimits: [] })).toBe(PAID_DAILY_LIMIT);
     expect(PAID_DAILY_LIMIT).toBe(20);
     expect(paidLimit({ groupLimits: [3] })).toBe(3);

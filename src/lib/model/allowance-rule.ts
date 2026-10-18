@@ -78,8 +78,8 @@ export function dailyLimit(input: { groupAllowances: readonly number[]; owner: b
 export const PAID_DAILY_LIMIT = 20;
 
 /**
- * The player's paid limit: the largest their groups set, else `PAID_DAILY_LIMIT`. The same rule as
- * `dailyLimit`'s group step, so a player in two groups takes the more generous of each. Pure.
+ * The player's paid limit: their group's, else `PAID_DAILY_LIMIT`. A player is in at most one group
+ * (`flag_group_members.user_id` is its key); taking the largest only mirrors `dailyLimit`'s group step. Pure.
  */
 export function paidLimit(input: { groupLimits: readonly number[] }): number {
   // The column is checked 1 to 1000; anything else read here is not a limit.
