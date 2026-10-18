@@ -16,7 +16,7 @@ const { GroupEditor } = await import("./group-editor");
 
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
-const SAVED: SavedGroup = { id: T, name: "testers", description: "Hugh plus one", dailyAllowance: null };
+const SAVED: SavedGroup = { id: T, name: "testers", description: "Hugh plus one", dailyAllowance: null, paidDailyLimit: null };
 const none = { gains: [], losses: [] };
 const ROWS: MemberRow[] = [
   { id: "u_hugh", name: "Hugh", email: "h•••@x•••.dev", saved: { id: T, name: "testers" }, toThis: none, toNone: { gains: [], losses: ["Overview v2"] } },
@@ -88,9 +88,22 @@ describe("GroupEditor", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Daily credits/ }), { target: { value: "8" } });
     fireEvent.click(member("Jun"));
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: 8, members: ["u_hugh", "u_jun"] });
+    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: 8, paidDailyLimit: null, members: ["u_hugh", "u_jun"] });
     expect(refresh).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("sends the paid limit, and refuses one out of range before sending", async () => {
+    save.mockResolvedValueOnce({ ok: true, id: T });
+    render(<GroupEditor saved={SAVED} rows={ROWS} />);
+    const field = screen.getByRole("textbox", { name: /Daily paid runs/ });
+    fireEvent.change(field, { target: { value: "1001" } });
+    await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
+    expect(save).not.toHaveBeenCalled();
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    fireEvent.change(field, { target: { value: "3" } });
+    await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
+    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: null, paidDailyLimit: 3, members: ["u_hugh"] });
   });
 
   it("refuses a bad name on the page, and shows the server's name refusal under the field", async () => {
@@ -131,7 +144,7 @@ describe("GroupEditor", () => {
     fireEvent.click(member("Jun"));
     expect(pending()).toHaveTextContent("Saving adds Jun to beta. Nothing changes for Jun.");
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Create" })));
-    expect(create).toHaveBeenCalledWith({ name: "beta", description: null, dailyAllowance: null, members: ["u_jun"] });
+    expect(create).toHaveBeenCalledWith({ name: "beta", description: null, dailyAllowance: null, paidDailyLimit: null, members: ["u_jun"] });
     expect(push).toHaveBeenCalledWith(`/admin/groups/${F}`);
   });
 

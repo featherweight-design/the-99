@@ -19,6 +19,7 @@ import {
 } from "../../lib/admin/groups-rule";
 import type { ConfirmPreview } from "../../lib/admin/rise-confirm";
 import { adminCopy } from "../../lib/copy/admin";
+import { PAID_DAILY_LIMIT } from "../../lib/model/allowance-rule";
 import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
 import { SearchField } from "../ui/text-field";
@@ -33,24 +34,33 @@ const FIELD =
   "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[13.5px]";
 const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
 
-type FieldError = { field: "name" | "description" | "credits"; text: string } | null;
+type FieldError = { field: "name" | "description" | "credits" | "paidLimit"; text: string } | null;
 
 /** What a save sends: the whole desired state, and the confirmed count once a confirm is accepted. */
-type Sent = { name: string; description: string | null; dailyAllowance: number | null; members: string[]; confirmed?: number };
+type Sent = {
+  name: string;
+  description: string | null;
+  dailyAllowance: number | null;
+  paidDailyLimit: number | null;
+  members: string[];
+  confirmed?: number;
+};
 
 const draftOf = (saved: SavedGroup | null): Draft => ({
   name: saved?.name ?? "",
   description: saved?.description ?? "",
   credits: saved?.dailyAllowance == null ? "" : String(saved.dailyAllowance),
+  paidLimit: saved?.paidDailyLimit == null ? "" : String(saved.paidDailyLimit),
 });
+const inRange = (n: number | null) => n === null || (Number.isInteger(n) && n >= ALLOWANCE_MIN && n <= ALLOWANCE_MAX);
 const savedMembers = (rows: readonly MemberRow[], saved: SavedGroup | null) => new Set(saved ? rows.filter((r) => r.saved?.id === saved.id).map((r) => r.id) : []);
 
 /** The field a draft fails on before it is sent, or null. */
 function checkDraft(d: Draft): FieldError {
   if (!GROUP_NAME.test(d.name.trim())) return { field: "name", text: copy.errors.nameRule };
   if (d.description.trim().length > DESCRIPTION_MAX) return { field: "description", text: copy.errors.description };
-  const c = parseCredits(d.credits);
-  if (c !== null && !(Number.isInteger(c) && c >= ALLOWANCE_MIN && c <= ALLOWANCE_MAX)) return { field: "credits", text: copy.errors.allowance };
+  if (!inRange(parseCredits(d.credits))) return { field: "credits", text: copy.errors.allowance };
+  if (!inRange(parseCredits(d.paidLimit))) return { field: "paidLimit", text: copy.errors.allowance };
   return null;
 }
 
@@ -187,6 +197,7 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
       name: draft.name.trim(),
       description: draft.description.trim() || null,
       dailyAllowance: parseCredits(draft.credits),
+      paidDailyLimit: parseCredits(draft.paidLimit),
       members: rows.filter((r) => selected.has(r.id)).map((r) => r.id),
     });
   }
@@ -224,6 +235,7 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
     else if (result.error === "nameRule") setFieldError({ field: "name", text: copy.errors.nameRule });
     else if (result.error === "description") setFieldError({ field: "description", text: copy.errors.description });
     else if (result.error === "allowance") setFieldError({ field: "credits", text: copy.errors.allowance });
+    else if (result.error === "paidLimit") setFieldError({ field: "paidLimit", text: copy.errors.allowance });
     else setFailure(errorText(result.error));
   }
 
@@ -258,6 +270,17 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
             autoComplete="off"
             maxLength={4}
             aria-invalid={err("credits") ? true : undefined}
+            className={`${FIELD} font-mono`}
+          />
+        </Field>
+        <Field label={copy.paidLimit} hint={copy.paidLimitHelp(PAID_DAILY_LIMIT)} error={err("paidLimit")}>
+          <input
+            value={draft.paidLimit}
+            onChange={edit("paidLimit")}
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            aria-invalid={err("paidLimit") ? true : undefined}
             className={`${FIELD} font-mono`}
           />
         </Field>

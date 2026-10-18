@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  paidLimit,
+  PAID_DAILY_LIMIT,
   ALLOWANCE_WINDOW_MS,
   MODEL_FRIEND_DAILY_ALLOWANCE,
   MODEL_OWNER_DAILY_ALLOWANCE,
@@ -81,6 +83,16 @@ describe("allowanceFrom", () => {
     // The spent unit leaves the window a minute from now, before the reservation's TTL.
     const a = allowanceFrom([spent(new Date(now.getTime() - ALLOWANCE_WINDOW_MS + 60_000)), reserved(minutesAgo(1))], now, 2);
     expect(a.reopensAt).toEqual(new Date(now.getTime() + 60_000));
+  });
+});
+
+describe("paidLimit", () => {
+  it("is the default with no group limit, else the largest a group sets, ignoring anything off the column's range", () => {
+    expect(paidLimit({ groupLimits: [] })).toBe(PAID_DAILY_LIMIT);
+    expect(PAID_DAILY_LIMIT).toBe(20);
+    expect(paidLimit({ groupLimits: [3] })).toBe(3);
+    expect(paidLimit({ groupLimits: [3, 40] })).toBe(40);
+    expect(paidLimit({ groupLimits: [0, -1, Number.NaN, 2.5] })).toBe(PAID_DAILY_LIMIT);
   });
 });
 

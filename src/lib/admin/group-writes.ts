@@ -48,11 +48,11 @@ async function writeIn(
   await lockSwitchWrites(tx);
   let saved: SavedGroup | null = null;
   if (id !== null) {
-    const { rows } = await tx.execute<{ id: string; name: string; description: string | null; daily_allowance: number | null }>(sql`
-      select id, name, description, daily_allowance from flag_groups where id = ${id}::uuid for update`);
+    const { rows } = await tx.execute<{ id: string; name: string; description: string | null; daily_allowance: number | null; paid_daily_limit: number | null }>(sql`
+      select id, name, description, daily_allowance, paid_daily_limit from flag_groups where id = ${id}::uuid for update`);
     const [row] = rows;
     if (!row) throw new Abort<GroupWriteResult>({ ok: false, error: "group" });
-    saved = { id: row.id, name: row.name, description: row.description, dailyAllowance: row.daily_allowance };
+    saved = { id: row.id, name: row.name, description: row.description, dailyAllowance: row.daily_allowance, paidDailyLimit: row.paid_daily_limit };
   }
   const groupId = saved?.id ?? newId();
 
@@ -73,11 +73,17 @@ async function writeIn(
 
   if (saved === null) {
     await tx.execute(sql`
-      insert into flag_groups (id, name, description, daily_allowance, created_by)
-      values (${groupId}::uuid, ${desired.name}, ${desired.description}, ${desired.dailyAllowance}, ${actorId})`);
-  } else if (saved.name !== desired.name || saved.description !== desired.description || saved.dailyAllowance !== desired.dailyAllowance) {
+      insert into flag_groups (id, name, description, daily_allowance, paid_daily_limit, created_by)
+      values (${groupId}::uuid, ${desired.name}, ${desired.description}, ${desired.dailyAllowance}, ${desired.paidDailyLimit}, ${actorId})`);
+  } else if (
+    saved.name !== desired.name ||
+    saved.description !== desired.description ||
+    saved.dailyAllowance !== desired.dailyAllowance ||
+    saved.paidDailyLimit !== desired.paidDailyLimit
+  ) {
     await tx.execute(sql`
-      update flag_groups set name = ${desired.name}, description = ${desired.description}, daily_allowance = ${desired.dailyAllowance}
+      update flag_groups set name = ${desired.name}, description = ${desired.description}, daily_allowance = ${desired.dailyAllowance},
+        paid_daily_limit = ${desired.paidDailyLimit}
       where id = ${groupId}::uuid`);
   }
   for (const userId of diff.removes) {

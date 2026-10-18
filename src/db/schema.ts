@@ -2546,10 +2546,11 @@ export const adminEvents = pgTable("admin_events", {
   newValue: text("new_value"),
   note: text("note"),
 }, (t) => [
-  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed')`),
+  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set')`),
   check("admin_events_scope_check", sql`${t.scope} is null or ${t.scope} in ('app', 'group', 'user')`),
   // Each kind names what it changed. A `group_allowance_set` names its group and a change: either
-  // side may be null (null is the default daily credits), never both.
+  // side may be null (null is the default daily credits), never both. `group_paid_limit_set` is
+  // the same shape for the paid limit (null is `PAID_DAILY_LIMIT`).
   check("admin_events_fields_check", sql`case ${t.kind}
     when 'override_set' then ${t.switchName} is not null and ${t.scope} is not null and ${t.newValue} is not null
     when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
@@ -2564,6 +2565,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'invites_topped_up' then ${t.groupId} is not null and ${t.newValue} is not null and ${t.note} is not null
     when 'invite_revoked' then ${t.userId} is not null
     when 'account_revealed' then ${t.userId} is not null
+    when 'group_paid_limit_set' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null
@@ -2587,7 +2589,13 @@ export const flagGroups = pgTable("flag_groups", {
   // The group's rolling-24-hour model credits (payments scope Q16). Null: its members take the
   // owner's or the app-wide default (`dailyLimit` in `lib/model/allowance-rule.ts`).
   dailyAllowance: integer("daily_allowance"),
-}, (t) => [check("flag_groups_daily_allowance_check", sql`${t.dailyAllowance} is null or ${t.dailyAllowance} between 1 and 1000`)]);
+  // The group's paid runs per rolling 24 hours (admin plan A-R1). Null: `PAID_DAILY_LIMIT`
+  // (`paidLimit` in `lib/model/allowance-rule.ts`).
+  paidDailyLimit: integer("paid_daily_limit"),
+}, (t) => [
+  check("flag_groups_daily_allowance_check", sql`${t.dailyAllowance} is null or ${t.dailyAllowance} between 1 and 1000`),
+  check("flag_groups_paid_daily_limit_check", sql`${t.paidDailyLimit} is null or ${t.paidDailyLimit} between 1 and 1000`),
+]);
 
 /**
  * Which group an account is in: at most ONE, by the primary key on `user_id` (admin plan), so a

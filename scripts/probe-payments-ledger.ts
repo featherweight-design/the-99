@@ -20,6 +20,9 @@
 //   j  a paid run never counts toward the free window
 //   k  the gates (`hasCredit`, intake's `closedBy`, the synopsis's `wouldSpend`) read a lot through the
 //      real `readAllowance`: open over a spent allowance while the lot holds a credit, shut once it does not
+//   n  a group's paid limit (admin plan A1): a group of 3 refuses the fourth paid run and `readAllowance`
+//      names 3; lowered below today's count it stays shut with a time back; a member moved mid-day to a
+//      group with no paid limit takes the default 20; a group setting only a paid limit leaves daily credits
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
@@ -29,9 +32,10 @@
 //   - a refunded run read as spend (`grantBalances` counting every row it reads, refunded included):
 //     fails d.
 //   - `hasCredit` reduced to the free allowance (`freeRoom`): fails k.
+//   - `readAllowance` reading the default paid limit instead of `paidLimitFor`: fails n.
 //
-// It writes `model_calls` and `credit_grants` rows under per-run `user_id`s and deletes them in a
-// `finally`, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
+// It writes `model_calls` and `credit_grants` rows under per-run `user_id`s, and case n's own
+// `flag_groups` and their members, and deletes them in a `finally`, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
 // staging and production are refused by id. Point it at a scratch branch or local-dev.
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:payments-ledger
@@ -59,6 +63,7 @@ const fixture = drizzle(pool);
 const PREFIX = `probe-payments-ledger-${Date.now()}`;
 let users = 0;
 const made: string[] = [];
+const groupsMade: string[] = [];
 const newUser = () => { const u = `${PREFIX}-${++users}`; made.push(u); return u; };
 
 let failures = 0;
@@ -103,6 +108,15 @@ async function grant(userId: string, source: "welcome" | "plan" | "pack", units:
 /** Every fixture user's rows, each user on its own: one failed delete neither stops the rest nor
  *  lets the run exit 0 over rows it left behind. */
 async function cleanup() {
+  for (const g of groupsMade) {
+    try {
+      // Members go with their group (`on delete cascade`).
+      await fixture.execute(sql`delete from flag_groups where id = ${g}::uuid`);
+    } catch (err) {
+      failures += 1;
+      console.error(`cleanup failed for group ${g}`, err);
+    }
+  }
   for (const u of made) {
     try {
       await fixture.execute(sql`delete from model_call_parts where call_id in (select id from model_calls where user_id = ${u})`);
@@ -270,6 +284,39 @@ async function run() {
     await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, credit_grant_id)
       select ${w}, 'tuning', 'spent', ${TUNING_MODEL}, credit_grant_id from (select id as credit_grant_id from credit_grants where user_id = ${w}) g, generate_series(1, 20)`);
     check("l · twenty paid runs never refuse a free-funded press", await fundedBy(await reserve(w)), null);
+  }
+
+  // n · A group's paid limit (admin plan A1), through the real `reserveModelCall` and `readAllowance`.
+  {
+    const group = async (paidLimit: number | null, dailyAllowance: number | null = null) => {
+      const [row] = await rows<{ id: string }>(sql`
+        insert into flag_groups (name, created_by, paid_daily_limit, daily_allowance)
+        values (${`probe-pl-${Date.now()}-${groupsMade.length}`}, ${PREFIX}, ${paidLimit}, ${dailyAllowance})
+        returning id::text as id`);
+      groupsMade.push(row.id);
+      return row.id;
+    };
+    const join = (userId: string, groupId: string) => fixture.execute(sql`
+      insert into flag_group_members (user_id, group_id, added_by) values (${userId}, ${groupId}::uuid, ${PREFIX})
+      on conflict (user_id) do update set group_id = excluded.group_id`);
+    const u = newUser();
+    await spendAllowance(u);
+    const pack = await grant(u, "pack", 100);
+    const three = await group(3);
+    await join(u, three);
+    const funded = [];
+    for (let i = 0; i < 4; i++) funded.push(await fundedBy(await reserve(u)));
+    check("n · a group of 3 funds three paid runs and refuses the fourth", funded, [pack, pack, pack, "refused"]);
+    const at = await readAllowance(u);
+    check("n · readAllowance names the group's limit", [at.paidUsedToday, at.paidLimit, at.paidBackAt instanceof Date], [3, 3, true]);
+    check("n · a group setting only a paid limit leaves daily credits at the default", at.limit, MODEL_FRIEND_DAILY_ALLOWANCE);
+    await fixture.execute(sql`update flag_groups set paid_daily_limit = 2 where id = ${three}::uuid`);
+    const lowered = await readAllowance(u);
+    check("n · lowered below today's count, it stays shut with a time back", [lowered.paidUsedToday, lowered.paidLimit, hasCredit(lowered), lowered.paidBackAt instanceof Date], [3, 2, false, true]);
+    check("n · and the gate agrees", kindOf(await reserve(u)), "allowance");
+    await join(u, await group(null));
+    check("n · moved mid-day to a group with no paid limit, the default 20 applies", (await readAllowance(u)).paidLimit, 20);
+    check("n · and the next paid run is funded", await fundedBy(await reserve(u)), pack);
   }
 
   // i · The purge takes the lots and the runs that named them.
