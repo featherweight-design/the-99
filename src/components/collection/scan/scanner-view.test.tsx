@@ -127,6 +127,8 @@ describe("ScannerView", () => {
   it("says a duplicate is already on the list, and a second copy takes its own press (R1, R2)", () => {
     draw({ mode: "normal", panel: { kind: "sure", guess: SOL, held: false, again: { kind: "duplicate", count: 1 } } });
     expect(within(panel()).getByText(copy.again.stillOn(1))).toBeTruthy();
+    // Drawn as one line (`.okk`), so the count never wraps off alone beside the desktop's press.
+    expect(within(panel()).getByText(copy.again.stillOn(1)).className).toContain("whitespace-nowrap");
     expect(screen.getByRole("button", { name: copy.again.addAnother })).toBeTruthy();
   });
 
@@ -140,6 +142,39 @@ describe("ScannerView", () => {
     expect(box.className).toContain("overflow-y-auto");
     expect(box.className).toContain("max-h-");
     expect(box.contains(screen.getByRole("button", { name: copy.view.notThis }))).toBe(false);
+  });
+
+  it("on the desktop lets the printing grid's box shrink below its cap, never the feed, so the actions stay in a clipped panel", () => {
+    // jsdom draws no layout, so this pins the flex chain that does: the section clips (overflow hidden, so it shrinks
+    // to the sheet's room), the feed keeps its 250px (flex-none), the choose panel may shrink (min-h-0), and inside it
+    // only the grid's box can (min-h-0); Add this printing and Not this card keep their 44px minimums.
+    const choices = [1, 2, 3, 4, 5, 6].map((n) => ({
+      scryfallId: `00000000-0000-4000-8000-00000000000${n}`, setCode: `s${n}`, setName: null, collectorNumber: String(n),
+      releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {},
+    }));
+    // Scored printings, as the server sends them: the scored step, with Add this printing above Not this card (the
+    // state the 1300x900 contact sheet photographs).
+    const guess = { ...SOL, printings: choices.slice(0, 4).map((c, i) => ({ scryfallId: c.scryfallId, score: 0.9 - i / 10 })) };
+    draw({ layout: "desk", mode: "normal", panel: { kind: "choose", guess, choices } });
+    const scanner = screen.getByTestId("scanner");
+    expect(scanner.className).toContain("overflow-hidden");
+    const feed = scanner.querySelector(':scope > [aria-hidden="true"]') as HTMLElement;
+    expect(feed.className).toContain("h-[250px]");
+    expect(feed.className.split(" ")).toContain("flex-none");
+    const live = panel().parentElement as HTMLElement;
+    expect(live.parentElement).toBe(scanner);
+    expect(live.className.split(" ")).toEqual(expect.arrayContaining(["flex", "flex-col", "min-h-0"]));
+    expect(panel().className.split(" ")).toContain("min-h-0");
+    expect(screen.getByTestId("scan-printings").className.split(" ")).toContain("min-h-0");
+    const add = screen.getByRole("button", { name: copy.view.addPrinting });
+    const notThis = screen.getByRole("button", { name: copy.view.notThis });
+    // Both actions sit outside the box that scrolls, Add first, each with its 44px minimum so neither shrinks away.
+    for (const b of [add, notThis]) {
+      expect(screen.getByTestId("scan-printings").contains(b)).toBe(false);
+      expect(b.parentElement).toBe(panel());
+      expect(b.className.split(" ")).toContain("min-h-[44px]");
+    }
+    expect(add.compareDocumentPosition(notThis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("in Auto draws no press and no wait: a sure card reads as added from its own frame, and one never out of the frame says how to add another", () => {

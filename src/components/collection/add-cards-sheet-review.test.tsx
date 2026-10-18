@@ -133,9 +133,9 @@ describe("AddCardsSheet: the scan review (card-scan PR 4)", () => {
     let land: (v: PrintingChoice[]) => void = () => {};
     choices.mockReturnValueOnce(new Promise<PrintingChoice[]>((r) => (land = r)));
     fireEvent.click(screen.getByRole("radio", { name: /Mind Stone/ }));
-    expect((screen.getByRole("button", { name: copy.save(1) }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: copy.save(1) })).toHaveAttribute("aria-disabled", "true");
     land([printing({ scryfallId: "m1", setCode: "wwk", collectorNumber: "133" })]);
-    await waitFor(() => expect((screen.getByRole("button", { name: copy.save(1) }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect(screen.getByRole("button", { name: copy.save(1) })).not.toHaveAttribute("aria-disabled"));
   });
 
   it("closes the fix with its line when a printing folds that line into another", async () => {

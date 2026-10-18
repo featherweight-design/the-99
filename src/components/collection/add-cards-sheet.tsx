@@ -469,8 +469,9 @@ function AddMode({
     }
   }
 
+  const saveHeld = !canSave(lines) || saving || scanPending > 0 || swapping;
   async function save() {
-    if (!canSave(lines) || saving || scanPending > 0 || swapping) return;
+    if (saveHeld) return;
     phaseRef.current = "saving";
     setPhase("saving");
     // The desktop's scanner stays open beside Save; the save takes the sheet to its receipt, and the scanner goes.
@@ -547,7 +548,7 @@ function AddMode({
           <CardScanner layout={phone ? "phone" : "desk"} listed={listed} onAdd={addScanned} onClose={closeScanner} onNoneOfThese={() => searchInstead(null)} />
         )}
         {phase !== "saved" && !(scanning && !phone) && (
-          <div inert={covered} className={`flex items-center gap-[10px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
+          <div inert={covered} className={`flex items-center gap-[8px] px-[18px] md:px-[22px] ${frozen}`} style={{ opacity: blocked ? 0.4 : undefined }}>
             <SearchField
               ref={searchRef}
               role="combobox"
@@ -584,7 +585,8 @@ function AddMode({
           </div>
         )}
 
-        <div inert={covered} className="min-h-0 flex-1 overflow-y-auto px-[18px] py-[12px] md:px-[22px]">
+        {/* Under the desktop's webcam panel the body starts 10px down (W2/W3's inline padding-top), else 12px. */}
+        <div inert={covered} className={`min-h-0 flex-1 overflow-y-auto px-[18px] pb-[12px] md:px-[22px] ${scanning && !phone ? "pt-[10px]" : "pt-[12px]"}`}>
           {notice && (
             <p
               role={notice.kind === "error" ? "alert" : "status"}
@@ -736,16 +738,20 @@ function AddMode({
         </div>
 
         {phase !== "saved" && (
-          <div inert={covered} className="flex items-center gap-[12px] border-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[18px] pb-[14px] pt-[12px] md:px-[22px] md:pb-[18px] md:pt-[14px]">
+          <div inert={covered} className="flex items-center gap-[12px] border-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[18px] pb-[16px] pt-[12px] md:px-[22px] md:pb-[18px] md:pt-[14px]">
             <span className="flex-1 text-[12px] text-[color:var(--fg-muted)]">
               {choosing ? copy.needsPrinting(choosing.name) : lines.length > 0 ? copy.summary(stats.lines, stats.copies) : copy.nothingYet}
             </span>
             <button
               type="button"
-              // A scanned card whose printings are still loading is not on the list yet: Save waits for it.
-              disabled={!canSave(lines) || saving || scanPending > 0 || swapping}
-              onClick={() => void save()}
-              className={`h-[46px] cursor-pointer rounded-[10px] px-[22px] text-[15px] font-semibold disabled:cursor-default disabled:opacity-40 md:h-auto md:rounded-[8px] md:px-[20px] md:py-[11px] md:text-[14px] ${PRIMARY}`}
+              // A scanned card whose printings are still loading is not on the list yet: Save waits for it. Held is
+              // `aria-disabled` (the review table's `.sv.off`), never `disabled`, so Save keeps its place in the tab
+              // order; a press while held does nothing.
+              aria-disabled={saveHeld || undefined}
+              onClick={() => {
+                if (!saveHeld) void save();
+              }}
+              className={`h-[46px] cursor-pointer rounded-[10px] px-[22px] text-[15px] font-semibold aria-disabled:cursor-default aria-disabled:opacity-40 md:h-[40px] md:rounded-[8px] md:text-[14px] ${PRIMARY}`}
             >
               {saving ? copy.saving : phase === "failed" ? copy.retry : copy.save(stats.copies)}
             </button>

@@ -82,7 +82,7 @@ export function AddLine(props: AddLineProps) {
   // asks nothing, and gets its printing or leaves the list on its own.
   if ((collapsed && !picking) || line.pending) {
     return (
-      <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px]">
+      <li className="flex items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[12px] md:py-[10px]">
         <Thumb uri={p?.imageUri ?? line.imageUri} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{line.name}</span>
         {p ? (
@@ -161,7 +161,7 @@ export function AddLine(props: AddLineProps) {
         <span className="text-[12.5px] text-[color:var(--fg-muted)]">{copy.afterPrinting}</span>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-[8px] md:gap-[10px]">
+          <div className="flex flex-wrap items-center gap-[8px]">
             {(synthetic ? [] : specials.length > 0 ? specials : (["foil"] as const)).map((f) => {
               const available = specials.length > 0;
               const on = line.finish === f;
