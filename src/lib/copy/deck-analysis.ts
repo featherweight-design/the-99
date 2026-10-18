@@ -21,6 +21,7 @@ import {
   TUTOR_DETECTION,
 } from "../bracket/rules";
 import type { Bracket } from "../bracket/types";
+import { ruleZeroCopy } from "./rule-zero";
 
 /**
  * The Commander Format Panel's own names, verbatim. Not ours to reword: a player carries a
@@ -33,6 +34,16 @@ export const BRACKET_NAMES: Record<Bracket, string> = {
   4: "Optimized",
   5: "cEDH",
 } as const;
+
+/**
+ * The noun a bracket reading counts a rule in, singular then plural. Extra turns are the one rule
+ * that counts two things: Exhibition forbids extra-turn CARDS outright, while Core and Upgraded
+ * count COMBOS that loop turns (`slotDeck`'s loop clause), so `below` decides it. One home, so the
+ * verdict's sub-line and Rule 0's seat say the same thing the same way.
+ */
+export function ruleNounFor(rule: keyof typeof deckAnalysisCopy.verdict.ruleNouns, below: Bracket): readonly [string, string] {
+  return rule === "extraTurns" && below > 1 ? ruleZeroCopy.seat.loopNouns : deckAnalysisCopy.verdict.ruleNouns[rule];
+}
 
 /** `Optimized`, or `Optimized or cEDH` — the permitted side, spoken. */
 export function bracketPhrase(permits: readonly Bracket[]): string {

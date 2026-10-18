@@ -9,6 +9,7 @@ import {
   nameList,
   numberWord,
   ordinal,
+  ruleNounFor,
 } from "./deck-analysis";
 
 describe("the bracket names", () => {
@@ -183,5 +184,19 @@ describe("the climb's drop sentence", () => {
       .toEqual(["Time Warp"]);
     expect(c.dropParts.count(2, "game changers", "Core").filter((p) => p.strong).map((p) => p.text))
       .toEqual(["two game changers"]);
+  });
+});
+
+describe("ruleNounFor", () => {
+  it("counts extra turns as cards at Exhibition and as combos that loop turns above it", () => {
+    expect(ruleNounFor("extraTurns", 1)).toEqual(["extra-turn card", "extra-turn cards"]);
+    expect(ruleNounFor("extraTurns", 2)).toEqual(["combo that loops turns", "combos that loop turns"]);
+    expect(ruleNounFor("extraTurns", 3)).toEqual(["combo that loops turns", "combos that loop turns"]);
+  });
+  it("leaves every other rule's noun as it is at every bracket", () => {
+    for (const below of [1, 2, 3] as const) {
+      expect(ruleNounFor("gameChangers", below)).toEqual(["game changer", "game changers"]);
+      expect(ruleNounFor("massLandDenial", below)).toEqual(["mass land denial card", "mass land denial cards"]);
+    }
   });
 });
