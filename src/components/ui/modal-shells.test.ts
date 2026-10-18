@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -35,7 +35,14 @@ type Shell = {
   lockBy?: string;
   /** Why a shell is exempt from the body-scroll rule. */
   noBody?: string;
+  /** The attribute holding the box's classes, when it is not `className` (a `Sheet` caller's `panelClassName`). */
+  classAttr?: string;
+  /** Files whose elements may supply the body scroller, when the box's children are drawn there. */
+  bodyFiles?: string[];
 };
+
+// A `Sheet` caller that overrides the panel draws the box in its own class; the Sheet draws the body scroller.
+const sheetOverride = (name: string, file: string): Shell => ({ name: `Sheet override: ${name}`, file, box: "panelClassName=", classAttr: "panelClassName", bodyFiles: ["src/components/ui/sheet.tsx"] });
 
 export const SHELLS: Shell[] = [
   // `Sheet` takes its panel classes as a prop defaulting to PANEL; callers that override them keep the cap in their
@@ -53,6 +60,12 @@ export const SHELLS: Shell[] = [
   { name: "PreconLinkDialogs", file: "src/components/decks/precons/precon-link-dialogs.tsx", box: 'role="dialog"' },
   { name: "GotItConfirm", file: "src/components/decks/got-it-confirm.tsx", box: 'role="dialog"' },
   { name: "RevertConfirm", file: "src/components/collection/revert-confirm.tsx", box: 'role="dialog"' },
+  { name: "CopyChooserDialog", file: "src/components/decks/copy-chooser-dialog.tsx", box: 'role="dialog"' },
+  { name: "GotItReceipt undo warning", file: "src/components/decks/got-it-receipt.tsx", box: 'role="dialog"', bodyFiles: ["src/components/collection/short-deck-warning.tsx"] },
+  { name: "ShelfSheet", file: "src/components/decks/shelf-sheet.tsx", box: 'role="dialog"' },
+  sheetOverride("collection FilterSheet", "src/components/collection/filter-sheet.tsx"),
+  sheetOverride("DeckFilterSheet", "src/components/decks/deck-filter-sheet.tsx"),
+  sheetOverride("IssueInspector (phone)", "src/components/collection/issue-inspector.tsx"),
   { name: "FolderCreateDialog", file: "src/components/decks/folder-create-dialog.tsx", box: 'role="dialog"', noBody: "a heading, one name field, an error line and two buttons: nothing in it grows" },
   // App-wide by reach: one provider mounts each. The card modal is the desktop card dialog and, below md, the phone
   // card-details sheet (the same box, full height).
@@ -97,7 +110,7 @@ function constants(sf: ts.SourceFile): Map<string, string> {
   return out;
 }
 
-type Tag = { node: ts.JsxOpeningElement | ts.JsxSelfClosingElement; attrs: string; className: string; style: string };
+type Tag = { node: ts.JsxOpeningElement | ts.JsxSelfClosingElement; attrs: string; className: string; style: string; attr: (name: string) => string };
 
 function tags(sf: ts.SourceFile): Tag[] {
   const out: Tag[] = [];
@@ -105,7 +118,7 @@ function tags(sf: ts.SourceFile): Tag[] {
     if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
       const attr = (name: string) =>
         n.attributes.properties.find((a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === name)?.initializer?.getText() ?? "";
-      out.push({ node: n, attrs: n.attributes.getText(), className: attr("className"), style: attr("style") });
+      out.push({ node: n, attrs: n.attributes.getText(), className: attr("className"), style: attr("style"), attr });
     }
     ts.forEachChild(n, visit);
   };
@@ -121,13 +134,19 @@ export function shellFailures(shell: Shell, text?: string): string[] {
   const consts = constants(sf);
   for (const f of shell.constFiles ?? []) for (const [k, v] of constants(parse(f, read(f)))) consts.set(k, v);
   const all = tags(sf);
+  const bodyTags = (shell.bodyFiles ?? []).flatMap((f) => {
+    const other = parse(f, read(f));
+    for (const [k, v] of constants(other)) if (!consts.has(k)) consts.set(k, v);
+    return tags(other);
+  });
   const boxes = all.filter((t) => t.attrs.includes(shell.box));
   if (boxes.length !== 1) return [`${where()}: ${boxes.length} elements match the box locator ${JSON.stringify(shell.box)}; it must be exactly one`];
   const box = boxes[0];
   const at = where(sf.getLineAndCharacterOfPosition(box.node.getStart()).line + 1);
   // The box's classes, with every constant it names inlined.
-  const named = [...(shell.classConsts ?? []), ...[...box.className.matchAll(/\b[A-Z][A-Z0-9_]+\b/g)].map((m) => m[0])];
-  const classes = [box.className, ...named.map((n) => consts.get(n) ?? "")].join(" ");
+  const own = box.attr(shell.classAttr ?? "className");
+  const named = [...(shell.classConsts ?? []), ...[...own.matchAll(/\b[A-Z][A-Z0-9_]+\b/g)].map((m) => m[0])];
+  const classes = [own, ...named.map((n) => consts.get(n) ?? "")].join(" ");
   const found: string[] = [];
 
   if (shell.styleCap) {
@@ -140,7 +159,7 @@ export function shellFailures(shell: Shell, text?: string): string[] {
   if (SCROLLS.test(classes)) found.push(`${at}: the box itself scrolls, so its header and footer scroll away with the body`);
   if (!/(?<![\w-])flex-col(?![\w-])/.test(classes)) found.push(`${at}: the box is not a flex column, so nothing keeps its header and footer outside the body`);
   if (!shell.noBody) {
-    const body = all.some((t) => {
+    const body = [...all, ...bodyTags].some((t) => {
       if (t === box) return false;
       const c = [t.className, ...[...t.className.matchAll(/\b[A-Z][A-Z0-9_]+\b/g)].map((m) => consts.get(m[0]) ?? "")].join(" ");
       return /(?<![\w-])overflow-(?:y-)?auto(?![\w-])/.test(c) && /(?<![\w-])(?:min-h-0|flex-1)(?![\w-])/.test(c);
@@ -150,6 +169,55 @@ export function shellFailures(shell: Shell, text?: string): string[] {
   if (!shell.lockBy && !/\b(?:useDialogA11y|useScrollLock)\(/.test(sf.getText())) found.push(`${at}: takes no scroll lock (useDialogA11y or useScrollLock)`);
   return found;
 }
+
+// The cap is in dvh, never vh: a phone's open keyboard shrinks the dynamic viewport and not the large one, so a
+// vh-capped box keeps its height and its footer sinks under the keyboard. Every height and max-height under
+// src/components is swept, class token or style key, so a new modal cannot bring vh back. `h-screen` is 100vh.
+const VH_TOKEN = /(?<![\w-])(?:[\w[\]():@-]+:)*(?:max-h-|h-|min-h-)(?:\[[^\]\s]*\]|screen)(?![\w-])/g;
+const VH_STYLE = /\b(?:maxHeight|height|minHeight)\s*:\s*["'`][^"'`]*/g;
+/** A vh length, once dvh, svh and lvh are struck out. */
+const hasVh = (v: string) => /\dvh\b/.test(v.replace(/[dsl]vh/g, ""));
+const isVh = (v: string) => hasVh(v) || /(?:^|:)(?:max-h|h)-screen$/.test(v);
+
+/** A `vh` height that is not a modal's cap, with the reason it may stay, by `file` and the exact token. */
+export const VH_ALLOWED: { file: string; token: string; why: string }[] = [
+  { file: "src/components/shell/nav.tsx", token: "h-screen", why: "the desktop rail is a sticky page column, not a modal, and its touch form is already `touch:h-dvh`" },
+  { file: "src/components/decks/builder-shell.tsx", token: "h-screen", why: "a comment naming the frame the deck page used to have, not a class" },
+];
+
+/** Every `vh` height or max-height in `text`, as `file:line: token`, less the allowlist. */
+export function vhHeights(file: string, text: string): string[] {
+  const out: string[] = [];
+  text.split("\n").forEach((line, i) => {
+    const found = [...line.matchAll(VH_TOKEN)].map((m) => m[0]).filter(isVh);
+    found.push(...[...line.matchAll(VH_STYLE)].map((m) => m[0]).filter(hasVh));
+    for (const token of found) if (!VH_ALLOWED.some((a) => a.file === file && a.token === token)) out.push(`${file}:${i + 1}: ${token}`);
+  });
+  return out;
+}
+
+function componentFiles(dir: string): string[] {
+  return readdirSync(join(process.cwd(), dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? componentFiles(`${dir}/${e.name}`) : e.name.endsWith(".tsx") && !/\.test\.tsx$/.test(e.name) ? [`${dir}/${e.name}`] : [],
+  );
+}
+
+describe("no vh height under src/components", () => {
+  it("every height and max-height is in dvh (or not viewport-bound)", () => {
+    const files = componentFiles("src/components");
+    expect(files.length).toBeGreaterThan(100);
+    expect(files.flatMap((f) => vhHeights(f, read(f)))).toEqual([]);
+  });
+
+  it("names a vh class, a vh style key and h-screen, and passes dvh, svh and a vh width", () => {
+    expect(vhHeights("f.tsx", 'className="flex max-h-[86vh] flex-col"')).toEqual(["f.tsx:1: max-h-[86vh]"]);
+    expect(vhHeights("f.tsx", 'className="md:max-h-[calc((100vh+min(620px,85dvh))/2-60px)]"')).toHaveLength(1);
+    expect(vhHeights("f.tsx", 'style={{ maxHeight: "min(85vh, 760px)" }}')).toEqual(['f.tsx:1: maxHeight: "min(85vh, 760px)']);
+    expect(vhHeights("f.tsx", 'className="h-screen"')).toEqual(["f.tsx:1: h-screen"]);
+    expect(vhHeights("f.tsx", 'className="max-h-[86dvh] h-[100svh] w-[50vw] min-h-screen"')).toEqual([]);
+    expect(VH_ALLOWED.every((a) => vhHeights(a.file, read(a.file)).length === 0 && read(a.file).includes(a.token))).toBe(true);
+  });
+});
 
 describe("modal shells: capped box, scrolling body, pinned header and footer", () => {
   it("every shared shell keeps the rule", () => {

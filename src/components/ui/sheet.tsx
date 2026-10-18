@@ -23,8 +23,8 @@
 // layer that already had it.
 //
 // WHAT IT ALSO DOES NOT OWN, FOR NOW: the box. Two vocabularies are in the
-// tree — `filter-panel` and the rack draw 16px on `--surface-rail` at 78vh,
-// while the deck and collection sheets draw 22px on `--surface-inset` at 86vh —
+// tree — `filter-panel` and the rack draw 16px on `--surface-rail` at 78dvh,
+// while the deck and collection sheets draw 22px on `--surface-inset` at 86dvh —
 // and the chassis handoff specifies only the ANCHORED panel (280px,
 // `--surface-rail`, 16px), never the sheet. So the difference is an undrawn
 // detail answered twice rather than a spec violation, and picking one here

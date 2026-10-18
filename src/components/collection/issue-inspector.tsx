@@ -37,7 +37,7 @@ import { Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { VIRTUALIZE_THRESHOLD } from "./issue-inspector-list";
 
-/** The phone sheet's height cap, as a fraction of the viewport (86vh). */
+/** The phone sheet's height cap, as a fraction of the viewport (86dvh). */
 const SHEET_CAP = 0.86;
 
 /**
@@ -49,7 +49,7 @@ const SHEET_CAP = 0.86;
  * before paint:
  *
  *   chrome = panel height − the visible list's box
- *   held   = min(86vh, chrome + the longer of the two lists' content heights)
+ *   held   = min(86dvh, chrome + the longer of the two lists' content heights)
  *
  * and the copy unmounts. A list past the virtualisation threshold is taller than
  * any cap it could meet: 151 rows at the smallest measured row (64px on a
@@ -405,7 +405,7 @@ export function IssueInspector({
         handleClassName="flex touch-none justify-center pt-[12px] pb-0"
         handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-strong)]"
         // The collection filter sheet's box (filter-sheet.tsx), which D8 names.
-        panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+        panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
       >
         {content}
       </Sheet>

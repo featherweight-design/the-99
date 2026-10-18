@@ -41,7 +41,7 @@ describe("IssueInspector — phone", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.className).toContain("rounded-t-[22px]");
     expect(dialog.className).toContain("bg-[color:var(--surface-inset)]");
-    expect(dialog.className).toContain("max-h-[86vh]");
+    expect(dialog.className).toContain("max-h-[86dvh]");
     // Not the desktop modal's box.
     expect(dialog.className).not.toContain("md:w-[660px]");
   });
@@ -64,7 +64,7 @@ describe("IssueInspector — phone", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("holds at the 86vh cap through a tab switch and a filter when a tab is virtualised", () => {
+  it("holds at the 86dvh cap through a tab switch and a filter when a tab is virtualised", () => {
     // A tab past the virtualisation threshold holds at the cap without
     // measuring. The measured branch is the pair of cases below.
     stubViewport(390);

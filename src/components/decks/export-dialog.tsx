@@ -145,7 +145,7 @@ export function ExportDialog({
             // The drawing sized the modal to a short list. A 99-card decklist or
             // a long shopping list would otherwise grow it past both edges of
             // the viewport, since the centring wrapper does not clip its child.
-            maxHeight: "min(85vh, 760px)",
+            maxHeight: "min(85dvh, 760px)",
             background: "var(--surface-rail)",
             border: "1px solid var(--border-strong)",
             borderRadius: 16,

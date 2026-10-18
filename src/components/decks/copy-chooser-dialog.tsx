@@ -53,16 +53,20 @@ export function CopyChooserDialog({
         aria-labelledby={titleId}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[88vh] w-full overflow-y-auto rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:w-[520px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
+        className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:w-[520px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
-        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)] md:hidden" />
-        <h2 id={titleId} className="m-0 font-display text-[20px] font-bold" style={{ color: "var(--fg)" }}>
+        <div aria-hidden className="mx-auto mb-[16px] h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold" style={{ color: "var(--fg)" }}>
           {c.changeTitle}
         </h2>
-        <p className="mt-[4px] mb-[14px] text-[14px]" style={{ color: "var(--fg-body)" }}>{c.changeSub(cardName)}</p>
-        <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} />
-        <div className="mt-[16px] flex justify-end">
+        <p className="mt-[4px] mb-[14px] flex-none text-[14px]" style={{ color: "var(--fg-body)" }}>{c.changeSub(cardName)}</p>
+        {/* The row is the body: it scrolls inside the cap, so the title and Done stay in view. The 6px pad and
+            its negative margin keep a focus ring inside the scroller's clip. */}
+        <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
+          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} />
+        </div>
+        <div className="mt-[16px] flex flex-none justify-end">
           <GhostButton onClick={onClose} className="px-[18px] py-[9px] text-[13.5px]">{c.done}</GhostButton>
         </div>
       </div>

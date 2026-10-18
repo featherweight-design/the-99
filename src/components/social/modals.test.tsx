@@ -241,7 +241,7 @@ describe("SocialModal on a phone with a keyboard up", () => {
     expect(frame.style.getPropertyValue("--social-vv-top")).toBe("120px");
     // The sheet and the frame read those values at phone width alone; the desktop dialog reads neither.
     expect(frame.className).toContain("max-md:h-[var(--social-vv-h,100%)]");
-    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100vh)*0.86)]");
+    expect(screen.getByRole("dialog").className).toContain("max-md:h-[calc(var(--social-vv-h,100dvh)*0.86)]");
     expect(screen.getByRole("dialog").className).not.toMatch(/(^|\s)h-\[86vh\]/);
     unmount();
     expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));

@@ -179,7 +179,7 @@ function SheetBody({
       // This route's box, kept as it is: the chassis handoff specifies the
       // anchored panel and not the sheet, so collapsing the two vocabularies is
       // a design ruling rather than a refactor.
-      panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+      panelClassName="relative z-10 flex max-h-[86dvh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
       // A SIBLING of the panel, never a child: the panel is `inert` while this
       // is up, and an inert subtree takes its descendants out of the
       // accessibility tree — so a panel nested inside it would be unreachable by
