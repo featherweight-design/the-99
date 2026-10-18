@@ -3,7 +3,7 @@
 **Status: PARTIAL.** Everything merged is walked below; the plan card (U3b) is not merged, so its rows are open, and the
 `credits` About entry is owed (see About). The line does not close until both land and their rows are ticked here.
 
-**Walked:** 2026-10-18, on `main` at `75b304bb2`, then the fixes re-walked on `1f170899d`, against the plan `docs/superpowers/plans/2026-10-17-buying-credits-ui.md`
+**Walked:** 2026-10-18, on `main` at `75b304bb2`; #2109's fixes were re-photographed on its branch (the deletion warning at both widths, the full `rich` sheet), and its last change, the labels' ink, is pinned by a contrast test rather than a photo. #2109 merged as `1f170899d`, against the plan `docs/superpowers/plans/2026-10-17-buying-credits-ui.md`
 and the handoff `design/design_handoff_the99_buying_credits/` (approved R2b, #1946). Merged and in scope:
 
 | Plan PR | What | PR |
