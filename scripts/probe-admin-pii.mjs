@@ -121,16 +121,16 @@ try {
   // From the Show on, responses go here instead, so the needle check above them stays a check of the masked pages.
   let sink = bodies;
   // Each body is read asynchronously, so a check waits for the reads still in flight (`drain`) before it counts.
-  const reading = new Set();
+  const reading = new Map();
   // Bounded: a response that streams without end (a poll held open) must not hold the probe forever. A body still
   // unread after 10 seconds is reported, so a check never silently skips one.
   const drain = async () => {
-    const pending = [...reading];
+    const pending = [...reading.keys()];
     const late = await Promise.race([
       Promise.all(pending).then(() => false),
       new Promise((r) => setTimeout(() => r(true), 10_000)),
     ]);
-    if (late) report("every response body read before the check", false, `${reading.size} still streaming`);
+    if (late) report("every response body read before the check", false, [...reading.values()].map((u) => new URL(u).pathname).join(", "));
   };
   page.on("response", (res) => {
     if (!res.url().startsWith(BASE)) return;
@@ -145,7 +145,7 @@ try {
       // A redirect or an aborted request has no body to read.
       .catch(() => {})
       .finally(() => reading.delete(read));
-    reading.add(read);
+    reading.set(read, res.url());
   });
 
   const visit = async (path, open = async () => {}) => {
