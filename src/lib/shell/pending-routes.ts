@@ -29,6 +29,8 @@ export function pendingRouteFor(href: string): PendingRoute {
     case undefined:
       return { kind: "overlay", key: "home" };
     case "about":
+    case "privacy":
+    case "terms":
       return { kind: "overlay", key: "about" };
     case "collection":
       if (second === "proxies") return { kind: "overlay", key: "proxies" };

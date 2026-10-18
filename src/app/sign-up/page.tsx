@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
 import { PRIMARY_BUTTON } from "../../components/social/friend-landing";
 import { INVITE_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
+import { LegalLinks } from "../../components/legal/legal-links";
 import { InviteFan } from "../../components/social/friend-card";
 
 export default async function SignUpPage() {
@@ -29,6 +30,7 @@ export default async function SignUpPage() {
             <SignInButton mode="redirect">
               <button type="button" className={PRIMARY_BUTTON}>{copy.signIn}</button>
             </SignInButton>
+            <LegalLinks className="mt-[18px]" />
           </div>
         }
         fine={copy.fine}

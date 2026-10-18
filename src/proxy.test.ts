@@ -337,6 +337,22 @@ describe("the newcomer's pages", () => {
   });
 });
 
+describe("the legal pages", () => {
+  // /privacy and /terms are read before an account exists (launch epic B1): public at their exact path, either slash form.
+  it("makes /privacy and /terms public at their exact path, and nothing that only starts with them", async () => {
+    for (const path of ["/privacy", "/privacy/", "/terms", "/terms/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/privacy-policy", "/terms-x", "/privacy/x", "/terms/x"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+});
+
 describe("the Clerk webhook", () => {
   // Clerk calls it with no session, so it must not be session-protected; its route checks the signature.
   it("is public at its exact path, with or without the trailing slash", async () => {

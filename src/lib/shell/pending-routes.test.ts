@@ -10,6 +10,8 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     };
     expect(key("/")).toBe("home");
     expect(key("/about")).toBe("about");
+    expect(key("/privacy")).toBe("about");
+    expect(key("/terms")).toBe("about");
     expect(key("/collection")).toBe("collection");
     expect(key("/collection/replace")).toBe("collection");
     expect(key("/collection/replace/summary/abc")).toBe("collection");
