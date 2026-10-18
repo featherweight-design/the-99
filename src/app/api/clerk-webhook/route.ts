@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { grantWelcome } from "../../../lib/payments/welcome";
-import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
+import { resolveSwitchEnvStrict } from "../../../lib/switches/snapshot";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
 export const runtime = "nodejs";
@@ -64,8 +64,9 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
   let welcomeFailed = false;
   try {
     // The account's own creation time, so a redelivery cannot extend the lot; the event's clock only when it is absent.
+    // A failed read of the overrides throws (a retryable 500) rather than reading as "switch off": nothing else would grant it later.
     const created = typeof data.created_at === "number" && Number.isFinite(data.created_at) ? new Date(data.created_at) : new Date();
-    const result = await grantWelcome(data.id, created, await resolveSwitchEnv(data.id));
+    const result = await grantWelcome(data.id, created, await resolveSwitchEnvStrict(data.id));
     console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
   } catch {
     welcomeFailed = true;

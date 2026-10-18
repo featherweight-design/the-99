@@ -60,7 +60,7 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = 
             <span className="min-h-[14.7px] font-mono text-[10.5px] leading-[14.7px] text-[color:var(--fg-muted)]">
               {cell.key === "free"
                 ? nextAtMs === null ? c.freeFull(freeLimit) : hydrated ? c.freeNext(clockTime(new Date(nextAtMs))) : null
-                : cell.key === "plan" ? c.planSub : c.packsSub}
+                : cell.key === "plan" ? c.planSub : cell.key === "pack" ? c.packsSub : null}
             </span>
           </li>
         ))}

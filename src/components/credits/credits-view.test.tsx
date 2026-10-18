@@ -44,6 +44,16 @@ describe("the page", () => {
     expect(screen.getByRole("button", { name: /Receipt/ })).toBeTruthy();
   });
 
+  it("D1: a welcome lot sits second, and does not inherit the packs' \"never expire\" subtitle", () => {
+    render(<CreditsView model={model({ allowance: allowance({ welcome: 15, pack: 40 }) })} ret={null} />);
+    const cells = screen.getAllByRole("listitem").filter((li) => li.hasAttribute("data-cell"));
+    expect(cells.map((li) => li.getAttribute("data-cell"))).toEqual(["free", "welcome", "pack"]);
+    const welcome = cells[1];
+    expect(welcome.textContent).toContain("15");
+    expect(welcome.textContent).not.toMatch(/never expire/i);
+    expect(cells[2].textContent).toMatch(/never expire/i);
+  });
+
   it("O4: with the switch off a holder keeps balances, history and the refund line, and gets no offers section", () => {
     render(<CreditsView model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row] })} ret={null} />);
     expect(screen.queryByText("Get more credits")).toBeNull();

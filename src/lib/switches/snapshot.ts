@@ -92,3 +92,14 @@ export function clearSwitchSnapshot(): void {
 export async function resolveSwitchEnv(userId: string | null, base: NodeJS.ProcessEnv = process.env): Promise<NodeJS.ProcessEnv> {
   return resolveEnv(base, await switchSnapshot(), userId);
 }
+
+/**
+ * The same, for a WRITE that must not be decided from the environment alone: a fresh read, and a failed one THROWS
+ * instead of serving the environment's defaults. A caller that turns a switch's answer into "write nothing" (the welcome
+ * grant) would otherwise treat a transient read failure as "off" and never be asked again.
+ */
+export async function resolveSwitchEnvStrict(userId: string | null, base: NodeJS.ProcessEnv = process.env): Promise<NodeJS.ProcessEnv> {
+  const snapshot = await readSnapshot();
+  if (snapshot === null) throw new Error("switch overrides could not be read");
+  return resolveEnv(base, snapshot, userId);
+}

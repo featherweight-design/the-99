@@ -9,7 +9,7 @@ const grant = vi.hoisted(() => vi.fn());
 const switchEnv = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
-vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnv: switchEnv }));
+vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnvStrict: switchEnv }));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 vi.mock("../../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../../lib/invites/spend")>()),
@@ -134,6 +134,13 @@ describe("POST /api/clerk-webhook", () => {
       verify.mockResolvedValue(created({ inviteReservation: RES }));
       expect((await POST(req())).status).toBe(500);
       expect(grant).toHaveBeenCalled();
+    });
+
+    it("answers 500 and grants nothing when the switch overrides cannot be read, so Clerk retries", async () => {
+      switchEnv.mockRejectedValue(new Error("switch overrides could not be read"));
+      verify.mockResolvedValue(created({}));
+      expect((await POST(req())).status).toBe(500);
+      expect(grant).not.toHaveBeenCalled();
     });
 
     it("refuses an event with no user id and writes nothing", async () => {
