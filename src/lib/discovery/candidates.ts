@@ -18,6 +18,7 @@ import { ownedSupportLock } from "./owned-support-lock";
 import { generationKey, readCatalogGeneration } from "../cache/catalog-generation";
 import type { EdhrecTag } from "../edhrec/parse";
 import { notBuiltBy } from "../decks/built";
+import { perfRead } from "../perf/timing";
 
 export type CandidateSqlRow = {
   oracleId: string;
@@ -122,7 +123,7 @@ export async function loadCandidates(
 ): Promise<CandidateRow[]> {
   // The whole-pool read is `/discover`'s, rebuilt on every cache miss: it reads the stored counts.
   // A narrowed ranked pool is a different count and keeps the live aggregate.
-  const stored = collectionOracleIds == null ? await storedOwnedSupport(userId, ownedOracleIds) : null;
+  const stored = collectionOracleIds == null ? await perfRead("candidates.storedSupport", () => storedOwnedSupport(userId, ownedOracleIds)) : null;
   const run = (owned: SQL, storeCurrent: SQL) => {
     const base = db
       .select({
@@ -149,12 +150,12 @@ export async function loadCandidates(
     ).where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
   };
 
-  let rows = stored ? await run(stored.table, stored.current) : await run(ownedSupportTable(ownedOracleIds), sql`true`);
+  let rows = await perfRead("candidates.query", async () => (stored ? await run(stored.table, stored.current) : await run(ownedSupportTable(ownedOracleIds), sql`true`)));
   // The stamp is re-read INSIDE the statement that read the counts, so both come from one snapshot.
   // A render whose inputs went stale could rewrite the store between this request's check and its
   // read; then this statement sees the moved stamp, and the live aggregate answers instead.
   if (stored && rows.length > 0 && !rows[0].storeCurrent) {
-    rows = await run(ownedSupportTable(ownedOracleIds), sql`true`);
+    rows = await perfRead("candidates.liveRerun", () => run(ownedSupportTable(ownedOracleIds), sql`true`));
   }
   // `storeCurrent` is this read's own check, not a row field: it never reaches the payload.
   return rows.map((row) => {

@@ -19,6 +19,7 @@ import type { PrintingPrices } from "../cards/price-lookup";
 import { factsFor } from "../bracket/facts";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import { recordSoftFailure } from "../cache/soft-failure";
+import { perfRead } from "../perf/timing";
 
 /**
  * Server query — joins collection_items × cards for the user, optionally narrowed to one
@@ -224,21 +225,22 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   /** The price read, injected for tests, as `attachBracketFacts`' flags read is. */
   readPrices?: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
 ): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean }> {
-  const aggregated = aggregateCollection(await selectCollectionRows(userId));
+  // Spans for the miss-path breakdown (PERF_TIMING=1 only; a pass-through otherwise).
+  const aggregated = aggregateCollection(await perfRead("browse.rows", () => selectCollectionRows(userId)));
   // STARTED BEFORE THE TWO PASSES AND AWAITED AFTER THEM, keyed on the cards of the snapshot just
   // read rather than on the user: a second read of the collection could see a card this one does
   // not, or miss one it has, and that card would ship silent and be cached so. A failure is
   // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
   const prices = startPriceRead(
     aggregated,
-    readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices,
+    readPrices ?? ((ids) => perfRead("browse.prices", async () => (await import("../cards/prices")).loadOwnedPrintingPrices(ids))),
   );
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
   // in any way this function can express.
-  const attached = await attachComboPartners(userId, await attachBracketFacts(aggregated));
-  const read = await prices;
+  const attached = await perfRead("browse.combos", async () => attachComboPartners(userId, await perfRead("browse.bracketFacts", () => attachBracketFacts(aggregated))));
+  const read = await perfRead("browse.pricesWait", () => prices);
   const cards = toListCards(attached);
   attachPrices(attached, cards, read);
   return { cards, pricesFailed: read === null };
