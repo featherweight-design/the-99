@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
 
 // The plan's Checkout (payments, the subscription PR): the subscriptions table, the mapping and the rate counter, by hand.
-const state = vi.hoisted(() => ({ subs: [] as { status: string }[], mapped: "cus_1" as string | null, hits: 0 }));
+const state = vi.hoisted(() => ({ subs: [] as { status: string }[], mapped: "cus_1" as string | null, hits: 0, blocked: false }));
+vi.mock("./blocked", () => ({ purchaseBlocked: async () => state.blocked }));
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
   return {
@@ -29,7 +30,7 @@ const ACTION = "11111111-1111-4111-8111-111111111111";
 const go = () => createPlanCheckout(stripe, { userId: "user_a", email: "a@x.dev", planId: "plan60", actionId: ACTION });
 
 beforeEach(() => {
-  state.subs = []; state.mapped = "cus_1"; state.hits = 0;
+  state.subs = []; state.mapped = "cus_1"; state.hits = 0; state.blocked = false;
   list.mockClear(); sessionCreate.mockClear(); list.mockResolvedValue({ data: [] });
   vi.stubEnv("STRIPE_PRICE_PLAN_60", "price_plan60");
   vi.stubEnv("APP_ORIGIN", "https://the-99.dev");
@@ -42,6 +43,13 @@ describe("createPlanCheckout", () => {
     const [params, opts] = sessionCreate.mock.calls[0] as unknown as [Stripe.Checkout.SessionCreateParams, { idempotencyKey: string }];
     expect(params.mode).toBe("subscription");
     expect(opts.idempotencyKey).toContain(ACTION);
+  });
+
+  it("is blocked for a disputed account, before anything is counted or made", async () => {
+    state.blocked = true;
+    expect(await go()).toEqual({ ok: false, reason: "blocked" });
+    expect(state.hits).toBe(0);
+    expect(sessionCreate).not.toHaveBeenCalled();
   });
 
   it("is unconfigured while the plan's Price is unset, and makes nothing", async () => {

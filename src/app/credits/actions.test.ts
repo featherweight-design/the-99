@@ -111,6 +111,15 @@ describe("buyPlanAction", () => {
     expect(m.createPlanCheckout).not.toHaveBeenCalled();
   });
 
+  it("refuses a blocked account before any Stripe call, and fails closed when the block cannot be read", async () => {
+    m.purchaseBlocked.mockResolvedValueOnce(true);
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "blocked" });
+    m.purchaseBlocked.mockRejectedValueOnce(new Error("db down"));
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "failed" });
+    expect(m.currentUser).not.toHaveBeenCalled();
+    expect(m.createPlanCheckout).not.toHaveBeenCalled();
+  });
+
   it("refuses an unverified email and a deployment with no usable key", async () => {
     m.currentUser.mockResolvedValueOnce({ primaryEmailAddress: { emailAddress: "a@x.dev", verification: { status: "unverified" } } });
     expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "unverified" });
