@@ -135,6 +135,11 @@ async function main() {
     check("a seated non-friend reads the table, all three faces", forC.length === 1 && forC[0].seats.map((s) => s.displayName).join() === "Ava,Bo,Cy");
     check("the payload names no account or deck id", !JSON.stringify(forC).includes(B) && !JSON.stringify(forC).includes(deckB));
     check("an unseated member reads no table", (await rz.openTablesFor(D)).length === 0);
+    // PR 6: Home's sentence names the setter and the reader's own deck; a non-friend's face is initials (D2).
+    check("the read names the setter and the reader's own seated deck", forC[0].setterName === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
+    await db.execute(sql`update social_profiles set commander_oracle_id = ${CMD} where user_id in (${A}, ${B})`);
+    const faced = (await rz.openTablesFor(C))[0]?.seats ?? [];
+    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => f.displayName === "Ava")?.commander != null && faced.find((f) => f.displayName === "Bo")?.commander === null);
     check("Home's read lists the table for its setter", (await loadHomeTables(A)).some((t) => t.tableId === T1 && t.setByYou));
 
     // A seat's own deck.

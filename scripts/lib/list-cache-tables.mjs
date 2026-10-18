@@ -71,6 +71,9 @@ export const PER_REQUEST_READS = {
   // The same section's Add a friend, with invites on: the reader's invite count, which a QR expiring or an invite
   // landing moves without any write of the reader's own.
   "src/lib/invites/read.ts": "Home's Add a friend shows the reader's invite count, read fresh per request beside the Friends section",
+  // Rule 0's `Tonight's table` card (plan decision 1): a reseat by a player who is not the reader's friend, a rename
+  // and an expiry move nothing in Home's key, and the seats carry no stamp trigger.
+  "src/lib/social/rule-zero-home.ts": "Home's Tonight's table card reads the open tables the reader sits at fresh on every request; no write of theirs moves Home's key",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

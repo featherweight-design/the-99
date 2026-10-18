@@ -1,6 +1,6 @@
 // /friends with invites (invites PR 4): off, Add a friend makes a link on the press as shipped; on, it opens the
 // chooser, never held, with the count line under it, and card 1's link opens as the chooser's path 1.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const a = vi.hoisted(() => ({
@@ -17,9 +17,14 @@ vi.mock("../../app/friends/actions", () => a);
 vi.mock("../../app/friends/invite-actions", () => inv);
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => nav }));
+const rz = vi.hoisted(() => ({ loadPodSetupAction: vi.fn(), setTableAction: vi.fn() }));
+vi.mock("../../app/friends/table/setup-actions", () => rz);
 
 import { FriendsView } from "./friends-view";
 import { socialCopy } from "../../lib/copy/social";
+import { useFriendInvite } from "./invite-context";
+import { PodRuleZeroRow } from "../rule-zero/pod-row";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { inviteCopy } from "../../lib/copy/invites";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
@@ -61,6 +66,41 @@ describe("Add a friend, invites off", () => {
 
 describe("Add a friend, invites on", () => {
   const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
+
+  it("returns focus to the control in the dialog that opened Invite someone new (Rule 0 setup's dashed row)", async () => {
+    function Opener() {
+      const ctx = useFriendInvite();
+      return <button type="button" onClick={(e) => ctx?.inviteNew?.(e.currentTarget)}>open invite</button>;
+    }
+    draw({ invites, pods: <Opener /> });
+    const opener = screen.getByRole("button", { name: "open invite" });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole("dialog", { name: inviteCopy.path.title });
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: socialCopy.dialog.close })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("draws Invite someone new above Rule 0's setup when opened from its dashed row", async () => {
+    rz.loadPodSetupAction.mockResolvedValue({
+      setup: { podId: "p1", podName: "Thursday night", owner: null, members: [{ publicId: "a", displayName: "Hugh", commander: null, kind: "you", isOwner: true, decks: [], start: null }] },
+      invites: true,
+    });
+    draw({ invites, pods: <PodRuleZeroRow podId="p1" table={null} now={NOW} /> });
+    await act(async () => fireEvent.click(screen.getByTestId("pod-rule-zero")));
+    const row = screen.getByText(ruleZeroCopy.setup.inviteTitle).closest("button")!;
+    row.focus();
+    fireEvent.click(row);
+    const frames = [...document.querySelectorAll("[data-social-modal-frame]")];
+    const setupFrame = frames.find((f) => f.querySelector('[role="dialog"]')?.getAttribute("aria-labelledby") && f.textContent?.includes(ruleZeroCopy.setup.whoTitle))!;
+    const inviteFrame = frames.find((f) => f.textContent?.includes(inviteCopy.path.title))!;
+    expect(inviteFrame.className).toContain("z-[60]");
+    expect(setupFrame.className).toContain("z-50");
+    // Closing it lands back on the setup control that opened it.
+    await act(async () => fireEvent.click(within(inviteFrame as HTMLElement).getByRole("button", { name: socialCopy.dialog.close })));
+    expect(document.activeElement).toBe(row);
+  });
 
   it("opens on Invite someone new when it arrived as ?invite=new (Rule 0 setup's dashed row)", () => {
     window.history.replaceState(null, "", "/friends?invite=new");

@@ -5,7 +5,16 @@
 
 import { createContext, useContext } from "react";
 
-export type FriendInvite = { invite: () => void; pending: boolean; held: boolean };
+export type FriendInvite = {
+  invite: () => void;
+  pending: boolean;
+  held: boolean;
+  /**
+   * Add a friend opened on Invite someone new, with invites on (Rule 0 setup's dashed row); absent when off. Closing it
+   * returns focus to `returnTo`, the control in the dialog it opened over.
+   */
+  inviteNew?: (returnTo: HTMLElement | null) => void;
+};
 
 export const FriendInviteContext = createContext<FriendInvite | null>(null);
 

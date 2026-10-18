@@ -1,0 +1,16 @@
+{
+  "feature": "Rule 0 PR 6: the way in (plan 2026-10-16-rule-zero.md, PR 6; boards E1 to E3 and F1 to F3): the pod card's last row on /friends and Home's Tonight's table card",
+  "note": "Needs RULE_ZERO_ENABLED=true and SOCIAL_FRIENDS_ENABLED=true for the reader, and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_ENTRY=1 (every fixture table but T1 closed, so the reader sits at one open table) on a SCRATCH BRANCH off local-dev only, with RZ_FIXTURE_USER the audit account. Thursday night has the open table (E2, F2: Tonight's table); Sunday league has none (E1, F1: Rule 0 check). E4 (the switch off) draws nothing and is held by the component tests. Reseed without RZ_FIXTURE_ENTRY before photographing rule-zero.json again.",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 2300 },
+    { "label": "desktop", "width": 1300, "height": 1350 }
+  ],
+  "out": "contact-sheets/rule-zero-entry",
+  "rows": [
+    {"id": "e1-e2", "label": "E1 and E2 on /friends: Thursday night's row is Tonight's table (faces, count, close), Sunday league's is Rule 0 check", "view": "src/components/rule-zero/pod-row.tsx", "widths": ["phone"], "steps": [{"goto": "/friends", "wait": "[data-testid=pod-rule-zero]", "settle": 900}]},
+    {"id": "f1-f2", "label": "F1 and F2: the same rows under the five seats", "view": "src/components/rule-zero/pod-row.tsx", "widths": ["desktop"], "steps": [{"goto": "/friends", "wait": "[data-testid=pod-rule-zero]", "scrollTo": "[data-testid=pod-rule-zero]", "settle": 900}]},
+    {"id": "e3", "label": "E3 Home: Tonight's table at the head of Friends, Colin seated you", "view": "src/components/rule-zero/home-table-card.tsx", "widths": ["phone"], "steps": [{"goto": "/", "wait": "[data-testid=home-table-card]", "scrollTo": "[data-testid=home-table-card]", "settle": 900}]},
+    {"id": "f3", "label": "F3 Home on desktop: the card heads the right column's Friends section", "view": "src/components/rule-zero/home-table-card.tsx", "widths": ["desktop"], "steps": [{"goto": "/", "wait": "[data-testid=home-table-card]", "settle": 900}]}
+  ]
+}

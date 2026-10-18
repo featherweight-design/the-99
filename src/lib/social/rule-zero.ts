@@ -289,10 +289,24 @@ export async function markSeen(viewerId: string, tableId: unknown, seenThrough: 
 /** A seated player as the pod row and Home's card draw them: a face and a name, in seat order. */
 export type TableFace = { displayName: string; you: boolean; commander: ProfileCommander | null };
 
-export type OpenTable = { tableId: string; podId: string; podName: string; closesAt: Date; setByYou: boolean; seats: TableFace[] };
+export type OpenTable = {
+  tableId: string;
+  podId: string;
+  podName: string;
+  closesAt: Date;
+  setByYou: boolean;
+  /** The setter's display name (Home's `Colin seated you with …`), or null when they no longer have a profile. */
+  setterName: string | null;
+  /** The viewer's own seated deck's name, or null while their seat waits. */
+  yourDeck: string | null;
+  seats: TableFace[];
+};
 
 const mine = alias(ruleZeroSeats, "mine");
 const viewerIn = alias(podMembers, "viewer_in");
+const setter = alias(socialProfiles, "setter");
+const viewerFriend = alias(friendLinks, "viewer_friend");
+const mineDeck = alias(decks, "mine_deck");
 
 /**
  * The open tables the viewer sits at, of pods they are still in. Apart so a test can render its SQL: the clock is
@@ -306,23 +320,37 @@ export function openTablesQuery(viewerId: string, q: Reader = db) {
       podName: pods.name,
       closesAt: ruleZeroTables.expiresAt,
       setBy: ruleZeroTables.setBy,
+      setterName: setter.displayName,
+      yourDeck: mineDeck.name,
     })
     .from(ruleZeroTables)
     .innerJoin(mine, and(eq(mine.tableId, ruleZeroTables.id), eq(mine.userId, viewerId)))
     .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
+    .leftJoin(setter, eq(setter.userId, ruleZeroTables.setBy))
+    .leftJoin(mineDeck, eq(mineDeck.id, mine.deckId))
     .where(sql`${ruleZeroTables.expiresAt} > now()`)
     .orderBy(asc(ruleZeroTables.expiresAt), asc(ruleZeroTables.id));
 }
 
-/** The seats of the given tables whose players are still members of the table's pod, with their faces. */
-function tableFacesQuery(tableIds: readonly string[], q: Reader = db) {
+/**
+ * The seats of the given tables whose players are still members of the table's pod, with their faces. A player who
+ * is not the viewer's friend is drawn as initials (D2, as the pod card draws them): `friend` says which.
+ */
+export function tableFacesQuery(viewerId: string, tableIds: readonly string[], q: Reader = db) {
   return q
-    .select({ tableId: ruleZeroSeats.tableId, userId: ruleZeroSeats.userId, displayName: socialProfiles.displayName, ...commanderColumns })
+    .select({
+      tableId: ruleZeroSeats.tableId,
+      userId: ruleZeroSeats.userId,
+      displayName: socialProfiles.displayName,
+      friend: viewerFriend.friendUserId,
+      ...commanderColumns,
+    })
     .from(ruleZeroSeats)
     .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
     .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroSeats.userId)))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroSeats.userId))
+    .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroSeats.userId)))
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .where(inArray(ruleZeroSeats.tableId, [...tableIds]))
     .orderBy(asc(ruleZeroSeats.tableId), asc(ruleZeroSeats.seat));
@@ -333,16 +361,21 @@ export async function openTablesFor(viewerId: string): Promise<OpenTable[]> {
   return db.transaction(async (tx) => {
     const tables = await openTablesQuery(viewerId, tx);
     if (tables.length === 0) return [];
-    const faces = await tableFacesQuery(tables.map((t) => t.tableId), tx);
+    const faces = await tableFacesQuery(viewerId, tables.map((t) => t.tableId), tx);
     return tables.map((t) => ({
       tableId: t.tableId,
       podId: t.podId,
       podName: t.podName,
       closesAt: t.closesAt,
       setByYou: t.setBy === viewerId,
+      setterName: t.setterName,
+      yourDeck: t.yourDeck,
       seats: faces
         .filter((f) => f.tableId === t.tableId)
-        .map((f) => ({ displayName: f.displayName, you: f.userId === viewerId, commander: toCommander(f) })),
+        .map((f) => {
+          const you = f.userId === viewerId;
+          return { displayName: f.displayName, you, commander: you || f.friend !== null ? toCommander(f) : null };
+        }),
     }));
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });
@@ -379,8 +412,6 @@ export type PodSetup = {
   owner: string | null;
   members: SetupMember[];
 };
-
-const viewerFriend = alias(friendLinks, "viewer_friend");
 
 /** The seatable members' decks: the viewer's and each friend's in the pod. Raw and aliased, so nothing resolves wrong. */
 export function setupDecksQuery(viewerId: string, podId: string) {
