@@ -89,6 +89,9 @@ describe("buildCreditsModel: history", () => {
 
 describe("buildCreditsModel: a welcome lot (D1)", () => {
   it("is held, so the page is seen with the switch off, and its cell sits after Free and counts in the total", () => {
+    // Welcome alone: it is the only thing that makes the page visible with the switch off (a pack would satisfy the old gate).
+    const only = model({ switchOn: false, allowance: allowance({ welcome: 15 }), history: [], offers });
+    expect(only.cells.map((c) => c.key)).toEqual(["free", "welcome"]);
     const m = model({ switchOn: false, allowance: allowance({ welcome: 15, pack: 4 }), history: [], offers });
     expect(m.cells.map((c) => c.key)).toEqual(["free", "welcome", "pack"]);
     expect(m.total).toBe(3 + 15 + 4);
