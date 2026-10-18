@@ -3028,3 +3028,20 @@ which commits with no loading screen. On deployed staging, READ-ONLY: it signs i
 pages, scrolls and presses links. Exits 1 if any landing settles anywhere but 0. Run it first if the report comes back, with
 `PROBE_STARTS`, `PROBE_SIZE`, `PROBE_ENGINES` and `PROBE_SLOW=1` to match the reader's device and the page they came from.
 
+
+## probe:anthropic-cost
+
+`pnpm probe:anthropic-cost [YYYY-MM ...]` reads The 99 workspace's month from Anthropic's Usage and Cost Admin API
+through the shipped, uncached `readWorkspaceCost` (`src/lib/admin/anthropic-cost.ts`), the read behind the admin Costs
+page's workspace row. It touches no database and writes nothing. With no month it reads the current month and the one
+before, which settles whether a current month clamped to now is accepted and how far back the report serves; its output,
+figures only, goes in the PR body before the first PR merges. It prints the month, `ok` or the unread kind (`refused`,
+`rejected`, `upstream`, `shape`, `no_workspace`, `ambiguous_workspace`), the match count, the window it sent (and whether
+`ending_at` was sent or omitted) and the figure in dollars: never an id, a header or a body. Exits 1 with no key or when
+any month is unread.
+
+**The key is read from the shell only.** `ANTHROPIC_ADMIN_KEY` is never put in `.env`: `scripts/lib/env.mjs` loads `.env`
+with `override: true`, so a value there would silently win over the shell's, and a file is a place a key leaks from. The
+probe does not load `.env` at all. The key is Sensitive in Vercel, so `vercel env pull` cannot fetch it: type it for the
+one command, `read -s ANTHROPIC_ADMIN_KEY && ANTHROPIC_ADMIN_KEY="$ANTHROPIC_ADMIN_KEY" pnpm probe:anthropic-cost; unset
+ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not set in this shell` and exits 1.
