@@ -78,7 +78,8 @@ export function CartLine({
             name={line.name}
             imageUri={line.imageUri ?? null}
             preview
-            // The name draws at its line; a coarse pointer gets 44px, within the row's 11px padding and the 8px gap beside it.
+            // The name draws at its ~21px line; a coarse pointer gets 44px, reaching under a pixel past the row's 11px padding
+            // (onto the row above's empty bottom padding) and, for a very short name, over the plain text beside it.
             className={`${TOUCH_HIT} text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
           >
             {frontFaceName(line.name, line.layout)}

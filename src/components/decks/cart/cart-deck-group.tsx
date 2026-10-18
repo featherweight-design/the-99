@@ -15,6 +15,7 @@ import { TwoFacedMark } from "../../cards/two-faced-mark";
 import { frontFaceName } from "../../../lib/cards/faces";
 import { OtherWaysPress } from "../../social/spare-markers";
 import { Checkbox } from "../../ui/checkbox";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 export function CartDeckGroup({
   deck,
@@ -97,7 +98,8 @@ export function CartDeckGroup({
                       name={line.name}
                       imageUri={line.imageUri ?? null}
                       preview
-                      className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
+                      // As the by-card line's name (cart-line.tsx): a 44px coarse-pointer hit past the drawn line.
+                      className={`${TOUCH_HIT} text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
                     >
                       {frontFaceName(line.name, line.layout)}
                     </CardDetailTrigger>

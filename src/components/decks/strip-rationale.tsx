@@ -81,7 +81,8 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
           className={
             open
               ? `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent cursor-pointer`
-              : `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
+              // Closed, the row sits 12px under the role cells; the hit drops 1px so its 12.75px reach stays off them.
+              : `${TOUCH_HIT_INLINE} pointer-coarse:after:mt-px font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
           }
         >
           {addPanelCopy.strip.rationaleToggle}
@@ -98,7 +99,7 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
               setOpen(false);
               triggerRef.current?.focus();
             }}
-            className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors"
+            className={`${TOUCH_HIT_INLINE} font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors`}
           >
             {addPanelCopy.strip.rationaleClose}
           </button>
