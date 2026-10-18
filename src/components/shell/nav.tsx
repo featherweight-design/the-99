@@ -205,17 +205,24 @@ function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
       if (!nowhere && !inLock(active, href)) return;
       close(href, true);
     };
-    const onResize = () => show(href);
+    // Re-placed on a resize or scroll; closed when its slot is no longer drawn (the window crossed the breakpoint
+    // into the other navigation), so a hidden note holds nothing off the page.
+    const onResize = () => {
+      const slot = slots.current.get(href);
+      if (!slot || slot.getClientRects().length === 0) setOpen(null);
+      else show(href);
+    };
+    const onScroll = () => show(href);
     // The touch rail's nav scrolls on a short screen, and the note is `fixed`, so a scroll there
     // re-places it the way a resize does (audit V-E3). Scroll does not bubble: listen in capture.
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("scroll", onResize, true);
+    document.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("scroll", onResize, true);
+      document.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
   }, [open, inLock, close, show]);

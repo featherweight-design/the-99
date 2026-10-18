@@ -371,6 +371,19 @@ describe("The lock, desktop rail", () => {
     expect(overPageCount().holds).toBe(1);
   });
 
+  it("closes a note, and lets its hold go, when its navigation is hidden across the breakpoint", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    expect(overPageCount().holds).toBe(1);
+    // The rail is now hidden: its slot draws no box.
+    const rects = vi.spyOn(decks, "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+    act(() => window.dispatchEvent(new Event("resize")));
+    expect(isOpen(decks)).toBe(false);
+    expect(overPageCount().holds).toBe(0);
+    rects.mockRestore();
+  });
+
   it("does not close when the pointer leaves the slot, so it can travel onto the note", () => {
     render(<NavRail locked theme="amonkhet" />);
     const decks = slot("Decks");
