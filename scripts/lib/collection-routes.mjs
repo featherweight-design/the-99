@@ -74,10 +74,17 @@ function routeFor(file) {
  * `[param]` — `revalidatePath` needs the `"page"` type for those and silently does nothing
  * without it.
  */
+/** The public routes, held to the catalog by `check:public-reads` instead. */
+export const PUBLIC_ROUTE_DIRS = ["card", "commander"];
+
 export function collectionRoutes() {
   const cache = new Map();
   return walk(join(SRC, "app"))
     .filter((f) => f.endsWith("/page.tsx"))
+    // The public pages (launch epic F3) reach `db/schema`, which names `collectionItems`, but `check:public-reads` proves
+    // they read catalog tables only. Listing them would revalidate them on every collection write, and `revalidatePath`
+    // also expires every `unstable_cache` entry the route stored: the whole public card cache, for every visitor.
+    .filter((f) => !PUBLIC_ROUTE_DIRS.some((d) => f.startsWith(join(SRC, "app", d) + "/")))
     .filter((f) => readsCollection(f, cache))
     .map((f) => routeFor(f))
     .map((path) => ({ path, dynamic: path.includes("[") }))

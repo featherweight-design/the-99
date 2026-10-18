@@ -750,6 +750,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
   PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
+  PUBLIC_PAGES_ENABLED: { label: "Public pages", description: "The signed-out card and commander pages at /card and /commander. Off, both answer 404." },
   RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
   RULE_ZERO_ENABLED: { label: "Rule 0 check", description: "Seat tonight's pod players and compare their decks' brackets." },
   SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },

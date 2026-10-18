@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
-import { ALLOWED_TABLES, codeOnly, judge, judgeSurface, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
+import { ALLOWED_TABLES, codeOnly, judge, judgeSurface, PAGE_ONLY_MODULES, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
 
@@ -13,9 +13,9 @@ describe("the public loaders, as they stand", () => {
     expect(files).toBeGreaterThan(publicEntries().length);
   });
 
-  it("are not wired to a route: the proxy's public list does not name the card or commander routes (yet)", () => {
+  it("are wired to the two public routes alone (F3 PR 2a): the proxy names each with its slash, never the signed-in lists", () => {
     const proxy = codeOnly(readFileSync("src/proxy.ts", "utf8"));
-    expect(proxy).not.toMatch(/["']\/(card|commander)s?\b/);
+    expect([...proxy.matchAll(/["']\/(card|commander)s?\b[^"']*["']/g)].map((m) => m[0]).sort()).toEqual(['"/card/(.*)"', '"/commander/(.*)"']);
   });
 });
 
@@ -86,7 +86,7 @@ describe("judge fails on what it must", () => {
   it("passes the allowlist and ignores a comment that names a cookie or a table", () => {
     const ok = `// reads no cookies() and never touches pods\n/* auth() is not called */\nimport { cards } from "../../db/schema";\nexport const q = db.select().from(cards);`;
     expect(run({ "src/lib/public/a.ts": ok })).toEqual([]);
-    expect([...ALLOWED_TABLES].sort()).toEqual(["card_bracket_flags", "cards", "commander_support", "commander_support_cards", "printings", "sets"]);
+    expect([...ALLOWED_TABLES].sort()).toEqual(["card_bracket_flags", "cards", "catalog_refreshes", "commander_support", "commander_support_cards", "printings", "sets"]);
   });
 });
 
@@ -148,6 +148,21 @@ describe("the public surface (F3): the page files and every component they draw"
     expect(files).not.toContain("src/db/schema.ts");
     expect(files).not.toContain("src/db/index.ts");
     expect(judgeSurface(files, (f: string) => readFileSync(f, "utf8"), [])).toEqual([]);
+  });
+
+  it("lets a PAGE FILE import the counter and the switch resolver unwalked, and walks them from anywhere else", () => {
+    expect([...PAGE_ONLY_MODULES.keys()]).toEqual(["src/lib/rate/anon.ts", "src/lib/switches/snapshot.ts"]);
+    const files: Record<string, string> = {
+      "src/app/card/[slug]/page.tsx": `import { observeAnonymousHit } from "../../../lib/rate/anon";`,
+      "src/components/public/a.tsx": `import { resolveSwitchEnv } from "../../lib/switches/snapshot";`,
+      "src/lib/rate/anon.ts": "export {}",
+      "src/lib/switches/snapshot.ts": "export {}",
+    };
+    const resolveFn = (_from: string, spec: string) => (spec.endsWith("rate/anon") ? "src/lib/rate/anon.ts" : spec.endsWith("switches/snapshot") ? "src/lib/switches/snapshot.ts" : null);
+    expect(surfaceFiles(["src/app/card/[slug]/page.tsx"], (f) => files[f], resolveFn)).toEqual(["src/app/card/[slug]/page.tsx"]);
+    const fromComponent = surfaceFiles(["src/components/public/a.tsx"], (f) => files[f], resolveFn);
+    expect(fromComponent).toContain("src/lib/switches/snapshot.ts");
+    expect(judgeSurface(fromComponent, (f: string) => files[f], ["src/components/public/a.tsx"]).map((f) => f.path)).toEqual(["src/lib/switches/snapshot.ts"]);
   });
 
   it("follows value imports and not type imports", () => {

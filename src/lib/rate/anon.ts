@@ -8,7 +8,8 @@ import { overLimit, RATE_RULES } from "./rules";
 /**
  * Anonymous reads (launch epic F3 groundwork, PR 2): the public card and commander pages have a visitor and no account.
  * OBSERVE-ONLY, exactly like `observeHit`: after the response it counts the hit under a key made from the visitor's network
- * address and logs what the `public-read` rule WOULD refuse. Nothing is refused, and nothing calls this until the pages ship.
+ * address and logs what the `public-read` rule WOULD refuse. Nothing is refused. The public card page calls it
+ * (`src/app/card/[slug]/page.tsx`, behind `PUBLIC_PAGES_ENABLED`).
  *
  * THE KEY IS PSEUDONYMOUS, NOT UNLINKABLE. `anon:` plus the first 16 hex of SHA-256 over the network address (an IPv6 address
  * on its /64, the unit a household or host is given) and the UTC day. The daily part stops one visitor's rows being joined

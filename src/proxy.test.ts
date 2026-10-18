@@ -439,6 +439,42 @@ describe("a friend link (Social R1 E8)", () => {
   });
 });
 
+describe("the public card and commander pages (launch epic F3)", () => {
+  it("open without a session, and the signed-in commander list does not", async () => {
+    session.mockResolvedValue({ userId: null });
+    await proxy(auth, request("/card/sol-ring-0b3f2c9e6a41"));
+    await proxy(auth, request("/commander/atraxa-praetors-voice-0b3f2c9e6a41"));
+    expect(protect).not.toHaveBeenCalled();
+    await proxy(auth, request("/commanders"));
+    expect(protect).toHaveBeenCalledTimes(1);
+  });
+
+  it("never send a member to About from a public page, nor hand them its cookie", async () => {
+    aboutVersionSeen.mockResolvedValue(0);
+    const res = await proxy(auth, request("/card/sol-ring-0b3f2c9e6a41"));
+    expectPassed(res);
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
+  });
+});
+
+describe("/sign-in, the public pages' way in", () => {
+  const redirectToSignIn = vi.fn((opts: { returnBackUrl: string }) => NextResponse.redirect(`https://accounts.test/sign-in?redirect_url=${encodeURIComponent(opts.returnBackUrl)}`));
+  const withRedirect = Object.assign(vi.fn(async () => ({ userId: null as string | null, redirectToSignIn })), { protect });
+
+  it("sends a stranger to Clerk's hosted sign-in, landing on Home after", async () => {
+    const res = await proxy(withRedirect, request("/sign-in"));
+    expect(redirectToSignIn).toHaveBeenCalledWith({ returnBackUrl: "https://the99.test/" });
+    expect(res?.headers.get("location")).toContain("accounts.test/sign-in");
+    expect(protect).not.toHaveBeenCalled();
+  });
+
+  it("sends a reader already signed in to Home", async () => {
+    withRedirect.mockResolvedValueOnce({ userId: "user_1", redirectToSignIn });
+    const res = await proxy(withRedirect, request("/sign-in"));
+    expect(res?.headers.get("location")).toBe("https://the99.test/");
+  });
+});
+
 describe("the invite claim cookie (signed out, /join/<token>)", () => {
   const TOKEN = "A".repeat(43);
   const join = (path: string, method = "GET", cookie?: string) => {

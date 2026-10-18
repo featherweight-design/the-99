@@ -90,7 +90,10 @@ export function gateApplies(pathname: string): boolean {
   // `/(api|trpc)(.*)`, which matches `/api` with no trailing slash, and a
   // signed-in HTML GET to it would otherwise enter the gate's read and its
   // redirect instead of being left to the handler or to a 404.
-  for (const ns of ["/api", "/trpc", "/_next"]) {
+  // The public card and commander pages (launch epic F3) are drawn the same for every visitor: a member who opens one is
+  // never sent to About from it, nor handed About's cookie for having looked. `/commanders` (the signed-in list) is not
+  // one of them: the prefix needs its slash or to be the whole path.
+  for (const ns of ["/api", "/trpc", "/_next", "/card", "/commander"]) {
     if (pathname === ns || pathname.startsWith(`${ns}/`)) return false;
   }
   return true;
