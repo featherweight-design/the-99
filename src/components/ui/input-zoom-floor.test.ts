@@ -37,7 +37,7 @@ export function subSixteenFields(file: string, text?: string): string[] {
       // variant. `md:text-[16px]`, a fine-pointer-only 16px or `placeholder:text-base` leave the phone at the small one.
       const phone16 = sizes.some((s) => s.px >= 16 && (s.variants === "" || s.variants === "touch:")) || /(?<![\w:[-])text-base(?![\w-])|touch:text-base/.test(written);
       const unguarded = sizes.some((s) => s.px < 16 && s.variants === "") && !phone16;
-      const wide = sizes.some((s) => s.px < 16 && /(^|:)(sm|md|lg|xl|2xl):/.test(s.variants) && !s.variants.includes("[@media(pointer:fine)]:"));
+      const wide = sizes.some((s) => s.px < 16 && /(^|:)(max-)?(sm|md|lg|xl|2xl):/.test(s.variants) && !s.variants.includes("[@media(pointer:fine)]:"));
       if (unguarded || wide) found.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
     }
     ts.forEachChild(n, visit);
@@ -60,6 +60,10 @@ describe("no text input under 16px on a touch screen", () => {
     const padded = `export const A = () => <textarea className="p-[14px_16px] text-[13px]" />;`;
     expect(subSixteenFields("a.tsx", bad)).toEqual(["a.tsx:1"]);
     expect(subSixteenFields("a.tsx", md)).toEqual(["a.tsx:1"]);
+    const maxMd = `export const A = () => <input className="text-[16px] max-md:text-[12px]" />;`;
+    const lg = `export const A = () => <input className="text-[16px] lg:text-[12px]" />;`;
+    expect(subSixteenFields("a.tsx", maxMd)).toEqual(["a.tsx:1"]);
+    expect(subSixteenFields("a.tsx", lg)).toEqual(["a.tsx:1"]);
     const mdFine = `export const A = () => <input className="text-[16px] [@media(pointer:fine)]:md:text-[12px]" />;`;
     expect(subSixteenFields("a.tsx", mdFine)).toEqual([]);
     expect(subSixteenFields("a.tsx", padded)).toEqual(["a.tsx:1"]);
