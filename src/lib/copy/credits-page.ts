@@ -35,7 +35,6 @@ export const creditsPageCopy = {
   /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
   subLink: creditsCopy.link,
   supportEmail: "support@the-99.dev",
-  /** The refunds line around the address, so it can be drawn as a mailto link (`SupportLink`). */
   /** D1/D2: the Manage account interstitial while paid credits are held (plan E6). */
   del: {
     title: (total: number) => `You have ${total} paid ${total === 1 ? "credit" : "credits"}`,
@@ -53,6 +52,7 @@ export const creditsPageCopy = {
     go: "Continue to Manage account",
     close: "Close",
   },
+  /** The refunds line around the address, so it can be drawn as a mailto link (`SupportLink`). */
   refunds: {
     before: "Refunds: email ",
     after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",

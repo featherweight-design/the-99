@@ -90,8 +90,9 @@ async function signIn(page) {
 /** The account's lots and its payments override, as the probe found them, so the `finally` can put them back. */
 async function snapshot(userId) {
   return {
-    grants: await sql`select * from credit_grants where user_id = ${userId}`,
-    overrides: await sql`select * from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`,
+    // As Postgres's own JSON, so a timestamp column (no zone) goes back exactly: the driver would parse it as local time.
+    grants: (await sql`select row_to_json(t)::text as j from credit_grants t where user_id = ${userId}`).map((r) => r.j),
+    overrides: (await sql`select row_to_json(t)::text as j from flag_overrides t where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`).map((r) => r.j),
   };
 }
 
@@ -206,11 +207,11 @@ try {
     await sql`delete from credit_grants where user_id = ${userId}`;
     // Every column, whatever the schema holds by then: each row goes back through its own table's record type.
     for (const g of saved.grants) {
-      await sql`insert into credit_grants select * from json_populate_record(null::credit_grants, ${JSON.stringify(g)}::json)`;
+      await sql`insert into credit_grants select * from json_populate_record(null::credit_grants, ${g}::json)`;
     }
     await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;
     for (const o of saved.overrides) {
-      await sql`insert into flag_overrides select * from json_populate_record(null::flag_overrides, ${JSON.stringify(o)}::json)`;
+      await sql`insert into flag_overrides select * from json_populate_record(null::flag_overrides, ${o}::json)`;
     }
   }
 }

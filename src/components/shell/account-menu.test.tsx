@@ -402,6 +402,36 @@ describe("AccountMenu items", () => {
       }
     });
 
+    it("reads afresh on each open, never deciding on a previous open's answer", async () => {
+      heldPaidAction.mockResolvedValueOnce({ plan: 0, pack: 3 });
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      await act(async () => {});
+      fireEvent.click(trigger()); // closed
+      let answer: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
+      fireEvent.click(trigger()); // reopened: the last read (3 credits) must not decide this press
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      expect(screen.queryByRole("dialog", { name: "You have 3 paid credits" })).toBeNull();
+      await act(async () => answer({ plan: 0, pack: 0 }));
+      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
+      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
+    });
+
+    it("does nothing when the menu was dismissed before the read landed", async () => {
+      let answer: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" })); // a second press while pending
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+      await act(async () => answer({ plan: 0, pack: 0 }));
+      await act(async () => {});
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
+    });
+
     it("waits for a read still in flight before deciding", async () => {
       let answer: (v: unknown) => void = () => {};
       heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));

@@ -494,8 +494,22 @@ export function AccountMenu({
     leaveDialogsForNavigation();
     void clerk.redirectToUserProfile();
   }
+  // The press while the read is in flight: one at a time, and only while the menu it came from is still open.
+  const pressing = useRef(false);
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
   async function onManage() {
-    const now = held === undefined ? await heldPaidAction().catch(() => null) : held;
+    if (pressing.current) return;
+    pressing.current = true;
+    let now: HeldPaid | null;
+    try {
+      now = held === undefined ? await heldPaidAction().catch(() => null) : held;
+    } finally {
+      pressing.current = false;
+    }
+    if (!openRef.current) return;
     if (warnsBeforeDelete(now)) {
       close();
       setWarning(now);
@@ -572,7 +586,11 @@ export function AccountMenu({
         data-account-trigger=""
         {...afterGame}
         ref={triggerAnchor}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Each open reads the held credits afresh: a previous open's answer is never the press's.
+          if (!open) setHeld(undefined);
+          setOpen((v) => !v);
+        }}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
         // outline clear of the adjacent border.
         className="group relative block cursor-pointer p-[3px]"
