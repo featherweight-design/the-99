@@ -20,8 +20,7 @@ import { PendingTrack } from "../shell/pending-track";
 // The two cursor utilities are a pair. Disabling a button suppresses its click
 // but not its cursor, so cursor-pointer alone leaves a dead button still
 // showing a hand; disabled:cursor-default takes it back.
-// Exported for the public not-found's plain-link `Back home` (C3), which wears the primary without being one.
-export const BASE =
+const BASE =
   "font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default";
 
 // Each hover is paired with a disabled: override for the same reason the cursor

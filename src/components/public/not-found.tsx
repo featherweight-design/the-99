@@ -1,8 +1,5 @@
-import { twMerge } from "tailwind-merge";
-
 import { shellCopy } from "../../lib/copy/shell";
-import { NOT_FOUND_ACTION, NotFoundView } from "../shell/not-found-view";
-import { BASE, PRIMARY } from "../ui/button";
+import { NotFoundView } from "../shell/not-found-view";
 import { PublicTopBar } from "./top-bar";
 
 /**
@@ -10,7 +7,7 @@ import { PublicTopBar } from "./top-bar";
  * way out, `Back home`. No `View decks` (it leads behind sign-in), no suggestions, nothing that would need a search. Drawn
  * for an address that does not resolve, an ambiguous one, and every address while the switch is off.
  *
- * `Back home` is a plain `<a>` in the shipped primary's fill, not `PrimaryButton`: every exit from a public page is a plain
+ * `Back home` is a plain `<a>` drawn as C3 draws it (the accent fill, 44px), not `PrimaryButton`: every exit from a public page is a plain
  * link (plan, follow-up B), so it never depends on a soft navigation re-rendering the root layout around it.
  */
 export function PublicNotFound() {
@@ -20,7 +17,10 @@ export function PublicNotFound() {
       <main className="flex flex-1 flex-col">
         <NotFoundView>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a public page's exits are plain links (see above). */}
-          <a href="/" className={twMerge(BASE, PRIMARY, "no-underline", NOT_FOUND_ACTION)}>
+          <a
+            href="/"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[22px] text-[14px] font-semibold text-[color:var(--bg)] no-underline hover:bg-[color:var(--accent-hover)]"
+          >
             {shellCopy.notFound.primaryCta}
           </a>
         </NotFoundView>
