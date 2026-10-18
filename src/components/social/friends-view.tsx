@@ -408,7 +408,7 @@ export function FriendsView({
           held={held}
           onInvite={invites ? openChooser : makeLink}
           inviteRef={invite}
-          inviteCount={invites ? <InviteCountLine count={invites} /> : undefined}
+          inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
         />
         <FriendsList
           friends={listed}

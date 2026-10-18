@@ -25,7 +25,8 @@ const inv = adminCopy.invites;
 const maskCopy = adminMaskCopy.reveal;
 const maskAccounts = adminMaskCopy.accounts;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
-const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_104px_minmax(0,0.7fr)_52px] md:items-center md:gap-[14px]";
+// Invites, then Invited by, are the last two columns (invites pr6a table, M1 Accounts table columns, Position).
+const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_52px_104px_minmax(0,0.7fr)] md:items-center md:gap-[14px]";
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5]";
 /** A revealed row's lines wrap rather than clip: the whole email and id are what the Show was for (A2). */
 const MONO_WHOLE = "font-mono text-[10.5px] leading-[1.5] [overflow-wrap:break-word]";
@@ -104,6 +105,10 @@ function Row({ row, reveal }: { row: AccountRow; reveal: RowReveal }) {
           <span className="sr-only">{copy.cols.credits} </span>
           {row.credits}
         </span>
+        <span className="hidden text-right font-mono text-[13px] text-[color:var(--fg)] md:inline">
+          <span className="sr-only">{copy.featureCols.spent} </span>
+          {row.spend}
+        </span>
         <span data-testid="account-invites-cell" className={`hidden font-mono text-[12px] md:inline ${left === 0 && waiting === 0 ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg)]"}`}>
           <span className="sr-only">{inv.colInvites} </span>
           {left}
@@ -115,10 +120,6 @@ function Row({ row, reveal }: { row: AccountRow; reveal: RowReveal }) {
         >
           <span className="sr-only">{inv.colInvitedBy} </span>
           {invitedByName(invitedBy)}
-        </span>
-        <span className="hidden text-right font-mono text-[13px] text-[color:var(--fg)] md:inline">
-          <span className="sr-only">{copy.featureCols.spent} </span>
-          {row.spend}
         </span>
       </div>
     </li>
@@ -255,9 +256,9 @@ export function AccountsList({
             <span>{copy.cols.account}</span>
             <span>{copy.cols.group}</span>
             <span>{copy.cols.credits}</span>
+            <span className="text-right">{month}</span>
             <span>{inv.colInvites}</span>
             <span>{inv.colInvitedBy}</span>
-            <span className="text-right">{month}</span>
           </div>
           {shown.length === 0 ? (
             !email && query.trim() && <p className="m-0 px-[14px] py-[14px] text-[13px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{copy.noMatch(query.trim())}</p>

@@ -242,9 +242,10 @@ export function AccountInvitesSection({
                 </button>
               }
             >
+              {/* The phone row's address is plain text (pr6a table, M2 Waiting row); desktop's is in `b`. */}
               <span className="md:hidden">
                 {inv.waitingPhone}
-                {strong(w.email)}
+                {w.email}
               </span>
               <span className="hidden md:inline">
                 {inv.waiting(w.how, "")}

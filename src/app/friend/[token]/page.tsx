@@ -32,7 +32,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
         <FriendCard face={null} up={false} />
         <LandingColumn
           kicker={copy.brand}
-          brand
+          signedOut
           title={copy.signedOutTitle}
           body={copy.signedOutBody}
           actions={
@@ -42,7 +42,6 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
             </SignInButton>
           }
           fine={copy.signedOutFine}
-          fineMuted
         />
       </main>
     );
