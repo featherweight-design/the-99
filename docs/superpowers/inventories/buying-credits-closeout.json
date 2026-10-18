@@ -1,0 +1,56 @@
+{
+  "feature": "Buying credits: the line's close-out (U1, U2b, U4, U5's surface; plan-card rows wait on U3b)",
+  "note": "Close-out walk of `2026-10-17-buying-credits-ui.md` against `design/design_handoff_the99_buying_credits`. ONE account STATE per run, seeded on a scratch branch before the run (`docs/superpowers/close-out-buying-credits.md` names each): `rich` (switch on, a 40-credit pack with a $5.31 payment, a 7-credit gift, the free allowance spent and 17 paid runs today) for every row here; `never`, `paused` and `off` for `buying-credits-closeout-page.json`; `gone` for `buying-credits-closeout-gone.json`; `admin` for `buying-credits-closeout-admin.json`. The deletion warning (D1/D2) opens from the shell's account menu, which no step verb presses inside a menu, so it is photographed by `pnpm probe:delete-warning` with `PROBE_SHOTS`. No row presses Buy (a real Stripe Session). The plan card (K1 to K6, R3, L7 live, the chip's expiring line) is added when U3b merges.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "closeout-page",
+      "label": "/credits: head, total over Free, Gift and Packs, the pack offer",
+      "view": "src/components/credits/credits-view.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "closeout-paid-today",
+      "label": "/credits: the paid-today line and meter (17 of 20)",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"paid-today\"]", "scrollTo": "[data-testid=\"paid-today\"]", "settle": 1000 }
+      ]
+    },
+    {
+      "id": "closeout-history",
+      "label": "/credits: purchase history with the paid amount and Receipt, the refund line, the legal links",
+      "view": "src/components/credits/history.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "scroll": 9999, "settle": 1000 }
+      ]
+    },
+    {
+      "id": "closeout-cancelled",
+      "label": "/credits?checkout=cancelled: R5, one quiet line with its ✕",
+      "view": "src/components/credits/return-band.tsx",
+      "steps": [
+        { "goto": "/credits?checkout=cancelled", "wait": "[data-testid=\"credits-total\"]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "closeout-chip",
+      "label": "Account menu open: the credit chip (popover at 1300, sheet at 390)",
+      "view": "src/components/shell/credit-chip.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-testid=\"credits-total\"]", "settle": 800 },
+        { "openAccount": true }
+      ]
+    },
+    {
+      "id": "closeout-line",
+      "label": "Help me choose, words written: the credit line beside the press",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        { "goto": "/decks/new/choose?w=big+dumb+lizards+that+stomp&c=r,g&t=dinosaurs&b=150&k=3", "wait": "button:has-text(\"Find commanders\"):visible ~ p", "settle": 1500, "scrollTo": "button:has-text(\"Find commanders\"):visible" }
+      ]
+    }
+  ]
+}

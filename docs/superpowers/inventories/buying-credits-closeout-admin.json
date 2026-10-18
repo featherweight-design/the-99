@@ -1,0 +1,23 @@
+{
+  "feature": "Buying credits close-out: the admin Payments tab (admin plan A2b, A3)",
+  "note": "Seeded `admin`: the rich state plus half the pack payment refunded, an open dispute on it and the account's buying paused. The server needs `ADMIN_USER_IDS` naming the audit account and `ADMIN_ENV_LABEL` set.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "closeout-admin-top",
+      "label": "/admin/payments: month bar and tiles (Paid says what was refunded)",
+      "view": "src/components/admin/payments-view.tsx",
+      "steps": [
+        { "goto": "/admin/payments", "wait": "[data-testid=\"payments-tiles\"]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "closeout-admin-disputes",
+      "label": "/admin/payments: Disputes and Buying paused with Let them buy",
+      "view": "src/components/admin/blocked-list.tsx",
+      "steps": [
+        { "goto": "/admin/payments", "wait": "[data-testid=\"payments-disputes\"]", "scrollTo": "[data-testid=\"payments-disputes\"]", "settle": 1000 }
+      ]
+    }
+  ]
+}
