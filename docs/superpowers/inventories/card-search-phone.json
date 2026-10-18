@@ -1,4 +1,5 @@
 {
+  "clearAbout": true,
   "feature": "Card search on the phone (plan 2026-10-16-card-search.md, PR C): the header icon, the search sheet S1 to S7, and the handover to card details",
   "note": "Photographed at 360, 375 and 390 against a dev server with CARD_SEARCH_ENABLED, SWAP_TOOLS_ENABLED and FIND_A_DECK_READ_ENABLED on, local-dev's audit account. The two Slow 4G rows put the throttle on only after the page has loaded, and lift it first. S6 (failed) cannot be forced from a browser without breaking the server, so it is proved in search-layer.test.tsx.",
   "widths": [
