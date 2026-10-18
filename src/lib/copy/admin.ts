@@ -61,7 +61,8 @@ export const adminCopy = {
       startsIn: (month: string) => `Starts ${month}.`,
       workspace: "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched.",
       elsewhere: (v: string) => ` Elsewhere ${v}: the other environment and anything else on this workspace.`,
-      ledgerAhead: " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.",
+      ledgerAhead:
+        " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0. Spend from before a key moved to this workspace stays billed where it ran.",
       org: (here: string, others: string) => `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`,
       // The org is read with the workspace, whose row already gives the reason (copy-reviewed: keep).
       orgUnread: "Read with the workspace above, so not read either.",
