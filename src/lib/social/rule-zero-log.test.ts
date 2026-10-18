@@ -55,6 +55,10 @@ describe("seatingHash", () => {
     expect(seatingHash("7a0e0000-0000-4000-8000-000000000002", ROWS)).not.toBe(base);
     // A player changing deck with no reseat: the form drew the old deck, so the save must refuse.
     expect(seatingHash(TABLE, ROWS.map((r, i) => (i === 1 ? { ...r, deckId: "dec0dec0-0000-4000-8000-0000000000ff" } : r)))).not.toBe(base);
+    // A commander or partner changed in place (same deck), or a renamed player: everything the save stores is in it.
+    for (const change of [{ commanderOracleId: "c0c0c0c0-0000-4000-8000-0000000000ff" }, { partnerOracleId: "c0c0c0c0-0000-4000-8000-0000000000fe" }, { displayName: "Renamed" }]) {
+      expect(seatingHash(TABLE, ROWS.map((r, i) => (i === 1 ? { ...r, ...change } : r)))).not.toBe(base);
+    }
   });
 });
 

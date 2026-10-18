@@ -1516,6 +1516,12 @@ describe("logGame", () => {
         expect(stub.state.insertCalls).toHaveLength(0);
       });
 
+      it("refuses, writing nothing, when a seat's commander changed in place since the prefill (same deck)", async () => {
+        tableRows.rows = tableRows.rows.map((r) => (r.seat === 4 ? { ...r, commanderOracleId: "c0c0c0c0-0000-4000-8000-0000000000ff" } : r));
+        expect((await log([{ tableSeat: 4 }])).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
       it("refuses, writing nothing, when the table was reseated since the prefill", async () => {
         tableRows.rows = tableRows.rows.map((r) => (r.seat === 2 ? { ...r, seat: 4 } : r.seat === 4 ? { ...r, seat: 2 } : r));
         expect((await log([{ tableSeat: 2 }])).ok).toBe(false);

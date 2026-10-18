@@ -87,12 +87,19 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
 export type TableSeatRow = Awaited<ReturnType<typeof tableSeatsQuery>>[number];
 
 /**
- * Who sat where, with what: the table, and each seat as `seat:account:deck`, in seat order. Hashed, so no account or
- * deck id leaves the server. The deck is in it because the form draws it: a seat's player changing deck after the
- * prefill would otherwise log a matchup the form never showed.
+ * Who sat where, with what: the table, and each seat as everything a save stores from it (the account, the deck, the
+ * deck's commander and partner, and the name a non-friend's label takes), in seat order. Hashed, so no id leaves the
+ * server. A save refuses when any of it moved since the prefill (a reseat, another deck, a commander changed in place,
+ * a renamed player), because the form would otherwise log a matchup it never showed.
  */
-export function seatingHash(tableId: string, rows: readonly Pick<TableSeatRow, "seat" | "userId" | "deckId">[]): string {
-  const seats = [...rows].sort((a, b) => a.seat - b.seat).map((r) => `${r.seat}:${r.userId}:${r.deckId ?? ""}`).join(",");
+export function seatingHash(
+  tableId: string,
+  rows: readonly Pick<TableSeatRow, "seat" | "userId" | "deckId" | "commanderOracleId" | "partnerOracleId" | "displayName">[],
+): string {
+  const seats = [...rows]
+    .sort((a, b) => a.seat - b.seat)
+    .map((r) => JSON.stringify([r.seat, r.userId, r.deckId, r.commanderOracleId, r.partnerOracleId, r.displayName]))
+    .join(",");
   return createHash("sha256").update(`${tableId}|${seats}`).digest("hex");
 }
 
