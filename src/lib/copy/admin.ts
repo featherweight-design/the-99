@@ -63,10 +63,9 @@ export const adminCopy = {
       elsewhere: (v: string) => ` Elsewhere ${v}: the other environment and anything else on this workspace.`,
       ledgerAhead: " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.",
       org: (here: string, others: string) => `The 99 ${here}, other workspaces ${others} hatched, the default workspace included.`,
-      // Owed to /copy-review: the org is read with the workspace, whose row already gives the reason.
+      // The org is read with the workspace, whose row already gives the reason (copy-reviewed: keep).
       orgUnread: "Read with the workspace above, so not read either.",
     },
-    // Owed to /copy-review.
     orgUnread: "not read",
     /** `time` is `14:05 UTC`, or `17 Oct, 14:05 UTC` when not today. */
     asOf: (time: string) => ` Read from Anthropic at ${time}, about five minutes behind.`,
@@ -84,7 +83,7 @@ export const adminCopy = {
     note: (text: string) => `Note: ${text}`,
     changeCap: "Change the cap",
     changeOrgCap: "Change the org cap",
-    // The keys billed to The 99 (PR 2). Owed to /copy-review.
+    // The keys billed to The 99 (PR 2).
     keys: {
       title: "Keys on The 99",
       meta: "name and hint only",
