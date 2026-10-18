@@ -54,8 +54,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `cost_report` grouped by workspace (The 99, other workspaces and the org), the workspace list (to find the one
   unarchived workspace named The 99), and The 99's `api_keys` (name, redacted hint and status only). The figures are
   cached per five minutes (current month) or hour (past month), a failure is never cached and is held 60 seconds, and a
-  failed key list leaves the figures standing. **Without the key the page degrades, never fails:** the workspace and
-  org rows read this environment's ledger alone with the `no_key` reason. The two caps (`account_cap_usd`, The 99
+  failed key list leaves the figures standing. **Without the key the page degrades, never fails:** the workspace row
+  reads this environment's ledger alone with the `no_key` reason, and the org row reads "not read", pointing at it. The two caps (`account_cap_usd`, The 99
   workspace; `org_cap_usd`, the org) are typed in on the page from Anthropic's console, because Spend Limits are
   Enterprise-only and cannot be read. Never put the key in `.env` (`scripts/lib/env.mjs` loads it with
   `override: true`); `pnpm probe:anthropic-cost` reads it from the shell. Find the reads with
