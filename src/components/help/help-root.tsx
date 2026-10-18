@@ -3,12 +3,13 @@
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { afterDialogsReleased, afterScrollRestored } from "../../lib/a11y/dialog";
-import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
+import { afterDialogsReleased, afterScrollRestored, dialogsUp, visibleFocusables } from "../../lib/a11y/dialog";
+import { HELP_STOP_ID, helpStop, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import type { TargetId } from "../../lib/discovery/targets";
+import { isDrawn } from "../../lib/ui/drawn";
 import { BuilderScreenContext } from "../decks/builder-screen";
 import { HALO_MS, useTargets } from "../discovery/targets-provider";
 import { useYieldMoment } from "../moments/moments-provider";
@@ -38,7 +39,19 @@ type HelpCtx = {
    * moves to and from its lift over card details (R2·9), so focus still has a ? to go back to on close.
    */
   adopt: (el: HTMLElement | null) => void;
+  /** Every ? mounted now, so a close can hand focus to one that is drawn. Returns its own removal. */
+  mount: (el: HTMLElement) => () => void;
 };
+
+/**
+ * A ? focus can go back to: drawn at this width, and not under a modal dialog that stays up (card details at 390
+ * covers the header's ?). The ? lifted over card details is that dialog's own extra stop, so it is never under it.
+ */
+function reachable(el: HTMLElement | null): el is HTMLElement {
+  if (el === null || !el.isConnected || !isDrawn(el)) return false;
+  if (el === helpStop()) return true;
+  return !dialogsUp().some((d) => !d.hasAttribute("data-help-panel") && d.getAttribute("aria-modal") === "true" && !d.contains(el));
+}
 
 const HelpContext = createContext<HelpCtx | null>(null);
 
@@ -84,6 +97,43 @@ function HelpOn({ children }: { children: ReactNode }) {
   );
 
   const close = useCallback(() => setOpen(false), []);
+
+  // Where focus goes on close, read as the panel goes: the ? that opened it if it is still reachable, else another ?
+  // that is. A window resized while the panel is open can leave the opener undrawn: the rail's ? is hidden below `md`
+  // and the header's from it (PR #2040, round 7). None reachable, focus goes into the dialog left up, below.
+  const buttons = useRef(new Set<HTMLElement>());
+  const returnTo = useMemo<{ readonly current: HTMLElement | null }>(
+    () => ({
+      get current() {
+        if (reachable(opener.current)) return opener.current;
+        return [...buttons.current].find(reachable) ?? null;
+      },
+    }),
+    [],
+  );
+  const mount = useCallback((el: HTMLElement) => {
+    buttons.current.add(el);
+    return () => {
+      buttons.current.delete(el);
+    };
+  }, []);
+  // No ? to go back to: the one left is under card details, still up after a resize below `md`. Focus goes into the
+  // card instead of the body. A task later, once the card has drawn itself out from under the panel (it is inert
+  // while the panel is stacked on it, and an inert control takes no focus).
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    const closed = wasOpen.current && !open;
+    wasOpen.current = open;
+    if (!closed) return;
+    const t = window.setTimeout(() => {
+      const at = document.activeElement as HTMLElement | null;
+      if (at !== null && at !== document.body && at.isConnected && isDrawn(at)) return;
+      const top = dialogsUp().findLast((d) => d.getAttribute("aria-modal") === "true");
+      if (top === undefined) return;
+      (visibleFocusables(top)[0] ?? top).focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   const adopt = useCallback((el: HTMLElement | null) => {
     const was = opener.current;
@@ -148,14 +198,14 @@ function HelpOn({ children }: { children: ReactNode }) {
     };
   }, [showMe, targets, endHold]);
 
-  const ctx = useMemo<HelpCtx>(() => ({ open, toggle, prefetch, adopt }), [open, toggle, prefetch, adopt]);
+  const ctx = useMemo<HelpCtx>(() => ({ open, toggle, prefetch, adopt, mount }), [open, toggle, prefetch, adopt, mount]);
 
   return (
     <HelpContext.Provider value={ctx}>
       <BuilderScreenContext.Provider value={setDeckView}>
         {children}
         {open && (
-          <HelpPanel data={data} deckView={deckView} onClose={close} onShowMe={onShowMe} returnFocusRef={opener} />
+          <HelpPanel data={data} deckView={deckView} onClose={close} onShowMe={onShowMe} returnFocusRef={returnTo} />
         )}
       </BuilderScreenContext.Provider>
     </HelpContext.Provider>
@@ -245,13 +295,20 @@ function Button({
   const p = PLACE[place];
   // Intent fetches only from `md` up (R2 gap 6), where the rail's ? lives.
   const intent = place === "rail" ? help.prefetch : undefined;
-  const { adopt } = help;
+  const { adopt, mount } = help;
   const ref = useCallback(
     (el: HTMLButtonElement | null) => {
       buttonRef?.(el);
       adopt(el);
+      if (el === null) return;
+      const unmount = mount(el);
+      // A cleanup replaces React's call with null, so it makes that call itself.
+      return () => {
+        unmount();
+        buttonRef?.(null);
+      };
     },
-    [buttonRef, adopt],
+    [buttonRef, adopt, mount],
   );
   return (
     <button
