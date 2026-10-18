@@ -181,7 +181,7 @@ export async function cachedWorkspaceCost(month: MonthKey, now: Date, deps: Anth
       result = { ok: false, kind: "upstream" };
     }
   }
-  if (result.ok) memo.delete(m);
-  else memo.set(m, { kind: result.kind, ...(result.count === undefined ? {} : { count: result.count }), until: now.getTime() + NEGATIVE_MEMO_MS });
+  // A success needs no clearing: a live memo answers before any read, so one only runs after it expires.
+  if (!result.ok) memo.set(m, { kind: result.kind, ...(result.count === undefined ? {} : { count: result.count }), until: now.getTime() + NEGATIVE_MEMO_MS });
   return result;
 }

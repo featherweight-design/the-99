@@ -252,16 +252,6 @@ describe("cachedWorkspaceCost", () => {
     expect(cache.calls).toHaveLength(2);
     expect(f.fetch.mock.calls.length).toBeGreaterThan(after);
   });
-
-  it("clears the memo once a read succeeds", async () => {
-    let fail = true;
-    const f = fake({ cost: [() => (fail ? json({}, 500) : json(costPage([{ amount: "1", currency: "USD", workspace_id: "wrkspc_99" }])))] });
-    expect(await cachedWorkspaceCost(OCT, NOW, f.deps())).toEqual({ ok: false, kind: "upstream" });
-    fail = false;
-    const t = NOW.getTime() + NEGATIVE_MEMO_MS + 1;
-    expect(await cachedWorkspaceCost(OCT, new Date(t), f.deps())).toMatchObject({ ok: true });
-    expect(await cachedWorkspaceCost(OCT, new Date(t + 1), f.deps())).toMatchObject({ ok: true });
-  });
 });
 
 describe("no route opts out of the fetch and cache behavior this read assumes (L3)", () => {
