@@ -237,6 +237,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   Background: `docs/agents/service-worker.md`.
 - **Loading the deck page's Tuning tools on demand was tried and reverted** (#1639, 2026-10-13). Do not retry without reading the tables at https://github.com/HartiganHM/the-99/pull/1639#issuecomment-6143963075. #1633's cut stands, with its guard `scripts/lib/client-graph.test.mts`.
   Background: `docs/agents/measure.md`.
+- `pnpm measure:strategy` scores each list's strongest strategy axis (read-only, staging): the label themes plus the type-line axes in `src/lib/strategy/axes.ts` (artifacts, enchantments, voltron, vehicles, big creatures by mana value, up to three creature types), each against the catalog and against the commander's EDHREC average, printed apart. Against its own commander a list reads near 0 by construction. No model call.
+  Background: `docs/agents/measure.md`.
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog (read-only). A classifier built from a fixture agrees with that fixture; watch `any` against 129 for a dropped word, since `unreachable` is only a structural invariant.
   Background: `docs/agents/bracket.md`.
 - **The bracket system's classifiers are all PARTIAL, and every surface says so.** The partial-detection strings live beside their classifiers (`oracle-rules.ts`, `combo-features.ts`) and are re-exported by `bracket/rules.ts`. There is no B2/B3 chain-or-loop flag: the only thing that violates bracket 3 is a measured LOOP, an assembled combo Spellbook records as producing infinite turns.
