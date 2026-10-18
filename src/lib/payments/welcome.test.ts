@@ -2,12 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 
 // The transaction's shape, played by hand: whether a tombstone exists, whether the unique index absorbs the insert, and
 // what the insert was asked to write.
-const state = vi.hoisted(() => ({ tombstone: false, conflict: false, values: null as null | Record<string, unknown>, locked: 0, order: [] as string[] }));
+const state = vi.hoisted(() => ({ tombstone: false, conflict: false, values: null as null | Record<string, unknown>, where: null as unknown, lockSql: "", locked: 0, order: [] as string[] }));
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
   const tx = {
-    execute: async () => { state.locked += 1; state.order.push("lock"); },
-    select: () => ({ from: (t: unknown) => ({ where: async () => { state.order.push(t === schema.accountTombstones ? "tombstone" : "other"); return state.tombstone ? [{ id: "h" }] : []; } }) }),
+    execute: async (sqlArg: unknown) => { state.locked += 1; state.order.push("lock"); state.lockSql = JSON.stringify(dialect.sqlToQuery(sqlArg as never).params); },
+    select: () => ({ from: (t: unknown) => ({ where: async (cond: unknown) => {
+      state.order.push(t === schema.accountTombstones ? "tombstone" : "other");
+      state.where = cond;
+      return state.tombstone ? [{ id: "h" }] : [];
+    } }) }),
     insert: () => ({
       values: (v: Record<string, unknown>) => {
         state.values = v;
@@ -19,12 +23,15 @@ vi.mock("../../db", async () => {
   return { db: { transaction: async (cb: (t: typeof tx) => unknown) => cb(tx) } };
 });
 
+import { PgDialect } from "drizzle-orm/pg-core";
+import { tombstoneHash } from "../account/purge";
 import { WELCOME_DAYS, WELCOME_UNITS, welcomeExpiry, grantWelcome } from "./welcome";
 
+const dialect = new PgDialect();
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-10-18T12:00:00Z");
 const on = { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-const reset = (over: Partial<typeof state> = {}) => Object.assign(state, { tombstone: false, conflict: false, values: null, locked: 0, order: [] }, over);
+const reset = (over: Partial<typeof state> = {}) => Object.assign(state, { tombstone: false, conflict: false, values: null, where: null, lockSql: "", locked: 0, order: [] }, over);
 
 describe("grantWelcome", () => {
   it("writes 15 units that expire 30 days after the ACCOUNT was created, not after the call", async () => {
@@ -41,6 +48,13 @@ describe("grantWelcome", () => {
     reset();
     await grantWelcome("user_a", NOW, on, NOW);
     expect(state.order).toEqual(["lock", "tombstone", "insert"]);
+  });
+
+  it("locks the account's invite lock and looks the tombstone up by the account id's hash", async () => {
+    reset();
+    await grantWelcome("user_a", NOW, on, NOW);
+    expect(state.lockSql).toContain("invites:user_a");
+    expect(dialect.sqlToQuery(state.where as never).params).toEqual([tombstoneHash("user_a")]);
   });
 
   it("writes nothing for a deleted account", async () => {

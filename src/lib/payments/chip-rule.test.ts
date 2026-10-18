@@ -12,6 +12,11 @@ describe("the menu chip (M1b)", () => {
     expect(chip(a({ used: 1, plan: 74, pack: 39 }), true, true)).toEqual({ kind: "credits", label: "117 credits", line: null, hollow: false });
   });
 
+  it("a welcome lot is held: counted in the label, and kept when payments are off (D1)", () => {
+    expect(chip(a({ used: 5, welcome: 15 }), true, false)).toMatchObject({ kind: "credits", label: "15 credits", hollow: false });
+    expect(chip(a({ used: 1, welcome: 15 }), false, false)).toMatchObject({ kind: "credits", label: "19 credits" });
+  });
+
   it("never bought, payments on: the free credits alone", () => {
     expect(chip(a())).toEqual({ kind: "free", label: "3 free credits", line: null, hollow: false });
   });

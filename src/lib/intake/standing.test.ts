@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bareStanding, closedBy, formLine, standingLine, toStanding, type Standing } from "./standing";
+import { bareStanding, closedBy, formLine, lineOf, standingLine, toStanding, type Standing } from "./standing";
 
 const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
 
@@ -63,5 +63,14 @@ describe("the paid forms (U2b)", () => {
     expect(formLine(s({ payments: true }))).toMatch(/\nGet more credits$/);
     expect(formLine(s({ payments: false }))).not.toContain("Get more credits");
     expect(formLine(s())).not.toContain("Get more credits");
+  });
+});
+
+describe("a welcome lot rides the Standing (D1)", () => {
+  it("round-trips through toStanding and lineOf, so the client line sees it as held", () => {
+    const now = new Date("2026-10-18T12:00:00Z");
+    const s = toStanding({ used: 5, limit: 5, nextAt: null, reopensAt: now, welcome: 15 }, now);
+    expect(s.welcome).toBe(15);
+    expect(lineOf(s).welcome).toBe(15);
   });
 });

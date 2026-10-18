@@ -16,9 +16,11 @@ import { paymentsEnabled } from "./flag";
 export async function readChip(userId: string, env: NodeJS.ProcessEnv, now: Date = new Date()): Promise<ChipState | null> {
   try {
     const switchOn = paymentsEnabled(env);
-    const [row] = await db.select({ id: creditGrants.id }).from(creditGrants).where(eq(creditGrants.userId, userId)).limit(1);
-    const everBought = row !== undefined;
-    if (!switchOn && !everBought) return null;
+    // A welcome lot is a gift, so it never makes a reader "someone who has bought"; it is still a lot the allowance read
+    // below must see, so a reader holding only one reaches `chipFor`, which turns them away when nothing is held.
+    const sources = await db.select({ source: creditGrants.source }).from(creditGrants).where(eq(creditGrants.userId, userId)).groupBy(creditGrants.source);
+    const everBought = sources.some((r) => r.source !== "welcome");
+    if (!switchOn && sources.length === 0) return null;
     return chipFor({ allowance: await readAllowance(userId, now), switchOn, everBought }, now);
   } catch {
     return null;
