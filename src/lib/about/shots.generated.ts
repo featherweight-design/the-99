@@ -10,6 +10,18 @@ export const SHOTS = {
       "bytes": 23432,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -432,6 +444,12 @@ export const SHOTS = {
       "bytes": 40230,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,
@@ -792,6 +810,18 @@ export const SHOTS = {
       "bytes": 23014,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -1214,6 +1244,12 @@ export const SHOTS = {
       "bytes": 38544,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,
@@ -1574,6 +1610,18 @@ export const SHOTS = {
       "bytes": 23234,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -1996,6 +2044,12 @@ export const SHOTS = {
       "bytes": 39798,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,
@@ -2356,6 +2410,18 @@ export const SHOTS = {
       "bytes": 22726,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -2778,6 +2844,12 @@ export const SHOTS = {
       "bytes": 37428,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,
@@ -3138,6 +3210,18 @@ export const SHOTS = {
       "bytes": 22710,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -3560,6 +3644,12 @@ export const SHOTS = {
       "bytes": 39040,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,
@@ -3920,6 +4010,18 @@ export const SHOTS = {
       "bytes": 22288,
       "quality": 75,
       "entries": {
+        "getting-help": [
+          0.0513,
+          0.7156,
+          0.8974,
+          0.0634
+        ],
+        "about-rebuilt": [
+          0.0513,
+          0.6534,
+          0.8974,
+          0.0622
+        ],
         "themes": [
           0.0513,
           0.394,
@@ -4342,6 +4444,12 @@ export const SHOTS = {
       "bytes": 39200,
       "quality": 75,
       "entries": {
+        "rule-zero": [
+          0.0795,
+          0.7841,
+          0.841,
+          0.0625
+        ],
         "friends": [
           0.041,
           0.2231,

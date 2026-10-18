@@ -18,6 +18,12 @@
 
 /** @type {Record<string, { screen: string, locator: string, reaches?: true, note?: string }>} */
 export const ABOUT_LOCATORS = {
+  // ---- CANDIDATES for the launch-end batch (NOT for merge): the brief's first-listed option in each of calls 1 to 3
+  // (2026-10-18 About batch brief), for Design to judge on real frames. Design's answer replaces these.
+  "getting-help": { screen: "account", locator: "[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']" },
+  "about-rebuilt": { screen: "account", locator: "[role='dialog'] a[href='/about'], [role='menu'] a[href='/about']" },
+  "rule-zero": { screen: "friends", locator: "[data-testid='pod-rule-zero']" },
+
   // ---- home ----------------------------------------------------------------
   "ready-to-build": { screen: "home", locator: "[data-testid='hero-art-link'] >> nth=0" },
   resume: {
