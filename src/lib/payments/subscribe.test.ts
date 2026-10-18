@@ -284,6 +284,8 @@ describe("customer.subscription.updated and .deleted", () => {
     current = subscription();
     await sync();
     expect(db.lots.find((l) => l.externalId === "in_lapsed")?.expiresAt).toBeNull();
+    // The fake cannot see the SQL, so pin it: a keep's write has no "not yet lapsed" guard, a cancel's has one.
+    expect(new PgDialect().sqlToQuery(db.updateWheres.at(-1) as never).sql).not.toContain('"credit_grants"."expires_at" >');
   });
 
   it("limits the expiry write to the account's live plan lots", async () => {
