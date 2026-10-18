@@ -120,15 +120,23 @@ try {
   let route = "";
   // From the Show on, responses go here instead, so the needle check above them stays a check of the masked pages.
   let sink = bodies;
-  page.on("response", async (res) => {
+  // Each body is read asynchronously, so a check waits for the reads still in flight (`drain`) before it counts.
+  const reading = new Set();
+  const drain = () => Promise.all([...reading]);
+  page.on("response", (res) => {
     if (!res.url().startsWith(BASE)) return;
     const type = res.headers()["content-type"] ?? "";
     if (!/text\/html|text\/x-component|application\/json|text\/plain/.test(type)) return;
-    try {
-      sink.push({ route, url: res.url(), method: res.request().method(), type, text: (await res.text()).toLowerCase() });
-    } catch {
+    // The sink as the response arrived: a check that switches it later still files this body where it belongs.
+    const into = sink;
+    const at = route;
+    const read = res
+      .text()
+      .then((text) => into.push({ route: at, url: res.url(), method: res.request().method(), type, text: text.toLowerCase() }))
       // A redirect or an aborted request has no body to read.
-    }
+      .catch(() => {})
+      .finally(() => reading.delete(read));
+    reading.add(read);
   });
 
   const visit = async (path, open = async () => {}) => {
@@ -189,6 +197,7 @@ try {
   });
   await visit("/admin/models");
 
+  await drain();
   for (const n of find) {
     // The shell's account menu names the signed-in reader to themself on every page (`shell.ts` triggerLabel). That
     // one label is the reader's own identity, not a listed account; anywhere else, the owner row included, it counts.
@@ -230,6 +239,7 @@ try {
     report("Show reveals the head", await head.waitFor({ timeout: 10_000 }).then(() => true, () => false));
     await page.waitForLoadState("networkidle");
     report("the revealed head draws the whole email and the Clerk id", Boolean(email) && (await head.innerText()).toLowerCase().includes(email) && (await head.innerText()).includes(id));
+    await drain();
     const carry = shown.filter((b) => email && holds(b.text, email));
     report(
       "the whole email reaches the browser once, in the Show action's response",
@@ -254,6 +264,7 @@ try {
     route = `${target} reload`;
     await page.reload({ waitUntil: "networkidle" });
     report("a reload draws the Show in History with the diamond", (await onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]").count()) >= 1);
+    await drain();
     report("a reload sends no whole email", !reloaded.some((b) => holds(b.text, email)) && !(await page.content()).toLowerCase().includes(email));
 
     // A6, D13: a Show that fails (here the action's request dies on the way) shows nothing and logs nothing; the
@@ -275,6 +286,58 @@ try {
       "a failed Show raises the toast with Try again, reveals no row and logs nothing",
       raised && (await toast.getByRole("button", { name: "Try again" }).count()) === 1 && (await onPage(page, "li[data-revealed]").count()) === 0 && afterFail === atFail,
     );
+
+    // The exact-email lookup (D10 to D13): a hit answers the account's id and nothing else, writes nothing, and the
+    // list narrows to its one masked row (A3); a miss draws no rows (A4); a failure keeps the list and says so (A5).
+    await page.goto(`${BASE}/admin/accounts`, { waitUntil: "networkidle" });
+    // Let the failed Show's toast run out first, so the A5 check below finds only its own.
+    await page.getByRole("alert").waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+    const field = onPageRole(page, "searchbox", /Name, or a whole email/).first();
+    const shot = async (name) => {
+      if (!SHOTS) return;
+      for (const [w, h, tag] of [[1300, 900, "desktop"], [390, 844, "phone"]]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.screenshot({ path: `${SHOTS}/${name}-${tag}.png` });
+      }
+      await page.setViewportSize({ width: 1300, height: 900 });
+    };
+    const [{ n: atLook }] = await sql`select count(*)::int as n from admin_events`;
+    const looked = [];
+    sink = looked;
+    route = "/admin/accounts lookup";
+    await field.fill(email.toUpperCase());
+    report("an address waits for Enter, the list whole (A8)", (await onPage(page, "[data-lookup-line='enter']").count()) === 1);
+    await field.press("Enter");
+    const hit = await onPage(page, "[data-lookup-line='hit']").waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    await page.waitForLoadState("networkidle");
+    await shot("masking-lookup-hit");
+    const one = onPage(page, "[data-testid='account-rows'] li");
+    report("a hit narrows the list to its one masked row, with Show (A3)", hit && (await one.count()) === 1 && (await one.first().getByRole("button", { name: /^Show / }).count()) === 1 && !(await one.first().innerText()).toLowerCase().includes(email));
+    await drain();
+    const answers = looked.filter((b) => b.method === "POST");
+    report(
+      "the lookup's answer carries no name or email, and no response does",
+      answers.length >= 1 && !looked.some((b) => find.some((n) => holds(b.text, n))),
+      `${answers.length} action response(s)`,
+    );
+    await field.fill(`nobody-${Date.now()}@pii-probe.example`);
+    await field.press("Enter");
+    const miss = await onPage(page, "[data-lookup-line='miss']").waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    await shot("masking-lookup-miss");
+    report("a miss draws no rows and no column head (A4)", miss && (await onPage(page, "[data-testid='account-rows']").count()) === 0);
+    await page.route(`${BASE}/admin/accounts`, (r) => (r.request().method() === "POST" ? r.abort() : r.fallback()));
+    await field.fill(email);
+    await field.press("Enter");
+    const lookToast = page.getByRole("alert").filter({ hasText: "Couldn’t look up that email." });
+    const lookRaised = await lookToast.waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    await shot("masking-lookup-failed");
+    await page.unroute(`${BASE}/admin/accounts`);
+    report(
+      "a failed lookup keeps the field and the whole list, with the toast and Try again (A5)",
+      lookRaised && (await field.inputValue()) === email && (await onPage(page, "[data-testid='account-rows'] li").count()) > 1,
+    );
+    const [{ n: afterLook }] = await sql`select count(*)::int as n from admin_events`;
+    report("the lookup writes nothing (D11)", afterLook === atLook, `${atLook} then ${afterLook}`);
   }
 } finally {
   await browser.close();
