@@ -67,8 +67,8 @@ describe("PaymentsView", () => {
     expect(screen.getByText("2 payments · 1 unattributed · $5.40 refunded")).toBeInTheDocument();
     const disputes = within(screen.getByTestId("payments-disputes")).getAllByRole("listitem").map((li) => li.textContent);
     expect(disputes).toEqual([
-      "Mara K. disputed $10.80Open · 40 credits taken back · opened Oct 15",
-      "A deleted account disputed $5.00Won · 0 credits taken back · opened Sep 2 · closed Oct 3",
+      "Mara K. disputed a $10.80 paymentOpen · 40 credits taken back · opened Oct 15",
+      "A deleted account disputed a $5.00 paymentWon · 0 credits taken back · opened Sep 2 · closed Oct 3",
     ]);
     expect(within(screen.getByTestId("payments-blocked")).getByText("Mara K. · since Oct 15")).toBeInTheDocument();
   });

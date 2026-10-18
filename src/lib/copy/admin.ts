@@ -49,7 +49,8 @@ export const adminCopy = {
     disputesHead: "Disputes",
     disputesMeta: "open ones, and any opened or closed this month",
     disputeStatus: { open: "Open", won: "Won", lost: "Lost" },
-    disputeLine: (whom: string, amount: string) => `${whom} disputed ${amount}`,
+    // The payment's own total: a dispute's amount is not stored (K2), and can be less than the payment.
+    disputeLine: (whom: string, amount: string) => `${whom} disputed a ${amount} payment`,
     disputeMeta: (status: string, units: number, opened: string, closed: string | null) =>
       `${status} · ${plural(units, "credit", "credits")} taken back · opened ${opened}${closed ? ` · closed ${closed}` : ""}`,
     purgedAccount: "A deleted account",

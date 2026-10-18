@@ -52,7 +52,7 @@ export function BlockedList({ rows, emptyClassName }: { rows: readonly BlockedRo
       {rows.length === 0 && <p className={emptyClassName}>{c.noBlocked}</p>}
       <ul data-testid="payments-blocked" className="m-0 flex list-none flex-col p-0">
         {rows.map((r) => (
-          <li key={r.userId} className="flex flex-col gap-[8px]">
+          <li key={r.userId} data-account={r.userId} className="flex flex-col gap-[8px]">
             <div className={LINE}>
               <span className="text-[13.5px] text-[color:var(--fg-body)]">{c.blockedLine(r.name, r.since)}</span>
               <button

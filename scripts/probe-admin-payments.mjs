@@ -161,13 +161,13 @@ try {
         on conflict (user_id) do update set purchase_blocked_at = excluded.purchase_blocked_at`;
       await page.reload({ waitUntil: "load" });
       const disputes = onPage(page, "[data-testid='payments-disputes']");
-      check(await disputes.getByText(/disputed \$10\.80/).first().waitFor({ timeout: 20_000 }).then(() => true, () => false), "Disputes names the disputed payment");
+      check(await disputes.getByText(/disputed a \$10\.80 payment/).first().waitFor({ timeout: 20_000 }).then(() => true, () => false), "Disputes names the disputed payment");
       check((await onPage(page, "[data-testid='payments-tiles']").getByText(/\$5\.40 refunded/).count()) === 1, "Paid says what was refunded");
       const blocked = onPage(page, "[data-testid='payments-blocked'] li").filter({ has: page.getByRole("button", { name: "Let them buy" }) });
       const rows = await blocked.count();
       check(rows >= 1, "Buying paused lists the account", String(rows));
-      // The audit account's own row: the one whose name the gift form's pending bar used.
-      const own = onPage(page, "[data-testid='payments-blocked'] li").filter({ hasText: sentence?.match(/gives (.+) 3 credits/)?.[1] ?? "" }).first();
+      // The audit account's own row, by its id: masked names are not unique.
+      const own = onPage(page, `[data-testid='payments-blocked'] li[data-account='${userId}']`);
       await own.getByRole("button", { name: "Let them buy" }).click();
       const clearBar = onPage(page, "[data-testid='clear-pending']");
       check(/1 dispute is still open/.test((await clearBar.textContent()) ?? ""), "the clear names the open dispute it leaves standing");
