@@ -12,7 +12,7 @@
 import { useId, useRef, useState } from "react";
 import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
+import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 
 const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixRole[] }[] = [
   { key: "ramp", roles: ["ramp"] },
@@ -99,7 +99,9 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
               setOpen(false);
               triggerRef.current?.focus();
             }}
-            className={`${TOUCH_HIT_INLINE} font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors`}
+            // `Hide` draws about 32px wide, so it takes TOUCH_HIT's 44px width too (6px each side, inside the 10px gap
+            // and the panel's 13px padding).
+            className={`${TOUCH_HIT} font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors`}
           >
             {addPanelCopy.strip.rationaleClose}
           </button>
