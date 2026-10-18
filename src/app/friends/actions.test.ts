@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   setCommander: vi.fn(),
   createInvite: vi.fn(),
   ensureProfile: vi.fn(),
+  profileAgeMs: vi.fn(),
   currentUser: vi.fn(),
   revokeInvite: vi.fn(),
   redeemInvite: vi.fn(),
@@ -37,7 +38,7 @@ vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/social/friends", () => ({
-  setDisplayName: m.setDisplayName, createInvite: m.createInvite, ensureProfile: m.ensureProfile, revokeInvite: m.revokeInvite,
+  setDisplayName: m.setDisplayName, createInvite: m.createInvite, ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs, revokeInvite: m.revokeInvite,
   redeemInvite: m.redeemInvite, declineInvite: m.declineInvite, readInvite: m.readInvite, unfriend: m.unfriend,
   spendAlreadyFriendsInvite: m.spendAlreadyFriendsInvite,
 }));
@@ -65,6 +66,7 @@ const open = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
+  m.profileAgeMs.mockResolvedValue(null);
   m.requestSwitchEnv.mockResolvedValue(ON);
   m.headers.mockResolvedValue(headersOf({ host: "staging.the-99.dev", "x-forwarded-proto": "https" }));
   m.after.mockImplementation((fn: () => void) => fn());
