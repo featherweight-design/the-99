@@ -5,7 +5,7 @@ import { perfRoute } from "../../../lib/perf/timing";
 import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
-import { loadCompletionPartners, loadInDeckPartners } from "../../../lib/combos/near-miss";
+import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
@@ -24,6 +24,7 @@ import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
+import { loadInDeckPartnersCached } from "../../../lib/combos/in-deck-cache";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
@@ -206,6 +207,21 @@ export default async function DeckBuilderPage({
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
   const indexGenRead = early(perf.timed("indexGeneration", () => indexGeneration()));
+  // THE ROW'S COMBO MARKS start the moment the detail resolves, beside the suggestions read, not after it: the statement needs only
+  // the deck's own card and commander ids. It used to start with the candidate-keyed reads below and, at ~390ms, was the last to
+  // finish. Cached by its inputs (`in-deck-cache.ts`); a read that fails answers null, as it did inline.
+  const inDeckCombosRead = early(
+    detailRead.then((d) =>
+      d
+        ? perf.timed("inDeckCombos", () => loadInDeckPartnersCached({
+            userId,
+            deckId: id,
+            deckOracleIds: d.cards.map((c) => c.oracleId),
+            commanderOracleIds: [d.commander.oracleId, ...(d.partner ? [d.partner.oracleId] : [])],
+          })).catch(() => null)
+        : null,
+    ),
+  );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
     // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and
     // an override flipping it must not be served the entry built under the other basis.
@@ -527,15 +543,9 @@ export default async function DeckBuilderPage({
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
     }, considerLabelDeps(env))).catch(() => null),
-    // THE ROW'S COMBO MARK: each card's two-card combo partner already in this deck, the
-    // commanders counted (rule 3). Swallowed like its neighbours: a failed read draws no mark.
-    perf.timed("inDeckCombos", () => loadInDeckPartners({
-      deckOracleIds: detail.cards.map((c) => c.oracleId),
-      commanderOracleIds: [
-        detail.commander.oracleId,
-        ...(detail.partner ? [detail.partner.oracleId] : []),
-      ],
-    })).catch(() => null),
+    // THE ROW'S COMBO MARK: each card's two-card combo partner already in this deck, the commanders counted (rule 3). Started with the
+    // detail (above), cached by its inputs; swallowed like its neighbours: a failed read draws no mark.
+    inDeckCombosRead,
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
