@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-18T06:40:00Z
+branch read this turn: main c81e35e (handoffs buying_credits, discovery_onboarding R3 + STATES-tour-and-need, social_r3/addendum-friends-home parts, card_carousel README; `components/credits/*`, `shell/credit-chip.tsx`, `shell/account-menu.tsx`, `lib/payments/chip-rule.ts`, `lib/model/credit-line.ts`, `lib/copy/credits.ts`, `lib/copy/credits-page.ts`, `intake/intake-form.tsx`, `lib/intake/standing.ts`, `discovery/first-run-tour.tsx`, `discovery/use-tool-landing.ts`, `lib/discovery/tour-steps.ts`, `cards/fits-door.tsx`, `cards/card-modal.tsx`, `app/globals.css` six theme blocks); open PR #2066 (credits-paid-nbsp)
+
+### Updated in this project
+- **R3 addendum, buying credits and discovery onboarding, for Hugh's audit.** Fourteen items. `design_handoff_the99_buying_credits/addendum-r3/` (Main, Credits-Pack 1–2, Credits-Balance 3/4/7, Credits-Chip 5/6/8/11, Credits-Line 9–10, README) and `design_handoff_the99_discovery_onboarding/addendum-r3/` (Main, Discovery-Landing 12, Discovery-Replay 13–14, Friends on Home parts, art, README). Design's calls for Hugh: 4 (support address in --fg, accent underline), 10 (Get more credits moves from the 390 dock to the Anything else? box; dock 138 → 92px), 12 (Find a deck's landing opens the full sheet at 390). Design canvas: "The 99 · R3 addendum · Buying credits and discovery". Generator, render harness and contrast/numeral measurements in `scratch/r3-addendum-gen/`. Item 4 depends on the text inks addendum: with `--accent-text` approved, the support link just uses it. No PR until Hugh approves.
+
+### Earlier entry
 date: 2026-10-18T06:10:00Z
 branch read this turn: main c81e35e (`app/globals.css` six theme blocks; `lib/theme/color.ts`, `contract.test.ts`, `credit-chip-contrast.test.ts`, `parse-css.ts`, `themes.ts`; `components/shell/credit-chip.tsx`; a sample of `--fg-faint` and `--accent` text sites; handoffs themes, theme_replacement)
 
