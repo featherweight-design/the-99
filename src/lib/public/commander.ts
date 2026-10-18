@@ -106,7 +106,8 @@ export async function loadPublicCommander(slug: string): Promise<PublicCommander
   if (hit.kind !== "ok") return hit;
   // ONE snapshot: the index publisher replaces a header and its dependent lists in one transaction, so reading the header and
   // the signature and similar cards as separate statements could return the old state with the new cards
-  // (`src/lib/edhrec/support-read.ts` documents the same race).
+  // (`src/lib/edhrec/support-read.ts` documents the same race). Repeatable read and NEVER `accessMode: "read only"`: a read-only
+  // transaction on the pooled Neon connection poisons the next transaction taken from the pool (`cuts-read.ts`; `draft-state-snapshot.test.ts` fails on it).
   const read = await db.transaction(async (tx) => {
     const [row] = await tx.select({ card: cards, support: commanderSupport }).from(cards)
       .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId))
@@ -122,7 +123,7 @@ export async function loadPublicCommander(slug: string): Promise<PublicCommander
           .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId)).where(inArray(cards.oracleId, similarIds)),
     ]);
     return { ...row, signature, similar };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (!read) return { kind: "not-found" };
   const commander = shapeCommander(read.card, read.support, read.signature, read.similar);
   return { kind: "ok", commander, canonicalSlug: commander.slug };
