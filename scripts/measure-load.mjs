@@ -927,12 +927,15 @@ function routesFor(deckId) {
     { label: "home", path: "/", pattern: "/" },
     { label: "decks", path: "/decks", pattern: "/decks" },
     { label: "deck", path: `/decks/${deckId}`, pattern: "/decks/[id]" },
-    { label: "collection", path: "/collection" },
-    { label: "commanders", path: "/commanders" },
-    { label: "discover", path: "/discover" },
+    { label: "collection", path: "/collection", pattern: "/collection" },
+    { label: "commanders", path: "/commanders", pattern: "/commanders" },
+    { label: "discover", path: "/discover", pattern: "/discover" },
   ];
   // Named only: /friends is a 404 where the social switch is off, so a default run must not carry it.
   if (ONLY?.has("friends")) routes.push({ label: "friends", path: "/friends", pattern: "/friends" });
+  // Named only, like friends: /about is the reference page and /credits is a 404 for a reader the payments switch turns away.
+  if (ONLY?.has("about")) routes.push({ label: "about", path: "/about", pattern: "/about" });
+  if (ONLY?.has("credits")) routes.push({ label: "credits", path: "/credits" });
   if (ONLY) {
     const unknown = [...ONLY].filter((l) => !routes.some((r) => r.label === l));
     if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);

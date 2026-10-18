@@ -1,4 +1,5 @@
 import { requireUserId } from "../../lib/auth";
+import { perfRoute } from "../../lib/perf/timing";
 import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { getCollectionStats } from "../../lib/home/summary";
@@ -28,11 +29,12 @@ export default async function DiscoverPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const perf = perfRoute("/discover");
   const userId = await requireUserId();
   // The reader's resolved switches (`requestSwitchEnv`), once for the whole render.
   const env = await requestSwitchEnv(userId);
   const params = parseLaneParams(searchParamsToQuery(await searchParams), "discover");
-  const stats = await getCollectionStats(userId);
+  const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
   if (stats.uniqueCards === 0) {
     // No cards: nothing here can be ranked without a collection to rank it against. The words follow the
@@ -59,8 +61,8 @@ export default async function DiscoverPage({
   // the entry, per request: its read can fail, and a failure filed here would hide the control
   // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
   // the per-request cost is the crossing, not the read.
-  const { encoded, oracleIds, basis } = await loadDiscoveryPayload(userId, sort, env);
-  const printedIn = await lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })));
+  const { encoded, oracleIds, basis } = await perf.timed("payload", () => loadDiscoveryPayload(userId, sort, env));
+  const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId }))));
 
   // THE URL'S OWN FIRST WINDOW keeps its draw columns and every other row ships without them
   // (list payload plan, PR 3): only 25 of about 3,000 rows are drawn on arrival, and the art,
