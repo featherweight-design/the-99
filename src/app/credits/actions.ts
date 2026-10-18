@@ -17,6 +17,7 @@ import { createPackCheckout, createPlanCheckout } from "../../lib/payments/check
 import { purchaseBlocked } from "../../lib/payments/blocked";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { isPackId, isPlanId } from "../../lib/payments/packs";
+import { openCardPortal, setPlanCancelling } from "../../lib/payments/plan-manage";
 import { readReturn, receiptUrlFor } from "../../lib/payments/return";
 import type { ReturnRead } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
@@ -87,6 +88,61 @@ export async function buyPlanAction(planId: unknown, actionId: unknown): Promise
     return await createPlanCheckout(stripe, { userId, email: email.emailAddress, planId, actionId: actionId as string });
   } catch (error) {
     console.error(`[checkout] plan failed${stripeType(error)}`);
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/**
+ * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `off`: payments
+ * are off for this reader. `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
+ * (a subscription Stripe does not tag as theirs answers the same, with no detail). `failed`: Stripe or the database did not answer.
+ */
+export type PlanChangeOutcome =
+  | { ok: true; unchanged: boolean }
+  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+
+async function changePlan(cancel: boolean): Promise<PlanChangeOutcome> {
+  const userId = await requireUserId();
+  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  const stripe = stripeClient();
+  if (!stripe) return { ok: false, reason: "unconfigured" };
+  try {
+    const result = await setPlanCancelling(stripe, userId, cancel);
+    if (!result.ok) {
+      if (result.reason === "foreign") console.error("[plan] change refused: the subscription is not tagged as this reader's");
+      return { ok: false, reason: "not_found" };
+    }
+    return { ok: true, unchanged: !result.changed };
+  } catch (error) {
+    console.error(`[plan] change failed${stripeType(error)}`);
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/** Stop the plan renewing at the period end (E4). The webhook, not this, writes our row and the lots' expiry. */
+export async function cancelPlanAction(): Promise<PlanChangeOutcome> {
+  return changePlan(true);
+}
+
+/** Undo a cancel: the plan renews again (E4). */
+export async function keepPlanAction(): Promise<PlanChangeOutcome> {
+  return changePlan(false);
+}
+
+export type ManageCardOutcome =
+  | { ok: true; url: string }
+  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+
+/** Update the card: Stripe's billing portal on The 99's own configuration (E5). Unset `STRIPE_PORTAL_CONFIG` is `unconfigured`. */
+export async function manageCardAction(): Promise<ManageCardOutcome> {
+  const userId = await requireUserId();
+  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  const stripe = stripeClient();
+  if (!stripe) return { ok: false, reason: "unconfigured" };
+  try {
+    return await openCardPortal(stripe, userId);
+  } catch (error) {
+    console.error(`[plan] portal failed${stripeType(error)}`);
     return { ok: false, reason: "failed" };
   }
 }

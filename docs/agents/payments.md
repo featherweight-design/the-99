@@ -97,6 +97,20 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   add the three events to the endpoint, the Price id as `STRIPE_PRICE_PLAN_60`, and the restricted key needs
   Subscriptions read (Checkout's duplicate-plan list) and Invoices read (the invoice webhook and `reconcile:payments` retrieve invoices). Subscriptions write arrives with in-app cancel, U3.
 
+  **Cancel, keep and Update card (U3a, plan E4/E5; no UI yet, the plan card is U3b).** `cancelPlanAction` and
+  `keepPlanAction` (`src/app/credits/actions.ts`, logic in `plan-manage.ts`, rule `plan-manage-rule.ts`) set
+  `cancel_at_period_end` on the reader's plan. Our `subscriptions` table is only how the id is found: the
+  subscription is RE-READ from Stripe and written only when its `metadata.app` is `the-99`, its `metadata.user_id` is the
+  reader and its status holds a plan. A repeat answers `unchanged`; a foreign, ended or absent plan answers `not_found`
+  with no detail; the action writes NOTHING of ours, so the `customer.subscription.updated` webhook stays the single
+  writer of the row and the lots' expiry. `manageCardAction` makes a billing portal Session for the mapped Customer
+  (re-read and tag-checked) on `configuration: STRIPE_PORTAL_CONFIG`, `return_url` = `APP_ORIGIN` + `/credits`; an unset or
+  malformed id answers `unconfigured`, never the account's default configuration (shared with Concert Crawl). All three
+  answer `off` under the payments switch. **Hugh-owned setup:** the restricted key gains Subscriptions WRITE and Customer
+  portal WRITE (Sensitive, as the key already is), and `STRIPE_PORTAL_CONFIG` is the `bpc_...` id of a configuration made
+  once with the Stripe CLI (`billing_portal configurations create`, metadata `app=the-99`; a plain env var, not a secret),
+  set on both Vercel projects. Proof: `pnpm probe:plan-cancel`.
+
 ## The welcome lot (launch epic D1, ruling L5)
 
 - `credit_grants.source = 'welcome'`: 15 units, `expires_at` required (the migration rewrites

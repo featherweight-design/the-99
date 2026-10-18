@@ -12,7 +12,10 @@ const m = vi.hoisted(() => ({
   readReturn: vi.fn(),
   receiptUrlFor: vi.fn(),
   purchaseBlocked: vi.fn(),
+  setPlanCancelling: vi.fn(),
+  openCardPortal: vi.fn(),
 }));
+vi.mock("../../lib/payments/plan-manage", () => ({ setPlanCancelling: m.setPlanCancelling, openCardPortal: m.openCardPortal }));
 vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
@@ -21,7 +24,7 @@ vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout, createPlanCheckout: m.createPlanCheckout }));
 vi.mock("../../lib/payments/return", () => ({ readReturn: m.readReturn, receiptUrlFor: m.receiptUrlFor }));
 
-import { buyPackAction, buyPlanAction, readReturnAction, receiptAction } from "./actions";
+import { buyPackAction, buyPlanAction, cancelPlanAction, keepPlanAction, manageCardAction, readReturnAction, receiptAction } from "./actions";
 
 const ACTION = "11111111-1111-4111-8111-111111111111";
 const verified = { primaryEmailAddress: { emailAddress: "a@x.dev", verification: { status: "verified" } } };
@@ -183,5 +186,68 @@ describe("receiptAction", () => {
     m.receiptUrlFor.mockRejectedValueOnce(new Error("boom"));
     expect(await receiptAction("cs_1")).toEqual({ ok: false, reason: "failed" });
     log.mockRestore();
+  });
+});
+
+describe("cancelPlanAction / keepPlanAction", () => {
+  beforeEach(() => {
+    m.setPlanCancelling.mockResolvedValue({ ok: true, changed: true });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  it("sets and clears cancel_at_period_end for the signed-in reader", async () => {
+    expect(await cancelPlanAction()).toEqual({ ok: true, unchanged: false });
+    expect(m.setPlanCancelling).toHaveBeenLastCalledWith({}, "user_a", true);
+    expect(await keepPlanAction()).toEqual({ ok: true, unchanged: false });
+    expect(m.setPlanCancelling).toHaveBeenLastCalledWith({}, "user_a", false);
+  });
+  it("answers unchanged for a repeat", async () => {
+    m.setPlanCancelling.mockResolvedValue({ ok: true, changed: false });
+    expect(await cancelPlanAction()).toEqual({ ok: true, unchanged: true });
+  });
+  it("is off, touching nothing, when the switch is off or killed", async () => {
+    for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
+      m.requestSwitchEnv.mockResolvedValueOnce(env);
+      expect(await cancelPlanAction()).toEqual({ ok: false, reason: "off" });
+    }
+    expect(m.stripeClient).not.toHaveBeenCalled();
+    expect(m.setPlanCancelling).not.toHaveBeenCalled();
+  });
+  it("is unconfigured without a Stripe client", async () => {
+    m.stripeClient.mockReturnValue(null);
+    expect(await keepPlanAction()).toEqual({ ok: false, reason: "unconfigured" });
+  });
+  it("answers not_found for no plan, a foreign subscription or an ended one, without detail", async () => {
+    for (const reason of ["not_found", "foreign", "ended"]) {
+      m.setPlanCancelling.mockResolvedValueOnce({ ok: false, reason });
+      expect(await cancelPlanAction()).toEqual({ ok: false, reason: "not_found" });
+    }
+  });
+  it("answers failed on a throw, leaking nothing", async () => {
+    m.setPlanCancelling.mockRejectedValue(new Error("cus_secret sub_123"));
+    expect(await cancelPlanAction()).toEqual({ ok: false, reason: "failed" });
+  });
+});
+
+describe("manageCardAction", () => {
+  beforeEach(() => {
+    m.openCardPortal.mockResolvedValue({ ok: true, url: "https://billing.stripe.com/p/x" });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  it("returns the portal url", async () => {
+    expect(await manageCardAction()).toEqual({ ok: true, url: "https://billing.stripe.com/p/x" });
+    expect(m.openCardPortal).toHaveBeenCalledWith({}, "user_a");
+  });
+  it("is off when the switch is off", async () => {
+    m.requestSwitchEnv.mockResolvedValueOnce({ PAYMENTS_ENABLED: "off" });
+    expect(await manageCardAction()).toEqual({ ok: false, reason: "off" });
+    expect(m.openCardPortal).not.toHaveBeenCalled();
+  });
+  it("passes unconfigured and not_found through, and fails closed on a throw", async () => {
+    m.openCardPortal.mockResolvedValueOnce({ ok: false, reason: "unconfigured" });
+    expect(await manageCardAction()).toEqual({ ok: false, reason: "unconfigured" });
+    m.openCardPortal.mockResolvedValueOnce({ ok: false, reason: "not_found" });
+    expect(await manageCardAction()).toEqual({ ok: false, reason: "not_found" });
+    m.openCardPortal.mockRejectedValueOnce(new Error("x"));
+    expect(await manageCardAction()).toEqual({ ok: false, reason: "failed" });
   });
 });
