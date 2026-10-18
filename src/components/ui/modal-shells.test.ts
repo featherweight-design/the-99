@@ -176,17 +176,18 @@ export function shellFailures(shell: Shell, text?: string): string[] {
 // VISUAL viewport, not the layout viewport dvh measures. Keyboard framing is visual-viewport framing, which
 // SocialModal does with --social-vv-h; the other input-bearing shells get it in a follow-up. Every height and
 // max-height under src/components is swept, class token or style key, so a new modal cannot bring vh back.
-// `h-screen` is 100vh.
+// `h-screen`, `max-h-screen` and `min-h-screen` are 100vh.
 const VH_TOKEN = /(?<![\w-])(?:[\w[\]():@-]+:)*(?:max-h-|h-|min-h-)(?:\[[^\]\s]*\]|screen)(?![\w-])/g;
 const VH_STYLE = /\b(?:maxHeight|height|minHeight)\s*:\s*["'`][^"'`]*/g;
 /** A vh length, once dvh, svh and lvh are struck out. */
 const hasVh = (v: string) => /\dvh\b/.test(v.replace(/[dsl]vh/g, ""));
-const isVh = (v: string) => hasVh(v) || /(?:^|:)(?:max-h|h)-screen$/.test(v);
+const isVh = (v: string) => hasVh(v) || /(?:^|:)(?:min-h|max-h|h)-screen$/.test(v);
 
 /** A `vh` height that is not a modal's cap, with the reason it may stay, by `file` and the exact token. */
 export const VH_ALLOWED: { file: string; token: string; why: string }[] = [
   { file: "src/components/shell/nav.tsx", token: "h-screen", why: "the desktop rail is a sticky page column, not a modal, and its touch form is already `touch:h-dvh`" },
   { file: "src/components/decks/builder-shell.tsx", token: "h-screen", why: "a comment naming the frame the deck page used to have, not a class" },
+  { file: "src/components/decks/cart/cart-view.tsx", token: "min-h-screen", why: "a comment explaining why the cart's desktop box is flex-none, not a class" },
 ];
 
 /** Every `vh` height or max-height in `text`, as `file:line: token`, less the allowlist. */
@@ -218,7 +219,9 @@ describe("no vh height under src/components", () => {
     expect(vhHeights("f.tsx", 'className="md:max-h-[calc((100vh+min(620px,85dvh))/2-60px)]"')).toHaveLength(1);
     expect(vhHeights("f.tsx", 'style={{ maxHeight: "min(85vh, 760px)" }}')).toEqual(['f.tsx:1: maxHeight: "min(85vh, 760px)']);
     expect(vhHeights("f.tsx", 'className="h-screen"')).toEqual(["f.tsx:1: h-screen"]);
-    expect(vhHeights("f.tsx", 'className="max-h-[86dvh] h-[100svh] w-[50vw] min-h-screen"')).toEqual([]);
+    expect(vhHeights("f.tsx", 'className="max-h-[86dvh] h-[100svh] w-[50vw]"')).toEqual([]);
+    // `min-h-screen` is a 100vh min-height, which would override a modal's dvh cap.
+    expect(vhHeights("f.tsx", 'className="min-h-screen"')).toEqual(["f.tsx:1: min-h-screen"]);
     expect(VH_ALLOWED.every((a) => vhHeights(a.file, read(a.file)).length === 0 && read(a.file).includes(a.token))).toBe(true);
   });
 });

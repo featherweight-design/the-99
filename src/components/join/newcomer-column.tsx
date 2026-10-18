@@ -9,7 +9,7 @@ import { Emphasis } from "./emphasis";
 
 /** The page frame both pages share: top-aligned, padding 44/24/24/24, the accent wash at 50% 18%. */
 export const NEWCOMER_MAIN =
-  "flex min-h-screen flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
+  "flex min-h-dvh flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
 
 /** The invite-only page's frame (I1, I2): 56px under the top on a phone, the fan beside the column from `md`. */
 export const INVITE_MAIN = NEWCOMER_MAIN.replace("pt-[44px]", "pt-[56px]") + " md:flex-row md:justify-center md:gap-[64px]";
