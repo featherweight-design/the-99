@@ -436,7 +436,9 @@ try {
       let note = "";
       try {
         await run(page, row.steps);
-        await page.screenshot({ path: file });
+        // `"fullPage": true` (on the inventory or one row) photographs the whole page rather than the viewport: a public
+        // page (F3) is read top to bottom, and its last section is where a state's difference shows.
+        await page.screenshot({ path: file, fullPage: row.fullPage ?? inventory.fullPage ?? false });
       } catch (error) {
         note = String(error).split("\n")[0].slice(0, 120);
         await page.screenshot({ path: file }).catch(() => {});

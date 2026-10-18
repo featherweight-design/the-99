@@ -13,8 +13,16 @@ const c = publicPagesCopy.card;
 const cssUrl = (uri: string) => `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
 const art = (uri: string): CSSProperties => ({ backgroundImage: cssUrl(uri), backgroundSize: "cover", backgroundPosition: "center" });
 
-/** The card box: 272 by 380 on the phone, 336 by 469 from `md` (A1 to A4), always 63/88 with a 14px radius. */
-const BOX = "relative w-[272px] h-[380px] md:w-[336px] md:h-[469px] flex-none rounded-[14px]";
+/**
+ * The card box, always 63/88. The card page's: 272 by 380 on the phone, 336 by 469 from `md`, 14px radius (A1 to A4). The
+ * commander page draws it a little smaller on the phone and larger from `md`: 248 by 346 at 13px, then 344 by 481 at 14px
+ * (B1 to B4).
+ */
+const BOXES = {
+  card: "relative w-[272px] h-[380px] md:w-[336px] md:h-[469px] flex-none rounded-[14px]",
+  commander: "relative w-[248px] h-[346px] md:w-[344px] md:h-[481px] flex-none rounded-[13px] md:rounded-[14px]",
+} as const;
+const RADII = { card: "rounded-[14px]", commander: "rounded-[13px] md:rounded-[14px]" } as const;
 
 /**
  * The public card page's card (A1 to A4, README call 2): the image with card details' hover tilt, the identity gradient
@@ -31,6 +39,7 @@ export function PublicCardArt({
   backImageUri,
   colorIdentity,
   printing,
+  size = "card",
 }: {
   name: string;
   faces: { name: string }[];
@@ -39,7 +48,10 @@ export function PublicCardArt({
   colorIdentity: string[];
   /** The pictured printing as `SOC · 8`, or null when nothing is pictured. */
   printing: string | null;
+  /** Which page's box (`BOXES`). */
+  size?: keyof typeof BOXES;
 }) {
+  const BOX = BOXES[size];
   const [flipped, setFlipped] = useState(false);
   const [turning, setTurning] = useState(false);
   const [announcement, setAnnouncement] = useState("");
@@ -104,7 +116,7 @@ export function PublicCardArt({
             aria-hidden
             data-testid="public-card-turn"
             data-face={flipped ? "back" : "front"}
-            className="absolute inset-0 rounded-[14px] anim-card-turn"
+            className={`absolute inset-0 ${RADII[size]} anim-card-turn`}
             onTransitionEnd={(e) => {
               if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
               setTurning(false);
@@ -115,7 +127,7 @@ export function PublicCardArt({
             <CardFaces
               front={art(imageUri)}
               back={art(backImageUri)}
-              radius="rounded-[14px]"
+              radius={RADII[size]}
               seam="inset 0 0 0 1px rgba(0,0,0,0.3)"
               testIdPrefix="public-card"
             />
