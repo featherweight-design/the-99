@@ -38,6 +38,7 @@ export const cardSearchCopy = {
   row: {
     inDeck: (deck: string) => `in ${deck}`,
     moreDecks: (n: number) => `+${n}`,
+    // The bookmark's words, said once: inside the row's one sentence below, never again on the bookmark itself.
     wishlistAria: "on your wishlist",
     // The whole row's accessible name.
     aria: (name: string, owned: number, decks: readonly string[], wish: boolean) =>
@@ -49,7 +50,7 @@ export const cardSearchCopy = {
           : decks.length === 1
             ? `in ${decks[0]}`
             : `in ${decks[0]} and ${decks.length - 1} more ${decks.length === 2 ? "deck" : "decks"}`,
-        wish ? "on your wishlist" : null,
+        wish ? cardSearchCopy.row.wishlistAria : null,
       ]
         .filter(Boolean)
         .join(", "),

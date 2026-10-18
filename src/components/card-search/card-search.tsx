@@ -41,6 +41,14 @@ import type { OpenCard, SearchLayerProps } from "./search-layer";
 export const SEARCH_DEBOUNCE_MS = 150;
 export const SEARCH_MIN_CHARS = 2;
 
+/**
+ * Card search's clear ✕, restyled through `SearchField`'s `clearClassName` (the shared default, a ✕ in a
+ * filled circle, stays as other surfaces' boards draw it). The board's `.clr` is a bare ✕: no fill, no
+ * radius, `--fg-faint` (the default's), 13px; 32x32 on the phone, 28px wide on the desktop.
+ */
+export const CARD_SEARCH_CLEAR_PHONE = "h-8 w-8 rounded-none bg-transparent text-[13px]";
+export const CARD_SEARCH_CLEAR_DESKTOP = "w-[28px] rounded-none bg-transparent text-[13px]";
+
 const loadLayer = () => import("./search-layer");
 
 const LISTBOX_ID = "card-search-list";
@@ -536,7 +544,8 @@ function PhoneFrame() {
         {cardSearchCopy.label}
       </h2>
       <div className="flex items-center gap-[6px] border-b border-b-[color:var(--border)] py-3 pr-2 pl-[14px] pt-[14px]">
-        {/* The app's one search field (`SearchField`): its ✕, its focus on the box, WebKit's own ✕ hidden. */}
+        {/* The app's one search field (`SearchField`): its ✕, its focus on the box, WebKit's own ✕ hidden.
+            The board's ✕ is bare (`.clr`): 32x32, `--fg-faint`, 13px, no filled circle. */}
         <SearchField
           ref={inputRef}
           containerClassName="h-11 min-w-0 flex-1 rounded-[10px] border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] pr-[6px] pl-[13px]"
@@ -562,6 +571,7 @@ function PhoneFrame() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onFieldKey}
           onClear={() => setQuery("")}
+          clearClassName={CARD_SEARCH_CLEAR_PHONE}
         />
         <button
           type="button"
