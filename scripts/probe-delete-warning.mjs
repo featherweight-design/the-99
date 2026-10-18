@@ -10,7 +10,7 @@
 //   e  a welcome lot only (a gift, not a purchase): no warning
 // "Goes to Clerk" means the page started a navigation off this origin; it is recorded and aborted, never followed.
 //
-// IT WRITES: the signed-in account's `credit_grants` (paid and welcome lots it seeds and removes) and one
+// IT WRITES: the signed-in account's `credit_grants` (lots it seeds and removes; its own lots parked, then restored) and one
 // `flag_overrides` row for `PAYMENTS_ENABLED` on that account. So it refuses anything but a scratch branch, by the
 // branch the database reports (`assertScratchBranch`), and restores both tables for the account in a `finally`.
 //
@@ -96,12 +96,21 @@ async function snapshot(userId) {
   };
 }
 
+// The account's own lots are PARKED, never deleted: a lot a model call spent is referenced by
+// `model_calls.credit_grant_id` (no cascade), so a delete would abort. Parking revokes every unit, which empties the lot
+// for `remaining`; the `finally` puts `revoked_units` and `expires_at` back. Only the probe's own lots are deleted.
+const dropProbeLots = (userId) => sql`delete from credit_grants where user_id = ${userId} and external_id like ${`${MARK}-%`}`;
+
 async function setCase(userId, { plan = 0, pack = 0, welcome = 0, payments }) {
-  await sql`delete from credit_grants where user_id = ${userId}`;
+  await dropProbeLots(userId);
+  await sql`update credit_grants set revoked_units = units where user_id = ${userId} and (external_id is null or external_id not like ${`${MARK}-%`})`;
   const future = new Date(Date.now() + 20 * 86_400_000);
+  // One welcome lot per account (`credit_grants_welcome_once`): an account that already has one lends it to the case.
+  const [own] = welcome ? await sql`select id from credit_grants where user_id = ${userId} and source = 'welcome'` : [];
+  if (own) await sql`update credit_grants set revoked_units = greatest(units - ${welcome}, 0), expires_at = ${future} where id = ${own.id}`;
   if (plan) await sql`insert into credit_grants (user_id, source, units, expires_at, external_id) values (${userId}, 'plan', ${plan}, ${future}, ${`${MARK}-plan`})`;
   if (pack) await sql`insert into credit_grants (user_id, source, units, external_id) values (${userId}, 'pack', ${pack}, ${`${MARK}-pack`})`;
-  if (welcome) await sql`insert into credit_grants (user_id, source, units, expires_at, external_id) values (${userId}, 'welcome', ${welcome}, ${future}, ${`${MARK}-welcome`})`;
+  if (welcome && !own) await sql`insert into credit_grants (user_id, source, units, expires_at, external_id) values (${userId}, 'welcome', ${welcome}, ${future}, ${`${MARK}-welcome`})`;
   await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;
   await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by) values ('PAYMENTS_ENABLED', 'user', ${userId}, ${payments ? "on" : "off"}, ${MARK}, ${MARK})`;
 }
@@ -203,11 +212,12 @@ try {
 } finally {
   await browser.close();
   if (userId && saved) {
-    // Put the account back as it was found.
-    await sql`delete from credit_grants where user_id = ${userId}`;
-    // Every column, whatever the schema holds by then: each row goes back through its own table's record type.
+    // Put the account back as it was found: the probe's lots go, and each parked lot takes back the two columns
+    // parking and a lent welcome lot moved, read through the table's own record type so the timestamp is exact.
+    await dropProbeLots(userId);
     for (const g of saved.grants) {
-      await sql`insert into credit_grants select * from json_populate_record(null::credit_grants, ${g}::json)`;
+      await sql`update credit_grants c set revoked_units = r.revoked_units, expires_at = r.expires_at
+        from json_populate_record(null::credit_grants, ${g}::json) r where c.id = r.id`;
     }
     await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;
     for (const o of saved.overrides) {

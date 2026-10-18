@@ -432,6 +432,26 @@ describe("AccountMenu items", () => {
       expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
     });
 
+    it("drops a press from a dismissed opening even after the menu reopens, and the new opening presses for itself", async () => {
+      let first: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValue(new Promise((r) => { first = r; }));
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+      let second: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValue(new Promise((r) => { second = r; }));
+      fireEvent.click(trigger()); // reopened before the first read landed
+      await act(async () => first({ plan: 3, pack: 0 }));
+      await act(async () => {});
+      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+      expect(screen.queryByRole("menu")).not.toBeNull();
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      await act(async () => second({ plan: 0, pack: 0 }));
+      await waitFor(() => expect(redirectToUserProfile).toHaveBeenCalledOnce());
+    });
+
     it("waits for a read still in flight before deciding", async () => {
       let answer: (v: unknown) => void = () => {};
       heldPaidAction.mockReturnValue(new Promise((r) => { answer = r; }));

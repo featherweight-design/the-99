@@ -494,22 +494,25 @@ export function AccountMenu({
     leaveDialogsForNavigation();
     void clerk.redirectToUserProfile();
   }
-  // The press while the read is in flight: one at a time, and only while the menu it came from is still open.
-  const pressing = useRef(false);
-  const openRef = useRef(open);
-  useEffect(() => {
-    openRef.current = open;
+  // The press while the read is in flight belongs to the opening it was made in: one press per opening, and a
+  // dismissal (or unmount) ends that opening, so a press it left in flight does nothing when it resolves, even
+  // after the menu reopens. `opening` moves on every change of `open` and on unmount.
+  const opening = useRef(0);
+  const pressedIn = useRef<number | null>(null);
+  useEffect(() => () => {
+    opening.current++;
   }, [open]);
   async function onManage() {
-    if (pressing.current) return;
-    pressing.current = true;
+    const at = opening.current;
+    if (pressedIn.current === at) return;
+    pressedIn.current = at;
     let now: HeldPaid | null;
     try {
       now = held === undefined ? await heldPaidAction().catch(() => null) : held;
     } finally {
-      pressing.current = false;
+      if (pressedIn.current === at) pressedIn.current = null;
     }
-    if (!openRef.current) return;
+    if (opening.current !== at) return;
     if (warnsBeforeDelete(now)) {
       close();
       setWarning(now);
