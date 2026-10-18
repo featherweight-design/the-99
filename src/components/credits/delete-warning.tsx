@@ -45,7 +45,7 @@ export function DeleteWarning({
         <p className="m-0 text-[14px] leading-[1.5] text-[color:var(--fg-body)]">{c.says(held.plan, held.pack)}</p>
         <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">
           {c.refundBefore}
-          <SupportLink />
+          <SupportLink ground="raised" />
           {c.refundAfter}
         </p>
         <button
