@@ -19,8 +19,8 @@ const DEFAULT_CARDS = ["348c67ef9ccc", "907ae51722d5", "b0b6be0c41cf", "6ad8011d
 const DEFAULT_COMMANDERS = ["977f9390e01d", "52241b9c7a69", "77a9e7cf76e9", "f61c1dc42f09", "68418069f615", "4c1c1537e519", "92023a5da143"];
 const ids = (value, fallback) => (value ?? fallback.join(",")).split(",").map((s) => s.trim()).filter(Boolean);
 const KINDS = [
-  { kind: "card", ids: ids(process.env.PROBE_CARDS, DEFAULT_CARDS), marker: 'data-testid="public-card-page"', titleEnd: " · The 99" },
-  { kind: "commander", ids: ids(process.env.PROBE_COMMANDERS, DEFAULT_COMMANDERS), marker: 'data-testid="public-commander-identity"', titleEnd: " · Commander · The 99" },
+  { kind: "card", ids: ids(process.env.PROBE_CARDS, DEFAULT_CARDS), testid: "public-card-page", titleEnd: " · The 99" },
+  { kind: "commander", ids: ids(process.env.PROBE_COMMANDERS, DEFAULT_COMMANDERS), testid: "public-commander-identity", titleEnd: " · Commander · The 99" },
 ];
 const UNKNOWN = process.env.PROBE_UNKNOWN ?? "000000000000";
 
@@ -73,7 +73,7 @@ const locationPath = (res) => {
   return loc ? new URL(loc, BASE).pathname : null;
 };
 
-for (const { kind, ids: kindIds, marker, titleEnd } of KINDS) {
+for (const { kind, ids: kindIds, testid, titleEnd } of KINDS) {
   for (const id of kindIds) {
     const bare = await get(`/${kind}/${id}`);
     const canonical = locationPath(bare);
@@ -87,7 +87,7 @@ for (const { kind, ids: kindIds, marker, titleEnd } of KINDS) {
     const page = await get(canonical);
     const html = await page.text();
     check(`${canonical}: 200`, page.status === 200, String(page.status));
-    check(`${canonical}: draws the ${kind} page`, html.includes(marker));
+    check(`${canonical}: draws the ${kind} page`, html.includes(`data-testid="${testid}"`));
     const title = meta(html, "og:title");
     check(`${canonical}: og:title`, Boolean(title?.endsWith(titleEnd)), title ?? "absent");
     check(`${canonical}: twitter:card summary_large_image`, meta(html, "twitter:card") === "summary_large_image", meta(html, "twitter:card") ?? "absent");
@@ -112,8 +112,9 @@ for (const { kind, ids: kindIds, marker, titleEnd } of KINDS) {
   // read for the public not-found, and the MARKUP (scripts removed) for `View decks`: the root layout's own not-found rides
   // in every page's payload, unrendered, and naming it there proves nothing. The browser half is the contact sheet's C3 row.
   const markup = missingHtml.replace(/<script\b[\s\S]*?<\/script>/gi, "");
-  // The segment's not-found rides in the page's payload too, so it is the 404 and the ABSENT page that make it this.
-  check(`/${kind}/${UNKNOWN}: the public not-found, and no ${kind} page`, missingHtml.includes("public-not-found") && missingHtml.includes("no page here") && !missingHtml.includes(marker));
+  // The segment's not-found rides in the page's payload too, so it is the 404 and the ABSENT page that make it this. The
+  // page's testid is searched BARE: in the payload it is JSON (`"data-testid":"..."`), never the attribute form.
+  check(`/${kind}/${UNKNOWN}: the public not-found, and no ${kind} page`, missingHtml.includes("public-not-found") && missingHtml.includes("no page here") && !missingHtml.includes(testid));
   check(`/${kind}/${UNKNOWN}: no View decks drawn`, !markup.includes("View decks"));
   const missingImage = await get(`/${kind}/${UNKNOWN}/opengraph-image`);
   check(`/${kind}/${UNKNOWN}/opengraph-image: 404`, missingImage.status === 404, String(missingImage.status));
