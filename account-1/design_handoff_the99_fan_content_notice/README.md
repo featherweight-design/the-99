@@ -1,4 +1,4 @@
-# The 99 · Fan Content notice · R2 (for Hugh's sign-off, 2026-10-17)
+# The 99 · Fan Content notice · approved R2 (Hugh, 2026-10-17)
 
 A small, muted legal notice at the foot of every page, signed in or out, in all six themes, and one prose page for `/privacy` and `/terms` that carries it. Launch epic A0; the build is A1.
 
