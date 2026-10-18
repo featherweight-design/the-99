@@ -4,6 +4,8 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GameLogForm } from "./game-log-form";
+import { GamesPanel } from "./games-panel";
+import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
@@ -18,7 +20,7 @@ const hit = (oracleId: string, name: string) => ({
 });
 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
-vi.mock("../../app/decks/actions", () => ({ logGame: (id: string, input: Record<string, unknown>) => logGame(id, input) }));
+vi.mock("../../app/decks/actions", () => ({ logGame: (id: string, input: Record<string, unknown>) => logGame(id, input), deleteGame: async () => ({ ok: true }) }));
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   searchOpponentCommandersAction: async () => [hit(YURIKO, "Yuriko, the Tiger’s Shadow")],
   listPickerFriendsAction: async () => [],
@@ -129,6 +131,25 @@ describe("opened from a table", () => {
   it("is the shipped form without a prefill", () => {
     mount(false);
     expect(screen.getByRole("button", { name: gameLogCopy.form.open })).toBeInTheDocument();
+    expect(screen.queryByTestId("log-from")).toBeNull();
+  });
+});
+
+describe("the Games panel spends the prefill", () => {
+  it("takes `table` off the address on arrival, and the list's form opens plain after the first save", async () => {
+    window.history.replaceState(null, "", `/decks/deck_1?tab=games&table=${prefill.table.id}`);
+    const panel = (games: DeckGame[]) => (
+      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} opponents={{ you }} prefill={prefill} />
+    );
+    const { rerender } = render(panel([]));
+    expect(window.location.search).toBe("?tab=games");
+    expect(screen.getByTestId("log-from")).toBeTruthy();
+    result(gameLogCopy.form.won);
+    save();
+    await waitFor(() => expect(logGame).toHaveBeenCalledTimes(1));
+    // The save revalidates the page: the panel now draws the list, whose form is a second mount.
+    const saved: DeckGame = { id: "g1", result: "win", podSize: 4, playedAt: new Date("2026-10-17"), versionNumber: null, note: null, worked: [], hurt: [] };
+    rerender(panel([saved]));
     expect(screen.queryByTestId("log-from")).toBeNull();
   });
 });
