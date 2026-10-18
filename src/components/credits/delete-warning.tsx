@@ -36,7 +36,7 @@ export function DeleteWarning({
         <ul className="m-0 flex list-none gap-[16px] p-0">
           {cells.map((cell) => (
             <li key={cell.key} data-held={cell.key} className="flex min-w-0 flex-1 flex-col gap-[2px] px-[13px] py-[10px]">
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{cell.label}</span>
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">{cell.label}</span>
               <span className="font-mono text-[20px] font-semibold leading-[1.15] text-[color:var(--fg)]">{cell.n}</span>
               <span className="font-mono text-[11px] text-[color:var(--fg-muted)] md:whitespace-nowrap">{cell.sub}</span>
             </li>
