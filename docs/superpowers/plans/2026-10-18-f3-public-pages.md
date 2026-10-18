@@ -159,11 +159,14 @@ actions, and the signed-in commander page is `/commanders/[slug]`, with per-read
     - the response carries no `Set-Cookie` signed out.
 - **4:** robots and one sitemap file fetched and parsed, and the index's URL count against the catalog's.
 
-## Open for d9
+## Rulings (d9 for Hugh, 2026-10-18; plan approved)
 
-1. **About:** the audit proposes no entry (an in-app page, and members are not routed here). The default is none. Whatever
-   d9 rules is recorded here, because the close-out needs an entry or a stated deferral.
-2. **Prose in `degraded`:** built as drawn (none). Showing the stored sentence there is a later change, if wanted.
+1. **About: no entry.** The public pages serve logged-out visitors, and Hugh's About rule for members is "only what isn't
+   evident". This is the close-out's stated deferral.
+2. **No prose in `degraded`**, as drawn (B4).
+3. **`PUBLIC_PAGES_ENABLED` stays off in production** until Hugh says otherwise.
+4. **PR 4 (robots and the sitemap) waits on Hugh.** Whether search engines index the public pages while the app is
+   invite-only is a product call. PRs 1 to 3 go ahead meanwhile. PR 2 also waits on A1's footer, as planned.
 
 ## Out of scope
 
