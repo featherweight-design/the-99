@@ -74,6 +74,7 @@ import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
+import type { TablePrefill } from "../../lib/social/rule-zero-log";
 // Types only: `games.ts` reaches for the database, and a value import from a
 // "use client" module would drag drizzle into the browser bundle.
 import type { DeckGame, GameSummary } from "../../lib/decks/games";
@@ -297,6 +298,8 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
   socialGames?: boolean;
+  /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
+  gamePrefill?: TablePrefill | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
   /** `manaBalanceEnabled(env)`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
@@ -372,6 +375,7 @@ export function BuilderShell({
   neverCut = false,
   tuningEnabled = false,
   socialGames = false,
+  gamePrefill = null,
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
@@ -1996,6 +2000,7 @@ export function BuilderShell({
                   onOpenAnalysis={() => setView("analysis")}
                   gameOpponents={gameOpponents}
                   opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
+                  prefill={gamePrefill ?? undefined}
                 />
               </div>
             ) : view === "versions" ? (

@@ -9,8 +9,11 @@
  * - a seat is ONE of three kinds, which `parseOpponents` takes as they are: anyone by a commander (and a label), a
  *   friend with a deck of theirs (name and commander are the deck's), or a friend alone or with a commander of
  *   their own (no label: the friend's name is the name), and a friend sits once;
- * - what is sent is `OpponentInput`, the shape `parseOpponents` checks again.
+ * - what is sent is `OpponentInput`, the shape `parseOpponents` checks again;
+ * - a seat that arrived from a Rule 0 table (plan §PR 8) is sent as its NUMBER alone, and the server reads who sat
+ *   there (decision 5); any edit but a winner mark turns it into an ordinary seat, which leaves the table path.
  */
+import type { TablePrefill } from "../social/rule-zero-log";
 import type { OpponentInput } from "./game-opponents";
 import type { OpponentCommanderHit } from "./opponent-commanders";
 
@@ -31,7 +34,11 @@ export type Seat = {
   /** Who sat there, in the player's words. Empty is none. */
   label: string;
   won: boolean;
+  /** A seat as a Rule 0 table filled it, drawn from the prefill and sent by number. `mark`: not the player's friend. */
+  table: SeatFromTable | null;
 };
+
+export type SeatFromTable = { seat: number; name: string; deckName: string | null; artCropUri: string | null; mark: boolean };
 
 /** Matches `OPPONENT_LABEL_MAX`; restated here because that module imports the database. */
 export const SEAT_LABEL_MAX = 30;
@@ -53,8 +60,9 @@ export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: st
  * carries no label, and anyone keeps the one already typed on that seat.
  */
 export function seatWith(seats: readonly Seat[], at: string | null, pick: SeatPick, key: string): Seat[] {
-  const filled = (s: Seat): Seat => ({ ...s, ...pick, label: pick.friend ? "" : s.label });
-  if (at === null) return [...seats, filled({ key, commander: null, friend: null, deck: null, label: "", won: false })];
+  // A picker press makes any seat an ordinary one: a seat from the table leaves the table path, label and all.
+  const filled = (s: Seat): Seat => ({ ...s, ...pick, label: pick.friend ? "" : s.label, table: null });
+  if (at === null) return [...seats, filled({ key, commander: null, friend: null, deck: null, label: "", won: false, table: null })];
   return seats.map((s) => (s.key === at ? filled(s) : s));
 }
 
@@ -99,7 +107,7 @@ export function cleanLabel(text: string): string {
 export function seatLabelled(seats: readonly Seat[], key: string, label: string): Seat[] {
   // NFC first: composing can ADD code points (U+0958 becomes two), and the cap is the server's, counted after it.
   const typed = Array.from(stripUnsendable(label).normalize("NFC")).slice(0, SEAT_LABEL_MAX).join("");
-  return seats.map((s) => (s.key === key ? { ...s, label: typed } : s));
+  return seats.map((s) => (s.key === key ? { ...s, label: typed, table: null } : s));
 }
 
 /** Pressing a trophy moves the mark to that seat; pressing the winner again clears it. At most one seat holds it. */
@@ -116,13 +124,31 @@ export function seatsForResult(seats: readonly Seat[], result: string | null): S
 /** The commander's short name, before the comma: `Yuriko` for `Yuriko, the Tiger's Shadow`. */
 export const shortName = (name: string) => name.split(",")[0].trim();
 
-/** The seat's own name for a screen reader and a heading: the friend, else the label when there is one, else the commander. */
-export const seatName = (s: Seat) => s.friend?.name ?? (cleanLabel(s.label) || shortName(s.commander?.name ?? ""));
+/** The seat's own name for a screen reader and a heading: the table's name for it, the friend, else the label when there is one, else the commander. */
+export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLabel(s.label) || shortName(s.commander?.name ?? ""));
+
+/**
+ * The seats a table's prefill fills, in seat order: every other seat, a waiting one too. Each draws the table's name
+ * and deck and carries nothing but its number to send. `key` names each seat, as a picker press does.
+ */
+export function prefillSeats(prefill: Pick<TablePrefill, "seats">, key: (seat: number) => string): Seat[] {
+  return prefill.seats.map((t) => ({
+    key: key(t.seat),
+    commander: null,
+    friend: null,
+    deck: null,
+    label: "",
+    won: false,
+    table: { seat: t.seat, name: t.name, deckName: t.deckName, artCropUri: t.artCropUri, mark: !t.friend },
+  }));
+}
 
 /** What `logGame` is sent. A label only when typed, `won` only when set and the game was lost. */
 export function opponentsFor(seats: readonly Seat[], result: string | null): OpponentInput[] {
   return seats.map((s) => {
     const won = s.won && result === "loss" ? { won: true } : {};
+    // A table seat is its number: who sat there, and with what, is read on the server (decision 5).
+    if (s.table) return { tableSeat: s.table.seat, ...won };
     // A friend's deck carries its own name and commanders, so none is sent beside it (`parseOpponents` refuses them).
     if (s.friend && s.deck) return { friend: s.friend.publicId, deck: s.deck.id, ...won };
     if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId } : {}), ...won };

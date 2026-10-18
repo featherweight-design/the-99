@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { TABLES, VIEWER_DECK_ID } from "./table-fixtures";
-import { drawTable, logGameHref, middleBrackets, type SeatDraw } from "./table-view";
+import { drawTable, logGameHref, logPrefillTable, middleBrackets, type SeatDraw } from "./table-view";
 
 const byName = (seats: SeatDraw[], name: string) => seats.find((s) => s.seat.displayName === name)!;
 const flagOf = (s: SeatDraw) => (s.read?.flag ? (s.read.flag.split ? "split" : s.read.flag.dir) : null);
@@ -123,5 +123,19 @@ describe("logGameHref", () => {
 
   it("is absent while the viewer's seat waits", () => {
     expect(logGameHref({ tableId: "t", viewerDeckId: null })).toBeNull();
+  });
+});
+
+describe("logPrefillTable", () => {
+  it("reads the table only on the Games tab, with both switches on", () => {
+    expect(logPrefillTable({ tab: "games", table: "t1" }, true)).toBe("t1");
+    expect(logPrefillTable({ tab: "games", table: "t1" }, false)).toBeNull();
+    expect(logPrefillTable({ tab: "deck", table: "t1" }, true)).toBeNull();
+    expect(logPrefillTable({ table: "t1" }, true)).toBeNull();
+  });
+
+  it("reads nothing from an absent or repeated parameter", () => {
+    expect(logPrefillTable({ tab: "games" }, true)).toBeNull();
+    expect(logPrefillTable({ tab: "games", table: ["t1", "t2"] }, true)).toBeNull();
   });
 });

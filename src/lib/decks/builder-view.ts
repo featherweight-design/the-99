@@ -4,12 +4,12 @@
 // navigation, and making it one would push a history entry per click. The tab
 // row is a row of `<button>`s for that reason.
 //
-// So NOTHING IN THE APP PRODUCES A `?tab=` URL. The parameter used to be
-// justified by `/decks/[id]/versions` redirecting here carrying it; that route
-// is retired, and what the parameter answers now is a URL written by hand or
-// kept in a bookmark. It is read on arrival only, and never written back as the
-// reader switches — which is the same contract it always had, minus the one
-// in-app producer.
+// So the tab row never writes a `?tab=` URL. One in-app link produces one: a
+// Rule 0 table's `Log this game` (`logGameHref`, `?tab=games&table=<id>`),
+// which lands on Games with the log prefilled from that table. Otherwise the
+// parameter answers a URL written by hand or kept in a bookmark (the retired
+// `/decks/[id]/versions` redirect used to carry it). It is read on arrival
+// only, and never written back as the reader switches.
 
 export type BuilderView = "deck" | "analysis" | "consider" | "games" | "versions";
 

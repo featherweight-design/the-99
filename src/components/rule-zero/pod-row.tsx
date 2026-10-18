@@ -19,6 +19,7 @@ import { Face } from "../social/face";
 import { useFriendInvite } from "../social/invite-context";
 import { useHydrated } from "../ui/hydrated-art";
 import { SetupSheet, type SetupData } from "./setup-sheet";
+import { TableGlyph } from "./table-glyph";
 
 const copy = ruleZeroCopy.entry;
 const FACES_MAX = 4;
@@ -98,13 +99,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
 function Icon() {
   return (
     <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] text-[color:var(--accent)]">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <ellipse cx="10" cy="10.5" rx="5.2" ry="3.4" />
-        <circle cx="10" cy="3.4" r="1.6" />
-        <circle cx="10" cy="17.6" r="1.6" />
-        <circle cx="2.6" cy="10.5" r="1.6" />
-        <circle cx="17.4" cy="10.5" r="1.6" />
-      </svg>
+      <TableGlyph size={18} />
     </span>
   );
 }

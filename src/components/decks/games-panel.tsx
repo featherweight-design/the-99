@@ -26,6 +26,8 @@ export interface GamesPanelProps {
   opponents?: GameLogFormProps["opponents"];
   /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_GAMES_ENABLED` on. Null: no Matchups, no `vs` lines. */
   gameOpponents?: DeckOpponentsWire | null;
+  /** A Rule 0 table's seats, for the form to open with (plan §PR 8). Passed to whichever form this panel draws. */
+  prefill?: GameLogFormProps["prefill"];
 }
 
 type GameRecord = GameSummary["record"];
@@ -237,7 +239,7 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
@@ -286,6 +288,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
               opponents={opponents}
+              prefill={prefill}
             />
           </div>
         </div>
@@ -307,6 +310,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         tuned={tuned}
         isFirstGame={games.length === 0}
         opponents={opponents}
+        prefill={prefill}
         onAnnounce={setAnnouncement}
         onSaved={(isFirst, result) =>
           isFirst
