@@ -8,7 +8,7 @@ vi.mock("../../app/friends/table/actions", () => ({ loadDeckChoicesAction: m.loa
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { orderChoices, type DeckChoice } from "../../lib/social/rule-zero-table";
-import { ChangeDeck } from "./change-deck";
+import { ChangeDeck, panelCap } from "./change-deck";
 import { SwapContext } from "./swap";
 
 const s = ruleZeroCopy.swap;
@@ -118,8 +118,19 @@ describe("Change deck's failures and focus", () => {
       const dialog = await screen.findByRole("dialog");
       expect(dialog.style.visibility).toBe("visible");
       await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
+      // The panel is capped by the room beside its link (jsdom's link sits at 0 on a 768px viewport).
+      expect(dialog.style.maxHeight).toBe(`${panelCap({ top: 0, bottom: 0 }, window.innerHeight)}px`);
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
     }
+  });
+});
+
+describe("the desktop panel's height (W3)", () => {
+  it("is capped by the larger room beside the link, so a long list scrolls in a panel that still hangs from it", () => {
+    // A link low on a 900px page: 260px under it, 616 over it.
+    expect(panelCap({ top: 628, bottom: 640 }, 900)).toBe(616);
+    // A link high on the page: the room under it wins.
+    expect(panelCap({ top: 120, bottom: 132 }, 900)).toBe(756);
   });
 });

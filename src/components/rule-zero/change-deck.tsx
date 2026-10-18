@@ -20,6 +20,15 @@ import { DeckRowChip, useSwap } from "./swap";
 const copy = ruleZeroCopy.swap;
 const PANEL_WIDTH = 420;
 
+/**
+ * The panel's height cap: the larger of the rooms under and over the link (less `useAnchoredPanel`'s 4px gap and 8px
+ * margin), so a long list scrolls inside a panel that still HANGS from its link as W3 draws it, rather than outgrowing
+ * both sides and being pinned to the top over the page. Pure, for the test.
+ */
+export function panelCap(link: { top: number; bottom: number }, viewport: number): number {
+  return Math.max(viewport - link.bottom - 12, link.top - 12);
+}
+
 export function ChangeDeck({ tableId }: { tableId: string }) {
   const [choices, setChoices] = useState<DeckChoice[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -69,6 +78,8 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
   const panelRef = useRef<HTMLDivElement | null>(null);
   const anchorRef = useRef<HTMLElement>(anchor);
   const { at, panelRef: placedRef, triggerRef } = useAnchoredPanel<HTMLElement>({ open: desktop, width: PANEL_WIDTH });
+  // Read once, when the list opens: the panel's first measured height is already within it.
+  const [cap] = useState(() => panelCap(anchor.getBoundingClientRect(), window.innerHeight));
   useEffect(() => {
     triggerRef.current = anchor;
     anchorRef.current = anchor;
@@ -125,7 +136,7 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
       role="dialog"
       aria-label={copy.sheetTitle}
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col p-[8px]`}
-      style={{ width: PANEL_WIDTH, maxHeight: "calc(100dvh - 16px)", top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+      style={{ width: PANEL_WIDTH, maxHeight: cap, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
       <div className="flex items-center justify-between px-[8px] pb-[8px] pt-[6px] font-mono text-[10.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{copy.sheetTitle}</span>
