@@ -192,12 +192,22 @@ describe("buildCreditsModel: the plan card and plan history", () => {
     expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", credits: 90 });
   });
 
-  it("a plan that is not cancelling names everything the account holds", () => {
+  it("a plan that is not cancelling names only the credits that roll over, not an older subscription's", () => {
     const m = model({ switchOn: true, allowance: allowance({ plan: 120, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
-    expect(m.plan?.credits).toBe(120);
+    expect(m.plan?.credits).toBe(90);
+    // The breakdown is absent: the account's figure stands.
+    const bare = model({ switchOn: true, allowance: allowance({ plan: 120 }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(bare.plan?.credits).toBe(120);
   });
 
-  it("with no group on the period end yet (the webhook has not set the expiry), the rolling lots stand in, then the account's figures", () => {
+  it("an empty current group is zero, never the older subscription's credits", () => {
+    const active = model({ switchOn: true, allowance: allowance({ plan: 30, planByExpiry: [{ at: end(2), n: 30 }] }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(active.plan?.credits).toBe(0);
+    const cancelling = model({ switchOn: true, allowance: allowance({ plan: 30, planByExpiry: [{ at: end(2), n: 30 }] }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(cancelling.plan?.credits).toBe(0);
+  });
+
+  it("with no group on the period end yet (the webhook has not set the expiry), the rolling lots stand in; without a breakdown the account's figures", () => {
     const rolling = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
     expect(rolling.plan?.credits).toBe(90);
     const none = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30 }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });

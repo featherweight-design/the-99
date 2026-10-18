@@ -144,19 +144,19 @@ export function historyItem(r: CreditHistoryRow): HistoryItem {
 }
 
 /**
- * The plan credits the card names. A plan that is cancelling lapses its OWN credits on the subscription's period end (the
- * webhook sets the lots' expiry to exactly it), so those are the groups whose instant equals it; the account's earliest
- * group (`planExpiring`) may belong to an older subscription. With no group on that instant (the webhook has not set
- * the expiry yet) the lots that roll over stand in, and then the account's figures as before. A plan that is not cancelling
- * names everything the account holds.
+ * The plan credits the card names. The expiry breakdown (`planByExpiry`), when supplied, is AUTHORITATIVE: the current
+ * subscription's lots are the ones that roll over (no expiry) or, once it is cancelling, the ones that lapse on its period
+ * end (the webhook sets exactly that instant), and an older subscription's lots carry their own earlier expiry and are
+ * never counted here. Nothing matching is zero, not the older lots. Without a breakdown the account's figures stand.
  */
 export function planCreditsFor(a: AllowanceFacts, sub: PlanSubscriptionFacts | null, cancelling: boolean): number {
   const total = a.plan ?? 0;
-  if (!cancelling) return total;
-  const groups = a.planByExpiry ?? [];
+  const groups = a.planByExpiry;
+  if (!groups) return cancelling ? (a.planExpiring ?? total) : total;
+  const sum = (match: (at: Date | null) => boolean) => groups.filter((g) => match(g.at)).reduce((n, g) => n + g.n, 0);
+  const rolling = sum((at) => at === null);
+  if (!cancelling) return rolling;
   const end = sub?.currentPeriodEnd?.getTime() ?? null;
-  const onEnd = end === null ? 0 : groups.filter((g) => g.at?.getTime() === end).reduce((n, g) => n + g.n, 0);
-  if (onEnd > 0) return onEnd;
-  const rolling = groups.filter((g) => g.at === null).reduce((n, g) => n + g.n, 0);
-  return rolling > 0 ? rolling : (a.planExpiring ?? total);
+  const onEnd = end === null ? 0 : sum((at) => at?.getTime() === end);
+  return onEnd > 0 ? onEnd : rolling;
 }
