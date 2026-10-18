@@ -303,7 +303,7 @@ export function CollectionPlaceHead({
               data-testid={`collection-tab-${tab.place}`}
               onNavigate={() => setPendingPlace(tab.place)}
               className={[
-                `flex items-center ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
+                `flex min-w-[44px] items-center justify-center ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
                 on
                   ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"

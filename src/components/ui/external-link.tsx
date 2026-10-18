@@ -1,4 +1,5 @@
 import { twMerge } from "tailwind-merge";
+import { TOUCH_HIT_INLINE } from "./touch-hit";
 
 // The shared outbound-link primitive (design table: "StoreLink"). Text only —
 // no box, no padding, no margin of its own, so the container it sits in owns
@@ -28,7 +29,8 @@ export function ExternalLink({ href, label, className }: ExternalLinkProps) {
       href={href}
       target="_blank"
       rel="noopener"
-      className={twMerge("group", LINK, className)}
+      // A one-line link drawn at its text's height; a coarse pointer gets a 44px-tall hit that stays off its neighbours.
+      className={twMerge("group", TOUCH_HIT_INLINE, LINK, className)}
     >
       {label}
       {/* The nbsp binds the glyph to the last word so it can never wrap alone.

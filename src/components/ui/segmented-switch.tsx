@@ -13,6 +13,7 @@
 
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { onSegmentKeys } from "./segment-keys";
+import { TOUCH_HIT } from "./touch-hit";
 
 export type Segment<T extends string> = {
   value: T;
@@ -38,9 +39,10 @@ const SEGMENT_BASE =
 /**
  * The compact segment (the /decks `Tiles · Stats` switch's own, handoff R2): 40px tall at phone and 30px from `md:`, in
  * a well with a 2px inset and normal weight at rest. Equal shares of the well under `fill`, content width otherwise.
+ * A coarse pointer gets a 44px hit past the drawn 40px (`TOUCH_HIT`), so the well keeps its height.
  */
 const SEGMENT_COMPACT =
-  "inline-flex h-[40px] items-center justify-center whitespace-nowrap rounded-[7px] px-[13px] text-[13px] md:h-[30px]";
+  `${TOUCH_HIT} inline-flex h-[40px] items-center justify-center whitespace-nowrap rounded-[7px] px-[13px] text-[13px] md:h-[30px]`;
 
 const SIZES = {
   default: { well: "p-[3px]", segment: SEGMENT_BASE, fill: "", rest: "font-medium" },
