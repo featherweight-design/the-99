@@ -49,6 +49,23 @@ describe("remaining", () => {
   });
 });
 
+describe("pickGrant: welcome, then plan, then pack", () => {
+  it("spends a welcome lot before a plan lot and a pack lot, whatever their age", () => {
+    const welcome = lot({ id: "welcome", source: "welcome", createdAt: ago(1), expiresAt: new Date(now.getTime() + 29 * DAY) });
+    const plan = lot({ id: "plan", source: "plan", createdAt: ago(40 * DAY), expiresAt: new Date(now.getTime() + DAY) });
+    const pack = lot({ id: "pack", createdAt: ago(90 * DAY) });
+    const order = (xs: CreditGrant[]) => pickGrant(xs.map((grant) => ({ grant, remaining: 1 })))?.id;
+    expect(order([pack, plan, welcome])).toBe("welcome");
+    expect(order([pack, plan])).toBe("plan");
+  });
+
+  it("stops funding from a welcome lot at its expiry", () => {
+    const welcome = lot({ id: "welcome", source: "welcome", expiresAt: new Date(now.getTime() - 1) });
+    expect(isLive(welcome, now)).toBe(false);
+    expect(remaining(welcome, { spent: 0, reserved: [] }, now)).toBe(0);
+  });
+});
+
 describe("pickGrant: plan before pack", () => {
   it("spends a plan lot before a pack lot, even an older pack", () => {
     const pack = lot({ id: "pack", createdAt: ago(30 * DAY) });
@@ -84,7 +101,8 @@ describe("creditTotals", () => {
       { grant: lot({ id: "p1", source: "plan" }), remaining: 12 },
       { grant: lot({ id: "p2", source: "plan" }), remaining: 3 },
       { grant: lot({ id: "k1" }), remaining: 40 },
+      { grant: lot({ id: "w1", source: "welcome", expiresAt: new Date(now.getTime() + DAY) }), remaining: 9 },
     ];
-    expect(creditTotals(balances)).toEqual({ plan: 15, pack: 40 });
+    expect(creditTotals(balances)).toEqual({ welcome: 9, plan: 15, pack: 40 });
   });
 });

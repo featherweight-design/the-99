@@ -71,3 +71,22 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   webhook refuses that payment as `amount`. A test builds a Session's params and runs them through `decideFulfilment`,
   so the two halves cannot drift. Nothing is granted on the return.
 - **Account deletion reaches Stripe** (`src/lib/payments/delete-customer.ts`, called by `purgeAccount` as step 0, before its transaction). With a `stripe_customers` mapping it retrieves the Customer and deletes it ONLY when `metadata.app` is `the-99` and `metadata.user_id` is the account (the Stripe account is shared); a Customer not so tagged is left in place, logged, and the purge goes on. Deleting cancels its subscriptions. **A 404 from Stripe counts as done**, so a deployment keyed to the wrong Stripe mode or account would drop the mapping and strand the Customer; the guard against that is `keyAllowed` tying key mode to the environment (production = live key only), not this code. Any other failure or no usable key throws and the purge does nothing. A Checkout started between the Stripe delete and the purge transaction fails at `ensureCustomer` (the account is being deleted; accepted). Needs only Customers write, which the restricted key already has.
+
+
+## The welcome lot (launch epic D1, ruling L5)
+
+- `credit_grants.source = 'welcome'`: 15 units, `expires_at` required (the migration rewrites
+  `credit_grants_pack_never_expires_check`: a pack never expires, a welcome lot always does, a plan lot may). A partial unique
+  index (`credit_grants_welcome_once`) holds one per account ever.
+- `grantWelcome(userId, createdAt, env)` (`src/lib/payments/welcome.ts`) runs from the `user.created` webhook for EVERY new
+  account, before and apart from the invite spend; either failing answers 500 for a retry. It takes the account's invite lock
+  (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
+  `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
+- Spend order is free, welcome, plan, pack (`SOURCE_RANK`). `heldCredits` is the one definition of "holds a lot"; the 20-a-day
+  paid limit applies to welcome runs. The `/credits` history leaves welcome lots out (a gift is not a purchase), and the page
+  draws a Welcome cell only while it holds a credit.
+- There is NO in-page fallback and no backfill script: a missed webhook means no grant. `user_prefs` carries no creation time,
+  so it is not a "new account" signal; a fallback is a D2 decision. Accepted: no per-email dedupe, so a deleted account that
+  signs up again gets another lot.
+- Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
+

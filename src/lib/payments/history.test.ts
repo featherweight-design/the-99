@@ -23,9 +23,15 @@ describe("creditHistoryQuery", () => {
     expect(q.sql).not.toMatch(/"payment_records"\."[a-z_]+" = \$1/);
   });
 
+  // A welcome lot is a gift: it is no history row, so it never makes a reader "someone who has bought".
+  it("leaves a welcome lot out", () => {
+    expect(q.sql).toMatch(/"credit_grants"\."source" <> \$2/);
+    expect(q.params[1]).toBe("welcome");
+  });
+
   it("is newest first and bounded", () => {
     expect(q.sql).toMatch(/order by "credit_grants"\."created_at" desc/);
-    expect(q.sql).toMatch(/limit \$2/);
-    expect(q.params[1]).toBe(HISTORY_LIMIT);
+    expect(q.sql).toMatch(/limit \$3/);
+    expect(q.params[2]).toBe(HISTORY_LIMIT);
   });
 });

@@ -1,5 +1,5 @@
 import { creditsCopy } from "../copy/credits";
-import { freeCount, type Allowance } from "../model/allowance-rule";
+import { freeCount, heldCredits, type Allowance } from "../model/allowance-rule";
 import { creditLineKind, expiringPhrase } from "../model/credit-line";
 import { readerSeesCredits } from "./visible-rule";
 
@@ -26,11 +26,9 @@ export type ChipState = {
 
 export function chipFor(input: { allowance: Allowance; switchOn: boolean; everBought: boolean }, now: Date): ChipState | null {
   const a = input.allowance;
-  const plan = a.plan ?? 0;
-  const pack = a.pack ?? 0;
-  const held = plan + pack > 0;
+  const held = heldCredits(a) > 0;
   if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: input.everBought, returning: false })) return null;
-  const total = freeCount(a) + plan + pack;
+  const total = freeCount(a) + heldCredits(a);
   if (creditLineKind(a) === "spent") {
     // Nothing to spend. The offer is a purchase, so it follows the switch; a reader who can no longer buy sees the count.
     return input.switchOn

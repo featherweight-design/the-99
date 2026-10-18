@@ -16,6 +16,7 @@ export type Standing = {
   reopensAt: string | null;
   ownerShare: boolean;
   /** Paid credits left, as the `Allowance` carries them: absent while the player holds no lot. */
+  welcome?: number;
   plan?: number;
   pack?: number;
   /** The paid limit's counter, as the `Allowance` carries it: `hasCredit` shuts paid credits at it. */
@@ -36,6 +37,7 @@ export function toStanding(a: Allowance, now: Date): Standing {
     nextAt: a.nextAt?.toISOString() ?? null,
     reopensAt: a.reopensAt?.toISOString() ?? null,
     ownerShare: a.ownerShare === true,
+    ...(a.welcome !== undefined ? { welcome: a.welcome } : {}),
     ...(a.plan !== undefined ? { plan: a.plan } : {}),
     ...(a.pack !== undefined ? { pack: a.pack } : {}),
     ...(a.paidUsedToday !== undefined ? { paidUsedToday: a.paidUsedToday } : {}),
@@ -52,7 +54,7 @@ export function lineOf(s: Standing): LineAllowance {
   const at = (v: string | null | undefined) => (v ? new Date(v) : null);
   return {
     used: s.used, limit: s.limit, nextAt: at(s.nextAt), reopensAt: at(s.reopensAt),
-    plan: s.plan, pack: s.pack, paidUsedToday: s.paidUsedToday, paidLimit: s.paidLimit,
+    welcome: s.welcome, plan: s.plan, pack: s.pack, paidUsedToday: s.paidUsedToday, paidLimit: s.paidLimit,
     paidBackAt: at(s.paidBackAt), planExpiresAt: at(s.planExpiresAt), payments: s.payments,
   };
 }

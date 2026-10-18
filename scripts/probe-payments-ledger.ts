@@ -90,7 +90,7 @@ async function spendAllowance(userId: string) {
   }
 }
 
-async function grant(userId: string, source: "plan" | "pack", units: number, opts: { createdAt?: Date; expiresAt?: Date; revoked?: number } = {}) {
+async function grant(userId: string, source: "welcome" | "plan" | "pack", units: number, opts: { createdAt?: Date; expiresAt?: Date; revoked?: number } = {}) {
   const [row] = await rows<{ id: string }>(sql`
     insert into credit_grants (user_id, source, units, revoked_units, expires_at, created_at)
     values (${userId}, ${source}, ${units}, ${opts.revoked ?? 0},
@@ -283,6 +283,40 @@ async function run() {
     const [left] = await rows<{ n: string }>(sql`
       select ((select count(*) from credit_grants where user_id = ${u}) + (select count(*) from model_calls where user_id = ${u}))::text as n`);
     check("i · and nothing of the account is left in either table", left.n, "0");
+  }
+  // m · The welcome lot (D1): after the free allowance and before a plan and a pack, one per account, never past its expiry.
+  {
+    const u = newUser();
+    await spendAllowance(u);
+    const day = 24 * 60 * 60 * 1000;
+    const pack = await grant(u, "pack", 5, { createdAt: new Date(Date.now() - 90 * day) });
+    const plan = await grant(u, "plan", 5, { createdAt: new Date(Date.now() - 40 * day) });
+    const welcome = await grant(u, "welcome", 2, { expiresAt: new Date(Date.now() + 29 * day) });
+    const funded = [];
+    for (let i = 0; i < 4; i++) funded.push(await fundedBy(await reserve(u)));
+    check("m · the welcome lot funds first, then the plan lot", funded, [welcome, welcome, plan, plan]);
+    const a = await readAllowance(u);
+    check("m · readAllowance reports the lots apart", [a.welcome, a.plan, a.pack], [0, 3, 5]);
+    check("m · the pack was never touched", pack !== plan && pack !== welcome, true);
+
+    let second = "accepted";
+    try { await grant(u, "welcome", 2, { expiresAt: new Date(Date.now() + day) }); } catch { second = "refused"; }
+    check("m · a second welcome lot for the account is refused by the index", second, "refused");
+
+    const v = newUser();
+    let noExpiry = "accepted";
+    try { await grant(v, "welcome", 2); } catch { noExpiry = "refused"; }
+    check("m · a welcome lot with no expiry is refused by the check", noExpiry, "refused");
+    let packExpiry = "accepted";
+    try { await grant(v, "pack", 2, { expiresAt: new Date(Date.now() + day) }); } catch { packExpiry = "refused"; }
+    check("m · a pack lot with an expiry is refused by the check", packExpiry, "refused");
+
+    const w = newUser();
+    await spendAllowance(w);
+    await grant(w, "welcome", 2, { createdAt: new Date(Date.now() - 31 * day), expiresAt: new Date(Date.now() - day) });
+    check("m · an expired welcome lot funds nothing", kindOf(await reserve(w)), "allowance");
+    const report = await purgeAccount(u);
+    check("m · the purge deleted all three lots", report.rows.credit_grants, 3);
   }
 }
 

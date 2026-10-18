@@ -7,7 +7,10 @@ import {
   RESERVATION_TTL_MS,
   allowanceFrom,
   counts,
+  hasCredit,
+  heldCredits,
   ownerDailyAllowanceFrom,
+  paidAtLimit,
 } from "./allowance-rule";
 
 const now = new Date("2026-09-23T12:00:00Z");
@@ -120,5 +123,20 @@ describe("ownerDailyAllowanceFrom", () => {
     for (const raw of ["0", "-5", "2.5", "1e3", "abc", "10abc", "0x10", "Infinity", "NaN", "99999999999999999999"]) {
       expect(ownerDailyAllowanceFrom(raw), raw).toBe(MODEL_OWNER_DAILY_ALLOWANCE);
     }
+  });
+});
+
+describe("a welcome lot is a held credit", () => {
+  it("counts in heldCredits beside plan and pack", () => {
+    expect(heldCredits({ welcome: 15, plan: 2, pack: 3 })).toBe(20);
+    expect(heldCredits({})).toBe(0);
+  });
+
+  it("funds a run once the free allowance is spent, under the paid limit", () => {
+    const spent = { used: 5, limit: 5, welcome: 15, paidUsedToday: 0, paidLimit: 20 };
+    expect(hasCredit(spent)).toBe(true);
+    expect(hasCredit({ ...spent, welcome: 0 })).toBe(false);
+    expect(hasCredit({ ...spent, paidUsedToday: 20 })).toBe(false);
+    expect(paidAtLimit({ ...spent, paidUsedToday: 20 })).toBe(true);
   });
 });

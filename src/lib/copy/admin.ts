@@ -660,4 +660,5 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
   UPCOMING_PRECONS_ENABLED: { label: "Upcoming precons", description: "Announced Commander sets on Precons, and a Home banner when one arrives." },
+  WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },
 };

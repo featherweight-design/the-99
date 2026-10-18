@@ -12,7 +12,7 @@ import { useHydrated } from "../ui/hydrated-art";
 
 const c = creditsPageCopy.bal;
 
-const LABEL = { free: c.free, plan: c.plan, pack: c.packs } as const;
+const LABEL = { free: c.free, welcome: c.welcome, plan: c.plan, pack: c.packs } as const;
 
 // The chevron at a join: a turned square, drawn on its top and right edges only. Each side has its own colour
 // (`check:border-collision`: a bare `border-r` is also a theme colour).
@@ -60,7 +60,7 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = 
             <span className="min-h-[14.7px] font-mono text-[10.5px] leading-[14.7px] text-[color:var(--fg-muted)]">
               {cell.key === "free"
                 ? nextAtMs === null ? c.freeFull(freeLimit) : hydrated ? c.freeNext(clockTime(new Date(nextAtMs))) : null
-                : cell.key === "plan" ? c.planSub : c.packsSub}
+                : cell.key === "plan" ? c.planSub : cell.key === "pack" ? c.packsSub : null}
             </span>
           </li>
         ))}

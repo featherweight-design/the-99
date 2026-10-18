@@ -17,3 +17,13 @@ export function paymentsEnabled(env: NodeJS.ProcessEnv): boolean {
 export function withPayments<T extends object>(allowance: T, env: NodeJS.ProcessEnv): T & { payments: boolean } {
   return { ...allowance, payments: paymentsEnabled(env) };
 }
+
+/**
+ * `WELCOME_CREDITS_ENABLED`: the welcome grant for a new sign-up (launch epic D1, ruling L5). `'true'` on staging, unset
+ * on production until Hugh turns it on. It requires `PAYMENTS_ENABLED`, checked here so an override of this one never
+ * raises its parent. It gates only the WRITE of a new lot: a lot already granted is spent whatever the switch says, as a
+ * taken payment is.
+ */
+export function welcomeCreditsEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.WELCOME_CREDITS_ENABLED === "true" && paymentsEnabled(env);
+}

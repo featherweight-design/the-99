@@ -5,7 +5,11 @@ const verify = vi.hoisted(() => vi.fn());
 const purge = vi.hoisted(() => vi.fn());
 const record = vi.hoisted(() => vi.fn());
 const spend = vi.hoisted(() => vi.fn());
+const grant = vi.hoisted(() => vi.fn());
+const switchEnv = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
+vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
+vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnvStrict: switchEnv }));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 vi.mock("../../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../../lib/invites/spend")>()),
@@ -24,6 +28,8 @@ beforeEach(() => {
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
   spend.mockReset().mockResolvedValue({ spent: true });
+  grant.mockReset().mockResolvedValue({ granted: true, expiresAt: new Date(0) });
+  switchEnv.mockReset().mockResolvedValue({ WELCOME_CREDITS_ENABLED: "true" });
 });
 
 describe("POST /api/clerk-webhook", () => {
@@ -107,6 +113,42 @@ describe("POST /api/clerk-webhook", () => {
     const RES = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
     const created = (public_metadata: unknown, extra: object = {}) =>
       ({ type: "user.created", data: { id: "user_new", first_name: "Ana", public_metadata, ...extra } });
+
+    it("gives every new account its welcome lot, from the account's own creation time and its resolved switches", async () => {
+      verify.mockResolvedValue(created({}, { created_at: 1_760_000_000_000 }));
+      expect((await POST(req())).status).toBe(200);
+      expect(switchEnv).toHaveBeenCalledWith("user_new");
+      expect(grant).toHaveBeenCalledWith("user_new", new Date(1_760_000_000_000), { WELCOME_CREDITS_ENABLED: "true" });
+      expect(spend).not.toHaveBeenCalled();
+    });
+
+    it("answers 500 for a retry when the grant throws, and still spends the invite", async () => {
+      grant.mockRejectedValue(new Error("db down"));
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      expect((await POST(req())).status).toBe(500);
+      expect(spend).toHaveBeenCalledWith("user_new", RES, "Ana");
+    });
+
+    it("answers 500 when the invite spend fails even though the grant landed, and grants regardless", async () => {
+      spend.mockRejectedValue(new Error("x"));
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      expect((await POST(req())).status).toBe(500);
+      expect(grant).toHaveBeenCalled();
+    });
+
+    it("answers 500 and grants nothing when the switch overrides cannot be read, so Clerk retries", async () => {
+      switchEnv.mockRejectedValue(new Error("switch overrides could not be read"));
+      verify.mockResolvedValue(created({}));
+      expect((await POST(req())).status).toBe(500);
+      expect(grant).not.toHaveBeenCalled();
+    });
+
+    it("refuses an event with no user id and writes nothing", async () => {
+      verify.mockResolvedValue({ type: "user.created", data: { first_name: "Ana" } });
+      expect((await POST(req())).status).toBe(400);
+      expect(grant).not.toHaveBeenCalled();
+      expect(spend).not.toHaveBeenCalled();
+    });
 
     it("spends the reservation the invitation named, for the new account and its first name", async () => {
       verify.mockResolvedValue(created({ inviteReservation: RES }));
