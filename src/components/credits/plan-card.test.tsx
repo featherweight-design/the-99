@@ -298,6 +298,27 @@ describe("Subscribe off and blocked go to the page's shared Buy handler", () => 
   });
 });
 
+describe("Keep refused for payments, forwarded", () => {
+  it.each(["off", "blocked"] as const)("%s goes to the page's shared handler, with no toast of the card's own", async (reason) => {
+    m.keep.mockResolvedValue({ ok: false, reason });
+    const onToast = vi.fn();
+    const onFailure = vi.fn();
+    render(<PlanCard plan={plan("cancelled")} onToast={onToast} onFailure={onFailure} />);
+    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
+    await waitFor(() => expect(onFailure).toHaveBeenCalledWith(reason));
+    expect(onToast).not.toHaveBeenCalled();
+  });
+  it("other Keep failures still toast, and a Cancel's never forward", async () => {
+    m.keep.mockResolvedValue({ ok: false, reason: "failed" });
+    const onToast = vi.fn();
+    const onFailure = vi.fn();
+    render(<PlanCard plan={plan("cancelled")} onToast={onToast} onFailure={onFailure} />);
+    fireEvent.click(screen.getByRole("button", { name: "Keep my plan" }));
+    await waitFor(() => expect(onToast).toHaveBeenCalledWith("Couldn’t update your plan. Try again."));
+    expect(onFailure).not.toHaveBeenCalled();
+  });
+});
+
 describe("Keep refused for payments", () => {
   it.each([["off", "Keeping your plan isn’t available right now."], ["blocked", "Buying is paused on this account, so the plan can’t be kept. Email support@the-99.dev and we’ll sort it out."]] as const)("%s says so and waits for nothing", async (reason, text) => {
     m.keep.mockResolvedValue({ ok: false, reason });
@@ -313,8 +334,10 @@ describe("K5 while cancelling", () => {
   const due = () => plan("pastDue", { cancelling: true, days: 20, on: "December 4" });
   it("draws the payment warning, the scheduled expiry, Update card first and Keep; no Cancel", () => {
     render(<PlanCard plan={due()} onToast={vi.fn()} />);
+    // Stripe is still retrying, so nothing here promises there will be no further charge.
+    expect(screen.queryByText(/charged again/)).toBeNull();
     expect(screen.getByText("Your payment didn’t go through")).toBeTruthy();
-    expect(screen.getByText("Your 74 plan credits expire on December 4. You won’t be charged again.")).toBeTruthy();
+    expect(screen.getByText("Your 74 plan credits expire on December 4. The plan will not renew.")).toBeTruthy();
     expect(buttons()).toEqual(["Update card↗", "Keep my plan"]);
   });
   it("reduced drops Keep and keeps Update card", () => {

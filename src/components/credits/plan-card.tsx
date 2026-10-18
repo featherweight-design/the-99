@@ -99,6 +99,9 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
         if (out.unchanged) onToast(kind === "cancel" ? p.outcome.alreadyCancelled : p.outcome.alreadyKept);
         setPending(kind);
         router.refresh();
+      } else if (kind === "keep" && (out.reason === "off" || out.reason === "blocked") && onFailure) {
+        // Keep is a purchase: its off and blocked answers are the page's shared Buy handler, as Subscribe's are.
+        onFailure(out.reason);
       } else {
         onToast(p.outcome[out.reason]);
       }
@@ -202,7 +205,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
         </ul>
       ) : null}
       {state === "pastDue" ? <p className={SAYS}>{p.dueSays(credits)}</p> : null}
-      {state === "pastDue" && scheduled ? <p className={`${SAYS} text-[color:var(--fg-body)]`}>{p.endedSays(credits, on)}</p> : null}
+      {state === "pastDue" && scheduled ? <p className={`${SAYS} text-[color:var(--fg-body)]`}>{p.dueEndsSays(credits, on)}</p> : null}
       {cancelling ? <p className={`${SAYS} ${state === "ending" ? warnText : "text-[color:var(--fg-body)]"}`}>{state === "ending" ? p.soon(credits, plan.days ?? 0, on) : p.endedSays(credits, on)}</p> : null}
 
       {presses.subscribe ? (

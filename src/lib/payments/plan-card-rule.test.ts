@@ -43,12 +43,17 @@ describe("planCardFacts", () => {
     expect(planCardFacts(sub("active", true, at(-1000)), {}, NOW)).toMatchObject({ state: "ending", days: 0 });
   });
 
-  it("reads the end from the lots' own expiry before the period end, and from the period end without one", () => {
-    expect(planCardFacts(sub("active", true, at(30 * DAY)), { planExpiresAt: at(2 * DAY) }, NOW).state).toBe("ending");
-    expect(planCardFacts(sub("active", true, at(2 * DAY)), {}, NOW).state).toBe("ending");
+  it("the date is the SUBSCRIPTION's, never the earliest lot expiry: an older subscription's lots lapsing Nov 16 do not date a plan ending Dec 14", () => {
+    const dec14 = at(30 * DAY);
+    const old = at(2 * DAY);
+    expect(planCardFacts(sub("active", true, dec14), { planExpiresAt: old }, NOW)).toEqual({ state: "cancelled", cancelling: true, endsAt: dec14, days: 30 });
+    // and the 3-day boundary is judged on the subscription's date, in both directions
+    expect(planCardFacts(sub("active", true, old), { planExpiresAt: dec14 }, NOW).state).toBe("ending");
+    expect(planCardFacts(sub("active", true, dec14), { planExpiresAt: old }, NOW).state).not.toBe("ending");
+  });
+  it("no period end means no date and no days", () => {
     expect(planCardFacts(sub("active", true, null), {}, NOW)).toEqual({ state: "cancelled", cancelling: true, endsAt: null, days: null });
   });
-
   it("an incomplete first payment is not an offer (Checkout would refuse it as already)", () => {
     expect(planCardFacts(sub("incomplete", false, null), {}, NOW).state).toBe("active");
   });

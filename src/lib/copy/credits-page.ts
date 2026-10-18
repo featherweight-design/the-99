@@ -135,6 +135,8 @@ export const creditsPageCopy = {
     updateCard: "Update card",
     ended: (on: string | null) => (on ? `Ends ${on}` : "Ends with your paid month"),
     endedSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. You won’t be charged again.`,
+    /** Past due and cancelling: the expiry and the non-renewal only, since Stripe is still retrying the payment. */
+    dueEndsSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. The plan will not renew.`,
     soon: (n: number, days: number, on: string | null) =>
       `Your ${creditWord(n)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${on ? `, on ${on}` : ""}.`,
     keep: "Keep my plan",

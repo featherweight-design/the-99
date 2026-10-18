@@ -33,13 +33,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function planCardFacts(
   sub: PlanSubscriptionFacts | null,
-  allowance: { planExpiresAt?: Date | null },
+  // Unused, kept so callers keep their shape: `planExpiresAt` is the earliest expiry over ALL plan lots, which can
+  // belong to an older subscription, so the card's dates come from the subscription alone.
+  _allowance: { planExpiresAt?: Date | null },
   now: Date,
 ): PlanCardFacts {
   if (!sub || isEnded(sub.status) || !holdsPlan(sub.status)) return { state: "offer", cancelling: false, endsAt: null, days: null };
   const cancelling = sub.cancelAtPeriodEnd;
-  // The lots' own expiry is what the credits do; the period end is what Stripe says. They agree once the webhook has run.
-  const endsAt = cancelling ? allowance.planExpiresAt ?? sub.currentPeriodEnd : sub.currentPeriodEnd;
+  // The subscription's own period end is the date for renewal and for ending alike (the lots' count is `planExpiring`'s).
+  const endsAt = sub.currentPeriodEnd;
   const ahead = cancelling && endsAt ? endsAt.getTime() - now.getTime() : null;
   const days = ahead === null ? null : Math.max(0, Math.ceil(ahead / DAY_MS));
   if (sub.status === "past_due" || sub.status === "unpaid") return { state: "pastDue", cancelling, endsAt, days };

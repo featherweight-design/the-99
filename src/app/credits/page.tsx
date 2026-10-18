@@ -44,10 +44,14 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   try {
     // The pause (B1) is read only while there is something to pause. A failed read draws the offers: the Buy press
     // checks the block again before any Stripe call, so a missed pause still cannot make a Session.
-    const [allowance, history, subscription, blocked] = await Promise.all([
+    // The subscription is read BEFORE the balance and history, never beside them: the webhook writes a cancel's row and
+    // the lots' expiry in one transaction, so a row read first and the lots read after can only agree or show the
+    // newer lots with the older row. Read the other way round, an acknowledged cancel could be paired with a
+    // pre-cancellation balance.
+    const subscription = await readPlanFacts(userId);
+    const [allowance, history, blocked] = await Promise.all([
       readAllowance(userId),
       listCreditHistory(userId),
-      readPlanFacts(userId),
       switchOn ? purchaseBlocked(userId).catch(() => false) : false,
     ]);
     built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers(), returning, subscription, blocked });

@@ -196,4 +196,14 @@ describe("the plan (U3b)", () => {
     expect((await render()).type).toBe((await import("../../components/credits/read-failed")).CreditsReadFailed);
     log.mockRestore();
   });
+
+  it("reads the subscription BEFORE the balance and history, so an acknowledged cancel is never paired with older lots", async () => {
+    const order: string[] = [];
+    m.readPlanFacts.mockImplementation(async () => { order.push("plan:start"); await Promise.resolve(); order.push("plan:end"); return null; });
+    m.readAllowance.mockImplementation(async () => { order.push("allowance"); return { used: 2, limit: 5, reopensAt: null, nextAt: null }; });
+    m.listCreditHistory.mockImplementation(async () => { order.push("history"); return []; });
+    await render();
+    expect(order.indexOf("plan:end")).toBeLessThan(order.indexOf("allowance"));
+    expect(order.indexOf("plan:end")).toBeLessThan(order.indexOf("history"));
+  });
 });

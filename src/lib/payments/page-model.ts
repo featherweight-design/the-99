@@ -87,10 +87,11 @@ export function buildCreditsModel(input: {
   const gift = a.gift ?? 0;
   const pack = a.pack ?? 0;
   const held = heldCredits(a) > 0;
-  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false })) return { sees: false };
+  const facts = planCardFacts(input.subscription ?? null, a, input.now ?? new Date());
+  // A live plan keeps the page even with no credit yet and no history: its first invoice may not have granted.
+  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false, planHeld: facts.state !== "offer" })) return { sees: false };
   const freeLeft = freeCount(a);
   const oncePack = history.some((r) => r.source === "pack");
-  const facts = planCardFacts(input.subscription ?? null, a, input.now ?? new Date());
   const cells: BalanceCell[] = [{ key: "free", value: freeLeft }];
   // The welcome lot is spent after the free allowance and before the others, so its cell sits second. It is drawn only
   // while it holds a credit: it is never bought, so there is no empty cell to explain (D1; D2 owns its wording).

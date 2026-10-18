@@ -172,4 +172,17 @@ describe("buildCreditsModel: the plan card and plan history", () => {
     const m = model({ switchOn: true, allowance: allowance(), offers, now: NOW, history: [row({ id: "a", source: "plan", externalId: "in_a" }), row({ id: "c", externalId: "cs_c" })] });
     expect(m.history.map((h) => [h.sessionId, h.invoiceId])).toEqual([[null, "in_a"], ["cs_c", null]]);
   });
+
+  it("a live plan whose first invoice has not granted keeps the page with the switch off (Cancel and Update card stay reachable)", () => {
+    const live = sub("incomplete", false, 20);
+    const m = model({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: live });
+    expect(m.plan?.state).toBe("active");
+    expect(buildCreditsModel({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: sub("canceled", false, -1) })).toEqual({ sees: false });
+    expect(buildCreditsModel({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: null })).toEqual({ sees: false });
+  });
+
+  it("an older subscription's lots lapsing Nov 16 do not date the current plan, which ends Dec 14; the count is the lots'", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 60, planExpiresAt: end(2) }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", days: 30, credits: 60 });
+  });
 });
