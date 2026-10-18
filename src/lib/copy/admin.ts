@@ -46,10 +46,11 @@ export const adminCopy = {
     },
     caps: "Against the caps",
     capsMeta: "set in code and read only, except the rows recorded here",
-    capsReference: "The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.",
-    // `here` names a figure typed in on this page, not read from code; owed to /copy-review.
-    capSource: { code: "in code", here: "recorded here" },
-    capRows: { owner: "Owner testing share", ceiling: "System ceiling", account: "Anthropic account cap" },
+    capsReference: "The system ceiling and the Anthropic caps are reference lines. None of them blocks a call.",
+    // `here` names a figure typed in on this page, not read from code; `anthropic`, one read from
+    // Anthropic's cost report. Owed to /copy-review.
+    capSource: { code: "in code", here: "recorded here", anthropic: "from Anthropic" },
+    capRows: { owner: "Owner testing share", ceiling: "System ceiling", workspace: "The 99 workspace cap" },
     of: (figure: string, cap: string) => `${figure} of ${cap}`,
     notSet: (figure: string) => `${figure} · not set`,
     capSub: {
@@ -58,15 +59,24 @@ export const adminCopy = {
       ceiling: "System rows in model_calls and card label batches. Evals are not counted.",
       noCeiling: "No ceiling is set.",
       startsIn: (month: string) => `Starts ${month}.`,
-      account: "Mirrors Anthropic’s console.",
-      elsewhere: (v: string, date: string, by: string | null) =>
-        ` Hatched: elsewhere ${v}, as of ${date}${by === null ? "." : `, entered by ${endOn(by)}`}`,
-      you: "you",
-      noElsewhere: " Elsewhere is not entered.",
+      workspace: "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched.",
+      elsewhere: (v: string) => ` Elsewhere ${v}: the other environment and anything else on this workspace.`,
+      ledgerAhead: " This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.",
+    },
+    /** `time` is `14:05 UTC`, or `17 Oct, 14:05 UTC` when not today. */
+    asOf: (time: string) => ` Read from Anthropic at ${time}, about five minutes behind.`,
+    workspaceUnread: (figure: string) => `${figure} here · workspace not read`,
+    // Why the workspace was not read, one per `CostUnread` kind. No upstream text ever reaches these.
+    unread: {
+      no_key: "ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read.",
+      refused: "Anthropic refused the admin key.",
+      rejected: "Anthropic refused the request for this month.",
+      upstream: "Anthropic’s cost report did not answer. A load a minute from now tries again.",
+      shape: "Anthropic’s cost report came back in a shape this page does not read.",
+      no_workspace: (name: string) => `No Anthropic workspace is named ${name}.`,
+      ambiguous: (n: number, name: string) => `${n} Anthropic workspaces are named ${name}, so none is read.`,
     },
     note: (text: string) => `Note: ${text}`,
-    enterElsewhere: "Enter elsewhere",
-    updateElsewhere: "Update elsewhere",
     changeCap: "Change the cap",
     changeCeiling: "Change the ceiling",
     trendPlayer: "Player runs, month to date",

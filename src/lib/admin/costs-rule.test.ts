@@ -17,7 +17,7 @@ const OCT = { year: 2026, month: 9 };
 const NOW = new Date("2026-10-11T15:00:00Z"); // day 11 of 31
 
 function rows(days: DayRow[], over: Partial<CostRows> = {}): CostRows {
-  return { days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: 5_000_000, previous: { runs: 0, micro: 0 }, settings: {}, ...over };
+  return { days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: 5_000_000, previous: { runs: 0, micro: 0 }, settings: {}, anthropic: { ok: false, kind: "no_key" }, ...over };
 }
 const p = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "player", runs, micro: usdToMicro(usdValue) });
 const sys = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "system", runs, micro: usdToMicro(usdValue) });
@@ -84,10 +84,11 @@ describe("costSummary, the rest", () => {
     expect(costSummary(rows([p(1, 3)], { playerAccounts: 3 }), OCT, NOW).perAccountMicro).toBe(usdToMicro(1));
   });
 
-  it("counts elsewhere only in the month it was read", () => {
+  it("ignores a stored elsewhere figure: the workspace is Anthropic's own", () => {
     const elsewhere = { micro: usdToMicro(18.4), asOf: "2026-10-09", note: null };
-    expect(costSummary(rows([], { settings: { elsewhere_usd: elsewhere } }), OCT, NOW).elsewhere).toEqual(elsewhere);
-    expect(costSummary(rows([], { settings: { elsewhere_usd: elsewhere } }), { year: 2026, month: 8 }, NOW).elsewhere).toBeNull();
+    const s = costSummary(rows([p(1, 2)], { settings: { elsewhere_usd: elsewhere } }), OCT, NOW);
+    expect(s.workspace).toEqual({ ledgerMicro: usdToMicro(2), read: { ok: false, kind: "no_key" } });
+    expect(s).not.toHaveProperty("elsewhere");
   });
 
   it("scales the trend to the series and its pace, never to a plan", () => {
@@ -168,8 +169,8 @@ describe("settingsForMonth: a setting belongs to its month", () => {
     expect(settingsForMonth(both, { year: 2026, month: 11 }).system_ceiling_usd?.micro).toBe(15_000_000);
   });
 
-  it("reads elsewhere in its own month only", () => {
-    expect(settingsForMonth(rows, oct).elsewhere_usd?.micro).toBe(18_400_000);
+  it("never reads an elsewhere row, retired with the Anthropic workspace read", () => {
+    expect(settingsForMonth(rows, oct).elsewhere_usd).toBeUndefined();
     expect(settingsForMonth(rows, nov).elsewhere_usd).toBeUndefined();
   });
 });
@@ -227,5 +228,32 @@ describe("costSummary, the system split", () => {
     const s = costSummary(rows([sys(3, 0.5)]), OCT, NOW);
     expect(s.systemSplit).toEqual({ labels: 0, rewrites: 500_000, total: 500_000, labelsPartial: false, incomplete: false });
     expect(s.evals).toEqual({ micro: 0, partial: false });
+  });
+});
+
+describe("costSummary, the Anthropic workspace", () => {
+  const read = (workspaceMicro: number) => ({ anthropic: { ok: true as const, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro } });
+
+  it("is the bill against this environment's ledger, elsewhere the difference", () => {
+    // Ledger: player $1 + system $0.75 + label batches $0.25 = $2. Evals are never in it.
+    const s = costSummary(rows([p(2, 1), sys(3, 0.75)], { ...read(usdToMicro(150)), outside: { batchMicro: 250_000, evalsMicro: 9_000_000, labelCallsMicro: 0 } }), OCT, NOW);
+    expect(s.workspace).toEqual({
+      ledgerMicro: usdToMicro(2),
+      read: { ok: true, asOf: "2026-10-11T14:55:00.000Z", totalMicro: usdToMicro(150), elsewhereMicro: usdToMicro(148), ledgerAhead: false },
+    });
+  });
+
+  it("floors elsewhere at $0, and names a ledger past the bill only beyond the tolerance", () => {
+    const within = costSummary(rows([p(2, 1.04)], read(usdToMicro(1))), OCT, NOW);
+    expect(within.workspace.read).toMatchObject({ elsewhereMicro: 0, ledgerAhead: false });
+    const past = costSummary(rows([p(2, 1.06)], read(usdToMicro(1))), OCT, NOW);
+    expect(past.workspace.read).toMatchObject({ elsewhereMicro: 0, ledgerAhead: true });
+  });
+
+  it("carries an unread kind, and the count of an ambiguous match", () => {
+    const s = costSummary(rows([p(2, 1)], { anthropic: { ok: false, kind: "ambiguous_workspace", count: 2 } }), OCT, NOW);
+    expect(s.workspace).toEqual({ ledgerMicro: usdToMicro(1), read: { ok: false, kind: "ambiguous_workspace", count: 2 } });
+    const t = costSummary(rows([p(2, 1)], { anthropic: { ok: false, kind: "refused" } }), OCT, NOW);
+    expect(t.workspace.read).toEqual({ ok: false, kind: "refused" });
   });
 });

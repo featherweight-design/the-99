@@ -166,6 +166,8 @@
 | card labels | `card_label_batches` (workflow runs, staging only) plus `model_calls` `feature = 'labels'` (manual collector); disjoint, summed (audit findings 3, 8) |
 | evals | `docs/superpowers/eval/ledger*.jsonl`, bundled at build, netted as `spent()` |
 | caps in code | `spend-rule.ts`, `allowance-rule.ts`, `ledger.mts` constants, read-only |
-| account cap, system ceiling, elsewhere | the admin settings table (locked rule 11) |
+| The 99 workspace total | Anthropic's Usage and Cost Admin API (`cost_report`, grouped by workspace, matched to the one unarchived workspace named The 99), server-side, read-only, needs `ANTHROPIC_ADMIN_KEY`; cached per five minutes (current month) or hour (past), a failure never cached and held 60s |
+| elsewhere | the workspace total less this environment's ledger (player and system, never evals), floored at $0; `elsewhere_usd` rows are retired and no longer read |
+| workspace cap (`account_cap_usd`), system ceiling | the admin settings table (locked rule 11) |
 | names, emails | Clerk Backend API, server-side |
 | job switches | GitHub repository variables API, server-side, read-only |

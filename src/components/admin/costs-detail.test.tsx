@@ -29,7 +29,7 @@ function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "produc
   // The core's day rows from the same calls, as `loadCosts` reads them.
   const days = (detailRows.calls ?? []).map((c) => ({ day: c.createdAt.getUTCDate(), origin: c.origin, runs: 1, micro: c.micro ?? 0 }));
   const rows: CostRows = {
-    days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {},
+    days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {}, anthropic: { ok: false, kind: "no_key" },
     outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete, evalsUnreadable: d.ledgersUnreadable.length > 0 },
   };
   return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} names={{ user_hugh: "Hugh H." }} viewerId={opts.viewerId} env={opts.env} month={month} current={OCT} />);
@@ -97,7 +97,8 @@ describe("CostsDetail, a month with runs", () => {
     expect(container.querySelector('[data-model="claude-sonnet-4-5"]')?.textContent).not.toMatch(/\d%/);
     expect(container.querySelector('[data-series="player"]')?.textContent).not.toMatch(/\d%/);
     expect(screen.getByText(/^System is at least [\d.]+% of October, with some of its spend not in yet\.$/)).toBeInTheDocument();
-    expect(screen.getByText("$59.65 so far · not set")).toBeInTheDocument();
+    // Unread here (no key), the workspace row is this environment's ledger alone, so far as well.
+    expect(screen.getByText("$59.65 so far here · workspace not read")).toBeInTheDocument();
   });
 
   it("lists accounts by masked name, never the Clerk id (Admin R3, C5), and the label runs by run", () => {

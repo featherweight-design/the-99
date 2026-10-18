@@ -18,7 +18,7 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 export default async function AdminModelsPage() {
   const { env } = await requireAdmin();
   const now = new Date();
-  const [{ detail }, jobs] = await Promise.all([loadCosts(monthOf(now), now), readJobValues()]);
+  const [{ detail }, jobs] = await Promise.all([loadCosts(monthOf(now), now, { workspace: false }), readJobValues()]);
   const rows = MODEL_ROWS.map((def) => ({ ...def, ...rowSpend(def, detail) }));
   return <ModelsView rows={rows} jobs={jobs} month={utcMonthName(now)} env={env} />;
 }
