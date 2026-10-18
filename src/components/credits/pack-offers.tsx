@@ -23,7 +23,10 @@ export function PackOffers({ offers, onFailure, lead }: {
     <section aria-labelledby="credits-offers" className={lead ? "md:col-span-2" : "flex flex-col md:max-w-[463px]"}>
       <h2 id="credits-offers" className="mb-[10px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:text-[19px]">{c.pack.heading}</h2>
       <div className={`flex flex-col gap-[14px] ${lead ? "md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]" : "flex-1"}`}>
-        {offers.map((offer) => <PackCard key={`${offer.id}:${offer.units}`} offer={offer} onFailure={onFailure} />)}
+        {/* One grid item for however many packs there are (P8), so a second pack stacks in the pack column beside the plan. */}
+        <div className="flex flex-1 flex-col gap-[14px]">
+          {offers.map((offer) => <PackCard key={`${offer.id}:${offer.units}`} offer={offer} onFailure={onFailure} />)}
+        </div>
         {lead}
       </div>
     </section>
