@@ -155,5 +155,17 @@
         }
       ]
     }
+  ],
+  "needsFixture": [
+    {
+      "id": "masking-reveal-failed",
+      "label": "/admin/accounts: A6, a failed Show (the toast naming the account masked, Try again; every row masked)",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it aborts the Show action's request): masking-reveal-failed-<width>.png",
+      "why": "a Show fails only when Clerk or the log write refuses, which no step of this runner can cause"
+    }
   ]
 }

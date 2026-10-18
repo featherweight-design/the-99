@@ -24,6 +24,8 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireE
 // Read-only: the waiting invites and the switch with an account override, from the database the server reads.
 const sql = neon(DATABASE_URL);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// Optional: a directory to photograph A6 (the failed Show) into, the one state the contact sheet cannot reach.
+const SHOTS = process.env.PROBE_SHOTS;
 
 let failures = 0;
 function report(label, ok, detail = "") {
@@ -236,6 +238,26 @@ try {
     await page.reload({ waitUntil: "networkidle" });
     report("a reload draws the Show in History with the diamond", (await onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]").count()) >= 1);
     report("a reload sends no whole email", !reloaded.some((b) => holds(b.text, email)) && !(await page.content()).toLowerCase().includes(email));
+
+    // A6, D13: a Show that fails (here the action's request dies on the way) shows nothing and logs nothing; the
+    // toast names the account masked and offers Try again.
+    await page.goto(`${BASE}/admin/accounts`, { waitUntil: "networkidle" });
+    const [{ n: atFail }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed'`;
+    await page.route(`${BASE}/admin/accounts`, (r) => (r.request().method() === "POST" ? r.abort() : r.fallback()));
+    await onPageRole(page, "button", /^Show /).filter({ visible: true }).first().click();
+    const toast = page.getByRole("alert").filter({ hasText: "Nothing was shown." });
+    const raised = await toast.waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    if (SHOTS) for (const [w, h, tag] of [[1300, 900, "desktop"], [390, 844, "phone"]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.screenshot({ path: `${SHOTS}/masking-reveal-failed-${tag}.png` });
+    }
+    await page.setViewportSize({ width: 1300, height: 900 });
+    await page.unroute(`${BASE}/admin/accounts`);
+    const [{ n: afterFail }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed'`;
+    report(
+      "a failed Show raises the toast with Try again, reveals no row and logs nothing",
+      raised && (await toast.getByRole("button", { name: "Try again" }).count()) === 1 && (await onPage(page, "li[data-revealed]").count()) === 0 && afterFail === atFail,
+    );
   }
 } finally {
   await browser.close();
