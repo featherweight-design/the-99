@@ -14,6 +14,15 @@ export function seatChanged(seat: Pick<TableSeat, "you" | "changedAt">, seenAt: 
   return !seat.you && seenAt !== null && seat.changedAt.getTime() > seenAt.getTime();
 }
 
+/**
+ * The viewer's own seat holds the deck they swapped to this visit (S2's `changed just now`): `swappedTo` is the deck the
+ * page itself seated, null before any swap and after an Undo. Never a read of another player's look: the seat keeps the
+ * mark for the swapper's own visit only.
+ */
+export function ownChanged(seat: Pick<TableSeat, "you" | "deck">, swappedTo: string | null): boolean {
+  return seat.you && swappedTo !== null && seat.deck?.deckId === swappedTo;
+}
+
 /** `Since you looked`'s sentences, in seat order: each changed seat that now holds a deck, and what it holds. */
 export function sinceYouLooked(view: Pick<TableView, "seats" | "seenAt">): { name: string; deck: string }[] {
   return view.seats.flatMap((s) => (seatChanged(s, view.seenAt) && s.deck ? [{ name: s.displayName, deck: s.deck.name }] : []));

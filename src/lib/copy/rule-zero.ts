@@ -96,7 +96,10 @@ export const ruleZeroCopy = {
     lowBody: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}. Low is worth the same word as high.`,
     // T7: a flagged seat whose declaration drifted says so in place of the closing line.
     driftNote: (whose: string, declared: string) => `${whose} declared ${declared} is from before its last reading, so it settles nothing.`,
-    oneBodyOwn: (middle: string, deck: string, reads: string) => `The table sits at ${middle}; ${deck} reads ${reads}. You have decks that sit closer.`,
+    // S1, S6: the viewer's own flagged seat with decks nearer the middle closes on them instead (after `sitsAt`).
+    closer: (n: number) => (n === 1 ? "You have a deck that sits closer." : "You have decks that sit closer."),
+    // S2: after the viewer's own swap this visit, in place of the read's sentence.
+    youSwapped: (deck: string) => `You swapped to ${deck}. The others see it on their next look.`,
     two: "Two decks sit off the table, one each way.",
     many: (n: number) => `${n} decks sit off the table.`,
     // T4, T6: the middle, then each flagged seat. T5: each seat after `splitBody`. Parts join with `readsList`.
@@ -178,6 +181,9 @@ export const ruleZeroCopy = {
     sub: (middle: string) => `Your decks that read nearer ${middle}. A swap changes it for everyone at the table.`,
     swapIn: "Swap in",
     toast: (deck: string) => `Swapped to ${deck}.`, // shared toast, with the shipped "Undo"
+    // Not drawn: a swap or an Undo the server refused (the table closed, the seat lapsed). The shared toast, role alert.
+    failed: "We couldn’t change your deck. Try again.",
+    undo: "Undo", // the shipped word every Undo uses
     sheetTitle: "Your deck tonight",
     sheetSub: "Nearest the table first. Everyone sees the change on their next look.",
     seatedTag: "seated",

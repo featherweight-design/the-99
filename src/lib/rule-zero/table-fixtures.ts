@@ -163,6 +163,7 @@ const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView =>
     seenAt: null,
     read: read.kind === "read" ? { kind: "read", middle: read.middle, band: read.band } : read,
     seats,
+    offer: [],
     ...o,
   };
 };
@@ -189,6 +190,17 @@ export const TABLES = {
   twoRanges: table([you(sai()), colin(miku()), peter(miku()), max(gisa())]),
   /** No flag, and the read seats do not all read the same: an undeclared Exhibition or Core beside two Cores. */
   mixed: table([you(giada()), colin(giada()), peter(miku())]),
+  /** PR 7's S1: the viewer's own deck reads high, with two of their own decks nearer the middle offered. */
+  S1: table([you(zimone()), colin(sai()), peter(ashling())], {
+    offer: [
+      { deckId: "deck-viewer-sai", name: "Sai Thopters", artCropUri: null, permits: [3], answered: null },
+      { deckId: "deck-viewer-jace", name: "Jace Clones", artCropUri: null, permits: [3], answered: null },
+    ],
+  }),
+  /** S6: the viewer's own deck reads low, with one nearer deck offered. */
+  S6: table([you(giada()), colin(sai()), peter(ashling())], {
+    offer: [{ deckId: "deck-viewer-ashling", name: "Ashling Elementals", artCropUri: null, permits: [3], answered: null }],
+  }),
   /** Legal, with a row this deployment cannot read: its player analyzes it (rules.ts `needsAnalysis`). */
   needsAnalysis: table([
     you(),

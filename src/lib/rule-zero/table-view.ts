@@ -8,7 +8,7 @@ import type { DeclarationAsk } from "../bracket/declaration-ask";
 import type { FindingId } from "../bracket/findings";
 import type { Bracket } from "../bracket/types";
 import type { TableSeat, TableView } from "../social/rule-zero-table";
-import { seatChanged, sinceYouLooked } from "./live";
+import { ownChanged, seatChanged, sinceYouLooked } from "./live";
 import type { Drivers, SeatState } from "./rules";
 
 export type { TableSeat, TableView };
@@ -63,11 +63,16 @@ export type TableDraw = {
   leftOut: number;
   /** `Since you looked`: each changed seat holding a deck, and the deck it holds now. Empty: no line. */
   since: { name: string; deck: string }[];
+  /** The deck the viewer swapped to this visit (S2): the read says so in place of its sentence. Null: none. */
+  youSwapped: string | null;
+  /** How many decks `Closer to the table` offers on the viewer's own flagged seat (the read's own sentence, S1, S6). */
+  closer: number;
 };
 
 const keyOf = (s: TableSeat) => `seat-${s.seat}`;
 
-export function drawTable(view: TableView): TableDraw {
+/** `swappedTo`: the deck the viewer seated with this visit's own swap, held by the page (`TableLive`). */
+export function drawTable(view: TableView, swappedTo: string | null = null): TableDraw {
   const draws: SeatDraw[] = [...view.seats].sort((a, b) => a.seat - b.seat).map((seat) => {
     // The loader reads a seat whenever its state is in the read, placed or not: T10's lone read seat keeps its chip
     // and counts with nothing to compare it to.
@@ -87,12 +92,21 @@ export function drawTable(view: TableView): TableDraw {
       drivers,
       driving: drivingOf(drivers),
       counts: reading ? countsOf(reading.findings) : null,
-      changed: seatChanged(seat, view.seenAt) ? seat.changedAt : null,
+      changed: seatChanged(seat, view.seenAt) || ownChanged(seat, swappedTo) ? seat.changedAt : null,
     };
   });
 
   const leftOut = draws.filter((d) => d.read === null).length;
-  return { read: view.read, seats: draws, headline: headlineOf(view.read, draws, leftOut), leftOut, since: sinceYouLooked(view) };
+  const mine = view.seats.find((s) => s.you);
+  return {
+    read: view.read,
+    seats: draws,
+    headline: headlineOf(view.read, draws, leftOut),
+    leftOut,
+    since: sinceYouLooked(view),
+    youSwapped: mine?.deck && ownChanged(mine, swappedTo) ? mine.deck.name : null,
+    closer: view.offer.length,
+  };
 }
 
 function countsOf(findings: readonly { id: FindingId; count: number }[]): Record<FindingId, number> {

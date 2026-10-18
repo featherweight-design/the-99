@@ -183,7 +183,9 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       // T7: a drifted declaration replaces the closing line; T3: a low seat closes on its own line.
       const body = line?.kind === "drifted"
         ? `${r.sitsAt(middle, deck, reads)} ${r.driftNote(who, BRACKET_NAMES[line.declared])}`
-        : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
+        : h.seat.seat.you && draw.closer > 0
+          ? `${r.sitsAt(middle, deck, reads)} ${r.closer(draw.closer)}`
+          : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
       out = h.dir === "high"
         ? { title: r.high(who, deck), ink: { phrase: copy.seat.above, kind: "high" }, body }
         : { title: r.low(who, deck), ink: { phrase: copy.seat.below, kind: "low" }, body };
@@ -213,6 +215,8 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
       return { title: r.leftOut(h.n), ink: null, body };
     }
   }
+  // S2: the viewer's own swap this visit replaces the sentence, until the visit ends.
+  if (draw.youSwapped !== null) out.body = r.youSwapped(em(draw.youSwapped));
   // The headline says it leaves seats out (decision 3): the sentence that follows says so whenever the headline
   // itself does not.
   if (draw.leftOut > 0) out.body = [out.body, r.leftOut(draw.leftOut)].filter(Boolean).join(" ");
