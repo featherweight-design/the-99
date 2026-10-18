@@ -6,6 +6,8 @@ import { adminSettings, cardLabelBatches, modelCallParts, modelCalls } from "../
 import { modelOwnerUserId, ownerShareMicro } from "../model/allowance";
 import { costDetail, EVAL_DIR_UNREADABLE, type CallRow, type CostDetail, type LedgerEntry, type LedgerFile } from "./costs-detail-rule";
 import { OPEN_STATUSES } from "../labels/reserve";
+import { cachedWorkspaceCost } from "./anthropic-cost";
+import type { WorkspaceCost } from "./anthropic-cost-rule";
 import {
   costSummary,
   settingsForMonth,
@@ -26,7 +28,8 @@ import {
  * split, as its `outside` (spend no `model_calls` row carries). The ledgers reach it as `evals`, a
  * figure of its own: they are repo files every deployment reads, so they are no environment's
  * System spend and count toward no cap. The month is a UTC calendar month, and a row belongs to the month its
- * `created_at` (or a ledger entry's `at`) falls in, as the owner's share counts it.
+ * `created_at` (or a ledger entry's `at`) falls in, as the owner's share counts it. Beside the transaction,
+ * never inside it, the Anthropic workspace's month is read from its cost report (`anthropic-cost.ts`).
  */
 
 // Drizzle drops the table from a column interpolated into a single-table select's projection
@@ -191,7 +194,10 @@ export async function loadCosts(month: MonthKey, now: Date = new Date()): Promis
     // connection to the next transaction (`READ_SNAPSHOT`, `src/lib/decks/draft-state.ts`).
     { isolationLevel: "repeatable read" },
   );
-  const [days, [figures], settingRows, callRows, partRows, labelRows] = await read;
+  // Outside the transaction: a network read must not hold a database snapshot open. It never throws,
+  // and a rejection all the same is read as upstream rather than taking the page down.
+  const anthropic: Promise<WorkspaceCost> = cachedWorkspaceCost(month, now).catch(() => ({ ok: false, kind: "upstream" }));
+  const [[days, [figures], settingRows, callRows, partRows, labelRows], workspace] = await Promise.all([read, anthropic]);
 
   const detail = costDetail({
     calls: callRows.map((c): CallRow => ({
@@ -237,6 +243,7 @@ export async function loadCosts(month: MonthKey, now: Date = new Date()): Promis
       settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy })),
       month,
     ),
+    anthropic: workspace,
     outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete, evalsUnreadable: detail.ledgersUnreadable.length > 0 },
   };
   return { summary: costSummary(rows, month, now), detail };

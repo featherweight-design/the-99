@@ -27,6 +27,12 @@ vi.mock("../model/allowance", async (importOriginal) => ({
   modelOwnerUserId: () => "user_owner",
 }));
 
+// The Anthropic read, stood in for: what it answers is handed through, and a rejection never escapes.
+const workspace = vi.hoisted(() => ({ answer: (): Promise<unknown> => Promise.resolve({ ok: false, kind: "no_key" }), calls: [] as unknown[][] }));
+vi.mock("./anthropic-cost", () => ({
+  cachedWorkspaceCost: (...args: unknown[]) => (workspace.calls.push(args), workspace.answer()),
+}));
+
 const { loadCosts, readEvalLedgers } = await import("./costs");
 
 const OCT = { year: 2026, month: 9 };
@@ -69,6 +75,22 @@ describe("loadCosts", () => {
     expect(summary.evals.micro).toBeGreaterThan(0);
     // The ledgers are repo files every deployment reads: no environment's System holds them.
     expect(summary.systemSplit.total).toBe(0);
+  });
+});
+
+describe("loadCosts, the Anthropic workspace", () => {
+  it("hands the cached workspace read through to the summary, for the month and instant asked", async () => {
+    workspace.calls.length = 0;
+    workspace.answer = () => Promise.resolve({ ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: 150_000_000 });
+    const { summary } = await loadCosts(OCT, NOW);
+    expect(workspace.calls).toEqual([[OCT, NOW]]);
+    expect(summary.workspace.read).toMatchObject({ ok: true, totalMicro: 150_000_000, asOf: "2026-10-11T14:55:00.000Z" });
+  });
+
+  it("reads a rejection as upstream rather than throwing", async () => {
+    workspace.answer = () => Promise.reject(new Error("boom"));
+    const { summary } = await loadCosts(OCT, NOW);
+    expect(summary.workspace.read).toEqual({ ok: false, kind: "upstream" });
   });
 });
 

@@ -20,7 +20,8 @@ export default async function AdminCostsPage({ searchParams }: { searchParams: P
   const raw = (await searchParams).month;
   const month = parseMonth(Array.isArray(raw) ? raw[0] : raw, now);
   const [{ summary, detail }, { accounts }] = await Promise.all([loadCosts(month, now), listAccounts()]);
-  // Every account the page draws is named masked (Admin R3, C5): the per-account rows and who entered a figure.
-  const names = namesFor([...detail.accounts.map((a) => a.userId), ...(summary.elsewhere?.by ? [summary.elsewhere.by] : [])], accounts);
+  // Every account the page draws is named masked (Admin R3, C5): the per-account rows. The typed elsewhere figure,
+  // and with it who entered one, is retired: Anthropic's cost report gives elsewhere now.
+  const names = namesFor(detail.accounts.map((a) => a.userId), accounts);
   return <CostsView s={summary} detail={detail} names={names} env={adminEnvironment() ?? undefined} month={month} current={monthOf(now)} viewerId={userId} />;
 }

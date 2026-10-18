@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { WORKSPACE_NAME } from "../../lib/admin/anthropic-cost-rule";
 import type { CostDetail } from "../../lib/admin/costs-detail-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
 import {
@@ -11,6 +12,7 @@ import {
   usd,
   type CostSummary,
   type MonthKey,
+  type WorkspaceBlock,
 } from "../../lib/admin/costs-rule";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -22,6 +24,8 @@ import { SettingAction } from "./setting-dialog";
 // code are read from `spend-rule.ts` here and never spelled, and the owner's share is the one the
 // allowance enforces, read by `loadCosts`. A cap row with no cap (or a ceiling that starts after the
 // viewed month) draws the bare track: a bar filled with spend against no cap reads as at the cap.
+// The workspace row's figure is Anthropic's own bill for The 99 (`anthropic-cost.ts`); unread, it
+// draws this environment's ledger alone on the bare track, with the reason.
 
 const copy = adminCopy.costs;
 
@@ -34,7 +38,26 @@ const hrefFor = (m: MonthKey, current: MonthKey) => (m.year === current.year && 
 const pct = (part: number, whole: number) => Math.round((part / whole) * 100);
 /** A floor of a share, for a figure that is itself a floor: never rounded up past what is known. */
 const pctFloor = (part: number, whole: number) => Math.floor((part / whole) * 100);
-const dayLabel = (asOf: string) => new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${asOf}T00:00:00Z`));
+/** When the workspace was read: `14:05 UTC` today, `17 Oct, 14:05 UTC` on another day. */
+function readAt(asOf: string, now: Date): string {
+  const at = new Date(asOf);
+  const time = `${String(at.getUTCHours()).padStart(2, "0")}:${String(at.getUTCMinutes()).padStart(2, "0")} UTC`;
+  if (at.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)) return time;
+  return `${at.getUTCDate()} ${new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(at)}, ${time}`;
+}
+
+/** Why the workspace was not read, in the page's words. */
+function unreadReason(read: Extract<WorkspaceBlock["read"], { ok: false }>): string {
+  const u = copy.unread;
+  switch (read.kind) {
+    case "no_workspace":
+      return u.no_workspace(WORKSPACE_NAME);
+    case "ambiguous_workspace":
+      return u.ambiguous(read.count ?? 2, WORKSPACE_NAME);
+    default:
+      return u[read.kind];
+  }
+}
 
 type Seg = { micro: number; ink: string; hatch?: boolean };
 type Tick = { micro: number; label: string; ink: string };
@@ -77,14 +100,14 @@ function CapBar({ scale, segs, ticks }: { scale: number; segs: Seg[]; ticks: Tic
   );
 }
 
-function CapRow({ label, here, figure, children, sub, actions }: { label: string; here?: boolean; figure: string; children: ReactNode; sub: ReactNode; actions?: ReactNode }) {
+function CapRow({ label, source = "code", figure, children, sub, actions }: { label: string; source?: "code" | "here" | "anthropic"; figure: string; children: ReactNode; sub: ReactNode; actions?: ReactNode }) {
   return (
     <div className="flex flex-col gap-[4px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] pb-[13px] pt-[12px] first:border-t-0 md:px-[16px] md:pb-[14px] md:pt-[13px]">
       <div className="flex flex-wrap items-baseline gap-[10px]">
         {/* Where the figure comes from, LEFT of the name (Hugh, 2026-10-13), drawn as a plain label
             rather than a bordered chip, which read as a control to press. */}
         <span className="whitespace-nowrap font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
-          {here ? copy.capSource.here : copy.capSource.code}
+          {copy.capSource[source]}
         </span>
         <span className="text-[13.5px] font-medium text-[color:var(--fg)]">{label}</span>
         <span className="flex-1" />
@@ -173,6 +196,7 @@ export function CostsView({
   names,
   env,
   viewerId,
+  now = new Date(),
 }: {
   s: CostSummary;
   month: MonthKey;
@@ -182,6 +206,7 @@ export function CostsView({
   names: Readonly<Record<string, string>>;
   env?: AdminEnv;
   viewerId?: string;
+  now?: Date;
 }) {
   const prev = shiftMonth(month, -1);
   const prevHref = hrefFor(prev, current);
@@ -197,14 +222,14 @@ export function CostsView({
       : copy.capSub.noCeiling;
   const share = s.ownerShareMicro;
   const cap = s.settings.account_cap_usd;
-  const elsewhere = s.elsewhere;
   const sys = s.systemSplit;
   const systemSegs: Seg[] = [
     { micro: sys.labels, ink: INK.labels },
     { micro: sys.rewrites, ink: INK.rewrites },
   ].filter((seg) => seg.micro > 0);
-  // Evals are never in it: the ledgers are repo files every deployment reads (`CostSummary.evals`).
-  const accountTotal = s.player.micro + sys.total + (elsewhere?.micro ?? 0);
+  // This environment's ledger (evals are never in it), and Anthropic's bill for the workspace.
+  const ws = s.workspace;
+  const wsRead = ws.read;
   // A label run still collecting, or unpriced, leaves every figure holding system spend partial.
   const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
   const note = (text: string | null | undefined) => (text ? ` ${copy.note(text)}` : "");
@@ -263,7 +288,7 @@ export function CostsView({
           </CapRow>
           <CapRow
             label={copy.capRows.ceiling}
-            here
+            source="here"
             figure={ceiling ? copy.of(sysUsd(sys.total), capMicro(ceiling.micro)) : copy.notSet(sysUsd(sys.total))}
             sub={ceilingSub + note(storedCeiling?.note)}
             actions={s.current && <SettingAction kind="ceiling" label={copy.changeCeiling} />}
@@ -275,23 +300,24 @@ export function CostsView({
             />
           </CapRow>
           <CapRow
-            label={copy.capRows.account}
-            here
-            figure={cap ? copy.of(sysUsd(accountTotal), capMicro(cap.micro)) : copy.notSet(sysUsd(accountTotal))}
-            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : (names[elsewhere.by] ?? elsewhere.by)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
-            actions={s.current && <>
-              <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
-              <SettingAction kind="cap" label={copy.changeCap} />
-            </>}
+            label={copy.capRows.workspace}
+            source="anthropic"
+            figure={wsRead.ok
+              ? cap ? copy.of(usd(wsRead.totalMicro), capMicro(cap.micro)) : copy.notSet(usd(wsRead.totalMicro))
+              : copy.workspaceUnread(sysUsd(ws.ledgerMicro))}
+            sub={wsRead.ok
+              ? copy.capSub.workspace + note(cap?.note) + (wsRead.ledgerAhead ? copy.capSub.ledgerAhead : copy.capSub.elsewhere(usd(wsRead.elsewhereMicro))) + copy.asOf(readAt(wsRead.asOf, now))
+              : unreadReason(wsRead) + note(cap?.note)}
+            actions={s.current && <SettingAction kind="cap" label={copy.changeCap} />}
           >
             <CapBar
-              scale={Math.max(cap?.micro ?? 0, accountTotal, 1)}
-              segs={cap ? [
+              scale={Math.max(cap?.micro ?? 0, wsRead.ok ? wsRead.totalMicro : 0, ws.ledgerMicro, 1)}
+              segs={cap && wsRead.ok ? [
                 { micro: s.player.micro, ink: INK.player },
                 ...systemSegs,
-                { micro: elsewhere?.micro ?? 0, ink: INK.elsewhere, hatch: true },
+                { micro: wsRead.elsewhereMicro, ink: INK.elsewhere, hatch: true },
               ] : []}
-              ticks={cap ? [{ micro: cap.micro, label: capMicro(cap.micro), ink: "var(--danger)" }] : []}
+              ticks={cap && wsRead.ok ? [{ micro: cap.micro, label: capMicro(cap.micro), ink: "var(--danger)" }] : []}
             />
           </CapRow>
         </div>

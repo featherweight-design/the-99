@@ -1,4 +1,5 @@
 import { usdToMicro } from "../model/spend-rule";
+import { elsewhere as elsewhereOf, type CostUnread, type WorkspaceCost } from "./anthropic-cost-rule";
 
 /**
  * The admin's Costs page as arithmetic (admin STATES C1 to C7). Pure and client-safe: `costs.ts`
@@ -9,6 +10,8 @@ import { usdToMicro } from "../model/spend-rule";
 /** A UTC calendar month; `month` is 0-based, as `Date` has it. */
 export type MonthKey = { year: number; month: number };
 
+// `elsewhere_usd` is retired (the admin cost-report plan): nothing reads it since the workspace
+// figure comes from Anthropic. It stays a key until its writer goes (PR 2), and its rows are kept.
 export const SETTING_KEYS = ["account_cap_usd", "system_ceiling_usd", "elsewhere_usd"] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 /** A stored setting: its value, the day it holds from, its note, and the Clerk id that entered it. */
@@ -70,6 +73,20 @@ export type CostRows = {
    * so the evals figure leaves it out.
    */
   outside?: { batchMicro: number; evalsMicro: number; labelCallsMicro: number; labelsIncomplete?: boolean; evalsUnreadable?: boolean };
+  /** The Anthropic workspace's month, from its cost report (`cachedWorkspaceCost`), or why it was not read. */
+  anthropic: WorkspaceCost;
+};
+
+/**
+ * The Anthropic workspace row. `ledgerMicro` is this environment's own ledger: player plus
+ * system, never the evals. Read, `elsewhereMicro` is the bill less that ledger, floored at 0, and
+ * `ledgerAhead` says the ledger runs past the bill by more than the tolerance.
+ */
+export type WorkspaceBlock = {
+  ledgerMicro: number;
+  read:
+    | { ok: true; asOf: string; totalMicro: number; elsewhereMicro: number; ledgerAhead: boolean }
+    | { ok: false; kind: CostUnread; count?: number };
 };
 
 /** System spend in its two inks: card labels, and the rest (free rewrites and prose). `incomplete`: labels are so far. */
@@ -112,8 +129,8 @@ export type CostSummary = {
   ownerShareMicro: number;
   previous: { runs: number; micro: number };
   settings: Partial<Record<SettingKey, Setting>>;
-  /** Counted against the account cap: entered with an as-of date inside this month. */
-  elsewhere: Setting | null;
+  /** The Anthropic workspace's month against this environment's ledger. */
+  workspace: WorkspaceBlock;
   /** The trend's top: the series or its pace, whichever is higher, and never under `TREND_FLOOR_MICRO`. */
   trendScaleMicro: number;
 };
@@ -150,8 +167,15 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
   const systemSplit = { labels, rewrites, total: labels + rewrites, labelsPartial: !!outside.labelsIncomplete, incomplete: !!outside.labelsIncomplete };
   const evals = { micro: outside.evalsMicro, partial: !!outside.evalsUnreadable };
 
-  const elsewhere = rows.settings.elsewhere_usd;
-  const prefix = monthParam(month);
+  // Evals are never in the ledger: no environment spent them (`EvalSpend`).
+  const ledgerMicro = player.micro + systemSplit.total;
+  const a = rows.anthropic;
+  const read: WorkspaceBlock["read"] = a.ok
+    ? (() => {
+        const e = elsewhereOf(a.workspaceMicro, ledgerMicro);
+        return { ok: true, asOf: a.asOf, totalMicro: a.workspaceMicro, elsewhereMicro: e.micro, ledgerAhead: e.ledgerAhead };
+      })()
+    : a.count === undefined ? { ok: false, kind: a.kind } : { ok: false, kind: a.kind, count: a.count };
 
   return {
     current,
@@ -172,7 +196,7 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
     ownerShareMicro: rows.ownerShareMicro,
     previous: rows.previous,
     settings: rows.settings,
-    elsewhere: elsewhere && elsewhere.asOf.startsWith(prefix) ? elsewhere : null,
+    workspace: { ledgerMicro, read },
     // The series' own height, never a plan's: there is none since 2026-10-17. At least a cent, so
     // an empty month still draws a scale.
     trendScaleMicro: Math.max(player.micro, playerPaceMicro ?? 0, TREND_FLOOR_MICRO),
@@ -196,7 +220,7 @@ export type SettingRow = Setting & { key: SettingKey; month: string };
  * The settings that apply to `month`. A cap or a ceiling holds from its own month until a later
  * month's row, so the latest row at or before `month` applies. A ceiling with none yet but one set
  * for a later month is given that one, so the page can say when it starts (`startsAfter`).
- * Elsewhere is one month's figure, read only in its own month.
+ * An `elsewhere_usd` row is never read: the workspace figure is Anthropic's own.
  */
 export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): Partial<Record<SettingKey, Setting>> {
   const m = monthParam(month);
@@ -208,8 +232,6 @@ export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): 
   if (cap) out.account_cap_usd = cap;
   const ceiling = strip(heldAt("system_ceiling_usd") ?? of("system_ceiling_usd").find((r) => r.month > m));
   if (ceiling) out.system_ceiling_usd = ceiling;
-  const elsewhere = strip(of("elsewhere_usd").find((r) => r.month === m));
-  if (elsewhere) out.elsewhere_usd = elsewhere;
   return out;
 }
 

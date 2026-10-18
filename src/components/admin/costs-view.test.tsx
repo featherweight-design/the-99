@@ -25,11 +25,14 @@ const NOW = new Date("2026-10-11T15:00:00Z");
 const p = (day: number, v: number, runs = 1): DayRow => ({ day, origin: "player", runs, micro: usdToMicro(v) });
 const sys = (day: number, v: number, runs = 1): DayRow => ({ day, origin: "system", runs, micro: usdToMicro(v) });
 const rows = (days: DayRow[], over: Partial<CostRows> = {}): CostRows => ({
-  days, playerAccounts: 1, ownerMicro: usdToMicro(0.884), ownerShareMicro: usdToMicro(5), previous: { runs: 19, micro: usdToMicro(0.813) }, settings: {}, ...over,
+  days, playerAccounts: 1, ownerMicro: usdToMicro(0.884), ownerShareMicro: usdToMicro(5), previous: { runs: 19, micro: usdToMicro(0.813) }, settings: {}, anthropic: { ok: false, kind: "no_key" }, ...over,
 });
+/** Anthropic's bill for The 99, read at 14:55 UTC on the day `NOW` falls on. */
+const billed = (v: number): Pick<CostRows, "anthropic"> => ({ anthropic: { ok: true, asOf: "2026-10-11T14:55:00.000Z", workspaceMicro: usdToMicro(v) } });
+const HATCH = "repeating-linear-gradient(135deg, var(--fg-faint) 0 3px, transparent 3px 6px)";
 
 function draw(r: CostRows, month = OCT) {
-  return render(<CostsView s={costSummary(r, month, NOW)} names={{}} month={month} current={OCT} />);
+  return render(<CostsView s={costSummary(r, month, NOW)} names={{}} month={month} current={OCT} now={NOW} />);
 }
 
 describe("CostsView, the current month (C1)", () => {
@@ -50,27 +53,40 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.queryByText("$0.884 of $10")).toBeNull();
     expect(screen.queryByText(/hard stop|plan/)).toBeNull();
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
-    // One in-code row (the owner's share), two recorded-here rows; the source label sits LEFT of the row's name.
-    expect(screen.getAllByText("in code")).toHaveLength(1);
-    const here = screen.getAllByText("recorded here");
-    expect(here).toHaveLength(2);
-    for (const tag of here) expect(tag.previousElementSibling).toBeNull();
-    expect(screen.getByText(/Elsewhere is not entered\./)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enter elsewhere" })).toBeInTheDocument();
+    // One row each from code, from this page and from Anthropic; the source label sits LEFT of the row's name.
+    for (const source of ["in code", "recorded here", "from Anthropic"]) {
+      const tags = screen.getAllByText(source);
+      expect(tags).toHaveLength(1);
+      expect(tags[0].previousElementSibling).toBeNull();
+    }
+    // No key here: the workspace row is this environment's ledger alone, and says why.
+    expect(screen.getByText("$1.135 here · workspace not read")).toBeInTheDocument();
+    expect(screen.getByText("ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
+    expect(screen.queryByText(/org cap|Other workspaces/)).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("names a stored cap and an elsewhere read this month", () => {
+  it("reads the workspace from Anthropic against the cap, elsewhere hatched last", () => {
     draw(rows([p(2, 1)], {
+      ...billed(19.4),
       settings: {
-        account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: null },
+        account_cap_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: null },
         system_ceiling_usd: { micro: usdToMicro(15), asOf: "2026-10-01", note: null },
-        elsewhere_usd: { micro: usdToMicro(18.4), asOf: "2026-10-09", note: "Concert Crawl and staging" },
+        // Retired: a stored figure is never drawn.
+        elsewhere_usd: { micro: usdToMicro(99), asOf: "2026-10-09", note: "stale" },
       },
     }));
-    expect(screen.getByText("$19.40 of $250")).toBeInTheDocument();
-    expect(screen.getByText(/Hatched: elsewhere \$18\.40, as of Oct 9\. Note: Concert Crawl and staging/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Update elsewhere" })).toBeInTheDocument();
+    expect(screen.getByText("$19.40 of $150")).toBeInTheDocument();
+    const { row, segs, ticks } = capRow("The 99 workspace cap");
+    expect(row).toHaveTextContent("from Anthropic");
+    expect(row).toHaveTextContent(
+      "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched. Elsewhere $18.40: the other environment and anything else on this workspace. Read from Anthropic at 14:55 UTC, about five minutes behind.",
+    );
+    expect(row).not.toHaveTextContent("stale");
+    expect(segs.map((el) => el.style.background)).toEqual(["var(--accent)", HATCH]);
+    expect(ticks).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
     expect(screen.getByText("$0 of $15")).toBeInTheDocument();
   });
 });
@@ -99,10 +115,10 @@ describe("CostsView, the owner's share", () => {
 });
 
 describe("CostsView, caps not set", () => {
-  it("draws the account cap's bare track, with the figure not set", () => {
-    draw(rows([p(2, 1), sys(3, 0.5)]));
-    expect(screen.getByText("$1.500 · not set")).toBeInTheDocument();
-    const { segs, ticks } = capRow("Anthropic account cap");
+  it("draws the workspace cap's bare track, with the figure not set", () => {
+    draw(rows([p(2, 1), sys(3, 0.5)], billed(12)));
+    expect(screen.getByText("$12.00 · not set")).toBeInTheDocument();
+    const { segs, ticks } = capRow("The 99 workspace cap");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
   });
@@ -117,20 +133,22 @@ describe("CostsView, caps not set", () => {
 
   it("fills the bars once the caps are set", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], {
+      ...billed(3),
       settings: {
         account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: null },
         system_ceiling_usd: { micro: usdToMicro(15), asOf: "2026-10-01", note: null },
       },
     }));
     // The account cap counts every origin: its bar carries the system segment beside the player's.
-    const inks = capRow("Anthropic account cap").segs.map((el) => el.style.background);
-    expect(inks).toEqual(expect.arrayContaining(["var(--accent)", "var(--success)"]));
+    const inks = capRow("The 99 workspace cap").segs.map((el) => el.style.background);
+    expect(inks).toEqual(["var(--accent)", "var(--success)", HATCH]);
     expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--success)"]);
     expect(capRow("System ceiling").ticks).toHaveLength(1);
   });
 
   it("splits system spend into labels and rewrites, each in its own ink, and leaves the evals out", () => {
     draw(rows([p(2, 1), sys(3, 0.75)], {
+      ...billed(130),
       settings: {
         account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: null },
         system_ceiling_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: null },
@@ -142,12 +160,12 @@ describe("CostsView, caps not set", () => {
     expect(screen.getByText("System").parentElement).toHaveTextContent("81% of the $150 ceiling");
     expect(screen.getByText("$121.70 of $150")).toBeInTheDocument();
     expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--success)"]);
-    // The account cap: the player's, then the two system inks; no eval ink.
-    expect(screen.getByText("$122.70 of $250")).toBeInTheDocument();
-    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background).slice(0, 3)).toEqual(["var(--accent)", "var(--fact)", "var(--success)"]);
-    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background)).not.toContain("var(--warning)");
-    // Both lines are reference only, and the page says so.
-    expect(screen.getByText("The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.")).toBeInTheDocument();
+    // The workspace cap: Anthropic's bill; the player's, then the two system inks, then elsewhere ($7.30); no eval ink.
+    expect(screen.getByText("$130.00 of $250")).toBeInTheDocument();
+    expect(capRow("The 99 workspace cap").segs.map((el) => el.style.background)).toEqual(["var(--accent)", "var(--fact)", "var(--success)", HATCH]);
+    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Elsewhere $7.30:");
+    // Every line is reference only, and the page says so.
+    expect(screen.getByText("The system ceiling and the Anthropic caps are reference lines. None of them blocks a call.")).toBeInTheDocument();
     // The Model calls tile stays model_calls alone.
     expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.750");
   });
@@ -223,56 +241,68 @@ describe("CostsView, other months", () => {
   });
 });
 
-describe("Enter elsewhere (C7)", () => {
-  it("opens a dialog with amount, as-of date and note, and saves through the action", async () => {
-    draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Enter elsewhere" }));
-    const dialog = screen.getByRole("dialog", { name: "Enter elsewhere" });
-    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "18.40" } });
-    fireEvent.change(within(dialog).getByLabelText("As of"), { target: { value: "2026-10-09" } });
-    fireEvent.change(within(dialog).getByLabelText("Note (optional)"), { target: { value: "console" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
-    await vi.waitFor(() => expect(setElsewhere).toHaveBeenCalledWith({ amount: "18.40", asOf: "2026-10-09", note: "console" }));
-    await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  });
-});
-
 describe("the settings actions belong to the current month", () => {
   it("offers no setting action on a past month, whose rows they could not change", () => {
     draw(rows([p(2, 1)]), { year: 2026, month: 8 });
-    for (const name of ["Change the cap", "Change the ceiling", "Enter elsewhere"]) {
+    for (const name of ["Change the cap", "Change the ceiling"]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
   });
 
-  it("offers all three on the current month", () => {
+  it("offers both on the current month, and no elsewhere entry", () => {
     draw(rows([p(2, 1)]));
-    for (const name of ["Change the cap", "Change the ceiling", "Enter elsewhere"]) {
+    for (const name of ["Change the cap", "Change the ceiling"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+    expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
   });
 });
 
-describe("the account cap row", () => {
-  it("shows the note saved with the cap, beside the elsewhere note", () => {
-    draw(rows([p(2, 1)], { settings: {
-      account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: "raised for the eval run" },
-      elsewhere_usd: { micro: usdToMicro(18.4), asOf: "2026-10-09", note: "console" },
-    } }));
-    const sub = screen.getByText(/^Mirrors Anthropic/);
-    expect(sub).toHaveTextContent("raised for the eval run");
-    expect(sub).toHaveTextContent("console");
+describe("the workspace cap row", () => {
+  const cap = { account_cap_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: "raised for the eval run" } };
+
+  it("shows the note saved with the cap, read or not", () => {
+    draw(rows([p(2, 1)], { ...billed(20), settings: cap }));
+    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Note: raised for the eval run");
   });
 
-  it("says who entered the elsewhere figure: you, or the account's masked name (Admin R3, C5)", () => {
-    const settings = { elsewhere_usd: { micro: usdToMicro(18.4), asOf: "2026-10-09", note: null, by: "user_admin" } };
-    const mine = render(<CostsView s={costSummary(rows([p(2, 1)], { settings }), OCT, NOW)} names={{ user_admin: "Hugh H." }} month={OCT} current={OCT} viewerId="user_admin" />);
-    expect(screen.getByText(/^Mirrors Anthropic/)).toHaveTextContent("as of Oct 9, entered by you.");
-    mine.unmount();
-    render(<CostsView s={costSummary(rows([p(2, 1)], { settings }), OCT, NOW)} names={{ user_admin: "Hugh H." }} month={OCT} current={OCT} viewerId="user_other" />);
-    expect(screen.getByText(/^Mirrors Anthropic/)).toHaveTextContent("entered by Hugh H.");
-    // A masked name ends in its own period, so the sentence takes no second one.
-    expect(screen.getByText(/^Mirrors Anthropic/)).not.toHaveTextContent("Hugh H..");
+  it("names a ledger past the bill, and draws elsewhere as $0", () => {
+    // Ledger $1.06 against a $1 bill: past the $0.05 floor.
+    draw(rows([p(2, 1.06)], { ...billed(1), settings: cap }));
+    const { row, segs } = capRow("The 99 workspace cap");
+    expect(row).toHaveTextContent("This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.");
+    expect(row).not.toHaveTextContent("Elsewhere $");
+    expect(segs.map((el) => el.style.width).at(-1)).toBe("0%");
+  });
+
+  it("says elsewhere is $0 with no remark inside the tolerance", () => {
+    draw(rows([p(2, 1.04)], { ...billed(1), settings: cap }));
+    const { row } = capRow("The 99 workspace cap");
+    expect(row).toHaveTextContent("Elsewhere $0: the other environment");
+    expect(row).not.toHaveTextContent("reads more than");
+  });
+
+  it("dates a read from another day", () => {
+    render(<CostsView s={costSummary(rows([p(2, 1)], billed(5)), OCT, NOW)} names={{}} month={OCT} current={OCT} now={new Date("2026-10-12T00:10:00Z")} />);
+    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Read from Anthropic at 11 Oct, 14:55 UTC, about five minutes behind.");
+  });
+
+  it.each([
+    [{ ok: false, kind: "no_key" }, "ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read."],
+    [{ ok: false, kind: "refused" }, "Anthropic refused the admin key."],
+    [{ ok: false, kind: "rejected" }, "Anthropic refused the request for this month."],
+    [{ ok: false, kind: "upstream" }, "Anthropic’s cost report did not answer. A load a minute from now tries again."],
+    [{ ok: false, kind: "shape" }, "Anthropic’s cost report came back in a shape this page does not read."],
+    [{ ok: false, kind: "no_workspace" }, "No Anthropic workspace is named The 99."],
+    [{ ok: false, kind: "ambiguous_workspace", count: 3 }, "3 Anthropic workspaces are named The 99, so none is read."],
+  ] as const)("draws %j as the ledger alone on the bare track, with its reason", (anthropic, reason) => {
+    draw(rows([p(2, 1), sys(3, 0.5)], { anthropic, settings: cap }));
+    expect(screen.getByText("$1.500 here · workspace not read")).toBeInTheDocument();
+    const { row, segs, ticks } = capRow("The 99 workspace cap");
+    expect(row).toHaveTextContent(reason);
+    expect(row).not.toHaveTextContent("Read from Anthropic");
+    expect(segs).toEqual([]);
+    expect(ticks).toEqual([]);
   });
 });
 
