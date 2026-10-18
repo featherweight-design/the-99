@@ -20,6 +20,10 @@ export function CreditChip({ chip, sheet, onGo }: { chip: ChipState; sheet: bool
       ? "border-[color:color-mix(in_srgb,var(--accent)_50%,transparent)] bg-transparent text-[color:var(--accent)]"
       : "border-[color:color-mix(in_srgb,var(--accent)_50%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] text-[color:var(--fg)]";
   const ink = warn ? "text-[color:var(--warning)]" : "text-[color:var(--accent)]";
+  // The count is TEXT on the chip's tint, so it needs 4.5:1 in every theme: --accent on its own 16% tint falls to 3.4 in
+  // Phyrexia and Kaldheim (4.48 in Low Sun), and --fg clears 8 everywhere. The diamond and the `›` keep the accent.
+  // The expiring count keeps --warning, which clears 4.8 on its tint. Pinned by `credit-chip-contrast.test.ts`.
+  const countInk = warn ? "text-[color:var(--warning)]" : "text-[color:var(--fg)]";
   const fill = warn ? "bg-[color:var(--warning)]" : "bg-[color:var(--accent)]";
   const ring = warn ? "border-[color:var(--warning)]" : "border-[color:var(--accent)]";
   return (
@@ -42,7 +46,7 @@ export function CreditChip({ chip, sheet, onGo }: { chip: ChipState; sheet: bool
         />
         {m && !out ? (
           <span>
-            <b className={`font-mono text-[13px] font-semibold ${ink}`}>{m[1]}</b>
+            <b data-chip-count className={`font-mono text-[13px] font-semibold ${countInk}`}>{m[1]}</b>
             {m[2]}
           </span>
         ) : (
