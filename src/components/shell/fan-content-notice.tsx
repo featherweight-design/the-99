@@ -20,7 +20,9 @@ export function FanContentNotice({ align = "start" }: { align?: "start" | "cente
     <footer
       data-fan-content-notice
       className={`shrink-0 border-t border-solid border-t-[color:var(--border)] px-[16px] pt-[20px] md:px-[34px] md:pt-[22px] ${
-        centered ? "pb-[calc(24px+env(safe-area-inset-bottom))] md:pb-[calc(28px+env(safe-area-inset-bottom))]" : "pb-[24px] md:pb-[28px]"
+        centered
+          ? "pb-[calc(24px+env(safe-area-inset-bottom)+var(--dock-h,0px))] md:pb-[calc(28px+env(safe-area-inset-bottom)+var(--dock-h,0px))]"
+          : "pb-[calc(24px+var(--dock-h,0px))] md:pb-[calc(28px+var(--dock-h,0px))]"
       }`}
     >
       <div

@@ -64,6 +64,7 @@ import { BuyTag } from "./buy-tag";
 import { GhostButton } from "../ui/button";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { useDockClearance } from "../shell/dock-clearance";
 
 /** How long ticking settles before one message is announced. Thirty fast taps
  *  is one message, which is the shipped selection rule from the Add panel. */
@@ -680,6 +681,7 @@ export function TopOffList({
 
   // The height the page foot has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);
+  useDockClearance(barRef);
   // Read through a ref so a caller passing an inline handler does not retear
   // down the observer on every render.
   const publish = useRef(onBarHeight);

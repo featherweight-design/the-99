@@ -18,6 +18,7 @@ import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
 import { OptInCheckbox } from "../../ui/opt-in-checkbox";
+import { useDockClearance } from "../../shell/dock-clearance";
 
 const copy = preconsCopy.start;
 
@@ -66,6 +67,8 @@ function writeAttempt(account: string | null | undefined, fileName: string, id: 
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
   const { row, cards, dockSummary, dockBeside } = props;
+  const dockRef = useRef<HTMLDivElement>(null);
+  useDockClearance(dockRef);
   // Kept here, past the dialog: a start whose answer was lost may have committed, and a reopened dialog must press again
   // under the same id, so the retry lands on the deck it made rather than adding the box twice. Per edition: each
   // edition's box is its own entry.
@@ -84,7 +87,7 @@ export function StartPrecon(props: StartPreconProps) {
       >
         {copy.button}
       </PrimaryButton>
-      <div className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-20 flex flex-col gap-[8px] border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)] bg-[color:var(--bg)] p-[10px_16px_12px] md:hidden">
+      <div ref={dockRef} className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-20 flex flex-col gap-[8px] border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)] bg-[color:var(--bg)] p-[10px_16px_12px] md:hidden">
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{dockSummary ?? copy.dock(row.name, cards, row.owned, row.of)}</span>
         <div className="flex gap-[8px]">
           <PrimaryButton type="button" onClick={() => setOpen(true)} className="h-[48px] min-w-0 flex-[2] rounded-[10px] text-[14px]">
