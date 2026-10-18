@@ -23,6 +23,7 @@ import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
 import { CardDetailProvider } from "../../cards/card-detail-provider";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 import { UNDER_HEADER } from "../../ui/under-header";
 
 /** By card: commanders first, then the cards most selected decks need, then A to Z (A2, A3). */
@@ -183,7 +184,7 @@ export function CartView({
 
   const header = (
     <header className="flex flex-col gap-[4px] border-b border-b-[color:var(--border)] px-[16px] pt-[16px] pb-[12px] md:px-[22px] md:pt-[20px] md:pb-[16px]">
-      <Link href="/decks" className="self-start font-mono text-[11px] text-[color:var(--fg-faint)]">
+      <Link href="/decks" className={`${TOUCH_HIT} self-start font-mono text-[11px] text-[color:var(--fg-faint)]`}>
         <span aria-hidden>‹ </span>{copy.page.back}
         <PendingReporter href="/decks" />
       </Link>

@@ -21,6 +21,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { folderCopy } from "../../lib/copy/folders";
 import type { Shelf } from "../../lib/decks/folder-view";
 import type { ShelfSegment } from "./shelf-line";
+import { TOUCH_HIT } from "../ui/touch-hit";
 
 const ROW =
   "flex min-h-[48px] w-full cursor-pointer items-center gap-[12px] border-x-0 border-b-0 "
@@ -103,7 +104,7 @@ export function ShelfSheet({
             type="button"
             onClick={onDismiss}
             aria-label={folderCopy.shelves.closeLabel}
-            className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] text-[13px] text-[color:var(--fg-muted)]"
+            className={`${TOUCH_HIT} flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] text-[13px] text-[color:var(--fg-muted)]`}
           >
             ✕
           </button>

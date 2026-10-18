@@ -12,6 +12,7 @@
 import { useId, useRef, useState } from "react";
 import { type MixRole, type RecommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 
 const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixRole[] }[] = [
   { key: "ramp", roles: ["ramp"] },
@@ -79,8 +80,8 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
           aria-controls={open ? panelId : undefined}
           className={
             open
-              ? "font-mono text-[11px] text-accent cursor-pointer"
-              : "font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer"
+              ? `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent cursor-pointer`
+              : `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
           }
         >
           {addPanelCopy.strip.rationaleToggle}
