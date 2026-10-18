@@ -108,11 +108,16 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
     // caller applies it and makes its list the scroll container. `height` is 0 on the first
     // placement, before the panel has rendered; the layout effect below re-places once it can be
     // measured. There is no "pin to the top margin" any more: that branch covered the trigger.
-    const roomBelow = Math.max(0, floor - box.bottom - gap - margin);
-    const roomAbove = Math.max(0, box.top - gap - margin);
+    // The edge each side hangs from is held inside the usable viewport: a trigger the page has scrolled
+    // past (the desktop panel leaves page scroll on, and this keeps tracking it) would otherwise count
+    // off-screen pixels as room and carry the panel's head out of view with it.
+    const belowEdge = Math.max(margin, box.bottom + gap);
+    const aboveEdge = Math.min(floor - margin, box.top - gap);
+    const roomBelow = Math.max(0, floor - margin - belowEdge);
+    const roomAbove = Math.max(0, aboveEdge - margin);
     const side = height <= roomBelow || roomBelow >= roomAbove ? "below" : "above";
     const maxHeight = side === "below" ? roomBelow : roomAbove;
-    const top = side === "below" ? box.bottom + gap : box.top - gap - Math.min(height, maxHeight);
+    const top = side === "below" ? belowEdge : aboveEdge - Math.min(height, maxHeight);
 
     setAt({ top, left, maxHeight });
   }

@@ -64,6 +64,19 @@ describe("useAnchoredPanel's room (a max height within the viewport)", () => {
     expect(at).toEqual({ top: 500 - 4 - 488, left: 676, maxHeight: 488 });
   });
 
+  it("keeps the head on screen when the page has scrolled the trigger above the viewport", () => {
+    // A 1500px Change deck panel, the trigger scrolled to -100…-64 on a 900px page: the panel hangs from
+    // the top margin, not from off-screen, and its room is what is actually left below that.
+    const at = setup({ rect: { top: -100, bottom: -64, right: 900 }, height: 1500 });
+    expect(at).toEqual({ top: 8, left: 676, maxHeight: 900 - 8 - 8 });
+  });
+
+  it("keeps the panel on screen when the trigger has scrolled below the viewport", () => {
+    const at = setup({ rect: { top: 1000, bottom: 1030, right: 900 }, height: 500 });
+    expect(at!.top).toBeGreaterThanOrEqual(8);
+    expect(at!.top + Math.min(500, at!.maxHeight)).toBeLessThanOrEqual(900 - 8);
+  });
+
   it("stays below when it fits neither and below is the larger side", () => {
     // 700 fits neither: below 558, above 288.
     const at = setup({ rect: { top: 300, bottom: 330, right: 900 }, height: 700 });
