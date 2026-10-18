@@ -5,9 +5,15 @@
 // the strip; then, at 1300 only, it grants the audit account itself 3 credits through the form: the pending bar names the
 // account and the count, Grant answers `Gave …`, and the database holds exactly ONE new gift lot of 3 and ONE
 // `credits_granted` event carrying the probe's note. A reload draws the lot in Credits granted and the note in Gifts.
+// Then (A3), with a paid, half-refunded pack, an open dispute on it and the audit account's buying paused, all seeded:
+// Paid says what was refunded, Disputes names the payment, Buying paused lists the account, and Let them buy clears
+// the block (the column is null) and records one `purchase_block_cleared` event, after which the account is no longer
+// listed.
 //
-// It WRITES that lot and event, so it refuses any branch but a scratch one (`assertScratchBranch`) and deletes both in a
-// `finally`: the lot by the external id `gift:<actionId>` the probe hands the form, the event by the probe's note.
+// It WRITES that lot and event, and the A3 fixture (a `payment_records` row, its pack lot, a `payment_disputes` row and
+// the account's `stripe_customers` row), so it refuses any branch but a scratch one (`assertScratchBranch`) and puts
+// everything back in a `finally`: the lot by the external id `gift:<actionId>` the probe hands the form, the events by
+// the probe's marker, the fixture by its marked ids, and the account's own `stripe_customers` row as it was found.
 //
 //   PROBE_BASE=http://localhost:3392 PROBE_DATABASE_URL=… pnpm probe:admin-payments
 // The server must read the same database (its `.env` `DATABASE_URL`). Point it at `next start`, never `next dev`.
@@ -84,6 +90,13 @@ async function signIn(page) {
 }
 
 let userId = null;
+// The A3 fixture's ids, all marked, and the account's own `stripe_customers` row as found (JSON, so it goes back exact).
+const PI = `pi_${MARK}`;
+const SESSION = `cs_${MARK}`;
+// The fixture's block, at a whole second, so the clear's event names it exactly and cleanup can match that event alone.
+const BLOCK_AT = new Date(Math.floor(Date.now() / 1000) * 1000 - 60_000).toISOString();
+let snapshot = null; // { row } once the account's own row was read; nothing of it is touched before then
+let fixtureMade = false;
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -138,12 +151,50 @@ try {
       const note = onPage(page, "[data-testid='payments-gifts']").getByText(MARK);
       check(await note.waitFor({ timeout: 20_000 }).then(() => true, () => false), "Gifts lists the note after a reload");
       check((await page.getByRole("table", { name: "Credits granted" }).getByRole("cell", { name: "Gift" }).count()) >= 1, "Credits granted lists a Gift row");
+      // A3: disputes, refunds and the purchase block.
+      snapshot = { row: (await sql`select row_to_json(t)::text as j from stripe_customers t where user_id = ${userId}`)[0]?.j ?? null };
+      fixtureMade = true;
+      await sql`insert into payment_records (payment_intent_id, checkout_session_id, amount_cents, tax_cents, currency, status) values (${PI}, ${SESSION}, 1080, 80, 'usd', 'granted')`;
+      await sql`insert into credit_grants (user_id, source, units, external_id, refunded_cents) values (${userId}, 'pack', 40, ${SESSION}, 540)`;
+      await sql`insert into payment_disputes (dispute_id, payment_intent_id, units_revoked, status) values (${`dp_${MARK}`}, ${PI}, 20, 'open')`;
+      await sql`insert into stripe_customers (user_id, stripe_customer_id, purchase_blocked_at) values (${userId}, ${`cus_${MARK}`}, ${BLOCK_AT.replace("Z", "")}::timestamp)
+        on conflict (user_id) do update set purchase_blocked_at = excluded.purchase_blocked_at`;
+      await page.reload({ waitUntil: "load" });
+      const disputes = onPage(page, "[data-testid='payments-disputes']");
+      check(await disputes.getByText(/disputed a \$10\.80 payment/).first().waitFor({ timeout: 20_000 }).then(() => true, () => false), "Disputes names the disputed payment");
+      check((await onPage(page, "[data-testid='payments-tiles']").getByText(/\$5\.40 refunded/).count()) === 1, "Paid says what was refunded");
+      const blocked = onPage(page, "[data-testid='payments-blocked'] li").filter({ has: page.getByRole("button", { name: "Let them buy" }) });
+      const rows = await blocked.count();
+      check(rows >= 1, "Buying paused lists the account", String(rows));
+      // The audit account's own row, by its id: masked names are not unique.
+      const own = onPage(page, `[data-testid='payments-blocked'] li[data-account='${userId}']`);
+      await own.getByRole("button", { name: "Let them buy" }).click();
+      const clearBar = onPage(page, "[data-testid='clear-pending']");
+      check(/1 dispute is still open/.test((await clearBar.textContent()) ?? ""), "the clear names the open dispute it leaves standing");
+      await clearBar.getByRole("button", { name: "Let them buy" }).click();
+      await page.getByRole("status").filter({ hasText: "can buy again" }).waitFor({ timeout: 20_000 });
+      const [after] = await sql`select purchase_blocked_at from stripe_customers where user_id = ${userId}`;
+      check(after?.purchase_blocked_at === null, "the block is cleared in the database");
+      const clears = await sql`select count(*)::int as n from admin_events where kind = 'purchase_block_cleared' and user_id = ${userId} and old_value = ${BLOCK_AT}`;
+      check(clears[0].n === 1, "one purchase_block_cleared event", String(clears[0].n));
     } finally {
       await context.close();
     }
   }
 } finally {
   await browser.close();
+  if (userId && fixtureMade) {
+    // The probe's own clear only: the event naming this run's fixture block.
+    await sql`delete from admin_events where kind = 'purchase_block_cleared' and user_id = ${userId} and old_value = ${BLOCK_AT}`;
+    await sql`delete from payment_disputes where dispute_id = ${`dp_${MARK}`}`;
+    await sql`delete from credit_grants where external_id = ${SESSION}`;
+    await sql`delete from payment_records where payment_intent_id = ${PI}`;
+  }
+  if (userId && snapshot) {
+    // The account's own row as it was found: gone if there was none, restored whole if there was.
+    await sql`delete from stripe_customers where user_id = ${userId}`;
+    if (snapshot.row) await sql`insert into stripe_customers select * from json_populate_record(null::stripe_customers, ${snapshot.row}::json)`;
+  }
   await sql`delete from credit_grants where external_id = ${`gift:${ACTION}`} and source = 'gift'`;
   await sql`delete from admin_events where kind = 'credits_granted' and note = ${MARK}`;
 }

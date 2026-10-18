@@ -2486,7 +2486,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   month bar, the four tiles (Paid, Tax, Net, Model spend) and the tab in the strip at both widths; then, at 1300,
   Grant credits gives the audit account 3 credits through the form, and the database holds exactly one new
   never-expiring gift lot of 3 and one `credits_granted` event with the probe's note, which a reload draws in Gifts
-  and Credits granted. It WRITES that lot and event, so it refuses anything but a scratch branch
+  and Credits granted. Then (A3), with a half-refunded pack payment, an open dispute on it and the account's buying
+  paused all seeded, Paid says what was refunded, Disputes names the payment, and Let them buy names the open dispute,
+  clears the block in the database and records one `purchase_block_cleared` event. The fixture and the account's own
+  `stripe_customers` row are put back in the `finally`. It WRITES that lot and event, so it refuses anything but a scratch branch
   (`assertScratchBranch`) and deletes both in a `finally`.
   `PROBE_BASE=… PROBE_DATABASE_URL=… pnpm probe:admin-payments`, the server reading the same database.
 - `pnpm probe:delete-warning` proves the Manage account deletion warning (buying-credits §7, D1/D2; plan E6, U5) in a

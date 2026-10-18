@@ -66,13 +66,15 @@ describe("the words", () => {
     expect(terms).toContain("we take back the credits from that payment that you haven’t spent");
     expect(terms).toContain("A dispute also pauses buying on the account until we lift the pause.");
     // The rules the sentences describe: a refund or lost dispute revokes the unspent part, a won dispute gives back what it took,
-    // and an opened or lost dispute blocks buying until it is cleared by hand (`purchaseBlocked`, enforced where a Session is made).
+    // and an opened or lost dispute blocks buying until an admin lifts it (`purchaseBlocked`, enforced where a Session is made;
+    // lifted by Let them buy, `clearPurchaseBlock`).
     const reverse = readFileSync("src/lib/payments/reverse.ts", "utf8");
     expect(reverse).toContain("purchase block");
     const rule = readFileSync("src/lib/payments/refund-rule.ts", "utf8");
     expect(rule).toMatch(/kind: "restore"/);
     expect(readFileSync("src/lib/payments/checkout.ts", "utf8")).toContain("purchaseBlocked(");
-    expect(readFileSync("src/lib/payments/blocked.ts", "utf8")).toContain("Cleared by hand");
+    expect(readFileSync("src/lib/payments/blocked.ts", "utf8")).toContain("Cleared by an admin's");
+    expect(readFileSync("src/lib/payments/clear-block.ts", "utf8")).toContain("purchase_block_cleared");
   });
 
   it("says US cards the way Checkout does", () => {

@@ -1,6 +1,6 @@
 // The Payments tab's questions, read off the emitted SQL (a component test never sees them).
 import { describe, expect, it } from "vitest";
-import { giftsQuery, grantsQuery, GRANTS_SHOWN, revenueQuery } from "./admin-read";
+import { blockedQuery, disputesQuery, giftsQuery, grantsQuery, GRANTS_SHOWN, revenueQuery } from "./admin-read";
 
 const start = new Date("2026-10-01T00:00:00Z");
 const end = new Date("2026-11-01T00:00:00Z");
@@ -8,10 +8,33 @@ const end = new Date("2026-11-01T00:00:00Z");
 describe("the Payments tab's reads", () => {
   it("sums the month's payments per currency, counting the unattributed apart", () => {
     const q = revenueQuery(start, end).toSQL();
-    expect(q.sql).toMatch(/from "payment_records" where \("payment_records"\."created_at" >= \$\d and "payment_records"\."created_at" < \$\d\) group by "payment_records"\."currency"/);
-    expect(q.sql).toContain(`sum("amount_cents")`);
-    expect(q.sql).toContain(`sum("tax_cents")`);
-    expect(q.sql).toContain(`filter (where "status" = 'unattributed')`);
+    // A join, so every column is qualified: the lot's columns can never be read for the payment's.
+    expect(q.sql).toMatch(/where \("payment_records"\."created_at" >= \$\d and "payment_records"\."created_at" < \$\d\) group by "payment_records"\."currency"/);
+    expect(q.sql).toContain(`sum("payment_records"."amount_cents")`);
+    expect(q.sql).toContain(`sum("payment_records"."tax_cents")`);
+    expect(q.sql).toContain(`filter (where "payment_records"."status" = 'unattributed')`);
+  });
+
+  it("reaches each payment's refund through the lot it granted, capped at the payment, with the tax inside it", () => {
+    const q = revenueQuery(start, end).toSQL();
+    expect(q.sql).toContain(`left join "credit_grants" on "credit_grants"."external_id" = "payment_records"."checkout_session_id"`);
+    expect(q.sql).toContain(`least(coalesce("credit_grants"."refunded_cents", 0), "payment_records"."amount_cents")`);
+    expect(q.sql).toMatch(/\* "payment_records"\."tax_cents" \/ "payment_records"\."amount_cents"/);
+  });
+
+  it("lists open disputes and the month's, reaching the account through the payment's lot", () => {
+    const q = disputesQuery(start, end).toSQL();
+    expect(q.sql).toContain(`left join "payment_records" on "payment_records"."payment_intent_id" = "payment_disputes"."payment_intent_id"`);
+    expect(q.sql).toContain(`left join "credit_grants" on "credit_grants"."external_id" = "payment_records"."checkout_session_id"`);
+    expect(q.sql).toMatch(/"payment_disputes"\."status" = \$1 or/);
+    expect(q.params[0]).toBe("open");
+    expect(q.sql).toContain(`"payment_disputes"."closed_at" >=`);
+  });
+
+  it("lists every paused account, whatever the month", () => {
+    const q = blockedQuery().toSQL();
+    expect(q.sql).toMatch(/where "stripe_customers"\."purchase_blocked_at" is not null order by "stripe_customers"\."purchase_blocked_at"/);
+    expect(q.params).toEqual([]);
   });
 
   it("lists the month's bought and gifted lots alone, newest first and bounded, with the full count", () => {

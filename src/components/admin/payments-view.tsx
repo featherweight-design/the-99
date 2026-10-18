@@ -5,6 +5,7 @@ import { money } from "../../lib/payments/admin-read-rule";
 import type { PaymentsMonth } from "../../lib/payments/admin-read";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SectionHead, Table } from "./costs-detail";
+import { BlockedList } from "./blocked-list";
 import { GiftForm, type PickAccount } from "./gift-form";
 
 // The Payments tab (admin plan A2b, A-R4, A-R6). No new layout: the Costs page's month bar and tiles, its table (a grid
@@ -48,7 +49,15 @@ export function PaymentsView({
   const usdRow = payments.revenue.find((r) => r.currency.toLowerCase() === "usd") ?? null;
   const rest = payments.revenue.filter((r) => r !== usdRow);
   const tilesFor = (r: PaymentsMonth["revenue"][number] | null, currency: string) => [
-    { label: copy.tiles.gross, fig: money(r?.grossCents ?? 0, currency), sub: [copy.tileSub.payments(r?.payments ?? 0), r?.unattributed ? copy.tileSub.unattributed(r.unattributed) : null].filter(Boolean).join(" · ") },
+    {
+      label: copy.tiles.gross,
+      fig: money(r?.grossCents ?? 0, currency),
+      sub: [
+        copy.tileSub.payments(r?.payments ?? 0),
+        r?.unattributed ? copy.tileSub.unattributed(r.unattributed) : null,
+        r?.refundedCents ? copy.tileSub.refunded(money(r.refundedCents, currency)) : null,
+      ].filter(Boolean).join(" · "),
+    },
     { label: copy.tiles.tax, fig: money(r?.taxCents ?? 0, currency), sub: copy.tileSub.tax },
     { label: copy.tiles.net, fig: money(r?.netCents ?? 0, currency), sub: copy.tileSub.net },
   ];
@@ -97,6 +106,40 @@ export function PaymentsView({
             </div>
           ))}
         </div>
+
+        <section className="flex flex-col gap-[10px]">
+          <SectionHead title={copy.disputesHead} meta={copy.disputesMeta} />
+          {payments.disputes.length === 0 ? (
+            <p className={EMPTY}>{copy.noDisputes}</p>
+          ) : (
+            <ul data-testid="payments-disputes" className="m-0 flex list-none flex-col p-0">
+              {payments.disputes.map((d) => (
+                <li key={d.disputeId} className="flex flex-col gap-[2px] border-0 border-t border-solid border-[color:var(--border)] py-[10px] first:border-t-0">
+                  <span className="text-[13.5px] text-[color:var(--fg-body)]">
+                    {copy.disputeLine(d.userId ? nameOf(d.userId) : copy.purgedAccount, d.amountCents === null ? "?" : money(d.amountCents, d.currency ?? "usd"))}
+                  </span>
+                  <span className={`font-mono text-[10.5px] ${d.status === "open" ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>
+                    {copy.disputeMeta(copy.disputeStatus[d.status], d.unitsRevoked, day(d.createdAt), d.closedAt ? day(d.closedAt) : null)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-[10px]">
+          <SectionHead title={copy.blockedHead} meta={copy.blockedMeta} />
+          {/* Mounted even when empty, so clearing the last account keeps its "can buy again" line. */}
+          <BlockedList
+            emptyClassName={EMPTY}
+            rows={payments.blocked.map((b) => ({
+              userId: b.userId,
+              name: nameOf(b.userId),
+              since: day(b.at),
+              openDisputes: payments.disputes.filter((d) => d.status === "open" && d.userId === b.userId).length,
+            }))}
+          />
+        </section>
 
         <GiftForm accounts={accounts} clerkDown={clerk === "down"} />
 

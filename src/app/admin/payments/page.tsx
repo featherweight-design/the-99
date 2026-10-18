@@ -25,7 +25,12 @@ export default async function AdminPaymentsPage({ searchParams }: { searchParams
     loadCosts(month, now, { workspace: false }),
     listAccounts(),
   ]);
-  const ids = [...payments.grants.map((g) => g.userId), ...payments.gifts.flatMap((g) => [g.userId, g.actorId])];
+  const ids = [
+    ...payments.grants.map((g) => g.userId),
+    ...payments.gifts.flatMap((g) => [g.userId, g.actorId]),
+    ...payments.disputes.flatMap((d) => (d.userId ? [d.userId] : [])),
+    ...payments.blocked.map((b) => b.userId),
+  ];
   return (
     <PaymentsView
       month={month}

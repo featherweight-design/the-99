@@ -30,8 +30,9 @@ export const adminCopy = {
     tileSub: {
       payments: (n: number) => plural(n, "payment", "payments"),
       unattributed: (n: number) => `${n} unattributed`,
+      refunded: (amount: string) => `${amount} refunded`,
       tax: "collected by Stripe Tax",
-      net: "paid less tax",
+      net: "paid less tax and refunds",
       spend: "this environment, as Costs reads it",
     },
     noPayments: "No payments this month.",
@@ -45,6 +46,31 @@ export const adminCopy = {
     giftsHead: "Gifts",
     giftLine: (who: string, whom: string, units: number) => `${who} gave ${whom} ${plural(units, "credit", "credits")}`,
     noGifts: "No gifts this month.",
+    disputesHead: "Disputes",
+    disputesMeta: "open ones, and any opened or closed this month",
+    disputeStatus: { open: "Open", won: "Won", lost: "Lost" },
+    // The payment's own total: a dispute's amount is not stored (K2), and can be less than the payment.
+    disputeLine: (whom: string, amount: string) => `${whom} disputed a ${amount} payment`,
+    disputeMeta: (status: string, units: number, opened: string, closed: string | null) =>
+      `${status} · ${plural(units, "credit", "credits")} taken back · opened ${opened}${closed ? ` · closed ${closed}` : ""}`,
+    purgedAccount: "A deleted account",
+    noDisputes: "No disputes.",
+    blockedHead: "Buying paused",
+    blockedMeta: "a dispute paused these accounts' buying; credits they hold still spend",
+    blockedLine: (whom: string, since: string) => `${whom} · since ${since}`,
+    noBlocked: "No account has buying paused.",
+    clear: {
+      press: "Let them buy",
+      pending: (whom: string, open: number) =>
+        open > 0
+          ? `Saving lets ${whom} buy again. ${plural(open, "dispute is", "disputes are")} still open: a new dispute, or one of these lost, pauses buying again.`
+          : `Saving lets ${whom} buy again.`,
+      confirm: "Let them buy",
+      done: (whom: string) => `${whom} can buy again.`,
+      already: (whom: string) => `${whom} could already buy.`,
+      failed: "Couldn't clear the pause, so nothing changed. Try again.",
+      lost: "Lost touch with the server, so it may have cleared. Reload before pressing again.",
+    },
     form: {
       head: "Grant credits",
       account: "Account",
