@@ -1,6 +1,6 @@
 {
   "feature": "Admin PII masking (Admin R3): every person named masked, computed on the server. PR 1, masked at the source; later PRs add their cells",
-  "note": "Run against a `next start` server with ADMIN_USER_IDS=user_3HdjdocERCjunk0zJQFDWyHkTd4 (the audit account on Clerk's development instance) and ADMIN_ENV_LABEL=staging, on a scratch branch made from local-dev and seeded with `OWNER_ID=user_3HdjdocERCjunk0zJQFDWyHkTd4 pnpm seed:admin-pii-fixture` (group pii-probe holding every account, an account override on HELP_PANEL_ENABLED, a waiting email invite). The account row takes its Clerk id from ADMIN_PII_ACCOUNT (the owner above holds the waiting invite). Nothing here presses a control that writes: the picker rows open a picker and pick nothing.",
+  "note": "Run against a `next start` server with ADMIN_USER_IDS=user_3HdjdocERCjunk0zJQFDWyHkTd4 (the audit account on Clerk's development instance) and ADMIN_ENV_LABEL=staging, on a scratch branch made from local-dev and seeded with `OWNER_ID=user_3HdjdocERCjunk0zJQFDWyHkTd4 pnpm seed:admin-pii-fixture` (group pii-probe holding every account, an account override on HELP_PANEL_ENABLED, a waiting email invite, one player run this month for Costs). The account row takes its Clerk id from ADMIN_PII_ACCOUNT (the owner above holds the waiting invite). Nothing here presses a control that writes: the picker rows open a picker and pick nothing.",
   "rows": [
     {
       "id": "masking-accounts-list",

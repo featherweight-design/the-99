@@ -1,7 +1,8 @@
 // The fixture `probe:admin-pii` and the admin-masking contact sheet read (Admin R3): one group holding every Clerk
 // account, an account override with its history, and a waiting email invite, so every surface that names a person
 // has someone to name. SCRATCH BRANCHES ONLY (`assertScratchBranch`): it writes rows the admin pages read for every
-// account. Re-running replaces its own rows (group `pii-probe`, actor `pii_probe_fixture`, `@pii-probe.example`).
+// account, and a player run this month so Costs draws its per-account table. Re-running replaces its own rows (group
+// `pii-probe`, actor `pii_probe_fixture`, `@pii-probe.example`, model `pii-probe-fixture`).
 //
 //   OWNER_ID=user_… pnpm seed:admin-pii-fixture
 //
@@ -32,6 +33,7 @@ await sql.transaction((tx) => [
   tx`delete from flag_overrides where updated_by = ${ACTOR}`,
   tx`delete from admin_events where actor_id = ${ACTOR}`,
   tx`delete from invite_reservations where email like '%@pii-probe.example'`,
+  tx`delete from model_calls where model = 'pii-probe-fixture'`,
   tx`insert into flag_groups (name, description, created_by) values (${GROUP}, 'probe:admin-pii fixture', ${ACTOR})`,
   tx`insert into flag_group_members (user_id, group_id, added_by)
      select id, (select id from flag_groups where name = ${GROUP}), ${ACTOR} from unnest(${ids}::text[]) id
@@ -43,6 +45,8 @@ await sql.transaction((tx) => [
   tx`insert into admin_events (actor_id, kind, switch, scope, user_id, new_value) values (${ACTOR}, 'override_set', ${SWITCH}, 'user', ${other}, 'on')`,
   tx`insert into invite_reservations (user_id, kind, state, holds_until, email)
      values (${OWNER_ID}, 'email', 'reserved', now() + interval '7 days', ${WAITING})`,
+  // One spent player run in the current month, so Costs has a per-account row to name.
+  tx`insert into model_calls (user_id, feature, origin, status, model, cost_micro_usd) values (${other}, 'tuning', 'player', 'spent', 'pii-probe-fixture', 12000)`,
   // A sender's balance is never below the invites holding it (`holdsInvite`'s rules): the copied branch may hold some already.
   tx`insert into invite_balances (user_id, held)
      select ${OWNER_ID}, count(*)::int from invite_reservations
