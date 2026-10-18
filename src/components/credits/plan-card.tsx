@@ -158,18 +158,18 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
   const updateButton = presses.updateCard && !cardHidden ? (
     <button type="button" onClick={() => void updateCard()} disabled={held} aria-busy={busy === "card" || undefined}
       className={state === "pastDue" ? FILLED : `${TEXT} text-[color:var(--accent)]`}>
-      {p.updateCard}<span aria-hidden="true" className={`text-[11px] ${state === "pastDue" ? "ml-1" : ""}`}>↗</span>
+      {p.updateCard}<span aria-hidden="true" className={`text-[11px] ${state === "pastDue" ? "ml-[6px]" : ""}`}>↗</span>
     </button>
   ) : null;
   const cancelButton = presses.cancel ? (
     <button type="button" onClick={() => void change("cancel")} disabled={held} aria-busy={busy === "cancel" || (waiting && pending === "cancel") || undefined}
-      className={state === "pastDue" ? `${TEXT} text-[color:var(--fg-body)]` : `${NEUTRAL} ring-2 ring-[color:color-mix(in_srgb,var(--accent)_35%,transparent)]`}>
+      className={state === "pastDue" ? `${TEXT} md:self-center text-[color:var(--fg-body)]` : `${NEUTRAL} ring-2 ring-[color:color-mix(in_srgb,var(--accent)_35%,transparent)]`}>
       {p.cancel}
     </button>
   ) : null;
 
   const card = (
-    <div className={`${CARD} ${border}`} data-plan-state={state}>
+    <div className={`${CARD} ${border} ${state === "offer" ? "" : "flex-1"}`} data-plan-state={state}>
       <div className="flex items-start gap-[14px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{p.k}</span>
@@ -184,7 +184,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
           {cancelling ? <span className={`font-mono text-[12px] ${state === "ending" ? warnText : "text-[color:var(--fg-muted)]"}`}>{p.ended(on)}</span> : null}
           {state === "pastDue" ? <span className={`font-mono text-[12px] ${warnText}`}>{p.dueTitle(on)}</span> : null}
         </div>
-        <span className={cancelling ? "opacity-45" : undefined}><OfferArt count={offer.units} /></span>
+        <span className={cancelling ? "opacity-45 saturate-[.3]" : undefined}><OfferArt count={offer.units} /></span>
       </div>
 
       {state === "offer" ? (
@@ -198,7 +198,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
       {cancelling ? <p className={`${SAYS} ${state === "ending" ? warnText : "text-[color:var(--fg-body)]"}`}>{state === "ending" ? p.soon(credits, plan.days ?? 0, on) : p.endedSays(credits, on)}</p> : null}
 
       {presses.subscribe ? (
-        <div className="flex flex-col gap-[8px] md:flex-row md:items-center md:gap-[16px]">
+        <div className="mt-auto flex flex-col gap-[8px] md:flex-row md:items-center md:gap-[16px]">
           <button type="button" onClick={() => void subscribe()} disabled={busy !== null} aria-busy={busy === "subscribe" || undefined} className={FILLED}>{p.subscribe(price)}</button>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.via}</span>
         </div>
@@ -211,8 +211,10 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
       ) : null}
       {state === "active" ? (
         <>
-          {cancelButton}
-          <p className={SAYS}>{p.cancelSays(credits, on)}</p>
+          <div className="flex flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:gap-[16px]">
+            {cancelButton}
+            <p className={`${SAYS} md:min-w-[220px] md:flex-1`}>{p.cancelSays(credits, on)}</p>
+          </div>
           {updateButton}
         </>
       ) : null}
@@ -229,7 +231,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
 
   if (state === "offer") return card;
   return (
-    <section aria-labelledby="credits-plan" className="md:max-w-[463px]">
+    <section aria-labelledby="credits-plan" className="flex flex-col md:max-w-[463px]">
       <h2 id="credits-plan" className="mb-[10px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:text-[19px]">{p.heading}</h2>
       {card}
     </section>

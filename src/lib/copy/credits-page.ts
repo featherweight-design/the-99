@@ -148,7 +148,6 @@ export const creditsPageCopy = {
     slow: "Still updating your plan. Reload in a moment to see it.",
     /** Why a Cancel, Keep or Update card press did nothing. Placeholders: not in the handoff's strings file. */
     outcome: {
-      off: "Plan changes aren’t available right now.",
       unconfigured: "Plan changes aren’t set up here yet.",
       not_found: "We couldn’t find a plan on your account.",
       failed: "Couldn’t update your plan. Try again.",

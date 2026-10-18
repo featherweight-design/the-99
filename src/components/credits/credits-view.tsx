@@ -69,7 +69,7 @@ export function CreditsView({ model, ret, timing, planTiming }: { model: Credits
       <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} />
       {/* `contents` below `md`, so the sections stack in the page's own column as ever; two columns from `md` (K2 to K5). */}
       {hasCards ? (
-      <div className="contents md:grid md:grid-cols-2 md:items-start md:gap-[18px]">
+      <div className="contents md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]">
         {plan && plan.state !== "offer" ? <PlanCard plan={plan} reduced={reduced} timing={planTiming} onToast={say} /> : null}
         {model.offers && onSale ? (
           <PackOffers offers={model.offers} onFailure={buyFailed} lead={plan?.state === "offer" ? <PlanCard plan={plan} reduced={reduced} timing={planTiming} onToast={say} /> : undefined} />

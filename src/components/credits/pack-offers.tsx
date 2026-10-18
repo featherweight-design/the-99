@@ -20,9 +20,9 @@ export function PackOffers({ offers, onFailure, lead }: {
   lead?: ReactNode;
 }) {
   return (
-    <section aria-labelledby="credits-offers" className={lead ? "md:col-span-2" : "md:max-w-[463px]"}>
+    <section aria-labelledby="credits-offers" className={lead ? "md:col-span-2" : "flex flex-col md:max-w-[463px]"}>
       <h2 id="credits-offers" className="mb-[10px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:text-[19px]">{c.pack.heading}</h2>
-      <div className={`flex flex-col gap-[14px] ${lead ? "md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]" : ""}`}>
+      <div className={`flex flex-col gap-[14px] ${lead ? "md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]" : "flex-1"}`}>
         {offers.map((offer) => <PackCard key={`${offer.id}:${offer.units}`} offer={offer} onFailure={onFailure} />)}
         {lead}
       </div>
@@ -62,7 +62,7 @@ function PackCard({ offer, onFailure }: { offer: PackOffer; onFailure: (reason: 
     }
   }
   return (
-    <div className="flex flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[16px] md:px-[22px] md:py-[20px]">
+    <div className="flex flex-1 flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[16px] md:px-[22px] md:py-[20px]">
       <div className="flex items-start gap-[14px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.pack.k}</span>

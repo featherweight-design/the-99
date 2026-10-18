@@ -93,17 +93,16 @@ export async function buyPlanAction(planId: unknown, actionId: unknown): Promise
 }
 
 /**
- * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `off`: payments
- * are off for this reader. `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
+ * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
  * (a subscription Stripe does not tag as theirs answers the same, with no detail). `failed`: Stripe or the database did not answer.
  */
 export type PlanChangeOutcome =
   | { ok: true; unchanged: boolean }
-  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+  | { ok: false; reason: "unconfigured" | "not_found" | "failed" };
 
 async function changePlan(cancel: boolean): Promise<PlanChangeOutcome> {
+  // NOT gated on the switch: a reader who holds a plan keeps managing it with payments off (O2, O3), as the receipt does.
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "unconfigured" };
   try {
@@ -131,12 +130,12 @@ export async function keepPlanAction(): Promise<PlanChangeOutcome> {
 
 export type ManageCardOutcome =
   | { ok: true; url: string }
-  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+  | { ok: false; reason: "unconfigured" | "not_found" | "failed" };
 
 /** Update the card: Stripe's billing portal on The 99's own configuration (E5). Unset `STRIPE_PORTAL_CONFIG` is `unconfigured`. */
 export async function manageCardAction(): Promise<ManageCardOutcome> {
+  // NOT gated on the switch, for the same reason as cancel and keep.
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "unconfigured" };
   try {

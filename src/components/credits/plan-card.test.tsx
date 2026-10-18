@@ -204,7 +204,6 @@ describe("Cancel plan and Keep my plan", () => {
   });
 
   it.each([
-    ["off", "Plan changes aren’t available right now."],
     ["unconfigured", "Plan changes aren’t set up here yet."],
     ["not_found", "We couldn’t find a plan on your account."],
     ["failed", "Couldn’t update your plan. Try again."],
@@ -251,7 +250,6 @@ describe("Update card", () => {
   });
 
   it.each([
-    ["off", "Plan changes aren’t available right now."],
     ["not_found", "We couldn’t find a plan on your account."],
     ["failed", "Couldn’t open the card page. Try again."],
   ] as const)("%s says so and gives the press back", async (reason, text) => {
