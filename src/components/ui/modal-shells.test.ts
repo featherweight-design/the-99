@@ -313,6 +313,12 @@ describe("modal shells: a field's keyboard does not cover the shell", () => {
     expect(src).toContain("max-[999px]:max-h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))]");
   });
 
+  it("frames the set list at the same 999px stop, since the compact collection and rack filters open it there", () => {
+    const src = read("src/components/ui/set-list-sheet.tsx");
+    expect(src).toContain("${VV_FRAME_COMPACT}");
+    expect(src).toContain("max-[999px]:h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))]");
+  });
+
   it("names a shell that skips the hook, reads no value, or sets it nowhere", () => {
     const shell = { file: "f.tsx" };
     expect(keyboardFailures(shell, "const visible = useVisualViewportFrame(); <div style={visible} className={VV_FRAME} />")).toEqual([]);

@@ -44,6 +44,12 @@ export function useVisualViewportFrame(active = true): CSSProperties | undefined
 export const VV_FRAME = "max-md:bottom-auto max-md:top-[var(--vv-top,0px)] max-md:h-[var(--vv-h,100%)]";
 
 /**
+ * `VV_FRAME` held to the compact filter stop (999px), for a sheet that is still a bottom sheet past `md`: the deck
+ * filter sheet, and the set list it opens from the collection and rack filters. A tablet keyboard covers it too.
+ */
+export const VV_FRAME_COMPACT = "max-[999px]:bottom-auto max-[999px]:top-[var(--vv-top,0px)] max-[999px]:h-[var(--vv-h,100%)]";
+
+/**
  * A `fixed bottom-0` panel with no frame, lifted on the phone to the visual viewport's bottom: the layout
  * viewport's height (`100%` of a fixed box's containing block) less the visible window's top and height.
  */
