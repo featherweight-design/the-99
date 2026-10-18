@@ -86,3 +86,16 @@ describe("buildCreditsModel: history", () => {
     expect(h).toMatchObject({ amount: null, sessionId: null });
   });
 });
+
+describe("buildCreditsModel: a welcome lot (D1)", () => {
+  it("is held, so the page is seen with the switch off, and its cell sits after Free and counts in the total", () => {
+    const m = model({ switchOn: false, allowance: allowance({ welcome: 15, pack: 4 }), history: [], offers });
+    expect(m.cells.map((c) => c.key)).toEqual(["free", "welcome", "pack"]);
+    expect(m.total).toBe(3 + 15 + 4);
+  });
+
+  it("draws no cell once the lot is spent: it is never bought, so there is no empty cell to explain", () => {
+    const m = model({ switchOn: true, allowance: allowance({ welcome: 0 }), history: [], offers });
+    expect(m.cells.map((c) => c.key)).toEqual(["free"]);
+  });
+});

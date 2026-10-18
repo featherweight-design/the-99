@@ -53,8 +53,8 @@ the onboarding surface and the credit line's wording are D2 and wait for Design.
   + 30 days`, and nothing is inserted when that is already past. A redelivery cannot extend a lot, and an old account's
   lot would be born expired.
 - **No in-page fallback in D1.** `user_prefs` carries no creation time, so it is not a "new account" signal. D1 ships the
-  webhook plus `scripts/backfill-welcome.ts` (Clerk users created in the last 30 days, dry-run by default). An in-page
-  fallback is a D2 decision.
+  webhook alone. A backfill script was dropped: it needs the target environment's Clerk key and a named database, and a
+  missed webhook is rare; an in-page fallback or a backfill is a D2 decision.
 - **Third source, every site.** `CreditSource`, `spendOrder`, an exhaustive `creditTotals`, `Allowance.welcome`,
   `heldCredits`, the credit line's `paidHeld`, the `/credits` page model (a welcome row is not "ever bought" and is not
   drawn as a pack), `return.ts`, the ledger probe.
