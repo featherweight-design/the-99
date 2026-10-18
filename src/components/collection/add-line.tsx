@@ -371,7 +371,7 @@ function CountInput({ name, quantity, disabled, onQuantity }: { name: string; qu
       }}
       onBlur={() => setDraft(null)}
       // The shared input half, with the stepper's own dividers put back over its `border-none`.
-      className={twMerge(AFFIX_INPUT, "h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] text-center text-[16px] md:w-[30px] md:text-[13px]")}
+      className={twMerge(AFFIX_INPUT, "h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] text-center text-[16px] md:w-[30px] [@media(pointer:fine)]:md:text-[13px]")}
     />
   );
 }

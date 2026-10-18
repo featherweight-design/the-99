@@ -361,7 +361,7 @@ export function IntakeForm({
               onKeyDown={(e) => { picker.onKeyDown(e); }}
               className={[
                 "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
-                "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] outline-none",
+                "bg-[color:var(--surface-sunken)] text-[16px] [@media(pointer:fine)]:md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)] outline-none",
                 // Accent while the words will be read: a credit free, or a standing that could not be
                 // read (the press then draws plain, and the submit decides).
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",

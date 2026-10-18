@@ -1108,7 +1108,7 @@ export function SetGridView(props: SetGridViewProps) {
               // 16px on the phone is not a type choice: iOS Safari zooms the page when a
               // text input under 16px takes focus, which would throw away the 390px
               // arithmetic this row is built on. The compact size starts at `md`.
-              className="text-[16px] md:text-[12.5px]"
+              className="text-[16px] [@media(pointer:fine)]:md:text-[12.5px]"
               value={draft}
               onChange={(e) => typeQuery(e.target.value)}
               // The phone slot is 173px and the icon, padding and clear leave far less to

@@ -349,12 +349,13 @@ describe("the settings dialog", () => {
     await vi.waitFor(() => expect(setSystemCeiling).toHaveBeenCalledWith({ amount: "15", start: "2099-11", note: "" }));
   });
 
-  it("is 16px on a phone, so iOS does not zoom on focus", () => {
+  it("is 16px on any touch screen, and 14px only for a fine pointer at md, so iOS does not zoom on focus", () => {
     draw(rows([p(2, 1)]));
     fireEvent.click(screen.getByRole("button", { name: "Change the cap" }));
     for (const input of within(screen.getByRole("dialog")).getAllByRole("textbox")) {
       expect(input.className).toMatch(/(^|\s)text-\[16px\](\s|$)/);
-      expect(input.className).toContain("md:text-[14px]");
+      expect(input.className).toMatch(/(^|\s)\[@media\(pointer:fine\)\]:md:text-\[14px\](\s|$)/);
+      expect(input.className).not.toMatch(/(^|\s)md:text-\[14px\](\s|$)/);
     }
   });
 });

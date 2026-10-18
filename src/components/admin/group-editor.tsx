@@ -30,7 +30,7 @@ import { SearchField } from "../ui/text-field";
 
 const copy = adminCopy.groups;
 const FIELD =
-  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[13.5px]";
+  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[13.5px]";
 const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
 
 type FieldError = { field: "name" | "description" | "credits"; text: string } | null;
