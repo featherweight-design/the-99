@@ -7,8 +7,9 @@
 // is shot. An entry whose locator draws nothing visible on its frame is not captured, and the run exits 1.
 //
 // THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its three decks, Alex's
-// spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with the tools'
-// switches on, `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`)
+// spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
+// reader-facing switch on (the registry's, less the plumbing ones and the payments line; a deck's Stats and Notes tabs, the
+// all-decks cart and the Shopping buy tag each have their own), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`)
 // ON, so the frames show the ?, the account menu's `Take the tour` row and the pod's `Rule 0 check` row that the
 // launch-end entries point at (About batch brief, 2026-10-18), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
 // `off`, so no bubble or sheet is photographed. The fixture account has decks, so its Home is the dashboard and the

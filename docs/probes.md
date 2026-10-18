@@ -662,8 +662,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped down by 5 for an
   image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
-  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with the tools' switches
-  on, `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) on, and
+  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
+  switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line: a deck's Stats and Notes
+  tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame missing one is not captured),
+  `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) on, and
   `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to `off`, so the frames show the ?, the account menu's `Take the
   tour` row and the pod's `Rule 0 check` row, and no bubble or sheet. A frame missing any of the three is refused
   (`REQUIRED_ON_FRAME`). It refuses any database but a scratch branch (`assertScratchBranch`)
