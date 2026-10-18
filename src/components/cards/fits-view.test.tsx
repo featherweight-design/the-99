@@ -411,6 +411,17 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
   });
 
+  it("a refusal before any credit counts the credits and never names a paid spend (L3)", async () => {
+    const paidNext = { ...allowance, used: 5, pack: 114, paidUsedToday: 0, paidLimit: 20 } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paidNext }));
+    readActions.pressFitsReadAction.mockResolvedValue({ ok: false, reason: "tooBig" });
+    fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+    await settle();
+    const band = screen.getByTestId("read-band-refused");
+    expect(band).toHaveTextContent("114 paid");
+    expect(band).not.toHaveTextContent("this run uses");
+  });
+
   it("too many decks for one read: refused before any credit, with no Try again, the list open", async () => {
     await draw(panel());
     readActions.pressFitsReadAction.mockResolvedValue({ ok: false, reason: "tooBig" });

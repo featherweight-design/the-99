@@ -430,7 +430,7 @@ export function FitsView({
         <RunningBand title={read.running(panel?.view.pending?.candidates ?? runCount ?? candidates, name)} elapsed={clock(now - running)} still={!result && !noFit} />
         {noFitBox ? <div className="opacity-[0.72]">{noFitBox}</div> : null}
       </>;
-    } else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
+    } else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={footStanding} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
       // P6c: the old no fit stays on screen, faded, under the note that re-offers the read.
