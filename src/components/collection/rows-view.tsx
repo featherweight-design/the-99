@@ -23,6 +23,7 @@ import { foilSpoken } from "../../lib/copy/foil-mark";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
 import { DateFigure, dateSpoken } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
@@ -256,7 +257,7 @@ export function RowsView({
           type="button"
           onClick={busy ? undefined : onShowMore}
           aria-busy={busy || undefined}
-          className="mt-[6px] mx-auto text-[13px] px-[16px] py-[9px]"
+          className={`${TOUCH_HIT} mt-[6px] mx-auto text-[13px] px-[16px] py-[9px]`}
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)
         </GhostButton>
