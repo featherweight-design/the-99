@@ -104,7 +104,10 @@ The recapture is engineering's, in the batch PR (Out of scope).
 **What the handoffs carry beyond the entry:**
 - `about · invites.ts` also edits sentence 2 of the shipped `friends` entry's caption, adding "pick “They’re on The 99”"
   (`about · invites.ts:35-37`). The invites plan counts that edit as owed (`2026-10-16-invites.md:271`). It is an edit,
-  with no bump of its own, and it ships with the batch.
+  with no bump of its own, and it ships with the batch. **It is gated by the reader's `SOCIAL_INVITES_ENABLED`**, as
+  a caption line under its own switch (`src/lib/about/visible.ts:81-94`): the `friends` entry itself follows only
+  `SOCIAL_FRIENDS_ENABLED`, and with invites off Add a friend skips the chooser (`src/components/social/friends-view.tsx:409`),
+  so a reader without invites must keep the shipped sentence and never be sent to “They’re on The 99”.
 - Both handoff files set `since` to the version current when they were drawn (`about · invites.ts:32` says 14). Ruled
   for this batch: `since: 16`, as for the other three. Apply the objects with that change.
 
