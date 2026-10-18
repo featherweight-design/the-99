@@ -346,8 +346,10 @@ export function DeckCardOverflow({
           {mode === "menu" ? (
             // Flush 38px rows divided by hairlines, not inset pills: the panel
             // clips its own corners, so `first:border-t-0` is the whole
-            // separator rule and it survives the Update row being absent.
-            <div className="flex min-h-0 flex-col overflow-y-auto">
+            // separator rule and it survives the Update row being absent. A BLOCK scroller, not a
+            // flex column: a capped flex column shrinks its 38px rows toward their text before it
+            // scrolls; a block keeps every row at 38px and scrolls the list.
+            <div data-menu-scroller className="min-h-0 overflow-y-auto">
               {!header && built > 0 && (
                 <Link
                   href={`/decks/${deckId}/import`}
@@ -451,7 +453,8 @@ export function DeckCardOverflow({
               }}
             />
           ) : mode === "delete" ? (
-            <div className="min-h-0 overflow-y-auto">
+            // No scroller here: `DeleteConfirm` keeps its heading (the deck's name) outside its own
+            // scrolling body, so scrolling to the buttons never hides which deck is going.
             <DeleteMode
               deckId={deckId}
               deckName={deckName}
@@ -467,7 +470,6 @@ export function DeckCardOverflow({
               }}
               onBusy={setBusy}
             />
-            </div>
           ) : (
             <div className="min-h-0 overflow-y-auto p-[12px]">
               <RenameForm

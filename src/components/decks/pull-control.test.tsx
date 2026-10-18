@@ -6,7 +6,7 @@
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { act, cleanup, fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
@@ -585,14 +585,38 @@ describe("PullControl — 2+ choosable sources", () => {
     expect(dialog.style.maxHeight).not.toBe("");
   });
 
+  // Copilot round 1 on #2060: with the order line, consequence and buttons fixed, a short window's
+  // cap left no room and clipped the controls out of reach. Only the title is fixed; everything
+  // under it scrolls as ONE body, with no second scroller nested for the sources.
+  it("keeps only the title fixed, and scrolls the order line, sources and buttons as one body", () => {
+    setViewport(true);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    const dialog = screen.getByRole("dialog");
+    const title = dialog.querySelector<HTMLElement>("[id$='-title']")!;
+    expect(title.closest(".overflow-y-auto")).toBeNull();
+    const body = within(dialog).getByText(sourceCopy.order).closest(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body!.className).toContain("min-h-0");
+    expect(body!.contains(title)).toBe(false);
+    const group = within(dialog).getByRole("radiogroup");
+    expect(body!.contains(group)).toBe(true);
+    expect(group.className).not.toContain("overflow-y-auto");
+    for (const button of within(dialog).getAllByRole("button").filter((b) => b.getAttribute("role") !== "radio" && !title.contains(b))) {
+      expect(body!.contains(button)).toBe(true);
+    }
+  });
+
   // Bug batch 2026-10-12: the phone sheet's body takes the other sheets' inset (16 / 14 / 16), and
   // the desktop popover keeps its own box padding with no second inset inside it.
   it("insets the phone sheet's body, and leaves the popover's own padding alone", () => {
     const INSET = ["px-[16px]", "pt-[14px]", "pb-[16px]"];
     const insetOf = () => {
-      // The order line, a direct child of the shared body column, whose parent is this shell's.
+      // The order line sits in the shared column's scrolling body; that column's parent is this shell's.
       const line = screen.getByText("In the order they committed it");
-      return (line.parentElement!.parentElement!.className ?? "").split(/\s+/);
+      return (line.closest("[data-picker-body]")!.parentElement!.parentElement!.className ?? "").split(/\s+/);
     };
     setViewport(false);
     const { unmount } = render(

@@ -184,6 +184,19 @@ describe("GameHistoryRow", () => {
     expect(screen.getByRole("button", { name: gameLogCopy.history.confirmNo })).toHaveFocus();
   });
 
+  // Copilot round 1 on #2060: the pane's heading stays outside its scrolling body, so scrolling to
+  // the buttons on a short window never hides what the pane is asking.
+  it("keeps the confirm's heading above its scrolling body", () => {
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    const heading = screen.getByText(gameLogCopy.history.confirm);
+    expect(heading.closest(".overflow-y-auto")).toBeNull();
+    const body = screen.getByRole("button", { name: gameLogCopy.history.confirmNo }).closest(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body!.className).toContain("min-h-0");
+    expect(body!.contains(heading)).toBe(false);
+  });
+
   it("returns focus to the × on KEEP, and on Escape", () => {
     mount();
     const x = screen.getByRole("button", { name: gameLogCopy.history.delete });

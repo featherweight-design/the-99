@@ -198,7 +198,6 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
             }}
             className={`absolute right-0 top-full mt-[6px] sm:mt-[4px] flex flex-col ${ANCHORED_PANEL_CLASS}`}
           >
-            <div className="min-h-0 overflow-y-auto">
             <DeleteConfirm
               heading={gameLogCopy.history.confirm}
               body={gameLogCopy.history.confirmBody}
@@ -210,7 +209,6 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
               onCancel={keep}
               onConfirm={confirm}
             />
-            </div>
           </div>
         )}
       </div>

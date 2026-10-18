@@ -16,10 +16,20 @@ export type AnchoredAt = {
  */
 function naturalHeight(node: HTMLElement | null): number {
   if (!node) return 0;
+  // Lifting the cap lets the inner scrollers grow to their content, and a scroller with nothing left
+  // to scroll has its `scrollTop` clamped to 0: without this a long list jumps back to its start on
+  // every scroll or resize that re-places the panel. Every scrolled element (the panel included) is
+  // recorded before the lift and put back after the cap, in this same synchronous read.
+  const scrolled: Array<[Element, number]> = [];
+  if (node.scrollTop > 0) scrolled.push([node, node.scrollTop]);
+  for (const el of node.querySelectorAll("*")) {
+    if (el.scrollTop > 0) scrolled.push([el, el.scrollTop]);
+  }
   const capped = node.style.maxHeight;
   node.style.maxHeight = "none";
   const height = node.offsetHeight;
   node.style.maxHeight = capped;
+  for (const [el, top] of scrolled) el.scrollTop = top;
   return height;
 }
 

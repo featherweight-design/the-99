@@ -88,6 +88,47 @@ describe("useAnchoredPanel's room (a max height within the viewport)", () => {
     expect(panel.style.maxHeight).toBe("58px");
   });
 
+  it("keeps every scroller's position across the uncapped measurement", () => {
+    // jsdom lays nothing out, so each scroller's `scrollTop` is a property the code reads and writes,
+    // clamped to 0 while the cap is lifted (a scroller grown to its content has nothing to scroll).
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1300 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 900 });
+    const { result } = renderHook(() => useAnchoredPanel({ open: false, width: 224 }));
+    const trigger = document.createElement("button");
+    trigger.getBoundingClientRect = () => ({ top: 100, bottom: 130, right: 900, left: 870, width: 30, height: 30, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+    const panel = document.createElement("div");
+    panel.style.maxHeight = "200px";
+    const list = document.createElement("div");
+    const nested = document.createElement("ul");
+    list.append(nested);
+    panel.append(list);
+    const lifted = () => panel.style.maxHeight === "none";
+    for (const [el, start] of [[panel, 12], [list, 340], [nested, 55]] as const) {
+      let top: number = start;
+      Object.defineProperty(el, "scrollTop", {
+        configurable: true,
+        get: () => (lifted() ? 0 : top),
+        set: (v: number) => {
+          top = lifted() ? 0 : v;
+        },
+      });
+    }
+    Object.defineProperty(panel, "offsetHeight", {
+      get: () => {
+        // What the browser does on the read: the uncapped scrollers clamp to their start.
+        for (const el of [panel, list, nested]) el.scrollTop = 0;
+        return lifted() ? 600 : 200;
+      },
+    });
+    (result.current.triggerRef as { current: HTMLButtonElement | null }).current = trigger;
+    (result.current.panelRef as { current: HTMLDivElement | null }).current = panel;
+    act(() => result.current.place());
+    expect(panel.style.maxHeight).toBe("200px");
+    expect(list.scrollTop).toBe(340);
+    expect(nested.scrollTop).toBe(55);
+    expect(panel.scrollTop).toBe(12);
+  });
+
   it("excludes the tab bar from the room below on the phone, and only on the phone", () => {
     // Phone: 844 - 64 - 300 - 6 - 8 = 466.
     const phone = setup({ rect: { top: 256, bottom: 300, right: 300 }, height: 100, vw: 390, vh: 844, tabbar: 64 });

@@ -42,6 +42,26 @@ describe("DeckCardOverflow", () => {
     expect(screen.queryByRole("button", { name: "Rename" })).toBeNull();
   });
 
+  // Copilot round 1 on #2060: a capped FLEX column shrinks its 38px rows toward their text before it
+  // scrolls. The menu's scroller is a block, so every row keeps 38px and the list scrolls instead.
+  it("scrolls the menu's rows in a block, never a flex column that would shrink them", () => {
+    render(
+      <DeckCardOverflow
+        deckId="d1"
+        deckName="Atraxa"
+        built={99}
+        placement="tile" move={{ folders: [], folderId: null, folderName: null, onCreateFolder: () => {}, onMove: () => {}, keepsFocus: true, closeAfterCreate: null }}
+      />,
+    );
+    fireEvent.click(trigger());
+    const row = screen.getByRole("button", { name: "Rename" });
+    const scroller = row.parentElement!;
+    expect(scroller.className).toContain("overflow-y-auto");
+    expect(scroller.className).toContain("min-h-0");
+    expect(scroller.className.split(/\s+/)).not.toContain("flex");
+    for (const r of Array.from(scroller.children)) expect(r.className.split(/\s+/)).toContain("h-[38px]");
+  });
+
   it("names the deck's current shelf on the Move row", () => {
     render(
       <DeckCardOverflow
@@ -178,6 +198,19 @@ describe("DeckCardOverflow — the delete confirm", () => {
       ),
     ).toBeInTheDocument();
     expect(deleteDeck).not.toHaveBeenCalled();
+  });
+
+  // Copilot round 1 on #2060: scrolling the whole pane to reach its buttons hid the heading, which
+  // is the one line naming WHICH deck goes. The heading stays outside the pane's scrolling body.
+  it("keeps the deck's name above the confirm's scrolling body", () => {
+    open();
+    const heading = screen.getByText("Delete “Atraxa”?");
+    expect(heading.closest(".overflow-y-auto")).toBeNull();
+    const body = screen.getByRole("button", { name: "Delete deck" }).closest(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body!.className).toContain("min-h-0");
+    expect(body!.contains(heading)).toBe(false);
+    expect(heading.className).toContain("shrink-0");
   });
 
   it("returns to the menu on Keep it, having deleted nothing", () => {
