@@ -92,7 +92,8 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
     windowRows(now),
     readEveryInvite(),
   ]);
-  const accounts = inListOrder(listed);
+  const ownerId = modelOwnerUserId();
+  const accounts = inListOrder(listed, ownerId);
   const ids = accounts.map((a) => a.id);
   const limits = await dailyLimitsFor(db, ids);
   return {
@@ -104,9 +105,11 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       spend: new Map(spendRows.map((r) => [r.userId, Number(r.micro)])),
       // An inviter is named from the whole Clerk list, so a row names one even when the search hides it.
       invites: rowInvites({ ids, ...invites, accounts: listed, now }),
+      ownerId,
     }),
     clerk,
-    month: utcMonthName(now),
+    // The list's spend column head is the short month (`Oct`), which its 52px track holds (R3, A1).
+    month: utcMonthName(now, "short"),
   };
 }
 
@@ -186,12 +189,12 @@ export async function loadAccountPage(userId: string, viewerId: string, now: Dat
   const shareMicro = ownerShareMicro();
   const features = featureRows.map((r) => ({ feature: r.feature, presses: Number(r.presses), micro: Number(r.micro) }));
   const month = utcMonthName(now);
-  const invites = accountInvites({ userId, ...inviteRows, accounts, viewerId, limit: HISTORY_LIMIT, now });
+  const invites = accountInvites({ userId, ...inviteRows, accounts, viewerId, ownerId: modelOwnerUserId(), limit: HISTORY_LIMIT, now });
   return {
     id: userId,
     name: accountName(account),
     email: account.email,
-    initials: initials(account),
+    initials: owner ? null : initials(account),
     role: roleLine(owner, allowance.limit, shareMicro),
     tiles: accountTiles({
       credits: allowance,

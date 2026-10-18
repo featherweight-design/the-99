@@ -2611,7 +2611,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   when a route answers non-2xx or a picker does not open. Read-only: it presses nothing that writes and never presses
   Show. Seed the rows it reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
-  `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example`, replacing its own rows on
+  `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is
   `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:

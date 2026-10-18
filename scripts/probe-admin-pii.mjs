@@ -162,7 +162,15 @@ try {
     });
   }
   // Costs: the month view at /admin, the per-model view at /admin/models.
-  await visit("/admin");
+  await visit("/admin", async () => {
+    // Costs per account names each account masked, never by its Clerk id (Admin R3, C5).
+    const table = onPageRole(page, "table", /Per account/).first();
+    // Absent when the month has no player run: seed:admin-pii-fixture writes one.
+    if (!report("Costs draws its per-account table (seed:admin-pii-fixture)", (await table.count()) > 0)) return;
+    const cells = (await table.getByRole("row").count()) - 1;
+    const text = await table.innerText();
+    report("Costs per account lists accounts by masked name, no Clerk id", cells > 0 && !/\buser_[A-Za-z0-9]{6,}/.test(text), `${cells} rows`);
+  });
   await visit("/admin/models");
 
   for (const n of find) {

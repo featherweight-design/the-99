@@ -23,9 +23,9 @@ const { AdminHead } = await import("./admin-head");
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
-  { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
-  { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh H.", joinedAt: new Date(0) } } },
-  { id: "user_4theo", name: "Theo", email: null, initials: "TH", group: null, credits: "5 of 5 left", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
+  { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", owner: true, initials: null, group: null, credits: "7 of 10", spend: "$2.10", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } },
+  { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", owner: false, initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5", spend: "$1.420", invites: { left: 2, waiting: 1, invitedBy: { kind: "account", id: "user_2hugh", name: "Hugh H.", joinedAt: new Date(0) } } },
+  { id: "user_4theo", name: "Theo", email: null, owner: false, initials: "TH", group: null, credits: "5 of 5", spend: "$0", invites: { left: 3, waiting: 0, invitedBy: { kind: "deleted", joinedAt: new Date(0) } } },
 ];
 
 const PAGE: AccountPage = {
@@ -55,7 +55,7 @@ const PAGE: AccountPage = {
   },
   features: [{ feature: "synopsis", name: "Overview", presses: 12, spent: "$0.640" }],
   featureTotal: { presses: 12, spent: "$0.640" },
-  invites: { left: 2, waiting: 0, spent: 0, invitedBy: { kind: "founder" }, invited: [], waitingLines: [], history: [], historyCut: false },
+  invites: { left: 2, waiting: 0, spent: 0, invitedBy: { kind: "founder" }, invitedByFace: null, invited: [], waitingLines: [], history: [], historyCut: false },
   month: "October",
   clerk: "ok",
   allFeatures: null,
@@ -75,13 +75,16 @@ describe("AccountsList (A1 to A3)", () => {
     expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("href", "/admin/accounts/user_9mara");
     expect(rows[1]).toHaveTextContent("m•••@e•••.com");
-    expect(rows[1]).toHaveTextContent("user_9mara");
+    // D3: the Clerk id is the link, never drawn.
+    expect(rows[1]).not.toHaveTextContent("user_9mara");
     expect(rows[1]).toHaveTextContent("friends");
-    expect(rows[1]).toHaveTextContent("3 of 5 left");
+    expect(rows[1]).toHaveTextContent("3 of 5");
+    // Under the `Credits now` head the row says `3 of 5`, not `3 of 5 left` (R3, A1).
+    expect(rows[1]).not.toHaveTextContent("3 of 5 left");
     expect(rows[0]).toHaveTextContent("No group");
     // The phone's meta line names the group as the desktop column does, `No group` included.
-    expect(rows[0]).toHaveTextContent("No group · 7 of 10 left");
-    expect(rows[1]).toHaveTextContent("friends · 3 of 5 left");
+    expect(rows[0]).toHaveTextContent("No group · 7 of 10");
+    expect(rows[1]).toHaveTextContent("friends · 3 of 5");
     expect(within(rows[0]).getByTestId("account-spend-phone")).toHaveTextContent("$2.10");
   });
 
@@ -97,9 +100,9 @@ describe("AccountsList (A1 to A3)", () => {
     expect(within(mara).getByTestId("account-invites-cell").className).not.toContain("--fg-faint");
     expect(within(mara).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by Hugh H.$/);
     expect(within(theo).getByTestId("account-invited-by")).toHaveTextContent(/^Invited by deleted account$/);
-    expect(hugh).toHaveTextContent("No group · 7 of 10 left · 0 invites · founder");
-    expect(mara).toHaveTextContent("friends · 3 of 5 left · 2 · 1 waiting · by Hugh H.");
-    expect(theo).toHaveTextContent("No group · 5 of 5 left · 3 invites · by deleted account");
+    expect(hugh).toHaveTextContent("No group · 7 of 10 · 0 invites · founder");
+    expect(mara).toHaveTextContent("friends · 3 of 5 · 2 · 1 waiting · by Hugh H.");
+    expect(theo).toHaveTextContent("No group · 5 of 5 · 3 invites · by deleted account");
     expect(screen.getAllByText("Invited by", { selector: "[aria-hidden] span" })).toHaveLength(1);
   });
 
@@ -122,8 +125,19 @@ describe("AccountsList (A1 to A3)", () => {
     }
   });
 
+  it("marks the owner and an account with no name with the diamond, and tags the owner (D4)", () => {
+    const bare: AccountRow = { ...ROWS[2], id: "user_7bare", name: "Account ·bare", initials: null };
+    render(<AccountsList rows={[...ROWS, bare]} clerk="ok" month="October" env="staging" />);
+    const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
+    const marked = (row: HTMLElement) => row.querySelector('[data-mark="diamond"]') !== null;
+    expect(rows.map(marked)).toEqual([true, false, false, true]);
+    expect(rows[0]).toHaveTextContent("owner");
+    expect(rows[1]).not.toHaveTextContent("owner");
+    expect(rows[1]).toHaveTextContent("MQ");
+  });
+
   it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
-    const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", email: null, initials: null, group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
+    const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", email: null, owner: false, initials: null, group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "user_7" } });
@@ -164,7 +178,7 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Mara Q." })).toBeInTheDocument();
     const head = screen.getByTestId("account-head");
     expect(head).toHaveTextContent("m•••@e•••.com");
-    expect(head).toHaveTextContent("user_9mara");
+    expect(head).not.toHaveTextContent("user_9mara");
     expect(head).toHaveTextContent("5 credits a day.");
     const credits = screen.getByTestId("account-tiles").querySelector('[data-tile="credits"]')!;
     expect(credits).toHaveTextContent("0 of 5 left");

@@ -253,9 +253,9 @@ export function memberRows(input: {
 }
 
 /** One member row as drawn for the current selection. */
-export function memberState(row: MemberRow, selected: boolean, groupId: string | null): { sub: string | null; state: string; unsaved: boolean } {
+export function memberState(row: MemberRow, selected: boolean, groupId: string | null): { sub: string; state: string; unsaved: boolean } {
   const savedHere = groupId !== null && row.saved?.id === groupId;
-  const sub = selected && !savedHere && row.saved ? copy.movesFrom(row.saved.name) : row.saved ? copy.inGroup(row.saved.name) : null;
+  const sub = selected && !savedHere && row.saved ? copy.movesFrom(row.saved.name) : row.saved ? copy.inGroup(row.saved.name) : copy.inNoGroup;
   const state = !selected ? copy.unselected : savedHere ? copy.selected : copy.selectedUnsaved;
   return { sub, state, unsaved: selected !== savedHere };
 }

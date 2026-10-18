@@ -36,8 +36,8 @@ export function utcClock(at: Date): string {
 }
 
 /** A month's name, read in UTC (`October`). */
-export function utcMonthName(at: Date): string {
-  return new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(at);
+export function utcMonthName(at: Date, month: "long" | "short" = "long"): string {
+  return new Intl.DateTimeFormat("en-US", { month, timeZone: "UTC" }).format(at);
 }
 
 /** The free allowance's count for every account, from the window's ledger rows and each account's own limit. */
@@ -60,6 +60,8 @@ export type AccountRow = {
   /** The masked name, which is also what the search matches (D14). */
   name: string;
   email: string | null;
+  /** The allowance owner's row: tagged `owner`, and marked with the diamond rather than lettered (D4). */
+  owner: boolean;
   initials: string | null;
   group: { id: string; name: string } | null;
   credits: string;
@@ -76,6 +78,7 @@ export function accountRows(input: {
   credits: ReadonlyMap<string, { left: number; limit: number }>;
   spend: ReadonlyMap<string, number>;
   invites: ReadonlyMap<string, RowInvites>;
+  ownerId: string | null;
 }): AccountRow[] {
   return input.accounts.map((a) => {
     const groupId = input.groupOf.get(a.id);
@@ -85,10 +88,11 @@ export function accountRows(input: {
       id: a.id,
       name: accountName(a),
       email: a.email,
-      initials: initials(a),
+      owner: a.id === input.ownerId,
+      initials: a.id === input.ownerId ? null : initials(a),
       // A membership whose group's name did not load (a failed or racing read) keeps the id as its name.
       group: groupId ? { id: groupId, name: groupName ?? groupId } : null,
-      credits: c ? copy.creditsLeft(c.left, c.limit) : "",
+      credits: c ? copy.creditsRow(c.left, c.limit) : "",
       spend: usd(input.spend.get(a.id) ?? 0),
       invites: input.invites.get(a.id) ?? { left: 0, waiting: 0, invitedBy: { kind: "founder" } },
     };

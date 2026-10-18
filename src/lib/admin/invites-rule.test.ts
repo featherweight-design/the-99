@@ -60,6 +60,7 @@ describe("who invited an account", () => {
 
 describe("an account's Invites section (M2)", () => {
   const base = {
+    ownerId: "u_hugh",
     userId: "u_colin",
     held: 5,
     open: [reservation({}), reservation({ id: "r2", kind: "qr", state: "claimed", holdsUntil: day(28), email: "j.ruiz@example.com" }), reservation({ id: "r3", kind: "qr", state: "qr_open", holdsUntil: null, qrExpiresAt: new Date(now.getTime() + 60_000), email: null })],
@@ -85,9 +86,11 @@ describe("an account's Invites section (M2)", () => {
     // 5 held, 3 holding: 2 left; the live QR holds but does not wait.
     expect([s.left, s.waiting, s.spent]).toEqual([2, 2, 2]);
     expect(s.invitedBy).toEqual({ kind: "account", id: "u_hugh", name: "Hugh", joinedAt: day(18) });
+    // D4: the owner's face is the diamond (null); a listed account's is its masked name's letters.
+    expect(s.invitedByFace).toBeNull();
     expect(s.invited).toEqual([
-      { id: "u_peter", name: "Peter", joined: "Oct 19" },
-      { id: null, name: "deleted account", joined: "Oct 17" },
+      { id: "u_peter", name: "Peter", face: "PE", joined: "Oct 19" },
+      { id: null, name: "deleted account", face: null, joined: "Oct 17" },
     ]);
     expect(s.waitingLines).toEqual([
       { id: "r1", how: "by email", email: "m•••@e•••.com", sent: "Oct 20", returns: "Oct 27" },

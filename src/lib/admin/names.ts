@@ -19,3 +19,9 @@ export function accountNames(accounts: readonly Account[], viewerId: string) {
   const actor = (id: string) => (id === viewerId ? adminCopy.switch.history.you : userName(id));
   return { userName, actor };
 }
+
+/** The masked name of each id, for a page that draws ids it read elsewhere (Costs, Admin R3 C5). */
+export function namesFor(ids: Iterable<string>, accounts: readonly Account[]): Record<string, string> {
+  const { userName } = accountNames(accounts, "");
+  return Object.fromEntries([...new Set(ids)].map((id) => [id, userName(id)]));
+}

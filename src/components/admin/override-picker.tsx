@@ -129,7 +129,7 @@ export function OverridePicker({
                     >
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className={`text-[13.5px] [overflow-wrap:anywhere] ${already ? "text-[color:var(--fg-disabled)]" : "text-[color:var(--fg)]"}`}>{c.label}</span>
-                        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{c.sub}</span>
+                        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{c.sub}</span>
                       </span>
                       {already && <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.already}</span>}
                     </button>

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { CostsView } from "../../components/admin/costs-view";
 import { adminMetadata, requireAdmin } from "../../lib/admin/access";
 import { adminCopy } from "../../lib/copy/admin";
+import { listAccounts } from "../../lib/admin/accounts";
 import { loadCosts } from "../../lib/admin/costs";
+import { namesFor } from "../../lib/admin/names";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { monthOf, parseMonth } from "../../lib/admin/costs-rule";
 
@@ -17,6 +19,8 @@ export default async function AdminCostsPage({ searchParams }: { searchParams: P
   const now = new Date();
   const raw = (await searchParams).month;
   const month = parseMonth(Array.isArray(raw) ? raw[0] : raw, now);
-  const { summary, detail } = await loadCosts(month, now);
-  return <CostsView s={summary} detail={detail} env={adminEnvironment() ?? undefined} month={month} current={monthOf(now)} viewerId={userId} />;
+  const [{ summary, detail }, { accounts }] = await Promise.all([loadCosts(month, now), listAccounts()]);
+  // Every account the page draws is named masked (Admin R3, C5): the per-account rows and who entered a figure.
+  const names = namesFor([...detail.accounts.map((a) => a.userId), ...(summary.elsewhere?.by ? [summary.elsewhere.by] : [])], accounts);
+  return <CostsView s={summary} detail={detail} names={names} env={adminEnvironment() ?? undefined} month={month} current={monthOf(now)} viewerId={userId} />;
 }

@@ -13,6 +13,7 @@ import {
   featureSpend,
   featureTotal,
   initials,
+  utcMonthName,
   matchesAccount,
   roleLine,
   switchGroups,
@@ -53,20 +54,22 @@ describe("the list (A1)", () => {
       credits: new Map([[HUGH.id, { left: 7, limit: 10 }], [MARA.id, { left: 0, limit: 5 }], [BARE.id, { left: 5, limit: 5 }]]),
       spend: new Map([[HUGH.id, 2_100_000], [MARA.id, 1_420_000]]),
       invites: new Map([[MARA.id, { left: 2, waiting: 1, invitedBy: { kind: "account", id: HUGH.id, name: "Hugh H.", joinedAt: new Date(0) } }]]),
+      ownerId: HUGH.id,
     });
     // An account the invite read did not name holds none and was invited by no one.
     expect(rows.map((r) => r.invites.left)).toEqual([0, 2, 0]);
     expect(rows[0].invites.invitedBy).toEqual({ kind: "founder" });
     expect(rows.map((r) => [r.name, r.group?.name ?? null, r.credits, r.spend])).toEqual([
-      ["Hugh H.", null, "7 of 10 left", "$2.10"],
-      ["Mara Q.", "friends", "0 of 5 left", "$1.420"],
-      ["Account ·bare", null, "5 of 5 left", "$0"],
+      ["Hugh H.", null, "7 of 10", "$2.10"],
+      ["Mara Q.", "friends", "0 of 5", "$1.420"],
+      ["Account ·bare", null, "5 of 5", "$0"],
     ]);
-    expect(rows.slice(0, 2).map((r) => r.initials)).toEqual(["HH", "MQ"]);
+    // D4: the owner and an account with no name are marked with the diamond (null), the rest lettered.
+    expect(rows.map((r) => [r.owner, r.initials])).toEqual([[true, null], [false, "MQ"], [false, null]]);
   });
 
   it("keeps a membership whose group name did not load, naming it by its id", () => {
-    const rows = accountRows({ accounts: [MARA], groupOf: new Map([[MARA.id, "g9"]]), groupNames: new Map(), credits: new Map(), spend: new Map(), invites: new Map() });
+    const rows = accountRows({ accounts: [MARA], groupOf: new Map([[MARA.id, "g9"]]), groupNames: new Map(), credits: new Map(), spend: new Map(), invites: new Map(), ownerId: null });
     expect(rows[0].group).toEqual({ id: "g9", name: "g9" });
   });
 
@@ -188,5 +191,13 @@ describe("featureSpend (A4)", () => {
       { feature: "intake", name: "Help me choose", presses: 9, spent: "$0.270" },
       { feature: "mystery", name: "mystery", presses: 1, spent: "$0.270" },
     ]);
+  });
+});
+
+describe("utcMonthName", () => {
+  it("names the UTC month in full, or short for the list's 52px spend head (R3, A1)", () => {
+    const at = new Date("2026-09-30T23:30:00Z");
+    expect(utcMonthName(at)).toBe("September");
+    expect(utcMonthName(at, "short")).toBe("Sep");
   });
 });

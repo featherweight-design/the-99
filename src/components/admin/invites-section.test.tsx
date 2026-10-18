@@ -24,9 +24,10 @@ const INVITES: AccountInvites = {
   waiting: 1,
   spent: 2,
   invitedBy: { kind: "account", id: "u_hugh", name: "Hugh", joinedAt: new Date("2026-10-18T09:00:00Z") },
+  invitedByFace: null,
   invited: [
-    { id: "u_peter", name: "Peter", joined: "Oct 19" },
-    { id: null, name: "deleted account", joined: "Oct 17" },
+    { id: "u_peter", name: "Peter", face: "PE", joined: "Oct 19" },
+    { id: null, name: "deleted account", face: null, joined: "Oct 17" },
   ],
   waitingLines: [{ id: R1, how: "by email", email: "m.chen@example.com", sent: "Oct 20", returns: "Oct 27" }],
   history: [{ when: "20 Oct · 18:12", what: "Colin sent an invitation: 1 waiting", note: null }],
@@ -94,6 +95,17 @@ describe("AccountInvitesSection (M2)", () => {
     const waiting = document.querySelector(`[data-waiting="${R1}"]`) as HTMLElement;
     expect(waiting).toHaveTextContent("Waiting · by email · m.chen@example.comsent Oct 20 · returns Oct 27");
     expect(within(screen.getByTestId("account-invites-history")).getByText("Colin sent an invitation: 1 waiting")).toBeInTheDocument();
+  });
+
+  it("faces each line: the diamond for the owner or no name, letters for an account, empty for deleted and waiting (D4)", () => {
+    render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
+    const diamond = (el: Element) => el.querySelector('[data-mark="diamond"]') !== null;
+    expect(diamond(screen.getByTestId("account-invited-by-line"))).toBe(true);
+    const peter = document.querySelector('[data-invited="u_peter"]') as HTMLElement;
+    expect(diamond(peter)).toBe(false);
+    expect(peter).toHaveTextContent(/^PE/);
+    expect(diamond(document.querySelector('[data-invited="deleted"]')!)).toBe(false);
+    expect(diamond(document.querySelector(`[data-waiting="${R1}"]`)!)).toBe(false);
   });
 
   it("draws no invited-by line for a founder", () => {

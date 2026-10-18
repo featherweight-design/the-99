@@ -340,12 +340,11 @@ export function AccountPageView({ page }: { page: AccountPage }) {
     <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
       {page.clerk === "down" && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
       {!page.overridesRead && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
-      <div data-testid="account-head" className="flex items-center gap-[14px]">
+      <div data-testid="account-head" className="flex items-start gap-[14px]">
         <Avatar text={page.initials} size="lg" />
-        <div className="flex min-w-0 flex-col gap-[3px]">
+        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{page.name}</h1>
           {page.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{page.email}</span>}
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [word-break:break-all]">{page.id}</span>
           <span className="text-pretty text-[12.5px] text-[color:var(--fg-body)]">{page.role}</span>
         </div>
       </div>

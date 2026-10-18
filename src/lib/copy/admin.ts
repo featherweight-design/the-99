@@ -12,6 +12,8 @@
 import type { SwitchName } from "../switches/registry";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** A sentence ending on a name: a masked name already ends in its initial's period (`Colin R.`), so it takes no second. */
+const endOn = (name: string) => (name.endsWith(".") ? name : `${name}.`);
 
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
@@ -58,7 +60,7 @@ export const adminCopy = {
       startsIn: (month: string) => `Starts ${month}.`,
       account: "Mirrors Anthropic’s console.",
       elsewhere: (v: string, date: string, by: string | null) =>
-        ` Hatched: elsewhere ${v}, as of ${date}${by === null ? "" : `, entered by ${by}`}.`,
+        ` Hatched: elsewhere ${v}, as of ${date}${by === null ? "." : `, entered by ${endOn(by)}`}`,
       you: "you",
       noElsewhere: " Elsewhere is not entered.",
     },
@@ -187,6 +189,8 @@ export const adminCopy = {
     newTitle: "New group",
     movesFrom: (g: string) => `moves from ${g}`,
     inGroup: (g: string) => `in ${g}`,
+    /** A member row for an account in no group (Admin R3 boards, C2). */
+    inNoGroup: "no group",
     newGroup: "New group",
     edit: "Edit",
     create: "Create",
@@ -229,7 +233,7 @@ export const adminCopy = {
       // `who` is empty after a move, whose sentence already names the account.
       gains: (who: string, gains: string, loses: string) =>
         `, and ${who ? `${who} ` : ""}${gains ? `gains ${gains}` : ""}${gains && loses ? " and " : ""}${loses ? `loses ${loses}` : ""}.`,
-      nothing: (who: string) => `. Nothing changes for ${who}.`,
+      nothing: (who: string) => `. Nothing changes for ${endOn(who)}`,
     },
     errors: {
       nameRule: "Use lowercase letters, digits, - or _, up to 40 characters, starting with a letter or digit.",
@@ -274,6 +278,8 @@ export const adminCopy = {
     },
     tiles: { credits: "Credits now", spent: (m: string) => `Spent in ${m}`, presses: "Runs", hub: "Tuning hub" },
     creditsLeft: (left: number, limit: number) => `${left} of ${limit} left`,
+    /** A list row's credits, under the `Credits now` head (Admin R3 boards, A1). */
+    creditsRow: (left: number, limit: number) => `${left} of ${limit}`,
     resetAt: (time: string) => `reset at ${time} UTC`,
     ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
     hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },

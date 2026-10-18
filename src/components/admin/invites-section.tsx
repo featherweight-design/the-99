@@ -99,14 +99,22 @@ function PendingBar({ testId, sentence, failure, press, onUndo, onPress, inFligh
   );
 }
 
-function WhoLine({ initials, children, action }: { initials: string | null; children: ReactNode; action?: ReactNode }) {
+/** A line's face: an account's letters, the diamond (the owner, or no name; D4), or empty (waiting, deleted). */
+type Face = { text: string } | "diamond" | "empty";
+const faceOf = (face: string | null): Face => (face === null ? "diamond" : { text: face });
+
+function WhoLine({ face, children, action }: { face: Face; children: ReactNode; action?: ReactNode }) {
   return (
     <div className={LINE}>
-      {initials === null ? (
+      {face === "empty" ? (
         <span aria-hidden className={`${FACE} border-[1.5px] border-dashed border-[color:var(--border-dashed)]`} />
+      ) : face === "diamond" ? (
+        <span aria-hidden data-mark="diamond" className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]`}>
+          <i className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--fg-muted)]" />
+        </span>
       ) : (
         <span aria-hidden className={`${FACE} border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[11px] text-[color:var(--fg-muted)]`}>
-          {initials}
+          {face.text}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[10px] [overflow-wrap:anywhere]">{children}</span>
@@ -115,7 +123,6 @@ function WhoLine({ initials, children, action }: { initials: string | null; chil
   );
 }
 
-const initialsOf = (name: string) => name.trim()[0]?.toLocaleUpperCase("en-US") ?? "?";
 const strong = (text: string) => <b className="font-medium text-[color:var(--fg)]">{text}</b>;
 
 /** M2: one account's Invites section. Keyed by its caller on the saved left, so a save starts it afresh. */
@@ -183,7 +190,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
         {/* A founder has no inviter, and the frames draw no row for one. */}
         {by.kind !== "founder" && (
           <div data-testid="account-invited-by-line">
-            <WhoLine initials={by.kind === "account" ? initialsOf(by.name) : null}>
+            <WhoLine face={by.kind === "account" ? faceOf(invites.invitedByFace) : "empty"}>
               <span>
                 {inv.invitedBy} {strong(invitedByName(by))}
               </span>
@@ -196,7 +203,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
           return (
             <div key={`${e.id ?? "deleted"}-${i}`} data-invited={e.id ?? "deleted"}>
               <WhoLine
-                initials={e.id === null ? null : initialsOf(e.name)}
+                face={e.id === null ? "empty" : faceOf(e.face)}
                 action={
                   href && (
                     <Link href={href} className={`${TEXT_BUTTON} no-underline`}>
@@ -217,7 +224,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
         {invites.waitingLines.map((w) => (
           <div key={w.id} data-waiting={w.id}>
             <WhoLine
-              initials={null}
+              face="empty"
               action={
                 <button type="button" onClick={() => revoke(w.id)} disabled={revoking !== null} className={TEXT_BUTTON}>
                   {inv.revoke}
@@ -226,7 +233,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
             >
               <span className="md:hidden">
                 {inv.waitingPhone}
-                {w.email}
+                {strong(w.email)}
               </span>
               <span className="hidden md:inline">
                 {inv.waiting(w.how, "")}

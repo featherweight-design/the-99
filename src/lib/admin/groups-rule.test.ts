@@ -156,7 +156,8 @@ describe("memberState", () => {
   it("draws a saved member, a move, an add and an unselected account", () => {
     expect(memberState(mara, true, T)).toEqual({ sub: "in testers", state: "selected", unsaved: false });
     expect(memberState(theo, true, T)).toEqual({ sub: "moves from friends", state: "selected, not saved", unsaved: true });
-    expect(memberState(jun, true, T)).toEqual({ sub: null, state: "selected, not saved", unsaved: true });
+    // An account in no group says so (R3 boards, C2).
+    expect(memberState(jun, true, T)).toEqual({ sub: "no group", state: "selected, not saved", unsaved: true });
     expect(memberState(theo, false, T)).toEqual({ sub: "in friends", state: "unselected", unsaved: false });
     // A saved member being removed reads unselected, and is still a change.
     expect(memberState(mara, false, T)).toEqual({ sub: "in testers", state: "unselected", unsaved: true });
@@ -187,6 +188,12 @@ describe("pendingSummary", () => {
     expect(pendingSummary({ saved, draft, rows, selected: new Set([]) })!.body).toBe("Saving removes Mara from testers, and Mara loses Overview v2.");
     const p = pendingSummary({ saved, draft, rows, selected: new Set(["u_mara", "u_jun"]) })!;
     expect(p.body).toBe("Saving adds Jun to testers. Nothing changes for Jun.");
+  });
+
+  it("ends a sentence on a masked name with the name's own period, never a second", () => {
+    const masked = rows.map((r) => (r.id === "u_jun" ? { ...r, name: "Jun K." } : r));
+    const p = pendingSummary({ saved, draft, rows: masked, selected: new Set(["u_mara", "u_jun"]) })!;
+    expect(p.body).toBe("Saving adds Jun K. to testers. Nothing changes for Jun K.");
   });
 
   it("counts field changes and members together", () => {

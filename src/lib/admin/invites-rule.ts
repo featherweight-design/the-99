@@ -1,5 +1,5 @@
 import { adminCopy } from "../copy/admin";
-import { maskEmail } from "./mask";
+import { maskEmail, maskInitials } from "./mask";
 import { inviteCopy } from "../copy/invites";
 import { HOLD_MS, holdsInvite, inviteCount, parseInvitesLeft, type HoldingRow, type InviteKind } from "../invites/rules";
 import type { Account } from "./accounts";
@@ -80,7 +80,8 @@ export function invitesTile(left: number, waiting: number, spent: number): Tile 
 /** A reservation of the account's, as the section reads it. */
 export type ReservationRow = OpenRow & { id: string; email: string | null };
 export type WaitingLine = { id: string; how: string; email: string; sent: string; returns: string };
-export type InvitedLine = { id: string | null; name: string; joined: string };
+/** `face`: the avatar's letters, null for the diamond (the owner, or an account with no name; D4). A deleted account draws an empty face. */
+export type InvitedLine = { id: string | null; name: string; face: string | null; joined: string };
 
 /** An admin event the account's history reads. */
 export type InviteEvent = { at: Date; actorId: string; kind: string; userId: string | null; oldValue: string | null; newValue: string | null };
@@ -90,6 +91,8 @@ export type AccountInvites = {
   waiting: number;
   spent: number;
   invitedBy: InvitedBy;
+  /** The inviter's face, as `InvitedLine.face`. */
+  invitedByFace: string | null;
   invited: InvitedLine[];
   waitingLines: WaitingLine[];
   history: HistoryItem[];
@@ -111,10 +114,16 @@ export function accountInvites(input: {
   holdsUntil: readonly Date[];
   accounts: readonly Account[];
   viewerId: string;
+  ownerId: string | null;
   limit: number;
   now: Date;
 }): AccountInvites {
   const { userName, actor } = accountNames(input.accounts, input.viewerId);
+  const listed = new Map(input.accounts.map((a) => [a.id, a]));
+  const face = (id: string): string | null => {
+    const a = listed.get(id);
+    return id === input.ownerId || !a ? null : maskInitials(a.name, a.named);
+  };
   const name = userName(input.userId);
   const count = countFor(input.held, input.open, input.now);
   const made = input.edges.filter((e) => e.inviter === input.userId).sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
@@ -132,12 +141,19 @@ export function accountInvites(input: {
     ...made.map((e) => ({ at: e.joinedAt, what: copy.history.joined(e.invitee === null ? copy.deleted : userName(e.invitee), name) })),
   ].sort((a, b) => b.at.getTime() - a.at.getTime());
 
+  const by = invitedBy(input.userId, input.edges, userName);
   return {
     left: count.left,
     waiting: count.waiting,
     spent: made.length,
-    invitedBy: invitedBy(input.userId, input.edges, userName),
-    invited: [...made].reverse().map((e) => ({ id: e.invitee, name: e.invitee === null ? copy.deleted : userName(e.invitee), joined: fmtDay(e.joinedAt) })),
+    invitedBy: by,
+    invitedByFace: by.kind === "account" ? face(by.id) : null,
+    invited: [...made].reverse().map((e) => ({
+      id: e.invitee,
+      name: e.invitee === null ? copy.deleted : userName(e.invitee),
+      face: e.invitee === null ? null : face(e.invitee),
+      joined: fmtDay(e.joinedAt),
+    })),
     waitingLines: waiting.map((r) => ({
       id: r.id,
       how: r.kind === "email" ? copy.byEmail : copy.inPerson,
