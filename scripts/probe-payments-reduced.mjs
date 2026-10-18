@@ -4,7 +4,8 @@
 //
 // For each case it seeds the signed-in test account's lots and a `PAYMENTS_ENABLED` account override, loads /credits,
 // and asserts what the rules say the page is:
-//   - not found (404) when the switch is off, nothing is held and nothing was ever bought (O1);
+//   - the not-found page, with no balances, when the switch is off, nothing is held and nothing was ever bought (O1):
+//     judged by what is drawn, since the route streams (it keeps a `loading.tsx`) and its status is 200;
 //   - otherwise the page, with balances and history, the offers ONLY with the switch on and buying not paused, and the
 //     pause band ONLY with the switch on and buying paused (B1); never both, and never a disabled Buy.
 // "Held" is a gift lot (held and spent, never bought, so it adds no history row); "bought" is a pack lot, revoked in

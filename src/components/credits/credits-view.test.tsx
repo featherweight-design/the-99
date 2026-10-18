@@ -185,6 +185,21 @@ describe("the Buy press", () => {
     expect(container.querySelector("[data-pause-band]")).not.toBeNull();
   });
 
+  it("a press's answer stands only until the server's next read: a refresh with the pause cleared draws the offers again", async () => {
+    m.buy.mockResolvedValue({ ok: false, reason: "blocked" });
+    const { container, rerender } = render(<CreditsView model={model()} ret={null} />);
+    press();
+    await screen.findByRole("alert");
+    expect(container.querySelector("[data-pause-band]")).not.toBeNull();
+    rerender(<CreditsView model={model()} ret={null} />);
+    expect(container.querySelector("[data-pause-band]")).toBeNull();
+    expect(screen.queryAllByRole("button", { name: /^Buy / }).length).toBeGreaterThan(0);
+    // ...and one with the switch gone off draws neither.
+    rerender(<CreditsView model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row] })} ret={null} />);
+    expect(container.querySelector("[data-pause-band]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
+  });
+
   it("a thrown action reads as failed", async () => {
     m.buy.mockRejectedValue(new Error("network"));
     render(<CreditsView model={model()} ret={null} />);

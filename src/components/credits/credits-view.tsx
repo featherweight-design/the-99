@@ -26,19 +26,20 @@ export type ReturnProp = { kind: "cancelled" } | { kind: "done"; sessionId: stri
 export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: ReturnProp | null; timing?: BandTiming }) {
   const router = useRouter();
   const [toast, setToast] = useState<CreditsToastState | null>(null);
-  const [onSale, setOnSale] = useState(true);
-  const [paused, setPaused] = useState(model.paused);
+  // What a Buy press was answered (`off` or `blocked`), and the model it was answered against: it stands only until the
+  // server's next read, so a refresh that finds the switch back on or the pause cleared draws what the server says.
+  const [answered, setAnswered] = useState<{ reason: "off" | "blocked"; model: CreditsModel } | null>(null);
+  const local = answered?.model === model ? answered.reason : null;
+  const onSale = local === null;
+  const paused = model.paused || local === "blocked";
   const [added, setAdded] = useState<number | null>(ret?.kind === "done" && ret.initial?.kind === "added" ? ret.initial.units : null);
   const say = (text: string, detail?: string) => setToast((t) => ({ id: (t?.id ?? 0) + 1, text, detail }));
 
   function buyFailed(reason: BuyFailure) {
     say(c.buy[reason]);
-    // Payments went off for this reader: the offer is gone rather than left as a press that cannot work.
-    if (reason === "off") setOnSale(false);
-    if (reason === "blocked") {
-      setOnSale(false);
-      setPaused(true);
-    }
+    // Payments went off for this reader, or their buying was paused: the offer is gone rather than left as a press that
+    // cannot work, and a pause raises the band in its place.
+    if (reason === "off" || reason === "blocked") setAnswered({ reason, model });
   }
 
   return (
@@ -62,7 +63,7 @@ export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: 
       <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} />
       {model.offers && onSale ? <PackOffers offers={model.offers} onFailure={buyFailed} /> : null}
       {/* B1: a dispute paused buying, so the band stands where the offers would. */}
-      {paused || model.paused ? <PauseBand /> : null}
+      {paused ? <PauseBand /> : null}
       <History items={model.history} onReceiptFailed={() => say(c.hist.receiptFailed)} />
       <CreditsToast toast={toast} onDone={() => setToast(null)} />
     </div>
