@@ -112,7 +112,7 @@ describe("Quick-add bar — phone bottom stack", () => {
     const bar = await dock();
 
     // `bottom-0` was the bug: a sticky element pins to the scrollport edge, and
-    // the padding `main` carries to reserve the fixed tab bar does not move it.
+    // the padding the shell's main column carries to reserve the fixed tab bar does not move it.
     expect(bar).toHaveClass("bottom-[var(--tabbar-h)]");
     expect(bar).toHaveClass("md:bottom-0");
     expect(bar.className).not.toMatch(/bottom-\[\d/);

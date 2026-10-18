@@ -420,7 +420,7 @@ export function CreatePicker(props: CreatePickerProps) {
               : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]") +
             " pb-[var(--picker-reserve)] md:pb-[24px]"
           }
-          // The shell's `main` already reserves the tab bar, so the picker owes
+          // The shell's main column already reserves the tab bar, so the picker owes
           // only the footer stacked on top of it.
           style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >

@@ -10,6 +10,7 @@ import { SHEET_ON_HEADER } from "../../lib/about/gate";
 import { readSheetState } from "../../lib/about/sheet-state";
 import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
+import { FanContentNotice } from "./fan-content-notice";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
@@ -52,7 +53,9 @@ export default async function Shell({
   const { userId } = await auth();
 
   if (!userId) {
-    return <>{children}</>;
+    // The Fan Content notice follows every signed-out page, centered on the pages' own axis; none of them mounts it
+    // (launch epic A1). Each keeps its shipped `min-h-screen`, so the notice waits one scroll below the fold.
+    return <>{children}<FanContentNotice align="center" /></>;
   }
 
   const stats = await perfRead("shell.collectionStats", () => getCollectionStats(userId));
@@ -125,7 +128,9 @@ export default async function Shell({
       <HelpRoot on={help}>
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} />
-        <div className="flex min-w-0 flex-1 flex-col">
+        {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
+            `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
+        <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
           <MobileHeader theme={theme} {...door} friendsMoment={friendsMoment} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
@@ -134,9 +139,13 @@ export default async function Shell({
               of guessing at the header/tab-bar offsets in a calc(). */}
           {/* `--about-sheet-h` is set by the About sheet while it is open on a
               phone, so the foot of the page scrolls clear of it (R6 §N5). */}
-          <ShellMain className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
+          {/* `min-h` makes the page at least one screen tall (the viewport less the phone header and the tab bar, or the
+              window from `md`), so the notice always starts at or below the fold: present on every page, never in the
+              way (R2). `--header-h` is the measured phone header, 0 on desktop where `md:` ignores it. */}
+          <ShellMain className="flex min-w-0 flex-1 flex-col min-h-[calc(100dvh-var(--header-h,79px)-var(--tabbar-h))] md:min-h-dvh">
             {children}
           </ShellMain>
+          <FanContentNotice />
         </div>
         <TabBar locked={locked} openLock={openLock} helpMoment={helpMoment} />
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}

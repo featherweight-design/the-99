@@ -3101,3 +3101,6 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
   It proves no two cards share a 12-hex address prefix (and prints how many 8 hex would have collided: 0 of 35,630 on
   staging, 2026-10-18), that twenty cards and twenty commanders load by their own address, that a wrong name part still
   resolves to the canonical address, that a prefix no card has is `not-found`, and prints the per-load read time.
+
+- `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree.
+
