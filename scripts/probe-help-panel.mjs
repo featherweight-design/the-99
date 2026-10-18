@@ -17,7 +17,14 @@
 //   - a search draws hits or the none line, and the list comes back when it is cleared;
 //   - Show me closes the panel and lands its halo (`data-target-halo`) on a drawn control, pressing nothing. The pages
 //     are tried in turn until one draws a Show me; none drawing one is SKIP, never PASS.
-// Card details under the panel is R2·9's, not here.
+// Card details under it (R2·9, readiness gap 5), on a card opened from `/collection`:
+//   - at 1300 the rail's ? is drawn above card details' backdrop (it is the element at its own centre), is one extra
+//     Tab stop in card details' cycle, and Tab reaches nothing else outside the dialog; pressed, the panel opens as a
+//     stacked dialog (`aria-modal` true) titled `Collection · Card details` over the open card, holds Tab, and Escape
+//     closes the panel only (focus back on the ?), then a second Escape closes card details. While the panel is open
+//     the dialog sits beside it, in the room left of it (H3's note), from 1280 (at 1100 it keeps its centre and the
+//     panel stacks over its edge), is inert (a press on it takes nothing), and centres again when the panel closes;
+//   - at 390 nothing is added: no ? is lifted, and Tab never reaches one.
 //
 // IT WRITES NOTHING: no database connection, and every press is a read (the panel, its search, Show me's halo). So it
 // needs no scratch branch. The deck it opens is the account's first on `/decks`.
@@ -139,6 +146,180 @@ async function visit(page, path) {
   await page.waitForFunction(() => document.querySelector("[data-help-button]") !== null, null, { timeout: 15_000 }).catch(() => {});
 }
 
+const CARD = '[role="dialog"][aria-labelledby="card-modal-title"]';
+
+/** What has focus: inside card details, inside the panel, the ?, or somewhere else. */
+const focusPlace = (page) =>
+  page.evaluate(([card, panel]) => {
+    const a = document.activeElement;
+    if (a === null || a === document.body) return "body";
+    if (a.closest(panel)) return "panel";
+    if (a.hasAttribute("data-help-button")) return "help";
+    if (a.closest(card)) return "card";
+    return `outside:${a.tagName.toLowerCase()}`;
+  }, [CARD, PANEL]);
+
+async function overDetails(browser, w, deckPath) {
+  const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
+  const page = await context.newPage();
+  try {
+    await signIn(page, EMAIL, PASSWORD);
+    // A card from the collection, whose open card is its own screen; else a deck's row (an empty collection).
+    await visit(page, "/collection");
+    let trigger = onPage(page, '[aria-label^="View details for "]').filter({ visible: true }).first();
+    let fromCollection = await trigger.waitFor({ state: "visible", timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!fromCollection && deckPath) {
+      await visit(page, deckPath);
+      trigger = onPage(page, "[data-decklist-row]").filter({ visible: true }).first();
+    }
+    const has = fromCollection || (await trigger.waitFor({ state: "visible", timeout: 30_000 }).then(() => true).catch(() => false));
+    if (!has) return skip(`${w.name} the ? over card details`, "neither the collection nor a deck draws a card");
+    console.log(`card from ${fromCollection ? "/collection" : deckPath}`);
+    await trigger.click();
+    await page.locator("#card-modal-title").waitFor({ timeout: 30_000 });
+    await page.waitForTimeout(400);
+    const lifted = page.locator('body > [data-help-button="rail"]');
+
+    // Tab through card details' whole cycle and a little past: where focus goes.
+    const places = new Set();
+    for (let i = 0; i < 60; i += 1) {
+      await page.keyboard.press("Tab");
+      places.add(await focusPlace(page));
+    }
+    const outside = [...places].filter((p) => p.startsWith("outside") || p === "body" || p === "panel");
+
+    if (w.phone) {
+      check((await lifted.count()) === 0, `${w.name} card details lifts no ?`, `${await lifted.count()}`);
+      check(!places.has("help"), `${w.name} Tab in card details never reaches a ?`, [...places].join(", "));
+      check(outside.length === 0, `${w.name} Tab stays in card details`, [...places].join(", "));
+      return;
+    }
+
+    check((await lifted.count()) === 1, `${w.name} the rail's ? is lifted over card details`, `${await lifted.count()}`);
+    const onTop = await page.evaluate(() => {
+      const b = document.querySelector('body > [data-help-button="rail"]');
+      if (!b) return "no ?";
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return hit === b ? "the ?" : (hit?.outerHTML.slice(0, 80) ?? "nothing");
+    });
+    check(onTop === "the ?", `${w.name} the ? is above the backdrop (a pointer reaches it)`, onTop);
+    const owned = await page.evaluate((card) => {
+      const id = document.querySelector(card)?.getAttribute("aria-owns");
+      return id ? document.getElementById(id)?.getAttribute("data-help-button") ?? `names ${id}, absent` : "no aria-owns";
+    }, CARD);
+    check(owned === "rail", `${w.name} card details owns the lifted ? (inside the modal's accessibility tree)`, owned);
+    const slot = await page.evaluate(() => {
+      const b = document.querySelector('body > [data-help-button="rail"]')?.getBoundingClientRect();
+      const r = document.querySelector("[data-help-slot]")?.getBoundingClientRect();
+      return b && r ? { dx: Math.round(b.left - r.left), dy: Math.round(b.top - r.top), w: Math.round(b.width), slotW: Math.round(r.width) } : null;
+    });
+    check(
+      slot !== null && slot.dx === 0 && slot.dy === 0 && slot.w === 38 && slot.slotW === 38,
+      `${w.name} the lifted ? keeps its place at the rail's foot`,
+      JSON.stringify(slot),
+    );
+    check(places.has("help"), `${w.name} the ? is a stop in card details' Tab cycle`, [...places].join(", "));
+    check(outside.length === 0, `${w.name} Tab reaches nothing else outside card details`, [...places].join(", "));
+
+    await lifted.click();
+    await page.waitForSelector(FILLED, { timeout: 15_000 });
+    const modal = await page.locator(PANEL).getAttribute("aria-modal");
+    check(modal === "true", `${w.name} over card details the panel is a stacked dialog`, `aria-modal ${modal}`);
+    check((await page.locator(CARD).count()) === 1, `${w.name} card details stays open under the panel`, `${await page.locator(CARD).count()}`);
+    // H3's note: the panel opens beside the dialog at 1280, so the dialog moves into the room left of the panel.
+    await page.waitForTimeout(300);
+    const room = await page.evaluate(([card, panel]) => {
+      const c = document.querySelector(card)?.getBoundingClientRect();
+      const p = document.querySelector(panel)?.getBoundingClientRect();
+      return c && p ? { cardRight: Math.round(c.right), panelLeft: Math.round(p.left), cardLeft: Math.round(c.left) } : null;
+    }, [CARD, PANEL]);
+    if (w.width >= 1280) {
+      check(room !== null && room.cardRight <= room.panelLeft + 2, `${w.name} the panel opens beside card details`, JSON.stringify(room));
+    } else {
+      // Too narrow for both: the dialog keeps its centre and the panel stacks over its right edge.
+      const off = room === null ? null : Math.round((room.cardLeft + room.cardRight) / 2 - w.width / 2);
+      check(off !== null && Math.abs(off) <= 1, `${w.name} too narrow to sit beside, card details keeps its centre`, `offset ${off}`);
+    }
+    // The card is inert under the panel: a press on it moves nothing, and Escape still closes the panel first.
+    const cardBox = await page.locator(CARD).boundingBox();
+    if (cardBox) await page.mouse.click(cardBox.x + 40, cardBox.y + cardBox.height - 40);
+    check((await page.locator(PANEL).count()) === 1, `${w.name} the panel stays open after a press on the card`, `${await page.locator(PANEL).count()}`);
+    check((await focusPlace(page)) === "panel", `${w.name} a press on the card leaves focus in the panel`, await focusPlace(page));
+    // The arrows page card details only while it is in front: under the panel, the card does not move.
+    const before = await page.locator("#card-modal-title").textContent();
+    await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(400);
+    const after = await page.locator("#card-modal-title").textContent();
+    check(after === before, `${w.name} an arrow does not page the card under the panel`, `${before} → ${after}`);
+    await page.locator(`${PANEL} button`).first().focus();
+    // The backdrop still covers the rail: what sits at a rail link's centre is not the link (only the ? is lifted).
+    const railHit = await page.evaluate(() => {
+      const link = document.querySelector("aside a[href]");
+      if (!link) return "no rail link";
+      const r = link.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return link.contains(hit) ? "the link" : "covered";
+    });
+    check(railHit === "covered", `${w.name} the rail's links stay under the backdrop`, railHit);
+    const title = await page.locator(`${PANEL} h2`).textContent();
+    if (fromCollection) check(title === "Collection · Card details", `${w.name} the title names card details`, `${title}`);
+    else skip(`${w.name} the title names card details`, `opened from a deck, whose screen is the deck (${title})`);
+    check((await focusPlace(page)) === "panel", `${w.name} focus moves into the stacked panel`, await focusPlace(page));
+    const inPanel = new Set();
+    for (let i = 0; i < 24; i += 1) {
+      await page.keyboard.press("Tab");
+      inPanel.add(await focusPlace(page));
+    }
+    check(inPanel.size === 1 && inPanel.has("panel"), `${w.name} the stacked panel holds Tab (one trap live)`, [...inPanel].join(", "));
+    if (SHOTS) {
+      await settled(page.locator(PANEL));
+      await page.screenshot({ path: `${SHOTS}/help-over-details-${w.name}.png` });
+    }
+
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(PANEL, { state: "detached", timeout: 5_000 }).catch(() => {});
+    check((await page.locator(PANEL).count()) === 0, `${w.name} Escape closes the panel`, "closed");
+    check((await page.locator(CARD).count()) === 1, `${w.name} that Escape leaves card details open`, `${await page.locator(CARD).count()}`);
+    check((await focusPlace(page)) === "help", `${w.name} focus goes back to the ?`, await focusPlace(page));
+    const back = await page.evaluate((card) => {
+      const c = document.querySelector(card)?.getBoundingClientRect();
+      return c ? Math.round(c.left + c.width / 2 - window.innerWidth / 2) : null;
+    }, CARD);
+    check(back !== null && Math.abs(back) <= 1, `${w.name} card details centres again once the panel closes`, `offset ${back}`);
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(CARD, { state: "detached", timeout: 5_000 }).catch(() => {});
+    check((await page.locator(CARD).count()) === 0, `${w.name} a second Escape closes card details`, `${await page.locator(CARD).count()}`);
+    check((await lifted.count()) === 0, `${w.name} the ? goes back into the rail`, `${await lifted.count()}`);
+
+    // The other order: the panel first, then a card from the still-usable page. The card is in front.
+    await helpButton(page, w).click();
+    await page.waitForSelector(FILLED, { timeout: 15_000 });
+    await trigger.click();
+    await page.locator("#card-modal-title").waitFor({ timeout: 30_000 });
+    await page.waitForTimeout(400);
+    const front = await page.evaluate(([card, panel]) => {
+      const p = document.querySelector(panel);
+      const r = p?.getBoundingClientRect();
+      if (!p || !r) return "no panel";
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return p.contains(hit) ? "panel" : document.querySelector(card)?.parentElement?.contains(hit) ? "card's layer" : "other";
+    }, [CARD, PANEL]);
+    check(front === "card's layer", `${w.name} a card opened over the open panel is drawn in front of it`, front);
+    check((await focusPlace(page)) === "card", `${w.name} that card takes focus`, await focusPlace(page));
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(CARD, { state: "detached", timeout: 5_000 }).catch(() => {});
+    check(
+      (await page.locator(CARD).count()) === 0 && (await page.locator(PANEL).count()) === 1,
+      `${w.name} Escape closes that card, and the panel stays`,
+      `card ${await page.locator(CARD).count()}, panel ${await page.locator(PANEL).count()}`,
+    );
+  } finally {
+    await context.close();
+  }
+}
+
 async function walk(browser, w, deckPath) {
   console.log(`\n── ${w.name}`);
   const context = await browser.newContext({ viewport: { width: w.width, height: w.height }, hasTouch: w.phone, isMobile: w.phone });
@@ -253,6 +434,9 @@ async function walk(browser, w, deckPath) {
       await helpButton(page, w).click();
     }
     await page.waitForSelector(PANEL, { state: "detached", timeout: 5_000 }).catch(() => {});
+    // The sheet's close steps its history entry back, as Escape's does; a navigation started before it lands is aborted.
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(300);
     const f4 = await focusState(page, w);
     const again = w.phone ? "the scrim" : "the ? again";
     check(
@@ -342,6 +526,10 @@ try {
   await page.close();
   console.log(`deck: ${deckPath ?? "none"}`);
   for (const w of WIDTHS) await walk(browser, w, deckPath);
+  for (const w of [...WIDTHS, { name: "1100", width: 1100, height: 900, phone: false, place: "rail" }]) {
+    console.log(`\n── ${w.name} over card details`);
+    await overDetails(browser, w, deckPath);
+  }
 } finally {
   await browser.close();
 }

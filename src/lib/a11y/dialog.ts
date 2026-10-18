@@ -656,6 +656,12 @@ export function useDialogA11y(
      */
     returnFocusRef?: RefObject<HTMLElement | null>;
     /**
+     * One control outside the dialog that its Tab cycle takes as an extra stop after its last control, read at each
+     * press (null: none). Card details passes the ? it lifts over its backdrop (discovery R2·9, readiness gap 5), so
+     * the dialog stays `aria-modal` and Tab still never reaches the page behind it.
+     */
+    extraStop?: () => HTMLElement | null;
+    /**
      * The dialog is being drawn as a STATIC SPECIMEN rather than opened, so
      * every behaviour this hook adds is suppressed: no scroll lock, no focus
      * capture or restore, no initial focus, no key listener.
@@ -682,6 +688,7 @@ export function useDialogA11y(
   const closeOnEscape = options?.closeOnEscape ?? true;
   const trapTab = options?.trapTab ?? true;
   const inert = options?.inert ?? false;
+  const extraStop = options?.extraStop;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
@@ -774,6 +781,9 @@ export function useDialogA11y(
       }
       if (e.key !== "Tab" || !trapTab) return;
       const focusables = visibleFocusables(root);
+      const extra = extraStop?.() ?? null;
+      const stepped = extra !== null && !root.contains(extra);
+      if (stepped) focusables.push(extra);
       // A modal whose every control is disabled (the replace confirm while it writes) has
       // nowhere to send focus, and letting Tab through would walk out of an `aria-modal`
       // surface into the page behind. Hold it where it is instead.
@@ -806,6 +816,14 @@ export function useDialogA11y(
         target.focus();
         return;
       }
+      // The extra stop sits wherever it is in the document, so the browser's own Tab would not land on it from the
+      // dialog's last control: every press steps through the list itself.
+      if (stepped) {
+        e.preventDefault();
+        const i = focusables.indexOf(active);
+        focusables[(i + (e.shiftKey ? focusables.length - 1 : 1)) % focusables.length].focus();
+        return;
+      }
       if (e.shiftKey && active === first) {
         e.preventDefault();
         last.focus();
@@ -816,5 +834,5 @@ export function useDialogA11y(
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogRef, onClose, closeOnEscape, trapTab, inert]);
+  }, [dialogRef, onClose, closeOnEscape, trapTab, inert, extraStop]);
 }

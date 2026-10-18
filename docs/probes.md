@@ -613,7 +613,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   builder's view; and Show me closing the panel, landing its halo (`data-target-halo`), pressing nothing and drawing no
   bubble. A row, chip or Show me the account cannot draw is SKIP, never PASS. It WRITES NOTHING and holds no database
   connection (the deck is read off `/decks`), so it needs no scratch branch. Run against `next start` with
-  `HELP_PANEL_ENABLED=true`. Card details under the panel is R2·9's extension.
+  `HELP_PANEL_ENABLED=true`. Then card details (R2·9, readiness gap 5), opened from `/collection` or, with an empty
+  collection, a deck's row: at 1300 the rail's ? is lifted above the backdrop (the element at its own centre, at its
+  slot's place), is the one Tab stop outside the dialog, and opens the panel as a stacked dialog that holds Tab;
+  Escape closes the panel (focus back on the ?), then card details. At 390 no ? is lifted and Tab stays in the card.
 
 - `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its

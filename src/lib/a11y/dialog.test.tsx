@@ -122,6 +122,48 @@ describe("useDialogA11y trapTab", () => {
   });
 });
 
+describe("useDialogA11y extraStop", () => {
+  // Card details takes the ? lifted over its backdrop as one more stop after its last control (discovery R2·9).
+  function setup(extra: () => HTMLElement | null) {
+    vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    const el = document.createElement("div");
+    el.setAttribute("role", "dialog");
+    const first = document.createElement("button");
+    const last = document.createElement("button");
+    el.append(first, last);
+    const stop = document.createElement("button");
+    document.body.append(el, stop);
+    appended.push(el, stop);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, vi.fn(), { lockScroll: false, extraStop: extra });
+    });
+    const press = (shiftKey = false) =>
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey, cancelable: true, bubbles: true }));
+    return { first, last, stop, press };
+  }
+
+  it("goes from the last control to the stop, and from the stop back to the first", () => {
+    const { first, last, stop, press } = setup(() => document.querySelector<HTMLElement>("body > button"));
+    last.focus();
+    press();
+    expect(document.activeElement).toBe(stop);
+    press();
+    expect(document.activeElement).toBe(first);
+    press(true);
+    expect(document.activeElement).toBe(stop);
+    press(true);
+    expect(document.activeElement).toBe(last);
+  });
+
+  it("wraps within the dialog when there is no stop", () => {
+    const { first, last, press } = setup(() => null);
+    last.focus();
+    press();
+    expect(document.activeElement).toBe(first);
+  });
+});
+
 describe("useDialogA11y scroll lock", () => {
   it("locks body scroll by default", () => {
     renderDialog();
