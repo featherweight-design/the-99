@@ -58,7 +58,7 @@ vi.mock("../../db", async () => {
           expect(table).toBe(schema.creditGrants);
           db.updateWheres.push(w);
           const ps = paramsOf(w);
-          for (const l of db.lots) if (l.source === "plan" && ps.includes(l.subscriptionId) && live(l)) l.expiresAt = set.expiresAt;
+          for (const l of db.lots) if (l.source === "plan" && ps.includes(l.subscriptionId) && (l.expiresAt === null || l.expiresAt.getTime() > db.now.getTime())) l.expiresAt = set.expiresAt;
         },
       }),
     }),
@@ -272,6 +272,13 @@ describe("customer.subscription.updated and .deleted", () => {
     expect((await sync("evt_r")).outcome).toBe("duplicate");
   });
 
+  it("expires a fully revoked lot too, so a won dispute cannot restore credits that outlive the plan", async () => {
+    db.lots.push({ userId: "user_a", source: "plan", units: 60, revokedUnits: 60, expiresAt: null, externalId: "in_disputed", billingReason: null, subscriptionId: "sub_1" });
+    current = subscription({ cancel: true });
+    await sync();
+    expect(db.lots.find((l) => l.externalId === "in_disputed")?.expiresAt).toEqual(MONTH2);
+  });
+
   it("limits the expiry write to the account's live plan lots", async () => {
     current = subscription({ cancel: true });
     await sync();
@@ -279,7 +286,8 @@ describe("customer.subscription.updated and .deleted", () => {
     expect(rendered.sql).toContain('"credit_grants"."user_id" = $1');
     expect(rendered.sql).toContain('"credit_grants"."source" = $2');
     expect(rendered.sql).toContain('"credit_grants"."subscription_id" = $3');
-    expect(rendered.sql).toContain('"credit_grants"."revoked_units" < "credit_grants"."units"');
+    // A fully revoked (disputed) lot is expired too: a won dispute restores its credits, which must not outlive the plan.
+    expect(rendered.sql).not.toContain('revoked_units');
     expect(rendered.sql).toContain('"credit_grants"."expires_at" is null');
     expect(rendered.params.slice(0, 3)).toEqual(["user_a", "plan", "sub_1"]);
     expect(creditGrants.expiresAt.name).toBe("expires_at");

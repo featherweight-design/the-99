@@ -50,7 +50,8 @@ export async function fulfilInvoice(
     await lockSubscription(tx, subscriptionId);
     const invoice = toFetchedInvoice(await stripe.invoices.retrieve(invoiceId, { expand: ["payments"] }));
     const sub = toFetchedSubscription(await stripe.subscriptions.retrieve(subscriptionId));
-    // FOR SHARE against the account purge, exactly as `fulfilCheckoutSession` does.
+    // FOR KEY SHARE (not FOR SHARE: K2's dispute path updates this row's purge-block column under the allowance lock, and a
+    // plain share lock would deadlock with it) against the account purge, exactly as `fulfilCheckoutSession` does.
     const mapped = await mappedUser(tx, invoice.customerId);
     const decision = decideInvoice(invoice, sub, mapped, planPriceEnv());
     if (decision.kind === "refuse") return { outcome: "refuse" as const, reason: decision.reason };
@@ -102,7 +103,7 @@ async function lockSubscription(tx: Tx, subscriptionId: string): Promise<void> {
 async function mappedUser(tx: Tx, customerId: string | null): Promise<string | null> {
   if (!customerId) return null;
   const [row] = await tx.select({ userId: stripeCustomers.userId }).from(stripeCustomers)
-    .where(eq(stripeCustomers.stripeCustomerId, customerId)).for("share");
+    .where(eq(stripeCustomers.stripeCustomerId, customerId)).for("key share");
   return row?.userId ?? null;
 }
 
@@ -144,7 +145,6 @@ async function storeAndExpire(tx: Tx, userId: string, sub: FetchedSubscription, 
       eq(creditGrants.userId, userId),
       eq(creditGrants.source, "plan"),
       eq(creditGrants.subscriptionId, sub.id),
-      sql`${creditGrants.revokedUnits} < ${creditGrants.units}`,
       or(isNull(creditGrants.expiresAt), gt(creditGrants.expiresAt, now)),
     ));
 }
