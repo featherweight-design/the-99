@@ -102,6 +102,12 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
         return;
       }
       const hidesAt = new Date(answer.hidesAt);
+      // An answer that lands past its own deadline shows nothing, not even for a frame; the Show was still logged, so
+      // the view that draws the log still refreshes.
+      if (hidesAt.getTime() <= Date.now()) {
+        onShown?.();
+        return;
+      }
       setRevealed((prev) => new Map(prev).set(id, { name: answer.name, email: answer.email, id: answer.id, hidesAt }));
       window.clearTimeout(timers.current.get(id));
       timers.current.set(

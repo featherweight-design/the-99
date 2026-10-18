@@ -161,6 +161,23 @@ describe("useReveal", () => {
     expect(result.current.pending.has("u1")).toBe(false);
   });
 
+  it("shows nothing from an answer that lands past its hide time, and still reports the logged Show", async () => {
+    const d = deferred();
+    const onShown = vi.fn();
+    const { result } = renderHook(() => useReveal(() => d.promise, onShown));
+    let shown!: Promise<void>;
+    act(() => {
+      shown = result.current.show("u1", "Colin R.");
+    });
+    act(() => vi.advanceTimersByTime(5 * 60_000 + 1));
+    await act(async () => {
+      d.resolve(ok("u1"));
+      await shown;
+    });
+    expect(result.current.revealed.has("u1")).toBe(false);
+    expect(onShown).toHaveBeenCalledTimes(1);
+  });
+
   it("reads the hide time on the UTC clock", () => {
     expect(utcHourMinute(new Date("2026-10-17T09:05:00.000Z"))).toBe("09:05");
   });
