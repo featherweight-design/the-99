@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 // A Clerk BACKEND call is a network round trip to Clerk's API (~125 ms measured on staging, 2026-10-18): `currentUser()` and
@@ -23,15 +24,35 @@ function sources(dir: string): string[] {
   });
 }
 
-/** The Backend-call names a file imports from the Clerk server package. */
+const CLERK_SERVER = new Set(["@clerk/nextjs/server", "@clerk/backend"]);
+const BACKEND_NAMES = new Set(["currentUser", "clerkClient", "createClerkClient"]);
+
+/**
+ * The Backend-call names a file takes from the Clerk server packages, from the parse tree: a named import (the ORIGINAL name,
+ * whatever it is aliased to), a re-export, and a namespace or default import or a dynamic `import()` of the package, which
+ * cannot be told apart from a Backend call by name and so reads as `*` and fails until it is listed. A comment, a string
+ * and a comment inside an import specifier are not imports.
+ */
 export function backendImports(text: string): string[] {
+  const sf = ts.createSourceFile("x.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const out: string[] = [];
-  for (const m of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']@clerk\/(?:nextjs\/server|backend)["']/g)) {
-    for (const part of m[1].split(",")) {
-      const name = part.trim().split(/\s+as\s+/)[0];
-      if (name === "currentUser" || name === "clerkClient" || name === "createClerkClient") out.push(name);
+  const visit = (n: ts.Node) => {
+    if (ts.isImportDeclaration(n) && ts.isStringLiteral(n.moduleSpecifier) && CLERK_SERVER.has(n.moduleSpecifier.text) && !n.importClause?.isTypeOnly) {
+      const c = n.importClause;
+      if (c?.name) out.push("*");
+      const b = c?.namedBindings;
+      if (b && ts.isNamespaceImport(b)) out.push("*");
+      if (b && ts.isNamedImports(b)) for (const e of b.elements) if (!e.isTypeOnly && BACKEND_NAMES.has((e.propertyName ?? e.name).text)) out.push((e.propertyName ?? e.name).text);
+    } else if (ts.isExportDeclaration(n) && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier) && CLERK_SERVER.has(n.moduleSpecifier.text)) {
+      const ex = n.exportClause;
+      if (!ex || ts.isNamespaceExport(ex)) out.push("*");
+      else for (const e of ex.elements) if (BACKEND_NAMES.has((e.propertyName ?? e.name).text)) out.push((e.propertyName ?? e.name).text);
+    } else if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword && n.arguments[0] && ts.isStringLiteral(n.arguments[0]) && CLERK_SERVER.has(n.arguments[0].text)) {
+      out.push("*");
     }
-  }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
   return out.sort();
 }
 
@@ -45,10 +66,19 @@ describe("Clerk Backend calls on the server", () => {
     expect(found).toEqual(Object.fromEntries(Object.entries(ALLOWED).map(([f, v]) => [f, [...v.names].sort()])));
   });
 
-  it("sees an aliased and a multi-name import, and ignores auth() and a comment", () => {
+  it("sees an aliased, multi-line and re-exported import, and ignores auth(), type imports, comments and strings", () => {
     expect(backendImports('import { auth, currentUser as me } from "@clerk/nextjs/server";')).toEqual(["currentUser"]);
     expect(backendImports('import {\n  clerkClient,\n  auth,\n} from "@clerk/nextjs/server";')).toEqual(["clerkClient"]);
-    expect(backendImports('import { auth } from "@clerk/nextjs/server";\n// currentUser() is not called')).toEqual([]);
+    expect(backendImports('import { /* account lookup */ currentUser } from "@clerk/nextjs/server";')).toEqual(["currentUser"]);
+    expect(backendImports('export { currentUser } from "@clerk/nextjs/server";')).toEqual(["currentUser"]);
+    expect(backendImports('import { auth } from "@clerk/nextjs/server";\n// import { currentUser } from "@clerk/nextjs/server";\nconst s = \'import { clerkClient } from "@clerk/nextjs/server"\';')).toEqual([]);
+    expect(backendImports('import type { currentUser } from "@clerk/nextjs/server";')).toEqual([]);
     expect(backendImports('import { useUser } from "@clerk/nextjs";')).toEqual([]);
+  });
+
+  it("reads a namespace import, a default import and a dynamic import as `*`, so each fails until it is listed", () => {
+    expect(backendImports('import * as clerk from "@clerk/nextjs/server";')).toEqual(["*"]);
+    expect(backendImports('import clerk from "@clerk/backend";')).toEqual(["*"]);
+    expect(backendImports('const m = await import("@clerk/nextjs/server");')).toEqual(["*"]);
   });
 });
