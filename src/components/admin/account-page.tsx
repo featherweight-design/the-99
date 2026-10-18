@@ -149,7 +149,7 @@ function GroupSection({ page }: { page: AccountPage }) {
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             disabled={inFlight}
-            className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[36px] md:w-[220px] md:text-[13.5px]"
+            className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[36px] md:w-[220px] [@media(pointer:fine)]:md:text-[13.5px]"
           >
             <option value="">{copy.noGroup}</option>
             {page.groups.map((g) => (

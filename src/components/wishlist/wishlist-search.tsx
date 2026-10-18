@@ -186,7 +186,7 @@ export function WishlistSearch({
         onClear={() => changeQuery("")}
         ref={inputRef}
         containerClassName="h-[44px] md:h-[46px] py-0 rounded-[10px] md:bg-[color:var(--bg)]"
-        className="text-[16px] md:text-[15px]"
+        className="text-[16px] [@media(pointer:fine)]:md:text-[15px]"
       />
       {open && (
         <div

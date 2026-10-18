@@ -114,7 +114,7 @@ function CountField({
       // past 99, an imported stack in the thousands) widens the field by its own digits, at the same font, rather
       // than clipping. Monospace, so `ch` is one digit.
       style={{ minWidth: band ? 32 : 24, width: `${shownText.length + 0.5}ch` }}
-      className={`h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
+      className={`h-[20px] bg-transparent border-0 border-b-2 border-b-transparent p-0 text-center font-mono tabular-nums text-[16px] [@media(pointer:fine)]:md:text-[12px] text-[color:var(--fg-body)] outline-none focus:border-b-[color:var(--accent)]`}
     />
   );
 }

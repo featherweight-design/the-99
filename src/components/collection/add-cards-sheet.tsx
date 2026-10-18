@@ -558,7 +558,7 @@ function AddMode({
               onClear={() => setQuery("")}
               onKeyDown={onSearchKey}
               containerClassName="h-[48px] min-w-0 flex-1 py-0 md:h-[46px]"
-              className="text-[16px] md:text-[14px]"
+              className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
             />
             {scan && (
               <button

@@ -108,7 +108,7 @@ export function OverridePicker({
               placeholder={kind === "user" ? copy.accountSearch : copy.groupSearch}
               aria-label={kind === "user" ? copy.accountSearch : copy.groupSearch}
               containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
-              className="text-[16px] md:text-[14px]"
+              className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
             />
           )}
           {choices.length === 0 && kind === "group" ? (

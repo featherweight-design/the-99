@@ -268,7 +268,7 @@ export function IssueInspector({
             // the held height is measured. This departs from frame 3a's 14px
             // on purpose (the repo convention, as quick-add-bar.tsx); desktop
             // keeps 14.
-            className="text-[16px] md:text-[14px]"
+            className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
             value={rawQuery}
             onChange={(e) => setRawQuery(e.target.value)}
             placeholder={

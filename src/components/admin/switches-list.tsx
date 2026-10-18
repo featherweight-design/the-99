@@ -195,7 +195,7 @@ export function SwitchesList({
           placeholder={copy.search}
           aria-label={copy.search}
           containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] md:max-w-[420px]"
-          className="text-[16px] md:text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
         />
         {/* A radiogroup (segmented switch 3b), compact like admin's other switches; it scrolls sideways where the row overruns, at any width. */}
         <div>

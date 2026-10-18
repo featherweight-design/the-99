@@ -132,7 +132,7 @@ export function AccountsList({
           placeholder={copy.search}
           aria-label={copy.search}
           containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
-          className="text-[16px] md:text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
         />
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">

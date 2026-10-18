@@ -541,7 +541,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             onKeyDown={(e) => escapeDismisses(e, query !== "", () => onQueryChange(""))}
             placeholder={choose ? chooseCopy.searchPlaceholder : copy.searchPlaceholder}
             aria-label={choose ? chooseCopy.searchAria : copy.searchAriaLabel}
-            className="text-[16px] md:text-[13.5px] py-[9px]"
+            className="text-[16px] [@media(pointer:fine)]:md:text-[13.5px] py-[9px]"
           />
           {/* The chip geometry, not a chip component: single-select, no dismiss ✕. A catalog
               printing's finishes are not held counts, so the choose role has no finish chips. */}

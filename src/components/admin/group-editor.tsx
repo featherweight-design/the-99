@@ -272,7 +272,7 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
         aria-label={copy.find}
         autoComplete="off"
         containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
-        className="text-[16px] md:text-[14px]"
+        className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
       />
       {shown.length ? (
         <div

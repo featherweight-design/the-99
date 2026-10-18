@@ -32,7 +32,7 @@ export function CheckAccount({ explanations, initial }: { explanations: readonly
           else url.searchParams.delete("account");
           mirrorUrl(url);
         }}
-        className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[36px] md:w-[200px] md:text-[13.5px]"
+        className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[36px] md:w-[200px] [@media(pointer:fine)]:md:text-[13.5px]"
       >
         <option value="">{copy.checkPick}</option>
         {explanations.map((e) => (

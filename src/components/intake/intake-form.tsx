@@ -310,7 +310,7 @@ export function IntakeForm({
               placeholder={copy.intake.budgetPlaceholder}
               // Whole dollars: a pasted `$1,500` reads as 1500, anything else is not a figure.
               onChange={(e) => setBudget(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
-              className={`flex-1 min-w-0 h-[28px] ${AFFIX_INPUT} font-mono text-[16px] md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]`}
+              className={`flex-1 min-w-0 h-[28px] ${AFFIX_INPUT} font-mono text-[16px] [@media(pointer:fine)]:md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-placeholder)]`}
             />
           </div>
         </Field>
