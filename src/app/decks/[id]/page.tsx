@@ -5,7 +5,7 @@ import { perfRoute } from "../../../lib/perf/timing";
 import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
-import { loadCompletionPartners, loadInDeckPartners } from "../../../lib/combos/near-miss";
+import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds, deckComboFields } from "../../../lib/combos/attach";
 import { readPreconAddReceipt } from "../../../lib/precons/add-receipt-read";
 import { readImportAddReceipt } from "../../../lib/decks/import-add-receipt";
