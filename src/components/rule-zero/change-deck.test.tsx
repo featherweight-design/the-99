@@ -112,10 +112,11 @@ describe("Change deck's failures and focus", () => {
     });
     try {
       await open();
-      // The width is read through a store that settles after the first render, and the panel stays hidden until
-      // `useAnchoredPanel` places it: in a fresh module (a test run alone, or first in its shard) neither has happened
-      // when the press returns. Wait for the placed panel, then for focus.
+      // The panel stays hidden until `useAnchoredPanel` places it. The link reaches the hook's trigger ref in a passive
+      // effect, after the hook's first synchronous placement, so `at` arrives from its frame loop, outside the press's
+      // `act`: wait for the placed (visible) panel, then for focus.
       const dialog = await screen.findByRole("dialog");
+      expect(dialog.style.visibility).toBe("visible");
       await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
