@@ -56,9 +56,22 @@ describe("networkOf and anonKey", () => {
     expect(networkOf("2001:db8:0:1::1")).not.toBe(networkOf("2001:db8:0:2::1"));
   });
 
-  it("reads an IPv4-mapped IPv6 address as the IPv4 it carries, in any case", () => {
+  it("returns text that is not an address unreduced and does not throw", () => {
+    for (const junk of [":::", "1:2:3", "a:b:c:d:e:f:g:h", "::ffff:999.1.1.1", "unknown, 1.2.3.4", ""]) {
+      expect(() => networkOf(junk), junk).not.toThrow();
+    }
+    expect(networkOf("A:B")).toBe("a:b");
+  });
+
+  it("reads an IPv4-mapped IPv6 address as the IPv4 it carries, in dotted, hexadecimal and expanded spellings and any case", () => {
     expect(networkOf("::ffff:1.2.3.4")).toBe("1.2.3.4");
     expect(networkOf("::FFFF:1.2.3.4")).toBe("1.2.3.4");
+    expect(networkOf("::ffff:102:304")).toBe("1.2.3.4");
+    expect(networkOf("0:0:0:0:0:ffff:1.2.3.4")).toBe("1.2.3.4");
+    expect(networkOf("0000:0000:0000:0000:0000:ffff:0102:0304")).toBe("1.2.3.4");
+    // Unrelated mapped addresses stay unrelated.
+    expect(networkOf("::ffff:506:708")).toBe("5.6.7.8");
+    expect(networkOf("::ffff:506:708")).not.toBe(networkOf("::ffff:102:304"));
     expect(anonKey("::ffff:1.2.3.4", DAY)).toBe(anonKey("1.2.3.4", DAY));
   });
 

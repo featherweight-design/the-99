@@ -13,10 +13,12 @@ import { overLimit, RATE_RULES } from "./rules";
  * THE KEY IS PSEUDONYMOUS, NOT UNLINKABLE. `anon:` plus the first 16 hex of SHA-256 over the network address (an IPv6 address
  * on its /64, the unit a household or host is given) and the UTC day. The daily part stops one visitor's rows being joined
  * across days; it does NOT make the hash irreversible (the IPv4 space is small enough to enumerate), and no secret is
- * introduced to pretend otherwise. RETENTION is a sweep, not a timer: `recordHit` deletes every row older than `RETAIN_MS`
- * (an hour) whenever it next runs, by anyone, so a row lives at least an hour, usually a little over, and indefinitely if no
- * hit ever follows. The privacy page must say that: "a one-way hash of your network address, deleted by the first count
- * more than an hour later". The `anon:` prefix cannot collide with a Clerk id.
+ * introduced to pretend otherwise. CLEANUP IS OPPORTUNISTIC AND WINDOW-BASED, with no minimum or maximum
+ * age to promise: a count deletes this key's rows from EARLIER windows (so a minute-window row can go within seconds of the
+ * next minute's count) and every row, anyone's, older than the counting window's start minus `RETAIN_MS`; if no count ever
+ * follows, a row stays. The privacy page must say only that the hash is held briefly in a request counter and cleared
+ * out as later requests are counted, and must NOT say "kept for up to an hour" or "deleted after an hour". The `anon:`
+ * prefix cannot collide with a Clerk id.
  */
 export const ANON_PREFIX = "anon:";
 export const UNKNOWN_KEY = `${ANON_PREFIX}unknown`;
@@ -29,21 +31,39 @@ export function clientAddress(headers: Pick<Headers, "get">): string | null {
   return address ? address : null;
 }
 
+/** An IPv6 address as eight 16-bit groups, or null when it is not one (an embedded dotted IPv4 tail counts as two groups). */
+function groupsOf(address: string): number[] | null {
+  let text = address;
+  const dotted = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(text);
+  if (dotted) {
+    const o = dotted.slice(1).map(Number);
+    if (o.some((n) => n > 255)) return null;
+    text = text.slice(0, dotted.index) + ((o[0] << 8) | o[1]).toString(16) + ":" + ((o[2] << 8) | o[3]).toString(16);
+  }
+  const halves = text.split("::");
+  if (halves.length > 2) return null;
+  const side = (h: string) => (h === "" ? [] : h.split(":"));
+  const head = side(halves[0]);
+  const tail = halves.length === 2 ? side(halves[1]) : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  const all = [...head, ...Array(Math.max(0, fill)).fill("0"), ...tail];
+  if (all.length !== 8 || all.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null;
+  return all.map((g) => parseInt(g, 16));
+}
+
 /**
- * A network address as the unit one visitor is counted by: IPv4 as written, an IPv4-mapped IPv6 address (`::ffff:1.2.3.4`)
- * as the IPv4 it carries, any other IPv6 address reduced to its /64 (the first four groups). Brackets, a `%zone` id and
- * letter case are dropped first, so the same visitor written two ways is one key.
+ * A network address as the unit one visitor is counted by: IPv4 as written; an IPv6 address that carries an IPv4 (the
+ * mapped `::ffff:` range, in dotted, hexadecimal or expanded spelling) as that IPv4; any other IPv6 address reduced to its
+ * /64 (the first four groups), canonically spelled. Brackets, a `%zone` id and letter case are dropped first, so one
+ * visitor written two ways is one key. Text that is neither is returned trimmed and lowercased, unreduced.
  */
 export function networkOf(raw: string): string {
   const address = raw.trim().replace(/^\[|\]$/g, "").replace(/%.*$/, "").toLowerCase();
-  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(address);
-  if (mapped) return mapped[1];
-  if (!address.includes(":") || address.includes(".")) return address; // IPv4, or a form this does not reduce
-  const [head, tail = ""] = address.split("::");
-  const groups = head === "" ? [] : head.split(":");
-  const rest = address.includes("::") ? tail.split(":").filter((g) => g !== "") : [];
-  const filled = address.includes("::") ? [...groups, ...Array(Math.max(0, 8 - groups.length - rest.length)).fill("0"), ...rest] : groups;
-  return `${filled.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":")}::/64`;
+  if (!address.includes(":")) return address;
+  const g = groupsOf(address);
+  if (g === null) return address;
+  if (g.slice(0, 5).every((n) => n === 0) && g[5] === 0xffff) return `${g[6] >> 8}.${g[6] & 255}.${g[7] >> 8}.${g[7] & 255}`;
+  return `${g.slice(0, 4).map((n) => n.toString(16)).join(":")}::/64`;
 }
 
 /** The `rate_hits` key for a visitor on a UTC day. */
