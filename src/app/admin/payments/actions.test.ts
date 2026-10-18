@@ -6,15 +6,18 @@ const requireAdmin = vi.fn();
 vi.mock("../../../lib/admin/access", () => ({ requireAdmin: () => requireAdmin() }));
 const grantGift = vi.fn();
 vi.mock("../../../lib/admin/gift", () => ({ grantGift: (...a: unknown[]) => grantGift(...a) }));
+const clearPurchaseBlock = vi.fn();
+vi.mock("../../../lib/payments/clear-block", () => ({ clearPurchaseBlock: (...a: unknown[]) => clearPurchaseBlock(...a) }));
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 
-const { grantCredits } = await import("./actions");
+const { clearBlock, grantCredits } = await import("./actions");
 const input = { accountId: "u_mara", units: 10, note: "why", actionId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b" };
 
 beforeEach(() => {
   requireAdmin.mockReset();
   grantGift.mockReset();
+  clearPurchaseBlock.mockReset();
   revalidatePath.mockReset();
 });
 
@@ -33,6 +36,25 @@ describe("grantCredits", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/admin/payments");
     revalidatePath.mockReset();
     expect(await grantCredits(input)).toEqual({ ok: false, error: "unknown" });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("clearBlock", () => {
+  it("is a 404 for a non-admin, clearing nothing", async () => {
+    requireAdmin.mockRejectedValue(new Error("NEXT_HTTP_ERROR_FALLBACK;404"));
+    await expect(clearBlock("u_mara")).rejects.toThrow("404");
+    expect(clearPurchaseBlock).not.toHaveBeenCalled();
+  });
+
+  it("clears as the gated admin, refreshing the tab only when something was cleared", async () => {
+    requireAdmin.mockResolvedValue({ userId: "u_admin" });
+    clearPurchaseBlock.mockResolvedValueOnce({ ok: true, cleared: true }).mockResolvedValueOnce({ ok: true, cleared: false });
+    expect(await clearBlock("u_mara")).toEqual({ ok: true, cleared: true });
+    expect(clearPurchaseBlock).toHaveBeenCalledWith("u_admin", "u_mara");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/payments");
+    revalidatePath.mockReset();
+    expect(await clearBlock("u_mara")).toEqual({ ok: true, cleared: false });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

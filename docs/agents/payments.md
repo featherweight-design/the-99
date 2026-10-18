@@ -106,7 +106,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   account, before and apart from the invite spend; either failing answers 500 for a retry. It takes the account's invite lock
   (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
   `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
-- **The admin Payments tab** (`/admin/payments`, admin plan A2b): a UTC month's revenue from `payment_records` per currency (gross, tax, net; refunds subtract in A3), the Costs page's own spend figure beside it, the month's plan, pack and gift lots, the `credits_granted` events, and Grant credits (`grantCredits` → `grantGift`, one `actionId` per grant). Reads in `src/lib/payments/admin-read.ts`. Proof: `pnpm probe:admin-payments`.
+- **The admin Payments tab** (`/admin/payments`, admin plan A2b, A3): a UTC month's revenue from `payment_records` per currency (gross, tax, and net of tax and of refunds less the tax they carried back, counted in the payment's month), the disputes still open and the month's, the accounts whose buying is paused with Let them buy, the Costs page's own spend figure beside it, the month's plan, pack and gift lots, the `credits_granted` events, and Grant credits (`grantCredits` → `grantGift`, one `actionId` per grant). Reads in `src/lib/payments/admin-read.ts`. Proof: `pnpm probe:admin-payments`.
 - Spend order is free, welcome, plan, gift, pack (`SOURCE_RANK`). A gift (admin plan A-R5) never expires, so it goes after plan lots, which can lapse, and before packs, which were bought and can be refunded; /credits draws its Gift cell only while it holds a credit, like Welcome. `heldCredits` is the one definition of "holds a lot"; the 20-a-day
   paid limit applies to welcome runs. A group can set its own paid limit (`flag_groups.paid_daily_limit`, 1 to 1000, the
   admin group editor's "Daily paid runs"): `paidLimitFor` reads the largest among the player's groups, else
@@ -136,8 +136,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   credit, keeps a `payment_disputes` row (no account id, kept through the purge like `payment_records`;
   `units_revoked` is what THIS dispute took) and sets `stripe_customers.purchase_blocked_at`. The lot-revoke is a SNAPSHOT at the event: credits freed afterwards by failed runs stay spendable (known,
   accepted). A win recomputes as above; a loss stays revoked. The dispute row is the state machine (`planDispute`), so a
-  `closed` before its `created` cannot revoke a won dispute. **The block is never cleared by code: Hugh clears it by
-  hand** (`update stripe_customers set purchase_blocked_at = null where user_id = …`). `createPackCheckout` (the one place a Session is made) refuses as
+  `closed` before its `created` cannot revoke a won dispute. **The block is cleared only by an admin**: Let them buy on
+  `/admin/payments` (`clearPurchaseBlock`, `src/lib/payments/clear-block.ts`, admin plan A3) nulls it under a row lock and
+  writes one `purchase_block_cleared` event in the same transaction; a repeat clears and records nothing. The block is set
+  only when a dispute is created, so clearing it while one is still open is allowed, and the press says how many are. `createPackCheckout` (the one place a Session is made) refuses as
   `blocked`, and `buyPackAction` reads the same helper first; a Session made before a dispute still fulfils when paid; credits already held keep spending. Dashboard: add the three events to the
   endpoint. `pnpm reconcile:payments` is read-only and dry-run only: the last 72 hours of paid `the-99` PaymentIntents
   with no record, and records or pack lots with no paid PaymentIntent, as counts and ids; `RECONCILE_TARGET_BRANCH`

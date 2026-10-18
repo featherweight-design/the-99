@@ -2341,7 +2341,8 @@ export const stripeCustomers = pgTable("stripe_customers", {
   userId: text("user_id").primaryKey(),
   stripeCustomerId: text("stripe_customer_id").notNull().unique(),
   // PURCHASE BLOCK (K2): set when a dispute opens against this account's payment. Only buying is refused
-  // (`buyPackAction`); credits already held keep spending. Never cleared by code: Hugh clears it by hand.
+  // (`buyPackAction`); credits already held keep spending. Cleared only by an admin, from the Payments tab
+  // (`clearPurchaseBlock`, admin plan A3), which records a `purchase_block_cleared` event.
   purchaseBlockedAt: timestamp("purchase_blocked_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -2606,12 +2607,13 @@ export const adminEvents = pgTable("admin_events", {
   newValue: text("new_value"),
   note: text("note"),
 }, (t) => [
-  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted')`),
+  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted', 'purchase_block_cleared')`),
   check("admin_events_scope_check", sql`${t.scope} is null or ${t.scope} in ('app', 'group', 'user')`),
   // Each kind names what it changed. A `group_allowance_set` names its group and a change: either
   // side may be null (null is the default daily credits), never both. `group_paid_limit_set` is
   // the same shape for the paid limit (null is `PAID_DAILY_LIMIT`).
   // A `credits_granted` (an admin's gift, admin plan A-R5) names the account, the units (`new_value`) and why (`note`).
+  // A `purchase_block_cleared` (A3) names the account and when its block was set (`old_value`, ISO).
   check("admin_events_fields_check", sql`case ${t.kind}
     when 'override_set' then ${t.switchName} is not null and ${t.scope} is not null and ${t.newValue} is not null
     when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
@@ -2628,6 +2630,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'account_revealed' then ${t.userId} is not null
     when 'group_paid_limit_set' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
     when 'credits_granted' then ${t.userId} is not null and ${t.newValue} is not null and ${t.note} is not null
+    when 'purchase_block_cleared' then ${t.userId} is not null and ${t.oldValue} is not null
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null

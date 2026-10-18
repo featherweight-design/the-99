@@ -3,9 +3,9 @@
 // record from `admin_events`. Admin-only: the page that calls this has passed `requireAdmin()`. Reads nothing per
 // player beyond ids, which the page masks (`namesFor`).
 
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { adminEvents, creditGrants, paymentRecords } from "../../db/schema";
+import { adminEvents, creditGrants, paymentDisputes, paymentRecords, stripeCustomers } from "../../db/schema";
 import { PAID_SOURCES } from "../model/credit-rule";
 import { revenueOf, type Revenue, type RevenueRow } from "./admin-read-rule";
 
@@ -14,9 +14,34 @@ export const GRANTS_SHOWN = 200;
 
 export type AdminGrant = { id: string; userId: string; source: "plan" | "pack" | "gift"; units: number; revokedUnits: number; createdAt: Date };
 export type AdminGift = { at: Date; actorId: string; userId: string; units: number; note: string };
-export type PaymentsMonth = { revenue: Revenue[]; grants: AdminGrant[]; grantsTotal: number; gifts: AdminGift[] };
+export type AdminDispute = {
+  disputeId: string;
+  status: "open" | "won" | "lost";
+  unitsRevoked: number;
+  createdAt: Date;
+  closedAt: Date | null;
+  amountCents: number | null;
+  currency: string | null;
+  /** Null once the account is purged, or for a payment that granted no lot. */
+  userId: string | null;
+};
+export type AdminBlock = { userId: string; at: Date };
+export type PaymentsMonth = {
+  revenue: Revenue[];
+  grants: AdminGrant[];
+  grantsTotal: number;
+  gifts: AdminGift[];
+  disputes: AdminDispute[];
+  blocked: AdminBlock[];
+};
 
-/** Exported for its test. Grouped by currency, so two currencies are never added together. */
+/** A payment's refund, never more than the payment (K2 stores the charge's cumulative figure). */
+const refunded = sql`least(coalesce(${creditGrants.refundedCents}, 0), ${paymentRecords.amountCents})`;
+
+/**
+ * Exported for its test. Grouped by currency, so two currencies are never added together. Each payment reaches its
+ * refund through the lot it granted (`external_id` is the Checkout Session's id; an unattributed payment has none).
+ */
 export function revenueQuery(start: Date, end: Date) {
   return db
     .select({
@@ -25,10 +50,47 @@ export function revenueQuery(start: Date, end: Date) {
       grossCents: sql<number>`coalesce(sum(${paymentRecords.amountCents}), 0)::int`,
       taxCents: sql<number>`coalesce(sum(${paymentRecords.taxCents}), 0)::int`,
       unattributed: sql<number>`(count(*) filter (where ${paymentRecords.status} = 'unattributed'))::int`,
+      refundedCents: sql<number>`coalesce(sum(${refunded}), 0)::int`,
+      refundedTaxCents: sql<number>`coalesce(sum(case when ${paymentRecords.amountCents} > 0 then round(${refunded}::numeric * ${paymentRecords.taxCents} / ${paymentRecords.amountCents}) else 0 end), 0)::int`,
     })
     .from(paymentRecords)
+    .leftJoin(creditGrants, eq(creditGrants.externalId, paymentRecords.checkoutSessionId))
     .where(and(gte(paymentRecords.createdAt, start), lt(paymentRecords.createdAt, end)))
     .groupBy(paymentRecords.currency);
+}
+
+/**
+ * Exported for its test: every dispute still open, and every one opened or closed in the month, newest first. A
+ * dispute has no account id (kept through the purge, as `payment_records` is); its account is reached through the
+ * payment's lot, and is null once that account is purged.
+ */
+export function disputesQuery(start: Date, end: Date) {
+  const inMonth = (c: typeof paymentDisputes.createdAt | typeof paymentDisputes.closedAt) => and(gte(c, start), lt(c, end));
+  return db
+    .select({
+      disputeId: paymentDisputes.disputeId,
+      status: paymentDisputes.status,
+      unitsRevoked: paymentDisputes.unitsRevoked,
+      createdAt: paymentDisputes.createdAt,
+      closedAt: paymentDisputes.closedAt,
+      amountCents: paymentRecords.amountCents,
+      currency: paymentRecords.currency,
+      userId: creditGrants.userId,
+    })
+    .from(paymentDisputes)
+    .leftJoin(paymentRecords, eq(paymentRecords.paymentIntentId, paymentDisputes.paymentIntentId))
+    .leftJoin(creditGrants, eq(creditGrants.externalId, paymentRecords.checkoutSessionId))
+    .where(or(eq(paymentDisputes.status, "open"), inMonth(paymentDisputes.createdAt), inMonth(paymentDisputes.closedAt)))
+    .orderBy(desc(paymentDisputes.createdAt));
+}
+
+/** Exported for its test: every account whose buying is paused (K2), oldest block first. Not by month: a block stands until cleared. */
+export function blockedQuery() {
+  return db
+    .select({ userId: stripeCustomers.userId, at: stripeCustomers.purchaseBlockedAt })
+    .from(stripeCustomers)
+    .where(isNotNull(stripeCustomers.purchaseBlockedAt))
+    .orderBy(stripeCustomers.purchaseBlockedAt);
 }
 
 const LISTED = [...PAID_SOURCES, "gift"] as const;
@@ -61,12 +123,21 @@ export function giftsQuery(start: Date, end: Date) {
 }
 
 export async function loadPaymentsMonth(start: Date, end: Date): Promise<PaymentsMonth> {
-  const [revenue, grants, gifts] = await Promise.all([revenueQuery(start, end), grantsQuery(start, end), giftsQuery(start, end)]);
+  const [revenue, grants, gifts, disputes, blocked] = await Promise.all([
+    revenueQuery(start, end),
+    grantsQuery(start, end),
+    giftsQuery(start, end),
+    disputesQuery(start, end),
+    blockedQuery(),
+  ]);
   return {
     revenue: revenueOf(revenue as RevenueRow[]),
     grants: grants.map((g) => ({ id: g.id, userId: g.userId, source: g.source as AdminGrant["source"], units: g.units, revokedUnits: g.revokedUnits, createdAt: g.createdAt })),
     grantsTotal: grants[0]?.total ?? 0,
     // The event's check holds both: a `credits_granted` row always names its account, its units and its note.
     gifts: gifts.map((g) => ({ at: g.at, actorId: g.actorId, userId: g.userId ?? "", units: Number(g.units), note: g.note ?? "" })),
+    disputes: disputes.map((d) => ({ ...d, status: d.status as AdminDispute["status"] })),
+    // The query keeps only rows with a block, so `at` is set.
+    blocked: blocked.map((b) => ({ userId: b.userId, at: b.at! })),
   };
 }
