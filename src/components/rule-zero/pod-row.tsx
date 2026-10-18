@@ -88,7 +88,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
             router.push(`/friends/table/${tableId}`);
           }}
           // On /friends, Invite someone new opens over setup, in place: setup is kept to come back to.
-          onInvite={open.invites ? invite?.inviteNew : undefined}
+          onInvite={open.invites && invite?.inviteNew ? () => invite.inviteNew?.(document.activeElement as HTMLElement | null) : undefined}
         />
       ) : null}
     </>

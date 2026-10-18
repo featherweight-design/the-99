@@ -63,8 +63,11 @@ describe("the pod row (E1, E2, F1, F2)", () => {
       </FriendInviteContext.Provider>,
     );
     fireEvent.click(screen.getByTestId("pod-rule-zero"));
-    fireEvent.click(await screen.findByText(ruleZeroCopy.setup.inviteTitle));
-    expect(inviteNew).toHaveBeenCalled();
+    const row = (await screen.findByText(ruleZeroCopy.setup.inviteTitle)).closest("button")!;
+    row.focus();
+    fireEvent.click(row);
+    // Add a friend hands focus back to the control inside setup that opened it.
+    expect(inviteNew).toHaveBeenCalledWith(row);
     expect(m.push).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("checkbox", { name: /^Colin/ }));
     fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.setup.next }));
@@ -127,5 +130,11 @@ describe("Home's table card (E3, F3)", () => {
     expect(p.textContent).toBe(e.homeBody("Maxine", "Max", 6, CLOSES));
     expect(p.querySelector("b")?.textContent).toBe("Max");
     expect(p.firstChild?.textContent).toBe("Maxine seated you with ");
+    cleanup();
+    // A deck named like a word in the sentence's tail bolds the slot, never the tail.
+    render(<HomeTableCard table={{ ...TABLE, yourDeck: "open" }} now={NOW} />);
+    const q = screen.getByRole("region").querySelector("p")!;
+    expect(q.textContent).toBe(e.homeBody("Colin", "open", 6, CLOSES));
+    expect(q.firstChild?.textContent).toBe("Colin seated you with ");
   });
 });

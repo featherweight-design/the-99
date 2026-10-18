@@ -14,22 +14,21 @@ import { useHydrated } from "../ui/hydrated-art";
 import { ACCENT_BUTTON } from "./setup-sheet";
 
 const copy = ruleZeroCopy.entry;
+const SLOT = "\u0000";
 
 export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
   const closes = closesWhen(table.closesAt, now, useHydrated() ? undefined : "UTC");
   const n = table.seats.length;
   const deck = table.yourDeck;
-  // A setter with no profile left names nobody, and never reads as you.
+  // A setter with no profile left names nobody, and never reads as you. The deck's slot is filled with a mark, then
+  // split on it, so the bold lands on the slot whatever the deck is called.
   const setter = table.setterName;
+  const sentence = (d: string) => table.setByYou || setter === null ? copy.homeBodyOwn(d, n, closes) : copy.homeBody(setter, d, n, closes);
   const body = deck === null
     ? table.setByYou ? copy.homeBodyWaitingOwn(n, closes) : copy.homeBodyWaiting(setter, n, closes)
-    : table.setByYou || setter === null
-      ? copy.homeBodyOwn(deck, n, closes)
-      : copy.homeBody(setter, deck, n, closes);
+    : null;
+  const [before, after] = deck === null ? ["", ""] : sentence(SLOT).split(SLOT);
   const art = table.seats.flatMap((s) => (s.commander?.artCropUri ? [s.commander.artCropUri] : []));
-  // The deck's name is bold in the sentence (E3). Every sentence names the deck after the setter, so its LAST
-  // occurrence is the deck even when the setter's name contains it.
-  const at = deck === null ? -1 : body.lastIndexOf(deck);
   return (
     <section
       aria-label={copy.homeKicker}
@@ -58,11 +57,11 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
         ))}
       </div>
       <p className="relative m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-        {at < 0 ? body : (
+        {body ?? (
           <>
-            {body.slice(0, at)}
+            {before}
             <b className="text-[color:var(--fg)]">{deck}</b>
-            {body.slice(at + (deck?.length ?? 0))}
+            {after}
           </>
         )}
       </p>

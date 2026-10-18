@@ -130,8 +130,13 @@ export function FriendsView({
   // friend (a link made from the toast's Try again, or one that expired while it was shown). Read at close.
   const invite = useRef<HTMLButtonElement>(null);
   const showOpener = useRef<HTMLElement | null>(null);
+  // A control in another open dialog that opened Invite someone new (Rule 0 setup's dashed row): focus goes back into
+  // that dialog, whatever the chooser and the link path do to `showOpener`, until Add a friend closes.
+  const inviteReturn = useRef<HTMLElement | null>(null);
   const [dialogReturn] = useState(() => ({
     get current(): HTMLElement | null {
+      const back = inviteReturn.current;
+      if (back && back.isConnected) return back;
       const opener = showOpener.current;
       // Safari does not focus a pressed button, so the capture can be the body: that is no opener.
       return opener && opener !== document.body && opener.isConnected ? opener : invite.current;
@@ -369,7 +374,10 @@ export function FriendsView({
   }
 
   return (
-    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held, inviteNew: invites ? () => setAdding("new") : undefined }}>
+    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held, inviteNew: invites ? (returnTo) => {
+      inviteReturn.current = returnTo;
+      setAdding("new");
+    } : undefined }}>
       {receipt ? (
         <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
           <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>
@@ -440,6 +448,10 @@ export function FriendsView({
             if (adding === "link") setShown(null);
             closeSheetToast();
             setAdding(null);
+            // Read at the close above, so it goes only once that close has returned focus.
+            queueMicrotask(() => {
+              inviteReturn.current = null;
+            });
           }}
           returnFocusRef={dialogReturn}
           say={sheetSay}

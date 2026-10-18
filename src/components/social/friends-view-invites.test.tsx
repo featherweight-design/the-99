@@ -1,6 +1,6 @@
 // /friends with invites (invites PR 4): off, Add a friend makes a link on the press as shipped; on, it opens the
 // chooser, never held, with the count line under it, and card 1's link opens as the chooser's path 1.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const a = vi.hoisted(() => ({
@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => nav }));
 
 import { FriendsView } from "./friends-view";
 import { socialCopy } from "../../lib/copy/social";
+import { useFriendInvite } from "./invite-context";
 import { inviteCopy } from "../../lib/copy/invites";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
@@ -61,6 +62,21 @@ describe("Add a friend, invites off", () => {
 
 describe("Add a friend, invites on", () => {
   const invites = { left: 2, waiting: 1, liveQr: false, qrUntil: null, out: false };
+
+  it("returns focus to the control in the dialog that opened Invite someone new (Rule 0 setup's dashed row)", async () => {
+    function Opener() {
+      const ctx = useFriendInvite();
+      return <button type="button" onClick={(e) => ctx?.inviteNew?.(e.currentTarget)}>open invite</button>;
+    }
+    draw({ invites, pods: <Opener /> });
+    const opener = screen.getByRole("button", { name: "open invite" });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole("dialog", { name: inviteCopy.path.title });
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: socialCopy.dialog.close })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
 
   it("opens on Invite someone new when it arrived as ?invite=new (Rule 0 setup's dashed row)", () => {
     window.history.replaceState(null, "", "/friends?invite=new");
