@@ -72,7 +72,9 @@ export function HelpPanel({
   if (over && !detailsUp) setOver(false);
   const stacked = desk && over;
   const under = desk && detailsUp && !over;
-  usePanelBeside(stacked);
+  // Held on `over`, not on the width: a window narrowed below `md` turns the panel into the sheet, and the card under
+  // it stays inert. The sheet and its scrim then sit above the card's layer too.
+  usePanelBeside(over);
   useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
@@ -234,7 +236,7 @@ export function HelpPanel({
 
   return (
     <>
-      {!desk && <div aria-hidden data-help-scrim onClick={onClose} className="fixed inset-0 z-[49] bg-[rgba(10,8,6,0.62)]" />}
+      {!desk && <div aria-hidden data-help-scrim onClick={onClose} className={`fixed inset-0 ${over ? "z-[51]" : "z-[49]"} bg-[rgba(10,8,6,0.62)]`} />}
       <section
         ref={ref}
         role="dialog"
@@ -242,7 +244,7 @@ export function HelpPanel({
         aria-label={helpPanelCopy.button}
         tabIndex={-1}
         data-help-panel={desk ? "panel" : "sheet"}
-        className={`fixed ${stacked ? "z-[51]" : under ? "z-[49]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
+        className={`fixed ${over ? "z-[52]" : under ? "z-[49]" : "z-50"} box-border flex flex-col overflow-hidden bg-[color:var(--surface-rail)] text-[color:var(--fg)] outline-none ${
           desk
             ? "right-0 top-0 h-dvh w-[400px] shadow-[-24px_0_60px_rgba(0,0,0,0.5)]"
             : "bottom-0 left-0 h-[684px] max-h-dvh w-full rounded-t-[18px] shadow-[0_-20px_60px_rgba(0,0,0,0.55)]"

@@ -96,7 +96,7 @@ describe("the ? over card details at 1280", () => {
     fireEvent.click(q());
     const panel = await screen.findByRole("dialog", { name: helpPanelCopy.button });
     expect(panel.getAttribute("aria-modal")).toBe("true");
-    expect(panel.className).toContain("z-[51]");
+    expect(panel.className).toContain("z-[52]");
     // Card details gives the panel its room, so the panel opens beside it.
     expect(document.querySelector("[data-backdrop]")?.hasAttribute("data-beside")).toBe(true);
     await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
@@ -130,6 +130,19 @@ describe("the ? over card details at 1280", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: helpPanelCopy.button })).toBeNull());
     expect(document.activeElement).toBe(q());
     expect(q().closest("[data-rail]")).not.toBeNull();
+  });
+
+  it("keeps the card under the panel when the window narrows to the sheet", async () => {
+    stubViewport(1300);
+    render(<Page details />);
+    fireEvent.click(q());
+    await screen.findByRole("dialog", { name: helpPanelCopy.button });
+    act(() => stubViewport(390));
+    const sheet = await screen.findByRole("dialog", { name: helpPanelCopy.button });
+    await waitFor(() => expect(sheet.getAttribute("data-help-panel")).toBe("sheet"));
+    expect(sheet.className).toContain("z-[52]");
+    expect(document.querySelector("[data-help-scrim]")?.className).toContain("z-[51]");
+    expect(document.querySelector("[data-backdrop]")?.hasAttribute("data-beside")).toBe(true);
   });
 
   it("leaves a card opened over the open panel in front, holding focus and keys", async () => {
