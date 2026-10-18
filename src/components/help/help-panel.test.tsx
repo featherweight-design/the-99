@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useEffect, useState } from "react";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy, referenceCopy } from "../../lib/copy/discovery";
@@ -296,6 +297,102 @@ describe("Show me", () => {
     expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
     // Friends' spares is a tool too, but its control is not on this page.
     expect(panel().querySelector('[data-help-show-me="friend-spares"]')).toBeNull();
+  });
+
+  // PR #2023 round 4: availability was read only when the panel rendered, so a control that showed or registered while
+  // it was open (Analysis's tools when their reads finish) was not offered until something else re-rendered it.
+  it("appears while the panel is open when a hidden control is shown, with nothing else pressed", async () => {
+    pathname = "/decks/d1";
+    render(
+      <TargetsProvider>
+        <HelpRoot on>
+          <HelpButton place="rail" />
+          <Builder view="shopping" />
+          <div data-loader hidden>
+            <Control id="stand-ins" />
+          </div>
+        </HelpRoot>
+      </TargetsProvider>,
+    );
+    await openIt();
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).toBeNull();
+    // The loader's reads finish: its panel leaves `hidden` in the DOM, rendering nothing the ? would see.
+    document.querySelector("[data-loader]")!.removeAttribute("hidden");
+    await waitFor(() => expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull(), { timeout: 2000 });
+  });
+
+  // PR #2054 round 1: with the entries already fetched, the panel opened in the same update that took `hidden` off a
+  // registered control rendered against the old DOM, and its subscription then recorded the control as drawn, so the
+  // look-again never moved: Show me stayed absent until something else rendered the panel.
+  it("is offered for a control shown in the same update that opens the panel, the entries already fetched", async () => {
+    pathname = "/decks/d1";
+    function Page() {
+      const [shown, setShown] = useState(false);
+      return (
+        <>
+          {/* One press, one update: the ? opens the panel and the page shows its control. */}
+          <div onClick={() => setShown(true)}>
+            <HelpButton place="rail" />
+          </div>
+          <Builder view="shopping" />
+          <div hidden={!shown}>
+            <Control id="stand-ins" />
+          </div>
+        </>
+      );
+    }
+    render(
+      <TargetsProvider>
+        <HelpRoot on>
+          <Page />
+        </HelpRoot>
+      </TargetsProvider>,
+    );
+    fireEvent.pointerEnter(q());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Let the prefetch land, so the panel opens on ready entries in the press's own render.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    act(() => {
+      fireEvent.click(q());
+    });
+    expect(panel().querySelector("[data-help-here]")).not.toBeNull();
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
+    // And it stays offered past the look-again.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 450));
+    });
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
+  });
+
+  it("appears while the panel is open when a control registers, with nothing else pressed", async () => {
+    pathname = "/decks/d1";
+    const late: { show: (on: boolean) => void } = { show: () => {} };
+    function Late() {
+      const [on, setOn] = useState(false);
+      useEffect(() => {
+        late.show = setOn;
+      }, []);
+      return on ? <Control id="stand-ins" /> : null;
+    }
+    render(
+      <TargetsProvider>
+        <HelpRoot on>
+          <HelpButton place="rail" />
+          <Builder view="shopping" />
+          <Late />
+        </HelpRoot>
+      </TargetsProvider>,
+    );
+    await openIt();
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).toBeNull();
+    // At once: the registration itself is the signal, not the look-again that catches a control shown later.
+    act(() => late.show(true));
+    expect(panel().querySelector('[data-help-show-me="stand-ins"]')).not.toBeNull();
+    // And goes again when it leaves.
+    act(() => late.show(false));
+    expect(panel().querySelector("[data-help-show-me]")).toBeNull();
   });
 
   it("is absent with no control registered", async () => {

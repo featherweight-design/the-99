@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
-import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget, useTargets, type Targets } from "./targets-provider";
+import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget, useTargets, useTargetsVersion, type Targets } from "./targets-provider";
 import type { TargetId } from "../../lib/discovery/targets";
 import { reveal } from "../../lib/ui/reveal";
 
@@ -279,5 +279,79 @@ describe("TargetsProvider", () => {
   it("does nothing outside the provider", () => {
     render(<Control id="top-off" name="Top off" />);
     expect(screen.getByRole("button", { name: "Top off" })).toBeTruthy();
+  });
+});
+
+describe("useTargetsVersion", () => {
+  function Reader({ seen }: { seen: number[] }) {
+    seen.push(useTargetsVersion());
+    return null;
+  }
+
+  it("moves on a control shown, looking again only while a component reads it", () => {
+    const every = vi.spyOn(window, "setInterval");
+    const seen: number[] = [];
+    const { rerender } = render(
+      <TargetsProvider>
+        <div data-wrap hidden>
+          <Control id="stand-ins" name="a" />
+        </div>
+      </TargetsProvider>,
+    );
+    // Nobody reading it: no look-again runs.
+    act(() => vi.advanceTimersByTime(1000));
+    expect(every).not.toHaveBeenCalled();
+    rerender(
+      <TargetsProvider>
+        <div data-wrap hidden>
+          <Control id="stand-ins" name="a" />
+        </div>
+        <Reader seen={seen} />
+      </TargetsProvider>,
+    );
+    expect(every).toHaveBeenCalledTimes(1);
+    const before = seen.at(-1)!;
+    act(() => vi.advanceTimersByTime(1000));
+    // Nothing changed: no render.
+    expect(seen.at(-1)).toBe(before);
+    document.querySelector("[data-wrap]")!.removeAttribute("hidden");
+    act(() => vi.advanceTimersByTime(250));
+    expect(seen.at(-1)).toBeGreaterThan(before);
+    const stop = vi.spyOn(window, "clearInterval");
+    rerender(
+      <TargetsProvider>
+        <div data-wrap>
+          <Control id="stand-ins" name="a" />
+        </div>
+      </TargetsProvider>,
+    );
+    expect(stop).toHaveBeenCalled();
+  });
+
+  // PR #2054 round 1: a reader mounted in the same update that takes `hidden` off a control already registered rendered
+  // against the old DOM; its subscription then recorded the control as drawn, so no look-again ever moved the count.
+  it("renders a reader mounted with a control's `hidden` coming off again, against the committed DOM", () => {
+    const drawn: boolean[] = [];
+    function Asker() {
+      useTargetsVersion();
+      const t = useTargets();
+      drawn.push(t?.targetRect("stand-ins") != null);
+      return null;
+    }
+    const at = (shown: boolean) => (
+      <TargetsProvider>
+        <div hidden={!shown}>
+          <Control id="stand-ins" name="a" />
+        </div>
+        {shown && <Asker />}
+      </TargetsProvider>
+    );
+    const { rerender } = render(at(false));
+    rerender(at(true));
+    // Its first render read the DOM before the commit; the next reads it after.
+    expect(drawn[0]).toBe(false);
+    expect(drawn.at(-1)).toBe(true);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(drawn.at(-1)).toBe(true);
   });
 });

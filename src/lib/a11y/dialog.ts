@@ -78,6 +78,12 @@ export const SCROLL_LOCK_EVENT = "the99:scroll-lock";
 // one a reader is actually looking at, so it is the one ambiguous focus belongs to.
 const dialogStack: HTMLElement[] = [];
 
+/** The dialogs up now, bottom first (a copy). For a dialog closing over another, deciding whether the control it
+ *  would hand focus back to sits under one that stays (the ? panel over card details, `help-root.tsx`). */
+export function dialogsUp(): readonly HTMLElement[] {
+  return [...dialogStack];
+}
+
 /**
  * While locked, true unless the wheel/touchmove's own target sits inside a region that
  * can genuinely scroll — a sheet's own options list, or a row of tiles that scrolls sideways.

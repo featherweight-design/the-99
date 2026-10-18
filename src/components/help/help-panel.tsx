@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
-import { useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
+import { useCardDetailsIsOpen, useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
 import { firstSentence, restOfFirstParagraph } from "../../lib/about/caption";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import {
@@ -29,7 +29,7 @@ import { ENTRY_TARGETS } from "../../lib/discovery/entry-targets";
 import type { TargetId } from "../../lib/discovery/targets";
 import { useMomentHold } from "../../lib/moments/hold";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { useTargets } from "../discovery/targets-provider";
+import { useTargets, useTargetsVersion } from "../discovery/targets-provider";
 import { usePendingPush } from "../shell/pending-push";
 import { SearchIcon } from "../ui/search-icon";
 import { SearchField } from "../ui/text-field";
@@ -71,12 +71,24 @@ export function HelpPanel({
   const [over, setOver] = useState(detailsUp);
   if (over && !detailsUp) setOver(false);
   const stacked = desk && over;
-  // At either width: a resize to the sheet keeps the card in front of a panel it opened over.
-  const under = detailsUp && !over;
+  // At either width: a resize to the sheet keeps the card in front of a panel it opened over. Held until that card
+  // closes, not only while it is in front: covered by a sheet or picker it opened (Fits your decks, the stand-ins
+  // sheet), it is still over the panel, and the surface over it is in front of both (PR #2054, round 1).
+  const cardOpen = useCardDetailsIsOpen();
+  const [cardOver, setCardOver] = useState(false);
+  const under = cardOpen && (cardOver || (detailsUp && !over));
+  if (under !== cardOver) setCardOver(under);
   // Held on `over`, not on the width: a window narrowed below `md` turns the panel into the sheet, and the card under
   // it stays inert. The sheet and its scrim then sit above the card's layer too.
   usePanelBeside(over);
-  useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
+  // The sheet holds the page and a history entry so Back closes it, but not while a card opened over the panel is in
+  // front: a window narrowed to the sheet then would push the panel's entry over the card's, and Back would close the
+  // hidden sheet first (PR #2040, round 7). The card holds the page already; once it closes, the sheet takes its own
+  // entry, now the top one. A sheet already holding its entry keeps it: a card opened over it pushes its own above.
+  const [holds, setHolds] = useState(!desk && !under);
+  const hold = !desk && (holds || !under);
+  if (hold !== holds) setHolds(hold);
+  useDialogA11y(ref, onClose, { lockScroll: hold, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
 
@@ -130,6 +142,9 @@ export function HelpPanel({
   };
 
   const targets = useTargets();
+  // Renders again when a control registers, goes, or shows while the panel is open (Analysis's tools when its reads
+  // finish, `hidden` until then), so Show me is offered for it with nothing else pressed (PR #2023, round 4).
+  useTargetsVersion();
   const showable = (id: string): TargetId | null => {
     const t = ENTRY_TARGETS[id];
     // Only a control registered and drawn now (C4, R2 gap 7).
