@@ -31,3 +31,41 @@ Launch epic rows A1 and B1 (rulings L1, L4, L7, L11). Design: `design/design_han
 - Risk: the padding move changes the shell's layout for every signed-in page. Mitigation: the contact sheet on the existing inventories' routes at both widths, before and after, and the locked-collection state.
 - Risk: the min-height pushes short pages to a full screen. That is the point (R2), checked on the short-page frames.
 - A1 first; B1 branches from it. No stacked PR: B1 opens after A1 merges.
+
+## Review outcome (subagent, 2026-10-18): what changed
+
+All accepted. Where this contradicts the sections above, THIS section wins.
+
+### A1 additions
+1. **Tests and a probe that read `main`'s padding** (the audit said none did; corrected in the handoff's `READINESS.md`): `src/components/shell/shell.test.tsx:98` and `scripts/probe-locked-nav.mjs:232` move their assertion to the column (`main.parentElement`). Comments in `deck-bottom-stack.test.tsx:115` and `create-picker.tsx:423` are updated.
+2. **The overlay is not the effect.** `pending-overlay.tsx` reads only the box's left and top. The real consequence is that `inert` and `aria-busy` stay on `<main>` and the notice, a sibling, is not inert during a pending navigation. The test is "the footer is a sibling of `main`, outside `inert`", not an overlay-box test.
+3. **`--header-h`** is `0px` on desktop (`use-quick-return.ts` writes the hidden header's `offsetHeight`) and the measured height on the phone, with `nav.tsx`'s 79px fallback. `calc(100dvh - var(--header-h,79px) - var(--tabbar-h))` on the phone and `md:min-h-dvh` on desktop are right as drawn. The phone fold is `100dvh`, which moves with the iOS URL bar; at rest the notice's top edge sits under the fixed tab bar, covered, not offscreen.
+4. **Pages that fill the viewport** now scroll by the notice's height, so the contact sheet names them: `review-parts.tsx` `STEP_FRAME`, `cart-view.tsx` (`md:h-dvh`), and the sticky `bottom-[var(--tabbar-h)]` bars (`builder-shell.tsx`, `precon-pick-view.tsx`, `create-picker.tsx`, `top-off-list.tsx`), plus the signed-out 404 (`not-found.tsx` is only `min-h-[400px]`, so the notice would sit above the fold on a tall screen: it gets `min-h-screen`, or the gap is accepted explicitly; `global-error.tsx` and Clerk's hosted pages get no notice, stated).
+5. **The bare-branch mount needs its own gutter and measure** (16px side, 720px max), since the body has no horizontal padding, not only the 24px foot pad.
+6. **`sw.test.ts` serves a stubbed HTML string**, so "stays green" proves nothing. A real render test of the signed-out `/offline` tree contains the footer replaces that proof; no service-worker `VERSION` bump (the offline copy refreshes hourly).
+7. **Contrast test**: import `parseThemeBlocks` and `contrast` from `placeholder-contrast.test.ts`'s own modules, pin the six figures with `toBeCloseTo(x, 2)`, and assert the component source names no `var(--` other than `--fg-muted` and `--border` (`check:tokens` skips tests).
+
+### B1 changes
+1. **Routes**: `isPublic` gets `"/privacy", "/privacy/", "/terms", "/terms/"` (both slash forms, the matcher's convention), with `proxy.test.ts` cases in the style of its existing ones (exact and trailing-slash paths are public; `/privacy-policy`, `/terms-x`, `/privacy/x` still `protect`). A signed-in reader on a public path still gets `auth()` and the switches header. In legacy-cookie About mode a signed-in reader with an unseen About entry can be redirected to `/about?next=/privacy`, exactly as at `/` today; moot in sheet or banner mode. B1.1's "`force-dynamic`-free static content that reads `auth()`" was contradictory: the root layout is already dynamic; the pages simply read `auth()`.
+2. **No nested `<main>`**: `LegalPage` renders `<article>` inside the shell and `<main>` plus the legal header when signed out.
+3. **`pending-routes.ts`** defaults an unknown top segment to the Home overlay; `privacy` and `terms` get an entry (About's overlay), and `route-loading.test.ts` is checked.
+4. **Metadata**: `export const metadata` titles for both pages; no `openGraph` (none is used anywhere). **No `robots.ts` or `sitemap.ts` exists in the app and none is added here**: the pages are deliberately not promoted; stated, not an oversight.
+5. **Links**: `/sign-up` and `/credits` each get a named edit (copy file, test, inventory row); About's is A2's.
+6. **Text under `src/lib/copy/legal/`**, not `src/lib/legal/`, so `check:copy-drift` and the copy-review path read it.
+7. **Facts that the draft states and the code does not support (fixed in the text, not in the code):**
+   - *Chargeback*: "A chargeback pauses buying ... and takes back the credits" is not built (`stripe-webhook/route.ts` ignores everything but `checkout.session.completed`; K2 is unbuilt; nothing writes `revoked_units`). Worded as policy ("we may take back credits from a disputed payment") and held out of the facts test until K2 ships.
+   - *US cards only*: the draft's source (`checkout-rule.ts:39`) has no country restriction; the sentence is pinned to `credits-page.ts:72` ("Checkout on Stripe · US cards") and says nothing stronger.
+   - *Refund paragraph*: not retypable verbatim (`refunds.before` + address + `refunds.after`, curly apostrophes, "A run that fails refunds itself."). The block is composed from those three parts with a mailto link; `LegalPage` blocks gain a "text + email" type.
+   - *Deletion*: "within minutes" is followed by "with a final pass within a day" (the tombstone keeps the raw Clerk id for 24 hours); a waiting invite's address is "erased once the invite is resolved or has expired", since expiry is derived from time and a sweep writes it down.
+   - *The 18+ line and invite-only* have no code source (they are rulings, L11 and L2): the facts test pins them to the text itself and says so.
+   - *Anthropic*: cite `scripts/lib/prompt-identity.test.mts` (no identity fields in prompts).
+   - *Processors*: the CSP also allows Cloudflare's bot challenge for Clerk and Clerk's telemetry and images; the text says "Clerk may load its bot check from Cloudflare". The processor test follows the CSP allowlist plus `mail.ts`, `model/client.ts`, `scan/models.ts` and Stripe.
+   - *Display name*: the first name becomes the display name on first use of Friends, not at sign-up.
+   - *The anonymous-counter paragraph is DROPPED from B1*: nothing calls `observeAnonymousHit` (it ships dead), so the text would describe data nobody collects. It returns, in the words `docs/agents/ops.md` prescribes, in the PR that wires it to the public pages. The draft's "swept hourly" wording is wrong and is not used.
+8. **The "Card content" section is removed from the Terms** (decision, below).
+9. **Effective date** = the PR's own date, written as a constant; if the merge lands on a later day, a one-line follow-up moves it. A later terms change moves it and owes a "What's new" note in About; the launch itself owes none.
+
+### Decisions to approve
+- **Drop the in-article "Card content" section from the Terms.** The draft repeats both Fan Content passages there; the handoff's STATES table says the legal page's article must not repeat the notice, and the brief only requires the Terms to carry it, which the footer does on every page. Default: drop. (Hugh wrote the draft with that section; this reverses part of it for a reason of duplication, not substance.)
+- **The chargeback sentence is policy wording until K2.**
+- **The signed-out 404** gets `min-h-screen`.
