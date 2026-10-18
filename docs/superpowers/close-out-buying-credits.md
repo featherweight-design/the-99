@@ -1,7 +1,9 @@
 # Close-out: Buying credits
 
-**Status: PARTIAL.** Everything merged is walked below; the plan card (U3b) is not merged, so its rows are open, and the
-`credits` About entry is owed (see About). The line does not close until both land and their rows are ticked here.
+**Status: PARTIAL.** Everything merged is walked below. The plan card (U3b, #2110) is merged and walked here (K1 to K5 and
+the reduced card at both widths); R3 and K6 in their final form need a real Checkout Session and Hugh's Stripe config,
+so they stay his. The `credits` About entry is also owed (see About). The line does not close until those land and their
+rows are ticked here.
 
 **Walked:** 2026-10-18, on `main` at `75b304bb2`; #2109's fixes were re-photographed on its branch (the deletion warning at both widths, the full `rich` sheet), and its last change, the labels' ink, is pinned by a contrast test rather than a photo. #2109 merged as `1f170899d`, against the plan `docs/superpowers/plans/2026-10-17-buying-credits-ui.md`
 and the handoff `design/design_handoff_the99_buying_credits/` (approved R2b, #1946). Merged and in scope:
@@ -20,9 +22,12 @@ and the handoff `design/design_handoff_the99_buying_credits/` (approved R2b, #19
 | Sub | the monthly plan, server half | #2091 |
 | U3a | cancel, keep and Update card, server actions | #2104 |
 | U4 | the pause band, no offers while paused or off | #2105 |
+| K2 follow-up | a refund's cumulative figure kept on `payment_records.refunded_cents` | #2098 |
+| U3b | the plan card (K1 to K6, R3, plan history), the pack leading | #2110 |
 
-Not merged: **U3b**, the plan card (K1 to K6, R3, the plan offer on P1, L7 and the chip's expiring line proven live,
-the reduced card O2/O3 through its `reduced` prop). Its rows below stay open.
+U3b (#2110) merged after this doc's first walk; its rows are walked in the second pass below (2026-10-18, on the
+`credits-plan-card` branch at its last head, `29af72e` plus the pack-grid fix `7901a5b`, which only changed how a
+second pack lays out). The reduced card O2/O3 is driven by `reduced = !readerSeesOffers` in `CreditsView`.
 
 **Where.** A scratch branch made from local-dev (`scratch-58-credits-closeout-2026-10-18`, deleted once this was
 recorded), brought to `main`'s schema. `next start` ran against it with `ADMIN_USER_IDS` naming the audit account and
@@ -63,9 +68,11 @@ and `buying-credits-closeout-admin.json`. Every cell of every run reached its su
 | Credit line, other states | L1, L2, L4 to L6, L8 | spend surfaces | ☐ | ☐ | not photographed here: `credit-line.test.ts` and U2b's per-state runs (`buying-credits-u2.json`) |
 | Deletion warning | D1, D2 | Manage account | ☑ sheet | ☑ popover | `probe:delete-warning` with `PROBE_SHOTS` |
 | Admin Payments tab | A2b, A3 | `/admin/payments` | ☑ | ☑ | contact sheet `admin` |
-| Plan card, plan offer, plan started | K1 to K6, R3 | `/credits` | ☐ | ☐ | **U3b, not merged** |
-| Reduced plan card | O2, O3 | `/credits` | ☐ | ☐ | **U3b, not merged** |
-| Chip's expiring line, L7 live | M1b, L7 | account menu, spend surfaces | ☐ | ☐ | **U3b, not merged** |
+| Plan offer (pack first), plan card active / cancelled / ending / past due | K1 to K5 | `/credits` | ☑ | ☑ | contact sheet `buying-credits-u3.json`, one state per run (`none`, `active`, `cancelled`, `ending`, `pastDue`) with real `subscriptions` and plan-lot rows for the audit account; full-page shots at both widths |
+| Plan expired (the offer returns, history keeps the months) | K6 | `/credits` | ☐ | ☐ | **Hugh's**: the phone frame scrolls to history and shows only the tail of the offer, and its wait (`data-plan-state="offer"`) cannot tell K6 from K1; the state is covered by `plan-card-rule` and page-model tests (no Plan cell at 0 once the plan is gone) |
+| Plan started | R3 | `/credits?checkout=done&session_id=` | ☐ | ☐ | **Hugh's**: needs a real test-mode plan Checkout Session; the return rule and band are component-tested |
+| Reduced plan card | O2, O3 | `/credits` | ☑ | ☑ | `probe:payments-reduced` plan-held cases (cancelling and active; switch on, off, paused; 202 PASS on a scratch branch), the expected presses taken from `cardPresses`, not restated |
+| Chip's expiring line, L7 live | M1b, L7 | account menu, spend surfaces | ☑ | ☑ | contact sheet `ending` (chip line `74 plan credits expire Oct 20`, a real cancelling subscription's lots); the count is the credits that lapse on the subscription's own period end |
 
 ## Structural checks
 
@@ -74,6 +81,10 @@ and `buying-credits-closeout-admin.json`. Every cell of every run reached its su
   `cuts-panel.tsx` and `cuts-free-count.tsx`, `synopsis-body.tsx` and `synopsis-controls.tsx`, `intake-form.tsx` and
   `read-panel.tsx`. No surface draws its own copy. The close-out inventory carries no `shares` block (one route each),
   so `pnpm check:shared` has nothing to read; this was checked by import, not by grep for the name.
+- **Import equality, the plan card.** One component, `PlanCard` (`src/components/credits/plan-card.tsx`), drawn at the two
+  places the page puts it (`credits-view.tsx`: the plan offer after the pack cards inside `PackOffers`, and the subscribed
+  card above the pack column); neither site restyles it, and `reduced` is the only prop that differs. Its presses are the
+  four actions in `src/app/credits/actions.ts` and nothing else.
 - **Probes, re-run here:** `probe:delete-warning` (all pass) on the close-out branch; `probe:payments-reduced` and
   `probe:admin-payments` passed on their own scratch branches as the last PRs merged (#2105, #2106).
 
@@ -104,6 +115,27 @@ radius, borders, what each width draws), then each mismatch was checked in the c
 empty history); P5 paid-today line and meter; history rows, refund line and support link; R5 cancelled band
 (`.band.quiet`); M1b chip (popover at 1300, a 44px press in the sheet at 390); the credit line (L3, `Uses a paid
 credit.`); B1 pause band (`.band`, `.hold`), in the offers' place; O4 (no offers section); O1/G6 not-found.
+
+**The plan card (U3b), against `R1 - Plan-and-Cancel`, `R1 - Billing-Page` and `R1b - Themes`** (a separate review
+after build; the layout was then photographed again):
+
+| Frame | Width | Property | Board | Shipped | Fix |
+|---|---|---|---|---|---|
+| K2 to K5 | 1300 | card heights | `.dk .offers{align-items:stretch}`, the card `flex:1` | plan card taller than the pack card | `md:items-stretch`, section and card as flex columns |
+| K2 | both | Cancel plan and its sentence | one `.acts` row: the sentence beside the button on desktop, stacked on phone | stacked at both | the row, sentence at `flex:1; min-width:220px` |
+| K3, K4 | both | the dimmed art | `opacity .45; filter:saturate(.3)` | opacity only | `saturate-[.3]` |
+| K5 | 1300 | the Cancel plan text button | no `align-self`, centred on `Update card ↗` | top-aligned | `md:self-center`; the arrow gets a 6px gap |
+| K5 (card at 768) | 768 touch | the action row | wraps | a nowrap row clipped Keep | `flex-wrap`; the Subscribe footer wraps too |
+
+**Deliberate differences, plan card (each carries its ruling):**
+
+- **The pack leads, the plan follows** (Hugh, 2026-10-17, launch epic L6, "both at launch, pack leads"): the board draws the
+  plan offer first. On a phone the pack card is above the plan card; from `md` the pack is on the left. Design follow-up
+  #20 (`boards/design-followups-2026-10-18.md`) asks for K1/P2/P4 to be redrawn.
+- `Subscribe · $5 a month` carries the price (the price at the point of purchase is Obligation-class in /copy-review);
+  the board's label is bare `Subscribe` (follow-up #23). The three crown marks beside the plan art are not drawn.
+- No Plan cell at 0 once the plan is gone (K6); packs keep "once held" (follow-up #22).
+- **Launch blocker, not built:** C1's "every view stays free" has no drawn placement on `/credits` (follow-up #21).
 
 **Not settled by any board, and owned elsewhere:**
 
@@ -143,11 +175,10 @@ These need Hugh's Stripe steps first, from `boards/hugh-todos.md`:
   the app.
 - **6i** (the monthly plan): add `invoice.paid`, `customer.subscription.updated` and `customer.subscription.deleted`;
   give the key Invoices: read and Subscriptions: read. Cancel and keep (U3a) also need Subscriptions **write** and Customer
-  portal write, plus `STRIPE_PORTAL_CONFIG` (`docs/agents/payments.md`). Until then the plan cannot be walked live (and U3b's card has
-  nothing to draw).
+  portal write, plus `STRIPE_PORTAL_CONFIG` (`docs/agents/payments.md`). Until then the plan cannot be walked live.
 
-Then: buy a pack with Stripe's test card (R1, R2), refund it (its unspent credits leave the balance), and, once U3b
-merges, subscribe, cancel and keep the plan.
+Then: buy a pack with Stripe's test card (R1, R2), refund it (its unspent credits leave the balance), and, with U3b
+merged, subscribe (R3), cancel and keep the plan, update the card, and let the period lapse for K6.
 
 ## About entry
 
