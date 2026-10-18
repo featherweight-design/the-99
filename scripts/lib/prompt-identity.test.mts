@@ -58,15 +58,17 @@ describe("the guard's failure paths", () => {
     "export function recorded(i: Pick<Inputs, \"pool\">): string { return Object.keys(i.pool).join(); }",
     "export function scalar(email: string): string { return email.length + \"\"; }",
     "export const VARIANTS = { a: { prompt: (who: () => { firstName: string }) => who().firstName } };",
+    "export function finite(r: Record<\"variant\", { owner: { email: string } }>): string { return Object.keys(r).join(); }",
     "export function clean(cards: { name: string; typeLine: string }[]): string { return cards.map((c) => c.name).join(); }",
   ].join("\n"));
   put("src/lib/fx/static-import.ts", "import { requireUserId } from \"../auth\";\nexport const p = () => requireUserId;\n");
+  put("src/lib/fx/extension-import.ts", "import { requireUserId } from \"../auth.js\";\nexport const p = () => requireUserId;\n");
   put("src/lib/fx/dynamic-import.ts", "export async function p() { const m = await import(\"../auth\"); return m.requireUserId; }\n");
   put("scripts/keep.mts", "export {};\n");
   put("src/lib/fx/sender.ts", "declare function callModel<T>(r: unknown): T;\ntype Reply = { ok: true };\nexport const go = () => callModel<Reply>({});\n");
 
   it("finds identity fields nested, through Pick and Record, in a scalar parameter and in a function's return", () => {
-    const { hits, missing } = identityPaths(fx, [{ file: "src/lib/fx/builder.ts", fns: ["nested", "picked", "recorded", "scalar", "VARIANTS", "clean"] }]);
+    const { hits, missing } = identityPaths(fx, [{ file: "src/lib/fx/builder.ts", fns: ["nested", "picked", "recorded", "scalar", "VARIANTS", "finite", "clean"] }]);
     expect(missing).toEqual([]);
     expect(hits).toEqual(expect.arrayContaining([
       expect.stringMatching(/#nested\(c\)\[\]\.owner\.primaryEmail$/),
@@ -74,13 +76,18 @@ describe("the guard's failure paths", () => {
       expect.stringMatching(/#recorded\(i\)\.pool\[key\]\.displayName$/),
       expect.stringMatching(/#scalar\(email\)$/),
       expect.stringMatching(/#VARIANTS\.a\.prompt\(who\)\(\)\.firstName$/),
+      expect.stringMatching(/#finite\(r\)\.variant\.owner\.email$/),
     ]));
     expect(hits.filter((h) => h.includes("#clean"))).toEqual([]);
   }, 120_000);
 
-  it("finds an identity import, static or dynamic", async () => {
-    const found = await identityImports(fx, [{ file: "src/lib/fx/static-import.ts", fns: [] }, { file: "src/lib/fx/dynamic-import.ts", fns: [] }]);
-    expect(found).toEqual(["src/lib/fx/static-import.ts imports ../auth", "src/lib/fx/dynamic-import.ts imports ../auth"]);
+  it("finds an identity import, static, dynamic or with its extension", async () => {
+    const found = await identityImports(fx, [{ file: "src/lib/fx/static-import.ts", fns: [] }, { file: "src/lib/fx/dynamic-import.ts", fns: [] }, { file: "src/lib/fx/extension-import.ts", fns: [] }]);
+    expect(found).toEqual([
+      "src/lib/fx/static-import.ts imports ../auth",
+      "src/lib/fx/dynamic-import.ts imports ../auth",
+      "src/lib/fx/extension-import.ts imports ../auth.js",
+    ]);
   });
 
   it("finds an unregistered sender, a generic call included", async () => {

@@ -80,7 +80,8 @@ export const IDENTITY =
 const named = (name) => IDENTITY.test(name.toLowerCase().replaceAll("_", ""));
 
 /** Imports a prompt builder may not take directly. */
-const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth$|\/social\/|\/admin\/accounts$/;
+// A specifier may carry its extension (`../auth.js`, as `.mts` callers write it), so each name allows one.
+const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth(\.[cm]?[jt]sx?)?$|\/social\/|\/admin\/accounts(\.[cm]?[jt]sx?)?$/;
 
 // `buildParams(` is the eval harness's request: a script that builds one sends it through `eval/lib/batch.mts`.
 // The sending calls too, not only a client's construction: a module handed a client sends with it.
@@ -208,9 +209,9 @@ export function identityPaths(root, builders = BUILDERS) {
     for (const prop of checker.getPropertiesOfType(type)) {
       const at = `${path}.${prop.name}`;
       if (named(prop.name)) hits.push(at);
+      // A synthesized property (a finite-key `Record`, a mapped type) has no declaration; its type is read off the symbol.
       const pdecl = prop.valueDeclaration ?? prop.declarations?.[0];
-      if (!pdecl) continue;
-      walk(checker.getTypeOfSymbolAtLocation(prop, pdecl), at, depth + 1, seen);
+      walk(pdecl ? checker.getTypeOfSymbolAtLocation(prop, pdecl) : checker.getTypeOfSymbol(prop), at, depth + 1, seen);
     }
   }
 
