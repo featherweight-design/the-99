@@ -62,8 +62,13 @@ function markSpentHere(account: string | null | undefined) {
 /** Mounted on a first-run Home whose tour is due (`tourDue`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). */
 export function FirstRunTour({ precons }: { precons: boolean }) {
   const { userId: account } = useAuth();
-  const [phase, setPhase] = useState<"waiting" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
+  const [phase, setPhase] = useState<"waiting" | "claiming" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
   const [note, setNote] = useState(false);
+  // This tab holds the claim: anything that came over Home while the claim was asked waits it out, then the tour
+  // opens without asking again.
+  const claimed = useRef(false);
+  // Moves on each landed claim, so the wait re-arms even when "claiming" and "waiting" commit in one batch.
+  const [armed, setArmed] = useState(0);
 
   useEffect(() => {
     if (phase !== "waiting") return;
@@ -78,18 +83,36 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       if (!clear()) return;
       timer = window.setTimeout(() => {
         if (!clear()) return;
+        if (claimed.current) {
+          // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
+          void withVisitLock(() => takeVisit());
+          setPhase("running");
+          return;
+        }
         // The account may have loaded after the first render: its mark is read again at the moment of opening.
         if (spentHere(account)) {
           setPhase("done");
           return;
         }
-        // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
-        void withVisitLock(() => takeVisit());
-        // The tour is spent as step 1 appears; a failed write shows it again on the next Home, which is the safe side.
-        markSpentHere(account);
-        void spendTourAction().catch(() => {});
-        setPhase("running");
-      }, ARRIVE_MS);
+        // The tour opens only for the one tab whose claim stamps it: two tabs waiting on one first-run Home both ask,
+        // and the second gets nothing back. A claim that fails to answer opens it anyway: it may or may not have
+        // written the stamp, and showing the tour once more is the better of the two ways to be wrong.
+        setPhase("claiming");
+        void spendTourAction()
+          .then((answer) => answer.claimed, () => true)
+          .then((took) => {
+            markSpentHere(account);
+            if (!took) {
+              setPhase("done");
+              return;
+            }
+            // Back to the wait, which this time opens at once, and only while the page is still clear: a sheet opened,
+            // or the tab left, while the claim was asked holds it until that ends.
+            claimed.current = true;
+            setPhase("waiting");
+            setArmed((n) => n + 1);
+          });
+      }, claimed.current ? 0 : ARRIVE_MS);
     };
     const settled = () => arm();
     arm();
@@ -103,7 +126,7 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       document.removeEventListener("visibilitychange", arm);
       off();
     };
-  }, [phase, account]);
+  }, [phase, account, armed]);
 
   if (phase === "running")
     return (

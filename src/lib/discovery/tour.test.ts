@@ -34,6 +34,10 @@ describe("spendTourWrite", () => {
   });
 
   it("updates only while the stamp is null, so taking the tour again moves no stamp", () => {
-    expect(sql).toMatch(/ where "user_prefs"\."tour_seen_at" is null$/);
+    expect(sql).toMatch(/ where "user_prefs"\."tour_seen_at" is null returning /);
+  });
+
+  it("returns a row only from the write that took the tour, so a second tab's claim comes back empty", () => {
+    expect(sql).toMatch(/ returning "tour_seen_at"$/);
   });
 });
