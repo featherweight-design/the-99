@@ -767,7 +767,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   placeholder={addPanelCopy.createPicker.namePlaceholder}
                   disabled={isPending}
                   aria-label={isImport ? undefined : renameCopy.fieldAria}
-                  className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
+                  className="block w-full p-[11px_13px] text-[16px] [@media(pointer:fine)]:text-[14px] mb-[16px]"
                 />
               </div>
             </>
