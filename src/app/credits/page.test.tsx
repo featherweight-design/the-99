@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   listCreditHistory: vi.fn(),
   readReturn: vi.fn(),
   stripeClient: vi.fn(),
+  purchaseBlocked: vi.fn(),
 }));
 class NotFound extends Error {}
 vi.mock("next/navigation", () => ({ notFound: () => { throw new NotFound("not found"); }, useRouter: () => ({ refresh: vi.fn() }) }));
@@ -18,6 +19,7 @@ vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../lib/model/allowance", () => ({ readAllowance: m.readAllowance }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
+vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
 vi.mock("../../lib/payments/return", () => ({ listCreditHistory: m.listCreditHistory, readReturn: m.readReturn }));
 
 const { default: CreditsPage } = await import("./page");
@@ -34,6 +36,32 @@ beforeEach(() => {
   m.readAllowance.mockResolvedValue({ used: 2, limit: 5, reopensAt: null, nextAt: null });
   m.listCreditHistory.mockResolvedValue([]);
   m.stripeClient.mockReturnValue({});
+  m.purchaseBlocked.mockResolvedValue(false);
+});
+
+describe("the pause (B1)", () => {
+  const drawn = async () => (await render()).props.model as { offers: unknown; paused: boolean };
+
+  it("takes the offers away and raises the band while buying is paused", async () => {
+    m.purchaseBlocked.mockResolvedValue(true);
+    expect(await drawn()).toMatchObject({ offers: null, paused: true });
+    expect(m.purchaseBlocked).toHaveBeenCalledWith("user_a");
+  });
+
+  it("draws the offers when the pause cannot be read: the Buy press checks again before any Session", async () => {
+    m.purchaseBlocked.mockRejectedValue(new Error("db"));
+    const model = await drawn();
+    expect(model.offers).not.toBeNull();
+    expect(model.paused).toBe(false);
+  });
+
+  it("is not read with the switch off: nothing is for sale, so nothing is paused", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    m.listCreditHistory.mockResolvedValue([grant]);
+    m.purchaseBlocked.mockResolvedValue(true);
+    expect(await drawn()).toMatchObject({ offers: null, paused: false });
+    expect(m.purchaseBlocked).not.toHaveBeenCalled();
+  });
 });
 
 describe("visibility (E3)", () => {
