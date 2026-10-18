@@ -58,7 +58,7 @@ vi.mock("../../db", async () => {
           expect(table).toBe(schema.creditGrants);
           db.updateWheres.push(w);
           const ps = paramsOf(w);
-          for (const l of db.lots) if (l.source === "plan" && ps.includes(l.subscriptionId) && (l.expiresAt === null || l.expiresAt.getTime() > db.now.getTime())) l.expiresAt = set.expiresAt;
+          for (const l of db.lots) if (l.source === "plan" && ps.includes(l.subscriptionId) && (set.expiresAt === null || l.expiresAt === null || l.expiresAt.getTime() > db.now.getTime())) l.expiresAt = set.expiresAt;
         },
       }),
     }),
@@ -226,9 +226,9 @@ describe("customer.subscription.updated and .deleted", () => {
     expect(db.lots[0].expiresAt).toEqual(now);
   });
 
-  it("does not revive a lot that already expired", async () => {
+  it("a lapsed lot is not given an expiry again by a cancel", async () => {
     db.lots[0].expiresAt = new Date("2026-10-01T00:00:00Z");
-    current = subscription({ cancel: false });
+    current = subscription({ cancel: true });
     await sync();
     expect(db.lots[0].expiresAt).toEqual(new Date("2026-10-01T00:00:00Z"));
   });
@@ -277,6 +277,13 @@ describe("customer.subscription.updated and .deleted", () => {
     current = subscription({ cancel: true });
     await sync();
     expect(db.lots.find((l) => l.externalId === "in_disputed")?.expiresAt).toEqual(MONTH2);
+  });
+
+  it("a keep delivered after the cutoff still clears the lapsed lot: delivery timing must not lose rollover credits", async () => {
+    db.lots.push({ userId: "user_a", source: "plan", units: 60, revokedUnits: 0, expiresAt: new Date(db.now.getTime() - 1000), externalId: "in_lapsed", billingReason: null, subscriptionId: "sub_1" });
+    current = subscription();
+    await sync();
+    expect(db.lots.find((l) => l.externalId === "in_lapsed")?.expiresAt).toBeNull();
   });
 
   it("limits the expiry write to the account's live plan lots", async () => {

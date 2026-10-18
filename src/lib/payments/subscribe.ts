@@ -145,7 +145,9 @@ async function storeAndExpire(tx: Tx, userId: string, sub: FetchedSubscription, 
       eq(creditGrants.userId, userId),
       eq(creditGrants.source, "plan"),
       eq(creditGrants.subscriptionId, sub.id),
-      or(isNull(creditGrants.expiresAt), gt(creditGrants.expiresAt, now)),
+      // A keep clears every lot, an expired one too: Stripe says the subscription never ended, so a webhook delivered
+      // after the cutoff must not turn delivery timing into lost credits. Setting an expiry never touches a lapsed lot.
+      ...(expiry.action === "clear" ? [] : [or(isNull(creditGrants.expiresAt), gt(creditGrants.expiresAt, now))]),
     ));
 }
 

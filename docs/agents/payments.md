@@ -90,12 +90,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   for the lot"), which is how a refund of a plan charge finds its lot through `external_id`. `planExpiry` is the one
   rule for the lots: a held, not-cancelling subscription CLEARS the expiry of every live plan lot (a keep, a
   renewal, a resubscribe); `cancel_at_period_end` SETS it to the period end; an ended subscription sets it to the
-  period end if ahead, else now. An already expired lot is never revived. `supersedes` makes an ended subscription
+  period end if ahead, else now. A lapsed lot is never given an expiry again, but a KEEP clears it too (the subscription never ended; a late webhook must not turn timing into lost credits). `supersedes` makes an ended subscription
   terminal for its id and a period end monotone. `readAllowance` fills `planExpiresAt` from the earliest expiry of
   the plan lots that still hold credits. The webhook runs whatever `PAYMENTS_ENABLED` says; another app's objects are
   200 and ignored; a paid invoice whose customer maps to no account is `unattributed` (refund by hand). Stripe setup:
   add the three events to the endpoint, the Price id as `STRIPE_PRICE_PLAN_60`, and the restricted key needs
-  Subscriptions read (Checkout's duplicate-plan list; write arrives with in-app cancel, U3).
+  Subscriptions read (Checkout's duplicate-plan list) and Invoices read (the invoice webhook and `reconcile:payments` retrieve invoices). Subscriptions write arrives with in-app cancel, U3.
 
 ## The welcome lot (launch epic D1, ruling L5)
 

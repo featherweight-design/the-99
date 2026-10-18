@@ -69,7 +69,16 @@ async function main(): Promise<number> {
           and not exists (select 1 from payment_records p where p.checkout_session_id = g.external_id)`, [dbSince],
     )).rows.map((r) => r.id as string);
 
-    const unrecorded = [...paid].filter((id) => !known.has(id));
+    // A paid invoice of this app's subscription with no payment record (its webhook was missed or refused). An invoice's
+    // PaymentIntent is untagged, so `paid` above cannot see it: list the invoices and read the tag off the subscription.
+    const recordedRefs = new Set((await client.query(
+      "select checkout_session_id as ref from payment_records where checkout_session_id like 'in\\_%'",
+    )).rows.map((r) => r.ref as string));
+    const unrecordedInvoices: string[] = [];
+    for await (const inv of stripe.invoices.list({ created: { gte: since }, status: "paid", limit: 100 })) {
+      if (inv.parent?.subscription_details?.metadata?.app === PAYMENTS_APP && !recordedRefs.has(inv.id!)) unrecordedInvoices.push(inv.id!);
+    }
+    const unrecorded = [...[...paid].filter((id) => !known.has(id)), ...unrecordedInvoices];
     // Records the creation window did not list are asked of Stripe; a transient failure throws (exit 1).
     const unmatched = [...(await unmatchedRecords(stripe, recordedIntents, paid)), ...(await unmatchedInvoices(stripe, recordedInvoices))];
     console.log(`window ${WINDOW_HOURS}h: ${paid.size} paid PaymentIntents of this app in Stripe, ${recordedIntents.length + recordedInvoices.length} payment records`);

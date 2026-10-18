@@ -92,6 +92,16 @@ export function creditTotals(balances: readonly GrantBalance[]): Record<CreditSo
   return totals;
 }
 
+/** The plan credits that lapse ON `at` (the earliest expiry): the figure L7 warns with, never the whole plan balance. */
+export function planCreditsExpiringAt(balances: readonly GrantBalance[], at: Date | null): number {
+  if (!at) return 0;
+  let n = 0;
+  for (const b of balances) {
+    if (b.grant.source === "plan" && b.remaining > 0 && b.grant.expiresAt?.getTime() === at.getTime()) n += b.remaining;
+  }
+  return n;
+}
+
 /**
  * The earliest `expires_at` among the plan lots that still hold a credit, or null when none expires (a held plan's
  * lots roll over). It is the `Allowance`'s `planExpiresAt`: when the plan credits the player holds begin to lapse.

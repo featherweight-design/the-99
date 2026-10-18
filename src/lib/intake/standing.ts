@@ -26,6 +26,7 @@ export type Standing = {
   /** When the paid limit has room again, and when a cancelled plan's credits lapse (ISO), as the `Allowance` carries them. */
   paidBackAt?: string | null;
   planExpiresAt?: string | null;
+  planExpiring?: number;
   /** `PAYMENTS_ENABLED` for this reader: whether a spent line offers `Get more credits`. */
   payments?: boolean;
   now: string;
@@ -46,6 +47,7 @@ export function toStanding(a: Allowance, now: Date): Standing {
     ...(a.paidLimit !== undefined ? { paidLimit: a.paidLimit } : {}),
     ...(a.paidBackAt ? { paidBackAt: a.paidBackAt.toISOString() } : {}),
     ...(a.planExpiresAt ? { planExpiresAt: a.planExpiresAt.toISOString() } : {}),
+    ...(a.planExpiring !== undefined ? { planExpiring: a.planExpiring } : {}),
     ...(a.payments !== undefined ? { payments: a.payments } : {}),
     now: now.toISOString(),
   };
@@ -57,7 +59,7 @@ export function lineOf(s: Standing): LineAllowance {
   return {
     used: s.used, limit: s.limit, nextAt: at(s.nextAt), reopensAt: at(s.reopensAt),
     welcome: s.welcome, plan: s.plan, gift: s.gift, pack: s.pack, paidUsedToday: s.paidUsedToday, paidLimit: s.paidLimit,
-    paidBackAt: at(s.paidBackAt), planExpiresAt: at(s.planExpiresAt), payments: s.payments,
+    paidBackAt: at(s.paidBackAt), planExpiresAt: at(s.planExpiresAt), planExpiring: s.planExpiring, payments: s.payments,
   };
 }
 

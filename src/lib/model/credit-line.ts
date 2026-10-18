@@ -18,7 +18,7 @@ import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowanc
  * L7 (a cancelled plan within three days of lapsing) is a suffix on L2/L3, drawn in `--warning` by `CreditsText`.
  */
 export type LineAllowance = Pick<Allowance, "used" | "limit" | "nextAt" | "reopensAt"> &
-  Partial<Pick<Allowance, "welcome" | "plan" | "gift" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "payments">>;
+  Partial<Pick<Allowance, "welcome" | "plan" | "gift" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "planExpiring" | "payments">>;
 
 export type CreditLineKind = "free" | "withPaid" | "paidNext" | "spent" | "limit" | "limitFree";
 
@@ -44,7 +44,7 @@ function freeNext(a: LineAllowance): Date | null {
 
 /** L7's phrase, or null: plan credits that lapse (a cancel set `planExpiresAt`) within three days. */
 export function expiringPhrase(a: LineAllowance, now: Date): string | null {
-  const plan = a.plan ?? 0;
+  const plan = a.planExpiring ?? 0;
   if (!a.planExpiresAt || plan <= 0) return null;
   const ahead = a.planExpiresAt.getTime() - now.getTime();
   return ahead >= 0 && ahead <= EXPIRY_WARNING_MS ? creditsCopy.expiring(plan, a.planExpiresAt) : null;
