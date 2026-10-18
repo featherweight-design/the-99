@@ -20,7 +20,7 @@ import {
   canSave, choosePrinting, openLine, removeLine, setFinish, setQuantity, summarize, swapScannedCard, toPayload,
   type AddLineState,
 } from "../../lib/collection/add-lines";
-import { identityGradient } from "../../lib/collection/gradients";
+import { identityGradient } from "../../lib/cards/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PendingReporter } from "../shell/pending-reporter";

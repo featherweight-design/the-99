@@ -18,7 +18,7 @@ import { readCardPrice } from "../../lib/collection/copy-price";
 import { DateFigure, dateSpoken, readCardDate } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
-import { identityGradient } from "../../lib/collection/gradients";
+import { identityGradient } from "../../lib/cards/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardFactMark } from "../cards/card-fact-mark";

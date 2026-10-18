@@ -11,8 +11,8 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ALLOWED = new Set([
   // Card-art placeholder gradients, sampled from card art rather than chrome.
   // These are art, not theme surface, and do not move between themes.
-  "lib/collection/gradients.ts",
-  "lib/collection/gradients.test.ts",
+  "lib/cards/gradients.ts",
+  "lib/cards/gradients.test.ts",
   // The web app manifest is JSON a launcher reads, so its colours must be literals. `manifest.test.ts`
   // pins the value to the default theme's `--bg` read out of globals.css, so it cannot drift.
   "app/manifest.ts",
@@ -74,7 +74,7 @@ describe("colour comes from tokens", () => {
   });
 
   // Every scanned path is src-relative, which is what makes ALLOWED's
-  // src-relative entries — lib/collection/gradients.ts — line up with them.
+  // src-relative entries — lib/cards/gradients.ts — line up with them.
   it("scans from src, not from this directory", () => {
     expect(files).toContain("components/ui/button.tsx");
   });

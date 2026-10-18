@@ -6,7 +6,7 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { commanderGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/cards/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import { colorLabel } from "../../lib/decks/format";

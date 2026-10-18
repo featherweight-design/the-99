@@ -431,10 +431,9 @@ export function formatLastUpdated(date: Date, now: Date = new Date()): string {
   return date.toLocaleDateString("en-US", opts);
 }
 
-/** Shared WUBRG palette — used by mana-pips, rows-view, the chassis chips, card-modal. */
-export const WUBRG_COLOR: Record<string, string> = {
-  W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)",
-};
+// The WUBRG palette lives with the catalog (`lib/cards/colors`), so a surface that must reach no collection module can draw
+// pips; re-exported here for the collection's own callers.
+export { WUBRG_COLOR } from "../cards/colors";
 
 /** Coarse card-type options shown in the Type ▾ dropdown (property table §Filter Button). */
 export const AVAILABLE_TYPES = [

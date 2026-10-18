@@ -19,7 +19,7 @@ import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import type { PriceFact } from "../../lib/decks/price";
 import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale, type GotItChoice } from "../../lib/decks/got-it-preset";
 import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
-import { identityGradient } from "../../lib/collection/gradients";
+import { identityGradient } from "../../lib/cards/gradients";
 import { PrintingRegion } from "../cards/printing-region";
 import type { GotItWritten } from "./got-it-receipt";
 import { ArtLayer } from "../ui/art-layer";

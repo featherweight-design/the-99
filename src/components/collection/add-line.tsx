@@ -4,7 +4,7 @@
 // whose printing is not chosen yet draws the required step in its place (B4a/B4m).
 
 import { useEffect, useRef, useState } from "react";
-import { identityGradient } from "../../lib/collection/gradients";
+import { identityGradient } from "../../lib/cards/gradients";
 import { ownedNote, SPECIAL_FINISHES, type AddLineState } from "../../lib/collection/add-lines";
 import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit-lines";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";

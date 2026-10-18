@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
-import { ALLOWED_TABLES, codeOnly, judge, publicEntries, publicReadFindings } from "./public-reads.mjs";
+import { ALLOWED_TABLES, codeOnly, judge, judgeSurface, publicEntries, publicReadFindings, publicSurfaceFindings, surfaceEntries, surfaceFiles } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
 
@@ -87,5 +87,50 @@ describe("judge fails on what it must", () => {
     const ok = `// reads no cookies() and never touches pods\n/* auth() is not called */\nimport { cards } from "../../db/schema";\nexport const q = db.select().from(cards);`;
     expect(run({ "src/lib/public/a.ts": ok })).toEqual([]);
     expect([...ALLOWED_TABLES].sort()).toEqual(["card_bracket_flags", "cards", "commander_support", "commander_support_cards", "printings", "sets"]);
+  });
+});
+
+describe("the public surface (F3): the page files and every component they draw", () => {
+  it("as it stands, reaches no session read, per-user module or server action", () => {
+    const { files, findings } = publicSurfaceFindings();
+    expect(findings).toEqual([]);
+    expect(files).toBeGreaterThan(surfaceEntries().length);
+  });
+
+  const surface = (files: Record<string, string>, entries = Object.keys(files)) =>
+    judgeSurface(Object.keys(files), (f: string) => files[f], entries).map((f) => `${f.path}: ${f.why}`);
+
+  it("fails on a per-user directory a component reaches", () => {
+    expect(surface({ "src/components/public/a.tsx": "export {}", "src/lib/collection/browse.ts": "export {}" }, ["src/components/public/a.tsx"]))
+      .toEqual(["src/lib/collection/browse.ts: reachable from a public page, and holds or fronts per-user data"]);
+  });
+
+  it("lets a page file read headers() for the counter, and nothing it imports", () => {
+    expect(surface({ "src/app/card/[slug]/page.tsx": "const h = await headers();" })).toEqual([]);
+    expect(surface({ "src/components/public/a.tsx": "const h = await headers();" })).toEqual(["src/components/public/a.tsx: calls headers()"]);
+    expect(surface({ "src/app/card/[slug]/page.tsx": "const c = await cookies();" })).toEqual(["src/app/card/[slug]/page.tsx: calls cookies()"]);
+    expect(surface({ "src/app/card/[slug]/page.tsx": "const { userId } = await auth();" })).toEqual(["src/app/card/[slug]/page.tsx: calls auth()"]);
+  });
+
+  it("fails on the auth library, a server action, and a reach into another page or action", () => {
+    expect(surface({ "src/components/public/a.tsx": `import { useUser } from "@clerk/nextjs";` })).toEqual(["src/components/public/a.tsx: imports the auth library"]);
+    expect(surface({ "src/components/public/a.tsx": `"use server";\nexport async function f() {}` })).toEqual(["src/components/public/a.tsx: is a server action module"]);
+    expect(surface({ "src/components/public/a.tsx": "export {}", "src/app/cards/tag-actions.ts": "export {}" }, ["src/components/public/a.tsx"]))
+      .toEqual(["src/app/cards/tag-actions.ts: a public page reaches into src/app (a page or an action)"]);
+  });
+
+  it("reads tables only where a file can: a schema import fails on `decks`, a sentence naming decks does not", () => {
+    expect(surface({ "src/lib/x.ts": `import { decks } from "../db/schema";\nexport const q = db.select().from(decks);` })).toEqual(["src/lib/x.ts: reads `decks`, which is not on the public allowlist"]);
+    expect(surface({ "src/lib/copy/x.ts": `export const s = "your decks";` })).toEqual([]);
+  });
+
+  it("follows value imports and not type imports", () => {
+    const files: Record<string, string> = {
+      "src/components/public/a.tsx": `import type { T } from "../../lib/collection/browse";\nimport { b } from "./b";`,
+      "src/components/public/b.tsx": "export const b = 1;",
+      "src/lib/collection/browse.ts": "export {}",
+    };
+    const resolveFn = (from: string, spec: string) => (spec === "./b" ? "src/components/public/b.tsx" : spec.includes("collection/browse") ? "src/lib/collection/browse.ts" : null);
+    expect(surfaceFiles(["src/components/public/a.tsx"], (f) => files[f], resolveFn)).toEqual(["src/components/public/a.tsx", "src/components/public/b.tsx"]);
   });
 });

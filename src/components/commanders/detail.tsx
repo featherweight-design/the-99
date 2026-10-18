@@ -3,7 +3,7 @@
 // Mobile: art header band (1.6:1, the shared art wash + overlay text) + sticky bottom Build bar + sections.
 
 import { drawsMarker } from "../../lib/decks/availability";
-import { commanderGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/cards/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { colorLabel } from "../../lib/decks/format";

@@ -220,6 +220,23 @@ directory (social, collection, decks, account, invites, payments, switches, wish
 `schemaTables`'s per-user test only sees tables that name `user_id`, `deck_id` or `version_id`. Adding a table is a deliberate,
 reviewed diff. The same test asserts the proxy's public list does not yet name a card or commander route.
 
+It also holds the public SURFACE (F3): the page files and every component they draw. Its entries are
+`PUBLIC_SURFACE_COMPONENTS` (the shared components the pages render, listed before their own directories exist) plus every
+file under `src/app/card`, `src/app/commander` and `src/components/public`. From those it follows VALUE imports through
+`src/components` and `src/lib` (an `import type` carries nothing at runtime) and fails on:
+
+- a reachable file under a forbidden directory;
+- `cookies()`, `auth()`, `currentUser()` or `@clerk/*` anywhere;
+- `headers()` or `next/headers` anywhere but a page file (which hands them to `observeAnonymousHit`);
+- a `"use server"` module;
+- a reach into another `src/app` file;
+- a table off the allowlist, checked only in files that import the schema or write SQL (so a copy string naming "decks" is
+  not a read).
+
+This is why the WUBRG palette lives in `lib/cards/colors.ts` and `identityGradient` in `lib/cards/gradients.ts`: mana pips
+used to reach `lib/decks/availability` through `lib/collection/browse`. Proved by its failure path: pointing `cost-pips.tsx`
+back at `lib/collection/browse` fails the standing test.
+
 - `scripts/lib/prompt-identity.test.mts` (in `pnpm test`) holds the privacy page's claim that no model prompt carries
   who the player is (launch epic B1). What a prompt can say is bounded by what its builder is handed, so it walks the
   TYPES of every registered builder's parameters with the type checker, through objects, arrays, maps, unions, index

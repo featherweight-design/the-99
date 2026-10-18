@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { commanderGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/cards/gradients";
 import { ArrivingArt, NearViewportArt } from "./art-wash-near";
 
 const tint = (token: string, pct: number) =>
