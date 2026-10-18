@@ -20,7 +20,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertDisposableAccount, ONBOARD_PROBE_EMAIL } from "./lib/probe-account.mjs";
-import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -155,7 +155,7 @@ async function walk(browser, vp) {
 
     // Home with no About line: step 6 stands centred with no cutout.
     await sql`update user_prefs set tour_seen_at = null where user_id = ${userId}`;
-    await markEveryEntrySeen(userId, sql);
+    await clearAboutSheet(page, userId);
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await card.waitFor({ timeout: 15_000 });
     for (let i = 0; i < 5; i++) await card.getByRole("button", { name: "Next", exact: true }).click();

@@ -2,6 +2,7 @@
 // spotlight", "The tour card" and "Step geometry"). Pure: the overlay reads a target's rect at run time and asks here
 // for the cutout around it and the card's place beside it.
 
+import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
 import type { TargetId } from "./targets";
 
 export type StepKey = "collection" | "commanders" | "decks" | "buying" | "look" | "whatsNew";
@@ -10,6 +11,15 @@ export type CutoutKind = "card" | "slot" | "account" | "banner";
 /** Where the card sits at desktop, relative to the lit control. */
 export type Placement = "below-end" | "beside" | "beside-foot" | "below-start";
 export type Picture = "tour-commanders" | "tour-decks" | "tour-shopping";
+/**
+ * A tour picture in the reader's theme (R2·4 captures all three in every theme, and its coverage test fails the build
+ * first if one is missing), the default theme's for an unknown one. Built here rather than through `shotFor`, whose
+ * shot map and tool registry would ride into Home's bundle with it.
+ */
+export function tourPictureSrc(theme: string | undefined, picture: Picture): string {
+  return `/about/shots/${isThemeKey(theme) ? theme : DEFAULT_THEME}/${picture}.webp`;
+}
+
 /** Where each capture is cropped in the card's 118px (128 at 390) box, as the boards draw it. */
 export const PICTURE_FOCUS: Record<Picture, string> = {
   "tour-commanders": "center 80%",

@@ -15,14 +15,14 @@ import { createPortal } from "react-dom";
 import { spendTourAction } from "../../app/tour-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
-import { shotFor } from "../../lib/about/shots";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
-import { CARD_W, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, type Box } from "../../lib/discovery/tour-steps";
+import { CARD_W, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, tourPictureSrc, type Box } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage } from "../../lib/moments/hold";
 import { takeVisit } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
 import { prefersReducedMotion } from "../../lib/ui/motion";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { NoteDialog } from "../about/reference/creator-note";
 import { ARRIVE_MS } from "../moments/moments-provider";
 import { ThemePicker, themeInForce } from "../shell/theme-picker";
@@ -150,6 +150,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top.
   useLayoutEffect(() => {
     const r = !desktop && step.key === "collection" ? targets?.targetRect(step.target) : null;
+    noteAppScroll();
     window.scrollTo({ top: r ? window.scrollY + r.top - 14 : 0, behavior: "instant" });
   }, [desktop, step.key, step.target, targets, cardH]);
 
@@ -172,7 +173,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   const fallback = !rect;
   const place = desktop ? placeCard(step.place, rect, { w: CARD_W, h: cardH ?? 0 }, frame) : null;
   const theme = themeInForce(DEFAULT_THEME);
-  const picture = step.picture ? shotFor(theme, step.picture) : null;
+  const picture = step.picture ? { src: tourPictureSrc(theme, step.picture) } : null;
   const copy = c.steps[step.key];
   const glide = "transition-[x,y,width,height,rx] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
 

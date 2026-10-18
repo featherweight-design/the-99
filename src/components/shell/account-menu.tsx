@@ -534,8 +534,6 @@ export function AccountMenu({
         // outline clear of the adjacent border.
         className="group relative block cursor-pointer p-[3px]"
       >
-        {/* The tour's step 5 lights this button, in the rail or the header (discovery R3·1b). */}
-        <TargetBox id="tour:account" />
         {/* Hover and pressed are one state (N2): colour only, no scale. Open
             wins over hover, so its classes are applied instead of alongside.
 
@@ -560,6 +558,9 @@ export function AccountMenu({
         >
           {identity.initials}
         </span>
+        {/* The tour's step 5 lights this button, in the rail or the header (discovery R3·1b). Last, so the
+            visual box stays the button's first child. */}
+        <TargetBox id="tour:account" />
       </button>
       {open &&
         (isPopover ? (

@@ -4,7 +4,7 @@ import type { TargetId } from "../../lib/discovery/targets";
 
 const spend = vi.fn(() => Promise.resolve());
 vi.mock("../../app/tour-actions", () => ({ spendTourAction: () => spend() }));
-vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn(), noteAppScroll: vi.fn() }));
 const takeVisit = vi.fn();
 vi.mock("../../lib/moments/visit", async (orig) => ({ ...(await orig<object>()), takeVisit: () => takeVisit() }));
 

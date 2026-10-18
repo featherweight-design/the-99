@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CARD_W, STEPS, cutoutFor, placeCard } from "./tour-steps";
+import { CARD_W, STEPS, cutoutFor, placeCard, tourPictureSrc } from "./tour-steps";
+import { SHOTS } from "../about/shots.generated";
+import { THEMES } from "../theme/themes";
 
 const FRAME = { w: 1280, h: 800 };
 const card = { w: CARD_W, h: 260 };
@@ -55,5 +57,17 @@ describe("placeCard, against the boards' step geometry", () => {
     const p = placeCard("beside", { x: 1200, y: 2, w: 38, h: 38 }, card, FRAME);
     expect(p.x).toBe(1280 - CARD_W - 14);
     expect(p.y).toBe(14);
+  });
+});
+
+describe("tourPictureSrc", () => {
+  it("names a capture R2·4 made, in every theme, and the default's for an unknown theme", () => {
+    for (const { key } of THEMES) {
+      for (const p of ["tour-commanders", "tour-decks", "tour-shopping"] as const) {
+        expect(tourPictureSrc(key, p)).toBe(`/about/shots/${key}/${p}.webp`);
+        expect(SHOTS[key]?.[p]).toBeTruthy();
+      }
+    }
+    expect(tourPictureSrc("retired", "tour-decks")).toBe("/about/shots/amonkhet/tour-decks.webp");
   });
 });
