@@ -26,7 +26,7 @@ describe("which line", () => {
   it("L3: free spent, paid held: the line says the next run uses a paid credit and the press stays live", () => {
     const a = base({ used: 5, reopensAt: at(15), pack: 114, paidUsedToday: 0, paidLimit: 20 });
     expect(creditLineKind(a)).toBe("paidNext");
-    expect(creditStanding(a)).toBe(`0 of 5 free · reset at ${t(at(15))} · this run uses 1 of 114 paid`);
+    expect(creditStanding(a)).toBe(`0 of 5 free · reset at ${t(at(15))} · this run uses 1 of 114\u00a0paid`);
     expect(creditFirst(a)).toBe(`Uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114\u00a0paid.`);
     expect(creditAgain(a)).toBe(`Replaces these suggestions and uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114\u00a0paid.`);
   });
