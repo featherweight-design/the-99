@@ -243,6 +243,8 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(shows).toHaveLength(2);
     await act(async () => fireEvent.click(shows[0]));
     expect(revealFn).toHaveBeenCalledWith("user_9mara");
+    // The page refreshes so History draws the Show's log line at once (D8).
+    expect(refresh).toHaveBeenCalledTimes(1);
     const head = screen.getByTestId("account-head");
     expect(head).toHaveAttribute("data-revealed");
     expect(screen.getByRole("heading", { level: 1, name: "Mara Quinn" })).toBeInTheDocument();

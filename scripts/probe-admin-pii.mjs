@@ -225,6 +225,9 @@ try {
     );
     const [{ n: after }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
     report("the Show writes one account_revealed event", after === before + 1, `${before} then ${after}`);
+    // D8: History draws the Show at once, while the head stays revealed through the page's refresh.
+    const logged = await onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]").first().waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    report("History draws the Show's line without a reload, the head still revealed", logged && (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 1);
     await onPageRole(page, "button", /^Hide /).filter({ visible: true }).first().click();
     report("Hide masks the head again", (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 0 && !(await onPage(page, "[data-testid='account-head']").innerText()).toLowerCase().includes(email));
     const reloaded = [];

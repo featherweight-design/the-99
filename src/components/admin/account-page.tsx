@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { moveAccountToGroup } from "../../app/admin/accounts/actions";
@@ -339,8 +339,11 @@ function FeatureSpendTable({ page }: { page: AccountPage }) {
 }
 
 export function AccountPageView({ page }: { page: AccountPage }) {
-  // This view's own reveal (D7): a Show made on the list does not carry here.
-  const reveal = useReveal();
+  // This view's own reveal (D7): a Show made on the list does not carry here. A Show that lands refreshes the page so
+  // History draws its log line at once (D8); the reveal is client state and survives the refresh.
+  const router = useRouter();
+  const refreshPage = useCallback(() => router.refresh(), [router]);
+  const reveal = useReveal(undefined, refreshPage);
   const rev = reveal.revealed.get(page.id) ?? null;
   const show = page.canShow && (
     <ShowButton

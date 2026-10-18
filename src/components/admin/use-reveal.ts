@@ -13,7 +13,8 @@ export type Revealed = { name: string | null; email: string | null; id: string; 
 /** The failed Show the view's toast names, by the account's masked name. */
 export type RevealFailure = { id: string; masked: string };
 
-export function useReveal(reveal: (id: string) => Promise<RevealResult> = revealAccount) {
+/** `onShown`: after a Show lands, for a view that draws its own log (the account page's History, D8). */
+export function useReveal(reveal: (id: string) => Promise<RevealResult> = revealAccount, onShown?: () => void) {
   const [revealed, setRevealed] = useState<ReadonlyMap<string, Revealed>>(new Map());
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [failure, setFailure] = useState<RevealFailure | null>(null);
@@ -81,8 +82,9 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
         id,
         window.setTimeout(() => drop(id), Math.max(0, hidesAt.getTime() - Date.now())),
       );
+      onShown?.();
     },
-    [reveal, drop],
+    [reveal, drop, onShown],
   );
 
   return { revealed, pending, failure, show, hide, dismissFailure: () => setFailure(null) };
