@@ -1,7 +1,8 @@
 # Close-out: Rule 0 table check
 
 **Walked:** 2026-10-17 to 2026-10-18, on the PR 8 branch with every plan PR merged or under it:
-- the plan PRs: #1979, #1987, #1997, #2005, #2008, #2009, #2015, #2029, #2039, #2045, #2050 (PR 2 split into 2a and 2b, PR 7 into 7a and 7b);
+- the plan PRs: #1979, #1987, #1997, #2005, #2009, #2015, #2029, #2039, #2045, #2050 (PR 2 split into 2a and 2b, PR 7 into 7a and 7b);
+- a mid-line fix: #2008;
 - the close-out's own fixes: #2056 and #2060.
 
 The modal-height rule Hugh set from a staging bug in this feature's setup sheet shipped alongside, in #2060, #2063, #2064 and #2077.
@@ -18,7 +19,7 @@ is Hugh's, as a checklist on his board (`boards/hugh-todos.md`, "Staging walk ch
 `neon.branch_id`. It seeds Colin's pod "Thursday night" with the audit account, Colin (owner, a friend), Peter (a
 friend), Max (Colin's friend, not the account's) and Chris (no decks). Every seated deck carries a real analysis of a
 cloned list, and the tables have fixed ids `7a0e0000-0000-4000-8000-0000000000NN`. `RZ_FIXTURE_ENTRY=1` seeds the
-entry surfaces instead (the pod rows and Home's card).
+entry surfaces: it seeds the same, then closes every table but T1 (the pod rows and Home's card), so reseed without it before photographing the table pages again.
 
 Plan: `docs/superpowers/plans/2026-10-16-rule-zero.md`. Brief: `docs/superpowers/design-briefs/2026-10-16-rule-zero-table-check.md`.
 Handoff: `design/design_handoff_the99_rule_zero/` (R2: the Read, Live, Setup, Entry, Swap and Log boards, phone and desktop).
@@ -56,17 +57,18 @@ What the feature shares, it imports:
 
 ## Design review against the whole brief
 
-A per-PR `design-review` ran on each UI PR (5 to 8). The close-out walk then looked at every photograph against its board frame.
+Each UI PR (3 to 8) carried a design review before it opened; PR 4's is the table `docs/superpowers/design-tables/rule-zero-pr4-live.md`. The close-out walk then looked at every photograph against its board frame.
 
 **Fixed after the walk:**
 - **W3 overlap.** Change deck's desktop panel, with 20+ decks, was pinned to the top over its own link. In #2060, every anchored panel now hangs from its trigger and scrolls inside.
 - **Missing stamp.** After a swap, W1, W2 and S2 had no `updated` stamp. In #2060, a swap's answer stamps it as a check does.
 
-**Fixed during the line:** found by review and walk, all inside their PRs:
+**Fixed during the line,** inside their PRs:
 - the offer's 22px chip;
 - a range chip overflowing the phone's offer row;
-- the from line's alignment in the Games tab's empty state;
-- the table page's "?", which now offers Friends' entries (#2064).
+- the from line's alignment in the Games tab's empty state.
+
+**Fixed after the line:** the table page's "?", which now offers Friends' entries (#2064).
 
 **Left as shipped, deliberately:**
 - **U2 copy.** U2 says "Seat one more player." without the board's "A game seats 2 to 8.": `/copy-review` cut it because the sheet's subtitle already says it.
