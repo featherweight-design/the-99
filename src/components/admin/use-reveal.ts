@@ -66,6 +66,12 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
   const hide = useCallback(
     (id: string) => {
       asked.current.set(id, (asked.current.get(id) ?? 0) + 1);
+      setPending((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       drop(id);
     },
     [drop],
@@ -83,13 +89,14 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
       } catch {
         answer = { ok: false, error: "failed" };
       }
-      if (!mounted.current) return;
+      // A retired answer (a Hide, a newer Show, the page left) touches nothing, not even pending: that belongs to
+      // whatever retired it.
+      if (!mounted.current || asked.current.get(id) !== ticket) return;
       setPending((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
       });
-      if (asked.current.get(id) !== ticket) return;
       if (!answer.ok) {
         setFailure({ id, masked, n: ++failures.current });
         return;

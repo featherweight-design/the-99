@@ -123,6 +123,44 @@ describe("useReveal", () => {
     expect(result.current.revealed.size).toBe(0);
   });
 
+  it("keeps a newer Show pending when a retired answer lands first", async () => {
+    const old = deferred();
+    const fresh = deferred();
+    const reveal = vi.fn<(id: string) => Promise<RevealResult>>().mockImplementationOnce(() => old.promise).mockImplementationOnce(() => fresh.promise);
+    const { result } = renderHook(() => useReveal(reveal));
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.show("u1", "Colin R.");
+    });
+    act(() => window.dispatchEvent(new Event("pagehide")));
+    act(() => {
+      second = result.current.show("u1", "Colin R.");
+    });
+    await act(async () => {
+      old.resolve(ok("u1"));
+      await first;
+    });
+    expect(result.current.pending.has("u1")).toBe(true);
+    expect(result.current.revealed.has("u1")).toBe(false);
+    await act(async () => {
+      fresh.resolve(ok("u1"));
+      await second;
+    });
+    expect(result.current.pending.has("u1")).toBe(false);
+    expect(result.current.revealed.has("u1")).toBe(true);
+  });
+
+  it("clears pending at once on Hide", () => {
+    const d = deferred();
+    const { result } = renderHook(() => useReveal(() => d.promise));
+    act(() => {
+      void result.current.show("u1", "Colin R.");
+    });
+    act(() => result.current.hide("u1"));
+    expect(result.current.pending.has("u1")).toBe(false);
+  });
+
   it("reads the hide time on the UTC clock", () => {
     expect(utcHourMinute(new Date("2026-10-17T09:05:00.000Z"))).toBe("09:05");
   });
