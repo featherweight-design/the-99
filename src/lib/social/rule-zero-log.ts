@@ -86,9 +86,13 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
 
 export type TableSeatRow = Awaited<ReturnType<typeof tableSeatsQuery>>[number];
 
-/** Who sat where: the table, and each seat as `seat:account`, in seat order. Hashed, so no account id leaves the server. */
-export function seatingHash(tableId: string, rows: readonly Pick<TableSeatRow, "seat" | "userId">[]): string {
-  const seats = [...rows].sort((a, b) => a.seat - b.seat).map((r) => `${r.seat}:${r.userId}`).join(",");
+/**
+ * Who sat where, with what: the table, and each seat as `seat:account:deck`, in seat order. Hashed, so no account or
+ * deck id leaves the server. The deck is in it because the form draws it: a seat's player changing deck after the
+ * prefill would otherwise log a matchup the form never showed.
+ */
+export function seatingHash(tableId: string, rows: readonly Pick<TableSeatRow, "seat" | "userId" | "deckId">[]): string {
+  const seats = [...rows].sort((a, b) => a.seat - b.seat).map((r) => `${r.seat}:${r.userId}:${r.deckId ?? ""}`).join(",");
   return createHash("sha256").update(`${tableId}|${seats}`).digest("hex");
 }
 

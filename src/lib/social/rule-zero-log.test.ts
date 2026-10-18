@@ -47,12 +47,14 @@ describe("seatingHash", () => {
     expect(seatingHash(TABLE, ROWS)).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("moves on a renumber, a new player or another table", () => {
+  it("moves on a renumber, a new player, another table or a changed deck", () => {
     const base = seatingHash(TABLE, ROWS);
     const swapped = ROWS.map((r) => (r.seat === 2 ? { ...r, seat: 4 } : r.seat === 4 ? { ...r, seat: 2 } : r));
     expect(seatingHash(TABLE, swapped)).not.toBe(base);
     expect(seatingHash(TABLE, ROWS.slice(0, 3))).not.toBe(base);
     expect(seatingHash("7a0e0000-0000-4000-8000-000000000002", ROWS)).not.toBe(base);
+    // A player changing deck with no reseat: the form drew the old deck, so the save must refuse.
+    expect(seatingHash(TABLE, ROWS.map((r, i) => (i === 1 ? { ...r, deckId: "dec0dec0-0000-4000-8000-0000000000ff" } : r)))).not.toBe(base);
   });
 });
 
