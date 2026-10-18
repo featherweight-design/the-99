@@ -50,7 +50,7 @@ const frames = [...document.querySelectorAll('.ph,.dk')];
 frames.forEach((f, idx) => {
   const fr = f.getBoundingClientRect();
   const label = (f.closest('.fr')?.querySelector('.k')?.textContent || 'frame ' + idx).slice(0, 60);
-  const n = f.querySelector('footer.fcn');
+  const n = f.querySelector('.r2fold') ? null : f.querySelector('footer.fcn');
   const tb = f.querySelector('.tbar');
   if (n) {
     const nr = n.getBoundingClientRect();
@@ -65,6 +65,7 @@ frames.forEach((f, idx) => {
   }
   // content must not overlap the notice
   const m = f.querySelector('.main, .pg');
+  if (f.querySelector('.r2fold')) { const fo=f.querySelector('.r2fold').getBoundingClientRect(); const nn=f.querySelector('footer.fcn').getBoundingClientRect(); if (nn.top < fo.top - 1) issues.push(label+': notice above the fold by '+Math.round(fo.top-nn.top)); }
   if (m && n) { const mr = m.getBoundingClientRect(); const nr = n.getBoundingClientRect(); if (mr.bottom > nr.top + 1 && !f.querySelector('.col.end,.dcol.end')) issues.push(label + ': page content runs into notice by ' + Math.round(mr.bottom - nr.top)); }
   if (n && !tb) { const nr = n.getBoundingClientRect(); if (nr.bottom > fr.bottom + 1) issues.push(label + ': notice cut by frame ' + Math.round(nr.bottom - fr.bottom)); }
 });

@@ -1,4 +1,4 @@
-# The 99 · Fan Content notice · R1 (for Hugh's audit, 2026-10-17)
+# The 99 · Fan Content notice · R2 (for Hugh's sign-off, 2026-10-17)
 
 A small, muted legal notice at the foot of every page, signed in or out, in all six themes, and one prose page for `/privacy` and `/terms` that carries it. Launch epic A0; the build is A1.
 
@@ -10,23 +10,31 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-17-fan-content-notice.m
 
 | Read | For |
 |---|---|
-| **`The 99 - Fan Content Notice (R1).dc.html`** | **The five calls, the locked items and where each is honoured, the gaps, the questions for Hugh.** |
-| `R1 - Signed-In.dc.html` | Short, long and locked (88px bar) at 390; the root mount drawn as rejected; short and long on desktop. |
-| `R1 - Signed-Out.dc.html` | `/`, `/sign-up`, `/join/[token]`, `/friend/[token]` (signed out) and `/offline`, each at 390 and desktop. |
+| **`The 99 - Fan Content Notice (R2).dc.html`** | **The five calls (call 1 as R2), the locked items and where each is honoured, the gaps, the questions for Hugh.** |
+| **`R2 - Signed-In.dc.html`** | **Short and locked (88px bar) at rest and scrolled, long, R1's placement for comparison; desktop at rest and scrolled.** |
+| **`R2 - Signed-Out.dc.html`** | **`/`, `/sign-up`, `/join/[token]`, `/friend/[token]` (signed out) and `/offline`: 390 at rest and scrolled, desktop scrolled.** |
 | `R1 - Privacy-and-Terms.dc.html` | The `LegalPage` container spec; `/privacy` and `/terms` full length, signed out and in, 390 and desktop. |
 | `R1 - Themes.dc.html` | The notice alone in all six themes with measured contrast, the link in four states, desktop at the 720px measure. |
 | `STATES-fan-content-notice.md` | Every surface and state, with what each must not do. |
 | `READINESS.md` | The verdict and what blocks the build. |
 | `fan-content-notice · copy strings.ts` | The notice (locked, for reference) and every new string, for /copy-review. |
+| `The 99 - Fan Content Notice (R1).dc.html`, `R1 - Signed-In.dc.html`, `R1 - Signed-Out.dc.html` | The record: R1's foot-of-the-screen placement, superseded by R2. Not built. |
+
+## R2 (Hugh, 2026-10-17)
+
+- **The notice is present on every page but never in the way: it always starts at or below the fold.** A short page looks exactly as it ships; the notice appears only to a reader who scrolls (about 150px on the phone). A long page carries it after its content, as in R1. Hugh's question: present, not always visible.
+- **Signed in:** still mounted inside the shell's column (not the root), so there is no empty band and the fold moves with the locked 88px bar. `ShellMain` gets a minimum height of the viewport less the header and the tab bar (the window on desktop), which is what puts the notice below the fold (G1).
+- **Signed out:** the pages keep their shipped `min-h-screen` and are not edited; the notice follows each one (G2 is now one line in `shell.tsx`).
+- Everything else approved as drawn: type, token, the link, the centered signed-out treatment, `LegalPage`, the themes.
 
 ## The five calls
 
-### 1 · Placement: the foot of the viewport on a short page, the end of the page on a long one
-The notice is the last child of the page column, and the page above it takes `flex: 1`. A short page pushes it to the bottom edge; a long one carries it after its content. Never `position: fixed`, never over anything.
+### 1 · Placement (R2): present on every page, always at or below the fold
+The notice is the last thing on every page and is never `position: fixed`, never over anything. A short page is at least one screen tall, so at rest it looks as it ships and the notice waits one short scroll below; a long page carries it after its content. (R1 put it at the foot of the screen on a short page; superseded.)
 
-- **Not the root mount.** The shell's column is already a viewport tall plus the tab-bar reserve, so a footer after `<Shell>` makes every short page scroll for the notice alone, and at the end of that scroll the column's 74px reserve sits empty above it. Drawn as R1 and R2 on Signed-In.
-- **Two mounts of one component, both in `shell.tsx`:** after `ShellMain` inside the signed-in column (G1), and after `children` in the bare branch (G2). Every signed-out route, `/offline` included, renders through the bare branch, so there is no per-page mount.
-- **It clears the tab bar and the sheets with the column's own reserve.** Inside the shell's wrapper `--tabbar-h` already resolves to 88px while locked, so the locked bar costs nothing extra (S3).
+- **Not the root mount.** A footer after `<Shell>` also lands below the fold, but behind an empty 74px band (the column's reserve sits above it) and unable to read the locked 88px bar. Mounting inside the column gives the same result without either.
+- **Two mounts of one component, both in `shell.tsx`:** after `ShellMain` inside the signed-in column (G1), and after `children` in the bare branch (G2). Every signed-out route, `/offline` included, renders through the bare branch, so there is no per-page mount and no page edit.
+- **It clears the tab bar and the sheets with the column's own reserve**, and the fold moves with the locked 88px bar (S3, S3b).
 - **Desktop:** in the column beside the rail, never under it. The hairline spans the column; the text starts at the 34px gutter the full-bleed pages use and is held to 720px.
 
 ### 2 · Type and token
@@ -39,7 +47,7 @@ IBM Plex Sans **11px / 16px on the phone, 12px / 18px from `md`**, weight 400, n
 Same ink and size as the notice, underlined (1px, `--fg-faint` as the line color, 2px offset), with a small `↗` kept on the same line as `Policy`. Hover and active `--fg`; focus the shipped link-out ring (2px `--accent`, 2px offset); visited as rest. `--accent` as the ink was rejected: louder than a legal line, and 4.51:1 in Oil Haze. The `↗` is `aria-hidden`; the new tab is said in the accessible name, the app's existing `newTab` pattern (G6).
 
 ### 4 · The signed-out shells
-One treatment for all five, centered on the page's axis, since each of those pages centers its own text. Each page swaps `min-h-screen` for `flex-1` (G2) and otherwise keeps its composition: `/`, `/friend` and `/offline` center in the space above the notice; `/sign-up` and `/join` stay top-aligned on the phone. No per-shell margins.
+One treatment for all five, centered on the page's axis, since each of those pages centers its own text. Each page keeps its shipped composition and `min-h-screen`, untouched; the notice waits one scroll below it. No per-shell margins.
 
 ### 5 · `/privacy` and `/terms`
 One `LegalPage` for both, signed in or out: a 680px article (the 356px phone measure), a mono `Last updated` line in `--fg-muted`, the title in the theme's display face (28 / 36px), an `On this page` list (numbered 44px rows on the phone, a sticky 220px column on desktop with the brand diamond on the section in view), 18px section headings, body 15px / 1.65 in `--fg-body`. Signed in: inside the shell, no tab lit. Signed out: a 64px header (68 desktop) with the wordmark to `/` and a quiet `Sign in` (the shipped secondary button). The notice follows the article. Section names are B1's list in brackets and the grey bars are line length: `/prose-pass` writes the words.
@@ -48,8 +56,8 @@ One `LegalPage` for both, signed in or out: a 680px article (the 356px phone mea
 
 | # | Gap | Who |
 |---|---|---|
-| G1 | Move `ShellMain`'s `pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0` to its parent column and render `<FanContentNotice />` after `ShellMain` inside it. `ShellMain` keeps `flex-1`. The notice is then a real `contentinfo` landmark beside `<main>`. Check nothing reads `main`'s padding. | Eng |
-| G2 | `Shell`'s bare branch returns `<div className="flex flex-1 flex-col">{children}<FanContentNotice align="center" /></div>`; `min-h-screen` becomes `flex-1` on the landing's section, `NEWCOMER_MAIN` / `INVITE_MAIN`, the friend page's main and `/offline`'s main. No mount in `layout.tsx`. A1's every-branch test asserts both mounts. | Eng |
+| G1 | Move `ShellMain`'s `pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0` to its parent column and render `<FanContentNotice />` after `ShellMain` inside it (a real `contentinfo` landmark beside `<main>`). Give `ShellMain` `min-h-[calc(100dvh-var(--header-h,79px)-var(--tabbar-h))] md:min-h-dvh`, so the notice always starts at or below the fold. Check nothing reads `main`'s padding. | Eng |
+| G2 | `Shell`'s bare branch returns `<>{children}<FanContentNotice align="center" /></>`. The signed-out pages keep `min-h-screen`, so the notice lands below the fold with no page edits. No mount in `layout.tsx`. A1's every-branch test asserts both mounts. | Eng |
 | G3 | The component reads `--fg-muted` only; a unit test measures it against `--bg` in all six theme blocks at ≥ 4.5:1, as `placeholder-contrast.test.ts` does. | Eng |
 | G4 | The bare branch's notice pads its foot `24px + env(safe-area-inset-bottom)`; inside the shell the column's reserve covers it. | Eng |
 | G5 | `/privacy` and `/terms` public in `src/proxy.ts`; in the shell when signed in, bare with the legal header when signed out; one `LegalPage` taking its sections for the list and anchors (`scroll-margin-top` on each). | Eng |

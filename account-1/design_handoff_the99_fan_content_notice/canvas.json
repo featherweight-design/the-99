@@ -4,42 +4,42 @@
   "v": 1,
   "at": "2026-10-18T04:37:58Z"
  },
- "title": "The 99 \u00b7 Fan Content notice R1",
+ "title": "The 99 \u00b7 Fan Content notice R2",
  "launch": {
   "view": "canvas"
  },
  "pages": [],
  "boards": {
-  "The 99 - Fan Content Notice (R1).dc.html": {
+  "The 99 - Fan Content Notice (R2).dc.html": {
    "x": 0,
    "y": 0,
    "w": 1700,
-   "h": 2543,
-   "title": "R1 \u00b7 the five calls, locked items, gaps"
+   "h": 2544,
+   "title": "R2 \u00b7 the five calls, locked items, gaps"
   },
-  "R1 - Signed-In.dc.html": {
+  "R2 - Signed-In.dc.html": {
    "x": 1780,
    "y": 0,
    "w": 1500,
-   "h": 4321,
-   "title": "Signed in \u00b7 short, long, locked; desktop"
+   "h": 6194,
+   "title": "Signed in \u00b7 below the fold; desktop"
   },
-  "R1 - Signed-Out.dc.html": {
+  "R2 - Signed-Out.dc.html": {
    "x": 3360,
    "y": 0,
-   "w": 1860,
-   "h": 5065,
-   "title": "Signed out \u00b7 landing, sign-up, join, friend, offline"
+   "w": 2020,
+   "h": 9655,
+   "title": "Signed out \u00b7 below the fold, centered"
   },
   "R1 - Privacy-and-Terms.dc.html": {
-   "x": 5300,
+   "x": 5460,
    "y": 0,
    "w": 1520,
    "h": 13372,
    "title": "/privacy and /terms \u00b7 one prose page"
   },
   "R1 - Themes.dc.html": {
-   "x": 6900,
+   "x": 7060,
    "y": 0,
    "w": 2660,
    "h": 3183,
@@ -47,9 +47,9 @@
   }
  },
  "order": [
-  "The 99 - Fan Content Notice (R1).dc.html",
-  "R1 - Signed-In.dc.html",
-  "R1 - Signed-Out.dc.html",
+  "The 99 - Fan Content Notice (R2).dc.html",
+  "R2 - Signed-In.dc.html",
+  "R2 - Signed-Out.dc.html",
   "R1 - Privacy-and-Terms.dc.html",
   "R1 - Themes.dc.html"
  ],
