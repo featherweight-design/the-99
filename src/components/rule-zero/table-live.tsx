@@ -62,6 +62,9 @@ export function TableLive({
 }) {
   const router = useRouter();
   const [view, setView] = useState(initial);
+  // Every answer, a check's or a swap's, is adopted only if it is no older than what the page shows: the two race,
+  // and either can land second with the earlier snapshot.
+  const adopt = (next: TableView) => setView((cur) => (next.revision.getTime() < cur.revision.getTime() ? cur : next));
   // A fresh server draw (the router's refresh after `Seats` saves) wins over what the page shows, adopted during
   // render so the old seats never paint once more. The visit's `seenAt` stays its first check's.
   const [drawn, setDrawn] = useState(initial);
@@ -107,7 +110,7 @@ export function TableLive({
         return;
       }
       swaps.current += 1;
-      setView(out.view);
+      adopt(out.view);
       // A swap answered before the visit's first check stands in for it: the check it drops would have set the
       // visit's baseline, and `recordSeen` waits on `arrived`.
       if (!firstAnswered.current) {
@@ -149,7 +152,7 @@ export function TableLive({
         if (poll.kind === "closed") setClosed(poll.closed);
         else {
           const next = reviveTableView(poll.view);
-          setView(next);
+          adopt(next);
           if (!firstAnswered.current) {
             firstAnswered.current = true;
             setLookedAt(next.seenAt);

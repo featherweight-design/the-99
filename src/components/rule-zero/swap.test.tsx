@@ -112,6 +112,27 @@ describe("Swap in (S2, W2)", () => {
     expect(m.seen).toHaveBeenCalledWith(S1.tableId, S1.revision.toISOString());
   });
 
+  it("keeps a newer check's table when the swap answers with an older one", async () => {
+    let answer: (r: Response) => void = () => {};
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((r) => (answer = r))));
+    let swapped: (v: { ok: true; view: TableView }) => void = () => {};
+    m.swap.mockReturnValueOnce(new Promise((r) => (swapped = r)));
+    render(<TableLive initial={S1} gamesEnabled now={AT} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
+    // Another player changes deck after the action read the table; the check sees both changes and answers first.
+    const later = new Date(AT.getTime() + 120_000);
+    const mine = swappedTo(S1, "Sai Thopters", "deck-viewer-sai");
+    const newer: TableView = {
+      ...mine,
+      revision: later,
+      seats: mine.seats.map((x) => (x.displayName === "Colin" && x.deck ? { ...x, changedAt: later, deck: { ...x.deck, name: "Colin's Other Deck" } } : x)),
+    };
+    await act(async () => answer(new Response(JSON.stringify({ kind: "open", view: newer }), { status: 200 })));
+    await act(async () => swapped({ ok: true, view: mine }));
+    expect(within(seatOf("Colin")).getByText("Colin's Other Deck")).toBeTruthy();
+    expect(within(seatOf("You")).getByText("Sai Thopters")).toBeTruthy();
+  });
+
   it("holds an older toast's Undo while a newer swap is still in flight", async () => {
     // The first swap lands on a deck that still leaves the seat flagged, so the offer stays.
     const first = { ...swappedTo(S1, "Jace Clones", "deck-viewer-jace"), offer: S1.offer };
