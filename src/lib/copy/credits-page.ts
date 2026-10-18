@@ -52,6 +52,12 @@ export const creditsPageCopy = {
     planSub: "roll over",
     packsSub: "never expire",
     added: (units: number) => `+${units}`,
+    /** P5: 15 to 19 paid runs today. `time` is the reader's clock, absent before hydration. */
+    near: (used: number, limit: number, time: string | null) =>
+      `${used} of ${limit} paid credits used today${time ? ` · the limit resets at ${time}` : ""}. Free credits still run.`,
+    /** P5b: at the limit; nothing banked is lost. */
+    atLimit: (used: number, limit: number, time: string | null) =>
+      `${used} of ${limit} paid credits used today.${time ? ` Back at ${time}.` : ""} Free credits still run, and nothing banked is lost.`,
   },
   pack: {
     k: "Credit pack",

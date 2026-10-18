@@ -11,6 +11,8 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
+import { readChip } from "../../lib/payments/chip";
+import type { ChipState } from "../../lib/payments/chip-rule";
 import { createPackCheckout } from "../../lib/payments/checkout";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { isPackId } from "../../lib/payments/packs";
@@ -95,4 +97,13 @@ export async function receiptAction(sessionId: unknown): Promise<ReceiptOutcome>
 function stripeType(error: unknown): string {
   const type = (error as { type?: unknown })?.type;
   return typeof type === "string" && /^Stripe\w+$/.test(type) ? ` (${type})` : "";
+}
+
+/**
+ * The account menu's chip, re-read (plan E10): on menu open and after a spend or a return from Checkout. Decided from
+ * the reader's own switches; `null` hides the chip (`readerSeesCredits`). Reads only, grants nothing.
+ */
+export async function chipAction(): Promise<ChipState | null> {
+  const userId = await requireUserId();
+  return readChip(userId, await requestSwitchEnv(userId));
 }

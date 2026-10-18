@@ -2,10 +2,14 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 import { Report } from "./pending-report";
+import type { ChipState } from "../../lib/payments/chip-rule";
 
 const redirectToUserProfile = vi.fn();
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
+
+const chipAction = vi.hoisted(() => vi.fn());
+vi.mock("../../app/credits/actions", () => ({ chipAction }));
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -43,6 +47,8 @@ const rects = vi
 afterAll(() => rects.mockRestore());
 
 beforeEach(() => {
+  chipAction.mockReset();
+  chipAction.mockResolvedValue(null);
   redirectToUserProfile.mockClear();
   signOut.mockClear();
 });
@@ -495,5 +501,54 @@ describe("AccountMenu Friends row (Social R1 placement)", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Friends" }));
     expect(providerPush).toHaveBeenCalledWith("/friends");
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+
+describe("AccountMenu credit chip (M1b)", () => {
+  const chip = (over: Partial<ChipState> = {}): ChipState => ({ kind: "credits", label: "117 credits", line: null, hollow: false, ...over });
+
+  it("draws nothing for a reader who does not see credits", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" credits={null} />);
+    press(trigger());
+    expect(screen.queryByTestId("credit-chip")).toBeNull();
+  });
+
+  it.each(["popover", "sheet"] as const)("%s: one link to /credits under the email, no new menu row", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" credits={chip()} />);
+    press(trigger());
+    const link = screen.getByTestId("credit-chip");
+    expect(link).toHaveAttribute("href", "/credits");
+    expect(link).toHaveTextContent("117 credits");
+    expect(within(screen.getByRole("menu")).queryByTestId("credit-chip")).toBeNull();
+  });
+
+  it("re-reads the chip each time the menu opens", async () => {
+    chipAction.mockResolvedValue(chip({ label: "93 credits" }));
+    render(<AccountMenu panel="popover" theme="amonkhet" credits={chip()} />);
+    press(trigger());
+    await waitFor(() => expect(screen.getByTestId("credit-chip")).toHaveTextContent("93 credits"));
+    expect(chipAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps what is drawn when the re-read fails", async () => {
+    chipAction.mockRejectedValue(new Error("down"));
+    render(<AccountMenu panel="popover" theme="amonkhet" credits={chip()} />);
+    press(trigger());
+    await waitFor(() => expect(chipAction).toHaveBeenCalled());
+    expect(screen.getByTestId("credit-chip")).toHaveTextContent("117 credits");
+  });
+
+  it("the expiring state carries its words on a line under the chip, in --warning", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" credits={chip({ kind: "expiring", line: "74 plan credits expire Nov 16" })} />);
+    press(trigger());
+    expect(screen.getByTestId("credit-chip")).toHaveAttribute("data-kind", "expiring");
+    expect(screen.getByTestId("credit-chip-line")).toHaveTextContent("74 plan credits expire Nov 16");
+  });
+
+  it("the out state offers Get more credits with a hollow diamond", () => {
+    render(<AccountMenu panel="sheet" theme="amonkhet" credits={chip({ kind: "out", label: "Get more credits", hollow: true })} />);
+    press(trigger());
+    expect(screen.getByTestId("credit-chip")).toHaveTextContent("Get more credits");
   });
 });

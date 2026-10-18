@@ -104,7 +104,12 @@ export const creditsCopy = {
     return line.endsWith(more) ? `${line.slice(0, -more.length)}${tail}${more}` : `${line}${tail}`;
   },
 
-  /** The link phrase, for `CreditsText` and for a test that finds it. */
+  /** The account menu's chip (M1b), by state. The count and the date are the server's read. */
+  chip: {
+    credits: (n: number) => `${n} credits`,
+    free: (n: number) => `${n} free credits`,
+    out: "Get more credits",
+  },  /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
   ownerShare: (month: Date) => `You’ve used your testing share for ${monthName(month)}. Friends aren’t affected.`,

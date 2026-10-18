@@ -7,6 +7,7 @@
 import { clockTime } from "../../lib/copy/credits";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { BalanceCell } from "../../lib/payments/page-model";
+import type { PaidToday } from "../../lib/payments/paid-today-rule";
 import { useHydrated } from "../ui/hydrated-art";
 
 const c = creditsPageCopy.bal;
@@ -18,7 +19,7 @@ const LABEL = { free: c.free, plan: c.plan, pack: c.packs } as const;
 const JOIN =
   "before:absolute before:left-[-5px] before:top-1/2 before:-mt-[4px] before:h-[8px] before:w-[8px] before:rotate-45 before:border-t before:border-r before:border-solid before:border-t-[color:var(--border-strong)] before:border-r-[color:var(--border-strong)] before:bg-[color:var(--surface)] before:content-['']";
 
-export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
+export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = null }: {
   total: number;
   cells: readonly BalanceCell[];
   freeLimit: number;
@@ -27,6 +28,8 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
    *  the cell holds more than that: when the delta is the whole balance (a first purchase) the band already says it
    *  (Hugh, 2026-10-17). */
   added?: number | null;
+  /** P5 / P5b: the daily paid line and its meter, or null. */
+  paidToday?: PaidToday | null;
 }) {
   const hydrated = useHydrated();
   return (
@@ -62,6 +65,21 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added }: {
           </li>
         ))}
       </ul>
+      {paidToday ? (
+        // The line is mono 11px in `--fg-muted` with a 64 x 5 meter beside it; at the limit the fill is `--warning`, never `--danger`.
+        <p data-testid="paid-today" data-at-limit={paidToday.atLimit} className="m-0 flex items-start gap-[8px] font-mono text-[11px] leading-[1.55] text-[color:var(--fg-muted)]">
+          <span aria-hidden className="mt-[6px] h-[5px] w-[64px] flex-none overflow-hidden rounded-[3px] bg-[color:var(--elevated)]">
+            <i data-testid="paid-today-fill" className="block h-full" style={{ width: `${paidToday.percent}%`, background: paidToday.atLimit ? "var(--warning)" : "var(--fg-muted)" }} />
+          </span>
+          <span>
+            {(paidToday.atLimit ? c.atLimit : c.near)(
+              paidToday.used,
+              paidToday.limit,
+              hydrated && paidToday.backAtMs !== null ? clockTime(new Date(paidToday.backAtMs)) : null,
+            )}
+          </span>
+        </p>
+      ) : null}
     </section>
   );
 }

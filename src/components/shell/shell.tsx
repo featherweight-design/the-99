@@ -4,6 +4,7 @@ import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { perfRead } from "../../lib/perf/timing";
+import { readChip } from "../../lib/payments/chip";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { SHEET_ON_HEADER } from "../../lib/about/gate";
 import { readSheetState } from "../../lib/about/sheet-state";
@@ -77,6 +78,8 @@ export default async function Shell({
   const door = {
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
     friends: socialFriendsEnabled(env),
+    // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
+    credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
   };
   // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
   const cardSearch = cardSearchEnabled(env);
