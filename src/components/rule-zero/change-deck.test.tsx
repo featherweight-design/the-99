@@ -90,3 +90,32 @@ describe("Change deck (S3, W3)", () => {
     expect(screen.queryByRole("list")).toBeNull();
   });
 });
+
+describe("Change deck's failures and focus", () => {
+  it("says a list that did not arrive aloud, apart from a lapsed grant, and a retry clears it", async () => {
+    m.load.mockRejectedValueOnce(new Error("network"));
+    render(<ChangeDeck tableId="t1" />);
+    const link = screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck });
+    await act(async () => fireEvent.click(link));
+    expect(screen.getByRole("alert").textContent).toBe(s.loadFailed);
+    m.load.mockResolvedValueOnce(null);
+    await act(async () => fireEvent.click(link));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("moves focus to the first row once the desktop panel is placed", async () => {
+    const was = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({ matches: true, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }),
+    });
+    try {
+      await open();
+      const dialog = screen.getByRole("dialog");
+      expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]);
+    } finally {
+      Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
+    }
+  });
+});

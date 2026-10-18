@@ -5,7 +5,7 @@
 // through the swap (`TableLive`'s, with its toast and Undo); the seated row closes; a deck short of 100 is pressable
 // and seats as not ready.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { loadDeckChoicesAction } from "../../app/friends/table/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
@@ -23,15 +23,21 @@ const PANEL_WIDTH = 420;
 export function ChangeDeck({ tableId }: { tableId: string }) {
   const [choices, setChoices] = useState<DeckChoice[] | null>(null);
   const [busy, setBusy] = useState(false);
+  // A list that did not arrive (a network or database failure), said aloud beside the link it is retried from. A
+  // lapsed grant is not this: it answers null and the page's next check draws the closed table.
+  const [failed, setFailed] = useState(false);
   // The pressed link, held as state (not a ref read during render) for the panel to hang from.
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   async function press(at: HTMLElement) {
     if (busy) return;
     setAnchor(at);
     setBusy(true);
+    setFailed(false);
     try {
       // Null when the seat grant has lapsed: the page's next check draws the closed table.
       setChoices(await loadDeckChoicesAction(tableId));
+    } catch {
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -47,6 +53,11 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
       >
         {ruleZeroCopy.seat.changeDeck}
       </button>
+      {failed ? (
+        <span role="alert" className="text-[12.5px] text-[color:var(--fg-muted)]">
+          {copy.loadFailed}
+        </span>
+      ) : null}
       {choices && anchor ? <Choices anchor={anchor} choices={choices} onClose={() => setChoices(null)} /> : null}
     </>
   );
@@ -63,7 +74,16 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
     anchorRef.current = anchor;
   }, [anchor, triggerRef]);
   // The sheet holds the page; the panel does not (it hangs off a control on a page the reader can still see).
-  useDialogA11y(desktop ? placedRef : panelRef, onClose, { returnFocusRef: anchorRef, lockScroll: !desktop });
+  // The panel is hidden until it is placed, and a hidden row takes no focus: the dialog hook's own attempt, in the
+  // first layout pass, fails. Focus the first row once it is visible (the seat picker's rule), once.
+  const firstRow = useRef<HTMLButtonElement | null>(null);
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!desktop || !at || focused.current) return;
+    focused.current = true;
+    firstRow.current?.focus();
+  }, [desktop, at]);
+  useDialogA11y(desktop ? placedRef : panelRef, onClose, { initialFocusRef: firstRow, returnFocusRef: anchorRef, lockScroll: !desktop });
   useEffect(() => {
     if (!desktop) return;
     const away = (e: MouseEvent) => {
@@ -81,9 +101,9 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
   };
   const list = (
     <ul aria-label={copy.decksList} className={`m-0 flex list-none flex-col p-0 ${desktop ? "" : "gap-[2px]"}`}>
-      {choices.map((c) => (
+      {choices.map((c, i) => (
         <li key={c.deckId}>
-          <Row choice={c} onPick={() => pick(c)} />
+          <Row choice={c} onPick={() => pick(c)} buttonRef={i === 0 ? firstRow : undefined} />
         </li>
       ))}
     </ul>
@@ -116,10 +136,11 @@ function Choices({ anchor, choices, onClose }: { anchor: HTMLElement; choices: D
   );
 }
 
-function Row({ choice: c, onPick }: { choice: DeckChoice; onPick: () => void }) {
+function Row({ choice: c, onPick, buttonRef }: { choice: DeckChoice; onPick: () => void; buttonRef?: Ref<HTMLButtonElement> }) {
   const sub = c.ready ? c.commanderName : c.cards !== 100 ? copy.notRead(c.cards) : copy.notReadYet;
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-pressed={c.seated}
       onClick={onPick}
