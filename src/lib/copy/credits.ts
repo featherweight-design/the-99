@@ -106,8 +106,8 @@ export const creditsCopy = {
 
   /** The account menu's chip (M1b), by state. The count and the date are the server's read. */
   chip: {
-    credits: (n: number) => `${n} credits`,
-    free: (n: number) => `${n} free credits`,
+    credits: (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`,
+    free: (n: number) => `${n} free ${n === 1 ? "credit" : "credits"}`,
     out: "Get more credits",
   },  /** The link phrase, for `CreditsText` and for a test that finds it. */
   link,

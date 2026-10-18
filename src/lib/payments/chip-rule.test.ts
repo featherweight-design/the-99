@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Allowance } from "../model/allowance-rule";
+import { creditsCopy } from "../copy/credits";
 import { chipFor } from "./chip-rule";
 
 const NOW = new Date("2026-11-14T12:00:00Z");
@@ -40,5 +41,11 @@ describe("the menu chip (M1b)", () => {
   it("does not warn four days out", () => {
     const planExpiresAt = new Date(NOW.getTime() + 4 * 86_400_000);
     expect(chip(a({ plan: 74, planExpiresAt }), true, true)?.kind).toBe("credits");
+  });
+
+  it("says 1 credit in the singular", () => {
+    expect(creditsCopy.chip.credits(1)).toBe("1 credit");
+    expect(creditsCopy.chip.free(1)).toBe("1 free credit");
+    expect(creditsCopy.chip.credits(117)).toBe("117 credits");
   });
 });

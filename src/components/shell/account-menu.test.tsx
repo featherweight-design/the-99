@@ -529,6 +529,12 @@ describe("AccountMenu credit chip (M1b)", () => {
     press(trigger());
     await waitFor(() => expect(screen.getByTestId("credit-chip")).toHaveTextContent("93 credits"));
     expect(chipAction).toHaveBeenCalledTimes(1);
+    // Close it and open it again: a second open is a second read.
+    press(trigger());
+    chipAction.mockResolvedValue(chip({ label: "92 credits" }));
+    press(trigger());
+    await waitFor(() => expect(chipAction).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId("credit-chip")).toHaveTextContent("92 credits"));
   });
 
   it("keeps what is drawn when the re-read fails", async () => {

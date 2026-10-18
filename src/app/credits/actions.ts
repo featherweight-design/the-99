@@ -100,7 +100,8 @@ function stripeType(error: unknown): string {
 }
 
 /**
- * The account menu's chip, re-read (plan E10): on menu open and after a spend or a return from Checkout. Decided from
+ * The account menu's chip, re-read (plan E10) each time the menu opens, so a spend since the layout rendered shows. A
+ * return from Checkout loads the page afresh, and the shell reads it then. Decided from
  * the reader's own switches; `null` hides the chip (`readerSeesCredits`). Reads only, grants nothing.
  */
 export async function chipAction(): Promise<ChipState | null> {
