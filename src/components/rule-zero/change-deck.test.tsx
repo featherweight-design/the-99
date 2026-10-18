@@ -36,6 +36,13 @@ function open() {
   return act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
 }
 
+describe("Change deck's press", () => {
+  it("keeps its drawn 36px and takes a 44px coarse-pointer hit", async () => {
+    await open();
+    expect(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })).toHaveClass("min-h-[36px]", "pointer-coarse:after:h-[max(44px,100%)]");
+  });
+});
+
 describe("Change deck's order (D1)", () => {
   it("puts the seated deck first, then the read decks nearest the middle, then the rest by G8", () => {
     const row = (id: string, o: { seated?: boolean; distance?: number | null; lastPlayed?: number; lastEdited?: number }) => ({

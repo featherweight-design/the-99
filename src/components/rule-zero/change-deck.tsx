@@ -14,6 +14,7 @@ import type { DeckChoice } from "../../lib/social/rule-zero-table";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { FadingImg } from "../ui/hydrated-art";
 import { Sheet, SheetHeader } from "../ui/sheet";
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { useMinWidth } from "../ui/use-min-width";
 import { DeckRowChip, useSwap } from "./swap";
 
@@ -49,7 +50,8 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
         aria-busy={busy || undefined}
         aria-haspopup="dialog"
         onClick={(e) => (choices ? setChoices(null) : void press(e.currentTarget))}
-        className="inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]"
+        // Drawn at 36px; a coarse pointer gets TOUCH_HIT's 44px past it (the 2026-10-18 phone sweep measured 76x36).
+        className={`${TOUCH_HIT} inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]`}
       >
         {ruleZeroCopy.seat.changeDeck}
       </button>
