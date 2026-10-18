@@ -10,10 +10,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { loadPodSetupAction, setTableAction } from "../../app/friends/table/setup-actions";
+import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { closesWhen } from "../../lib/social/when";
+import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
+import { useFriendInvite } from "../social/invite-context";
 import { useHydrated } from "../ui/hydrated-art";
 import { SetupSheet, type SetupData } from "./setup-sheet";
 
@@ -26,6 +29,7 @@ const ROW =
 export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: OpenTable | null; now: Date }) {
   const router = useRouter();
   const hydrated = useHydrated();
+  const invite = useFriendInvite();
   const [open, setOpen] = useState<{ setup: SetupData; invites: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,6 +51,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
           ))}
         </span>
         <Chevron />
+        <PendingReporter href={`/friends/table/${table.tableId}`} />
       </Link>
     );
   }
@@ -77,10 +82,13 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
           onClose={() => setOpen(null)}
           onSave={(seats) => setTableAction(podId, seats)}
           onDone={(tableId) => {
+            // The sheet's history entry stays under the new route: released by a close, its Back would cancel the push.
+            leaveDialogsForNavigation();
             setOpen(null);
             router.push(`/friends/table/${tableId}`);
           }}
-          onInvite={open.invites ? () => router.push("/friends?invite=new") : undefined}
+          // On /friends, Invite someone new opens over setup, in place: setup is kept to come back to.
+          onInvite={open.invites ? invite?.inviteNew : undefined}
         />
       ) : null}
     </>

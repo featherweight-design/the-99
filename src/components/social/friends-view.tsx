@@ -369,7 +369,7 @@ export function FriendsView({
   }
 
   return (
-    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held }}>
+    <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held, inviteNew: invites ? () => setAdding("new") : undefined }}>
       {receipt ? (
         <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
           <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>

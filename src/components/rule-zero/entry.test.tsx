@@ -9,6 +9,7 @@ vi.mock("../../app/friends/table/setup-actions", () => ({ loadPodSetupAction: m.
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { closesWhen } from "../../lib/social/when";
+import { FriendInviteContext } from "../social/invite-context";
 import { HomeTableCard } from "./home-table-card";
 import { PodRuleZeroRow } from "./pod-row";
 
@@ -44,6 +45,32 @@ describe("the pod row (E1, E2, F1, F2)", () => {
     fireEvent.click(row);
     await waitFor(() => expect(screen.getByRole("dialog", { name: ruleZeroCopy.setup.whoTitle })).toBeTruthy());
     expect(m.loadPodSetupAction).toHaveBeenCalledWith("p1");
+  });
+
+  it("opens Invite someone new in place on /friends (the invite context), and sets the table then goes to it", async () => {
+    m.loadPodSetupAction.mockResolvedValue({
+      setup: { podId: "p1", podName: "Thursday night", owner: null, members: [
+        { publicId: "a", displayName: "Hugh", commander: null, kind: "you", isOwner: true, decks: [], start: null },
+        { publicId: "b", displayName: "Colin", commander: null, kind: "picksOwn", isOwner: false, decks: [], start: null },
+      ] },
+      invites: true,
+    });
+    m.setTableAction.mockResolvedValue({ ok: true, tableId: "t9" });
+    const inviteNew = vi.fn();
+    render(
+      <FriendInviteContext.Provider value={{ invite: () => {}, pending: false, held: false, inviteNew }}>
+        <PodRuleZeroRow podId="p1" table={null} now={NOW} />
+      </FriendInviteContext.Provider>,
+    );
+    fireEvent.click(screen.getByTestId("pod-rule-zero"));
+    fireEvent.click(await screen.findByText(ruleZeroCopy.setup.inviteTitle));
+    expect(inviteNew).toHaveBeenCalled();
+    expect(m.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Colin/ }));
+    fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.setup.next }));
+    fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.setup.set }));
+    await waitFor(() => expect(m.push).toHaveBeenCalledWith("/friends/table/t9"));
+    expect(m.setTableAction).toHaveBeenCalledWith("p1", [{ member: "a", deck: null }, { member: "b", deck: null }]);
   });
 
   it("refreshes rather than opening anything when setup cannot be read", async () => {

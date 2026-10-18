@@ -6,6 +6,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { loadTableSetupAction, reseatTableAction } from "../../app/friends/table/setup-actions";
+import { leaveDialogsForNavigation } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { GhostButton } from "../ui/button";
 import { SetupSheet, type SetupData } from "./setup-sheet";
@@ -45,7 +46,16 @@ export function SeatsButton({ tableId, className }: { tableId: string; className
             setOpen(null);
             router.refresh();
           }}
-          onInvite={open.invites ? () => router.push("/friends?invite=new") : undefined}
+          onInvite={
+            open.invites
+              ? () => {
+                  // The sheet's history entry stays under /friends: released by a close, its Back would cancel the push.
+                  leaveDialogsForNavigation();
+                  setOpen(null);
+                  router.push("/friends?invite=new");
+                }
+              : undefined
+          }
         />
       ) : null}
     </>

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { closesWhen } from "../../lib/social/when";
+import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { useHydrated } from "../ui/hydrated-art";
 import { ACCENT_BUTTON } from "./setup-sheet";
@@ -67,6 +68,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
       </p>
       <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline`}>
         {copy.homeOpen}
+        <PendingReporter href={`/friends/table/${table.tableId}`} />
       </Link>
     </section>
   );

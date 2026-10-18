@@ -25,6 +25,7 @@ import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
 import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
+import { HomeTableCard } from "../components/rule-zero/home-table-card";
 import { loadInviteCount } from "../lib/invites/read";
 import { wishlistEnabled } from "../lib/wishlist/flag";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
@@ -275,6 +276,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   }
   // The no-collection entry (S1, S12): step 1's ways group, and the dashboard's zero-card header for an account with
   // decks and no cards. Decided per request from the resolved switches, outside the cached payload.
+  // Rule 0's `Tonight's table` (plan decision 1): read per request after the cached load, never stored, so a reseat,
+  // a rename and an expiry show on the next request. A failed read draws no card. Read
+  // before the first-run return: a reader with no cards and no decks can still sit at a table, their seat waiting.
+  let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
+  if (ruleZeroEnabled(env)) {
+    try {
+      homeTables = await loadHomeTables(userId);
+    } catch (error) {
+      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+      console.error("home: tonight's table could not be read", error);
+    }
+  }
   const noCollectionEntry = noCollectionEntryEnabled(env);
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
@@ -287,17 +300,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     } catch (error) {
       // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
       console.error("home: the friends section could not be read", error);
-    }
-  }
-  // Rule 0's `Tonight's table` (plan decision 1): read per request after the cached load, never stored, so a reseat,
-  // a rename and an expiry show on the next request. A failed read draws no card.
-  let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
-  if (ruleZeroEnabled(env)) {
-    try {
-      homeTables = await loadHomeTables(userId);
-    } catch (error) {
-      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
-      console.error("home: tonight's table could not be read", error);
     }
   }
   // With invites on, Add a friend opens /friends' chooser (addendum G4), which shows the reader's invite count. Read
@@ -319,6 +321,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
         scan={cardScanEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
+        tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
       />
     );
   }
