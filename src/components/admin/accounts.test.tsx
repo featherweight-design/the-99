@@ -339,6 +339,27 @@ describe("AccountsList (A1 to A3)", () => {
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(screen.getAllByRole("alert")).toHaveLength(1);
       expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+      // Clearing the newer leaves none: the failed Show it replaced is gone for good.
+      fireEvent.change(field(), { target: { value: "" } });
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("draws one failure toast at a time the other way round: a failed Show after a failed lookup replaces it", async () => {
+      revealFn.mockResolvedValue({ ok: false, error: "failed" });
+      lookUpFn.mockResolvedValue({ kind: "failed" });
+      list();
+      fireEvent.change(field(), { target: { value: "mara@example.com" } });
+      await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
+      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+      // The whole list stays on a failed lookup, so Mara's Show is there to press.
+      const mara = within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
+      await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+      expect(screen.getByRole("alert")).toHaveTextContent("Nothing was shown.");
+      // Its Try again asks again, and a toast it leaves behind is not the lookup's.
+      revealFn.mockResolvedValue({ ok: true, id: "user_9mara", name: "Mara Quinn", email: "mara@example.com", hidesAt: SOON.toISOString() });
+      await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" })));
+      expect(screen.queryByRole("alert")).toBeNull();
     });
 
     it("brings the whole list back on ✕", async () => {

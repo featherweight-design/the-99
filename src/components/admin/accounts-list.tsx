@@ -145,7 +145,7 @@ export function AccountsList({
   const email = query.includes("@");
   const [lookup, setLookup] = useState<{ q: string; result: LookUpResult } | null>(null);
   const [looking, setLooking] = useState(false);
-  const [lookFailed, setLookFailed] = useState<{ q: string; n: number; at: number } | null>(null);
+  const [lookFailed, setLookFailed] = useState<{ q: string; n: number } | null>(null);
   const answer = email && lookup?.q === query ? lookup.result : null;
   const lineId = useId();
   const router = useRouter();
@@ -175,7 +175,9 @@ export function AccountsList({
     setLooking(false);
     // A failure keeps the field and the whole list as they were, and says so in the toast (A5).
     if (result.kind === "failed") {
-      setLookFailed((prev) => ({ q, n: (prev?.n ?? 0) + 1, at: Date.now() }));
+      // One failure at a time: this one retires a failed Show's, which then never comes back.
+      reveal.dismissFailure();
+      setLookFailed((prev) => ({ q, n: (prev?.n ?? 0) + 1 }));
       return;
     }
     setLookup({ q, result });
@@ -183,8 +185,14 @@ export function AccountsList({
     // down): the page reads the list again, and the row draws when it lands.
     if (result.kind === "hit" && !rows.some((r) => r.id === result.id)) router.refresh();
   };
-  // One toast at a time: a failed Show and a failed lookup in one window draw only the newer.
-  const toast = !lookFailed ? (reveal.failure ? "reveal" : null) : !reveal.failure || lookFailed.at >= reveal.failure.at ? "lookup" : "reveal";
+  // One failure at a time, the newer: a failed Show retires a failed lookup's (here, during render, as it lands), and
+  // a failed lookup retires the Show's (in `lookUp`). The retired one never comes back when the newer closes.
+  const [revealSeen, setRevealSeen] = useState<number | null>(null);
+  const revealN = reveal.failure?.n ?? null;
+  if (revealN !== revealSeen) {
+    setRevealSeen(revealN);
+    if (revealN !== null && lookFailed) setLookFailed(null);
+  }
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
   const shown = useMemo(() => {
@@ -274,8 +282,8 @@ export function AccountsList({
         </div>
         )}
       </div>
-      {toast === "reveal" && reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
-      {toast === "lookup" && lookFailed && (
+      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
+      {lookFailed && (
         <FailedToast
           key={`look-${lookFailed.n}`}
           kind="lookup-failed"
