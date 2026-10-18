@@ -3075,3 +3075,9 @@ with `override: true`, so a value there would silently win over the shell's, and
 probe does not load `.env` at all. The key is Sensitive in Vercel, so `vercel env pull` cannot fetch it: type it for the
 one command, `read -s ANTHROPIC_ADMIN_KEY && ANTHROPIC_ADMIN_KEY="$ANTHROPIC_ADMIN_KEY" pnpm probe:anthropic-cost; unset
 ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not set in this shell` and exits 1.
+
+- `pnpm probe:public-loaders` (launch epic F3 groundwork) runs the public card and commander loaders against a real catalog,
+  READ-ONLY (it only selects; point it at staging with `PROBE_READ_URL=<url>`, otherwise it reads `.env`'s `DATABASE_URL`).
+  It proves no two cards share a 12-hex address prefix (and prints how many 8 hex would have collided: 0 of 35,630 on
+  staging, 2026-10-18), that twenty cards and twenty commanders load by their own address, that a wrong name part still
+  resolves to the canonical address, that a prefix no card has is `not-found`, and prints the per-load read time.

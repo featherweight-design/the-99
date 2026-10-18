@@ -52,8 +52,8 @@ function resolveImport(fromFile, spec) {
  * (`export { x } from`, `export * from`), since a barrel re-exporting a reader is as much a path to
  * it as importing it directly. Type-only forms carry no runtime edge and are left out.
  */
-function importsOf(source) {
-  return [...source.matchAll(/^(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+export function importsOf(source) {
+  return [...source.matchAll(/^[ \t]*(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
 }
 
 /**
