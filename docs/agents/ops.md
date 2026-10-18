@@ -44,3 +44,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   by `observeHit` in `after()` behind `RATE_LIMIT_ENABLED` (a plumbing switch). **Observe-only**: it logs
   `[rate] would refuse ...` and refuses nothing; the limits are provisional until those logs say what a real reader does.
   Enforcing is a separate change. The table is purged with the account.
+
+- **The admin Costs page and Anthropic's Admin API** (the admin cost-report plan,
+  `docs/superpowers/plans/2026-10-17-admin-anthropic-cost-report.md`). `ANTHROPIC_ADMIN_KEY` is an Admin API key
+  (`sk-ant-admin...`), set in Vercel on BOTH projects (`the-99` and `the-99-staging`), **Production scope** (staging's
+  top-level deploys run with it; previews have no key and read `no_key`) and **Sensitive**, as `DATABASE_URL` and
+  `CLERK_SECRET_KEY` are. It is read server-side only (`src/lib/admin/anthropic-cost.ts`, on `client-imports.test.ts`'s
+  `SERVER_ONLY` list) and is never in a log, an error, a cache key or a payload. It reads three lists: the month's
+  `cost_report` grouped by workspace (The 99, other workspaces and the org), the workspace list (to find the one
+  unarchived workspace named The 99), and The 99's `api_keys` (name, redacted hint and status only). The figures are
+  cached per five minutes (current month) or hour (past month), a failure is never cached and is held 60 seconds, and a
+  failed key list leaves the figures standing. **Without the key the page degrades, never fails:** the workspace and
+  org rows read this environment's ledger alone with the `no_key` reason. The two caps (`account_cap_usd`, The 99
+  workspace; `org_cap_usd`, the org) are typed in on the page from Anthropic's console, because Spend Limits are
+  Enterprise-only and cannot be read. Never put the key in `.env` (`scripts/lib/env.mjs` loads it with
+  `override: true`); `pnpm probe:anthropic-cost` reads it from the shell. Find the reads with
+  `vercel logs -p the-99 -q "[costs]"`: one line per read, `ok days=‹n› keys=‹n›` or `unread kind=‹k›`.

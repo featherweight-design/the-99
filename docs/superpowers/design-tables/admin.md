@@ -157,6 +157,8 @@
 | split | one 14px bar, gap 2; legend one column | legend two columns |
 | tables | each row a card: title 14 / 500 + figure mono 13; meta mono 10.5 `--fg-muted` | grid per table (see `Admin.dc.html`); head mono 9.5 upper on `--surface-rail`; foot row 600 on `--surface-rail` |
 | reserved bar | 12px dashed 1px `--border-dashed` box = reservation; fill `--accent` = mean | same |
+| org cap row | the caps row shape, source `from Anthropic`, label `Anthropic org cap`, after the workspace row; segments The 99 `--accent`, then other workspaces `--fg-faint` hatched; tick at the org cap `--danger`; no cap or not read: the bare track; `Change the org cap` on the current month | same |
+| keys on The 99 | section head `Keys on The 99` + meta `name and hint only`, under the caps; the detail tables' row card, one row a key: name 14 / 500 `--fg`, status mono 11 at the right (`active` `--fg-body`, any other word `--fg-faint`), hint mono 10.5 `--fg-muted` under; none `No keys on this workspace.`, unread `The key list was not read.` 13 `--fg-muted` | same (row card, not a grid) |
 
 ## Data sources
 | Figure | Source |
@@ -167,7 +169,9 @@
 | evals | `docs/superpowers/eval/ledger*.jsonl`, bundled at build, netted as `spent()` |
 | caps in code | `spend-rule.ts`, `allowance-rule.ts`, `ledger.mts` constants, read-only |
 | The 99 workspace total | Anthropic's Usage and Cost Admin API (`cost_report`, grouped by workspace, matched to the one unarchived workspace named The 99), server-side, read-only, needs `ANTHROPIC_ADMIN_KEY`; cached per five minutes (current month) or hour (past), a failure never cached and held 60s |
-| elsewhere | the workspace total less this environment's ledger (player and system, never evals), floored at $0; `elsewhere_usd` rows are retired and no longer read |
-| workspace cap (`account_cap_usd`), system ceiling | the admin settings table (locked rule 11) |
+| elsewhere | the workspace total less this environment's ledger (player and system, never evals), floored at $0; `elsewhere_usd` rows are retired, no longer read or written, and kept |
+| other workspaces, org total | the same `cost_report` read: the org's every line (the default workspace's `null` id included) summed exactly and rounded once; other workspaces are the org less The 99 |
+| keys on The 99 | `GET /v1/organizations/api_keys?workspace_id=‹The 99›`, paged by `after_id`, inside the same cached read and timeout; only keys whose `scope` is The 99's workspace; name, the hint only when redacted (an ellipsis, at most 40 characters) and status; no id, creator, principal, scope or date reaches the page; a failed key read leaves the figures standing |
+| workspace cap (`account_cap_usd`), org cap (`org_cap_usd`), system ceiling | the admin settings table (locked rule 11) |
 | names, emails | Clerk Backend API, server-side |
 | job switches | GitHub repository variables API, server-side, read-only |

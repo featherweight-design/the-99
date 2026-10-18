@@ -3037,8 +3037,9 @@ page's workspace row. It touches no database and writes nothing. With no month i
 before, which settles whether a current month clamped to now is accepted and how far back the report serves; its output,
 figures only, goes in the PR body before the first PR merges. It prints the month, `ok` or the unread kind (`refused`,
 `rejected`, `upstream`, `shape`, `no_workspace`, `ambiguous_workspace`), the match count, the window it sent (and whether
-`ending_at` was sent or omitted) and the figure in dollars: never an id, a header or a body. Exits 1 with no key or when
-any month is unread.
+`ending_at` was sent or omitted), the workspace, other-workspaces and org figures in dollars, and the keys on The 99 as
+a count with how many are active (or the key list's unread kind): never an id, a key's name or hint, a header or a body.
+Exits 1 with no key or when any month is unread; a key list that fails alone does not.
 
 **The key is read from the shell only.** `ANTHROPIC_ADMIN_KEY` is never put in `.env`: `scripts/lib/env.mjs` loads `.env`
 with `override: true`, so a value there would silently win over the shell's, and a file is a place a key leaks from. The
