@@ -81,7 +81,8 @@ Copy wording was not reviewed here; that is `/copy-review`'s, run in each PR.
 
 All are reachable in code; the walk named each branch.
 
-- **E4 and L3, the switch-off states:** held by component tests (`table-body.test.tsx`, the entry tests).
+- **L3, games off:** held by `table-body.test.tsx`, which draws no Log this game while games is off.
+- **E4, Rule 0 off:** no test of its own. The Home and Friends pages read the switch before they draw the pod row or the card; the entry tests render those components directly.
 - **D9 at 1300, a deck being read on the spot:** the fixture's read finishes before the desktop shot.
 - **Setup opened fresh from a pod's Rule 0 check:** every U and V shot is the setter's Seats on an existing table.
 - **W4 as its own shot:** S4 and W5 carry the other seat's change.
