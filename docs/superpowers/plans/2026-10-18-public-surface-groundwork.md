@@ -62,3 +62,49 @@ the pages ship from Design's F2 handoff (brief `2026-10-17-public-card-and-comma
 - Is the 8-hex suffix enough, or should the suffix be the full uuid's first 12? (Cost: a longer URL.)
 - Does anything reachable from the loaders read per-user data through a shared helper (the card-label read, the bracket
   classifier) that the guard would catch but the plan has not named?
+
+## Review outcome (subagent, 2026-10-18): what changed
+
+All of it accepted. Where it contradicts the decisions above, THIS section wins.
+
+1. **Suffix is 12 hex, resolved by a uuid RANGE.** 8 hex gives about a 10% chance that two of ~30,000 cards share a prefix; 12 hex
+   is about one in a million. The lookup is `oracle_id >= '<prefix padded with 0>'::uuid and oracle_id <= '<padded with f>'::uuid`
+   so the primary key serves it (a `::text like` casts the column and scans). A test asserts the emitted SQL has no `::text`.
+   The probe prints the collision count at 12 hex on staging (read-only) and asserts 0.
+2. **The cosmetic slugifier is new** (`src/lib/public/slug.ts`), not `commanderSlug`, which keeps only the first half of a
+   split card (`Fire // Ice` becomes `fire`) and is EDHREC's address. It keeps both halves, folds `Æ`/`æ`, `ß`, `ø`
+   explicitly (NFD does not decompose them), and falls back to the bare 12 hex when nothing survives.
+3. **Loaders reuse what is clean**: `loadSupportMeta` (`src/lib/edhrec/support-read.ts`) and `loadBracketFlags`
+   (`src/lib/bracket/flags-read.ts`) import only `db`, the schema and types; `src/lib/recs/faces.ts` splits faces. New reads:
+   the signature and similar cards (`commander_support_cards` joined to `cards`, ordered `inclusion desc nulls last, oracle_id`).
+   Never imported: `synergy-read.ts` (joins the collection), `collection/card-detail.ts`, `profile/load.ts`. The card-label
+   read stays out of the first cut.
+4. **Prose** is `commander_support.prose` when present and not `isSuppressed(oracleId)`. The signed-in page shows prose whatever the
+   `synergy_state`; the public page DELIBERATELY departs: no prose for `absent` or `degraded` (the brief's "not available right
+   now"). An oracle id with no `commander_support` row is `not-found` on the commander loader. A catalog has only the front
+   face's text plus `back_image_uri`; "both faces" means the row, the back image and names/type lines split on ` // `. The
+   result carries `canonicalSlug` so a route can redirect.
+5. **The guard is an ALLOWLIST, not a per-user-column test.** `schemaTables` calls a table per-user only when its body names
+   `user_id`, `deck_id` or `version_id`, and 48 tables pass as catalog that are not (`pods`, `friend_invites`, `payment_records`,
+   `rule_zero_tables`, `deck_game_opponents`, `account_tombstones`...). `check:public-reads` therefore fails on any table outside
+   `cards`, `printings`, `sets`, `commander_support`, `commander_support_cards` and `card_bracket_flags`. It passes `{}` as the
+   per-request map (the default silently skips three social modules), forbids `src/lib/{social,collection,decks,account,invites,
+   payments,switches,wishlist,profile,recs,auth*}` and `src/lib/cache/{page-cache,user-lists}`, and text-scans every reachable
+   file (comments stripped) for `next/headers`, `cookies`, `auth(`, `@clerk`. Lives in `scripts/lib/public-reads.mjs` with a
+   `.test.mts` that proves red on fixtures, like `social-reads`.
+6. **Rate bucket (PR 2)**: the key is `anon:` plus a SHA-256 of the client network address (IPv6 on its /64) and the UTC day. That
+   is a pseudonymous key, NOT an unlinkable one (the IPv4 space is small enough to reverse), so the privacy text says "a
+   one-way hash of your network address, kept for up to an hour" and no HMAC secret is introduced. The address is
+   `x-real-ip`, else `x-vercel-forwarded-for`, else the first hop of `x-forwarded-for`. `observeAnonymousHit` resolves switches
+   with `resolveSwitchEnv(null)`, never `requestSwitchEnv` (which would look up a fake user), and swallows every failure. It
+   is called from the route, never `proxy.ts`. A comment on `rateHits` says `anon:` rows live in a table the purge treats as
+   per-user and are never matched by an account purge.
+7. **Cached once**: the root layout is already dynamic (`resolveTheme()` reads cookies), so a page under it is not CDN-static.
+   "Cached once for everyone" means the loader's data cache, keyed on the catalog stamp and the deployment. Real abuse
+   limiting of cached hits belongs to Vercel's firewall; an origin counter sees misses only. The loader cache is F3's, not this
+   PR's. No "about one read per page per day" promise until then.
+8. **Out of scope, and kept so by a test**: `/card/*` and `/commander/*` are NOT added to `isPublic`; no `robots`, no sitemap (30,000
+   URLs needs a sitemap index); no `proxy.ts` rate call; no enforcement of any bucket but `checkout`. No About entry is owed
+   (backend only).
+9. **Open questions answered**: 12 hex plus the staging collision check; no per-user read is reachable through the named
+   helpers and the allowlist guard is the backstop.
