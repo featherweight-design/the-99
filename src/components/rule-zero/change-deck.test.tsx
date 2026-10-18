@@ -1,6 +1,6 @@
 // Change deck (Rule 0 plan PR 7b; boards S3, W3): every own deck, the seated one first, then nearest the table, then
 // the ones not in the read; a press seats it through the swap; the seated row closes; a short deck is pressable.
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ load: vi.fn(), swap: vi.fn() }));
@@ -112,8 +112,11 @@ describe("Change deck's failures and focus", () => {
     });
     try {
       await open();
-      const dialog = screen.getByRole("dialog");
-      expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]);
+      // The width is read through a store that settles after the first render, and the panel stays hidden until
+      // `useAnchoredPanel` places it: in a fresh module (a test run alone, or first in its shard) neither has happened
+      // when the press returns. Wait for the placed panel, then for focus.
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
     }
