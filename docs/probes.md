@@ -662,9 +662,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   halo is down; a route tool's is the control its moment anchors. WebP from quality 75, stepped down by 5 for an
   image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
-  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with the tools' switches
-  on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to `off`
-  so no bubble, tour or sheet is photographed. It refuses any database but a scratch branch (`assertScratchBranch`)
+  `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
+  switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line: a deck's Stats and Notes
+  tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame missing one is not captured),
+  `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) on, and
+  `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to `off`, so the frames show the ?, the account menu's `Take the
+  tour` row and the pod's `Rule 0 check` row, and no bubble or sheet. A screen frame missing what it
+  must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
+  the top and its header scrolled away; the tour row on `account`; the Rule 0 row on `friends`) is refused
+  (`REQUIRED_ON_FRAME`); the tool crops and tour pictures are not checked. It refuses any database but a scratch branch (`assertScratchBranch`)
   before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
   upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync
   choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
