@@ -217,7 +217,11 @@ try {
     grants: (await sql`select row_to_json(t)::text as j from credit_grants t where user_id = ${userId}`).map((r) => r.j),
     overrides: (await sql`select row_to_json(t)::text as j from flag_overrides t where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`).map((r) => r.j),
     customer: (await sql`select row_to_json(t)::text as j from stripe_customers t where user_id = ${userId}`)[0]?.j ?? null,
+    subscriptions: (await sql`select row_to_json(t)::text as j from subscriptions t where user_id = ${userId}`).map((r) => r.j),
   };
+  // The account's own subscriptions are parked for the run (a live plan would keep /credits reachable through `planHeld`
+  // and fake the no-plan cases), and put back in the `finally`.
+  await sql`delete from subscriptions where user_id = ${userId}`;
   for (const switchOn of [true, false]) {
     console.log(`\n── switch ${switchOn ? "on" : "off"}`);
     await setSwitch(userId, switchOn);
@@ -259,6 +263,7 @@ try {
     for (const o of saved.overrides) await sql`insert into flag_overrides select * from json_populate_record(null::flag_overrides, ${o}::json)`;
     await sql`delete from stripe_customers where user_id = ${userId}`;
     if (saved.customer) await sql`insert into stripe_customers select * from json_populate_record(null::stripe_customers, ${saved.customer}::json)`;
+    for (const s of saved.subscriptions) await sql`insert into subscriptions select * from json_populate_record(null::subscriptions, ${s}::json) on conflict (stripe_subscription_id) do nothing`;
   }
 }
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);

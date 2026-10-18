@@ -209,7 +209,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
       {cancelling ? <p className={`${SAYS} ${state === "ending" ? warnText : "text-[color:var(--fg-body)]"}`}>{state === "ending" ? p.soon(credits, plan.days ?? 0, on) : p.endedSays(credits, on)}</p> : null}
 
       {presses.subscribe ? (
-        <div className="mt-auto flex flex-col gap-[8px] md:flex-row md:items-center md:gap-[16px]">
+        <div className="mt-auto flex flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:gap-[16px]">
           <button type="button" onClick={() => void subscribe()} disabled={busy !== null} aria-busy={busy === "subscribe" || undefined} className={FILLED}>{p.subscribe(price)}</button>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.via}</span>
         </div>
