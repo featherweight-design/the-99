@@ -231,10 +231,9 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // read rather than on the user: a second read of the collection could see a card this one does
   // not, or miss one it has, and that card would ship silent and be cached so. A failure is
   // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
-  const prices = startPriceRead(
-    aggregated,
-    readPrices ?? ((ids) => perfRead("browse.prices", async () => (await import("../cards/prices")).loadOwnedPrintingPrices(ids))),
-  );
+  // Resolved here, outside any catch: an import that fails throws out of this function as it always did.
+  const loadPrices = readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices;
+  const prices = startPriceRead(aggregated, (ids) => perfRead("browse.prices", () => loadPrices(ids)));
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
