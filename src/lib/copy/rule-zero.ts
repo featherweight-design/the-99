@@ -188,6 +188,12 @@ export const ruleZeroCopy = {
     sheetSub: "Nearest the table first. Everyone sees the change on their next look.",
     seatedTag: "seated",
     notRead: (n: number) => `${n} of 100 · not read yet`,
+    // Not drawn: a deck of 100 we have not read yet (S3 draws only a short one).
+    notReadYet: "not read yet",
+    loadFailed: "We couldn’t load your decks. Try again.", // Change deck’s list did not arrive
+    nearestFirst: "nearest first", // W3's panel head, right
+    decksList: "Your decks", // the list's name
+    close: "Close",
   },
 
   // Logging and expiry (L1 to L4)

@@ -16,6 +16,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { socialCopy } from "../../lib/copy/social";
 import { changedLine } from "../../lib/rule-zero/live";
+import { ChangeDeck } from "./change-deck";
 import { SeatOffer } from "./swap";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
@@ -30,7 +31,17 @@ const copy = ruleZeroCopy.seat;
 /** The name a seat prints: the game log's `You` for the viewer, else the display name as seated. */
 export const seatName = (d: SeatDraw): string => (d.seat.you ? gameSeatsCopy.seats.you : d.seat.displayName);
 
-export function TableSeat({ draw, now }: { draw: SeatDraw; /** The clock the changed line counts from. */ now: Date }) {
+export function TableSeat({
+  draw,
+  now,
+  tableId,
+}: {
+  draw: SeatDraw;
+  /** The clock the changed line counts from. */
+  now: Date;
+  /** The table, for the viewer's own seat's `Change deck` (PR 7b). */
+  tableId?: string;
+}) {
   const { seat, state, chip, read } = draw;
   const deck = seat.deck;
   const kind = read?.flag ? flagKind(read.flag) : null;
@@ -167,10 +178,12 @@ export function TableSeat({ draw, now }: { draw: SeatDraw; /** The clock the cha
       <SeatMore draw={draw} why={why} />
       {/* `Closer to the table` (PR 7): only on the viewer's own flagged seat, under its reason. */}
       {draw.seat.you && draw.read?.flag ? <SeatOffer /> : null}
-      {draw.changed ? (
-        // The phone's seat line (S5: `.ln`) and the desktop row's control strip under the text column (W5: `.ctl`).
-        <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px] xl:-mt-[8px] xl:gap-[10px] xl:pb-[8px] xl:pl-[162px] xl:pr-[16px]">
-          <Changed text={changedLine(draw.changed, now)} />
+      {draw.changed || draw.seat.you ? (
+        // The phone's seat line (S5: `.ln`) and the desktop row's control strip under the text column (W5: `.ctl`). The
+        // viewer's own seat always carries `Change deck` at its right (S1, W1), after `changed just now` when it moved.
+        <div className="relative -mt-[6px] flex items-center justify-between gap-[8px] px-[12px] pb-[12px] xl:-mt-[8px] xl:justify-end xl:gap-[10px] xl:pb-[8px] xl:pl-[162px] xl:pr-[16px]">
+          {draw.changed ? <span className="xl:mr-auto"><Changed text={changedLine(draw.changed, now)} /></span> : <span />}
+          {draw.seat.you && tableId ? <ChangeDeck tableId={tableId} /> : null}
         </div>
       ) : null}
     </article>
@@ -229,8 +242,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
       </div>
     );
   }
-  // The viewer's own waiting seat says only `Picking your deck` on its deck line: a sentence telling them to pick
-  // would have no control under it until Change deck arrives (PR 7).
+  // The viewer's own waiting seat says only `Picking your deck` on its deck line: `Change deck` under it is the control.
   if (state.kind === "waiting" && !seat.you) {
     return (
       <div data-testid="seat-wait" className={WAIT}>

@@ -70,7 +70,7 @@ export function TableBody({
           </div>
           <div className="flex flex-col gap-[10px] xl:col-start-1 xl:row-start-1 xl:row-end-3" data-testid="table-seats">
             {draw.seats.map((s) => (
-              <TableSeat key={s.key} draw={s} now={now} />
+              <TableSeat key={s.key} draw={s} now={now} tableId={view.tableId} />
             ))}
           </div>
           {log ? (
