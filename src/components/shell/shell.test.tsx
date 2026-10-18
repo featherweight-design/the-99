@@ -154,6 +154,9 @@ describe("Shell and the Fan Content notice", () => {
     expect(screen.getByText("page").compareDocumentPosition(notices[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(notices[0].querySelector("div")!.className).toContain("text-center");
     expect(document.querySelector("main")).toBeNull();
+    // The page sits in a full-viewport column so a short one (the error fallback) still pushes the notice below the fold.
+    expect(screen.getByText("page").parentElement!.className).toContain("min-h-dvh");
+    expect(screen.getByText("page").parentElement!.contains(notices[0])).toBe(false);
   });
 });
 
