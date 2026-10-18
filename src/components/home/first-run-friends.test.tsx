@@ -143,6 +143,20 @@ describe("FirstRunFriendsRow", () => {
     fireEvent.click(screen.getByRole("button", { name: "close" }));
     expect(document.activeElement).toBe(show);
   });
+
+  it("keeps focus on the row when it changes element under it: accepted, the dialog closed onto Show, then the friend lands", () => {
+    const { rerender } = render(<FirstRunFriendsRow {...props({ links: [link(inDays(6))] })} />);
+    const show = screen.getByRole("button", { name: c.rowAria("6 days left") });
+    fireEvent.click(show);
+    const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
+    act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
+    // The dialog's cleanup hands focus back to Show, which is still C2's press.
+    show.focus();
+    expect(document.activeElement).toBe(show);
+    // The refresh lands the friend: C2's button becomes C3's link, and focus moves with the row.
+    rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: c.doneAria(socialCopy.page.accepted("Colin")) }));
+  });
 });
 
 describe("FirstRunChecklist · the Friends row", () => {

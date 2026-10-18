@@ -17,6 +17,7 @@
 // C2 to C3 as it is accepted) returns focus to the row as it now stands, never to a detached press.
 
 import Link from "next/link";
+import { useCallback, useRef } from "react";
 import { socialCopy } from "../../lib/copy/social";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { underADay } from "../../lib/social/when";
@@ -60,6 +61,25 @@ const CHEV = "text-[17px] leading-none text-[color:var(--fg-faint)]";
 
 export function FirstRunFriendsRow({ friends, links, now, invites = null }: FirstRunFriendsProps) {
   const { nowDate, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
+  // The row is a different element in each state, so a state change while it holds focus (a dialog closed onto C2's
+  // Show, then the refresh lands the friend and draws C3's link) would drop focus to the body. The leaving element
+  // notes that it held focus as its ref is cleaned up, while it is still in the document, and the arriving one takes it.
+  const heldFocus = useRef(false);
+  const rowRef = useCallback(
+    (el: HTMLElement | null) => {
+      if (!el) return;
+      returnRef(el);
+      if (heldFocus.current) {
+        heldFocus.current = false;
+        el.focus();
+      }
+      return () => {
+        if (document.activeElement === el) heldFocus.current = true;
+        returnRef(null);
+      };
+    },
+    [returnRef],
+  );
   const state = friendsRowState(friends.length, open.length);
 
   let row;
@@ -67,7 +87,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
     const first = friends[0];
     const line = friends.length === 1 ? socialCopy.page.accepted(first.displayName) : c.doneMany(friends.length);
     row = (
-      <Link ref={returnRef} href="/friends" data-friends-row="done" aria-label={c.doneAria(line)} className={`${BOX} border-[color:var(--border)]`}>
+      <Link ref={rowRef} href="/friends" data-friends-row="done" aria-label={c.doneAria(line)} className={`${BOX} border-[color:var(--border)]`}>
         <PendingReporter href="/friends" />
         <span
           aria-hidden
@@ -89,7 +109,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
     const left = socialCopy.invites.left(msLeft);
     row = (
       <button
-        ref={returnRef}
+        ref={rowRef}
         type="button"
         data-friends-row="link"
         onClick={() => showLink(soonest)}
@@ -115,7 +135,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
   } else {
     row = (
       <button
-        ref={returnRef}
+        ref={rowRef}
         type="button"
         data-friends-row="todo"
         onClick={add}
