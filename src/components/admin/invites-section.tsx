@@ -126,7 +126,18 @@ function WhoLine({ face, children, action }: { face: Face; children: ReactNode; 
 const strong = (text: string) => <b className="font-medium text-[color:var(--fg)]">{text}</b>;
 
 /** M2: one account's Invites section. Keyed by its caller on the saved left, so a save starts it afresh. */
-export function AccountInvitesSection({ accountId, name, invites }: { accountId: string; name: string; invites: AccountInvites }) {
+export function AccountInvitesSection({
+  accountId,
+  name,
+  shownName = null,
+  invites,
+}: {
+  accountId: string;
+  name: string;
+  /** The full name while the account is revealed: the field help names it then, and only then (B2). */
+  shownName?: string | null;
+  invites: AccountInvites;
+}) {
   const router = useRouter();
   const [draft, setDraftText] = useState(String(invites.left));
   const [inFlight, setInFlight] = useState(false);
@@ -170,7 +181,7 @@ export function AccountInvitesSection({ accountId, name, invites }: { accountId:
     <>
       <SectionHead title={inv.section} id={headId} />
       <section data-testid="account-invites" aria-labelledby={headId} className={CARD}>
-        <NumberField label={inv.field} help={inv.fieldHelp(name)} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} edited={draft !== String(invites.left)} />
+        <NumberField label={inv.field} help={inv.fieldHelp(shownName ?? name)} value={draft} onChange={(v) => { setDraftText(v); setFailure(null); }} invalid={state.kind === "invalid"} disabled={inFlight} edited={draft !== String(invites.left)} />
         {state.kind === "invalid" && (
           <p role="alert" className={ERROR}>
             {inv.invalid}

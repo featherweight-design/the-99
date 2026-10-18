@@ -286,7 +286,7 @@ export const adminCopy = {
   // the Switches list says when the account list is the stored ids (STATES A3).
   accounts: {
     title: "Accounts",
-    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails are masked.`,
+    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails are masked; Show reveals one account and logs it.`,
     search: FIND_BY_NAME,
     noMatch: (q: string) => `No account matches ${q}.`,
     clerkDown: "Names didn’t load from Clerk.",
@@ -606,6 +606,18 @@ export const adminMaskCopy = {
   /** D1: an account Clerk holds no name or username for. */
   noName: (idTail: string) => `Account ·${idTail}`,
   findByName: FIND_BY_NAME,
+  /** Show and its reveal (D5 to D8, D13), from the handoff's `reveal` block. */
+  reveal: {
+    show: "Show",
+    hide: "Hide",
+    /** D6: under a revealed account. */
+    shown: (time: string) => `Shown and logged · hides at ${time} UTC`,
+    /** D13, the toast when a Show fails. */
+    failed: (name: string) => `Couldn’t show ${endOn(name)} Nothing was shown.`,
+    tryAgain: "Try again",
+    /** D8: the account page's History line. */
+    history: (who: string, name: string) => `${who} showed ${name}’s name and email`,
+  },
 } as const;
 
 /**

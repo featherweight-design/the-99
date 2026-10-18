@@ -11,7 +11,11 @@ let path = "/admin/accounts";
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ usePathname: () => path, useRouter: () => ({ refresh }) }));
 const move = vi.fn<(userId: string, groupId: string | null, confirmed?: number) => Promise<MoveResult>>();
-vi.mock("../../app/admin/accounts/actions", () => ({ moveAccountToGroup: (u: string, g: string | null, c?: number) => move(u, g, c) }));
+const revealFn = vi.fn<(id: string) => Promise<import("../../lib/admin/reveal").RevealResult>>();
+vi.mock("../../app/admin/accounts/actions", () => ({
+  moveAccountToGroup: (u: string, g: string | null, c?: number) => move(u, g, c),
+  revealAccount: (id: string) => revealFn(id),
+}));
 const setOverride = vi.fn();
 const clearOverride = vi.fn();
 vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: unknown) => setOverride(i), clearSwitchOverride: (i: unknown) => clearOverride(i) }));
@@ -20,6 +24,8 @@ const { AccountsList } = await import("./accounts-list");
 const { AccountPageView } = await import("./account-page");
 const { AdminHead } = await import("./admin-head");
 
+/** A reveal's hide time as the server stamps it: five minutes on. */
+const SOON = new Date(Date.now() + 5 * 60_000);
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
@@ -33,6 +39,7 @@ const PAGE: AccountPage = {
   name: "Mara Q.",
   email: "m•••@e•••.com",
   initials: "MQ",
+  canShow: true,
   role: "5 credits a day.",
   tiles: [
     { key: "credits", label: "Credits now", figure: "0 of 5 left", sub: "reset at 9:05 PM UTC" },
@@ -63,14 +70,15 @@ const PAGE: AccountPage = {
 };
 
 beforeEach(() => {
+  revealFn.mockReset();
   move.mockReset();
   refresh.mockReset();
 });
 
 describe("AccountsList (A1 to A3)", () => {
   it("draws a row per account linking to its page, with group, credits and spend, under the tab's sub", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
-    expect(screen.getByText("3 accounts on production. Names and emails are masked.")).toBeInTheDocument();
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
+    expect(screen.getByText("3 accounts on production. Names and emails are masked; Show reveals one account and logs it.")).toBeInTheDocument();
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("href", "/admin/accounts/user_9mara");
@@ -89,7 +97,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   it("draws Invites (with what is waiting) and Invited by (M1), and the same on the phone's meta line", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
     const [hugh, mara, theo] = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     // The column cells, each with its sr-only label; a 0 with nothing waiting and a founder are faint.
     expect(within(hugh).getByTestId("account-invites-cell")).toHaveTextContent(/^Invites 0$/);
@@ -107,7 +115,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   it("searches the masked name through the shared search field, and says when nothing matches", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "ara q" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
@@ -117,7 +125,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   it("never matches an email or a Clerk id, which the client does not hold whole", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     for (const q of ["mara@", "example.com", "user_9", "9mara"]) {
       fireEvent.change(search, { target: { value: q } });
@@ -127,7 +135,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("marks the owner and an account with no name with the diamond, and tags the owner (D4)", () => {
     const bare: AccountRow = { ...ROWS[2], id: "user_7bare", name: "Account ·bare", initials: null };
-    render(<AccountsList rows={[...ROWS, bare]} clerk="ok" month="October" env="staging" />);
+    render(<AccountsList viewerId="user_2hugh" rows={[...ROWS, bare]} clerk="ok" month="October" env="staging" />);
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     const marked = (row: HTMLElement) => row.querySelector('[data-mark="diamond"]') !== null;
     expect(rows.map(marked)).toEqual([true, false, false, true]);
@@ -138,7 +146,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
     const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", email: null, owner: false, initials: null, group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
-    render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
+    render(<AccountsList viewerId="user_2hugh" rows={[bare]} clerk="down" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Find an account by name" });
     fireEvent.change(search, { target: { value: "user_7" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
@@ -146,8 +154,49 @@ describe("AccountsList (A1 to A3)", () => {
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
   });
 
+  it("offers Show on every row but the owner's and the viewer's own (A1)", () => {
+    render(<AccountsList viewerId="user_4theo" rows={ROWS} clerk="ok" month="October" env="production" />);
+    const [hugh, mara, theo] = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
+    expect(within(hugh).queryByRole("button", { name: /Show/ })).toBeNull();
+    expect(within(theo).queryByRole("button", { name: /Show/ })).toBeNull();
+    const show = within(mara).getByRole("button", { name: /Show/ });
+    // Show sits beside the link, never inside it (D5).
+    expect(show.closest("a")).toBeNull();
+    expect(show).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("reveals one row on Show, with its id and the hide time, and masks it again on Hide (A2, D6)", async () => {
+    revealFn.mockResolvedValue({ ok: true, id: "user_9mara", name: "Mara Quinn", email: "mara@example.com", hidesAt: SOON.toISOString() });
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
+    const mara = () => within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
+    await act(async () => fireEvent.click(within(mara()).getByRole("button", { name: /Show/ })));
+    expect(revealFn).toHaveBeenCalledWith("user_9mara");
+    expect(mara()).toHaveAttribute("data-revealed");
+    expect(mara()).toHaveTextContent("Mara Quinn");
+    expect(mara()).toHaveTextContent("mara@example.com");
+    expect(mara()).toHaveTextContent("user_9mara");
+    expect(mara()).toHaveTextContent(`Shown and logged · hides at ${String(SOON.getUTCHours()).padStart(2, "0")}:${String(SOON.getUTCMinutes()).padStart(2, "0")} UTC`);
+    // Only the row asked for: Theo stays masked.
+    expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")[2]).not.toHaveAttribute("data-revealed");
+    fireEvent.click(within(mara()).getByRole("button", { name: /Hide/ }));
+    expect(mara()).not.toHaveAttribute("data-revealed");
+    expect(mara()).not.toHaveTextContent("mara@example.com");
+    expect(mara()).toHaveTextContent("m•••@e•••.com");
+  });
+
+  it("says a failed Show showed nothing, by the masked name, and Try again asks again (D13)", async () => {
+    revealFn.mockResolvedValue({ ok: false, error: "failed" });
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
+    const mara = within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
+    await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
+    expect(screen.getByRole("alert")).toHaveTextContent(/^Couldn’t show Mara Q\. Nothing was shown\./);
+    expect(mara).not.toHaveAttribute("data-revealed");
+    await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" })));
+    expect(revealFn).toHaveBeenCalledTimes(2);
+  });
+
   it("says the names did not load when Clerk is down", () => {
-    render(<AccountsList rows={ROWS} clerk="down" month="October" env="staging" />);
+    render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="down" month="October" env="staging" />);
     expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
   });
 });
@@ -184,6 +233,33 @@ describe("AccountPageView (A4 to A7)", () => {
     expect(credits).toHaveTextContent("0 of 5 left");
     expect(credits).toHaveTextContent("reset at 9:05 PM UTC");
     expect(within(screen.getByTestId("account-group")).getByRole("link", { name: "friends" })).toHaveAttribute("href", `/admin/groups/${F}`);
+  });
+
+  it("reveals the head on Show: full name, email, the id under it and the hide time; Hide masks it again (B2)", async () => {
+    revealFn.mockResolvedValue({ ok: true, id: "user_9mara", name: "Mara Quinn", email: "mara@example.com", hidesAt: SOON.toISOString() });
+    render(<AccountPageView page={PAGE} />);
+    // One Show for each width (the head's right from md, under the head on the phone), the same control.
+    const shows = screen.getAllByRole("button", { name: "Show Mara Q." });
+    expect(shows).toHaveLength(2);
+    await act(async () => fireEvent.click(shows[0]));
+    expect(revealFn).toHaveBeenCalledWith("user_9mara");
+    const head = screen.getByTestId("account-head");
+    expect(head).toHaveAttribute("data-revealed");
+    expect(screen.getByRole("heading", { level: 1, name: "Mara Quinn" })).toBeInTheDocument();
+    expect(head).toHaveTextContent("mara@example.com");
+    expect(head).toHaveTextContent("user_9mara");
+    expect(head).toHaveTextContent(`Shown and logged · hides at ${String(SOON.getUTCHours()).padStart(2, "0")}:${String(SOON.getUTCMinutes()).padStart(2, "0")} UTC`);
+    // The invites field help names the full name while revealed, and only then.
+    expect(screen.getByTestId("account-invites")).toHaveTextContent("Mara Quinn");
+    fireEvent.click(screen.getAllByRole("button", { name: "Hide Mara Q." })[1]);
+    expect(head).not.toHaveAttribute("data-revealed");
+    expect(head).not.toHaveTextContent("mara@example.com");
+    expect(screen.getByTestId("account-invites")).not.toHaveTextContent("Mara Quinn");
+  });
+
+  it("draws no Show on the owner's or the viewer's own page", () => {
+    render(<AccountPageView page={{ ...PAGE, canShow: false }} />);
+    expect(screen.queryByRole("button", { name: /^Show / })).toBeNull();
   });
 
   it("draws the Invites tile fifth and the Invites section after the tiles, before the group (M2)", () => {

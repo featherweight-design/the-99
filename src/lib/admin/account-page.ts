@@ -118,6 +118,8 @@ export type AccountPage = {
   name: string;
   email: string | null;
   initials: string | null;
+  /** Show is drawn for every account but the owner and the viewer, neither masked from its reader (D5). */
+  canShow: boolean;
   role: string;
   tiles: Tile[];
   group: { id: string; name: string } | null;
@@ -195,6 +197,7 @@ export async function loadAccountPage(userId: string, viewerId: string, now: Dat
     name: accountName(account),
     email: account.email,
     initials: owner ? null : initials(account),
+    canShow: !owner && userId !== viewerId,
     role: roleLine(owner, allowance.limit, shareMicro),
     tiles: accountTiles({
       credits: allowance,
