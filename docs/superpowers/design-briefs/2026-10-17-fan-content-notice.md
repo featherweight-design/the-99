@@ -59,7 +59,10 @@ the same, nothing left out by omission (L1), and as quietly as a footer can be: 
   Putting it at the foot of the viewport on a short page would mean mounting it inside the shell's column and again in
   each bare branch. Design should say which it wants (Open 1); the root mount is the simpler and is the default.
 - **It must never sit under the phone tab bar** or collide with a bottom sheet, the card search sheet or the About sheet,
-  which already reserve `--tabbar-h` (and `--about-sheet-h`, while that sheet exists). The footer clears them by its own bottom padding; it is
+  which already reserve `--tabbar-h` (and `--about-sheet-h`, while that sheet exists). The footer clears them by its own bottom padding, and
+  because `--tabbar-h` is 74px globally but set to 88px only on the shell's own wrapper while the collection is locked, a
+  sibling footer cannot read the locked figure by itself: A1 has to hand it the resolved height (or mount the footer
+  inside that wrapper). It is
   never `position: fixed`.
 - **Every layout branch renders it** (A1 adds a test for that): the shell, the bare signed-out branch, the offline
   page. Design's board should show each branch so the test has a picture to match.
@@ -76,7 +79,9 @@ the same, nothing left out by omission (L1), and as quietly as a footer can be: 
    thing to get right: five or six lines at 11px is acceptable, a wall is not. Say whether the two passages run together or break.
 3. **The "Fan Content Policy" words** draw as a link (decided, below): the treatment that stays quiet and still reads as one.
 4. **The signed-out shells:** the landing, `/join`, `/sign-up`, the friend card and `/offline` each have their own
-   composition. One footer treatment for all, or a tuned margin per shell, and how it sits under Clerk's sign-up card.
+   composition. One footer treatment for all, or a tuned margin per shell, and how it sits under the page's own content. `/sign-up` is the app's invite-only explainer with a Sign in button, not
+   a Clerk card: account creation and sign-in happen on Clerk's hosted pages, outside the app's layout, where this footer
+   cannot reach and is not asked to.
 5. **`/privacy` and `/terms`.** One prose-page layout for both, signed in or out: title, a "Last updated" line, section
    headings, the measure of the text at 390 and 1300, a way to jump to a section if the page is long (plan B1 expects
    receipts, refunds, the admin PII line, data deletion, the AI vendor, the 18-or-older line), a way back to the app
