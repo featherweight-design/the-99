@@ -46,14 +46,24 @@ describe("FanContentNotice", () => {
     expect(document.querySelector("footer div")!.className).not.toContain("text-center");
   });
 
-  it("is never fixed or sticky and carries no state", () => {
+  it("renders no element out of flow: no class on any node positions it fixed, sticky or absolute", () => {
+    render(<FanContentNotice />);
+    const classes = [document.querySelector("footer")!, ...document.querySelectorAll("footer *")].map((n) => n.getAttribute("class") ?? "").join(" ");
+    expect(classes).not.toMatch(/(^|\s)(?:[\w:-]+:)?(fixed|sticky|absolute)(\s|$)/);
+  });
+
+  it("carries no state or request API in its source", () => {
     expect(SOURCE).not.toMatch(/\b(fixed|sticky)\b/);
     expect(SOURCE).not.toMatch(/useState|useEffect|"use client"|onClick|cookies\(|headers\(|auth\(/);
   });
 
   it("paints its text in --fg-muted and names no other color token for ink beyond the link's states", () => {
     const tokens = new Set([...SOURCE.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((m) => m[1]));
-    expect([...tokens].sort()).toEqual(["accent", "border", "fg", "fg-faint", "fg-muted"]);
+    // Never a token beyond the notice's ink and hairline and the link's own states; an addition is a deliberate diff here.
+    const allowed = new Set(["accent", "border", "fg", "fg-faint", "fg-muted"]);
+    expect([...tokens].filter((t) => !allowed.has(t))).toEqual([]);
+    expect(tokens.has("fg-muted")).toBe(true);
+    expect(tokens.has("border")).toBe(true);
     expect(SOURCE).toContain("text-[color:var(--fg-muted)]");
     // The ink of the text is not --fg-faint or --accent (the underline's --fg-faint is `decoration-`, the ring's --accent `outline-`).
     expect(SOURCE).not.toMatch(/(?<![\w-])text-\[color:var\(--(fg-faint|accent)\)\]/);

@@ -10,7 +10,7 @@
 //   5  the phone shows it in 6 lines or fewer (3 + 3 in Plex Sans at 390; a wall is the failure the brief named);
 //   6  the page has no sideways scroll.
 // With E2E_AUDIT_USER_EMAIL set it also signs in as that (read-only) audit account on Clerk's DEVELOPMENT instance and checks
-// the signed-in shell on `/`, `/decks` and `/collection`: the notice is one footer, a SIBLING after <main>, starts at or
+// the signed-in shell on `/`, `/decks`, `/collection` and the 404 (a short page, so the one that proves the fold): the notice is one footer, a SIBLING after <main>, starts at or
 // below the tab bar's top edge at rest on the phone (the fold moves with the 74px/88px bar), and scrolled to the end its last
 // line clears the bar; on desktop it sits in the column beside the rail, never under it.
 // Read-only: no write. Point it at a server serving THIS worktree (read the pid's cwd first).
@@ -21,6 +21,8 @@ import { chromium } from "playwright";
 import "./lib/env.mjs";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// (A signed-out request to an unknown path is sent to sign in by the proxy, so the signed-out 404 is not reachable to probe; the
+// signed-in 404 below is a SHORT page, which is what proves the fold.)
 const ROUTES = ["/", "/sign-up", "/join/probe-token", "/friend/probe-token", "/offline"];
 const WIDTHS = [
   { label: "390", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
@@ -63,7 +65,7 @@ try {
       const context = await browser.newContext({ viewport: w.viewport, isMobile: w.isMobile, hasTouch: w.hasTouch });
       const page = await context.newPage();
       await signIn(page, process.env.E2E_AUDIT_USER_EMAIL);
-      for (const route of ["/", "/decks", "/collection"]) {
+      for (const route of ["/", "/decks", "/collection", "/probe-missing"]) {
         const name = `signed in ${route} @${w.label}`;
         await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
         const g = await page.evaluate(() => {
@@ -125,7 +127,7 @@ try {
       report(rest.lastIsNotice, `${name}: last in the document`);
       report(!rest.overflowX, `${name}: no sideways scroll`);
       report(rest.text[0].startsWith("The 99 is unofficial Fan Content") && rest.text[1].startsWith("Card images and mana symbols"), `${name}: the locked passages`);
-      if (w.label === "390") report(rest.lines <= 6 + 1, `${name}: not a wall`, `${rest.lines} lines`);
+      if (w.label === "390") report(rest.lines <= 6, `${name}: not a wall`, `${rest.lines} lines`);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       const end = await page.evaluate(() => {
         const r = document.querySelector("footer[data-fan-content-notice]").getBoundingClientRect();

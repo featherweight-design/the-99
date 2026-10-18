@@ -147,7 +147,7 @@ describe("DecksView", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
-  // The shell reserves exactly `--tabbar-h` under `<main>`, so a list with no
+  // The shell reserves exactly `--tabbar-h` under its main column, so a list with no
   // bottom padding of its own ends flush against the phone's tab bar — the last
   // tile's edge and the bar's edge with nothing between them. Desktop is
   // unaffected: `sm:p-[18px_22px]` pays all four sides there.

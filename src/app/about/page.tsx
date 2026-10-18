@@ -114,7 +114,7 @@ export default async function AboutRoute({
   const written = writtenForYou(credits ? credits.caption : null);
 
   // The boards' `main` (ShowcasePhone, ReferencePhone `24px 0 104px`; the Desk boards `40px 56px 64px`). The phone's
-  // 104px includes the 74px tab bar the shell already reserves (`--tabbar-h`), so 30px is the page's own.
+  // 104px includes the 74px tab bar the shell's main column already reserves (`--tabbar-h`), so 30px is the page's own.
   return (
     <div className="flex flex-col pb-[30px] pt-[24px] md:px-[56px] md:pb-[64px] md:pt-[40px]">
       <AboutTabs
