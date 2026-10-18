@@ -8,7 +8,7 @@
 // until it closes. Opening takes the visit (no moment arrives the same visit) and spends the tour on the server, so a
 // reload, a closed tab or Back never shows it again (R3 gap 4). ✕, Esc, Finish and `Read the note ›` end it.
 //
-// The scrim is one SVG mask, not a box shadow (plan decision 5), so R3·3's second light on step 6 is one more hole.
+// The scrim is one SVG mask, not a box shadow (plan decision 5): a hole per lit control. Every step lights one.
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
