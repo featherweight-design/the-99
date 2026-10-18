@@ -3,6 +3,13 @@ branch: main
 path: src
 
 ## Last sync
+date: 2026-10-18T06:10:00Z
+branch read this turn: main c81e35e (`app/globals.css` six theme blocks; `lib/theme/color.ts`, `contract.test.ts`, `credit-chip-contrast.test.ts`, `parse-css.ts`, `themes.ts`; `components/shell/credit-chip.tsx`; a sample of `--fg-faint` and `--accent` text sites; handoffs themes, theme_replacement)
+
+### Updated in this project
+- **Text inks addendum R1, for Hugh's audit.** `design_handoff_the99_themes/addendum-text-inks/`: README (decisions 1–5), TOKEN-TABLE.md, tokens.json, `canvas/` export (Ledger, Oil Haze accent options, one board per theme with each changed ink on all six grounds). Design canvas: "The 99 · Text inks addendum R1". Measurement scripts (repo's own `contrast()`) in `scratch/text-inks-measure/`. Values trial-run against `src/lib/theme` + `src/components/shell`: 3,604 tests pass. No PR until Hugh approves.
+
+### Earlier entry
 date: 2026-10-18T04:45:00Z
 branch read this turn: main 2b0b760 (brief `2026-10-17-fan-content-notice.md`, PR #2030; `app/layout.tsx`, `components/shell/shell.tsx`, `shell/nav.tsx` TabBar, TabBracket, NavRail, MobileHeader; `app/offline/page.tsx`, `app/page.tsx`, `app/sign-up/page.tsx`, `app/join/[token]/page.tsx`, `app/friend/[token]/page.tsx`, `components/join/newcomer-column.tsx`, `social/friend-card.tsx`, `social/friend-landing.tsx`, `pwa/try-again.tsx`, `copy/pwa.ts`, `copy/refresh.ts`, `theme/themes.ts`, `app/globals.css` six theme blocks; handoffs buying_credits, linkout)
 
