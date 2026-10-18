@@ -12,7 +12,7 @@
 // The caller draws its own presses and puts `overlays` (the chooser, the dialog and the toast) somewhere in its tree.
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createInviteAction } from "../../app/friends/actions";
 import { socialCopy } from "../../lib/copy/social";
 import { invitePath, MAX_OPEN_INVITES } from "../../lib/social/client-rules";
@@ -57,8 +57,9 @@ export type AddFriend = {
   add: () => void;
   /** Show: the dialog on a link already open. */
   showLink: (link: FriendLink) => void;
-  /** The Add a friend press, where focus returns when the dialog closes. */
-  addRef: RefObject<HTMLButtonElement | null>;
+  /** A callback ref for the element focus returns to when the dialog closes: the Add a friend press, or whichever of the
+   *  caller's controls stands in for it now (the checklist row is a different element in each state). */
+  returnRef: (el: HTMLElement | null) => void;
   /** The chooser, the dialog and the toast, drawn by the caller. */
   overlays: ReactNode;
 };
@@ -131,7 +132,10 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
     setToast(null);
     setAdding("choose");
   }
-  const addRef = useRef<HTMLButtonElement | null>(null);
+  const addRef = useRef<HTMLElement | null>(null);
+  const returnRef = useCallback((el: HTMLElement | null) => {
+    addRef.current = el;
+  }, []);
   // Where focus goes when the dialog closes: the Show press that opened it while it still stands, else Add a friend.
   const showOpener = useRef<HTMLElement | null>(null);
   const [dialogReturn] = useState(() => ({
@@ -244,7 +248,7 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
     making,
     add: invites ? openChooser : () => void makeLink(),
     showLink,
-    addRef,
+    returnRef,
     overlays,
   };
 }

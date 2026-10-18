@@ -4,14 +4,17 @@
 // numbered: a friend is not on the path to a first recommendation, and the row is live while steps 2 and 3 are locked.
 //
 // Its box is the shipped LockedStep's (radius 14, a 56 floor, 14/15 padding on the phone and 15/18 from sm), but live:
-// `--surface-inset` on `--border-strong`, the title in `--fg`. Three states, one press each:
+// `--surface-inset`, on `--border-strong` with the title in `--fg` while not done (C1, C2), and on `--border` with the
+// title in `--fg-body` once done (C3, as the board draws it). Three states, one press each:
 //
 // - C1, not done: a dashed `+` in the numeral's slot; the row opens Add a friend exactly as Home's Friends section does.
 // - C2, a link open: the slot carries the accent diamond, the line reads the link's time left, and the press is Show.
 // - C3, done at one friend: a ✓ in `--success`, the friend's face, and the row opens /friends. It stays.
 //
 // A spent link (expired or revoked) is not open, so the row is back at C1. The press, the dialog, the chooser, the
-// invite watch and the toast are Home's Friends section's own (`useAddFriend`).
+// invite watch and the toast are Home's Friends section's own (`useAddFriend`). The row is a different element in each
+// state, so its `returnRef` moves with it: a dialog closed after the row changed state (C1 to C2 as the made link lands,
+// C2 to C3 as it is accepted) returns focus to the row as it now stands, never to a detached press.
 
 import Link from "next/link";
 import { socialCopy } from "../../lib/copy/social";
@@ -56,7 +59,7 @@ const TRAIL = "flex flex-none items-center gap-[10px] text-[12.5px] text-[color:
 const CHEV = "text-[17px] leading-none text-[color:var(--fg-faint)]";
 
 export function FirstRunFriendsRow({ friends, links, now, invites = null }: FirstRunFriendsProps) {
-  const { nowDate, open, soonest, msLeft, making, add, showLink, addRef, overlays } = useAddFriend({ friends, links, now, invites });
+  const { nowDate, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
   const state = friendsRowState(friends.length, open.length);
 
   let row;
@@ -64,7 +67,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
     const first = friends[0];
     const line = friends.length === 1 ? socialCopy.page.accepted(first.displayName) : c.doneMany(friends.length);
     row = (
-      <Link href="/friends" data-friends-row="done" aria-label={c.doneAria(line)} className={`${BOX} border-[color:var(--border)]`}>
+      <Link ref={returnRef} href="/friends" data-friends-row="done" aria-label={c.doneAria(line)} className={`${BOX} border-[color:var(--border)]`}>
         <PendingReporter href="/friends" />
         <span
           aria-hidden
@@ -86,6 +89,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
     const left = socialCopy.invites.left(msLeft);
     row = (
       <button
+        ref={returnRef}
         type="button"
         data-friends-row="link"
         onClick={() => showLink(soonest)}
@@ -111,7 +115,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
   } else {
     row = (
       <button
-        ref={addRef}
+        ref={returnRef}
         type="button"
         data-friends-row="todo"
         onClick={add}

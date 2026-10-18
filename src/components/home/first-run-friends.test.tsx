@@ -8,9 +8,10 @@ vi.mock("../social/invite-sheet", () => ({
   InviteSheet: ({ screen }: { screen: string }) => <div role="dialog" aria-label="Invite chooser" data-screen={screen} />,
 }));
 vi.mock("../social/add-friend-dialog", () => ({
-  AddFriendDialog: ({ url, onClose }: { url: string; onClose: () => void }) => (
+  // Closing hands focus back through `returnFocusRef`, as the real dialog's `useDialogA11y` does.
+  AddFriendDialog: ({ url, onClose, returnFocusRef }: { url: string; onClose: () => void; returnFocusRef?: { current: HTMLElement | null } }) => (
     <div role="dialog" aria-label="Add a friend" data-url={url}>
-      <button type="button" onClick={onClose}>close</button>
+      <button type="button" onClick={() => { onClose(); returnFocusRef?.current?.focus(); }}>close</button>
     </div>
   ),
 }));
@@ -129,6 +130,18 @@ describe("FirstRunFriendsRow", () => {
     rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
     expect(screen.getByRole("link", { name: c.doneAria(socialCopy.page.accepted("Colin")) })).toBeTruthy();
     expect(screen.getAllByText(socialCopy.page.accepted("Colin")).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("a dialog closed after the row changed state returns focus to the row as it now stands", async () => {
+    actions.createInviteAction.mockResolvedValue({ ok: true, token: "t9", url: "https://x/friend/t9", expiresAt: inDays(7) });
+    const { rerender } = render(<FirstRunFriendsRow {...props()} />);
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${c.title}`) }));
+    await screen.findByRole("dialog", { name: "Add a friend" });
+    // The made link lands while its dialog is open: the C1 press is gone, the row is C2's Show.
+    rerender(<FirstRunFriendsRow {...props({ links: [link(inDays(7), "t9")] })} />);
+    const show = screen.getByRole("button", { name: c.rowAria("7 days left") });
+    fireEvent.click(screen.getByRole("button", { name: "close" }));
+    expect(document.activeElement).toBe(show);
   });
 });
 

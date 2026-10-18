@@ -52,7 +52,7 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
 export function FriendsSection({ you, friends, links, now, games, friendPages, invites = null, className = "" }: FriendsSectionProps) {
   // Add a friend, Show, the dialog, the chooser, the invite watch, the clock and the toast: shared with the first-run
   // checklist's Friends row (`useAddFriend`).
-  const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, addRef, overlays } = useAddFriend({ friends, links, now, invites });
+  const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
   const plan = seatPlan(friends.length);
 
   const faceHref = (publicId: string) => (friendPages ? `/friends/${publicId}` : "/friends");
@@ -157,7 +157,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, i
       )}
 
       <button
-        ref={addRef}
+        ref={returnRef}
         type="button"
         onClick={add}
         aria-disabled={making || undefined}
