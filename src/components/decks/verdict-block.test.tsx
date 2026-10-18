@@ -158,8 +158,10 @@ describe("the sub-line", () => {
     ).toBeTruthy();
   });
 
-  // `slotDeck` counts COMBOS that loop turns for the extra-turn rule at Core and Upgraded, and cards only at
-  // Exhibition, so the noun follows the bracket the rule ruled out. "1 extra-turn card" at Core was wrong.
+  // The extra-turn rule counts COMBOS that loop turns at Core and Upgraded and cards only at Exhibition, so the
+  // noun follows the bracket the rule ruled out. These two readings are CONSTRUCTED, not slotDeck's: a loop
+  // violates B3 (`violatesB3`), so a real deck with one is `[4,5]` and reads as intent, never as ruled out at
+  // Core or Upgraded. The test pins the component's formatting so a future rule that reports there reads right.
   it("counts extra turns as combos that loop turns at Core, and as cards at Exhibition", () => {
     const base = drawn("2");
     // The sub-line reads the bracket below the deck's own: permits [n + 1] and the violations reported at n.
