@@ -198,7 +198,10 @@ export const ruleZeroCopy = {
 
   // Logging and expiry (L1 to L4)
   log: {
-    from: (pod: string) => `From ${pod}’s table. Seats filled; change anything.`,
+    // The from line bolds `<pod>’s table`: the form fills `from`'s slot with a mark and splits on it (the
+    // `homeBody` pattern), so the bold lands on `fromPod` whatever the pod is called.
+    from: (podTable: string) => `From ${podTable}. Seats filled; change anything.`,
+    fromPod: (pod: string) => `${pod}’s table`,
     fromTable: "from the table", // tag on a seat who isn't your friend
   },
   expired: {

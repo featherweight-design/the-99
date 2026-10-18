@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents } from "./game-opponents";
+import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents, withTableSeats } from "./game-opponents";
 
 const A = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
 const B = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -72,9 +72,71 @@ describe("parseOpponents", () => {
   });
 });
 
+// A seat from a Rule 0 table (plan §PR 8) names its number and nothing else: who sat there is read on the server.
+describe("parseOpponents, table seats", () => {
+  it("reads a seat number, beside a winner mark and the other kinds", () => {
+    expect(parseOpponents([{ tableSeat: 2, won: true }, { tableSeat: 4 }, { label: "Jo" }], loss)).toEqual([
+      { kind: "tableSeat", seat: 2, won: true },
+      { kind: "tableSeat", seat: 4, won: false },
+      { kind: "other", commander: null, partner: null, label: "Jo", won: false },
+    ]);
+  });
+
+  it("refuses anything sent beside the number", () => {
+    for (const extra of [{ friend: A }, { deck: B }, { commander: A }, { partner: A }, { label: "Max" }, { name: "Max" }]) {
+      expect(parseOpponents([{ tableSeat: 2, ...extra }], loss), JSON.stringify(extra)).toBeNull();
+    }
+  });
+
+  it("takes a whole seat from 1 to 8, each once", () => {
+    for (const seat of [0, 9, 1.5, -1, "2", null]) expect(parseOpponents([{ tableSeat: seat === null ? {} : seat }], loss), String(seat)).toBeNull();
+    expect(parseOpponents([{ tableSeat: 1 }], loss)).not.toBeNull();
+    expect(parseOpponents([{ tableSeat: 8 }], { podSize: 8, result: "loss" })).not.toBeNull();
+    expect(parseOpponents([{ tableSeat: 3 }, { tableSeat: 3 }], loss)).toBeNull();
+  });
+
+  it("still marks one winner, and only on a loss", () => {
+    expect(parseOpponents([{ tableSeat: 2, won: true }, { label: "Jo", won: true }], loss)).toBeNull();
+    expect(parseOpponents([{ tableSeat: 2, won: true }], win)).toBeNull();
+  });
+});
+
+describe("withTableSeats", () => {
+  const parsed = parseOpponents([{ label: "Jo" }, { tableSeat: 2, won: true }, { tableSeat: 3 }, { tableSeat: 4 }], { podSize: 5, result: "loss" })!;
+  const table = [
+    { kind: "friend" as const, friend: A, deck: B },
+    { kind: "friend" as const, friend: C, deck: null },
+    { kind: "other" as const, commander: A, partner: null, label: "Max" },
+  ];
+
+  it("puts what the table resolved in each table seat's place, keeping its winner mark", () => {
+    expect(withTableSeats(parsed, table)).toEqual([
+      { kind: "other", commander: null, partner: null, label: "Jo", won: false },
+      { kind: "friendDeck", friend: A, deck: B, won: true },
+      { kind: "friend", friend: C, commander: null, partner: null, won: false },
+      { kind: "other", commander: A, partner: null, label: "Max", won: false },
+    ]);
+  });
+
+  it("refuses when the table refused, or answered for a different number of seats", () => {
+    expect(withTableSeats(parsed, null)).toBeNull();
+    expect(withTableSeats(parsed, table.slice(1))).toBeNull();
+  });
+
+  it("refuses a friend seated twice, once picked and once from the table", () => {
+    const twice = parseOpponents([{ friend: A }, { tableSeat: 2 }], loss)!;
+    expect(withTableSeats(twice, [{ kind: "friend", friend: A, deck: null }])).toBeNull();
+  });
+
+  it("passes a parse with no table seat through", () => {
+    const plain = parseOpponents([{ label: "Jo" }], loss)!;
+    expect(withTableSeats(plain, [])).toEqual(plain);
+  });
+});
+
 describe("opponentRows", () => {
   it("numbers seats from 1 and lays each friend's facts on its own seat", () => {
-    const parsed = parseOpponents([{ label: "Sam", won: true }, { friend: A, deck: B }, { friend: C, commander: A }], loss)!;
+    const parsed = withTableSeats(parseOpponents([{ label: "Sam", won: true }, { friend: A, deck: B }, { friend: C, commander: A }], loss)!, [])!;
     const facts = (id: string, deck: string | null) => ({
       friendUserId: id, friendNameThen: id, friendDeckId: deck, deckNameThen: deck && "Yuriko",
       commanderOracleId: deck && C, partnerOracleId: null,

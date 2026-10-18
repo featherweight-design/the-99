@@ -482,11 +482,34 @@ vi.mock("../../lib/decks/draft-state", () => ({
   loadDraftState: vi.fn(),
 }));
 
+// A Rule 0 table's seats (plan §PR 8). The grant's SQL is `rule-zero-log.test.ts`'s; here the read hands back the rows
+// a granted table holds (none when the grant lapsed), and the real `resolveSeatsFrom` decides what each seat becomes.
+const tableRows = vi.hoisted(() => ({ rows: [] as import("../../lib/social/rule-zero-log").TableSeatRow[] }));
+vi.mock("../../lib/social/rule-zero-log", async (importActual) => {
+  const actual = await importActual<typeof import("../../lib/social/rule-zero-log")>();
+  return {
+    ...actual,
+    resolveTableSeatsIn: vi.fn(async (_tx: unknown, viewerId: string, table: { id: string; seating: string }, seats: number[]) =>
+      actual.resolveSeatsFrom(tableRows.rows, viewerId, table, seats)),
+  };
+});
+// A friend seat's facts, as `resolveFriendSeatsIn` would read them under the friendship's lock.
+vi.mock("../../lib/social/games", async (importActual) => ({
+  ...(await importActual<typeof import("../../lib/social/games")>()),
+  resolveFriendSeatsIn: vi.fn(async (_tx: unknown, _viewer: string, asks: { friend: string; deck: string | null }[]) =>
+    asks.map((a) => ({
+      friendUserId: `account-of-${a.friend}`, friendNameThen: "Friend", friendDeckId: a.deck,
+      deckNameThen: a.deck === null ? null : "Their deck", commanderOracleId: null, partnerOracleId: null,
+    }))),
+}));
+
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
   pullCardFromDeck, restoreAutoCards, setCardProxied, setCardLocked, chooseBulkFill,
 } from "./actions";
 import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
+import type { LogGameInput } from "./actions";
+import type { OpponentInput } from "../../lib/decks/game-opponents";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import {
@@ -1429,6 +1452,84 @@ describe("logGame", () => {
       const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: seats });
       expect(result.ok).toBe(false);
       expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    describe("from a Rule 0 table", () => {
+      const TABLE_ID = "7a0e0000-0000-4000-8000-000000000001";
+      const COLIN = "c01c01c0-0000-4000-8000-000000000001";
+      const COLIN_DECK = "dec0dec0-0000-4000-8000-0000000000c0";
+      const PETER = "9e7e9e7e-0000-4000-8000-000000000001";
+      const GISA = "a0a0a0a0-0000-4000-8000-000000000001";
+      const GISA_PARTNER = "a1a1a1a1-0000-4000-8000-000000000001";
+      const seat = (over: Partial<(typeof tableRows.rows)[number]>) => ({
+        seat: 1, userId: "user_1", displayName: "Hugh", publicId: "p0000000-0000-4000-8000-000000000001", friend: null,
+        deckId: "deck_1", deckName: "Ghalta Stompy", commanderOracleId: null, partnerOracleId: null,
+        commanderName: null, commanderArt: null, podName: "Thursday night", ...over,
+      });
+      let table: { id: string; seating: string };
+      beforeEach(async () => {
+        const { seatingHash } = await vi.importActual<typeof import("../../lib/social/rule-zero-log")>("../../lib/social/rule-zero-log");
+        tableRows.rows = [
+          seat({}),
+          seat({ seat: 2, userId: "user_colin", displayName: "Colin", publicId: COLIN, friend: "user_colin", deckId: COLIN_DECK, deckName: "Zimone Combo" }),
+          seat({ seat: 3, userId: "user_peter", displayName: "Peter", publicId: PETER, friend: "user_peter", deckId: null, deckName: null }),
+          seat({ seat: 4, userId: "user_max", displayName: "Max, who typed a very long display name", publicId: "p0000000-0000-4000-8000-0000000000a0",
+            deckId: "dec0dec0-0000-4000-8000-0000000000a0", deckName: "Gisa Zombies", commanderOracleId: GISA, partnerOracleId: GISA_PARTNER }),
+        ];
+        table = { id: TABLE_ID, seating: seatingHash(TABLE_ID, tableRows.rows) };
+        ENV.SOCIAL_GAMES_ENABLED = "true";
+        ENV.SOCIAL_FRIENDS_ENABLED = "true";
+        ENV.RULE_ZERO_ENABLED = "true";
+      });
+      afterEach(() => { delete ENV.RULE_ZERO_ENABLED; });
+      const log = (opponents: OpponentInput[], over: Partial<LogGameInput> = {}) =>
+        logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents, table, ...over });
+      const seatsWritten = () => stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents")[0]?.values as Record<string, unknown>[] | undefined;
+
+      it("seats a friend with a deck as their deck, read on the server", async () => {
+        expect(await log([{ tableSeat: 2, won: true }])).toEqual({ ok: true });
+        expect(seatsWritten()).toEqual([expect.objectContaining({ seat: 1, friendUserId: `account-of-${COLIN}`, friendDeckId: COLIN_DECK, won: true, label: null })]);
+      });
+
+      it("seats someone who is not a friend by their deck's commanders and their name, cut to 30", async () => {
+        expect(await log([{ tableSeat: 4 }])).toEqual({ ok: true });
+        expect(seatsWritten()).toEqual([expect.objectContaining({
+          friendUserId: null, commanderOracleId: GISA, partnerOracleId: GISA_PARTNER, label: "Max, who typed a very long dis",
+        })]);
+      });
+
+      it("seats a friend still waiting for a deck as the friend alone", async () => {
+        expect(await log([{ tableSeat: 3 }])).toEqual({ ok: true });
+        expect(seatsWritten()).toEqual([expect.objectContaining({ friendUserId: `account-of-${PETER}`, friendDeckId: null, commanderOracleId: null })]);
+      });
+
+      it("refuses, writing nothing, when the grant has lapsed", async () => {
+        tableRows.rows = [];
+        expect((await log([{ tableSeat: 2 }])).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
+      it("refuses, writing nothing, when the table was reseated since the prefill", async () => {
+        tableRows.rows = tableRows.rows.map((r) => (r.seat === 2 ? { ...r, seat: 4 } : r.seat === 4 ? { ...r, seat: 2 } : r));
+        expect((await log([{ tableSeat: 2 }])).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
+      it("refuses a table seat while Rule 0 is off for this reader", async () => {
+        delete ENV.RULE_ZERO_ENABLED;
+        expect((await log([{ tableSeat: 2 }])).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
+      it("refuses a table seat sent without its table", async () => {
+        expect((await log([{ tableSeat: 2 }], { table: undefined })).ok).toBe(false);
+        expect((await log([{ tableSeat: 2 }], { table: { id: TABLE_ID, seating: "not-a-hash" } })).ok).toBe(false);
+        expect(stub.state.insertCalls).toHaveLength(0);
+      });
+
+      it("ignores a table sent with no table seat", async () => {
+        expect(await log([{ label: "Sam" }], { table: { id: "nope", seating: "nope" } })).toEqual({ ok: true });
+      });
     });
 
     it("logs no opponents with the switch off exactly as before", async () => {
