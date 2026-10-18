@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { importsOf, loaderFiles } from "./list-cache-tables.mjs";
 import { ALLOWED_TABLES, codeOnly, judge, publicEntries, publicReadFindings } from "./public-reads.mjs";
 
 const run = (files: Record<string, string>) => judge(Object.keys(files), (f) => files[f]);
@@ -49,6 +50,26 @@ describe("judge fails on what it must", () => {
     expect(why('import { x } from "../../server/x";')).toContain("imports src/server/x, outside src/lib and src/db, which the guard does not read");
     expect(why('import { x } from "../bracket/flags-read";')).toEqual([]);
     expect(why('import { db } from "../../db";')).toEqual([]);
+    expect(why('import { cards } from "../../db/schema";')).toEqual([]);
+    // An aliased import is judged like the relative one, and a db HELPER is not the entry point or the schema.
+    expect(why('import { x } from "@/server/reader";')).toContain("imports src/server/reader, outside src/lib and src/db, which the guard does not read");
+    expect(why('import { x } from "@/lib/bracket/flags-read";')).toEqual([]);
+    expect(why('import { x } from "../../db/catalog-helper";')).toContain("imports src/db/catalog-helper, outside src/lib and src/db, which the guard does not read");
+  });
+
+  it("the walk follows an INDENTED import, and the full walk finds what it leads to", () => {
+    expect(importsOf('  import { x } from "../reader";\n\timport { y } from "../other";')).toEqual(["../reader", "../other"]);
+    const dir = "src/lib/public/zz-fixture";
+    try {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(`${dir}/entry.ts`, 'export const a = 1;\n  import { loadSecret } from "./helper";\n');
+      writeFileSync(`${dir}/helper.ts`, "export const loadSecret = async () => cookies();\n");
+      const files = loaderFiles([`${dir}/entry.ts`], {});
+      expect(files).toContain(`${dir}/helper.ts`);
+      expect(judge(files, (f) => readFileSync(f, "utf8")).map((f) => f.why)).toContain("calls cookies()");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("a barrel FILE named like a forbidden directory, and SQL the old pattern missed", () => {

@@ -50,12 +50,15 @@ export type PublicCommanderResult =
   | { kind: "not-found" }
   | { kind: "ambiguous" };
 
+/** What a read needs: `db` itself, or the transaction it is run in. */
+type Reader = Pick<typeof db, "select">;
+
 export const SIGNATURE_LIMIT = 12;
 export const SIMILAR_LIMIT = 12;
 
 /** Exported so the order can be asserted from the rendered SQL: it mirrors the support list's (`inclusion desc nulls last, oracle_id`). */
-export function signatureQuery(commanderOracleId: string) {
-  return db.select({
+export function signatureQuery(commanderOracleId: string, q: Reader = db) {
+  return q.select({
     oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri,
     inclusion: commanderSupportCards.inclusion, synergy: commanderSupportCards.synergy,
   }).from(commanderSupportCards)
@@ -101,20 +104,26 @@ export function shapeCommander(card: CardRow, support: SupportRow, signature: re
 export async function loadPublicCommander(slug: string): Promise<PublicCommanderResult> {
   const hit = await resolvePublicSlug(slug);
   if (hit.kind !== "ok") return hit;
-  const [row] = await db.select({ card: cards, support: commanderSupport }).from(cards)
-    .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId))
-    .where(eq(cards.oracleId, hit.oracleId));
-  if (!row) return { kind: "not-found" };
-  const { card, support } = row;
-  const similarIds = similarIdsOf(support);
-  const [signature, similar] = await Promise.all([
-    support.synergyState === "ok" ? signatureQuery(card.oracleId) : Promise.resolve([]),
-    similarIds.length === 0
-      ? Promise.resolve([])
-      // Only commanders: a similar id that is a card with no support row would link to an address that answers not-found.
-      : db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards)
-        .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId)).where(inArray(cards.oracleId, similarIds)),
-  ]);
-  const commander = shapeCommander(card, support, signature, similar);
+  // ONE snapshot: the index publisher replaces a header and its dependent lists in one transaction, so reading the header and
+  // the signature and similar cards as separate statements could return the old state with the new cards
+  // (`src/lib/edhrec/support-read.ts` documents the same race).
+  const read = await db.transaction(async (tx) => {
+    const [row] = await tx.select({ card: cards, support: commanderSupport }).from(cards)
+      .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId))
+      .where(eq(cards.oracleId, hit.oracleId));
+    if (!row) return null;
+    const similarIds = similarIdsOf(row.support);
+    const [signature, similar] = await Promise.all([
+      row.support.synergyState === "ok" ? signatureQuery(row.card.oracleId, tx) : Promise.resolve([]),
+      similarIds.length === 0
+        ? Promise.resolve([])
+        // Only commanders: a similar id that is a card with no support row would link to an address that answers not-found.
+        : tx.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards)
+          .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId)).where(inArray(cards.oracleId, similarIds)),
+    ]);
+    return { ...row, signature, similar };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  if (!read) return { kind: "not-found" };
+  const commander = shapeCommander(read.card, read.support, read.signature, read.similar);
   return { kind: "ok", commander, canonicalSlug: commander.slug };
 }

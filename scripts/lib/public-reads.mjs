@@ -56,7 +56,8 @@ const dirKey = (file) => file.replace(/\.(?:m?[jt]sx?)$/, "").replace(/\/index$/
 
 /** Every relative import in `text`, resolved from `file` to a repo-relative path. */
 export function relativeImports(file, text) {
-  return [...text.matchAll(/\b(?:from|import)\s+["'](\.{1,2}\/[^"']*)["']/g)].map((m) => posix.normalize(posix.join(posix.dirname(file), m[1])));
+  return [...text.matchAll(/\b(?:from|import)\s+["'](\.{1,2}\/[^"']*|@\/[^"']*)["']/g)]
+    .map((m) => (m[1].startsWith("@/") ? posix.join("src", m[1].slice(2)) : posix.normalize(posix.join(posix.dirname(file), m[1]))));
 }
 
 /** The entries: every non-test `.ts` file directly in the public directory. */
@@ -78,7 +79,7 @@ export function judge(files, read, tables = schemaTables()) {
     for (const [re, why] of FORBIDDEN_TEXT) if (re.test(text)) findings.push({ path: file, why });
     // The walk reads only files under src/lib; an import that lands anywhere else is a file nothing would scan.
     for (const target of relativeImports(file, text)) {
-      if (!target.startsWith("src/lib/") && !/^src\/db(\/|$)/.test(target)) findings.push({ path: file, why: `imports ${target}, outside src/lib and src/db, which the guard does not read` });
+      if (!target.startsWith("src/lib/") && !/^src\/db(\/(index|schema))?$/.test(target)) findings.push({ path: file, why: `imports ${target}, outside src/lib and src/db, which the guard does not read` });
     }
     const named = new Set();
     for (const [binding, t] of tables) if (new RegExp(`\\b${binding}\\b`).test(text)) named.add(t.name);

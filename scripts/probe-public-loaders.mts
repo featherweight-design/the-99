@@ -57,6 +57,7 @@ async function run() {
     times.push(performance.now() - t0);
     if (res.kind === "ok" && res.commander.oracleId === r.oracle_id) { cmdOk += 1; shapes[res.commander.state] += 1; }
   }
+  check("2 · there are commanders to load", commanders.length > 0, true);
   check("2 · twenty commanders load by their own address", cmdOk, commanders.length);
   console.log(`   states ${JSON.stringify(shapes)}`);
 
