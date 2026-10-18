@@ -22,9 +22,10 @@ export function previewTypeLine(card: Pick<PublicCard, "faces" | "typeLine">): s
  */
 export function cutAtWord(text: string, max: number = DESCRIPTION_MAX): string {
   if (text.length <= max) return text;
-  const room = text.slice(0, max - 1);
+  // The space may sit at `max - 1`: a word ending there still fits, with the ellipsis after it.
+  const room = text.slice(0, max);
   const space = room.lastIndexOf(" ");
-  const head = (space > 0 ? room.slice(0, space) : room).replace(/[\s,.;:—-]+$/u, "");
+  const head = (space > 0 ? room.slice(0, space) : room.slice(0, max - 1)).replace(/[\s,.;:—-]+$/u, "");
   return `${head}…`;
 }
 

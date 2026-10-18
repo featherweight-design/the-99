@@ -18,7 +18,8 @@ import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
  * the card's id (`publicCardImageKey`), so a share preview renders once per card per catalog refresh, and a refresh or a new
  * build retires it with the card. The ROUTE itself is dynamic: a route-level cache (`revalidate`) would key on the path
  * alone, so it could not carry the generation, and it would hold the switch's answer past a flip. Each request costs the
- * switch read and the generation read (both held in memory for under a minute), then a cache hit.
+ * switch read (an in-memory snapshot, 30s), the card read (`readPublicCard`, a data-cache hit), the generation read (a
+ * data-cache entry, 60s) and then the image's own data-cache hit.
  *
  * Off, or for an address that does not resolve, a bare 404, never an image. Nothing here reads a request, a session or a
  * per-user table: the card comes through `readPublicCard` alone (`check:public-reads`).

@@ -43,6 +43,8 @@ describe("the card's link-preview description (C2)", () => {
   it("cuts a single over-long word mid-word rather than dropping it, and drops trailing punctuation before the ellipsis", () => {
     expect(cutAtWord("x".repeat(200), 10)).toBe(`${"x".repeat(9)}…`);
     expect(cutAtWord("one two, three four", 10)).toBe("one two…");
+    // A word ending at the last character before the ellipsis still fits.
+    expect(cutAtWord("aaaa bbbb cccc", 10)).toBe("aaaa bbbb…");
   });
 });
 
