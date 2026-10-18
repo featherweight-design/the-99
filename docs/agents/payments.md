@@ -139,7 +139,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `closed` before its `created` cannot revoke a won dispute. **The block is cleared only by an admin**: Let them buy on
   `/admin/payments` (`clearPurchaseBlock`, `src/lib/payments/clear-block.ts`, admin plan A3) nulls it under a row lock and
   writes one `purchase_block_cleared` event in the same transaction; a repeat clears and records nothing. The block is set
-  only when a dispute is created, so clearing it while one is still open is allowed, and the press says how many are. `createPackCheckout` (the one place a Session is made) refuses as
+  when a dispute is created and again when one is lost, so clearing it while one is still open is allowed, and the press
+  says how many are and that losing one pauses buying again. Known gap: a refund is read through the payment's lot, which
+  the purge deletes, so a purged account's refunds and an unattributed payment's refund read as 0 on the tab. `createPackCheckout` (the one place a Session is made) refuses as
   `blocked`, and `buyPackAction` reads the same helper first; a Session made before a dispute still fulfils when paid; credits already held keep spending. Dashboard: add the three events to the
   endpoint. `pnpm reconcile:payments` is read-only and dry-run only: the last 72 hours of paid `the-99` PaymentIntents
   with no record, and records or pack lots with no paid PaymentIntent, as counts and ids; `RECONCILE_TARGET_BRANCH`

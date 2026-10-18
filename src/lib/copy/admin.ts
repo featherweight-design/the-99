@@ -62,7 +62,7 @@ export const adminCopy = {
       press: "Let them buy",
       pending: (whom: string, open: number) =>
         open > 0
-          ? `Saving lets ${whom} buy again. ${plural(open, "dispute is", "disputes are")} still open, and nothing pauses buying again until a new one.`
+          ? `Saving lets ${whom} buy again. ${plural(open, "dispute is", "disputes are")} still open: a new dispute, or one of these lost, pauses buying again.`
           : `Saving lets ${whom} buy again.`,
       confirm: "Let them buy",
       done: (whom: string) => `${whom} can buy again.`,

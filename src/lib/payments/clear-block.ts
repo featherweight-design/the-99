@@ -1,7 +1,7 @@
 // Clear a purchase block (admin plan A3): an admin lets an account buy again after a dispute set the block (K2,
-// `stripe_customers.purchase_blocked_at`). The block is set only when a dispute is created, so clearing it while a
-// dispute is still open is allowed (the page shows the open count beside the press) and nothing sets it again until a
-// new dispute. One transaction: the column is nulled only where it is set, and the `purchase_block_cleared` event is
+// `stripe_customers.purchase_blocked_at`). The block is set when a dispute is created and again when one is LOST
+// (`reverseCharge`), so clearing it while a dispute is still open is allowed, and the press says how many are open
+// and that losing one pauses buying again. One transaction: the column is nulled only where it is set, and the `purchase_block_cleared` event is
 // written only when it was, so a repeat press clears nothing and records nothing. The event names the account and
 // when the block was set, and no other id.
 //

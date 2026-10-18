@@ -25,7 +25,7 @@ describe("BlockedList", () => {
   it("names the open disputes a clear leaves standing, and says nothing of them when none are open", () => {
     render(<BlockedList rows={ROWS} emptyClassName="" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Let them buy" })[0]);
-    expect(pending()).toHaveTextContent("Saving lets Mara K. buy again. 1 dispute is still open, and nothing pauses buying again until a new one.");
+    expect(pending()).toHaveTextContent("Saving lets Mara K. buy again. 1 dispute is still open: a new dispute, or one of these lost, pauses buying again.");
     fireEvent.click(within(pending()!).getByRole("button", { name: "Undo" }));
     expect(pending()).toBeNull();
     fireEvent.click(screen.getAllByRole("button", { name: "Let them buy" })[1]);

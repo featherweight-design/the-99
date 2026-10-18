@@ -20,7 +20,8 @@ export type Revenue = RevenueRow & { netCents: number };
 
 /**
  * Net is what was kept: gross less tax, less what was refunded net of the tax that went back with it. A refund is
- * counted in the month of the payment it refunds. Currencies are never summed together: each is its own row, largest
+ * counted in the month of the payment it refunds. A refund is read through the payment's lot, so it reads as 0 once
+ * the purge deletes that lot, and for an unattributed payment, which has none (`docs/agents/payments.md`). Currencies are never summed together: each is its own row, largest
  * gross first.
  */
 export function revenueOf(rows: readonly RevenueRow[]): Revenue[] {
