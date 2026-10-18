@@ -6,7 +6,9 @@ import { join } from "node:path";
  * reads TrueType, OpenType and WOFF but NOT WOFF2, which is all `src/app/fonts/` holds, so `./fonts/` keeps TrueType copies
  * made from those files with fontTools:
  *
- * - `ibm-plex-mono-400.ttf`, `ibm-plex-mono-600.ttf`: the shipped WOFF2s decompressed, nothing else changed.
+ * - `og-mono-99-400.ttf`, `og-mono-99-600.ttf`: the shipped IBM Plex Mono WOFF2s decompressed and RENAMED (family, full
+ *   and PostScript names; the copyright and licence records are kept): a format change is a Modified Version under the OFL,
+ *   and "Plex" is a Reserved Font Name.
  * - `cinzel-700.ttf`: the variable Cinzel pinned at weight 700 (the renderer cannot read a variable font).
  * - `og-sans-99-400.ttf`: the variable IBM Plex Sans pinned at 400 and RENAMED, because "Plex" is a Reserved Font Name and a
  *   pinned instance is a Modified Version under the OFL. The licences sit beside the files.
@@ -29,8 +31,8 @@ export function ogFonts(): Promise<OgFont[]> {
   loaded ??= Promise.all([
     face("cinzel-700.ttf", "Display", 700),
     face("og-sans-99-400.ttf", "Sans", 400),
-    face("ibm-plex-mono-400.ttf", "Mono", 400),
-    face("ibm-plex-mono-600.ttf", "Mono", 600),
+    face("og-mono-99-400.ttf", "Mono", 400),
+    face("og-mono-99-600.ttf", "Mono", 600),
   ]).catch((e) => {
     loaded = null;
     throw e;
