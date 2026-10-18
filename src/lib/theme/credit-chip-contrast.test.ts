@@ -27,6 +27,17 @@ function inks(name: string): { warn: string; rest: string } {
   return { warn: m[1], rest: m[2] };
 }
 
+describe("the credit chip's out state", () => {
+  it.each([...THEMES.keys()])("draws Get more credits in an ink that clears 4.5:1 straight on both menu grounds in %s", (name) => {
+    const m = /\? "border-\[color:color-mix\(in_srgb,var\(--accent\)_50%,transparent\)\] bg-transparent text-\[color:var\(--([a-z-]+)\)\]"/.exec(CHIP);
+    if (!m) throw new Error("credit-chip.tsx no longer draws the out state as this test reads it");
+    const t = THEMES.get(name)!;
+    for (const ground of ["surface-raised", "surface"]) {
+      expect(contrast(t.get(m[1])!, t.get(ground)!), `${name}: --${m[1]} on --${ground}`).toBeGreaterThanOrEqual(FLOOR);
+    }
+  });
+});
+
 describe("the credit chip's count", () => {
   const count = inks("countInk");
 
