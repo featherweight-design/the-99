@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "./allowance-rule";
-import { countsAgainstGrant, creditTotals, isLive, pickGrant, remaining, type CreditGrant } from "./credit-rule";
+import { countsAgainstGrant, creditTotals, isLive, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -59,6 +59,19 @@ describe("pickGrant: welcome, then plan, then pack", () => {
     expect(order([pack, plan])).toBe("plan");
   });
 
+  it("spends a gift after plan lots and before packs, whatever their age (admin plan A-R5)", () => {
+    const plan = lot({ id: "plan", source: "plan", createdAt: ago(1), expiresAt: new Date(now.getTime() + 30 * DAY) });
+    const gift = lot({ id: "gift", source: "gift", createdAt: ago(90 * DAY) });
+    const pack = lot({ id: "pack", createdAt: ago(200 * DAY) });
+    const order = (xs: CreditGrant[]) => pickGrant(xs.map((grant) => ({ grant, remaining: 1 })))?.id;
+    expect(order([pack, gift, plan])).toBe("plan");
+    expect(order([pack, gift])).toBe("gift");
+  });
+
+  it("calls only plan and pack paid", () => {
+    expect(["plan", "pack", "welcome", "gift"].map(isPaidSource)).toEqual([true, true, false, false]);
+  });
+
   it("stops funding from a welcome lot at its expiry", () => {
     const welcome = lot({ id: "welcome", source: "welcome", expiresAt: new Date(now.getTime() - 1) });
     expect(isLive(welcome, now)).toBe(false);
@@ -102,7 +115,8 @@ describe("creditTotals", () => {
       { grant: lot({ id: "p2", source: "plan" }), remaining: 3 },
       { grant: lot({ id: "k1" }), remaining: 40 },
       { grant: lot({ id: "w1", source: "welcome", expiresAt: new Date(now.getTime() + DAY) }), remaining: 9 },
+      { grant: lot({ id: "g1", source: "gift" }), remaining: 5 },
     ];
-    expect(creditTotals(balances)).toEqual({ welcome: 9, plan: 15, pack: 40 });
+    expect(creditTotals(balances)).toEqual({ welcome: 9, plan: 15, gift: 5, pack: 40 });
   });
 });

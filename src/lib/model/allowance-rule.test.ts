@@ -151,4 +151,12 @@ describe("a welcome lot is a held credit", () => {
     expect(hasCredit({ ...spent, paidUsedToday: 20 })).toBe(false);
     expect(paidAtLimit({ ...spent, paidUsedToday: 20 })).toBe(true);
   });
+
+  it("counts a gift as held like any lot, so it funds a run and meets the paid limit", () => {
+    expect(heldCredits({ gift: 4, pack: 1 })).toBe(5);
+    const spent = { used: 5, limit: 5, gift: 4, paidUsedToday: 0, paidLimit: 20 };
+    expect(hasCredit(spent)).toBe(true);
+    expect(hasCredit({ ...spent, paidUsedToday: 20 })).toBe(false);
+    expect(paidAtLimit({ ...spent, paidUsedToday: 20 })).toBe(true);
+  });
 });

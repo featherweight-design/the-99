@@ -1065,6 +1065,13 @@
       "when": 1792302323240,
       "tag": "0151_group_paid_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "7",
+      "when": 1792305472318,
+      "tag": "0152_gift_credits",
+      "breakpoints": true
     }
   ]
 }

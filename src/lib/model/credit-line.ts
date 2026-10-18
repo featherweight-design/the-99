@@ -18,7 +18,7 @@ import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowanc
  * L7 (a cancelled plan within three days of lapsing) is a suffix on L2/L3, drawn in `--warning` by `CreditsText`.
  */
 export type LineAllowance = Pick<Allowance, "used" | "limit" | "nextAt" | "reopensAt"> &
-  Partial<Pick<Allowance, "welcome" | "plan" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "payments">>;
+  Partial<Pick<Allowance, "welcome" | "plan" | "gift" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "payments">>;
 
 export type CreditLineKind = "free" | "withPaid" | "paidNext" | "spent" | "limit" | "limitFree";
 

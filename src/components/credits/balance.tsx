@@ -12,7 +12,7 @@ import { useHydrated } from "../ui/hydrated-art";
 
 const c = creditsPageCopy.bal;
 
-const LABEL = { free: c.free, welcome: c.welcome, plan: c.plan, pack: c.packs } as const;
+const LABEL = { free: c.free, welcome: c.welcome, plan: c.plan, gift: c.gift, pack: c.packs } as const;
 
 // The chevron at a join: a turned square, drawn on its top and right edges only. Each side has its own colour
 // (`check:border-collision`: a bare `border-r` is also a theme colour).

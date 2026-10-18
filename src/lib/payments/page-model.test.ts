@@ -102,3 +102,12 @@ describe("buildCreditsModel: a welcome lot (D1)", () => {
     expect(m.cells.map((c) => c.key)).toEqual(["free"]);
   });
 });
+
+describe("buildCreditsModel: an admin's gift (admin plan A-R5)", () => {
+  it("draws its cell in spend order, after plan and before pack, only while it holds a credit, and counts it in the total", () => {
+    const m = model({ switchOn: true, allowance: allowance({ welcome: 2, plan: 3, gift: 5, pack: 4 }), history: [], offers });
+    expect(m.cells.map((c) => c.key)).toEqual(["free", "welcome", "plan", "gift", "pack"]);
+    expect(m.total).toBe(3 + 2 + 3 + 5 + 4);
+    expect(model({ switchOn: true, allowance: allowance({ gift: 0 }), history: [], offers }).cells.map((c) => c.key)).toEqual(["free"]);
+  });
+});

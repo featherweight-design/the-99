@@ -20,6 +20,9 @@
 //   j  a paid run never counts toward the free window
 //   k  the gates (`hasCredit`, intake's `closedBy`, the synopsis's `wouldSpend`) read a lot through the
 //      real `readAllowance`: open over a spent allowance while the lot holds a credit, shut once it does not
+//   o  an admin's gift (`grantGift`): one lot and one `credits_granted` event for a double submit, counted by
+//      `readAllowance` and `heldCredits`, spent after plan and before pack, no purchase history row, never expiring,
+//      and purged with the account
 //   n  a group's paid limit (admin plan A1): a group of 3 refuses the fourth paid run and `readAllowance`
 //      names 3; lowered below today's count it stays shut with a time back; a member moved mid-day to a
 //      group with no paid limit takes the default 20; a group setting only a paid limit leaves daily credits
@@ -33,6 +36,7 @@
 //     fails d.
 //   - `hasCredit` reduced to the free allowance (`freeRoom`): fails k.
 //   - `readAllowance` reading the default paid limit instead of `paidLimitFor`: fails n.
+//   - a gift ranked before plan lots (`SOURCE_RANK`): fails o.
 //
 // It writes `model_calls` and `credit_grants` rows under per-run `user_id`s, and case n's own
 // `flag_groups` and their members, and deletes them in a `finally`, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
@@ -48,10 +52,12 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { readAllowance, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, hasCredit } from "../src/lib/model/allowance-rule";
+import { MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, hasCredit, heldCredits } from "../src/lib/model/allowance-rule";
 import { closedBy, toStanding } from "../src/lib/intake/standing";
 import { synopsisStatus } from "../src/lib/synopsis/read";
 import { purgeAccount } from "../src/lib/account/purge";
+import { grantGift } from "../src/lib/admin/gift";
+import { listCreditHistory } from "../src/lib/payments/return";
 import { TUNING_MODEL } from "../src/lib/tuning/limits";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
@@ -95,7 +101,7 @@ async function spendAllowance(userId: string) {
   }
 }
 
-async function grant(userId: string, source: "welcome" | "plan" | "pack", units: number, opts: { createdAt?: Date; expiresAt?: Date; revoked?: number } = {}) {
+async function grant(userId: string, source: "welcome" | "plan" | "gift" | "pack", units: number, opts: { createdAt?: Date; expiresAt?: Date; revoked?: number } = {}) {
   const [row] = await rows<{ id: string }>(sql`
     insert into credit_grants (user_id, source, units, revoked_units, expires_at, created_at)
     values (${userId}, ${source}, ${units}, ${opts.revoked ?? 0},
@@ -108,6 +114,12 @@ async function grant(userId: string, source: "welcome" | "plan" | "pack", units:
 /** Every fixture user's rows, each user on its own: one failed delete neither stops the rest nor
  *  lets the run exit 0 over rows it left behind. */
 async function cleanup() {
+  try {
+    await fixture.execute(sql`delete from admin_events where actor_id = ${PREFIX}`);
+  } catch (err) {
+    failures += 1;
+    console.error("cleanup failed for the gift events", err);
+  }
   for (const g of groupsMade) {
     try {
       // Members go with their group (`on delete cascade`).
@@ -364,6 +376,35 @@ async function run() {
     check("m · an expired welcome lot funds nothing", kindOf(await reserve(w)), "allowance");
     const report = await purgeAccount(u);
     check("m · the purge deleted all three lots", report.rows.credit_grants, 3);
+  }
+
+  // o · An admin's gift (admin plan A-R5), written through the real `grantGift` (Clerk stood in: the account exists).
+  {
+    const giftDeps = { accountExists: async () => true, transaction: ((fn: never) => db.transaction(fn)) as never };
+    const u = newUser();
+    await spendAllowance(u);
+    const day = 24 * 60 * 60 * 1000;
+    const pack = await grant(u, "pack", 5, { createdAt: new Date(Date.now() - 90 * day) });
+    const plan = await grant(u, "plan", 1, { createdAt: new Date(Date.now() - 40 * day) });
+    const action = crypto.randomUUID();
+    const first = await grantGift(PREFIX, { accountId: u, units: 2, note: "probe gift", actionId: action }, giftDeps);
+    const again = await grantGift(PREFIX, { accountId: u, units: 2, note: "probe gift", actionId: action }, giftDeps);
+    const gift = first.ok ? first.id : "none";
+    check("o · a double submit writes one lot and answers it twice", [first.ok, again.ok && again.repeated, again.ok ? again.id : null], [true, true, gift]);
+    const [events] = await rows<{ n: string }>(sql`
+      select count(*)::text as n from admin_events where kind = 'credits_granted' and user_id = ${u} and new_value = '2' and note = 'probe gift' and actor_id = ${PREFIX}`);
+    check("o · and one credits_granted event names who, whom, how many and why", events.n, "1");
+    const before = await readAllowance(u);
+    check("o · readAllowance and heldCredits count the gift", [before.gift, before.plan, before.pack, heldCredits(before)], [2, 1, 5, 8]);
+    const funded = [];
+    for (let i = 0; i < 4; i++) funded.push(await fundedBy(await reserve(u)));
+    check("o · spent after the plan lot and before the pack", funded, [plan, gift, gift, pack]);
+    check("o · a gift is no purchase history row", (await listCreditHistory(u)).map((r) => r.source).sort(), ["pack", "plan"]);
+    let expiring = "accepted";
+    try { await grant(u, "gift", 1, { expiresAt: new Date(Date.now() + day) }); } catch { expiring = "refused"; }
+    check("o · a gift lot with an expiry is refused by the check", expiring, "refused");
+    const report = await purgeAccount(u);
+    check("o · the purge deleted the gift with the other lots", report.rows.credit_grants, 3);
   }
 }
 
