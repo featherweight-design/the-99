@@ -108,6 +108,13 @@ export function TableLive({
       }
       swaps.current += 1;
       setView(out.view);
+      // A swap answered before the visit's first check stands in for it: the check it drops would have set the
+      // visit's baseline, and `recordSeen` waits on `arrived`.
+      if (!firstAnswered.current) {
+        firstAnswered.current = true;
+        setLookedAt(out.view.seenAt);
+        setArrived(true);
+      }
       setSwappedTo(undoTo === null ? deckId : null);
       const name = out.view.seats.find((x) => x.you)?.deck?.name ?? null;
       // An Undo answers with no toast of its own: it put back what the reader had.

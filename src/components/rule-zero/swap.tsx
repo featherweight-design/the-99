@@ -7,6 +7,7 @@
 import { createContext, useContext } from "react";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { OfferDeck } from "../../lib/social/rule-zero-table";
+import { verdictHead } from "../../lib/bracket/verdict-head";
 import { BracketChip } from "../decks/bracket-chip";
 import { FadingImg } from "../ui/hydrated-art";
 
@@ -39,9 +40,7 @@ export function SeatOffer() {
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-[4px]">
             <b className="truncate whitespace-nowrap font-sans text-[13.5px] font-semibold text-[color:var(--fg)]">{d.name}</b>
-            <span className="flex items-center gap-[6px]">
-              <BracketChip permits={d.permits} answered={d.answered} />
-            </span>
+            <OfferChip permits={d.permits} answered={d.answered} />
           </span>
           <button
             type="button"
@@ -55,5 +54,32 @@ export function SeatOffer() {
         </div>
       ))}
     </section>
+  );
+}
+
+/**
+ * The offer's bracket chip. An unanswered range names both brackets, which is wider than the row's text column on a
+ * phone (the art, the padding and `Swap in` leave about 130px at 390). Below 480px a range draws its marks alone, the
+ * phone header's own yield (F18), with the name for a screen reader; one bracket, or a wider page, draws the whole chip.
+ */
+function OfferChip({ permits, answered }: Pick<OfferDeck, "permits" | "answered">) {
+  const head = verdictHead(permits, answered);
+  if (!head.split) {
+    return (
+      <span className="flex items-center gap-[6px]">
+        <BracketChip permits={permits} answered={answered} compact />
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-[6px]">
+      <span data-testid="offer-chip-marks" aria-hidden className="flex min-[480px]:hidden">
+        <BracketChip permits={permits} answered={answered} face={false} compact />
+      </span>
+      <span className="sr-only min-[480px]:hidden">{head.face}</span>
+      <span className="hidden min-[480px]:flex">
+        <BracketChip permits={permits} answered={answered} compact />
+      </span>
+    </span>
   );
 }

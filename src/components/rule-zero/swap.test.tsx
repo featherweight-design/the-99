@@ -61,6 +61,14 @@ describe("Closer to the table (S1, S6, W1)", () => {
     expect(readCard().textContent).toContain(copy.read.closer(1));
   });
 
+  it("draws an unanswered range's marks alone on a phone, with its name for a screen reader", () => {
+    const [first, ...rest] = S1.offer;
+    render(<TableLive initial={{ ...S1, offer: [{ ...first, permits: [1, 2], answered: null }, ...rest] }} gamesEnabled now={AT} />);
+    const row = within(screen.getByTestId("seat-offer")).getByRole("button", { name: `${s.swapIn}: ${first.name}` }).parentElement!;
+    expect(within(row).getByTestId("offer-chip-marks").textContent).toBe("");
+    expect(within(row).getAllByText("Exhibition or Core").length).toBe(2);
+  });
+
   it("draws nothing when no deck is nearer, and the flag stays", () => {
     render(<TableLive initial={{ ...S1, offer: [] }} gamesEnabled now={AT} />);
     expect(screen.queryByTestId("seat-offer")).toBeNull();
@@ -100,6 +108,8 @@ describe("Swap in (S2, W2)", () => {
     await act(async () => answer(new Response(JSON.stringify({ kind: "open", view: S1 }), { status: 200 })));
     expect(within(seatOf("You")).getByText("Sai Thopters")).toBeTruthy();
     expect(screen.queryByTestId("seat-offer")).toBeNull();
+    // The swap stood in for the dropped check: the visit's baseline is set and what it shows is recorded as seen.
+    expect(m.seen).toHaveBeenCalledWith(S1.tableId, S1.revision.toISOString());
   });
 
   it("holds an older toast's Undo while a newer swap is still in flight", async () => {
