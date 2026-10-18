@@ -229,8 +229,9 @@ async function phone(page) {
   const bar = page.locator('nav[aria-label="Primary"]:visible').last();
   const barBox = await bar.boundingBox();
   report(barBox?.height === 88, "4.1 the bar is 88px while locked", px(barBox?.height));
-  const mainPad = await page.evaluate(() => getComputedStyle(document.querySelector("main")).paddingBottom);
-  report(mainPad === "88px", "4.1 <main> reserves the bar's 88px", mainPad);
+  // The reserve is on the column <main> sits in since the Fan Content notice (launch epic A1) became a sibling of <main>.
+  const mainPad = await page.evaluate(() => getComputedStyle(document.querySelector("main").parentElement).paddingBottom);
+  report(mainPad === "88px", "4.1 the column <main> sits in reserves the bar's 88px", mainPad);
   report(!(await page.locator("[data-lock-page-line]").isVisible()), "2.9 no page line on the phone");
 
   // The bracket.

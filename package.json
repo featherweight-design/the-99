@@ -323,6 +323,7 @@
     "probe:font-parity": "node scripts/probe-font-parity.mjs",
     "probe:onboarding": "node scripts/probe-onboarding.mjs",
     "probe:tour": "node scripts/probe-tour.mjs",
+    "probe:fan-content-notice": "node scripts/probe-fan-content-notice.mjs",
     "probe:locked-nav": "node scripts/probe-locked-nav.mjs",
     "probe:lock-shift": "node scripts/probe-lock-shift.mjs",
     "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",

@@ -11,7 +11,7 @@
 // heights reads as three different kinds of thing.
 //
 // THE LAST TILE CLEARS THE TAB BAR. The shell reserves exactly `--tabbar-h`
-// under `<main>`, so a list with no bottom padding of its own ends flush against
+// under the main column, so a list with no bottom padding of its own ends flush against
 // the phone's bar: the tile's edge and the bar's edge with nothing between them.
 //
 // Makes no writes. Signs in through Clerk's dev instance — see the local-auth

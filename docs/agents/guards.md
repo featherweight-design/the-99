@@ -257,3 +257,7 @@ back at `lib/collection/browse` fails the standing test.
   builder, and an unregistered caller each fail it. Those rejection cases are also standing fixture tests in the same
   file (a scalar `email` parameter, a dynamic `import("../auth")` and a generic `callModel<Reply>(` among them), so a
   guard that always answered clean would fail.
+
+## The Fan Content notice's guards
+
+`src/lib/copy/fan-content-notice.test.ts` pins the two passages to the brief's own text (change the brief first). `src/components/shell/fan-content-notice.test.tsx` measures `--fg-muted` against `--bg` in all six theme blocks (>= 4.5:1, at the figures Design measured), fails if the component names a color token beyond `--fg-muted`, `--border` and the link's `--fg`, `--fg-faint`, `--accent`, or uses `fixed`, `sticky`, state or a request API. `shell.test.tsx` asserts the two mounts (one per branch, a sibling AFTER `<main>` signed in, none inside it, so the pending screen's `inert` does not reach it). `pnpm probe:fan-content-notice` reads resolved geometry on the five signed-out routes and, with `E2E_AUDIT_USER_EMAIL`, the signed-in shell, at 390 and 1300: one notice, last in the document, starting at or below the fold (or the tab bar's top edge), not fixed, six lines or fewer at 390, its last line clearing the bar once scrolled.

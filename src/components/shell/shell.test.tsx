@@ -14,7 +14,8 @@ vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ push: () => {} }),
 }));
-vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
+let signedInUser: string | null = "user_1";
+vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: signedInUser }) }));
 let uniqueCards = 5;
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }) }));
 // The props each menu's call site is handed, so the Friends row's switch can be read off them.
@@ -42,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.ABOUT_SHEET_ENABLED;
   uniqueCards = 5;
+  signedInUser = "user_1";
 });
 
 describe("Shell and the About sheet", () => {
@@ -95,7 +97,9 @@ describe("Shell and the locked tab bar height", () => {
     const main = screen.getByText("page").closest("main")!;
     const wrapper = main.closest<HTMLElement>("[style]")!;
     expect(wrapper.style.getPropertyValue("--tabbar-h")).toBe("88px");
-    expect(main.className).toContain("pb-[calc(var(--tabbar-h)");
+    // The reserve is on the column <main> sits in (the Fan Content notice, a sibling of <main>, sits above it), not on <main>.
+    expect(main.className).not.toContain("pb-[calc(var(--tabbar-h)");
+    expect(main.parentElement!.className).toContain("pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))]");
     // Outside the pending provider, whose loading overlay renders beside the shell rather than
     // inside it: that overlay has to read the same 88px or its foot sits under the bar.
     expect(wrapper.className).toBe("contents");
@@ -118,3 +122,41 @@ describe("Shell and the Friends row (Social R1)", () => {
     for (const p of navProps) expect(p.friends).toBe(on);
   });
 });
+
+// The Fan Content notice (launch epic A1): two mounts, one per branch, and nowhere else.
+describe("Shell and the Fan Content notice", () => {
+  it("mounts it once in the signed-in column, a sibling AFTER <main>, inside the column that holds the tab-bar reserve", async () => {
+    await renderShell();
+    const notices = document.querySelectorAll("[data-fan-content-notice]");
+    expect(notices).toHaveLength(1);
+    const notice = notices[0];
+    const main = screen.getByText("page").closest("main")!;
+    expect(notice.parentElement).toBe(main.parentElement);
+    expect(main.contains(notice)).toBe(false);
+    expect(main.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notice.tagName).toBe("FOOTER");
+    // The notice is the column's footer landmark, not <main>'s: it is not inside the element the pending screen makes inert.
+    expect(main.querySelector("footer[data-fan-content-notice]")).toBeNull();
+  });
+
+  it("makes <main> at least a screen tall, so the notice starts at or below the fold, and ignores the header height from md", async () => {
+    await renderShell();
+    const main = screen.getByText("page").closest("main")!;
+    expect(main.className).toContain("min-h-[calc(100dvh-var(--header-h,79px)-var(--tabbar-h))]");
+    expect(main.className).toContain("md:min-h-dvh");
+  });
+
+  it("mounts it once, centered, after the page in the bare signed-out branch, and nothing else is drawn around the page", async () => {
+    signedInUser = null;
+    render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+    const notices = document.querySelectorAll("[data-fan-content-notice]");
+    expect(notices).toHaveLength(1);
+    expect(screen.getByText("page").compareDocumentPosition(notices[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notices[0].querySelector("div")!.className).toContain("text-center");
+    expect(document.querySelector("main")).toBeNull();
+    // The page sits in a full-viewport column so a short one (the error fallback) still pushes the notice below the fold.
+    expect(screen.getByText("page").parentElement!.className).toContain("min-h-dvh");
+    expect(screen.getByText("page").parentElement!.contains(notices[0])).toBe(false);
+  });
+});
+

@@ -4,7 +4,7 @@ import { GhostButton, PrimaryButton } from "../components/ui/button";
 export default function NotFound() {
   return (
     <div
-      className="flex flex-col items-center justify-center text-center p-[40px] min-h-[400px] md:min-h-[480px] bg-[color:var(--bg)] bg-[radial-gradient(520px_300px_at_50%_70%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]"
+      className="flex flex-col items-center justify-center text-center p-[40px] flex-1 min-h-[400px] md:min-h-[480px] bg-[color:var(--bg)] bg-[radial-gradient(520px_300px_at_50%_70%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]"
     >
       <span
         aria-hidden="true"

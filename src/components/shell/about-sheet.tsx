@@ -16,7 +16,7 @@ export function sheetTitles(n: number): { shown: number; more: number } {
 }
 
 /** The page reserves the card's height at its foot on a phone (§N5), read by
- *  `Shell`'s `<main>` as `var(--about-sheet-h, 0px)`. */
+ *  the shell's main column as `var(--about-sheet-h, 0px)`. */
 const RESERVE = "--about-sheet-h";
 
 /**
