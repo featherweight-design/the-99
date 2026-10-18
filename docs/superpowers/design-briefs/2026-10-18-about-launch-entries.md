@@ -1,4 +1,4 @@
-# Brief: the launch-end About batch, three entry artboards
+# Brief: the launch-end About batch, five entry artboards
 
 2026-10-18. Three About entries owed by two lines that paused their entries until the About reshape landed: the
 discovery line (R2 and R3, `design/design_handoff_the99_discovery_onboarding/README-r3.md:9`, "About entries are
@@ -6,8 +6,8 @@ paused until this line closes") and Rule 0 (`docs/superpowers/design-briefs/2026
 and `docs/superpowers/plans/2026-10-16-rule-zero.md:243-247`, "Its entry is owed when that redesign lands"). They ship
 together, with one `ABOUT_VERSION` bump at the end of the launch.
 
-**What this brief asks.** One per-entry artboard for each of the three entries, at 390 and 1300, and the call on what
-each entry's picture shows. It proposes one Design round and one addendum folder.
+**What this brief asks.** One per-entry artboard for each of the three new entries, at 390 and 1300, and the call on what
+each entry's picture shows; entries 4 and 5 reuse the artboards their handoffs already carry and need only their halo. It proposes one Design round and one addendum folder.
 
 The drafts come from two of the orchestrator's boards, which live outside this repository. Each draft is quoted in
 full below, so nothing here needs those files open; their line numbers are kept only for the orchestrator.
@@ -75,6 +75,26 @@ Keys: 1 `Start one from a pod’s “Rule 0 check”, for 2 to 8 players.` 2 `Wh
 listed. Anyone else picks their own.` 3 `“Swap in” or “Change deck” changes yours. “Undo” changes it back.` 4 `A table
 closes 24 hours after it’s set. Its logged games stay.`
 
+### Entries 4 and 5 · Inviting someone new (`invites`) and Looking up any card (`card-search`)
+
+Added to the batch by the orchestrator (2026-10-18). Both entries were ruled owed when their features shipped and were
+held back only by the About pause, and **both handoffs already carry the entry's words and its artboard**, so they need
+no new Design work beyond what every entry in this batch needs (a halo on its screen's capture, below):
+
+- `invites`: `design/design_handoff_the99_invites/about · invites.ts` and `The 99 - About · Invites Entry.dc.html`.
+  Chapter `04`, after `friends`; route `/friends`; opens Add a friend. Its `switch` there is a placeholder
+  (`INVITES_ENABLED`, README G4); the shipped switch is `SOCIAL_INVITES_ENABLED` (`src/lib/switches/registry.ts:68`,
+  needs `SOCIAL_FRIENDS_ENABLED`).
+- `card-search`: `design/design_handoff_the99_card_search/about · card search.ts` and
+  `The 99 - About · Card Search Entry.dc.html`. Chapter `01`, after `card-detail`; route any page; opens Search all cards.
+  Switch `CARD_SEARCH_ENABLED` (`registry.ts:34`).
+
+Both artboards were drawn for the one-page About, before #2013 moved an opened entry to a capture with one control
+haloed. So, as for entries 1 to 3, each needs its control picked and boxed on a capture: the Add a friend press on
+`/friends` for `invites`, and the header's search icon (phone) or the rail slot (desktop) for `card-search`. Neither
+control is on a current capture: the `friends` frame was taken with invites off, and no frame shows the search icon.
+That recapture is engineering's, in the batch PR. `since: 16` for both, as for the other three.
+
 ## What an entry draws today (read from the shipped code)
 
 The per-entry template was drawn for the one-page About (R3 §8, `design/design_handoff_the99_about/README.md:115-117`: title, route, opens,
@@ -107,8 +127,9 @@ discovery reshape (R2·6b, #2013) changed what an entry renders. Today:
 
 1. **Every feature owes an entry; a multi-round line batches its entries at the launch end with one bump.**
    `docs/agents/design-pipeline.md:5-18,23-31`. This moves when, never whether.
-2. **Design draws the entries; Hugh decides which features owe one** (`design-pipeline.md:56-58`). All three are owed:
-   discovery by `README-r3.md:153`, Rule 0 by its brief and plan (cited above).
+2. **Design draws the entries; Hugh decides which features owe one** (`design-pipeline.md:56-58`). All five are owed:
+   discovery by `README-r3.md:153`, Rule 0 by its brief and plan (cited above), invites and card search by their plans
+   (deferred only by the About pause).
 3. **Copy is not Design's call.** Every caption, key, title and `opens` string goes to `/copy-review`
    (`README-r2.md:37` lock "Wording goes to /copy-review"; addendum-social-line `README.md:42`, G6).
 4. **The bump is 14 to 16, never 15** (`src/lib/copy/about.ts:77-83`: 15 was spent once by #1840). Only an UNSWITCHED
@@ -153,6 +174,8 @@ is captured in. Each is constrained by "Decided" 5 and 6.
 | `getting-help` | every route; the entry's screen is `account` (`/` with the account menu open) | `src/components/help/help-root.tsx`, `src/components/help/help-panel.tsx`; menu row in `src/components/shell/account-menu.tsx` | Open 1: the ? panel on one screen, or the menu's `Take the tour` row | Behind `HELP_PANEL_ENABLED` (`src/lib/switches/registry.ts:46`): staging `'true'`, production unset (`src/lib/discovery/onboarding-flag.ts:1-5`). Tour lines behind `FIRST_RUN_TOUR_ENABLED` (`registry.ts:44`), same states |
 | `about-rebuilt` | `/about` (Tools), `/about?tab=reference`; screen `account` | `src/components/about/tools/about-tabs.tsx`, `tools-tab.tsx`, `tool-card.tsx`, `src/components/about/reference/reference-tab.tsx` | Open 2: the menu's `About The 99` row; Tools as context | Shipped to everyone, no switch (`onboarding-flag.ts:4`; #2013). Lines behind `HELP_PANEL_ENABLED`, `HELP_ME_CHOOSE_ENABLED` (`registry.ts:45`), `FIRST_RUN_TOUR_ENABLED` |
 | `rule-zero` | `/friends` (pod row), `/friends/table/[id]` (the table) | `src/components/rule-zero/pod-row.tsx`; table: `table-body.tsx`, `read-card.tsx`, `swap.tsx`, `change-deck.tsx` | Open 3: the pod card with its `Rule 0 check` row | Behind `RULE_ZERO_ENABLED` (`registry.ts:63`, needs `SOCIAL_FRIENDS_ENABLED`): staging `'true'`, production unset (`src/lib/social/flag.ts:20-24`). Log lines behind `SOCIAL_GAMES_ENABLED` (`registry.ts:67`) |
+| `invites` | `/friends` (Add a friend) | `src/components/social/invite-sheet.tsx`, `invite-new.tsx`, `invite-count-line.tsx` | The Add a friend press with its count line (existing artboard) | Behind `SOCIAL_INVITES_ENABLED` (`registry.ts:68`, needs `SOCIAL_FRIENDS_ENABLED`) |
+| `card-search` | any page (header icon on the phone, rail slot on desktop) | `src/components/card-search/card-search.tsx`, `search-desktop.tsx` | The search icon or rail slot at rest (existing artboard) | Behind `CARD_SEARCH_ENABLED` (`registry.ts:34`) |
 
 ## Draft vs code
 
