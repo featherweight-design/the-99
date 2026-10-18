@@ -9,6 +9,7 @@ import type { SelectedLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 import { TwoFacedMark } from "../../cards/two-faced-mark";
 import { frontFaceName } from "../../../lib/cards/faces";
 import { OtherWaysPress } from "../../social/spare-markers";
@@ -77,7 +78,9 @@ export function CartLine({
             name={line.name}
             imageUri={line.imageUri ?? null}
             preview
-            className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
+            // The name draws at its ~21px line; a coarse pointer gets 44px, reaching under a pixel past the row's 11px padding
+            // (onto the row above's empty bottom padding) and, for a very short name, over the plain text beside it.
+            className={`${TOUCH_HIT} text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]`}
           >
             {frontFaceName(line.name, line.layout)}
           </CardDetailTrigger>

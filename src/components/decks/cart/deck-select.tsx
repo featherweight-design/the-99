@@ -10,6 +10,7 @@ import { formatCents } from "../../../lib/decks/price";
 import type { CartDeck } from "../../../lib/decks/cart";
 import { Chevron } from "../../ui/chevron";
 import { Checkbox } from "../../ui/checkbox";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 export function DeckSelect({
   decks,
@@ -71,7 +72,8 @@ export function DeckSelect({
           tabIndex={-1}
           aria-hidden
           onClick={() => setOpen((v) => !v)}
-          className="flex h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden"
+          // 28px drawn; TOUCH_HIT widens the hit to 44px, 8px each side, inside the row's 10px gap.
+          className={`${TOUCH_HIT} flex h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden`}
         >
           <Chevron kind="disclosure" open={open} />
         </button>

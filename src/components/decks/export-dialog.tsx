@@ -19,6 +19,7 @@ import {
 import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
+import { TOUCH_HIT } from "../ui/touch-hit";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import {
   exportDialogCopy,
@@ -277,7 +278,7 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className="bg-transparent border-none text-[color:var(--fg-faint)]"
+            className={`${TOUCH_HIT} bg-transparent border-none text-[color:var(--fg-faint)]`}
             style={{ fontSize: 17 }}
             aria-label={exportDialogCopy.closeAria}
           >
@@ -315,6 +316,7 @@ function DialogContent({
           type="button"
           onClick={() => setTab("decklist")}
           className={[
+            TOUCH_HIT,
             "font-sans text-[13px]",
             tab === "decklist"
               ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)] border-none"
@@ -333,6 +335,7 @@ function DialogContent({
           type="button"
           onClick={() => setTab("shopping")}
           className={[
+            TOUCH_HIT,
             "font-sans text-[13px]",
             tab === "shopping"
               ? "font-semibold text-[color:var(--bg)] bg-[color:var(--warning)] border-none"
