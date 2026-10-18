@@ -656,7 +656,9 @@ function SourcePickerBody({
       <p id={`${titleId}-title`} className="m-0 shrink-0 font-sans text-[13px] font-semibold text-[color:var(--fg)]">
         {nameOpens ? <TitleOpeningCard card={card} /> : sourceCopy.title(card.name)}
       </p>
-      <div data-picker-body className="min-h-0 overflow-y-auto">
+      {/* A 4px gutter, with the margin taken back, so the 2px focus ring at its 2px offset is never clipped by
+          this scroller's edge (globals.css's `:focus-visible`). */}
+      <div data-picker-body className="-m-[4px] min-h-0 overflow-y-auto p-[4px]">
       <div className="flex flex-col gap-[12px]">
       {/* Found missing by Copilot's round-2 review: `sourceCopy.order` was defined for exactly
           this line (the handoff draws it under the title in both shells) and never rendered. */}

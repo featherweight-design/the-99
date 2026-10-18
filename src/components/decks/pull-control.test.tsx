@@ -583,6 +583,10 @@ describe("PullControl — 2+ choosable sources", () => {
     await vi.waitFor(() => expect(dialog.style.position).toBe("fixed"));
     expect(dialog.style.marginTop).toBe("0px");
     expect(dialog.style.maxHeight).not.toBe("");
+    // The scroll body keeps a 4px gutter (margin taken back) so a focus ring at its edge is not clipped.
+    const body = dialog.querySelector("[data-picker-body]")!;
+    expect(body.className).toEqual(expect.stringContaining("-m-[4px]"));
+    expect(body.className).toEqual(expect.stringContaining("p-[4px]"));
   });
 
   // Copilot round 1 on #2060: with the order line, consequence and buttons fixed, a short window's
