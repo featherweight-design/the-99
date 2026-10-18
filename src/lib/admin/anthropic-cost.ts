@@ -30,7 +30,8 @@ import { monthOf, monthParam, type MonthKey } from "./costs-rule";
  * Never put `ANTHROPIC_ADMIN_KEY` in `.env`: `scripts/lib/env.mjs` loads it with `override: true`.
  */
 
-export const UNREAD_LOG = "[admin] anthropic cost unread";
+/** The one server line a read leaves, found by `vercel logs -q "[costs]"`. Never the key, a body or a URL. */
+export const COST_LOG = "[costs] anthropic cost_report";
 /** One timeout for the whole read: both lists, every page. */
 export const ANTHROPIC_TIMEOUT_MS = 8_000;
 /** A failure is answered from memory for this long, so a broken key costs one call a minute. */
@@ -55,7 +56,11 @@ const defaultDeps = (): AnthropicDeps => ({
 
 /** A failed request, by its closed kind alone. */
 class Unread {
-  constructor(readonly kind: Exclude<CostUnread, "no_key" | "no_workspace" | "ambiguous_workspace">) {}
+  constructor(
+    readonly kind: Exclude<CostUnread, "no_key" | "no_workspace" | "ambiguous_workspace">,
+    /** The HTTP status that refused the read, when one did. */
+    readonly status?: number,
+  ) {}
 }
 
 function kindOf(status: number): Unread["kind"] {
@@ -76,7 +81,7 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
 
   const get = async (url: string): Promise<unknown> => {
     const res = await deps.fetch(url, { headers, cache: "no-store", signal });
-    if (!res.ok) throw new Unread(kindOf(res.status));
+    if (!res.ok) throw new Unread(kindOf(res.status), res.status);
     try {
       return await res.json();
     } catch {
@@ -85,6 +90,7 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
   };
 
   const window = reportWindow(month, now);
+  let days = 0;
   const costRows = async (): Promise<CostRow[]> => {
     const rows: CostRow[] = [];
     let page: string | undefined;
@@ -92,6 +98,7 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
       const parsed = parseCostPage(await get(costReportUrl(window, page)));
       if (!parsed) throw new Unread("shape");
       rows.push(...parsed.rows);
+      days += parsed.days;
       if (!parsed.hasMore) return rows;
       if (n >= MAX_PAGES) throw new Unread("shape");
       page = parsed.nextPage ?? undefined;
@@ -110,8 +117,8 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
     }
   };
 
-  const unread = (kind: CostUnread, count?: number): WorkspaceCost => {
-    deps.log(`${UNREAD_LOG}: ${kind}`);
+  const unread = (kind: CostUnread, count?: number, status?: number): WorkspaceCost => {
+    deps.log(`${COST_LOG} unread kind=${kind}${status === undefined ? "" : ` status=${status}`}`);
     return count === undefined ? { ok: false, kind } : { ok: false, kind, count };
   };
 
@@ -121,10 +128,11 @@ export async function readWorkspaceCost(month: MonthKey, now: Date, deps: Anthro
     [rows, items] = await Promise.all([costRows(), workspaces()]);
   } catch (error) {
     // A network error or the timeout's abort is upstream; nothing of the error is kept.
-    return unread(error instanceof Unread ? error.kind : "upstream");
+    return error instanceof Unread ? unread(error.kind, undefined, error.status) : unread("upstream");
   }
   const match = matchWorkspace(items);
   if (!match.ok) return match.kind === "ambiguous_workspace" ? unread(match.kind, match.count) : unread(match.kind);
+  deps.log(`${COST_LOG} ok days=${days}`);
   return { ok: true, asOf: deps.now().toISOString(), workspaceMicro: workspaceMicro(rows, match.id) };
 }
 
@@ -169,7 +177,7 @@ export async function cachedWorkspaceCost(month: MonthKey, now: Date, deps: Anth
     if (error instanceof NotStored) result = error.value;
     else {
       // The cache itself failed: no figure, and nothing of the error kept.
-      deps.log(`${UNREAD_LOG}: upstream`);
+      deps.log(`${COST_LOG} unread kind=upstream`);
       result = { ok: false, kind: "upstream" };
     }
   }

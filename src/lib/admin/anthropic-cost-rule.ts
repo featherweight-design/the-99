@@ -126,7 +126,7 @@ export function workspacesUrl(afterId?: string): string {
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** One cost report page, or null when the body is off the documented shape (a non-USD line included). */
-export function parseCostPage(body: unknown): { rows: CostRow[]; hasMore: boolean; nextPage: string | null } | null {
+export function parseCostPage(body: unknown): { rows: CostRow[]; days: number; hasMore: boolean; nextPage: string | null } | null {
   if (!isObject(body) || !Array.isArray(body.data) || typeof body.has_more !== "boolean") return null;
   const nextPage = body.next_page ?? null;
   if (nextPage !== null && typeof nextPage !== "string") return null;
@@ -143,7 +143,7 @@ export function parseCostPage(body: unknown): { rows: CostRow[]; hasMore: boolea
       rows.push({ workspaceId, cents });
     }
   }
-  return { rows, hasMore: body.has_more, nextPage };
+  return { rows, days: body.data.length, hasMore: body.has_more, nextPage };
 }
 
 export type WorkspaceItem = { id: string; name: string; archived: boolean };

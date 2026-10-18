@@ -192,7 +192,7 @@ cache wrapper lives here too (M4). The probe imports this module but calls only 
   4. `run` throws `new NotStored(result)` on `ok: false`. The wrapper catches it, writes the memo, and returns the
      result unstored. This is the `user-lists.ts` pattern with its own `NotStored`, which carries only
      `{ ok: false, kind, count }`.
-- `UNREAD_LOG = "[admin] anthropic cost unread"`; `NEGATIVE_MEMO_MS = 60_000`.
+- `COST_LOG = "[costs] anthropic cost_report"` (one line per read: `unread kind=<k> [status=<n>]` or `ok days=<n>`); `NEGATIVE_MEMO_MS = 60_000`.
 
 **Modified in PR 1:**
 - `costs-rule.ts`:

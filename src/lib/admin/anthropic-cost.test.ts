@@ -12,7 +12,7 @@ vi.mock("next/cache", () => ({
   },
 }));
 
-const { cachedWorkspaceCost, clearNegativeMemo, NEGATIVE_MEMO_MS, readWorkspaceCost, UNREAD_LOG } = await import("./anthropic-cost");
+const { cachedWorkspaceCost, clearNegativeMemo, NEGATIVE_MEMO_MS, readWorkspaceCost, COST_LOG } = await import("./anthropic-cost");
 const { MAX_PAGES } = await import("./anthropic-cost-rule");
 const { DEPLOYMENT_ID } = await import("../cache/deployment");
 
@@ -60,7 +60,8 @@ describe("readWorkspaceCost", () => {
   it("reads The 99's month from the cost report", async () => {
     const f = fake({});
     expect(await readWorkspaceCost(OCT, NOW, f.deps())).toEqual({ ok: true, asOf: NOW.toISOString(), workspaceMicro: 124_540_000 });
-    expect(f.log).not.toHaveBeenCalled();
+    // One line on success too, so a deployed read can be confirmed from the logs: the days read, nothing else.
+    expect(f.log.mock.calls).toEqual([[expect.stringMatching(/^\[costs\] anthropic cost_report ok days=\d+$/)]]);
     for (const c of f.calls) {
       expect(c.init.cache).toBe("no-store");
       expect(c.init.headers).toEqual({ "x-api-key": KEY, "anthropic-version": "2023-06-01", "user-agent": "the-99-admin" });
@@ -87,7 +88,8 @@ describe("readWorkspaceCost", () => {
   ])("reads a %i as %s, with one fixed log line", async (status, kind) => {
     const f = fake({ cost: [() => json({ error: { message: `leak ${KEY}` } }, status)] });
     expect(await readWorkspaceCost(OCT, NOW, f.deps())).toEqual({ ok: false, kind });
-    expect(f.log.mock.calls).toEqual([[`${UNREAD_LOG}: ${kind}`]]);
+    // The status, and nothing of the body: the line never carries what the server said.
+    expect(f.log.mock.calls).toEqual([[`${COST_LOG} unread kind=${kind} status=${status}`]]);
   });
 
   it("reads a status from the workspace list the same way", async () => {
@@ -100,7 +102,7 @@ describe("readWorkspaceCost", () => {
     expect(await readWorkspaceCost(OCT, NOW, network.deps())).toEqual({ ok: false, kind: "upstream" });
     const abort = fake({ ws: [() => Promise.reject(new DOMException("The operation timed out.", "TimeoutError"))] });
     expect(await readWorkspaceCost(OCT, NOW, abort.deps())).toEqual({ ok: false, kind: "upstream" });
-    expect(abort.log.mock.calls).toEqual([[`${UNREAD_LOG}: upstream`]]);
+    expect(abort.log.mock.calls).toEqual([[`${COST_LOG} unread kind=upstream`]]);
   });
 
   it("reads a bad body, a body that is not JSON and a non-USD line as shape", async () => {
@@ -154,7 +156,7 @@ describe("readWorkspaceCost", () => {
   it("finds no workspace, or two, and never guesses", async () => {
     const none = fake({ ws: [() => json(wsPage([OTHER]))] });
     expect(await readWorkspaceCost(OCT, NOW, none.deps())).toEqual({ ok: false, kind: "no_workspace" });
-    expect(none.log.mock.calls).toEqual([[`${UNREAD_LOG}: no_workspace`]]);
+    expect(none.log.mock.calls).toEqual([[`${COST_LOG} unread kind=no_workspace`]]);
     const two = fake({ ws: [() => json(wsPage([THE_99, { id: "wrkspc_dup", name: "the 99", archived_at: null }]))] });
     expect(await readWorkspaceCost(OCT, NOW, two.deps())).toEqual({ ok: false, kind: "ambiguous_workspace", count: 2 });
   });
