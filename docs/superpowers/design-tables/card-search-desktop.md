@@ -342,7 +342,7 @@ Board `:root` tokens used below: `--bg` #0E0F14 · `--surface-raised` #191B22 ·
 | Space reserved on rows without it | yes (`.sp`, `visibility: hidden`), so rows align |
 | Glyph (SVG) | width 16, height 16, viewBox 0 0 24 24, fill currentColor, stroke currentColor, stroke-width 1.8, stroke-linejoin round |
 | Path d | `M6.5 3.5h11v17l-5.5-4-5.5 4z` |
-| Accessible name | copy key `row.wishlistAria` (`aria-label` on the box) |
+| Accessible name | copy key `row.wishlistAria`, read as the last clause of the ROW's name; the box itself is `aria-hidden` (the board's `aria-label` on the box would announce it twice inside the listbox option; ruled at the close-out, 2026-10-18, matching the phone table) |
 | Type | bookmark glyph, not a press |
 
 ### Row states
