@@ -348,14 +348,15 @@ export function CostsView({
             label={copy.capRows.org}
             source="anthropic"
             figure={wsRead.ok ? (orgCap ? copy.of(usd(wsRead.orgMicro), capMicro(orgCap.micro)) : copy.notSet(usd(wsRead.orgMicro))) : copy.orgUnread}
-            sub={(wsRead.ok ? copy.capSub.org(usd(wsRead.totalMicro), usd(Math.max(0, wsRead.otherMicro))) : copy.capSub.orgUnread) + note(orgCap?.note)}
+            sub={(wsRead.ok ? copy.capSub.org(usd(wsRead.totalMicro), usd(wsRead.otherMicro)) : copy.capSub.orgUnread) + note(orgCap?.note)}
             actions={s.current && <SettingAction kind="org" label={copy.changeOrgCap} />}
           >
             <CapBar
               scale={Math.max(orgCap?.micro ?? 0, wsRead.ok ? wsRead.orgMicro : 0, 1)}
               segs={orgCap && wsRead.ok ? [
                 { micro: wsRead.totalMicro, ink: INK.player },
-                // A credit could take the rest of the org below zero; the bar draws none rather than a negative width.
+                // A credit could take the rest of the org below zero; the bar draws none rather than a negative width,
+                // while the line beside it still names the signed figure.
                 { micro: Math.max(0, wsRead.otherMicro), ink: INK.elsewhere, hatch: true },
               ] : []}
               ticks={orgCap && wsRead.ok ? [{ micro: orgCap.micro, label: capMicro(orgCap.micro), ink: "var(--danger)" }] : []}

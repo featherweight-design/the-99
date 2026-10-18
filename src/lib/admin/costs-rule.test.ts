@@ -104,6 +104,9 @@ describe("formatting and input", () => {
     expect(usd(0)).toBe("$0");
     expect(usd(usdToMicro(0.884))).toBe("$0.884");
     expect(usd(usdToMicro(135.96))).toBe("$135.96");
+    // A credit carries its sign before the dollar, its places chosen on its size.
+    expect(usd(usdToMicro(-20))).toBe("−$20.00");
+    expect(usd(usdToMicro(-0.5))).toBe("−$0.500");
     // The places are chosen after rounding: just under $2 rounds to $2 and prints as dollars.
     expect(usd(1_999_700)).toBe("$2.00");
     expect(usd(1_234_000)).toBe("$1.234");

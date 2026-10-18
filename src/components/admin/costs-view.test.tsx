@@ -333,6 +333,15 @@ describe("the org cap row", () => {
     expect(ticks[0].style.left).toBe("100%");
   });
 
+  it("names a credit on the other workspaces signed, and draws it as no width", () => {
+    // The 99 at $100, the rest of the org a $20 credit: an $80 org, and the line says so rather than $0.
+    draw(rows([p(2, 1)], { ...billed(100, -20), settings: caps }));
+    expect(screen.getByText("$80.00 of $250")).toBeInTheDocument();
+    const { row, segs } = capRow("Anthropic org cap");
+    expect(row).toHaveTextContent("The 99 $100.00, other workspaces −$20.00 hatched");
+    expect(segs.map((el) => el.style.width).at(-1)).toBe("0%");
+  });
+
   it("draws the bare track with the figure not set when no org cap is stored", () => {
     draw(rows([p(2, 1)], billed(12, 3)));
     expect(screen.getByText("$15.00 · not set")).toBeInTheDocument();

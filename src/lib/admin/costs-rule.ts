@@ -220,12 +220,13 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
 
 /**
  * Dollars as the admin prints them: `$0`, three places under $2, two from there. The places are
- * chosen AFTER rounding to three, so $1.9997 is `$2.00` rather than `$2.000`.
+ * chosen AFTER rounding to three, so $1.9997 is `$2.00` rather than `$2.000`. A credit (a negative figure) reads
+ * `−$20.00`, the sign before the dollar, with the places chosen on its size.
  */
 export function usd(micro: number): string {
   if (micro === 0) return "$0";
-  const v = Math.round(micro / 1_000) / 1_000;
-  return `$${v.toFixed(v < 2 ? 3 : 2)}`;
+  const v = Math.round(Math.abs(micro) / 1_000) / 1_000;
+  return `${micro < 0 ? "−" : ""}$${v.toFixed(v < 2 ? 3 : 2)}`;
 }
 
 /** One `admin_settings` row: a key's value for one UTC month (`YYYY-MM`). */
