@@ -3,6 +3,7 @@
 import { requireAdmin } from "../../../lib/admin/access";
 import { moveAccount, type MoveResult } from "../../../lib/admin/group-writes";
 import { revealAccountIn, type RevealResult } from "../../../lib/admin/reveal";
+import { lookUpAccountIn, type LookUpResult } from "../../../lib/admin/lookup";
 
 // The Accounts page's one write (admin plan 9b): `Change group`. Every export calls `requireAdmin()` on
 // its first line, so a stranger's press is the app's 404 (STATES D4); `actions.test.ts` reads every
@@ -20,4 +21,10 @@ export async function moveAccountToGroup(accountId: string, groupId: string | nu
 export async function revealAccount(accountId: string): Promise<RevealResult> {
   const { userId } = await requireAdmin();
   return revealAccountIn(userId, accountId);
+}
+
+/** The exact-email lookup (Admin R3, D10 to D12): an account id or nothing, never a name or an email. */
+export async function lookUpAccount(email: string): Promise<LookUpResult> {
+  await requireAdmin();
+  return lookUpAccountIn(email);
 }

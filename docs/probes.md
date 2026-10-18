@@ -2617,7 +2617,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   offers one (D5 to D8): the whole email must reach the browser in the Show action's POST response and in no other, one
   `account_revealed` event must be written, History must draw the line at once, Hide must mask the head, and a reload
   must draw the line and no email. Last it aborts one Show's request on `/admin/accounts` (A6, D13): the toast with Try
-  again, no row revealed, nothing logged. `PROBE_SHOTS=<dir>` photographs that toast at both widths. The Shows are its
+  again, no row revealed, nothing logged. Then the exact-email lookup on `/admin/accounts` (D10 to D13): an address
+  typed waits for Enter with the list whole (A8); Enter on that account's address in capitals narrows the list to its
+  one masked row with Show, and no response carries a name or an email (A3); an unheld address draws no card (A4); an
+  aborted lookup keeps the field and the list and raises the toast (A5); and the lookups write no `admin_events` row
+  (D11). Every admin body is read before a check counts it, and one still streaming is reported. `PROBE_SHOTS=<dir>`
+  photographs the failed Show's toast and A3 to A5 at both widths. The Shows are its
   only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
   reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on

@@ -607,6 +607,16 @@ export const adminMaskCopy = {
   /** D1: an account Clerk holds no name or username for. */
   noName: (idTail: string) => `Account ·${idTail}`,
   findByName: FIND_BY_NAME,
+  /** The Accounts list's one field: a name filters, a whole email looks up (D10 to D13). */
+  accounts: {
+    search: "Name, or a whole email",
+    /** D10: an `@` typed, not yet submitted. */
+    enterToLookUp: "Press Enter to look up this exact email.",
+    hit: "One account holds this email.",
+    miss: "No account holds this email.",
+    /** D13, the toast. */
+    lookUpFailed: "Couldn’t look up that email.",
+  },
   /** Show and its reveal (D5 to D8, D13), from the handoff's `reveal` block. */
   reveal: {
     show: "Show",
