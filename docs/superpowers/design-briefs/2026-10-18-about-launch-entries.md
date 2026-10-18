@@ -1,6 +1,6 @@
 # Brief: the launch-end About batch, five entry artboards
 
-2026-10-18. Three About entries owed by two lines that paused their entries until the About reshape landed: the
+2026-10-18. Three About entries owed by two lines (and, added the same day, two more owed by invites and card search) that paused their entries until the About reshape landed: the
 discovery line (R2 and R3, `design/design_handoff_the99_discovery_onboarding/README-r3.md:9`, "About entries are
 paused until this line closes") and Rule 0 (`docs/superpowers/design-briefs/2026-10-16-rule-zero-table-check.md:165-169`
 and `docs/superpowers/plans/2026-10-16-rule-zero.md:243-247`, "Its entry is owed when that redesign lands"). They ship
@@ -89,11 +89,24 @@ no new Design work beyond what every entry in this batch needs (a halo on its sc
   `The 99 - About · Card Search Entry.dc.html`. Chapter `01`, after `card-detail`; route any page; opens Search all cards.
   Switch `CARD_SEARCH_ENABLED` (`registry.ts:34`).
 
-Both artboards were drawn for the one-page About, before #2013 moved an opened entry to a capture with one control
-haloed. So, as for entries 1 to 3, each needs its control picked and boxed on a capture: the Add a friend press on
-`/friends` for `invites`, and the header's search icon (phone) or the rail slot (desktop) for `card-search`. Neither
-control is on a current capture: the `friends` frame was taken with invites off, and no frame shows the search icon.
-That recapture is engineering's, in the batch PR. `since: 16` for both, as for the other three.
+Both artboards were drawn for the one-page About, before #2013 moved an opened entry to a 390×844 capture of one
+screen with one control haloed (`scripts/capture-about.mjs:69`). There is no desktop frame, so each entry's box is
+measured on a phone capture:
+- `invites`: the `Add a friend` press on the `friends` frame. The press is already on the shipped
+  `public/about/shots/<theme>/friends.webp`. What the frame lacks is the count line under it, because it was taken with
+  invites off.
+- `card-search`: the header's search icon. The entry's route is "any page", so it has no screen of its own; Design picks
+  which screen's frame carries the box (Open 4). No current frame shows the icon, because the capture ran with the
+  switch off.
+
+The recapture is engineering's, in the batch PR (Out of scope).
+
+**What the handoffs carry beyond the entry:**
+- `about · invites.ts` also edits sentence 2 of the shipped `friends` entry's caption, adding "pick “They’re on The 99”"
+  (`about · invites.ts:35-37`). The invites plan counts that edit as owed (`2026-10-16-invites.md:271`). It is an edit,
+  with no bump of its own, and it ships with the batch.
+- Both handoff files set `since` to the version current when they were drawn (`about · invites.ts:32` says 14). Ruled
+  for this batch: `since: 16`, as for the other three. Apply the objects with that change.
 
 ## What an entry draws today (read from the shipped code)
 
@@ -134,8 +147,8 @@ discovery reshape (R2·6b, #2013) changed what an entry renders. Today:
    (`README-r2.md:37` lock "Wording goes to /copy-review"; addendum-social-line `README.md:42`, G6).
 4. **The bump is 14 to 16, never 15** (`src/lib/copy/about.ts:77-83`: 15 was spent once by #1840). Only an UNSWITCHED
    entry moves the version; a switched entry is announced when its switch turns on and takes the version current when it
-   ships (`about.ts:77-80`; the Social addendum's precedent, `addendum-social-line/README.md:27-29`). So of the three,
-   `about-rebuilt` is the one the bump announces.
+   ships (`about.ts:77-80`; the Social addendum's precedent, `addendum-social-line/README.md:27-29`). So of the five,
+   `about-rebuilt` is the one the bump announces; the other four are switched.
 5. **A figure draws only what the app draws, from the surface's own copy** (`about.ts:48-57`, rules 2 and 4). The
    picture is a real capture (`README-r2.md:31`, lock "Real screenshots, not illustrations or detached snippets").
 6. **One picture per screen, in one capture per theme.** An entry does not get a frame of its own; it gets a box on its
@@ -167,6 +180,9 @@ is captured in. Each is constrained by "Decided" 5 and 6.
 5. **The template's dead slots.** Whether the artboard keeps `width`, specimen, fixture props and phone reduction,
    which the reshape no longer reads, or replaces them with frame, locator and capture state.
 
+4. **`card-search`'s screen.** Which screen's capture carries the header search icon's box: any frame drawn with the
+   header (for example `collection`), since the entry's route is any page.
+
 ## Per entry
 
 | Entry | Surface route | Component file | State to depict | Shipped or switched |
@@ -175,7 +191,7 @@ is captured in. Each is constrained by "Decided" 5 and 6.
 | `about-rebuilt` | `/about` (Tools), `/about?tab=reference`; screen `account` | `src/components/about/tools/about-tabs.tsx`, `tools-tab.tsx`, `tool-card.tsx`, `src/components/about/reference/reference-tab.tsx` | Open 2: the menu's `About The 99` row; Tools as context | Shipped to everyone, no switch (`onboarding-flag.ts:4`; #2013). Lines behind `HELP_PANEL_ENABLED`, `HELP_ME_CHOOSE_ENABLED` (`registry.ts:45`), `FIRST_RUN_TOUR_ENABLED` |
 | `rule-zero` | `/friends` (pod row), `/friends/table/[id]` (the table) | `src/components/rule-zero/pod-row.tsx`; table: `table-body.tsx`, `read-card.tsx`, `swap.tsx`, `change-deck.tsx` | Open 3: the pod card with its `Rule 0 check` row | Behind `RULE_ZERO_ENABLED` (`registry.ts:63`, needs `SOCIAL_FRIENDS_ENABLED`): staging `'true'`, production unset (`src/lib/social/flag.ts:20-24`). Log lines behind `SOCIAL_GAMES_ENABLED` (`registry.ts:67`) |
 | `invites` | `/friends` (Add a friend) | `src/components/social/invite-sheet.tsx`, `invite-new.tsx`, `invite-count-line.tsx` | The Add a friend press with its count line (existing artboard) | Behind `SOCIAL_INVITES_ENABLED` (`registry.ts:68`, needs `SOCIAL_FRIENDS_ENABLED`) |
-| `card-search` | any page (header icon on the phone, rail slot on desktop) | `src/components/card-search/card-search.tsx`, `search-desktop.tsx` | The search icon or rail slot at rest (existing artboard) | Behind `CARD_SEARCH_ENABLED` (`registry.ts:34`) |
+| `card-search` | any page; the box goes on a phone frame's header search icon (Open 4) | `src/components/card-search/card-search.tsx`, `search-desktop.tsx` | The header search icon at rest (existing artboard) | Behind `CARD_SEARCH_ENABLED` (`registry.ts:34`) |
 
 ## Draft vs code
 
@@ -183,7 +199,7 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
 
 1. **`rule-zero` sets `since: 15`** (rule-zero board line 119; section 6 reasons "if that bump is 14 → 15"). `about.ts:77-82`
    says the next bump is 16, never 15, and a switched entry takes the version current when it ships: 14 or 16.
-   **Ruled (orchestrator, 2026-10-18): `since: 16` for all three entries.**
+   **Ruled (orchestrator, 2026-10-18): `since: 16` for all five entries.**
 2. **"What puts it there:"** (rule-zero board line 208, the specimen's second part). The shipped lead is `What puts it here:`
    (`src/lib/copy/rule-zero.ts:140`).
 3. **`“Try it”` is quoted as a shipped label** (entry 2, Tools line; discovery board line 238). No Tools card draws it:
@@ -200,10 +216,11 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
    frame (`/friends`), not the table, and places no numbers on it (see "What an entry draws today").
 6. **The Rule 0 fixture is the handoff's** ("Colin's pod Thursday night", rule-zero board line 199). The capture's
    fixture is Sam with Alex in `About pod` (`scripts/about-fixtures.mts:14`, the pod made at `:285`).
-7. **`width: 'plate'` and `marksPending: true`** in all three drafts, and the discovery board's own `marksPending` note.
+7. **`width: 'plate'` and `marksPending: true`** in all three discovery and Rule 0 drafts, and the discovery board's own `marksPending` note.
    Neither field is read by any renderer today (see above).
-8. **`HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` are not in `AboutSwitch`**
-   (`about.ts:108-139`), so all three drafts are type errors until they are added. Both boards say so.
+8. **`HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED`, `SOCIAL_INVITES_ENABLED` and
+   `CARD_SEARCH_ENABLED` are not in `AboutSwitch`** (`about.ts:108-139`), so all five entries are type errors until they
+   are added. Both boards say so for the first three.
 9. **A `?` pressed on the table page offers nothing.** `screenForPath` maps only the exact path `/friends`
    (`screen-for-path.ts:46`), so the entry about `/friends/table/[id]` is never offered there. The Rule 0 board says so.
 10. **Rule 0's last paragraph gates two sentences of ONE line as two lines.** `resolveLine` removes a literal substring
@@ -223,12 +240,13 @@ cites) and holds.
 An addendum folder inside `design/design_handoff_the99_about/`, the convention the three earlier addenda follow
 (`addendum-launch-entries/`, `addendum-social-line/`, `addendum-collection-edit/`), named so it does not collide with
 the v10 `addendum-launch-entries/`. Mirror `addendum-social-line/`: a `Main` board for the calls above and the gaps, one
-board per entry at 1300 and 390, a `canvas.json`, the three entry objects in a `.ts`, and a README with a per-entry
+board per entry at 1300 and 390, a `canvas.json`, the three new entry objects in a `.ts`, and a README with a per-entry
 table (`addendum-social-line/README.md:9-14`).
 
 ## Out of scope
 
 The entry words, the `AboutSwitch` additions and locator code, and the recapture itself (new locators and halo boxes
-in six themes, with `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` on; eng work for the batch
+in six themes, with `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED`, `SOCIAL_INVITES_ENABLED` and
+`CARD_SEARCH_ENABLED` on; eng work for the batch
 PR, assigned by the orchestrator), and a Rule 0 tool card in the Tools tab (the
 board's optional idea, `tools.ts:57-59`; it would need its own crop in every theme, `shots.ts:28-33`).
