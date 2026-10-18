@@ -3,7 +3,7 @@ import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
 import { hasCredit } from "../../lib/model/allowance-rule";
-import { creditCount, creditSpent } from "../../lib/model/credit-line";
+import { creditCount, creditLineKind, creditSpent } from "../../lib/model/credit-line";
 
 /**
  * The credit note beside a press that also writes the overview (`CREDITS-overview.md`, the four
@@ -42,6 +42,9 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
   // owner's share is used, or every credit is out (the-99-d9's ruling, 2026-09-24).
   if (allowance.ownerShare) return { text: synopsisCopy.pressNote.ownerShare(monthName(new Date())), writes: false };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
-  if (hasCredit(allowance)) return { text: synopsisCopy.pressNote.writes(creditCount(allowance)), writes: true };
+  if (hasCredit(allowance)) {
+    const writes = creditLineKind(allowance) === "paidNext" ? synopsisCopy.pressNote.writesPaid : synopsisCopy.pressNote.writes;
+    return { text: writes(creditCount(allowance)), writes: true };
+  }
   return { text: `${lead} ${creditSpent(allowance)}`, writes: false };
 }

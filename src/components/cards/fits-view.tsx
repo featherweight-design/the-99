@@ -25,7 +25,7 @@ import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
 import { hasCredit } from "../../lib/model/allowance-rule";
-import { creditCount, creditFirst, creditSpent, creditStanding } from "../../lib/model/credit-line";
+import { creditCount, creditFirst, creditLineKind, creditSpent, creditStanding } from "../../lib/model/credit-line";
 
 const copy = swapToolsCopy.fits;
 const read = copy.read;
@@ -392,7 +392,7 @@ export function FitsView({
     ? standing
     : stale?.outcome === "noFit"
       ? creditFirst(allowance!)
-      : read.again(creditCount(allowance!));
+      : (creditLineKind(allowance!) === "paidNext" ? read.againPaid : read.again)(creditCount(allowance!));
   const staleNote = stale && staleText ? (
     <section data-testid="read-stale" className="flex flex-col gap-[10px] rounded-[10px] px-[14px] py-[12px] border border-dashed border-[color:var(--border-dashed)]">
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{staleText}</p>

@@ -30,6 +30,12 @@ describe("pressNote", () => {
     expect(n.text).toMatch(/^Also writes the overview, using a credit\. 2 of 3 left/);
   });
 
+  it("says a paid credit when the free allowance is spent and the press takes one (L3)", () => {
+    const n = pressNote(ready({ pressWrites: true, allowance: { ...out, pack: 2, paidUsedToday: 0, paidLimit: 20 } }), "analyze")!;
+    expect(n.writes).toBe(true);
+    expect(n.text).toMatch(/^Also writes the overview, using a paid credit\. 0 of \d+ free/);
+  });
+
   // 7d: the list already has its overview, so the press returns it and spends nothing.
   it("draws nothing over a list that already has its overview", () => {
     expect(pressNote(ready({ pressWrites: false }), "reanalyze")).toBeNull();
