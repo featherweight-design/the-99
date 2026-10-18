@@ -21,7 +21,7 @@ export const privacyDoc: LegalDoc = {
         { kind: "p", lead: "Smart tools.", text: "Analysis, the Overview, Suggested changes, Help me choose and the other tools that use a credit keep what they produced, so you can read it again. Each run also records which tool ran, how many tokens it used, and what it cost." },
         { kind: "p", lead: "Wishlist, friends and pods.", text: "The cards you want and how many; who you’re friends with; your pods and what you share in them." },
         { kind: "p", lead: "Credits and purchases.", text: "Your credit balance and where each credit came from. For a purchase we keep Stripe’s ids, the amount, the tax, the currency, the billing country and the status. Your card number never reaches The 99: you type it into Stripe’s checkout." },
-        { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting (up to 7 days), then erase it once the invite is resolved or has expired.` },
+        { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting. An invite is valid for up to 7 days, and we erase the address once the invite is resolved or has expired. If that cleanup is delayed, the next sweep does it.` },
         { kind: "p", lead: "Card scanning.", text: "The scanner turns what your camera sees into a short list of numbers on your phone, and only those numbers are sent to match the card. No photo leaves your device." },
         { kind: "p", lead: "Small things.", text: "Your theme, a few view choices (grid or list, a sort) and which About entries you’ve seen, kept in cookies and your browser’s storage. Recent card searches are kept on your device and cleared when you sign out. The 99 has no analytics or advertising trackers." },
       ],
@@ -36,7 +36,7 @@ export const privacyDoc: LegalDoc = {
           items: [
             { lead: "Clerk:", text: "sign-in, your account page, and email invitations. Clerk may load its bot check from Cloudflare." },
             { lead: "Neon:", text: "the database where everything above is stored." },
-            { lead: "Vercel:", text: "hosting, and the server logs. Our own log lines carry no account id or email." },
+            { lead: "Vercel:", text: "hosting, and the server logs." },
             { lead: "Stripe:", text: "checkout, tax and receipts. Stripe gets your email and your account id when you buy, plus the billing address you enter at checkout." },
             { lead: "Resend:", text: "sends the six-digit code when someone joins by QR code." },
             { lead: "Anthropic:", text: "the AI model behind the smart tools. A run sends the deck or the cards it is about, your game records where the tool reads them, and the words you typed for it (a deck’s intent, a run’s notes). It sends no account id, email or name." },

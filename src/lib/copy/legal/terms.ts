@@ -55,7 +55,7 @@ export const termsDoc: LegalDoc = {
         { kind: "p", text: "Checkout is Stripe’s, and it takes US cards only. You need a verified email to buy. Tax is added at checkout. Your receipt is Stripe’s, and “Purchase history” on Credits links to it." },
         // One definition with the Credits page: the same three parts it draws, so a change there moves both.
         { kind: "p", text: `${creditsPageCopy.refunds.before}{email}${creditsPageCopy.refunds.after}` },
-        { kind: "p", text: "If a payment is disputed with the card issuer, we may pause buying on the account and take back the credits that payment bought." },
+        { kind: "p", text: "When a payment is refunded, or a dispute over it is decided against us, we take back the credits from that payment that you haven’t spent. While a dispute is open, the unspent credits from that payment are held back, and they come back if the dispute is decided in our favor. A dispute also pauses buying on the account until we lift the pause." },
       ],
     },
     {

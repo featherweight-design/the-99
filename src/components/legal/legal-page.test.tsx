@@ -68,4 +68,23 @@ describe("LegalToc: the section in view", () => {
       HTMLElement.prototype.getBoundingClientRect = original;
     }
   });
+
+  it("marks the last section at the foot of the page, where it cannot reach the line", () => {
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = () => ({ top: 5000 }) as DOMRect;
+    const scrollHeight = Object.getOwnPropertyDescriptor(Element.prototype, "scrollHeight");
+    Object.defineProperty(document.documentElement, "scrollHeight", { configurable: true, value: 3000 });
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 2200 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    try {
+      render(<LegalPage doc={termsDoc} />);
+      act(() => { window.dispatchEvent(new Event("scroll")); });
+      const last = termsDoc.sections[termsDoc.sections.length - 1].id;
+      expect(screen.getByRole("navigation", { name: legalCopy.onThisPage }).querySelector("[aria-current]")!.getAttribute("href")).toBe(`#${last}`);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      if (scrollHeight) Object.defineProperty(Element.prototype, "scrollHeight", scrollHeight);
+      Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+    }
+  });
 });

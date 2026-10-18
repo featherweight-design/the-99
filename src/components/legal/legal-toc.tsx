@@ -19,6 +19,12 @@ export function LegalToc({ sections }: { sections: readonly LegalSection[] }) {
     const update = () => {
       const line = window.innerHeight * 0.3;
       let current = sections[0]?.id ?? "";
+      // At the foot of the page the last, short section can never scroll up to the line: it is the one in view.
+      const atEnd = window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+      if (atEnd) {
+        setActive(sections[sections.length - 1]?.id ?? current);
+        return;
+      }
       for (const s of sections) {
         const el = document.getElementById(s.id);
         if (el && el.getBoundingClientRect().top <= line) current = s.id;

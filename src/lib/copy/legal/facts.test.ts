@@ -23,7 +23,7 @@ const terms = flat(termsDoc);
 describe("the numbers", () => {
   it("states the invite hold as the code holds it", () => {
     expect(HOLD_MS).toBe(7 * 24 * 60 * 60 * 1000);
-    expect(privacy).toContain("up to 7 days");
+    expect(privacy).toContain("An invite is valid for up to 7 days");
   });
 
   it("states the welcome grant and the pack as the ledger grants them", () => {
@@ -50,11 +50,17 @@ describe("the words", () => {
     expect(terms).toContain(`${creditsPageCopy.refunds.before}{email}${creditsPageCopy.refunds.after}`);
   });
 
-  it("states chargebacks as policy (\"may\"), not as something built, until K2 ships", () => {
-    expect(terms).toContain("we may pause buying on the account and take back the credits");
-    // The webhook ignores everything but a completed Checkout: when this starts handling disputes, state it as built.
-    const webhook = readFileSync("src/app/api/stripe-webhook/route.ts", "utf8");
-    expect(webhook).not.toMatch(/charge\.dispute|revoked_units/);
+  it("states refunds and disputes as K2 does them (reverse.ts, createPackCheckout)", () => {
+    expect(terms).toContain("we take back the credits from that payment that you haven’t spent");
+    expect(terms).toContain("A dispute also pauses buying on the account until we lift the pause.");
+    // The rules the sentences describe: a refund or lost dispute revokes the unspent part, a won dispute gives back what it took,
+    // and an opened or lost dispute blocks buying until it is cleared by hand (`purchaseBlocked`, enforced where a Session is made).
+    const reverse = readFileSync("src/lib/payments/reverse.ts", "utf8");
+    expect(reverse).toContain("purchase block");
+    const rule = readFileSync("src/lib/payments/refund-rule.ts", "utf8");
+    expect(rule).toMatch(/kind: "restore"/);
+    expect(readFileSync("src/lib/payments/checkout.ts", "utf8")).toContain("purchaseBlocked(");
+    expect(readFileSync("src/lib/payments/blocked.ts", "utf8")).toContain("Cleared by hand");
   });
 
   it("says US cards the way Checkout does", () => {
