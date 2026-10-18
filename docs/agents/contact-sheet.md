@@ -37,6 +37,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   them again, because the wrapper owns the import. Pick the component first, then set `view` to
   wherever each route renders it, which may be a wrapper.
 
+- **`openAccount`** opens the account menu (the popover at 1300, the sheet at 390) and waits for its credit chip
+  (`"chip": false` waits for the open menu alone; `"chipLine": true` also waits for the line under an expiring chip).
+  It is the one verb that does not go through `onPage`, because the menu is shell and `onPage` scopes to `<main>`: it
+  finds the trigger by `data-account-trigger`, as `openHelp` finds the ? by `data-help-button`.
 - Browser scripts reach the page through `scripts/lib/surface.mjs` — `onPage()` and `openSheet()`
   — never a bare selector. The shell renders `NavRail`, `MobileHeader` and `TabBar` around
   `<main>`, and its account menu is a `button[aria-haspopup="dialog"]` at phone width, first in
