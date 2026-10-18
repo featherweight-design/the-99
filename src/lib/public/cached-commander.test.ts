@@ -71,23 +71,17 @@ describe("the public commander cache", () => {
     expect(store.size).toBe(0);
   });
 
-  it("stores an absent commander, a settled fact", async () => {
-    const absent = { ...ok, commander: { ...ok.commander, state: "absent" } };
-    load.mockResolvedValue(absent);
-    await readPublicCommander("sol-ring-0b3f2c9e6a41");
-    expect(await readPublicCommander("sol-ring-0b3f2c9e6a41")).toEqual(absent);
-    expect(load).toHaveBeenCalledTimes(1);
-    expect(store.size).toBe(1);
-  });
-
-  it("serves a degraded commander and never stores it, so the next visit reads again", async () => {
-    const degraded = { ...ok, commander: { ...ok.commander, state: "degraded" } };
-    load.mockResolvedValue(degraded);
-    expect(await readPublicCommander("sol-ring-0b3f2c9e6a41")).toEqual(degraded);
-    load.mockResolvedValue(ok);
-    expect(await readPublicCommander("sol-ring-0b3f2c9e6a41")).toEqual(ok);
-    expect(load).toHaveBeenCalledTimes(2);
-    expect(store.size).toBe(1);
+  it("stores a found commander whatever its support state, since only a rebuild changes it", async () => {
+    for (const state of ["absent", "degraded"]) {
+      store.clear();
+      load.mockReset();
+      const found = { ...ok, commander: { ...ok.commander, state } };
+      load.mockResolvedValue(found);
+      await readPublicCommander("sol-ring-0b3f2c9e6a41");
+      expect(await readPublicCommander("sol-ring-0b3f2c9e6a41")).toEqual(found);
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(store.size).toBe(1);
+    }
   });
 
   it("lets a failed read throw, and stores nothing", async () => {

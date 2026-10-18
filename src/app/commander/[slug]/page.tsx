@@ -14,7 +14,7 @@ import { resolveSwitchEnv } from "../../../lib/switches/snapshot";
  *
  * - The switch is plumbing and decided with no account (`resolveSwitchEnv(null)`): off, a 404, never a sign-in redirect.
  * - An unknown or ambiguous address, or a card with no `commander_support` row, is a 404; a wrong name part 308s.
- * - The read is cached on the catalog generation and the deployment (`readPublicCommander`); a `degraded` read is not kept.
+ * - The read is cached on the catalog generation and the deployment (`readPublicCommander`).
  */
 export default async function PublicCommanderRoute({ params }: { params: Promise<{ slug: string }> }) {
   const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
