@@ -178,7 +178,7 @@ async function walk(browser, vp) {
     await page.waitForTimeout(2_000);
     report("Back to Home shows no tour", (await page.locator("[data-tour-card]").count()) === 0);
     // The tab's own spent mark would hide the tour on its own; clear it, so the reload proves the server's stamp.
-    await page.evaluate(() => sessionStorage.removeItem("the99.tour.spent"));
+    await page.evaluate((id) => sessionStorage.removeItem(`the99.tour.spent:${id}`), userId);
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForTimeout(2_000);
     report("a reload shows no tour", (await page.locator("[data-tour-card]").count()) === 0);
@@ -189,7 +189,7 @@ async function walk(browser, vp) {
     await sql`update user_prefs set tour_seen_at = null where user_id = ${userId}`;
     await clearAboutSheet(page, userId);
     // A new tour in the same tab: the tab's spent mark goes too, as a new tab would start without it.
-    await page.evaluate(() => sessionStorage.removeItem("the99.tour.spent"));
+    await page.evaluate((id) => sessionStorage.removeItem(`the99.tour.spent:${id}`), userId);
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await card.waitFor({ timeout: 15_000 });
     for (let i = 0; i < 5; i++) await card.getByRole("button", { name: "Next", exact: true }).click();

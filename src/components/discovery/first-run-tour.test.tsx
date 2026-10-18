@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TargetId } from "../../lib/discovery/targets";
 
 const spend = vi.fn(() => Promise.resolve());
+let account: string | null = "user_a";
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: account }) }));
 vi.mock("../../app/tour-actions", () => ({ spendTourAction: () => spend() }));
 vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn(), noteAppScroll: vi.fn() }));
 // A browser drops focus from a control the moment it goes inert; jsdom does not, so the mock does it, as Chrome would.
@@ -62,6 +64,7 @@ const card = () => screen.getByRole("dialog");
 const next = () => fireEvent.click(within(card()).getByRole("button", { name: /^(Next|Finish)$/ }));
 
 beforeEach(() => {
+  account = "user_a";
   sessionStorage.clear();
   vi.useFakeTimers();
   spend.mockClear();
@@ -260,5 +263,16 @@ describe("FirstRunTour", () => {
     arrive();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(spend).not.toHaveBeenCalledTimes(2);
+  });
+
+  it("still runs for another account signed in in the same tab", () => {
+    const first = render(<Home />);
+    arrive();
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    first.unmount();
+    account = "user_b";
+    render(<Home />);
+    arrive();
+    expect(card()).toBeInTheDocument();
   });
 });

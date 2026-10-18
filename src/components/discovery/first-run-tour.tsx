@@ -12,6 +12,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "@clerk/nextjs";
 import { spendTourAction } from "../../app/tour-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
@@ -36,20 +37,23 @@ const collectionPrecons = collectionEditCopy.ways.precons;
 const noteTitle = creatorNoteCopy.title;
 
 /**
- * This tab spent the tour. Back can restore a Home whose payload still says the tour is due (the router keeps it), and
- * that remount must not run it again; a reload reads the server, which has the stamp.
+ * This tab spent the tour, for this account. Back can restore a Home whose payload still says the tour is due (the
+ * router keeps it), and that remount must not run it again; a reload reads the server, which has the stamp. Keyed by
+ * the account, so another account signed in in the same tab still gets its own tour.
  */
-const SPENT_KEY = "the99.tour.spent";
-function spentHere(): boolean {
+const spentKey = (account: string) => `the99.tour.spent:${account}`;
+function spentHere(account: string | null | undefined): boolean {
+  if (!account) return false;
   try {
-    return sessionStorage.getItem(SPENT_KEY) === "1";
+    return sessionStorage.getItem(spentKey(account)) === "1";
   } catch {
     return false;
   }
 }
-function markSpentHere() {
+function markSpentHere(account: string | null | undefined) {
+  if (!account) return;
   try {
-    sessionStorage.setItem(SPENT_KEY, "1");
+    sessionStorage.setItem(spentKey(account), "1");
   } catch {
     // not a fallback: without storage a restored Home can show the tour once more, as before this guard.
   }
@@ -57,7 +61,8 @@ function markSpentHere() {
 
 /** Mounted on a first-run Home whose tour is due (`tourDue`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). */
 export function FirstRunTour({ precons }: { precons: boolean }) {
-  const [phase, setPhase] = useState<"waiting" | "running" | "done">(() => (spentHere() ? "done" : "waiting"));
+  const { userId: account } = useAuth();
+  const [phase, setPhase] = useState<"waiting" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
   const [note, setNote] = useState(false);
 
   useEffect(() => {
@@ -73,10 +78,15 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       if (!clear()) return;
       timer = window.setTimeout(() => {
         if (!clear()) return;
+        // The account may have loaded after the first render: its mark is read again at the moment of opening.
+        if (spentHere(account)) {
+          setPhase("done");
+          return;
+        }
         // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
         void withVisitLock(() => takeVisit());
         // The tour is spent as step 1 appears; a failed write shows it again on the next Home, which is the safe side.
-        markSpentHere();
+        markSpentHere(account);
         void spendTourAction().catch(() => {});
         setPhase("running");
       }, ARRIVE_MS);
@@ -93,7 +103,7 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       document.removeEventListener("visibilitychange", arm);
       off();
     };
-  }, [phase]);
+  }, [phase, account]);
 
   if (phase === "running")
     return (
