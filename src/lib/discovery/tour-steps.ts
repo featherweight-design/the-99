@@ -72,7 +72,10 @@ export const BESIDE = 24;
 export const FRAME = 14;
 /** Desktop card width; the phone's is the frame less 16 a side. */
 export const CARD_W = 340;
-/** At 390 the card is docked this far above the frame's foot: 12 above the locked tab bar. */
+/**
+ * At 390 the card's foot sits this far above the frame's: the table's `bottom 100 with the locked bar`, 12 above the
+ * locked tab bar's bracket rather than the bar's own 74px top.
+ */
 export const PHONE_DOCK = 100;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Math.max(lo, hi)));

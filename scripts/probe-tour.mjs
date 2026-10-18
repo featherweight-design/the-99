@@ -68,10 +68,11 @@ const seenAt = async (userId) => (await sql`select tour_seen_at from user_prefs 
  */
 const controls = (phone) => ({
   collection: phone ? { sel: "[data-step1-controls]", pad: 8 } : { sel: "[data-step1-card]", pad: 8 },
-  // A slot and the account button carry their target as a box over the control (`TargetBox`, `data-target`).
-  commanders: { sel: '[data-target="tour:commanders"]', pad: 5 },
-  decks: { sel: '[data-target="tour:decks"]', pad: 5 },
-  buying: { sel: '[data-target="tour:decks"]', pad: 5 },
+  // The slots by their own label, not by the target they register, so a target on the wrong slot fails here.
+  commanders: { sel: '[data-locked-slot="Commanders"]', pad: 5 },
+  decks: { sel: '[data-locked-slot="Decks"]', pad: 5 },
+  buying: { sel: '[data-locked-slot="Decks"]', pad: 5 },
+  // The account button has one target, a box over the button (`TargetBox`).
   look: { sel: '[data-target="tour:account"]', pad: phone ? 1 : 4 },
   whatsNew: { sel: "[data-arrivals-banner] section", pad: 8 },
 });
