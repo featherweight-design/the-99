@@ -236,6 +236,22 @@
           "settle": 600
         }
       ]
+    },
+    {
+      "id": "help-panel",
+      "label": "/collection — the ? opened: the panel at 1300 and the sheet at 390, with this screen's entries (R2·8 #2023)",
+      "view": "src/components/help/help-root.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[type='search']",
+          "settle": 600
+        },
+        {
+          "openHelp": true,
+          "settle": 800
+        }
+      ]
     }
   ],
   "needsFixture": [
@@ -327,16 +343,6 @@
     }
   ],
   "unmounted": [
-    {
-      "id": "help-panel",
-      "mountedBy": "R2·8",
-      "goto": "any screen with HELP_PANEL_ENABLED",
-      "widths": [
-        "phone",
-        "desktop"
-      ],
-      "shows": "the ? in the rail and header; the panel (1300) and the sheet (390); Elsewhere chips; Show me; search; the none state"
-    },
     {
       "id": "help-over-card-details",
       "mountedBy": "R2·9",
