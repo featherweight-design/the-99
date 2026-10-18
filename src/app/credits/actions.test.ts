@@ -10,7 +10,9 @@ const m = vi.hoisted(() => ({
   createPackCheckout: vi.fn(),
   readReturn: vi.fn(),
   receiptUrlFor: vi.fn(),
+  purchaseBlocked: vi.fn(),
 }));
+vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
@@ -30,6 +32,7 @@ beforeEach(() => {
   m.currentUser.mockResolvedValue(verified);
   m.stripeClient.mockReturnValue({});
   m.createPackCheckout.mockResolvedValue({ ok: true, url: "https://checkout.stripe.com/x" });
+  m.purchaseBlocked.mockResolvedValue(false);
 });
 
 describe("buyPackAction", () => {
@@ -59,6 +62,15 @@ describe("buyPackAction", () => {
       m.currentUser.mockResolvedValueOnce(user);
       expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "unverified" });
     }
+    expect(m.createPackCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses a blocked account before any Stripe call, and fails closed when the block cannot be read", async () => {
+    m.purchaseBlocked.mockResolvedValueOnce(true);
+    expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "blocked" });
+    m.purchaseBlocked.mockRejectedValueOnce(new Error("db down"));
+    expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "failed" });
+    expect(m.stripeClient).not.toHaveBeenCalled();
     expect(m.createPackCheckout).not.toHaveBeenCalled();
   });
 

@@ -2340,6 +2340,9 @@ export const deckProfiles = pgTable("deck_profiles", {
 export const stripeCustomers = pgTable("stripe_customers", {
   userId: text("user_id").primaryKey(),
   stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  // PURCHASE BLOCK (K2): set when a dispute opens against this account's payment. Only buying is refused
+  // (`buyPackAction`); credits already held keep spending. Never cleared by code: Hugh clears it by hand.
+  purchaseBlockedAt: timestamp("purchase_blocked_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -2375,6 +2378,24 @@ export const paymentRecords = pgTable("payment_records", {
 ]);
 
 /**
+ * One row per dispute on a payment of ours (K2), with NO account id, for the same reason as `payment_records`:
+ * dispute records outlive an account, so this table is kept through the purge on purpose. `units_revoked` is
+ * what THIS dispute took from the lot, so a win gives back exactly that and no more.
+ */
+export const paymentDisputes = pgTable("payment_disputes", {
+  disputeId: text("dispute_id").primaryKey(),
+  paymentIntentId: text("payment_intent_id").notNull(),
+  unitsRevoked: integer("units_revoked").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  closedAt: timestamp("closed_at"),
+}, (t) => [
+  check("payment_disputes_status_check", sql`${t.status} in ('open', 'won', 'lost')`),
+  check("payment_disputes_units_check", sql`${t.unitsRevoked} >= 0`),
+  index("payment_disputes_intent_idx").on(t.paymentIntentId),
+]);
+
+/**
  * PAID CREDITS, one row per lot (payments plan, PR L, 2026-10-13). A `plan` lot is a subscription
  * period's credits and a `pack` lot a one-time purchase. A lot is spent by the `model_calls` rows that
  * name it (`credit_grant_id`), counted by the same rule as the allowance minus its 24-hour window
@@ -2393,6 +2414,13 @@ export const creditGrants = pgTable("credit_grants", {
   source: text("source").notNull(),
   units: integer("units").notNull(),
   revokedUnits: integer("revoked_units").notNull().default(0),
+  // What a refund or dispute wanted back but could not take because it was already spent (K2): the
+  // shortfall, set (not added) by each event, for the admin view.
+  unrecoveredUnits: integer("unrecovered_units").notNull().default(0),
+  // The largest `amount_refunded` (cents) any event has reported for this lot's charge, written as
+  // greatest(existing, fetched) under the player's lock (K2). Every refund figure reads THIS, never a raw
+  // Stripe snapshot, so an older snapshot delivered late cannot lower a revocation.
+  refundedCents: integer("refunded_cents").notNull().default(0),
   expiresAt: timestamp("expires_at"),
   externalId: text("external_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -2400,6 +2428,8 @@ export const creditGrants = pgTable("credit_grants", {
   check("credit_grants_source_check", sql`${t.source} in ('plan', 'pack', 'welcome', 'gift')`),
   check("credit_grants_units_check", sql`${t.units} > 0`),
   check("credit_grants_revoked_check", sql`${t.revokedUnits} between 0 and ${t.units}`),
+  check("credit_grants_unrecovered_check", sql`${t.unrecoveredUnits} between 0 and ${t.units}`),
+  check("credit_grants_refunded_check", sql`${t.refundedCents} >= 0`),
   // A pack and an admin's gift never expire, a welcome lot always does, a plan lot may (while subscribed it does not).
   check("credit_grants_pack_never_expires_check", sql`${t.source} = 'plan' or (${t.source} in ('pack', 'gift') and ${t.expiresAt} is null) or (${t.source} = 'welcome' and ${t.expiresAt} is not null)`),
   index("credit_grants_user_idx").on(t.userId),

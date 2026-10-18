@@ -5,6 +5,7 @@ import { stripeCustomers } from "../../db/schema";
 import { isTombstoned } from "../account/tombstone";
 import { recordHit } from "../rate/observe";
 import { overLimit, RATE_RULES } from "../rate/rules";
+import { purchaseBlocked } from "./blocked";
 import { appOrigin, packCheckoutParams, priceIdFor } from "./checkout-rule";
 import { PAYMENTS_APP, type PackId } from "./packs";
 import { packPriceEnv } from "./stripe";
@@ -28,12 +29,16 @@ import { packPriceEnv } from "./stripe";
  */
 export type CheckoutResult =
   | { ok: true; url: string }
-  | { ok: false; reason: "unconfigured" | "throttled" };
+  | { ok: false; reason: "unconfigured" | "throttled" | "blocked" };
 
 export async function createPackCheckout(
   stripe: Stripe,
   input: { userId: string; email: string | null; packId: PackId; actionId: string },
 ): Promise<CheckoutResult> {
+  // The one place a Session is made, so the one place the purchase block (K2) is enforced: no caller can skip it.
+  // A Session made BEFORE a dispute and paid after still fulfils (`fulfilCheckoutSession` is untouched): the
+  // payment happened, and refusing it would take money for nothing.
+  if (await purchaseBlocked(input.userId)) return { ok: false, reason: "blocked" };
   const priceId = priceIdFor(input.packId, packPriceEnv());
   const origin = appOrigin(process.env.APP_ORIGIN, process.env.ADMIN_ENV_LABEL);
   if (!priceId || !origin) return { ok: false, reason: "unconfigured" };

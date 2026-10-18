@@ -5,15 +5,18 @@ const fulfil = vi.hoisted(() => vi.fn());
 const configured = vi.hoisted(() => ({ value: true }));
 vi.mock("../../../lib/payments/fulfil", () => ({ fulfilCheckoutSession: fulfil, paymentsConfigured: () => configured.value }));
 
+const reverse = vi.hoisted(() => vi.fn());
+vi.mock("../../../lib/payments/reverse", () => ({ reverseCharge: reverse }));
+
 import { POST } from "./route";
 
 // A made-up secret and key: no payment data and no real credential ever reaches these tests (scope §5.2).
 const SECRET = "whsec_test_fixture";
 const signer = new Stripe("sk_test_fixture");
 
-function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null } = {}) {
+function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null; id?: string } = {}) {
   const metadata = opts.metadata === undefined ? { app: "the-99" } : opts.metadata;
-  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: "cs_1", object: "checkout.session", metadata } } });
+  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: opts.id ?? "cs_1", object: "checkout.session", metadata } } });
   const header = opts.signature !== undefined
     ? opts.signature
     : signer.webhooks.generateTestHeaderString({ payload, secret: opts.secret ?? SECRET, timestamp: opts.timestamp });
@@ -28,6 +31,7 @@ beforeEach(() => {
   vi.stubEnv("STRIPE_WEBHOOK_SECRET_PREVIOUS", "");
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
   fulfil.mockReset();
+  reverse.mockReset();
   configured.value = true;
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -129,5 +133,56 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
     expect(logged).toContain("refused (attribution)");
     expect(logged).toContain("(08006)");
     for (const leak of ["cs_1", "evt_1", "cus_1", "user_a"]) expect(logged).not.toContain(leak);
+  });
+});
+
+describe("POST /api/stripe-webhook: refunds and disputes", () => {
+  const types = ["charge.refunded", "charge.dispute.created", "charge.dispute.closed"];
+
+  it("hands the charge or dispute id to reverseCharge, for each of the three events", async () => {
+    reverse.mockResolvedValue({ outcome: "refund" });
+    for (const type of types) expect((await POST(delivery(type, { id: "ch_1", metadata: null }))).status).toBe(200);
+    expect(reverse.mock.calls.map((c) => [c[2], c[3]])).toEqual(types.map((t) => [t, "ch_1"]));
+  });
+
+  it("answers 200 and touches nothing for a charge tagged as another app's, even with no key", async () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "");
+    expect((await POST(delivery("charge.refunded", { metadata: { app: "concert-crawl" } }))).status).toBe(200);
+    expect(reverse).not.toHaveBeenCalled();
+  });
+
+  it("answers 503 with no usable key, for an event that may be ours", async () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "");
+    expect((await POST(delivery("charge.dispute.created", { metadata: null }))).status).toBe(503);
+    expect(reverse).not.toHaveBeenCalled();
+  });
+
+  it("answers 500 for a payment of ours with no record yet, so Stripe redelivers it", async () => {
+    reverse.mockResolvedValue({ outcome: "retry" });
+    expect((await POST(delivery("charge.refunded"))).status).toBe(500);
+  });
+
+  it("answers 200 and logs at error level for an unmatched charge past the retry window", async () => {
+    reverse.mockResolvedValueOnce({ outcome: "unmatched" });
+    expect((await POST(delivery("charge.refunded"))).status).toBe(200);
+    expect(vi.mocked(console.error).mock.calls.flat().join("\n")).toContain("no payment record");
+  });
+
+  it("answers 200 for an ignored or duplicate event and 500 when the work fails", async () => {
+    for (const outcome of ["ignored", "duplicate", "no_grant", "dispute_won"]) {
+      reverse.mockResolvedValueOnce({ outcome });
+      expect((await POST(delivery("charge.refunded"))).status).toBe(200);
+    }
+    reverse.mockRejectedValueOnce(Object.assign(new Error("boom ch_1 user_a"), { code: "40P01" }));
+    expect((await POST(delivery("charge.refunded"))).status).toBe(500);
+  });
+
+  it("logs a refund, a dispute and a shortfall at error level, in fixed words with no id", async () => {
+    reverse.mockResolvedValueOnce({ outcome: "dispute_opened", shortfall: true });
+    await POST(delivery("charge.dispute.created", { id: "dp_secret", metadata: null }));
+    const errors = vi.mocked(console.error).mock.calls.flat().map(String).join("\n");
+    expect(errors).toContain("dispute_opened");
+    expect(errors).toContain("shortfall");
+    expect(errors).not.toContain("dp_secret");
   });
 });

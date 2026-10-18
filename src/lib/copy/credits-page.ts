@@ -97,6 +97,7 @@ export const creditsPageCopy = {
     throttled: "Too many tries. Wait a little, then try again.",
     unconfigured: "Buying credits isn’t set up here yet.",
     failed: "Couldn’t start checkout. Try again.",
+    blocked: "Buying is paused on this account. Email support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual.",
   },
   hist: {
     title: "Purchase history",

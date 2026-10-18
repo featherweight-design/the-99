@@ -93,3 +93,28 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   signs up again gets another lot.
 - Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
 
+
+- **Refunds and disputes** (K2). The webhook also handles `charge.refunded`, `charge.dispute.created` and
+  `charge.dispute.closed` (`reverseCharge`, `src/lib/payments/reverse.ts`; rules in `refund-rule.ts`). The charge,
+  dispute and PaymentIntent are RETRIEVED; the event is a trigger. A charge is ours when its PaymentIntent has a
+  `payment_records` row. With none, a PaymentIntent tagged `the-99` answers 500 while the charge is under 2 hours old (not recorded yet, Stripe
+  redelivers); older, the event is recorded and answered 200 `unmatched` with an error log (a refused Checkout never gets a
+  record; `reconcile:payments` covers it),
+  anything else is Concert Crawl's and is 200 ignored. One transaction: the `stripe_events` row first, the
+  `model-allowance:<user>` advisory lock `reserveModelCall` takes, then the lot FOR UPDATE (after
+  `stripe_customers`, the purge's order). A refund's target is `min(units, ceil(units * amount_refunded / amount))`
+  from the lot's stored MONOTONIC refund claim (`credit_grants.refunded_cents`, `greatest(stored, fetched)` written under the player lock, so a stale snapshot never lowers it or `unrecovered_units`), so replays and out-of-order partials converge; `revoked_units` only rises, and
+  never past what is unspent (`countsAgainstGrant`); only a WON dispute lowers it, and then to the refund target alone
+  (recomputed, never `revoked - took`), unless another dispute on the payment is open OR lost. Every exit (no lot, lot gone mid-event, normal) moves the dispute row through one upsert (`advanceDispute`), so a dispute keeps closing after a purge. The spent part is NOT
+  clawed back: the shortfall is `credit_grants.unrecovered_units`, set (not added) by each event, WRITTEN for the admin
+  PR to read (no reader yet). A dispute revokes every unspent
+  credit, keeps a `payment_disputes` row (no account id, kept through the purge like `payment_records`;
+  `units_revoked` is what THIS dispute took) and sets `stripe_customers.purchase_blocked_at`. The lot-revoke is a SNAPSHOT at the event: credits freed afterwards by failed runs stay spendable (known,
+  accepted). A win recomputes as above; a loss stays revoked. The dispute row is the state machine (`planDispute`), so a
+  `closed` before its `created` cannot revoke a won dispute. **The block is never cleared by code: Hugh clears it by
+  hand** (`update stripe_customers set purchase_blocked_at = null where user_id = …`). `createPackCheckout` (the one place a Session is made) refuses as
+  `blocked`, and `buyPackAction` reads the same helper first; a Session made before a dispute still fulfils when paid; credits already held keep spending. Dashboard: add the three events to the
+  endpoint. `pnpm reconcile:payments` is read-only and dry-run only: the last 72 hours of paid `the-99` PaymentIntents
+  with no record, and records or pack lots with no paid PaymentIntent, as counts and ids; `RECONCILE_TARGET_BRANCH`
+  must equal the database's `neon.branch_id`, and production or staging also need `RECONCILE_READONLY_OK=<branch id>`.
+  Proof: `pnpm probe:payments-webhook` (cases j to q).

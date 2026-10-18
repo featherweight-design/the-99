@@ -3,6 +3,8 @@ import { fulfilCheckoutSession, paymentsConfigured } from "../../../lib/payments
 import { isOurSession } from "../../../lib/payments/packs";
 import { verifyStripeEvent } from "../../../lib/payments/verify";
 import { stripeClient } from "../../../lib/payments/stripe";
+import { reverseCharge } from "../../../lib/payments/reverse";
+import { PAYMENTS_APP } from "../../../lib/payments/packs";
 
 // Pin to Node: the Stripe SDK and the neon-serverless websocket driver do not run on Edge.
 export const runtime = "nodejs";
@@ -25,6 +27,11 @@ export const dynamic = "force-dynamic";
  *   (`fulfilCheckoutSession`). A grant, a duplicate, an unattributed payment and a refusal all answer
  *   200, because retrying a mismatch cannot heal it; a failure to reach Stripe or the database answers
  *   500, and Stripe retries for up to three days.
+ * - `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed` (K2): the charge and the dispute are
+ *   retrieved from Stripe and judged there (`reverseCharge`). A refund or a dispute takes back the lot's
+ *   UNSPENT credits; a dispute also blocks that account's buying. Another app's charge is 200 and ignored; one
+ *   of ours with no payment record yet answers 500, so Stripe redelivers it after the record lands. Every
+ *   refund, dispute and shortfall logs at error level so it is seen.
  *
  * Logs carry the event type and the outcome in fixed words: never the payload, an id, an email or an
  * amount.
@@ -40,6 +47,7 @@ export async function POST(req: NextRequest) {
     return new Response("Webhook verification failed", { status: 400 });
   }
   const event = verified;
+  if (REVERSAL_EVENTS.has(event.type)) return reverse(event);
   if (event.type !== "checkout.session.completed") return new Response("Ignored", { status: 200 });
   // The Stripe account is shared with Concert Crawl, and this endpoint receives their Sessions too. One
   // not tagged as ours is acknowledged and left alone: no retrieve, no record, and never a 503, which
@@ -69,6 +77,40 @@ export async function POST(req: NextRequest) {
     return new Response("OK", { status: 200 });
   } catch (error) {
     // A fixed message and the SQLSTATE alone: a driver or Stripe error's message can carry ids.
+    const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
+    console.error(`[stripe-webhook] ${event.type}: failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}; Stripe will retry`);
+    return new Response("Failed", { status: 500 });
+  }
+}
+
+const REVERSAL_EVENTS = new Set(["charge.refunded", "charge.dispute.created", "charge.dispute.closed"]);
+
+/** A refund or a dispute. See the route's header; the outcome words below are the only thing logged. */
+async function reverse(event: { id: string; type: string; data: { object: unknown } }): Promise<Response> {
+  const object = event.data.object as { id: string; metadata?: Record<string, string> | null };
+  // A charge copies its PaymentIntent's metadata. One explicitly tagged as another app's is Concert Crawl's.
+  const app = event.type === "charge.refunded" ? object.metadata?.app : undefined;
+  if (app !== undefined && app !== PAYMENTS_APP) {
+    console.info(`[stripe-webhook] ${event.type}: not this app's charge; ignored`);
+    return new Response("Ignored", { status: 200 });
+  }
+  const stripe = stripeClient();
+  if (!stripe) {
+    console.error(`[stripe-webhook] ${event.type}: no usable Stripe key for this environment; Stripe will retry`);
+    return new Response("Webhook not configured", { status: 503 });
+  }
+  try {
+    const { outcome, shortfall } = await reverseCharge(stripe, event.id, event.type, object.id);
+    if (outcome === "retry") {
+      console.error(`[stripe-webhook] ${event.type}: our payment has no record yet; Stripe will retry`);
+      return new Response("Not yet", { status: 500 });
+    }
+    if (outcome === "unmatched") console.error(`[stripe-webhook] ${event.type}: our charge has no payment record and is past the retry window; recorded, see reconcile:payments`);
+    else if (outcome === "duplicate" || outcome === "ignored" || outcome === "dispute_unchanged") console.info(`[stripe-webhook] ${event.type}: ${outcome}`);
+    else console.error(`[stripe-webhook] ${event.type}: ${outcome}; credits taken back where unspent`);
+    if (shortfall) console.error(`[stripe-webhook] ${event.type}: part of it was already spent; the shortfall is on the lot`);
+    return new Response("OK", { status: 200 });
+  } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[stripe-webhook] ${event.type}: failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}; Stripe will retry`);
     return new Response("Failed", { status: 500 });

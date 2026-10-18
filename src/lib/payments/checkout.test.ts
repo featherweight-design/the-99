@@ -33,6 +33,9 @@ vi.mock("../../db", async () => {
 vi.mock("../account/tombstone", () => ({ isTombstoned: async (u: string) => state.tombstoned.has(u) }));
 vi.mock("../rate/observe", () => ({ recordHit: vi.fn(async () => ++state.hits) }));
 
+const blocked = vi.hoisted(() => ({ value: false }));
+vi.mock("./blocked", () => ({ purchaseBlocked: async () => blocked.value }));
+
 import { createPackCheckout, ensureCustomer } from "./checkout";
 
 const create = vi.fn(async () => ({ id: "cus_new" }));
@@ -42,6 +45,7 @@ const stripe = { customers: { create, update }, checkout: { sessions: { create: 
 const ACTION = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
+  blocked.value = false;
   state.mapping.clear();
   state.hits = 0;
   state.inserts = 0;
@@ -124,5 +128,15 @@ describe("createPackCheckout", () => {
     expect(await run()).toEqual({ ok: false, reason: "unconfigured" });
     expect(state.hits).toBe(0);
     expect(sessionCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("createPackCheckout: the purchase block", () => {
+  it("makes no Customer, no Session and no hit for a blocked account", async () => {
+    blocked.value = true;
+    expect(await createPackCheckout(stripe, { userId: "user_a", email: "a@x.dev", packId: "pack40", actionId: ACTION })).toEqual({ ok: false, reason: "blocked" });
+    expect(create).not.toHaveBeenCalled();
+    expect(sessionCreate).not.toHaveBeenCalled();
+    expect(state.hits).toBe(0);
   });
 });
