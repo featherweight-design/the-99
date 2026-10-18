@@ -73,6 +73,12 @@ export function useHelpStop(el: HTMLElement | null) {
   }, [el]);
 }
 
+/**
+ * The lifted ?'s id. Card details names it in `aria-owns`, so the ? is inside the modal's accessibility tree, not only
+ * its Tab cycle: a screen reader confined to an `aria-modal` dialog would otherwise never find it.
+ */
+export const HELP_STOP_ID = "help-over-card-details";
+
 /** The extra Tab stop card details' trap takes, or null when no ? is lifted. */
 export function helpStop(): HTMLElement | null {
   return stop !== null && stop.isConnected ? stop : null;

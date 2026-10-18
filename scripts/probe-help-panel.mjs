@@ -204,6 +204,11 @@ async function overDetails(browser, w, deckPath) {
       return hit === b ? "the ?" : (hit?.outerHTML.slice(0, 80) ?? "nothing");
     });
     check(onTop === "the ?", `${w.name} the ? is above the backdrop (a pointer reaches it)`, onTop);
+    const owned = await page.evaluate((card) => {
+      const id = document.querySelector(card)?.getAttribute("aria-owns");
+      return id ? document.getElementById(id)?.getAttribute("data-help-button") ?? `names ${id}, absent` : "no aria-owns";
+    }, CARD);
+    check(owned === "rail", `${w.name} card details owns the lifted ? (inside the modal's accessibility tree)`, owned);
     const slot = await page.evaluate(() => {
       const b = document.querySelector('body > [data-help-button="rail"]')?.getBoundingClientRect();
       const r = document.querySelector("[data-help-slot]")?.getBoundingClientRect();

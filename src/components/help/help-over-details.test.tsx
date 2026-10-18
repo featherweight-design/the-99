@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRef } from "react";
 import { useDialogA11y, visibleFocusables } from "../../lib/a11y/dialog";
-import { helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
+import { HELP_STOP_ID, helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
@@ -36,7 +36,7 @@ function Details({ onClose }: { onClose: () => void }) {
   const beside = usePanelIsBeside();
   return (
     <div data-backdrop data-beside={beside || undefined} style={{ position: "fixed", inset: 0, zIndex: 50 }}>
-      <div ref={ref} role="dialog" aria-modal="true" aria-label="card">
+      <div ref={ref} role="dialog" aria-modal="true" aria-label="card" aria-owns={HELP_STOP_ID}>
         <button type="button">first</button>
         <button type="button">last</button>
       </div>
@@ -72,6 +72,8 @@ describe("the ? over card details at 1280", () => {
     expect(q().parentElement).toBe(document.body);
     expect(q().style.position).toBe("fixed");
     expect(q().style.zIndex).toBe("51");
+    // Named by card details' aria-owns: inside the modal's accessibility tree.
+    expect(q().id).toBe(HELP_STOP_ID);
     expect(container.querySelector("[data-rail] > span[aria-hidden]")).not.toBeNull();
     rerender(<Page details={false} />);
     expect(q().closest("[data-rail]")).not.toBeNull();
@@ -133,11 +135,11 @@ describe("the ? over card details at 1280", () => {
   });
 
   it("keeps the card under the panel when the window narrows to the sheet", async () => {
-    stubViewport(1300);
+    const view = stubViewport(1300);
     render(<Page details />);
     fireEvent.click(q());
     await screen.findByRole("dialog", { name: helpPanelCopy.button });
-    act(() => stubViewport(390));
+    act(() => view.resizeTo(390));
     const sheet = await screen.findByRole("dialog", { name: helpPanelCopy.button });
     await waitFor(() => expect(sheet.getAttribute("data-help-panel")).toBe("sheet"));
     expect(sheet.className).toContain("z-[52]");
@@ -146,7 +148,7 @@ describe("the ? over card details at 1280", () => {
   });
 
   it("leaves a card opened over the open panel in front, holding focus and keys", async () => {
-    stubViewport(1300);
+    const view = stubViewport(1300);
     const onClose = vi.fn();
     const { rerender } = render(<Page details={false} onClose={onClose} />);
     fireEvent.click(q());
@@ -160,6 +162,13 @@ describe("the ? over card details at 1280", () => {
     escape();
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog", { name: helpPanelCopy.button })).toBe(panel);
+    // Narrowed to the sheet, the card stays in front of the panel.
+    act(() => view.resizeTo(390));
+    const sheet = () => screen.getByRole("dialog", { name: helpPanelCopy.button, hidden: true });
+    await waitFor(() => expect(sheet().getAttribute("data-help-panel")).toBe("sheet"));
+    expect(sheet().className).toContain("z-[49]");
+    expect(document.querySelector("[data-help-scrim]")?.className).toContain("z-[48]");
+    act(() => view.resizeTo(1300));
     // A second card, opened while the panel is still open, is in front too.
     rerender(<Page details={false} onClose={onClose} />);
     rerender(<Page details onClose={onClose} />);

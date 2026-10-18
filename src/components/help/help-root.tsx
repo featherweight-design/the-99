@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { afterDialogsReleased, afterScrollRestored } from "../../lib/a11y/dialog";
-import { useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
+import { HELP_STOP_ID, useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
@@ -220,7 +220,7 @@ export function HelpButton({ place }: { place: keyof typeof PLACE }) {
         {at !== null &&
           at.slot === slot &&
           createPortal(
-            <Button help={help} place={place} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />,
+            <Button help={help} place={place} id={HELP_STOP_ID} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />,
             document.body,
           )}
       </>
@@ -234,9 +234,11 @@ function Button({
   place,
   buttonRef,
   style,
+  id,
 }: {
   help: HelpCtx;
   place: keyof typeof PLACE;
+  id?: string;
   buttonRef?: (el: HTMLButtonElement | null) => void;
   style?: CSSProperties;
 }) {
@@ -254,6 +256,7 @@ function Button({
   return (
     <button
       ref={ref}
+      id={id}
       type="button"
       style={style}
       data-help-button={place}

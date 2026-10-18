@@ -71,7 +71,8 @@ export function HelpPanel({
   const [over, setOver] = useState(detailsUp);
   if (over && !detailsUp) setOver(false);
   const stacked = desk && over;
-  const under = desk && detailsUp && !over;
+  // At either width: a resize to the sheet keeps the card in front of a panel it opened over.
+  const under = detailsUp && !over;
   // Held on `over`, not on the width: a window narrowed below `md` turns the panel into the sheet, and the card under
   // it stays inert. The sheet and its scrim then sit above the card's layer too.
   usePanelBeside(over);
@@ -236,7 +237,14 @@ export function HelpPanel({
 
   return (
     <>
-      {!desk && <div aria-hidden data-help-scrim onClick={onClose} className={`fixed inset-0 ${over ? "z-[51]" : "z-[49]"} bg-[rgba(10,8,6,0.62)]`} />}
+      {!desk && (
+        <div
+          aria-hidden
+          data-help-scrim
+          onClick={onClose}
+          className={`fixed inset-0 ${over ? "z-[51]" : under ? "z-[48]" : "z-[49]"} bg-[rgba(10,8,6,0.62)]`}
+        />
+      )}
       <section
         ref={ref}
         role="dialog"

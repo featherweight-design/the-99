@@ -39,7 +39,7 @@ import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
+import { HELP_STOP_ID, helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
@@ -2176,6 +2176,8 @@ export function CardModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        // The ? lifted over the backdrop (R2·9) belongs to this modal's accessibility tree; absent, the id names nothing.
+        aria-owns={locked ? undefined : HELP_STOP_ID}
         inert={helpStacked || undefined}
         onClick={(e) => e.stopPropagation()}
         // A swipe that began on a peek, the grip or the turn plate ends in that control's click;
