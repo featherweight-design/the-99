@@ -1,6 +1,6 @@
 // Change deck (Rule 0 plan PR 7b; boards S3, W3): every own deck, the seated one first, then nearest the table, then
 // the ones not in the read; a press seats it through the swap; the seated row closes; a short deck is pressable.
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ load: vi.fn(), swap: vi.fn() }));
@@ -112,8 +112,12 @@ describe("Change deck's failures and focus", () => {
     });
     try {
       await open();
-      const dialog = screen.getByRole("dialog");
-      expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]);
+      // The panel stays hidden until `useAnchoredPanel` places it. The link reaches the hook's trigger ref in a passive
+      // effect, after the hook's first synchronous placement, so `at` arrives from its frame loop, outside the press's
+      // `act`: wait for the placed (visible) panel, then for focus.
+      const dialog = await screen.findByRole("dialog");
+      expect(dialog.style.visibility).toBe("visible");
+      await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
     }
