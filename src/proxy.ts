@@ -44,7 +44,7 @@ import { isQrToken } from "./lib/invites/rules";
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
 // a signed-in reader whose own switch is on (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
 // protected: the pattern needs the slash.
-const isPublic = createRouteMatcher(["/", "/offline", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+const isPublic = createRouteMatcher(["/", "/offline", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
