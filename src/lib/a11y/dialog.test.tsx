@@ -1,7 +1,7 @@
 import { fireEvent, render, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, useRef } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "./dialog";
+import { afterScrollRestored, leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "./dialog";
 
 // The trap roots below are appended by hand rather than rendered, so Testing
 // Library's automatic cleanup does not know about them.
@@ -773,6 +773,32 @@ describe("useBackDismiss", () => {
     window.scrollY = 50;
     await new Promise((r) => setTimeout(r, 700));
     expect(window.scrollY).toBe(50);
+    scrollTo.mockRestore();
+  });
+
+  // Show me (discovery R2·8) reveals its target once the sheet's pop has landed; a reveal made while this loop still
+  // ran was put straight back to the offset the sheet opened over.
+  it("runs afterScrollRestored at once with no restoration running, else once the restoration ends", async () => {
+    const now = vi.fn();
+    afterScrollRestored(now);
+    expect(now).toHaveBeenCalledTimes(1);
+
+    window.scrollY = 900;
+    const { hook } = open();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation((_x, y) => {
+      window.scrollY = y as number;
+    });
+    const popped = new Promise((r) => window.addEventListener("popstate", r, { once: true }));
+    hook.unmount();
+    await popped;
+    const later = vi.fn(() => window.scrollY);
+    const cancelled = vi.fn();
+    afterScrollRestored(later);
+    afterScrollRestored(cancelled)();
+    expect(later).not.toHaveBeenCalled();
+    await waitFor(() => expect(later).toHaveBeenCalledTimes(1), { timeout: 2_000 });
+    expect(later).toHaveReturnedWith(900);
+    expect(cancelled).not.toHaveBeenCalled();
     scrollTo.mockRestore();
   });
 

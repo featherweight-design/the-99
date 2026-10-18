@@ -16,6 +16,9 @@ const REPORTERS = new Set(["PendingPip", "PendingTrack", "PendingReporter"]);
 // loading.tsx, which commits at press and ends pending before any mark could paint; a same-page
 // anchor never navigates.
 const KEPT = "a kept route: its own screen commits at press";
+// The ? panel's links: a press closes the panel or sheet, which unmounts the link (PR #2023 review).
+const HELP_PANEL =
+  "its press closes the help panel, which unmounts the link, so the navigation runs through usePendingPush and the provider reports it";
 const EXEMPT: Record<string, string> = {
   "components/cards/card-modal.tsx :: `/decks/${claim.id}`": KEPT,
   "components/cards/card-modal.tsx :: `/decks/${deck.id}`": KEPT,
@@ -24,6 +27,9 @@ const EXEMPT: Record<string, string> = {
   "components/cards/read-row.tsx :: `/decks/${deckId}`": KEPT,
   "components/collection/add-cards-sheet.tsx :: PICK_FROM_COLLECTION_HREF":
     "its press closes the sheet, which unmounts the row, so the navigation runs through usePendingPush and the provider reports it",
+  "components/help/help-panel.tsx :: REFERENCE_HREF": HELP_PANEL,
+  "components/help/help-panel.tsx :: TOOLS_HREF": HELP_PANEL,
+  "components/help/help-panel.tsx :: href": HELP_PANEL,
   "components/collection/short-deck-warning.tsx :: `/decks/${row.deckId}`":
     "opens in a new tab, so this page and its warning stay where they are",
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,

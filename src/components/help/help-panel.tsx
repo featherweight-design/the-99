@@ -27,7 +27,7 @@ import { ENTRY_TARGETS } from "../../lib/discovery/entry-targets";
 import type { TargetId } from "../../lib/discovery/targets";
 import { useMomentHold } from "../../lib/moments/hold";
 import { useTargets } from "../discovery/targets-provider";
-import { PendingReporter } from "../shell/pending-reporter";
+import { usePendingPush } from "../shell/pending-push";
 import { SearchIcon } from "../ui/search-icon";
 import { SearchField } from "../ui/text-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -83,13 +83,24 @@ export function HelpPanel({
   // G21: no visible entry lives on this screen (or the page is no screen at all).
   const empty = ready && (here === null || entries.every((e) => e.screen !== here.screen));
 
-  // A link press closes the panel. The sheet's history entry stays under the new page rather than stepping back,
-  // which would cancel the navigation; a press to the page already open just closes.
+  // A link press closes the panel, which unmounts the link and the report its own status would carry to the shell's
+  // loading screen. So the navigation runs from the pending provider, which stays mounted and reports it, as the
+  // account menu's rows do; the link's own navigation is cancelled so it does not run twice. The sheet's history entry
+  // stays under the new page rather than stepping back, which would cancel the navigation. A press to the page
+  // already open (a fragment on it included) just closes and lets the link move to its fragment; a modified press is
+  // the browser's own.
+  const { go } = usePendingPush();
   const leave = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const now = window.location.pathname + window.location.search;
-    if (!desk && href.split("#")[0] !== now) leaveDialogsForNavigation();
+    if (href.split("#")[0] === now) {
+      onClose();
+      return;
+    }
+    e.preventDefault();
+    if (!desk) leaveDialogsForNavigation();
     onClose();
+    go(href);
   };
 
   const targets = useTargets();
@@ -113,7 +124,6 @@ export function HelpPanel({
               className="mt-[6px] self-start py-[8px] text-[14px] font-semibold text-[color:var(--accent)] no-underline"
             >
               {helpPanelCopy.noneOut}
-              <PendingReporter href={REFERENCE_HREF} />
             </Link>
           </div>
         );
@@ -139,7 +149,6 @@ export function HelpPanel({
                 <span className="mt-[3px] block text-[13px] leading-[1.45] text-[color:var(--fg-muted)]">
                   {h.field === "title" ? firstSentence(h.entry.caption) : marked}
                 </span>
-                <PendingReporter href={href} />
               </Link>
             );
           })}
@@ -273,11 +282,9 @@ export function HelpPanel({
         >
           <Link href={TOOLS_HREF} onClick={leave(TOOLS_HREF)} className="py-[10px] font-mono text-[12.5px] text-[color:var(--fg-muted)] no-underline">
             {helpPanelCopy.footTools}
-            <PendingReporter href={TOOLS_HREF} />
           </Link>
           <Link href={REFERENCE_HREF} onClick={leave(REFERENCE_HREF)} className="py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] no-underline">
             {helpPanelCopy.footAll}
-            <PendingReporter href={REFERENCE_HREF} />
           </Link>
         </footer>
       </section>
@@ -340,7 +347,6 @@ function Row({
           ))}
           <Link href={href} onClick={onLeave(href)} className="self-start py-[4px] font-mono text-[12px] text-[color:var(--accent)] no-underline">
             {helpPanelCopy.readWhole}
-            <PendingReporter href={href} />
           </Link>
         </div>
       )}

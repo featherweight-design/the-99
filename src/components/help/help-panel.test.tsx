@@ -5,8 +5,13 @@ import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { usePublishBuilderScreen } from "../decks/builder-screen";
-import { HALO_ATTR, TargetsProvider, useTarget } from "../discovery/targets-provider";
+import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "../discovery/targets-provider";
 import { HelpButton, HelpRoot } from "./help-root";
+import { reveal } from "../../lib/ui/reveal";
+import { Report } from "../shell/pending-report";
+import { ARRIVE_MS, MomentsProvider, useMomentAnchor } from "../moments/moments-provider";
+
+vi.mock("../../app/moments-actions", () => ({ spendMomentAction: vi.fn(async () => {}) }));
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn(), prefetch: vi.fn() }) }));
@@ -38,6 +43,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.mocked(reveal).mockReset();
+  window.scrollY = 0;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -52,9 +59,10 @@ function Control({ id }: { id: "stand-ins" }) {
   return <button ref={ref} type="button" data-control={id}>control</button>;
 }
 
-type DrawOpts = { on?: boolean; deckView?: DeckView; control?: boolean };
+type DrawOpts = { on?: boolean; deckView?: DeckView; control?: boolean; push?: (href: string) => void };
 const draw = (opts: DrawOpts = {}) => render(tree(opts));
-const tree = ({ on = true, deckView, control = false }: DrawOpts = {}) => (
+const tree = ({ on = true, deckView, control = false, push }: DrawOpts = {}) => {
+  const help = (
     <TargetsProvider>
       <HelpRoot on={on}>
         <HelpButton place="rail" />
@@ -63,7 +71,14 @@ const tree = ({ on = true, deckView, control = false }: DrawOpts = {}) => (
         <button type="button">page</button>
       </HelpRoot>
     </TargetsProvider>
-);
+  );
+  // The shell's pending provider, whose `push` runs a navigation that outlives the panel.
+  return push ? (
+    <Report.Provider value={{ report: () => {}, pathname, push, registerContentScope: () => {} }}>{help}</Report.Provider>
+  ) : (
+    help
+  );
+};
 
 const q = () => screen.getByRole("button", { name: helpPanelCopy.button });
 const panel = () => screen.getByRole("dialog", { name: helpPanelCopy.button });
@@ -299,5 +314,183 @@ describe("Show me", () => {
     await waitFor(() => expect(control.hasAttribute(HALO_ATTR)).toBe(true));
     expect(pressed).not.toHaveBeenCalled();
     await act(async () => {});
+  });
+
+  // The sheet's close steps back off its history entry, and that pop starts dialog.ts's scroll restoration, which
+  // puts the page's old offset back for ~30 frames. Under reduced motion the reveal jumps at once, so a reveal made
+  // inside that window was pulled straight back and the halo sat offscreen.
+  it("from the sheet, reaches a target below the fold under reduced motion, and stays there", async () => {
+    pathname = "/decks/d1";
+    stubViewport(390);
+    window.scrollY = 120;
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(((_x: number, y: number) => {
+      window.scrollY = y;
+    }) as typeof window.scrollTo);
+    // Reduced motion's reveal: one jump to the target, far below the offset the sheet opened over.
+    vi.mocked(reveal).mockImplementation(() => {
+      window.scrollTo(0, 2400);
+      return () => {};
+    });
+    draw({ deckView: "shopping", control: true });
+    await openIt();
+    const control = document.querySelector('[data-control="stand-ins"]') as HTMLElement;
+    fireEvent.click(panel().querySelector('[data-help-show-me="stand-ins"]')!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(control.hasAttribute(HALO_ATTR)).toBe(true), { timeout: 2000 });
+    expect(reveal).toHaveBeenCalledTimes(1);
+    // Past the restoration's 30 frames: the page is still where the reveal took it.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    expect(window.scrollY).toBe(2400);
+    scrollTo.mockRestore();
+  });
+});
+
+describe("a link press", () => {
+  // The press closes the panel, which unmounts the link: its own status could not carry a slow navigation to the
+  // shell's loading screen, so the provider, which stays mounted, runs and reports it.
+  it("hands an ordinary press to the pending provider, cancelling the link's own navigation, and closes", async () => {
+    stubViewport(1300);
+    const push = vi.fn();
+    draw({ push });
+    await openIt();
+    const link = within(panel()).getByRole("link", { name: helpPanelCopy.footAll });
+    const ran = fireEvent.click(link, { button: 0 });
+    expect(ran).toBe(false);
+    expect(push).toHaveBeenCalledWith("/about?tab=reference");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("hands a row's Read the whole entry to the provider too", async () => {
+    stubViewport(1300);
+    pathname = "/decks/d1";
+    const push = vi.fn();
+    draw({ push, deckView: "your-deck" });
+    await openIt();
+    fireEvent.click(panel().querySelector('[data-help-row="deck-a"] button')!);
+    fireEvent.click(within(panel()).getByRole("link", { name: helpPanelCopy.readWhole }));
+    expect(push).toHaveBeenCalledWith("/about?tab=reference#deck-a");
+  });
+
+  it("leaves a modified press to the browser, and the panel open", async () => {
+    stubViewport(1300);
+    const push = vi.fn();
+    draw({ push });
+    await openIt();
+    const link = within(panel()).getByRole("link", { name: helpPanelCopy.footAll });
+    link.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(link, { button: 0, metaKey: true });
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+  });
+
+  it("only closes on a press to the page already open, a fragment on it included, and pushes nothing", async () => {
+    stubViewport(1300);
+    pathname = "/about";
+    window.history.replaceState(null, "", "/about?tab=reference");
+    const push = vi.fn();
+    draw({ push });
+    await openIt();
+    const link = within(panel()).getByRole("link", { name: helpPanelCopy.footAll });
+    // Read after React's handler (the document hears the click last): the default is left to the link itself.
+    let prevented: boolean | null = null;
+    const hear = (e: Event) => {
+      prevented = e.defaultPrevented;
+      e.preventDefault();
+    };
+    document.addEventListener("click", hear);
+    fireEvent.click(link, { button: 0 });
+    document.removeEventListener("click", hear);
+    expect(prevented).toBe(false);
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("from the sheet, leaves its history entry under the new page rather than stepping back", async () => {
+    stubViewport(390);
+    const push = vi.fn();
+    draw({ push });
+    await openIt();
+    const back = vi.spyOn(window.history, "back");
+    fireEvent.click(within(panel()).getByRole("link", { name: helpPanelCopy.footAll }), { button: 0 });
+    expect(push).toHaveBeenCalledWith("/about?tab=reference");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(back).not.toHaveBeenCalled();
+  });
+});
+
+describe("Show me and the moments", () => {
+  // One fake observer: the test says when the control is on screen.
+  let notify: ((entries: { target: Element; isIntersecting: boolean }[]) => void) | null = null;
+  class FakeObserver {
+    constructor(cb: (entries: { target: Element; isIntersecting: boolean }[]) => void) {
+      notify = cb;
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  beforeEach(() => {
+    vi.stubGlobal("IntersectionObserver", FakeObserver);
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    notify = null;
+  });
+
+  function Anchor() {
+    const anchor = useMomentAnchor("stand-ins", { eligible: true, copy: { tool: "Stand-ins", line: "opens Stand-ins." } });
+    return (
+      <button type="button" data-control="stand-ins" {...anchor}>
+        control
+      </button>
+    );
+  }
+
+  const advance = async (ms: number) => {
+    await act(async () => {
+      vi.advanceTimersByTime(ms);
+    });
+  };
+
+  // Closing the panel ends its moment hold, and the provider's arrival timer would bring a bubble up inside the
+  // halo's 2.4s: the halo is the one guide on screen (rows 101 to 104).
+  it("holds every bubble off through the halo, and lets them come again after it", async () => {
+    pathname = "/decks/d1";
+    stubViewport(1300);
+    render(
+      <TargetsProvider>
+        <MomentsProvider live={["stand-ins"]} spent={[]}>
+          <HelpRoot on>
+            <HelpButton place="rail" />
+            <Builder view="shopping" />
+            <Anchor />
+          </HelpRoot>
+        </MomentsProvider>
+      </TargetsProvider>,
+    );
+    await openIt();
+    const control = document.querySelector('[data-control="stand-ins"]') as HTMLElement;
+    vi.useFakeTimers();
+    fireEvent.click(panel().querySelector('[data-help-show-me="stand-ins"]')!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    act(() => notify!([{ target: control, isIntersecting: true }]));
+    await advance(0);
+    expect(control.hasAttribute(HALO_ATTR)).toBe(true);
+    await advance(ARRIVE_MS * 3);
+    expect(control.hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.queryByRole("note")).toBeNull();
+    // The halo ends and the hold with it: the moment may arrive again.
+    await advance(HALO_MS);
+    expect(control.hasAttribute(HALO_ATTR)).toBe(false);
+    act(() => notify!([{ target: control, isIntersecting: false }]));
+    act(() => notify!([{ target: control, isIntersecting: true }]));
+    await advance(ARRIVE_MS);
+    expect(screen.getByRole("note", { name: "Stand-ins, a tip" })).toBeTruthy();
   });
 });

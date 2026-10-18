@@ -356,6 +356,8 @@ function restoreHref(href: string | null) {
 function pinScrollY(y: number | null) {
   if (y == null) return;
   const offset = y;
+  pinning += 1;
+  let stopped = false;
   // A link click during the reassert window fires none of the three events below
   // — found by Copilot's round-2 review — so the loop would otherwise keep
   // applying the OLD route's offset onto the route the click just committed.
@@ -366,10 +368,17 @@ function pinScrollY(y: number | null) {
   let frames = 0;
   let rafId = requestAnimationFrame(reassert);
   const stop = () => {
+    if (stopped) return;
+    stopped = true;
     cancelAnimationFrame(rafId);
     window.removeEventListener("wheel", stop);
     window.removeEventListener("touchstart", stop);
     window.removeEventListener("keydown", stop);
+    pinning -= 1;
+    if (pinning > 0) return;
+    const waiting = [...afterPin];
+    afterPin.clear();
+    for (const then of waiting) then();
   };
   window.addEventListener("wheel", stop, { passive: true });
   window.addEventListener("touchstart", stop, { passive: true });
@@ -387,6 +396,27 @@ function pinScrollY(y: number | null) {
     if (frames < 30) rafId = requestAnimationFrame(reassert);
     else stop();
   }
+}
+
+/** Scroll restorations running now (`pinScrollY`), and what waits for the last of them to end. */
+let pinning = 0;
+const afterPin = new Set<() => void>();
+
+/**
+ * Runs `then` once no scroll restoration is running: at once when none is, else when the last ends (its 30 frames
+ * out, the reader's own scroll, or the URL moving). For a move the app makes to the page right after a dialog's
+ * release (Show me's reveal), which the restoration would otherwise put straight back where the dialog opened. Wait
+ * for `afterDialogsReleased` first: the restoration starts with the pop that wait ends on. Returns its own cancel.
+ */
+export function afterScrollRestored(then: () => void): () => void {
+  if (pinning === 0) {
+    then();
+    return () => {};
+  }
+  afterPin.add(then);
+  return () => {
+    afterPin.delete(then);
+  };
 }
 
 /** Stand the dialog on a fresh entry at the current URL. */

@@ -2,13 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { afterDialogsReleased } from "../../lib/a11y/dialog";
+import { afterDialogsReleased, afterScrollRestored } from "../../lib/a11y/dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import type { DeckView } from "../../lib/copy/about";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import type { TargetId } from "../../lib/discovery/targets";
 import { BuilderScreenContext } from "../decks/builder-screen";
-import { useTargets } from "../discovery/targets-provider";
+import { HALO_MS, useTargets } from "../discovery/targets-provider";
+import { useYieldMoment } from "../moments/moments-provider";
 import { HelpPanel } from "./help-panel";
 
 /**
@@ -84,22 +85,54 @@ function HelpOn({ children }: { children: ReactNode }) {
     if (open) setOpen(false);
   }
 
-  const onShowMe = useCallback((target: TargetId) => {
-    setShowMe({ target });
-    setOpen(false);
+  // No bubble from the press to the halo's end (rows 101 to 104): the panel's own hold ends as it closes, which would
+  // start the moments' arrival timer under the halo. So a delivery hold is taken BEFORE the close and kept until the
+  // halo ends, or the root goes.
+  const yieldBubble = useYieldMoment();
+  const hold = useRef<{ release: () => void; timer: number | null } | null>(null);
+  const endHold = useCallback(() => {
+    const h = hold.current;
+    hold.current = null;
+    if (h === null) return;
+    if (h.timer !== null) window.clearTimeout(h.timer);
+    h.release();
   }, []);
+  useEffect(() => endHold, [endHold]);
+
+  const onShowMe = useCallback(
+    (target: TargetId) => {
+      endHold();
+      hold.current = { release: yieldBubble(), timer: null };
+      setShowMe({ target });
+      setOpen(false);
+    },
+    [endHold, yieldBubble],
+  );
 
   // After the close has committed: the panel's own cleanup has put focus back on the ? and, for the sheet, queued the
   // release of its history entry. The scroll waits for that release, so the pop cannot land after it.
+  // That pop also starts the page's scroll restoration, which puts the offset the sheet opened over back for about
+  // half a second; a reveal made inside it (at once, under reduced motion) is pulled straight back, so it waits too.
   useEffect(() => {
     if (showMe === null || targets === null) return;
-    return afterDialogsReleased(() => {
-      setShowMe(null);
-      // Scrolled into view and haloed for 2.4s; never pressed, and no bubble (rows 101 to 104).
-      targets.scrollToTarget(showMe.target);
-      targets.haloTarget(showMe.target);
+    let unpin = () => {};
+    const unrelease = afterDialogsReleased(() => {
+      unpin = afterScrollRestored(() => {
+        setShowMe(null);
+        // Scrolled into view and haloed for 2.4s; never pressed, and no bubble (rows 101 to 104).
+        targets.scrollToTarget(showMe.target);
+        if (targets.haloTarget(showMe.target) && hold.current !== null) {
+          hold.current.timer = window.setTimeout(endHold, HALO_MS);
+        } else {
+          endHold();
+        }
+      });
     });
-  }, [showMe, targets]);
+    return () => {
+      unrelease();
+      unpin();
+    };
+  }, [showMe, targets, endHold]);
 
   const ctx = useMemo<HelpCtx>(() => ({ open, toggle, prefetch }), [open, toggle, prefetch]);
 
