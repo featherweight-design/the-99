@@ -42,7 +42,7 @@ export type CreditsModel = {
   paidToday: PaidToday | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; plan?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; plan?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;

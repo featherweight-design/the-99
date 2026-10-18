@@ -18,11 +18,13 @@ export type PaidToday = {
   backAtMs: number | null;
 };
 
-export function paidToday(a: { paidUsedToday?: number | null; paidLimit?: number | null; paidBackAt?: Date | null }): PaidToday | null {
+export function paidToday(a: { paidUsedToday?: number | null; paidLimit?: number | null; paidBackAt?: Date | null; paidNextAt?: Date | null }): PaidToday | null {
   const used = a.paidUsedToday;
   const limit = a.paidLimit;
   if (used == null || limit == null || limit <= 0) return null;
   const atLimit = !paidRoom({ paidUsed: used, paidLimit: limit });
   if (!atLimit && used < PAID_TODAY_SHOWN_FROM) return null;
-  return { used, limit, atLimit, percent: Math.min(100, Math.round((used / limit) * 100)), backAtMs: a.paidBackAt ? a.paidBackAt.getTime() : null };
+  // At the limit the limit reopens at `paidBackAt`; below it, the next counted run leaving the window is the "resets at" time.
+  const backAt = atLimit ? a.paidBackAt : a.paidNextAt;
+  return { used, limit, atLimit, percent: Math.min(100, Math.round((used / limit) * 100)), backAtMs: backAt ? backAt.getTime() : null };
 }

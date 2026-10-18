@@ -135,6 +135,8 @@ export type Allowance = {
   paidLimit?: number;
   /** When the paid limit has room again: the oldest counted paid run leaving the window. Null while it has room. */
   paidBackAt?: Date | null;
+  /** When the NEXT counted paid run leaves the window (the paid counter's `nextAt`): the near-limit line's "resets at", where `paidBackAt` is still null. */
+  paidNextAt?: Date | null;
   /** When a cancelled plan's remaining credits lapse. Unset until the Subscription PR fills it. */
   planExpiresAt?: Date | null;
   /** `PAYMENTS_ENABLED` for this reader, stamped by the read that knows the request's switches. Absent reads as off:

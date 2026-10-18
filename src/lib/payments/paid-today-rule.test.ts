@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { allowanceFrom } from "../model/allowance-rule";
 import { PAID_TODAY_SHOWN_FROM, paidToday } from "./paid-today-rule";
 
 describe("the daily paid line (P5, P5b)", () => {
@@ -20,5 +21,15 @@ describe("the daily paid line (P5, P5b)", () => {
 
   it("a group's own limit below 15 still shows at the limit", () => {
     expect(paidToday({ paidUsedToday: 10, paidLimit: 10 })).toMatchObject({ atLimit: true });
+  });
+
+  it("P5 gets its reset time from what the paid counter really produces below the limit", () => {
+    const now = new Date("2026-10-17T12:00:00Z");
+    const rows = Array.from({ length: 17 }, (_, i) => ({ status: "spent" as const, createdAt: new Date(now.getTime() - (i + 1) * 3_600_000) }));
+    const paid = allowanceFrom(rows, now, 20);
+    expect(paid.reopensAt).toBeNull();
+    const line = paidToday({ paidUsedToday: paid.used, paidLimit: 20, paidBackAt: paid.reopensAt, paidNextAt: paid.nextAt });
+    expect(line?.atLimit).toBe(false);
+    expect(line?.backAtMs).toBe(paid.nextAt!.getTime());
   });
 });
