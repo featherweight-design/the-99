@@ -35,7 +35,6 @@ export const BRACKET_NAMES: Record<Bracket, string> = {
   5: "cEDH",
 } as const;
 
-/** `Optimized`, or `Optimized or cEDH` — the permitted side, spoken. */
 /**
  * The noun a bracket reading counts a rule in, singular then plural. Extra turns are the one rule
  * that counts two things: Exhibition forbids extra-turn CARDS outright, while Core and Upgraded
@@ -46,6 +45,7 @@ export function ruleNounFor(rule: keyof typeof deckAnalysisCopy.verdict.ruleNoun
   return rule === "extraTurns" && below > 1 ? ruleZeroCopy.seat.loopNouns : deckAnalysisCopy.verdict.ruleNouns[rule];
 }
 
+/** `Optimized`, or `Optimized or cEDH` — the permitted side, spoken. */
 export function bracketPhrase(permits: readonly Bracket[]): string {
   const names = permits.map((b) => BRACKET_NAMES[b]);
   return names.length === 1 ? names[0] : names.join(" or ");
