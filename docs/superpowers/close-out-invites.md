@@ -1,7 +1,7 @@
 # Close-out: Invites
 
-**Walked:** 2026-10-18, on `main` with all six plan PRs and their follow-ups merged (#1986, #1990, #1994, #1996,
-#1998, #1999), then again after the close-out's own fixes (#2078).
+**Walked:** 2026-10-18, on `main` with every plan PR merged (#1940, #1954, #1964, #1971, #1976, #1977, #1981; PR 6
+split into 6a and 6b) and the follow-ups (#1986, #1990, #1994, #1996, #1998, #1999), then again after the close-out's own fixes (#2078).
 
 **Where.** A scratch branch made from local-dev (`scratch-9b-invites-closeout`, deleted once this was recorded),
 migrated to `main`'s schema. `next start` ran against it with these switches on: `SOCIAL_FRIENDS_ENABLED`,
@@ -23,7 +23,7 @@ four property tables `docs/superpowers/design-tables/invites-pr4.md`, `pr5`, `pr
 
 | Surface | 390 | 1300 | Seen |
 |---|---|---|---|
-| Add a friend: chooser (N) | ✓ | ✓ | Two cards; the fan shows three backs and the accent count line |
+| Add a friend: chooser (N) | ✓ | ✓ | Two cards; the fan draws one back per invite left (two here) and the accent count line |
 | Path 2, empty: the QR press and the email form | ✓ | ✓ | The QR press, then "or", then the outlined Send. Stacked on the phone, inline on desktop |
 | The invite QR, live (Q1) | ✓ | ✓ | The full ring, `mm:ss left`, and "held by this QR" |
 | `/friends`: the count line | ✓ | ✓ | The waiting and held forms. Right-aligned on desktop since #2078 |
@@ -35,7 +35,7 @@ four property tables `docs/superpowers/design-tables/invites-pr4.md`, `pr5`, `pr
 
 **Photographed by:**
 - `scripts/contact-sheet.mjs` over `docs/superpowers/inventories/invites.json` (8 of 8 cells) and `invites-admin.json`
-  (9 of 9; one row is phone-only);
+  (8 of 8; one row is desktop-only and one phone-only);
 - `pnpm probe:invites-join` (32 of 32 checks, photos in `contact-sheets/invites-join/`).
 
 The sheets are not committed.
@@ -84,5 +84,5 @@ All are reachable in code; the walk named each branch.
 
 **Owed, and now scheduled.** The plan deferred it under the About pause (plan, "About"). On 2026-10-18 the
 orchestrator added `invites` to the launch-end About batch, reusing the entry and artboard its handoff already carries
-(`about · invites.ts`, `The 99 - About · Invites Entry.dc.html`). The brief is `2026-10-18-about-launch-entries.md`.
+(`about · invites.ts`, `The 99 - About · Invites Entry.dc.html`). The brief is `2026-10-18-about-launch-entries.md`, entries 4 and 5 (added by #2079).
 The entry ships with that batch's single `ABOUT_VERSION` bump, at `since: 16`.
