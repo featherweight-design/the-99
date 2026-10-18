@@ -528,6 +528,8 @@ export function AccountMenu({
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={label}
+        // The contact sheet's `openAccount` step finds the trigger by this mark, as `openHelp` finds the ? by its own.
+        data-account-trigger=""
         {...afterGame}
         onClick={() => setOpen((v) => !v)}
         // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
