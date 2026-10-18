@@ -30,13 +30,14 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
     const inserted = await tx.insert(stripeEvents).values({ eventId, type: eventType })
       .onConflictDoNothing().returning({ id: stripeEvents.eventId });
     if (inserted.length === 0) return { outcome: "duplicate" as const };
-    // FOR SHARE, against the account purge, which deletes this mapping BEFORE the account's lots
+    // FOR KEY SHARE (a plain FOR SHARE would deadlock with a dispute's purchase-block update, which takes the payment row first),
+    // against the account purge, which deletes this mapping BEFORE the account's lots
     // (`PURGE_ORDER`). Whichever takes the row first, the other waits: a purge that got there first
     // leaves no mapping, so the payment is kept unattributed; a grant that got there first commits
     // before the purge's next statement, which then deletes the lot it wrote.
     const [mapped] = fetched.customerId
       ? await tx.select({ userId: stripeCustomers.userId }).from(stripeCustomers)
-        .where(eq(stripeCustomers.stripeCustomerId, fetched.customerId)).for("share")
+        .where(eq(stripeCustomers.stripeCustomerId, fetched.customerId)).for("key share")
       : [];
     const decision = decideFulfilment(fetched, mapped?.userId ?? null, packPriceEnv());
     if (decision.kind === "refuse") return { outcome: "refuse" as const, reason: decision.reason };

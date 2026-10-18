@@ -24,10 +24,10 @@ if (decision.kind !== "grant") throw new Error("fixture must grant");
 
 const world = {
   events: new Set<string>(), records: new Map<string, { checkoutSessionId: string }>(), lots: new Map<string, GrantRow>(),
-  disputes: new Map<string, { pi: string; status: DisputeStatus; unitsRevoked: number }>(), blocked: false,
+  disputes: new Map<string, { pi: string; status: DisputeStatus; unitsRevoked: number }>(), blocked: false, refundedCents: 0,
 };
 function reset() {
-  world.events = new Set(); world.disputes = new Map(); world.blocked = false;
+  world.refundedCents = 0; world.events = new Set(); world.disputes = new Map(); world.blocked = false;
   world.records = new Map([[decision.kind === "grant" ? decision.record.paymentIntentId : "", { checkoutSessionId: decision.kind === "grant" ? decision.record.checkoutSessionId : "" }]]);
   // The lot as `fulfilInvoice` writes it: external_id = the invoice id.
   world.lots = new Map([["in_1", { id: "g1", userId: "user_a", units: decision.kind === "grant" ? decision.units : 0, revokedUnits: 0, unrecoveredUnits: 0, refundedCents: 0 }]]);
@@ -37,6 +37,7 @@ const tx: ReverseTx = {
   async insertEvent(id) { if (world.events.has(id)) return false; world.events.add(id); return true; },
   async paymentRecord(pi) { return world.records.get(pi) ?? null; },
   async grantOwner(key) { return world.lots.get(key)?.userId ?? null; },
+  async recordRefund(_pi, cents) { world.refundedCents = Math.max(world.refundedCents, cents); },
   async lockPlayer() {},
   async blockPurchases() { world.blocked = true; },
   async lockGrant(key) { return world.lots.get(key) ?? null; },
@@ -87,6 +88,13 @@ describe("K2's reversal against a plan lot", () => {
     expect((await refund(250, "evt_half")).outcome).toBe("refund");
     expect(world.lots.get("in_1")?.revokedUnits).toBe(30);
     expect((await refund(250, "evt_half")).outcome).toBe("duplicate");
+  });
+
+  it("keeps the invoice's refund on its payment record, replay or older figure never lowering it", async () => {
+    await refund(250, "evt_half");
+    await refund(100, "evt_older");
+    await refund(250, "evt_half");
+    expect(world.refundedCents).toBe(250);
   });
 
   it("is decided as ours by the payment record alone, though the invoice's PaymentIntent carries no tag", async () => {

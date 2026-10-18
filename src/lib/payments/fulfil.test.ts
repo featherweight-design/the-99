@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
 
 // The transaction's shape, played by hand: which inserts conflicted, and whether the customer maps.
-const state = vi.hoisted(() => ({ seen: false, eventInserted: true, recordInserted: true, lotInserted: true, mapped: "user_a" as string | null, lotInserts: 0 }));
+const state = vi.hoisted(() => ({ seen: false, eventInserted: true, recordInserted: true, lotInserted: true, mapped: "user_a" as string | null, lotInserts: 0, lockModes: [] as string[] }));
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
   const insert = (table: unknown) => ({
@@ -19,7 +19,7 @@ vi.mock("../../db", async () => {
   });
   const tx = {
     insert,
-    select: () => ({ from: () => ({ where: () => ({ for: async () => (state.mapped ? [{ userId: state.mapped }] : []) }) }) }),
+    select: () => ({ from: () => ({ where: () => ({ for: async (mode: string) => (state.lockModes.push(mode), state.mapped ? [{ userId: state.mapped }] : []) }) }) }),
   };
   return {
     db: {
@@ -50,6 +50,13 @@ describe("fulfilCheckoutSession: what each conflict means", () => {
     reset();
     expect((await run()).outcome).toBe("grant");
     expect(state.lotInserts).toBe(1);
+  });
+
+  it("reads the customer mapping FOR KEY SHARE: a plain share lock deadlocks with a dispute's purchase block", async () => {
+    reset();
+    state.lockModes = [];
+    await run();
+    expect(state.lockModes).toEqual(["key share"]);
   });
 
   it("asks Stripe nothing for an event already recorded", async () => {

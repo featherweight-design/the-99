@@ -46,6 +46,8 @@ export interface ReverseTx {
   insertEvent(eventId: string, type: string): Promise<boolean>;
   paymentRecord(paymentIntentId: string): Promise<{ checkoutSessionId: string } | null>;
   grantOwner(checkoutSessionId: string): Promise<string | null>;
+  /** Raises the payment's account-free cumulative refund to at least `cents` (`greatest`, so replays and out-of-order events never lower it). */
+  recordRefund(paymentIntentId: string, cents: number): Promise<void>;
   lockPlayer(userId: string): Promise<void>;
   blockPurchases(userId: string): Promise<void>;
   lockGrant(checkoutSessionId: string): Promise<GrantRow | null>;
@@ -112,6 +114,8 @@ export async function reverseCharge(
   return store.transaction(async (tx) => {
     if (!(await tx.insertEvent(eventId, eventType))) return { outcome: "duplicate" as const };
     const record = await tx.paymentRecord(facts.paymentIntentId);
+    // The refund is kept on the PAYMENT too, which has no account: it survives the purge and covers a payment with no lot.
+    if (record) await tx.recordRefund(facts.paymentIntentId, facts.charge.refunded);
     const owner = record ? await tx.grantOwner(record.checkoutSessionId) : null;
     const keepDispute = () => (facts.disputeId && facts.dispute ? tx.advanceDispute(facts.disputeId, facts.paymentIntentId, facts.dispute, 0) : Promise.resolve(false));
     // An unattributed payment, or an account already purged, has no lot to take from. A dispute is still kept,
@@ -218,6 +222,9 @@ function txPort(tx: Tx): ReverseTx {
     async grantOwner(checkoutSessionId) {
       const [row] = await tx.select({ userId: creditGrants.userId }).from(creditGrants).where(eq(creditGrants.externalId, checkoutSessionId));
       return row?.userId ?? null;
+    },
+    async recordRefund(pi, cents) {
+      await tx.update(paymentRecords).set({ refundedCents: sql`greatest(${paymentRecords.refundedCents}, ${cents})` }).where(eq(paymentRecords.paymentIntentId, pi));
     },
     // The key `reserveModelCall` takes (allowance.ts), so a revoke and a reserve for one player take turns.
     async lockPlayer(userId) {
