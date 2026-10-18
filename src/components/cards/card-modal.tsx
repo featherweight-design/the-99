@@ -39,7 +39,7 @@ import { cheapestLiveCents, priceFor, priceKeyFor } from "../../lib/cards/price-
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { helpStop, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
+import { helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
@@ -1515,6 +1515,10 @@ export function CardModal({
   // The ? lifted over the backdrop at 1280 is one more stop in the cycle, and only while this card is in front.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef, extraStop: locked ? undefined : helpStop });
   useCardDetailsUp(!locked);
+  // The ? panel open over this card (R2·9): the backdrop still covers the whole viewport, rail included, but pads out the
+  // rail and the panel's 400px, so the dialog centres beside the panel rather than under its edge. The neighbor plates
+  // are anchored from the backdrop's centre and would land under the rail or the panel, so they are not drawn meanwhile.
+  const besideHelp = usePanelIsBeside() && !locked;
 
 
   const gestures = useCardSheetGestures({
@@ -2128,6 +2132,7 @@ export function CardModal({
       ref={backdropRef}
       className={
         "fixed inset-0 flex items-center justify-center"
+        + (besideHelp ? " box-border pl-[var(--rail-w)] pr-[400px]" : "")
         + (covered ? " z-[49]" : " z-50")
       }
       inert={locked}
@@ -2151,7 +2156,7 @@ export function CardModal({
           threshold is built from — so the dialog never moves, with a neighbor on one side,
           both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
           browser" — a visible, clickable plate behind the zoom could still page past it). */}
-      {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen ? (
+      {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen && !besideHelp ? (
         <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
       ) : null}
       <div
@@ -3137,7 +3142,7 @@ export function CardModal({
           </div>
         )}
       </div>
-      {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen ? (
+      {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen && !besideHelp ? (
         <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
       ) : null}
     </div>

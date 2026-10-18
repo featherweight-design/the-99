@@ -21,7 +21,8 @@
 //   - at 1300 the rail's ? is drawn above card details' backdrop (it is the element at its own centre), is one extra
 //     Tab stop in card details' cycle, and Tab reaches nothing else outside the dialog; pressed, the panel opens as a
 //     stacked dialog (`aria-modal` true) titled `Collection · Card details` over the open card, holds Tab, and Escape
-//     closes the panel only (focus back on the ?), then a second Escape closes card details;
+//     closes the panel only (focus back on the ?), then a second Escape closes card details. While the panel is open
+//     the dialog sits beside it, in the room left of it (H3's note), and centres again when it closes;
 //   - at 390 nothing is added: no ? is lifted, and Tab never reaches one.
 //
 // IT WRITES NOTHING: no database connection, and every press is a read (the panel, its search, Show me's halo). So it
@@ -220,6 +221,23 @@ async function overDetails(browser, w, deckPath) {
     const modal = await page.locator(PANEL).getAttribute("aria-modal");
     check(modal === "true", `${w.name} over card details the panel is a stacked dialog`, `aria-modal ${modal}`);
     check((await page.locator(CARD).count()) === 1, `${w.name} card details stays open under the panel`, `${await page.locator(CARD).count()}`);
+    // H3's note: the panel opens beside the dialog at 1280, so the dialog moves into the room left of the panel.
+    await page.waitForTimeout(300);
+    const room = await page.evaluate(([card, panel]) => {
+      const c = document.querySelector(card)?.getBoundingClientRect();
+      const p = document.querySelector(panel)?.getBoundingClientRect();
+      return c && p ? { cardRight: Math.round(c.right), panelLeft: Math.round(p.left), cardLeft: Math.round(c.left) } : null;
+    }, [CARD, PANEL]);
+    check(room !== null && room.cardRight <= room.panelLeft + 2, `${w.name} the panel opens beside card details`, JSON.stringify(room));
+    // The backdrop still covers the rail: what sits at a rail link's centre is not the link (only the ? is lifted).
+    const railHit = await page.evaluate(() => {
+      const link = document.querySelector("aside a[href]");
+      if (!link) return "no rail link";
+      const r = link.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return link.contains(hit) ? "the link" : "covered";
+    });
+    check(railHit === "covered", `${w.name} the rail's links stay under the backdrop`, railHit);
     const title = await page.locator(`${PANEL} h2`).textContent();
     if (fromCollection) check(title === "Collection · Card details", `${w.name} the title names card details`, `${title}`);
     else skip(`${w.name} the title names card details`, `opened from a deck, whose screen is the deck (${title})`);
@@ -240,6 +258,11 @@ async function overDetails(browser, w, deckPath) {
     check((await page.locator(PANEL).count()) === 0, `${w.name} Escape closes the panel`, "closed");
     check((await page.locator(CARD).count()) === 1, `${w.name} that Escape leaves card details open`, `${await page.locator(CARD).count()}`);
     check((await focusPlace(page)) === "help", `${w.name} focus goes back to the ?`, await focusPlace(page));
+    const back = await page.evaluate((card) => {
+      const c = document.querySelector(card)?.getBoundingClientRect();
+      return c ? Math.round(c.left + c.width / 2 - window.innerWidth / 2) : null;
+    }, CARD);
+    check(back !== null && Math.abs(back) <= 1, `${w.name} card details centres again once the panel closes`, `offset ${back}`);
     await page.keyboard.press("Escape");
     await page.waitForSelector(CARD, { state: "detached", timeout: 5_000 }).catch(() => {});
     check((await page.locator(CARD).count()) === 0, `${w.name} a second Escape closes card details`, `${await page.locator(CARD).count()}`);

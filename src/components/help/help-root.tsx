@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { afterDialogsReleased, afterScrollRestored } from "../../lib/a11y/dialog";
 import { useCardDetailsIsUp, useHelpStop } from "../../lib/a11y/help-over-dialog";
@@ -189,19 +189,27 @@ export function HelpButton({ place }: { place: keyof typeof PLACE }) {
   // place in the rail, which keeps an empty slot of its size. The backdrop is fixed over the whole viewport and the
   // rail is its own stacking layer under it, so the ? leaves the rail for the document's top layer while it is lifted.
   const lift = help !== null && place === "rail" && desk && detailsUp;
-  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  // Where the slot is, for the slot it was read from: a lift that just started never draws at the last one's place.
+  const [at, setAt] = useState<{ slot: HTMLElement; left: number; top: number } | null>(null);
   const [slot, setSlot] = useState<HTMLSpanElement | null>(null);
   const [lifted, setLifted] = useState<HTMLButtonElement | null>(null);
   useHelpStop(lift ? lifted : null);
-  useEffect(() => {
+  // Read before paint, and again whenever the window or the rail's foot changes size: the offline pill arriving under
+  // the ? moves the slot up without resizing the window.
+  useLayoutEffect(() => {
     if (slot === null) return;
     const measure = () => {
       const r = slot.getBoundingClientRect();
-      setAt({ left: r.left, top: r.top });
+      setAt({ slot, left: r.left, top: r.top });
     };
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    const foot = typeof ResizeObserver === "undefined" || slot.parentElement === null ? null : new ResizeObserver(measure);
+    if (foot !== null && slot.parentElement !== null) foot.observe(slot.parentElement);
+    return () => {
+      window.removeEventListener("resize", measure);
+      foot?.disconnect();
+    };
   }, [slot]);
   if (help === null) return null;
   const p = PLACE[place];
@@ -210,6 +218,7 @@ export function HelpButton({ place }: { place: keyof typeof PLACE }) {
       <>
         <span ref={setSlot} aria-hidden data-help-slot className={`block shrink-0 ${p.box}`} />
         {at !== null &&
+          at.slot === slot &&
           createPortal(
             <Button help={help} place={place} buttonRef={setLifted} style={{ position: "fixed", left: at.left, top: at.top, zIndex: 51 }} />,
             document.body,

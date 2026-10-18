@@ -12,34 +12,55 @@ import { useEffect, useSyncExternalStore } from "react";
  * details dialog is up and in front (not covered by a sheet it opened), and which element is the ?'s Tab stop.
  */
 
-let up = 0;
-let stop: HTMLElement | null = null;
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+/** A count of surfaces holding a fact, read through `useSyncExternalStore`. */
+function counter() {
+  let n = 0;
+  const listeners = new Set<() => void>();
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  };
+  const emit = () => {
+    for (const l of listeners) l();
+  };
+  return {
+    useHold(active: boolean) {
+      useEffect(() => {
+        if (!active) return;
+        n += 1;
+        emit();
+        return () => {
+          n -= 1;
+          emit();
+        };
+      }, [active]);
+    },
+    useIsHeld(): boolean {
+      return useSyncExternalStore(subscribe, () => n > 0, () => false);
+    },
   };
 }
 
+const details = counter();
+const beside = counter();
+let stop: HTMLElement | null = null;
+
 /** Card details calls this: `active` while it is the dialog in front. */
-export function useCardDetailsUp(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-    up += 1;
-    for (const l of listeners) l();
-    return () => {
-      up -= 1;
-      for (const l of listeners) l();
-    };
-  }, [active]);
-}
+export const useCardDetailsUp = details.useHold;
 
 /** Whether a card details dialog is up and in front. */
-export function useCardDetailsIsUp(): boolean {
-  return useSyncExternalStore(subscribe, () => up > 0, () => false);
-}
+export const useCardDetailsIsUp = details.useIsHeld;
+
+/**
+ * The panel calls this while it is open stacked over card details, which then centres itself in the room between the
+ * rail and the panel, so the panel opens beside it (H3's note) rather than over its right edge.
+ */
+export const usePanelBeside = beside.useHold;
+
+/** Whether the panel is open beside card details. */
+export const usePanelIsBeside = beside.useIsHeld;
 
 /** The lifted ? registers itself as the extra stop while it is lifted; the cleanup clears only its own. */
 export function useHelpStop(el: HTMLElement | null) {

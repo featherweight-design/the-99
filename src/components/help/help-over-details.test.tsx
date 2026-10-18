@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRef } from "react";
 import { useDialogA11y, visibleFocusables } from "../../lib/a11y/dialog";
-import { helpStop, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
+import { helpStop, useCardDetailsUp, usePanelIsBeside } from "../../lib/a11y/help-over-dialog";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import { helpPanelCopy } from "../../lib/copy/discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
@@ -33,8 +33,9 @@ function Details({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useDialogA11y(ref, onClose, { lockScroll: false, extraStop: helpStop });
   useCardDetailsUp(true);
+  const beside = usePanelIsBeside();
   return (
-    <div data-backdrop style={{ position: "fixed", inset: 0, zIndex: 50 }}>
+    <div data-backdrop data-beside={beside || undefined} style={{ position: "fixed", inset: 0, zIndex: 50 }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-label="card">
         <button type="button">first</button>
         <button type="button">last</button>
@@ -96,6 +97,8 @@ describe("the ? over card details at 1280", () => {
     const panel = await screen.findByRole("dialog", { name: helpPanelCopy.button });
     expect(panel.getAttribute("aria-modal")).toBe("true");
     expect(panel.className).toContain("z-[51]");
+    // Card details gives the panel its room, so the panel opens beside it.
+    expect(document.querySelector("[data-backdrop]")?.hasAttribute("data-beside")).toBe(true);
     await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
     // The trap is the panel's while it is open: Tab wraps inside it rather than leaving for card details or the ?.
     const own = visibleFocusables(panel);
@@ -108,6 +111,7 @@ describe("the ? over card details at 1280", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: helpPanelCopy.button })).toBeNull());
     expect(onClose).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(q());
+    expect(document.querySelector("[data-backdrop]")?.hasAttribute("data-beside")).toBe(false);
     escape();
     expect(onClose).toHaveBeenCalledTimes(1);
   });

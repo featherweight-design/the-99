@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
-import { useCardDetailsIsUp } from "../../lib/a11y/help-over-dialog";
+import { useCardDetailsIsUp, usePanelBeside } from "../../lib/a11y/help-over-dialog";
 import { firstSentence, restOfFirstParagraph } from "../../lib/about/caption";
 import type { EntryPayload } from "../../lib/about/entries-payload";
 import {
@@ -67,6 +67,7 @@ export function HelpPanel({
   // details (R2·9) it is its own dialog stacked on that one, so it takes the trap while it is open: one trap live.
   const detailsUp = useCardDetailsIsUp();
   const stacked = desk && detailsUp;
+  usePanelBeside(stacked);
   useDialogA11y(ref, onClose, { lockScroll: !desk, trapTab: !desk || stacked, returnFocusRef, initialFocusRef: closeRef });
   // No scroll lock on the panel, so it tells the moments itself that it is open over the page.
   useMomentHold(true);
