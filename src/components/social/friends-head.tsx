@@ -188,7 +188,7 @@ export function FriendsHead({
                 onBlur={(e) => {
                   if (!form.current?.contains(e.relatedTarget as Node | null)) done(true);
                 }}
-                className="h-[44px] px-[12px] text-[16px] md:h-[40px] md:text-[14px]"
+                className="h-[44px] px-[12px] text-[16px] md:h-[40px] [@media(pointer:fine)]:md:text-[14px]"
               />
               <p id={`${id}-hint`} className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{p.nameField.hint}</p>
               <div className="flex gap-[8px] max-md:[&>button]:h-[44px] max-md:[&>button]:flex-1 max-md:[&>button]:text-[14px]">

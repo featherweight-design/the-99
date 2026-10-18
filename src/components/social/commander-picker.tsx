@@ -153,7 +153,7 @@ export function CommanderPicker({
         autoComplete="off"
         // 16px at phone, or iOS zooms the page into the field.
         containerClassName="h-[46px] flex-none md:h-[44px]"
-        className="text-[16px] md:text-[14px]"
+        className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
       />
 
       {searching ? (

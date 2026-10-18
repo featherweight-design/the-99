@@ -189,7 +189,7 @@ export function QuickAddBar({
           // left to say.
           containerClassName="flex-1 min-w-[220px] max-w-[520px] h-[44px] md:h-[38px] py-0"
           // 16px on mobile so Safari does not zoom the page on focus.
-          className="text-[16px] md:text-[14px]"
+          className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
           role="combobox"
           aria-expanded={open}
           // Only while the listbox is mounted: a reference to an element that is

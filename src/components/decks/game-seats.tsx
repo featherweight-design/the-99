@@ -101,7 +101,7 @@ function SeatView({
               onChange={(e) => onLabel(e.target.value)}
               onBlur={() => { if (seat.label === "") setNaming(false); }}
               // 16px on the phone, or iOS zooms the page when the field takes focus.
-              className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[6px] text-[16px] text-[color:var(--fg)] md:text-[11px]"
+              className="h-[28px] min-w-0 flex-1 rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[6px] text-[16px] text-[color:var(--fg)] [@media(pointer:fine)]:md:text-[11px]"
             />
             <span className="shrink-0 font-mono text-[10px] text-[color:var(--fg-faint)]">
               {copy.labelCounter(Array.from(seat.label).length)}

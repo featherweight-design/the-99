@@ -263,7 +263,7 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
         placeholder={searchLabel}
         aria-label={searchLabel}
         containerClassName="h-[44px] rounded-[8px] md:h-[40px]"
-        className="font-sans text-[16px] md:text-[14px]"
+        className="font-sans text-[16px] [@media(pointer:fine)]:md:text-[14px]"
       />
       <div className="flex flex-col gap-[8px]">
         <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{label}</span>

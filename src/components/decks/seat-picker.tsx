@@ -99,7 +99,7 @@ function Field({ inputRef, value, onChange, placeholder, describedBy }: {
         aria-describedby={describedBy}
         autoComplete="off"
         // 16px on the phone, or iOS zooms the page when the field takes focus.
-        className="h-[44px] md:h-[38px] text-[16px] md:text-[13.5px]"
+        className="h-[44px] md:h-[38px] text-[16px] [@media(pointer:fine)]:md:text-[13.5px]"
       />
     </div>
   );
