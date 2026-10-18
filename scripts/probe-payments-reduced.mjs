@@ -15,7 +15,14 @@
 // IT WRITES the account's `credit_grants` (its own lots parked, then restored; the probe's own lots deleted), its
 // `PAYMENTS_ENABLED` override and its `stripe_customers` row, so it refuses anything but a scratch branch
 // (`assertScratchBranch`) and restores all three in a `finally`, every column through `json_populate_record`. A switch
-// change waits out the server's 30-second switch memo (`SNAPSHOT_TTL_MS`).
+// PLAN HELD (d9, the plan card PR): the account also holds a plan (a `subscriptions` row and a 60-unit `plan` lot, both
+// carrying MARK), cancelling (state `cancelled`, 20 days out) or not (`active`), over switch on / off x paused / not at
+// both widths. The page must draw the plan card (`[data-plan-state]`, the state `planCardFacts` names) and exactly the
+// presses `cardPresses(state, reduced)` allows, where `reduced` is `!readerSeesOffers(...)`: Keep my plan and Subscribe
+// are purchases and go with the offers; Cancel plan and Update card stay. Both rules are imported, never restated, so
+// the probe is run with `tsx`.
+//
+// A switch change waits out the server's 30-second switch memo (`SNAPSHOT_TTL_MS`).
 //
 //   PROBE_BASE=http://localhost:3392 PROBE_DATABASE_URL=… pnpm probe:payments-reduced
 // The server must read the same database (its `.env` `DATABASE_URL`). Point it at `next start`, never `next dev`.
@@ -25,7 +32,9 @@ import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, onPageRole } from "./lib/surface.mjs";
+import { readerSeesOffers } from "../src/lib/payments/visible-rule";
+import { cardPresses, planCardFacts } from "../src/lib/payments/plan-card-rule";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, PROBE_DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -118,6 +127,25 @@ async function setPaused(userId, blocked) {
     on conflict (user_id) do update set purchase_blocked_at = excluded.purchase_blocked_at`;
 }
 
+const PLAN_SUB = `sub_${MARK}`;
+const PERIOD_END_MS = Date.now() + 20 * 24 * 60 * 60 * 1000;
+const periodEnd = () => new Date(PERIOD_END_MS).toISOString().replace("Z", "");
+
+const dropPlan = async (userId) => {
+  await dropProbeLots(userId);
+  await sql`delete from subscriptions where stripe_subscription_id = ${PLAN_SUB} and user_id = ${userId}`;
+};
+
+// A plan lot (60 units, spent none) and its subscription. A cancelling plan's lot expires with the paid month.
+async function setPlan(userId, cancelling) {
+  await setLots(userId, { held: false, bought: false });
+  await dropPlan(userId);
+  await sql`insert into subscriptions (stripe_subscription_id, user_id, status, current_period_end, cancel_at_period_end)
+    values (${PLAN_SUB}, ${userId}, 'active', ${periodEnd()}::timestamp, ${cancelling})`;
+  await sql`insert into credit_grants (user_id, source, units, expires_at, external_id, subscription_id)
+    values (${userId}, 'plan', 60, ${cancelling ? periodEnd() : null}::timestamp, ${`${MARK}-plan`}, ${PLAN_SUB})`;
+}
+
 async function setSwitch(userId, on) {
   await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;
   await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by) values ('PAYMENTS_ENABLED', 'user', ${userId}, ${on ? "on" : "off"}, ${MARK}, ${MARK})`;
@@ -151,6 +179,28 @@ async function look(page, width, c) {
   if (SHOTS && (c.blocked || (!c.switchOn && c.bought))) await page.screenshot({ path: `${SHOTS}/payments-reduced-${width}-${c.switchOn ? "on" : "off"}${c.blocked ? "-paused" : ""}.png`, fullPage: true });
 }
 
+async function lookPlan(page, width, { switchOn, blocked, cancelling }) {
+  const reduced = !readerSeesOffers({ switchOn, blocked });
+  const end = new Date(PERIOD_END_MS);
+  const facts = planCardFacts({ status: "active", cancelAtPeriodEnd: cancelling, currentPeriodEnd: end }, { planExpiresAt: cancelling ? end : null }, new Date());
+  const want = cardPresses(facts.state, reduced);
+  const name = `${width} plan ${facts.state}, switch ${switchOn ? "on" : "off"}${blocked ? ", paused" : ""}`;
+  const res = await page.goto(`${BASE}/credits`, { waitUntil: "load" });
+  check((res?.status() ?? 0) === 200, `${name}: the page`, String(res?.status()));
+  const card = onPage(page, "[data-plan-state]");
+  const drawn = await card.first().waitFor({ timeout: 20_000 }).then(() => true, () => false);
+  check(drawn, `${name}: plan card drawn`);
+  if (!drawn) return;
+  check((await card.first().getAttribute("data-plan-state")) === facts.state, `${name}: state is ${facts.state}`, String(await card.first().getAttribute("data-plan-state")));
+  for (const [key, label] of [["keep", /^Keep my plan/], ["subscribe", /^Subscribe/], ["cancel", /^Cancel plan/], ["updateCard", /^Update card/]]) {
+    const n = await onPageRole(page, "button", label).count();
+    check((n > 0) === want[key], `${name}: ${key} ${want[key] ? "drawn" : "absent"}`, `${n}`);
+  }
+  const offers = await onPage(page, "#credits-offers").count();
+  check((offers > 0) === !reduced, `${name}: offers ${reduced ? "absent" : "drawn"}`, `${offers}`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/payments-reduced-plan-${width}-${facts.state}-${switchOn ? "on" : "off"}${blocked ? "-paused" : ""}.png`, fullPage: true });
+}
+
 let userId = null;
 let saved = null;
 await clerkSetup();
@@ -167,7 +217,11 @@ try {
     grants: (await sql`select row_to_json(t)::text as j from credit_grants t where user_id = ${userId}`).map((r) => r.j),
     overrides: (await sql`select row_to_json(t)::text as j from flag_overrides t where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`).map((r) => r.j),
     customer: (await sql`select row_to_json(t)::text as j from stripe_customers t where user_id = ${userId}`)[0]?.j ?? null,
+    subscriptions: (await sql`select row_to_json(t)::text as j from subscriptions t where user_id = ${userId}`).map((r) => r.j),
   };
+  // The account's own subscriptions are parked for the run (a live plan would keep /credits reachable through `planHeld`
+  // and fake the no-plan cases), and put back in the `finally`.
+  await sql`delete from subscriptions where user_id = ${userId}`;
   for (const switchOn of [true, false]) {
     console.log(`\n── switch ${switchOn ? "on" : "off"}`);
     await setSwitch(userId, switchOn);
@@ -186,12 +240,21 @@ try {
       await setPaused(userId, false);
       await look(pages["390"], "390", { switchOn, held: true, bought: true, blocked: false });
     }
+    // Plan held: the card stays, its purchases follow the offers.
+    for (const cancelling of [true, false]) {
+      await setPlan(userId, cancelling);
+      for (const blocked of [false, true]) {
+        await setPaused(userId, blocked);
+        for (const w of ["1300", "390"]) await lookPlan(pages[w], w, { switchOn, blocked, cancelling });
+      }
+    }
+    await dropPlan(userId);
   }
   for (const c of Object.values(contexts)) await c.close();
 } finally {
   await browser.close();
   if (userId && saved) {
-    await dropProbeLots(userId);
+    await dropPlan(userId);
     for (const g of saved.grants) {
       await sql`update credit_grants c set source = r.source, units = r.units, revoked_units = r.revoked_units, expires_at = r.expires_at
         from json_populate_record(null::credit_grants, ${g}::json) r where c.id = r.id`;
@@ -200,6 +263,7 @@ try {
     for (const o of saved.overrides) await sql`insert into flag_overrides select * from json_populate_record(null::flag_overrides, ${o}::json)`;
     await sql`delete from stripe_customers where user_id = ${userId}`;
     if (saved.customer) await sql`insert into stripe_customers select * from json_populate_record(null::stripe_customers, ${saved.customer}::json)`;
+    for (const s of saved.subscriptions) await sql`insert into subscriptions select * from json_populate_record(null::subscriptions, ${s}::json) on conflict (stripe_subscription_id) do nothing`;
   }
 }
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);

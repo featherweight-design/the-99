@@ -5,7 +5,7 @@ import { chipFor } from "./chip-rule";
 
 const NOW = new Date("2026-11-14T12:00:00Z");
 const a = (over: Partial<Allowance> = {}): Allowance => ({ used: 2, limit: 5, nextAt: null, reopensAt: null, ...over });
-const chip = (allowance: Allowance, switchOn = true, everBought = false) => chipFor({ allowance, switchOn, everBought }, NOW);
+const chip = (allowance: Allowance, switchOn = true, everBought = false, planHeld?: boolean) => chipFor({ allowance, switchOn, everBought, planHeld }, NOW);
 
 describe("the menu chip (M1b)", () => {
   it("holding credits: free plus plan plus packs", () => {
@@ -23,6 +23,11 @@ describe("the menu chip (M1b)", () => {
 
   it("absent with payments off and nothing held or bought (O1)", () => {
     expect(chip(a(), false, false)).toBeNull();
+  });
+
+  it("kept for a live plan with no grant yet and payments off: the entry that links to /credits", () => {
+    expect(chip(a(), false, false, true)).toMatchObject({ kind: "credits", label: "3 credits" });
+    expect(chip(a(), false, false, false)).toBeNull();
   });
 
   it("kept, as a count, once credits are held or were bought and payments are off (O2 to O4)", () => {

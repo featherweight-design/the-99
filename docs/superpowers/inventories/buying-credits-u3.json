@@ -1,0 +1,116 @@
+{
+  "feature": "Buying credits: the plan card, K1 to K6 and R3 (U3b)",
+  "note": "Plan `2026-10-17-buying-credits-ui.md`, PR U3b; extends `buying-credits.json` (U1) and `buying-credits-u2.json`. ONE account STATE per run, like U2: the sheet reads whatever the signed-in account holds, so a run is repeated with the account reseeded between runs (no subscription; an `active` subscription with 74 plan credits; `active` with cancel_at_period_end and a period end 20 days out (K3); the same with the period end 2 days out and a plan lot expiring then (K4, and the chip line); `past_due`; a `canceled` subscription with its plan lots expired and two plan history rows (K6)). Every row waits on `data-plan-state`, so a run in the wrong state times out, and that time-out IS the evidence the state is absent. PRECONDITION: `PAYMENTS_ENABLED` on for the account. The page READS only: no row presses Subscribe, Cancel, Keep or Update card, which write a real Stripe Session or subscription (the signed-fixture probe and the component tests cover the presses; `pnpm probe:plan-cancel` the server half). `credits-u3-r3` needs a Checkout Session of the account's own for a plan, created on test mode and passed as `PLAN_SESSION_ID`; without one the row times out, which is the good failure. `credits-u3-chip-line` uses the shell's `openAccount` verb, as U2's does, and draws only in the K4 state. Low Sun is the app default; Witching Hour and First Frost are checked once here with `THEME=<key>` (plan, Themes).",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "credits-u3-k1",
+      "label": "/credits: K1, no plan: the offer with its four fine-print lines before Subscribe, above the pack",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"offer\"]",
+          "scrollTo": "[data-plan-state=\"offer\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-k2",
+      "label": "/credits: K2, subscribed: Your plan with the renewal date, Cancel plan, what it does, Update card",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"active\"]",
+          "scrollTo": "[data-plan-state=\"active\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-k3",
+      "label": "/credits: K3, cancelled in the paid month: Ends date, expiry restated, Keep my plan",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"cancelled\"]",
+          "scrollTo": "[data-plan-state=\"cancelled\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-k4",
+      "label": "/credits: K4, cancelled and within 3 days: border and words in --warning",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"ending\"]",
+          "scrollTo": "[data-plan-state=\"ending\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-k5",
+      "label": "/credits: K5, past due: payment didn't go through, Update card leads, Cancel plan as text",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"pastDue\"]",
+          "scrollTo": "[data-plan-state=\"pastDue\"]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-k6",
+      "label": "/credits: K6, expired: the K1 offer again, the months kept in history",
+      "view": "src/components/credits/plan-card.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"offer\"]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "#credits-history",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-r3",
+      "label": "/credits?checkout=done&session_id=<the account's own plan Session>: R3, Plan started with the renewal date, Cancel plan below",
+      "view": "src/components/credits/return-band.tsx",
+      "steps": [
+        {
+          "goto": "/credits?checkout=done&session_id=${PLAN_SESSION_ID}",
+          "wait": "[role=\"status\"]:has-text(\"Plan started\")",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "credits-u3-chip-line",
+      "label": "Account menu open: the expiring chip's line for the cancelled plan (K4's twin, L7 and the chip proven live)",
+      "view": "src/components/shell/credit-chip.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-plan-state=\"ending\"]",
+          "settle": 800
+        },
+        {
+          "openAccount": true,
+          "chipLine": true
+        }
+      ]
+    }
+  ]
+}

@@ -154,6 +154,8 @@ export type Allowance = {
   planExpiresAt?: Date | null;
   /** The plan credits that lapse on `planExpiresAt`: a later subscription's lots do not count. */
   planExpiring?: number;
+  /** The plan credits still held, grouped by the instant they lapse (`null`: they roll over). Read server-side by the plan card; not part of `Standing`. */
+  planByExpiry?: { at: Date | null; n: number }[];
   /** `PAYMENTS_ENABLED` for this reader, stamped by the read that knows the request's switches. Absent reads as off:
    *  the credit line then draws its shipped forms and never offers `Get more credits` (L8). */
   payments?: boolean;

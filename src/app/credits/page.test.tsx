@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   readAllowance: vi.fn(),
   listCreditHistory: vi.fn(),
   readReturn: vi.fn(),
+  readPlanFacts: vi.fn(),
   stripeClient: vi.fn(),
   purchaseBlocked: vi.fn(),
 }));
@@ -20,6 +21,7 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitch
 vi.mock("../../lib/model/allowance", () => ({ readAllowance: m.readAllowance }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/blocked", () => ({ purchaseBlocked: m.purchaseBlocked }));
+vi.mock("../../lib/payments/plan-read", () => ({ readPlanFacts: m.readPlanFacts }));
 vi.mock("../../lib/payments/return", () => ({ listCreditHistory: m.listCreditHistory, readReturn: m.readReturn }));
 
 const { default: CreditsPage } = await import("./page");
@@ -35,6 +37,7 @@ beforeEach(() => {
   m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "true" });
   m.readAllowance.mockResolvedValue({ used: 2, limit: 5, reopensAt: null, nextAt: null });
   m.listCreditHistory.mockResolvedValue([]);
+  m.readPlanFacts.mockResolvedValue(null);
   m.stripeClient.mockReturnValue({});
   m.purchaseBlocked.mockResolvedValue(false);
 });
@@ -175,5 +178,32 @@ describe("the return", () => {
 
   it("passes a cancel through as one quiet line", async () => {
     expect((await render({ checkout: "cancelled" })).props.ret).toEqual({ kind: "cancelled" });
+  });
+});
+
+describe("the plan (U3b)", () => {
+  it("reads the reader's own subscription row and hands the card its state", async () => {
+    m.readAllowance.mockResolvedValue({ used: 2, limit: 5, reopensAt: null, nextAt: null, plan: 74 });
+    m.readPlanFacts.mockResolvedValue({ status: "active", cancelAtPeriodEnd: false, currentPeriodEnd: new Date("2099-11-16T00:00:00Z") });
+    const el = await render();
+    expect(m.readPlanFacts).toHaveBeenCalledWith("user_a");
+    expect((el.props.model as { plan: { state: string; on: string } }).plan).toMatchObject({ state: "active", on: "November 16" });
+  });
+
+  it("a failed subscription read is P7, never a thrown page", async () => {
+    m.readPlanFacts.mockRejectedValue(new Error("db"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await render()).type).toBe((await import("../../components/credits/read-failed")).CreditsReadFailed);
+    log.mockRestore();
+  });
+
+  it("reads the subscription BEFORE the balance and history, so an acknowledged cancel is never paired with older lots", async () => {
+    const order: string[] = [];
+    m.readPlanFacts.mockImplementation(async () => { order.push("plan:start"); await Promise.resolve(); order.push("plan:end"); return null; });
+    m.readAllowance.mockImplementation(async () => { order.push("allowance"); return { used: 2, limit: 5, reopensAt: null, nextAt: null }; });
+    m.listCreditHistory.mockImplementation(async () => { order.push("history"); return []; });
+    await render();
+    expect(order.indexOf("plan:end")).toBeLessThan(order.indexOf("allowance"));
+    expect(order.indexOf("plan:end")).toBeLessThan(order.indexOf("history"));
   });
 });

@@ -9,6 +9,14 @@ describe("readerSeesCredits", () => {
   });
 });
 
+describe("readerSeesCredits: a held plan", () => {
+  it("keeps the page for a reader with the switch off, nothing held, bought or returning, who holds a live plan", () => {
+    expect(readerSeesCredits({ switchOn: false, held: false, everBought: false, returning: false, planHeld: true })).toBe(true);
+    expect(readerSeesCredits({ switchOn: false, held: false, everBought: false, returning: false, planHeld: false })).toBe(false);
+    expect(readerSeesCredits({ switchOn: false, held: false, everBought: false, returning: false })).toBe(false);
+  });
+});
+
 describe("readerSeesOffers and readerSeesPause", () => {
   it("draws offers only with the switch on and buying not paused; holdings and purchases never open a sale", () => {
     expect(readerSeesOffers({ switchOn: true, blocked: false })).toBe(true);

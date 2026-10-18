@@ -18,8 +18,8 @@ import { purchaseBlocked } from "../../lib/payments/blocked";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { isPackId, isPlanId } from "../../lib/payments/packs";
 import { openCardPortal, setPlanCancelling } from "../../lib/payments/plan-manage";
-import { readReturn, receiptUrlFor } from "../../lib/payments/return";
-import type { ReturnRead } from "../../lib/payments/return-rule";
+import { invoiceReceiptUrlFor, readReturn, receiptUrlFor } from "../../lib/payments/return";
+import { isInvoiceId, type ReturnRead } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
@@ -93,17 +93,25 @@ export async function buyPlanAction(planId: unknown, actionId: unknown): Promise
 }
 
 /**
- * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `off`: payments
- * are off for this reader. `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
+ * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `off` and `blocked`: a KEEP
+ * only (it restores renewal, which is a purchase): payments are off for the reader, or buying is paused. `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
  * (a subscription Stripe does not tag as theirs answers the same, with no detail). `failed`: Stripe or the database did not answer.
  */
 export type PlanChangeOutcome =
   | { ok: true; unchanged: boolean }
-  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+  | { ok: false; reason: "off" | "blocked" | "unconfigured" | "not_found" | "failed" };
 
 async function changePlan(cancel: boolean): Promise<PlanChangeOutcome> {
+  // A CANCEL is not gated on the switch: a reader who holds a plan keeps managing it with payments off (O2, O3), as the
+  // receipt does. A KEEP puts the renewal back, which is a purchase: it needs the switch and no purchase block, and
+  // fails closed when the block cannot be read.
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  if (!cancel) {
+    if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+    const blocked = await purchaseBlocked(userId).catch(() => null);
+    if (blocked === null) return { ok: false, reason: "failed" };
+    if (blocked) return { ok: false, reason: "blocked" };
+  }
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "unconfigured" };
   try {
@@ -131,12 +139,12 @@ export async function keepPlanAction(): Promise<PlanChangeOutcome> {
 
 export type ManageCardOutcome =
   | { ok: true; url: string }
-  | { ok: false; reason: "off" | "unconfigured" | "not_found" | "failed" };
+  | { ok: false; reason: "unconfigured" | "not_found" | "failed" };
 
 /** Update the card: Stripe's billing portal on The 99's own configuration (E5). Unset `STRIPE_PORTAL_CONFIG` is `unconfigured`. */
 export async function manageCardAction(): Promise<ManageCardOutcome> {
+  // NOT gated on the switch, for the same reason as cancel and keep.
   const userId = await requireUserId();
-  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "unconfigured" };
   try {
@@ -170,15 +178,18 @@ export async function readReturnAction(sessionId: unknown): Promise<ReturnOutcom
 export type ReceiptOutcome = { ok: true; url: string } | { ok: false; reason: "none" | "failed" };
 
 /**
- * A history row's Receipt link, fetched on demand and never stored. NOT gated on the switch: a receipt is for money
+ * A history row's Receipt link (a pack's Session id or a plan month's invoice id), fetched on demand and never stored. NOT gated on the switch: a receipt is for money
  * already taken, and the reduced page (O4) keeps its history. The ownership check is `receiptUrlFor`'s.
  */
-export async function receiptAction(sessionId: unknown): Promise<ReceiptOutcome> {
+export async function receiptAction(reference: unknown): Promise<ReceiptOutcome> {
   const userId = await requireUserId();
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "failed" };
   try {
-    const url = await receiptUrlFor(stripe, { sessionId, viewerId: userId });
+    // A pack's reference is its Checkout Session; a plan month's is its invoice (`in_`).
+    const url = isInvoiceId(reference)
+      ? await invoiceReceiptUrlFor(stripe, { invoiceId: reference, viewerId: userId })
+      : await receiptUrlFor(stripe, { sessionId: reference, viewerId: userId });
     return url ? { ok: true, url } : { ok: false, reason: "none" };
   } catch (error) {
     console.error(`[checkout] receipt read failed${stripeType(error)}`);

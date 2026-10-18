@@ -119,3 +119,98 @@ describe("buildCreditsModel: an admin's gift (admin plan A-R5)", () => {
     expect(model({ switchOn: true, allowance: allowance({ gift: 0 }), history: [], offers }).cells.map((c) => c.key)).toEqual(["free"]);
   });
 });
+
+describe("buildCreditsModel: the plan card and plan history", () => {
+  const NOW = new Date("2026-11-14T12:00:00Z");
+  const DAY = 24 * 60 * 60 * 1000;
+  const end = (days: number) => new Date(NOW.getTime() + days * DAY);
+  const sub = (status: string, cancel: boolean, days: number) => ({ status, cancelAtPeriodEnd: cancel, currentPeriodEnd: end(days) });
+
+  it("K1: no subscription, switch on: the offer, sized from the registry", () => {
+    expect(model({ switchOn: true, allowance: allowance(), history: [], offers, now: NOW }).plan).toEqual({
+      state: "offer", cancelling: false, offer: { id: "plan60", units: 60, price: "$5" }, on: null, credits: 0, days: null,
+    });
+  });
+
+  it("O1 to O4: no offer while the switch is off", () => {
+    expect(model({ switchOn: false, allowance: allowance({ pack: 5 }), history: [], offers, now: NOW }).plan).toBeNull();
+  });
+
+  it("K2: the renewal date is long-form UTC and the credit count is what is held", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 74 }), history: [], offers, now: NOW, subscription: sub("active", false, 2) });
+    expect(m.plan).toMatchObject({ state: "active", on: "November 16", credits: 74 });
+  });
+
+  it("a plan held with the switch off keeps its card (O2): the reduced page manages it", () => {
+    const m = model({ switchOn: false, allowance: allowance({ plan: 74 }), history: [], offers, now: NOW, subscription: sub("active", false, 20) });
+    expect(m.plan?.state).toBe("active");
+    expect(m.offers).toBeNull();
+  });
+
+  it("K3/K4: a cancelled plan states the credits that lapse, which can be fewer than the plan credits held", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 60, planExpiresAt: end(2) }), history: [], offers, now: NOW, subscription: sub("active", true, 2) });
+    expect(m.plan).toMatchObject({ state: "ending", credits: 60, days: 2, on: "November 16" });
+  });
+
+  it("K6: an ended subscription is the offer again, and the history keeps the months", () => {
+    const history = [row({ id: "g2", source: "plan", externalId: "in_2", billingReason: "subscription_cycle" }), row({ id: "g1", source: "plan", externalId: "in_1", billingReason: "subscription_create" })];
+    const m = model({ switchOn: true, allowance: allowance(), history, offers, now: NOW, subscription: sub("canceled", false, -1) });
+    expect(m.plan?.state).toBe("offer");
+    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan", "Monthly plan, first month"]);
+  });
+
+  it("E7: the first invoice is labelled by the stored billing reason, never by position", () => {
+    const m = model({ switchOn: true, allowance: allowance(), offers, now: NOW, history: [
+      row({ id: "a", source: "plan", externalId: "in_a", billingReason: "subscription_create" }),
+      row({ id: "b", source: "plan", externalId: "in_b", billingReason: null }),
+      row({ id: "c", source: "pack", externalId: "cs_c" }),
+    ] });
+    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan, first month", "Monthly plan", "Credit pack"]);
+  });
+
+  it("a plan month's Receipt is fetched by its invoice id, a pack's by its Session", () => {
+    const m = model({ switchOn: true, allowance: allowance(), offers, now: NOW, history: [row({ id: "a", source: "plan", externalId: "in_a" }), row({ id: "c", externalId: "cs_c" })] });
+    expect(m.history.map((h) => [h.sessionId, h.invoiceId])).toEqual([[null, "in_a"], ["cs_c", null]]);
+  });
+
+  it("a live plan whose first invoice has not granted keeps the page with the switch off (Cancel and Update card stay reachable)", () => {
+    const live = sub("incomplete", false, 20);
+    const m = model({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: live });
+    expect(m.plan?.state).toBe("active");
+    expect(buildCreditsModel({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: sub("canceled", false, -1) })).toEqual({ sees: false });
+    expect(buildCreditsModel({ switchOn: false, allowance: allowance(), history: [], offers, now: NOW, subscription: null })).toEqual({ sees: false });
+  });
+
+  it("an older subscription's lots lapsing Nov 16 do not date the current plan, which ends Dec 14; the count is the lots'", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 60, planExpiresAt: end(2) }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", days: 30, credits: 60 });
+  });
+
+  it("the card counts only the credits that lapse on ITS subscription's date: 30 old credits on Nov 16 and 90 current ones on Dec 14 read 90", () => {
+    const byExpiry = [{ at: end(2), n: 30 }, { at: end(30), n: 90 }];
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30, planExpiresAt: end(2), planByExpiry: byExpiry }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(m.plan).toMatchObject({ state: "cancelled", on: "December 14", credits: 90 });
+  });
+
+  it("a plan that is not cancelling names only the credits that roll over, not an older subscription's", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(m.plan?.credits).toBe(90);
+    // The breakdown is absent: the account's figure stands.
+    const bare = model({ switchOn: true, allowance: allowance({ plan: 120 }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(bare.plan?.credits).toBe(120);
+  });
+
+  it("an empty current group is zero, never the older subscription's credits", () => {
+    const active = model({ switchOn: true, allowance: allowance({ plan: 30, planByExpiry: [{ at: end(2), n: 30 }] }), history: [], offers, now: NOW, subscription: sub("active", false, 30) });
+    expect(active.plan?.credits).toBe(0);
+    const cancelling = model({ switchOn: true, allowance: allowance({ plan: 30, planByExpiry: [{ at: end(2), n: 30 }] }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(cancelling.plan?.credits).toBe(0);
+  });
+
+  it("with no group on the period end yet (the webhook has not set the expiry), the rolling lots stand in; without a breakdown the account's figures", () => {
+    const rolling = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30, planByExpiry: [{ at: end(2), n: 30 }, { at: null, n: 90 }] }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(rolling.plan?.credits).toBe(90);
+    const none = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 30 }), history: [], offers, now: NOW, subscription: sub("active", true, 30) });
+    expect(none.plan?.credits).toBe(30);
+  });
+});

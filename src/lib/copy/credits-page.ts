@@ -8,7 +8,7 @@
 //
 // The credit line's own strings stay in `credits.ts` (`creditsCopy`); the phrase `What uses credits?` is its `link`.
 
-import { PACKS, type PackId } from "../payments/packs";
+import { PACKS, PLANS, type PackId, type PlanId } from "../payments/packs";
 import { creditsCopy } from "./credits";
 
 /** `$5`, `$12.50`: a whole-dollar price carries no cents, as the boards draw it. */
@@ -28,6 +28,20 @@ export type PackOffer = { id: PackId; units: number; price: string };
 export function packOffers(ids: readonly PackId[] = Object.keys(PACKS) as PackId[]): PackOffer[] {
   return ids.map((id) => ({ id, units: PACKS[id].units, price: dollars(PACKS[id].priceCents) }));
 }
+
+/** A history or card date, `November 16`, in UTC for the same reason as `shortDate`. */
+export function longDate(at: Date): string {
+  return at.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+}
+
+/** The plan as the page draws it: the closed registry's facts, never a price typed in a component. */
+export type PlanOffer = { id: PlanId; units: number; price: string };
+
+export function planOffer(id: PlanId = "plan60"): PlanOffer {
+  return { id, units: PLANS[id].units, price: dollars(PLANS[id].priceCents) };
+}
+
+const creditWord = (n: number) => `${n} plan ${n === 1 ? "credit" : "credits"}`;
 
 export const creditsPageCopy = {
   title: "Credits",
@@ -97,7 +111,58 @@ export const creditsPageCopy = {
     throttled: "Too many tries. Wait a little, then try again.",
     unconfigured: "Buying credits isn’t set up here yet.",
     failed: "Couldn’t start checkout. Try again.",
+    already: "You already have a plan.",
     blocked: "Buying is paused on this account. Email support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual.",
+  },
+  /** The plan card, every state (K1 to K6). Placeholders from the handoff's `plan` block; dates and counts arrive as arguments. */
+  plan: {
+    heading: "Your plan",
+    k: "Monthly plan",
+    title: (units: number) => `${units} credits a month`,
+    price: (price: string) => `${price} a month`,
+    fine: [
+      "Unused plan credits roll over, with no cap, while you stay subscribed.",
+      "Renews every month until you cancel. Cancel any time, in one tap, here.",
+      "If you cancel, plan credits last until the end of the month you paid for, then expire.",
+      "Paid credits are forfeited if you delete your account.",
+    ],
+    subscribe: (price: string) => `Subscribe · ${price} a month`,
+    via: "Checkout on Stripe · US cards",
+    active: (on: string | null, price: string) => (on ? `Renews ${on} · ${price}` : price),
+    activeLeft: (n: number) => `${creditWord(n)}, rolling over`,
+    cancel: "Cancel plan",
+    cancelSays: (n: number, on: string | null) => `Canceling keeps your ${creditWord(n)} until ${on ?? "the end of your paid month"}, then they expire. Pack credits aren’t affected.`,
+    updateCard: "Update card",
+    ended: (on: string | null) => (on ? `Ends ${on}` : "Ends with your paid month"),
+    endedSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. You won’t be charged again.`,
+    /** Past due and cancelling: the expiry and the non-renewal only, since Stripe is still retrying the payment. */
+    dueEndsSays: (n: number, on: string | null) => `Your ${creditWord(n)} expire on ${on ?? "the last day of your paid month"}. The plan will not renew.`,
+    soon: (n: number, days: number, on: string | null) =>
+      `Your ${creditWord(n)} expire ${days <= 0 ? "today" : `in ${days} ${days === 1 ? "day" : "days"}`}${on ? `, on ${on}` : ""}.`,
+    keep: "Keep my plan",
+    keepSays: (on: string | null) => `Keeps your credits and renews${on ? ` on ${on}` : ""}, as before.`,
+    cancelledLive: (n: number, on: string | null) => `Plan canceled. Your ${creditWord(n)} last until ${on ?? "the end of your paid month"}.`,
+    keptLive: (on: string | null) => `Plan kept.${on ? ` It renews on ${on}.` : ""}`,
+    /** Never names a date: the subscription's period end is not the failed invoice's date. */
+    dueTitle: "Your payment didn’t go through",
+    dueSays: (n: number) => `Your ${creditWord(n)} still work for now. Update your card to keep the plan going; if it ends, they expire.`,
+    /** A cancel or keep that was accepted but whose new state has not reached the page yet, and the line when it never does. */
+    working: "Updating your plan",
+    slow: "Still updating your plan. Reload in a moment to see it.",
+    /** Why a Cancel, Keep or Update card press did nothing. Placeholders: not in the handoff's strings file. */
+    outcome: {
+      off: "Keeping your plan isn’t available right now.",
+      blocked: "Buying is paused on this account, so the plan can’t be kept. Email support@the-99.dev and we’ll sort it out.",
+      unconfigured: "Plan changes aren’t set up here yet.",
+      not_found: "We couldn’t find a plan on your account.",
+      failed: "Couldn’t update your plan. Try again.",
+      cardFailed: "Couldn’t open the card page. Try again.",
+      alreadyCancelled: "Your plan was already canceled.",
+      alreadyKept: "Your plan was already set to renew.",
+    },
+    /** The return band after a plan Checkout (R3). */
+    added: (units: number) => `Plan started: ${units} credits added`,
+    addedSays: (on: string) => `Renews ${on}. Cancel any time below.`,
   },
   hist: {
     title: "Purchase history",

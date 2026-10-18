@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideReturn, isSessionId } from "./return-rule";
+import { decideReturn, isInvoiceId, isSessionId } from "./return-rule";
 
 const mine = { metadata: { app: "the-99", pack: "pack40", user_id: "user_a" }, paymentStatus: "paid" };
 
@@ -40,8 +40,8 @@ describe("decideReturn", () => {
 describe("decideReturn: a plan's Session", () => {
   const plan = { metadata: { app: "the-99", plan: "plan60", user_id: "user_a" }, paymentStatus: "paid" };
   it("is processing, sized by the plan, until the first invoice's lot exists, then added at the lot's units", () => {
-    expect(decideReturn(plan, "user_a", null)).toEqual({ kind: "processing", units: 60 });
-    expect(decideReturn(plan, "user_a", 60)).toEqual({ kind: "added", units: 60 });
+    expect(decideReturn(plan, "user_a", null)).toEqual({ kind: "processing", units: 60, plan: true });
+    expect(decideReturn(plan, "user_a", 60)).toEqual({ kind: "added", units: 60, plan: true });
   });
   it("keeps the same refusals: another reader, another app, an unknown plan, an unpaid Session", () => {
     expect(decideReturn(plan, "user_b", 60)).toEqual({ kind: "none" });
@@ -58,3 +58,10 @@ describe("isSessionId", () => {
   });
 });
 
+
+describe("isInvoiceId", () => {
+  it("accepts an invoice id as Stripe writes it and nothing else", () => {
+    expect(isInvoiceId("in_1QabcXYZ")).toBe(true);
+    for (const v of ["cs_1", "in_", "in_a b", "in_/x", "", undefined, 5]) expect(isInvoiceId(v)).toBe(false);
+  });
+});

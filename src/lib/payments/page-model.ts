@@ -2,7 +2,8 @@ import { freeCount, heldCredits } from "../model/allowance-rule";
 import type { CreditHistoryRow } from "./return";
 import { paidToday, type PaidToday } from "./paid-today-rule";
 import { readerSeesCredits, readerSeesOffers, readerSeesPause } from "./visible-rule";
-import { creditsPageCopy, dollars, shortDate, type PackOffer } from "../copy/credits-page";
+import { creditsPageCopy, dollars, longDate, planOffer, shortDate, type PackOffer, type PlanOffer } from "../copy/credits-page";
+import { planCardFacts, type PlanCardState, type PlanSubscriptionFacts } from "./plan-card-rule";
 
 /**
  * What `/credits` draws, from what the server read. Pure: the page reads, this decides.
@@ -28,6 +29,22 @@ export type HistoryItem = {
   amount: string | null;
   /** The Checkout Session id a Receipt is fetched by, or null (a lot with no Session has no receipt link). */
   sessionId: string | null;
+  /** A plan month's invoice id (its lot's `external_id`), which its Receipt is fetched by, or null. */
+  invoiceId: string | null;
+};
+
+/** The plan card (K1 to K6), formatted for the client: dates are the server's, in UTC, like the history's. */
+export type PlanCardModel = {
+  state: PlanCardState;
+  /** Set to end at the period end, in any plan-holding state (a past-due plan can be cancelling too). */
+  cancelling: boolean;
+  offer: PlanOffer;
+  /** `November 16`: when the plan renews (active, past due) or ends (cancelled, ending), or null. */
+  on: string | null;
+  /** Plan credits held now (active, past due) or lapsing on `on` (cancelled, ending). */
+  credits: number;
+  /** Whole days left on a cancelled plan; null otherwise. */
+  days: number | null;
 };
 
 export type CreditsModel = {
@@ -43,9 +60,11 @@ export type CreditsModel = {
   history: HistoryItem[];
   /** P5 / P5b: the daily paid line, or null below 15 paid runs (or with no paid lot). */
   paidToday: PaidToday | null;
+  /** The plan card, or null while there is nothing to draw: no plan and no offer (the switch is off). */
+  plan: PlanCardModel | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null; planExpiresAt?: Date | null; planExpiring?: number; planByExpiry?: { at: Date | null; n: number }[] };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;
@@ -57,6 +76,10 @@ export function buildCreditsModel(input: {
   returning?: boolean;
   /** Whether a dispute paused this reader's buying (`purchaseBlocked`, K2). */
   blocked?: boolean;
+  /** The reader's newest subscription row (`readPlanFacts`), or null. */
+  subscription?: PlanSubscriptionFacts | null;
+  /** The clock the plan card's days are counted from; a test passes one. */
+  now?: Date;
 }): { sees: false } | { sees: true; model: CreditsModel } {
   const { allowance: a, history } = input;
   const welcome = a.welcome ?? 0;
@@ -64,19 +87,31 @@ export function buildCreditsModel(input: {
   const gift = a.gift ?? 0;
   const pack = a.pack ?? 0;
   const held = heldCredits(a) > 0;
-  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false })) return { sees: false };
+  const facts = planCardFacts(input.subscription ?? null, a, input.now ?? new Date());
+  // A live plan keeps the page even with no credit yet and no history: its first invoice may not have granted.
+  if (!readerSeesCredits({ switchOn: input.switchOn, held, everBought: history.length > 0, returning: input.returning ?? false, planHeld: facts.state !== "offer" })) return { sees: false };
   const freeLeft = freeCount(a);
-  const oncePlan = history.some((r) => r.source === "plan");
   const oncePack = history.some((r) => r.source === "pack");
   const cells: BalanceCell[] = [{ key: "free", value: freeLeft }];
   // The welcome lot is spent after the free allowance and before the others, so its cell sits second. It is drawn only
   // while it holds a credit: it is never bought, so there is no empty cell to explain (D1; D2 owns its wording).
   if (welcome > 0) cells.push({ key: "welcome", value: welcome });
-  if (plan > 0 || oncePlan) cells.push({ key: "plan", value: plan });
+  // The Plan cell goes once the plan credits are gone and no plan is held (K6): never a cell at 0 forever. A held plan with
+  // everything spent still draws it, because the card beside it says the plan renews.
+  if (plan > 0 || facts.state !== "offer") cells.push({ key: "plan", value: plan });
   // A gift (an admin's support grant, admin plan A-R5) is spent after plan and before pack, and like the welcome lot it
   // is never bought, so its cell is drawn only while it holds a credit.
   if (gift > 0) cells.push({ key: "gift", value: gift });
   if (pack > 0 || oncePack) cells.push({ key: "pack", value: pack });
+  // The offer is a purchase, so it follows the switch; a plan the reader already holds is theirs to manage (O2, O3).
+  const planCard: PlanCardModel | null = facts.state === "offer" && !input.switchOn ? null : {
+    state: facts.state,
+    cancelling: facts.cancelling,
+    offer: planOffer(),
+    on: facts.endsAt ? longDate(facts.endsAt) : null,
+    credits: planCreditsFor(a, input.subscription ?? null, facts.cancelling),
+    days: facts.days,
+  };
   return {
     sees: true,
     model: {
@@ -89,6 +124,7 @@ export function buildCreditsModel(input: {
       paused: readerSeesPause({ switchOn: input.switchOn, blocked: input.blocked ?? false }),
       history: history.map(historyItem),
       paidToday: paidToday(a),
+      plan: planCard,
     },
   };
 }
@@ -99,9 +135,28 @@ export function historyItem(r: CreditHistoryRow): HistoryItem {
   return {
     id: r.id,
     date: shortDate(r.createdAt),
-    label: r.source === "plan" ? creditsPageCopy.hist.planMonth : creditsPageCopy.hist.pack,
+    label: r.source === "plan" ? (r.billingReason === "subscription_create" ? creditsPageCopy.hist.planFirst : creditsPageCopy.hist.planMonth) : creditsPageCopy.hist.pack,
     units: r.units,
     amount: r.amountCents !== null && r.currency === "usd" ? usd(r.amountCents) : null,
     sessionId: r.externalId?.startsWith("cs_") ? r.externalId : null,
+    invoiceId: r.source === "plan" && r.externalId?.startsWith("in_") ? r.externalId : null,
   };
+}
+
+/**
+ * The plan credits the card names. The expiry breakdown (`planByExpiry`), when supplied, is AUTHORITATIVE: the current
+ * subscription's lots are the ones that roll over (no expiry) or, once it is cancelling, the ones that lapse on its period
+ * end (the webhook sets exactly that instant), and an older subscription's lots carry their own earlier expiry and are
+ * never counted here. Nothing matching is zero, not the older lots. Without a breakdown the account's figures stand.
+ */
+export function planCreditsFor(a: AllowanceFacts, sub: PlanSubscriptionFacts | null, cancelling: boolean): number {
+  const total = a.plan ?? 0;
+  const groups = a.planByExpiry;
+  if (!groups) return cancelling ? (a.planExpiring ?? total) : total;
+  const sum = (match: (at: Date | null) => boolean) => groups.filter((g) => match(g.at)).reduce((n, g) => n + g.n, 0);
+  const rolling = sum((at) => at === null);
+  if (!cancelling) return rolling;
+  const end = sub?.currentPeriodEnd?.getTime() ?? null;
+  const onEnd = end === null ? 0 : sum((at) => at?.getTime() === end);
+  return onEnd > 0 ? onEnd : rolling;
 }

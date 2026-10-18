@@ -16,6 +16,7 @@ import { CreditsToast, type CreditsToastState } from "./credits-toast";
 import { History } from "./history";
 import { PackOffers, type BuyFailure } from "./pack-offers";
 import { PauseBand } from "./pause-band";
+import { PlanCard, type PlanTiming } from "./plan-card";
 import { CancelledBand, ReturnBand, type BandTiming } from "./return-band";
 
 const c = creditsPageCopy;
@@ -23,7 +24,7 @@ const c = creditsPageCopy;
 /** How the reader came back from Checkout: closed on Stripe's page, or finished (with the Session to follow). */
 export type ReturnProp = { kind: "cancelled" } | { kind: "done"; sessionId: string; initial: ReturnRead | null };
 
-export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: ReturnProp | null; timing?: BandTiming }) {
+export function CreditsView({ model, ret, timing, planTiming }: { model: CreditsModel; ret: ReturnProp | null; timing?: BandTiming; planTiming?: PlanTiming }) {
   const router = useRouter();
   const [toast, setToast] = useState<CreditsToastState | null>(null);
   // What a Buy press was answered (`off` or `blocked`), and the model it was answered against: it stands only until the
@@ -33,6 +34,10 @@ export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: 
   const onSale = local === null;
   const paused = model.paused || local === "blocked";
   const [added, setAdded] = useState<number | null>(ret?.kind === "done" && ret.initial?.kind === "added" ? ret.initial.units : null);
+  const plan = model.plan;
+  // Payments are off for this reader when no offers are drawn: the plan card keeps Cancel and Update card only (O2, O3).
+  const reduced = model.offers === null || !onSale;
+  const hasCards = (plan !== null && plan !== undefined && plan.state !== "offer") || Boolean(model.offers && onSale);
   const say = (text: string, detail?: string) => setToast((t) => ({ id: (t?.id ?? 0) + 1, text, detail }));
 
   function buyFailed(reason: BuyFailure) {
@@ -49,6 +54,7 @@ export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: 
       {ret?.kind === "done" ? (
         <ReturnBand
           sessionId={ret.sessionId}
+          planRenews={model.plan?.state === "active" ? model.plan.on : null}
           initial={ret.initial}
           timing={timing}
           onAdded={(units) => {
@@ -61,7 +67,15 @@ export function CreditsView({ model, ret, timing }: { model: CreditsModel; ret: 
         />
       ) : null}
       <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} />
-      {model.offers && onSale ? <PackOffers offers={model.offers} onFailure={buyFailed} /> : null}
+      {/* `contents` below `md`, so the sections stack in the page's own column as ever; two columns from `md` (K2 to K5). */}
+      {hasCards ? (
+      <div className="contents md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]">
+        {plan && plan.state !== "offer" ? <PlanCard plan={plan} reduced={reduced} timing={planTiming} onToast={say} onFailure={buyFailed} /> : null}
+        {model.offers && onSale ? (
+          <PackOffers offers={model.offers} onFailure={buyFailed} lead={plan?.state === "offer" ? <PlanCard plan={plan} reduced={reduced} timing={planTiming} onToast={say} onFailure={buyFailed} /> : undefined} />
+        ) : null}
+      </div>
+      ) : null}
       {/* B1: a dispute paused buying, so the band stands where the offers would. */}
       {paused ? <PauseBand /> : null}
       <History items={model.history} onReceiptFailed={() => say(c.hist.receiptFailed)} />

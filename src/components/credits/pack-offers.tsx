@@ -4,7 +4,7 @@
 // list is the closed pack registry. The Buy press mints its own uuid per press (`buyPackAction`'s `actionId`) and
 // sends the reader to Stripe's Checkout. Nothing is granted here.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { buyPackAction, type CheckoutOutcome } from "../../app/credits/actions";
 import { creditsPageCopy, type PackOffer } from "../../lib/copy/credits-page";
 import { OfferArt } from "./offer-art";
@@ -13,12 +13,21 @@ const c = creditsPageCopy;
 
 export type BuyFailure = Extract<CheckoutOutcome, { ok: false }>["reason"];
 
-export function PackOffers({ offers, onFailure }: { offers: readonly PackOffer[]; onFailure: (reason: BuyFailure) => void }) {
+export function PackOffers({ offers, onFailure, lead }: {
+  offers: readonly PackOffer[];
+  onFailure: (reason: BuyFailure) => void;
+  /** The plan offer (K1): the card AFTER the packs, because the pack leads (launch epic L6, Hugh 2026-10-17; the handoff drew the plan first). With it the cards sit in two columns from `md`. */
+  lead?: ReactNode;
+}) {
   return (
-    <section aria-labelledby="credits-offers" className="md:max-w-[463px]">
+    <section aria-labelledby="credits-offers" className={lead ? "md:col-span-2" : "flex flex-col md:max-w-[463px]"}>
       <h2 id="credits-offers" className="mb-[10px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:text-[19px]">{c.pack.heading}</h2>
-      <div className="flex flex-col gap-[14px]">
-        {offers.map((offer) => <PackCard key={`${offer.id}:${offer.units}`} offer={offer} onFailure={onFailure} />)}
+      <div className={`flex flex-col gap-[14px] ${lead ? "md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]" : "flex-1"}`}>
+        {/* One grid item for however many packs there are (P8), so a second pack stacks in the pack column beside the plan. */}
+        <div className="flex flex-1 flex-col gap-[14px]">
+          {offers.map((offer) => <PackCard key={`${offer.id}:${offer.units}`} offer={offer} onFailure={onFailure} />)}
+        </div>
+        {lead}
       </div>
     </section>
   );
@@ -56,7 +65,7 @@ function PackCard({ offer, onFailure }: { offer: PackOffer; onFailure: (reason: 
     }
   }
   return (
-    <div className="flex flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[16px] md:px-[22px] md:py-[20px]">
+    <div className="flex flex-1 flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[16px] md:px-[22px] md:py-[20px]">
       <div className="flex items-start gap-[14px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.pack.k}</span>
