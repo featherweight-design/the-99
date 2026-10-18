@@ -187,7 +187,7 @@ cache wrapper lives here too (M4). The probe imports this module but calls only 
   1. A blank key returns `no_key`.
   2. A live negative-memo entry for the month returns its unread `kind`.
   3. Otherwise it calls
-     `unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, monthParam(month), current ? String(Math.floor(now / 300_000)) : "closed"], { revalidate })`.
+     `unstable_cache(run, ["anthropic-cost", DEPLOYMENT_ID, monthParam(month), String(Math.floor(now / (current ? 300_000 : 3_600_000)))], { revalidate })`.
      `revalidate` is 300 for the current month and 3600 for a past one (a closed month can still settle).
   4. `run` throws `new NotStored(result)` on `ok: false`. The wrapper catches it, writes the memo, and returns the
      result unstored. This is the `user-lists.ts` pattern with its own `NotStored`, which carries only
@@ -315,7 +315,7 @@ Both lanes touch `costs.ts` (9b changes `loadCosts` to take the masked universe)
   - 0 and 2 workspaces match.
   - **The key never escapes.** A sentinel key appears in no URL, no `JSON.stringify(result)`, no log line and no
     `NotStored`, and exactly once per request in the headers.
-  - **The cache:** the key parts are deployment, month and the five-minute bucket (`"closed"` for a past month), and
+  - **The cache:** the key parts are deployment, month and the five-minute bucket (an hourly one for a past month, so an expired figure is a foreground miss), and
     never the key. `revalidate` is 300 or 3600.
   - **The memo:** a failure is returned unstored. A second call inside 60s returns the same kind with no fetch. A call
     at 61s fetches again. A success is never memoized as a failure, and the memo never answers with figures.
