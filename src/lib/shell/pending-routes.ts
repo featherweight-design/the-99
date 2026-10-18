@@ -38,6 +38,13 @@ export function pendingRouteFor(href: string): PendingRoute {
       return { kind: "overlay", key: "collection" };
     case "commanders":
       return { kind: "overlay", key: "commanders" };
+    // The public card and commander pages (launch epic F3). The app never routes a member to either (Locked 3) and a stranger
+    // gets the bare shell, which draws no loading screen, so these only name what a member's direct load would stream: the
+    // commander page under the commanders screen, as its signed-in twin, and the card page under the root's.
+    case "card":
+      return { kind: "overlay", key: "home" };
+    case "commander":
+      return { kind: "overlay", key: "commanders" };
     case "credits":
       return { kind: "kept", screen: "credits" };
     case "discover":

@@ -84,6 +84,16 @@ describe("gateApplies", () => {
     expect(gateApplies("/apiary")).toBe(true);
   });
 
+  it("exempts the public card and commander pages, and only those", () => {
+    for (const path of ["/card", "/card/sol-ring-0b3f2c9e6a41", "/commander", "/commander/atraxa-praetors-voice-0b3f2c9e6a41"]) {
+      expect(gateApplies(path)).toBe(false);
+    }
+    // The signed-in commander list and pages keep the gate: `/commanders` is not `/commander/`.
+    expect(gateApplies("/commanders")).toBe(true);
+    expect(gateApplies("/commanders/atraxa")).toBe(true);
+    expect(gateApplies("/cards")).toBe(true);
+  });
+
   it("applies to the routes a reader is actually sent away from", () => {
     expect(gateApplies("/")).toBe(true);
     expect(gateApplies("/decks")).toBe(true);

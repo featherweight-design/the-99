@@ -20,6 +20,8 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     expect(key("/collection/sets/mh3")).toBe("setGrid");
     expect(key("/commanders")).toBe("commanders");
     expect(key("/commanders/atraxa")).toBe("commanders");
+    expect(key("/card/sol-ring-0b3f2c9e6a41")).toBe("home");
+    expect(key("/commander/atraxa-praetors-voice-0b3f2c9e6a41")).toBe("commanders");
     expect(key("/discover")).toBe("discover");
     expect(key("/decks")).toBe("decks");
     expect(key("/decks/import")).toBe("decks");

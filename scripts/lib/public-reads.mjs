@@ -18,9 +18,14 @@ import { importsOf, loaderFiles, schemaTables } from "./list-cache-tables.mjs";
 
 export const PUBLIC_DIR = "src/lib/public";
 
-/** The catalog tables a public page may be drawn from. Adding one is a deliberate, reviewed diff. */
+/**
+ * The catalog tables a public page may be drawn from. Adding one is a deliberate, reviewed diff.
+ *
+ * `catalog_refreshes` (F3 PR 2a): one row, the time the catalog last moved, read by `catalogGeneration` for the loader
+ * cache's key. Nothing about a person.
+ */
 export const ALLOWED_TABLES = new Set([
-  "cards", "printings", "sets", "commander_support", "commander_support_cards", "card_bracket_flags",
+  "cards", "printings", "sets", "commander_support", "commander_support_cards", "card_bracket_flags", "catalog_refreshes",
 ]);
 
 /** Directories (under `src/lib`) a public loader may not reach, whatever they read: they hold, or sit in front of, per-user data. */
@@ -130,6 +135,21 @@ export const PUBLIC_SURFACE_DIRS = ["src/app/card", "src/app/commander", "src/co
 
 const isPageFile = (file) => /^src\/app\/.*\/page\.tsx?$/.test(file);
 
+/**
+ * Modules a PAGE FILE may import whose graphs the walk does not follow, each with the reason it cannot change what the page
+ * draws. Imported from anything but a page file, they are walked and judged like any other module (and fail). Adding one
+ * is a deliberate, reviewed diff (F3 PR 2a).
+ */
+export const PAGE_ONLY_MODULES = new Map([
+  // The anonymous counter: called with the request's headers, it returns nothing, counts the hit in `rate_hits` AFTER the
+  // response, and swallows every failure. Its graph holds the signed-in counter (`observe.ts`, `requestSwitchEnv`), which
+  // the anonymous path never calls.
+  ["src/lib/rate/anon.ts", "counts the visitor's read after the response; nothing it returns is drawn"],
+  // The page's own switch, decided with NO account (`resolveSwitchEnv(null)`): a plumbing switch takes the app-wide
+  // override alone, so every visitor gets the same answer.
+  ["src/lib/switches/snapshot.ts", "decides the page's plumbing switch app-wide, with no account"],
+]);
+
 function filesUnder(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { recursive: true }).map((f) => posix.join(dir, String(f).split("\\").join("/")))
@@ -160,6 +180,7 @@ export function surfaceFiles(entries, read = (f) => readFileSync(f, "utf8"), res
     for (const spec of importsOf(read(file))) {
       const next = resolveFn(file, spec);
       if (!next || seen.has(next)) continue;
+      if (isPageFile(file) && PAGE_ONLY_MODULES.has(next)) continue;
       if (next.startsWith("src/app/")) { stack.push(next); continue; }
       // The database entry and the schema are terminal: the schema declares every table and imports app modules, and
       // what a caller reads from it is judged in the CALLER (its bindings and SQL), as the loader guard does.

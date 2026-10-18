@@ -22,6 +22,7 @@ import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { noticesEnabled } from "../notices/flag";
 import { preconsEnabled } from "../precons/flag";
+import { publicPagesEnabled } from "../public/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -75,6 +76,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PAYMENTS_ENABLED: paymentsEnabled,
   PRECONS_ENABLED: preconsEnabled,
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
+  PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
   RULE_ZERO_ENABLED: ruleZeroEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,

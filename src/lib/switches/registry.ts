@@ -59,6 +59,7 @@ export const SWITCHES = [
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PRECONS_ENABLED", kind: "feature" },
   { name: "PROPOSED_CUTS_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
+  { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "RULE_ZERO_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },

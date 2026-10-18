@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const resolve = vi.hoisted(() => vi.fn());
 vi.mock("./resolve", async (orig) => ({ ...(await orig<typeof import("./resolve")>()), resolvePublicSlug: resolve }));
 
-import { PRINTINGS_LIMIT, loadPublicCard, printingsQuery, splitFaces } from "./card";
+import { PRINTINGS_LIMIT, commanderPageQuery, loadPublicCard, printingsQuery, splitFaces } from "./card";
 import { loadPublicCommander, signatureQuery, SIGNATURE_LIMIT } from "./commander";
 import { cardsByPrefixQuery } from "./resolve";
 
@@ -30,11 +30,18 @@ describe("the card loader", () => {
     expect(await loadPublicCard("x-0b3f2c9e6a41")).toEqual({ kind: "not-found" });
   });
 
-  it("reads printings representative-first, then by set and number, bounded, from the printings table alone", () => {
-    const q = printingsQuery(ID).toSQL();
-    expect(q.sql).toMatch(/from "printings" where "printings"\."oracle_id" = \$1 order by "printings"\."is_representative" desc, "printings"\."set_code" asc, "printings"\."collector_number" asc limit \$2/);
-    expect(q.params).toEqual([ID, PRINTINGS_LIMIT]);
+  it("reads the card's own printing first, then by set and by number as a number, one past the limit, from the printings table alone", () => {
+    const PICTURED = "9a1b2c3d-0000-4000-8000-000000000001";
+    const q = printingsQuery(ID, PICTURED).toSQL();
+    expect(q.sql).toMatch(/from "printings" where "printings"\."oracle_id" = \$1 order by "printings"\."scryfall_id" = \$2 desc, "printings"\."set_code" asc, nullif\(regexp_replace\("printings"\."collector_number", '\[\^0-9\]\.\*\$', ''\), ''\)::int nulls last, "printings"\."collector_number" asc limit \$3/);
+    expect(q.params).toEqual([ID, PICTURED, PRINTINGS_LIMIT + 1]);
     expect(q.sql).not.toMatch(/printing_prices/);
+  });
+
+  it("asks whether a commander page exists by the support table's key alone, one row at most", () => {
+    const q = commanderPageQuery(ID).toSQL();
+    expect(q.sql).toMatch(/^select "commander_oracle_id" from "commander_support" where "commander_support"\."commander_oracle_id" = \$1 limit \$2$/);
+    expect(q.params).toEqual([ID, 1]);
   });
 
   it("splits a double-faced or split card's name and type line, and leaves a one-faced card whole", () => {

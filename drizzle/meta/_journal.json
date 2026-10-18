@@ -1100,6 +1100,13 @@
       "when": 1792316962198,
       "tag": "0156_nebulous_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 157,
+      "version": "7",
+      "when": 1792318767702,
+      "tag": "0157_public_pages_switch",
+      "breakpoints": true
     }
   ]
 }

@@ -44,9 +44,19 @@ import { isQrToken } from "./lib/invites/rules";
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
 // a signed-in reader whose own switch is on (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
 // protected: the pattern needs the slash.
-const isPublic = createRouteMatcher(["/", "/offline", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
+// /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
+// (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
+// stays protected: the pattern needs the slash.
+const isPublic = createRouteMatcher(["/", "/offline", "/card/(.*)", "/commander/(.*)", "/friend/(.*)", "/join/(.*)", "/sign-up(/.*)?", "/privacy", "/privacy/", "/terms", "/terms/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/clerk-webhook", "/api/clerk-webhook/", "/api/csp-report", "/api/csp-report/", "/api/stripe-webhook", "/api/stripe-webhook/"]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // `/sign-in` is the public pages' way in (their signed-out block links here, because a page a stranger opens imports
+  // nothing from the auth library): Clerk's hosted sign-in, landing on Home after, or Home at once for a reader already in.
+  if (req.nextUrl.pathname === SIGN_IN_PATH) {
+    const { userId, redirectToSignIn } = await auth();
+    const home = new URL("/", req.url);
+    return userId ? NextResponse.redirect(home) : redirectToSignIn({ returnBackUrl: home.toString() });
+  }
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
   // uses constantly — it renders the dashboard, and it is where Clerk lands
   // them after sign-in. Returning early on the whole matcher therefore left the
@@ -158,6 +168,9 @@ export default clerkMiddleware(async (auth, req) => {
   return response;
 });
 
+/** The one in-app address of Clerk's hosted sign-in; `src/components/public/links.ts` names the same path. */
+const SIGN_IN_PATH = "/sign-in";
+
 const COOKIE_OPTIONS = {
   path: "/",
   httpOnly: true,
@@ -166,5 +179,7 @@ const COOKIE_OPTIONS = {
 } as const;
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],
+  // The public pages' addresses may carry a dot in their name part (`/card/sol.ring-<id>`), which the first pattern
+  // excludes as a static file. Without the proxy, `Shell`'s `auth()` throws instead of the page's 308 or 404.
+  matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)", "/card/(.*)", "/commander/(.*)"],
 };

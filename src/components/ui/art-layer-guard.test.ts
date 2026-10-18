@@ -14,6 +14,11 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
   "cards/card-modal.tsx": { count: 3, reason: "the card details' main faces and zoom: art the reader asked for, left unfaded (PR 1)" },
   "decks/hover-preview.tsx": { count: 1, reason: "the hover preview: art the reader asked for, left unfaded (PR 1)" },
   "sets/set-icon.tsx": { count: 2, reason: "a set symbol drawn as a mask, not card art" },
+  "public/card-art.tsx": { count: 2, reason: "the public card page's card, front and back: the art the page exists to show, left unfaded as card details' is" },
+  "public/card-page.tsx": {
+    count: 1,
+    reason: "the public card page's phone wash, the card's own art blurred: ArtLayer reaches lib/collection, which `check:public-reads` keeps off a public page",
+  },
 };
 
 const ROOT = join(process.cwd(), "src/components");

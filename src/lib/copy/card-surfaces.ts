@@ -154,6 +154,11 @@ function speakSymbol(symbol: string): string {
  * no cost rather than falling silent — silence is indistinguishable from a
  * missing label.
  */
+/** One symbol as written in rules text (`{R}`), spoken as itself: `Add {R}` is mana made, not a cost. */
+export function spokenManaSymbol(token: string): string {
+  return speakSymbol(token.replace(/^\{|\}$/g, ""));
+}
+
 export function spokenManaCost(cost: string | null | undefined): string {
   // The same half the pips draw. A label that spoke both halves of an Adventure
   // would describe a cost the run beside it does not show.

@@ -1,7 +1,34 @@
 import type { ReactNode } from "react";
+import { manaSymbolBackground } from "../../lib/cards/mana-symbols";
+import { spokenManaSymbol } from "../../lib/copy/card-surfaces";
 
 // Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
-export function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
+/**
+ * A run of plain text with each mana symbol (`{R}`, `{X}`, `{T}`) drawn as its printed symbol at the text's own size,
+ * spoken as the symbol. A token the sprite has no art for stays as written.
+ */
+function withSymbols(text: string, key: string): ReactNode[] {
+  return text.split(/(\{[^}]+\})/).filter(Boolean).map((part, i) => {
+    const background = /^\{[^}]+\}$/.test(part) ? manaSymbolBackground(part.slice(1, -1)) : null;
+    if (!background) return part;
+    return (
+      <span
+        key={`${key}-${i}`}
+        role="img"
+        aria-label={spokenManaSymbol(part)}
+        className="inline-block rounded-full align-[-0.15em] mx-[0.06em] w-[1em] h-[1em]"
+        style={background}
+      />
+    );
+  });
+}
+
+/**
+ * `symbols` draws each mana symbol in the text as its printed symbol (the public card page, A1 to A4). Off, the text is
+ * drawn as card details has always drawn it.
+ */
+export function OracleText({ text, keywords, symbols = false }: { text: string; keywords: string[]; symbols?: boolean }) {
+  const plain = (run: string, key: string): ReactNode | ReactNode[] => (symbols ? withSymbols(run, key) : run);
   const paragraphs = text.split("\n");
 
   // Build a regex that matches parenthesized runs and keyword occurrences.
@@ -29,28 +56,28 @@ export function OracleText({ text, keywords }: { text: string; keywords: string[
 
       if (parenIdx === Infinity && kwIdx === Infinity) {
         // Only plain text remains.
-        parts.push(remaining);
+        parts.push(plain(remaining, `p${key++}`));
         break;
       }
 
       if (parenIdx <= kwIdx) {
         // Flush text before paren.
         if (parenStart > 0) {
-          parts.push(remaining.slice(0, parenStart));
+          parts.push(plain(remaining.slice(0, parenStart), `p${key++}`));
         }
         const parenEnd = remaining.indexOf(")", parenStart);
         if (parenEnd === -1) {
           // Unclosed paren — treat rest as plain text.
-          parts.push(remaining.slice(parenStart));
+          parts.push(plain(remaining.slice(parenStart), `p${key++}`));
           break;
         }
         const parenContent = remaining.slice(parenStart, parenEnd + 1);
-        parts.push(<em key={key++} className="italic">{parenContent}</em>);
+        parts.push(<em key={key++} className="italic">{plain(parenContent, `e${key}`)}</em>);
         remaining = remaining.slice(parenEnd + 1);
       } else {
         // Keyword comes first — flush text before it.
         if (kwMatch!.index > 0) {
-          parts.push(remaining.slice(0, kwMatch!.index));
+          parts.push(plain(remaining.slice(0, kwMatch!.index), `p${key++}`));
         }
         parts.push(
           <strong key={key++} className="font-semibold" style={{ color: "var(--fg)", fontWeight: 600 }}>
