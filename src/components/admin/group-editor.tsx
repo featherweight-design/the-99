@@ -30,7 +30,7 @@ import { SearchField } from "../ui/text-field";
 
 const copy = adminCopy.groups;
 const FIELD =
-  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[13.5px]";
+  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[13.5px]";
 const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
 
 type FieldError = { field: "name" | "description" | "credits"; text: string } | null;
@@ -272,7 +272,7 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
         aria-label={copy.find}
         autoComplete="off"
         containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px]"
-        className="text-[16px] md:text-[14px]"
+        className="text-[16px] [@media(pointer:fine)]:md:text-[14px]"
       />
       {shown.length ? (
         <div

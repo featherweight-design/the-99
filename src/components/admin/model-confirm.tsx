@@ -97,7 +97,7 @@ export function ModelConfirm({
               onChange={(e) => setNote(e.target.value)}
               maxLength={500}
               autoComplete="off"
-              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]"
+              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]"
             />
           </label>
         )}

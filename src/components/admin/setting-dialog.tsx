@@ -18,7 +18,7 @@ export type SettingKind = "elsewhere" | "cap" | "ceiling";
 
 const copy = adminCopy.setting;
 const FIELD =
-  "h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]";
+  "h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]";
 
 function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);

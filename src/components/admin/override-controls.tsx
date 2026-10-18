@@ -306,7 +306,7 @@ export function RowControls({
               autoComplete="off"
               aria-label={copy.noteField}
               placeholder={copy.noteField}
-              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[32px] md:text-[13px]"
+              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[32px] [@media(pointer:fine)]:md:text-[13px]"
             />
             <span className="text-[12px] text-[color:var(--fg-faint)]">{copy.pendingHint}</span>
           </>

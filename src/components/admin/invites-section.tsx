@@ -18,7 +18,7 @@ import { HistoryList } from "./switch-page";
 const inv = adminCopy.invites;
 const CARD = "flex flex-col gap-[10px] md:gap-[12px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[14px] md:px-[20px] md:py-[18px]";
 const FIELD =
-  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] md:w-[120px] md:text-[14px]";
+  "h-[44px] w-full min-w-0 rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] md:w-[120px] [@media(pointer:fine)]:md:text-[14px]";
 const HELP = "text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-faint)]";
 const ERROR = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]";
 const LINE = "flex min-h-[44px] items-center gap-[10px] border-0 border-t border-solid border-[color:var(--border)] py-[6px] text-[13px] text-[color:var(--fg-body)] md:min-h-[40px] md:text-[13.5px]";
