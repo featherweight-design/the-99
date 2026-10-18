@@ -95,6 +95,41 @@ try {
         });
         report(end.bottom <= end.limit + 1, `${name}: scrolled to the end its last line clears the bar`, `${Math.round(end.bottom)} <= ${Math.round(end.limit)}`);
       }
+      // The pages whose action dock is `fixed` over the foot of the page (A1b). Scrolled to the end, the notice's last line
+      // must clear the TOPMOST fixed dock, not only the tab bar. A page that draws no dock at this width is reported as
+      // skipped, never as a pass: the gate-dismiss bar only exists with the About sheet switch off, and the top-off bar
+      // needs PROBE_TOPOFF_PATH (a deck with open slots).
+      const precon = await page.goto(`${BASE}/decks/precons`, { waitUntil: "networkidle" }).then(() => page.evaluate(() => document.querySelector('a[href^="/decks/precons/"]')?.getAttribute("href") ?? null));
+      const DOCKED = [
+        ["picker", "/decks/new"],
+        ["intake", "/decks/new/choose"],
+        ["precon", precon],
+        ["top-off", process.env.PROBE_TOPOFF_PATH ?? null],
+        ["gate-dismiss", "/about?tab=reference&next=%2Fdecks"],
+      ];
+      for (const [label, path] of DOCKED) {
+        const name = `signed in ${label} dock @${w.label}`;
+        if (!path) { console.log(` SKIP  ${name}: no route to open`); continue; }
+        await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        const m = await page.evaluate(() => {
+          const f = document.querySelector("footer[data-fan-content-notice]");
+          if (!f) return null;
+          const vh = window.innerHeight;
+          const docks = [...document.querySelectorAll("body *")].filter((e) => {
+            if (e === f || f.contains(e) || e.closest("nav") || e.closest('[role="dialog"]')) return false;
+            const cs = getComputedStyle(e);
+            const r = e.getBoundingClientRect();
+            return cs.position === "fixed" && cs.display !== "none" && r.width > 200 && r.height > 20 && r.height < 240 && r.top > vh / 2 && r.bottom < vh + 1;
+          });
+          const dockTop = docks.length ? Math.min(...docks.map((e) => e.getBoundingClientRect().top)) : null;
+          // The last LINE, not the box: the box always ends at the column's foot, and its bottom padding is what clears the dock.
+          return { bottom: f.querySelector("div").getBoundingClientRect().bottom, dockTop, docks: docks.length };
+        });
+        if (!m) { report(false, `${name}: a notice is drawn`); continue; }
+        if (m.dockTop === null) { console.log(` SKIP  ${name}: no fixed dock drawn at this width`); continue; }
+        report(m.bottom <= m.dockTop + 1, `${name}: scrolled to the end the notice clears the dock`, `${Math.round(m.bottom)} <= ${Math.round(m.dockTop)}`);
+      }
       await context.close();
     }
   }

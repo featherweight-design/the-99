@@ -36,6 +36,7 @@ import { InfoTip } from "../ui/info-tip";
 import { CardTagList, useCardTagPicker } from "../cards/card-tag-picker";
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { serialize, toField } from "../../lib/decks/notes-field";
+import { useDockClearance } from "../shell/dock-clearance";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -115,6 +116,7 @@ export function IntakeForm({
   // own, so the last field never sits under it.
   const dockRef = useRef<HTMLDivElement>(null);
   const [dockHeight, setDockHeight] = useState(0);
+  useDockClearance(dockRef);
   useLayoutEffect(() => {
     const el = dockRef.current;
     if (!el) return;

@@ -16,6 +16,7 @@ export function GateDismiss({ destination, shown }: { destination: string; shown
       {/* The pinned bar's own height, given back to the document on the phone, as the shipped page did. */}
       <div aria-hidden className="h-[67px] md:hidden" />
       <DismissForm
+        dock
         destination={destination}
         shown={shown}
         className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-30 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] pt-[10px] pb-[12px] md:static md:order-first md:mb-[20px] md:flex md:justify-end md:border-t-0 md:bg-transparent md:p-0"

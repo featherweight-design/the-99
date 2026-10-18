@@ -35,6 +35,7 @@ import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
 import { PreconDoor } from "./precons/precon-door";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { noteAppScroll } from "../../lib/ui/reveal";
+import { useDockClearance } from "../shell/dock-clearance";
 
 const copy = deckImportCopy.commander;
 
@@ -184,6 +185,7 @@ export function CreatePicker(props: CreatePickerProps) {
   // line pushes it taller — so the reserve is measured rather than hard-coded.
   const footerRef = useRef<HTMLDivElement>(null);
   const [footerHeight, setFooterHeight] = useState(0);
+  useDockClearance(footerRef);
   // Layout rather than passive: a passive effect runs after paint, so the
   // measurement below would still leave one frame in which the dock covers the
   // last row.

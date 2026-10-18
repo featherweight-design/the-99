@@ -1,8 +1,9 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 
 import { dismissAbout } from "../../app/about/actions";
+import { useDockClearance } from "../shell/dock-clearance";
 import { usePendingPush } from "../shell/pending-push";
 
 /**
@@ -16,6 +17,7 @@ export function DismissForm({
   shown,
   className,
   style,
+  dock = false,
   children,
 }: {
   destination: string;
@@ -23,11 +25,16 @@ export function DismissForm({
   shown: readonly string[];
   className?: string;
   style?: CSSProperties;
+  /** The form is the phone's pinned bar: its height is published for the Fan Content notice to clear. */
+  dock?: boolean;
   children: ReactNode;
 }) {
   const { go } = usePendingPush();
+  const ref = useRef<HTMLFormElement>(null);
+  useDockClearance(ref, dock);
   return (
     <form
+      ref={ref}
       className={className}
       style={style}
       action={async (formData) => {
