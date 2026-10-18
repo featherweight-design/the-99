@@ -558,3 +558,35 @@ describe("AccountMenu credit chip (M1b)", () => {
     expect(screen.getByTestId("credit-chip")).toHaveTextContent("Get more credits");
   });
 });
+
+describe("AccountMenu Take the tour row (discovery R3·2)", () => {
+  it("draws no Take the tour row with the switch off", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" friends />);
+    fireEvent.click(trigger());
+    expect(screen.queryByRole("menuitem", { name: "Take the tour" })).toBeNull();
+  });
+
+  it.each(["popover", "sheet"] as const)("puts Take the tour directly under About in the %s, drawn as that row is", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" friends tour />);
+    fireEvent.click(trigger());
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/?tour=1", "/friends", "/admin", "Manage account", "Sign out"]);
+    const [about, tour] = items;
+    expect(tour.tagName).toBe(about.tagName);
+    expect(tour.getAttribute("class")?.replace(/border-t.*?\]/, "")).toBe(about.getAttribute("class")?.replace(/border-t.*?\]/, ""));
+  });
+
+  it("hands the navigation to Home's tour parameter to the provider, even from Home, and closes the menu", () => {
+    window.history.replaceState(null, "", "/");
+    const providerPush = vi.fn();
+    render(
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
+        <AccountMenu panel="sheet" theme="amonkhet" tour />
+      </Report.Provider>,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Take the tour" }));
+    expect(providerPush).toHaveBeenCalledWith("/?tour=1");
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+});

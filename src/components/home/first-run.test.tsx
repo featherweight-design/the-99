@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
 // render to send a confirmed upload on to /collection. Outside an app-router
 // tree that throws, and none of these tests navigates.
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock("../discovery/first-run-tour", () => ({ FirstRunTour: ({ precons }: { precons: boolean }) => <div data-testid="tour" data-precons={String(precons)} /> }));
+const nav = vi.hoisted(() => ({ query: "" }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(nav.query) }));
+vi.mock("../../lib/url/mirror", () => ({ mirrorUrl: vi.fn() }));
+vi.mock("../discovery/first-run-tour", () => ({ FirstRunTour: ({ precons, again = false }: { precons: boolean; again?: boolean }) => <div data-testid="tour" data-precons={String(precons)} data-again={String(again)} /> }));
 
 // The review is reached through the real paste path; only the server read is stubbed.
 const previewPaste = vi.fn();
@@ -233,5 +235,17 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     unmount();
     render(<FirstRunChecklist tour ways={{ precons: true }} />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
+  });
+
+  it("runs the first-run tour again on ?tour=1 with the switch on, asked for so a spent tab's mark cannot hold it off, and never with it off (R3·2)", () => {
+    nav.query = "tour=1";
+    const { unmount } = render(<FirstRunChecklist ways={{ precons: true }} />);
+    expect(screen.queryByTestId("tour")).toBeNull();
+    unmount();
+    render(<FirstRunChecklist tourAgain ways={{ precons: true }} />);
+    expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
+    // Asked for: `again`, which is what lets the replay past this tab's spent mark (first-run-tour.test.tsx proves that half).
+    expect(screen.getByTestId("tour")).toHaveAttribute("data-again", "true");
+    nav.query = "";
   });
 });

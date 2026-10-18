@@ -312,4 +312,99 @@ describe("FirstRunTour", () => {
     await arrive();
     expect(card()).toBeInTheDocument();
   });
+
+  it("runs again in that same tab when asked for (`?tour=1`, R3·2): the spent mark holds off only the unasked remount", async () => {
+    const first = render(<Home />);
+    await arrive();
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    first.unmount();
+    render(
+      <TargetsProvider>
+        <Lit id="tour:step-one" label="Upload" />
+        <FirstRunTour precons again />
+      </TargetsProvider>,
+    );
+    await arrive();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+describe("FirstRunTour asked for again, with the stamp already set (R3·2 over the claim)", () => {
+  it("opens without waiting on the claim, which only a null stamp wins, and still spends through the same action", async () => {
+    spend.mockResolvedValueOnce({ claimed: false });
+    render(
+      <TargetsProvider>
+        <Lit id="tour:step-one" label="Upload" />
+        <FirstRunTour precons again />
+      </TargetsProvider>,
+    );
+    await arrive();
+    expect(card()).toBeInTheDocument();
+    expect(spend).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** A dashboard Home (R3·2): the shell's slots, its lock handed down, and the tour asked for again. */
+function Dashboard({ locked, collection = true }: { locked: boolean; collection?: boolean }) {
+  return (
+    <TargetsProvider navLocked={locked}>
+      <div data-testid="app">
+        <Lit id="tour:step-one" label="Upload" />
+        {collection && <Lit id="tour:collection" label="Collection" />}
+        <Lit id="tour:commanders" label="Commanders" />
+        <Lit id="tour:decks" label="Decks" />
+        <Lit id="tour:account" label="Account" />
+        <Lit id="tour:banner" label="About" />
+      </div>
+      <FirstRunTour precons mode="dashboard" again />
+    </TargetsProvider>
+  );
+}
+
+describe("FirstRunTour taken again on a dashboard (R3·2)", () => {
+  it("lights the Collection slot on step 1, not step 1's card, and drops the precon line", async () => {
+    const { unmount } = render(<Dashboard locked={false} />);
+    await arrive();
+    expect(card()).toHaveAccessibleDescription(/Pointing at Collection\.$/);
+    expect(card()).not.toHaveTextContent("Precons I own");
+    expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
+    unmount();
+    // Step 1's card is registered but the slot is not: nothing is lit, so the tour did not fall back to the card.
+    render(<Dashboard locked={false} collection={false} />);
+    await arrive();
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+  });
+
+  it("takes the replay's body and captions with the shell's nav unlocked", async () => {
+    render(<Dashboard locked={false} />);
+    await arrive();
+    expect(card()).toHaveTextContent("Drop in a new file whenever it changes.");
+    next();
+    expect(card()).toHaveTextContent("Commanders, on someone else’s cards");
+    expect(card()).not.toHaveTextContent("once your cards are in");
+    next();
+    expect(card()).toHaveTextContent("A deck, built by someone else");
+    next();
+    expect(card()).toHaveTextContent("Shopping, inside every deck");
+  });
+
+  it("keeps the once-your-cards-are-in copy while the shell's nav is locked (decks, no cards)", async () => {
+    render(<Dashboard locked />);
+    await arrive();
+    expect(card()).toHaveTextContent("Drop in a file from ManaBox");
+    next();
+    expect(card()).toHaveTextContent("Commanders, once your cards are in");
+    expect(card()).toHaveTextContent("It opens once your cards are in.");
+    next();
+    expect(card()).toHaveTextContent("A deck, once you build one");
+  });
+
+  it("is the same six stops, spent through the same action (which writes only while the stamp is null)", async () => {
+    render(<Dashboard locked={false} />);
+    await arrive();
+    expect(spend).toHaveBeenCalledTimes(1);
+    for (let i = 0; i < 5; i++) next();
+    expect(within(card()).getByText("6 of 6 · What’s new")).toBeInTheDocument();
+    expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
+  });
 });

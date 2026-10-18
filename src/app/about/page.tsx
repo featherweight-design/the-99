@@ -17,6 +17,7 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 import { DECK_TOOLS, loadToolFits, type DeckToolId } from "../../lib/discovery/fits";
 import { showcaseGroups, writtenForYou } from "../../lib/discovery/showcase";
 import { TOOLS } from "../../lib/discovery/tools";
+import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { dailyLimitFor } from "../../lib/model/allowance";
 import { perfRoute } from "../../lib/perf/timing";
 import { SWITCH_FLAGS } from "../../lib/switches/flags";
@@ -120,6 +121,7 @@ export default async function AboutRoute({
         initial={initial}
         counts={{ tools: groups.reduce((n, g) => n + g.cards.length, 0), reference: screens.reduce((n, s) => n + s.entries.length, 0) }}
         helpHint={isOn("HELP_PANEL_ENABLED")}
+        tour={firstRunTourEnabled(env)}
         panels={{
           tools: <ToolsTab groups={groups} written={written} allowance={fillAllowance(ALLOWANCE_SLOT, creditLimit)} theme={theme} />,
           reference: (

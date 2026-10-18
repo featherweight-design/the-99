@@ -18,6 +18,7 @@ import { loadUnplayedCounts } from "../lib/recs/home-novelty";
 import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
+import { HomeTour } from "../components/discovery/home-tour";
 import { collectionEditEnabled } from "../lib/collection/edit-flag";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
@@ -313,6 +314,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       })
     : null;
 
+  // The tour taken again (R3·2, plan decision 6): with the switch on, `/?tour=1` starts it whatever `tour_seen_at` says.
+  // Decided per request, outside the cached payload; the client reads and strips the parameter itself.
+  const tourAgain = firstRunTourEnabled(env);
+
   if (data.firstRun) {
     return (
       <FirstRunChecklist
@@ -323,6 +328,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
         tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
         tour={data.tourDue}
+        tourAgain={tourAgain}
       />
     );
   }
@@ -362,5 +368,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       now={now.toISOString()}
     />
   );
-  return receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
+  // On the dashboard the tour runs on the real app, and is never due: only asked for.
+  const page = receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
+  return tourAgain ? <>{page}<HomeTour due={false} mode="dashboard" precons={false} /></> : page;
 }

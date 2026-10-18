@@ -23,6 +23,7 @@ import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { adminCopy } from "../../lib/copy/admin";
 import { socialCopy } from "../../lib/copy/social";
+import { TOUR_HREF, tourAgainCopy } from "../../lib/copy/discovery";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -75,6 +76,10 @@ type MenuItemsProps = {
   chip: ChipState | null;
   /** Leaves for /credits, as `onAbout` leaves for /about. */
   onCredits: () => void;
+  /** `FIRST_RUN_TOUR_ENABLED` for this reader (discovery R3·2): `Take the tour`, directly under About, else no row. */
+  tour: boolean;
+  /** Leaves for `/?tour=1`, which starts the tour on Home, as `onAbout` leaves for /about. */
+  onTour: () => void;
 };
 
 /**
@@ -84,12 +89,14 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, tour, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // About first, Friends under it (Social R1 placement), Admin after them; each drawn only where it applies.
   const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
+    // The tour taken again sits directly under About, drawn as that row is (plan decision 6).
+    ...(tour ? [{ href: TOUR_HREF, label: tourAgainCopy.menu, trailing: null, go: onTour }] : []),
     ...(friends ? [{ href: "/friends", label: socialCopy.menu.friends, trailing: null, go: onFriends }] : []),
     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
   ];
@@ -395,6 +402,7 @@ export function AccountMenu({
   friends = false,
   credits = null,
   friendsMoment = false,
+  tour = false,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -408,6 +416,8 @@ export function AccountMenu({
   credits?: ChipState | null;
   /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
   friendsMoment?: boolean;
+  /** `FIRST_RUN_TOUR_ENABLED` for this reader, resolved by the shell: the `Take the tour` row. */
+  tour?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -462,6 +472,7 @@ export function AccountMenu({
     chipAction().then((next) => { if (live) setChip(next); }, () => {});
     return () => { live = false; };
   }, [open]);
+  const onTour = () => go(TOUR_HREF);
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
@@ -580,6 +591,8 @@ export function AccountMenu({
             admin={admin}
             friends={friends}
             onFriends={onFriends}
+            tour={tour}
+            onTour={onTour}
             onAdmin={onAdmin}
             chip={chip}
             onCredits={onCredits}
@@ -599,6 +612,8 @@ export function AccountMenu({
             admin={admin}
             friends={friends}
             onFriends={onFriends}
+            tour={tour}
+            onTour={onTour}
             onAdmin={onAdmin}
             chip={chip}
             onCredits={onCredits}

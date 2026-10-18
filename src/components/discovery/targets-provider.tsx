@@ -63,7 +63,18 @@ function firstInDocument(els: Iterable<HTMLElement>): HTMLElement | null {
   return first;
 }
 
-export function TargetsProvider({ children }: { children: ReactNode }) {
+/**
+ * Whether the shell draws its nav locked (`uniqueCards === 0`), handed down by the shell itself. The tour taken again
+ * (R3·2) reads it, not Home's own figures: a dashboard with decks and no cards still has a locked nav, and the tour's
+ * captions follow what the shell draws. Null outside the provider.
+ */
+const NavLockedContext = createContext<boolean | null>(null);
+
+export function useNavLocked(): boolean | null {
+  return useContext(NavLockedContext);
+}
+
+export function TargetsProvider({ children, navLocked = null }: { children: ReactNode; navLocked?: boolean | null }) {
   const regs = useRef(new Map<TargetId, Set<HTMLElement>>());
   const waiters = useRef(new Set<() => void>());
   // Each haloed element and the timer that takes its halo off, so a second halo replaces the first.
@@ -170,7 +181,11 @@ export function TargetsProvider({ children }: { children: ReactNode }) {
     () => ({ register, targetRect, scrollToTarget, haloTarget, whenTarget }),
     [register, targetRect, scrollToTarget, haloTarget, whenTarget],
   );
-  return <TargetsContext.Provider value={ctx}>{children}</TargetsContext.Provider>;
+  return (
+    <TargetsContext.Provider value={ctx}>
+      <NavLockedContext.Provider value={navLocked}>{children}</NavLockedContext.Provider>
+    </TargetsContext.Provider>
+  );
 }
 
 /**

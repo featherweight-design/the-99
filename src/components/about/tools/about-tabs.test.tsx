@@ -89,3 +89,24 @@ describe("AboutTabs (C1, R2 gap 12)", () => {
     expect(aboutTabOf(undefined)).toBe("tools");
   });
 });
+
+describe("About's head: Take the tour (discovery R3·2)", () => {
+  it("draws Take the tour → after the subtitle with the switch on, on both tabs, going to Home's tour parameter", () => {
+    for (const initial of ["tools", "reference"] as const) {
+      const { unmount } = render(<AboutTabs initial={initial} counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} tour />);
+      const press = screen.getByRole("link", { name: "Take the tour →" });
+      expect(press.getAttribute("href")).toBe("/?tour=1");
+      // After the subtitle, inside its line, and drawn as Tools' `Open the Reference →` is: the accent, 14.5 semibold.
+      const sub = press.closest("p");
+      expect(sub?.textContent?.startsWith(initial === "tools" ? "What each tool is for" : "Every entry")).toBe(true);
+      expect(sub?.lastElementChild).toBe(press);
+      for (const cls of ["py-[10px]", "text-[14.5px]", "font-semibold", "text-[color:var(--accent)]", "hover:underline"]) expect(press.classList).toContain(cls);
+      unmount();
+    }
+  });
+
+  it("draws no press with the switch off", () => {
+    render(<AboutTabs initial="tools" counts={{ tools: 14, reference: 71 }} panels={panels} helpHint={false} />);
+    expect(screen.queryByRole("link", { name: "Take the tour →" })).toBeNull();
+  });
+});

@@ -639,3 +639,17 @@ describe("The lock, phone tab bar", () => {
     expect(isOpen(decks)).toBe(false);
   });
 });
+
+describe("the tour's slots on a live nav (discovery R3·2)", () => {
+  it.each([
+    ["rail", () => <NavRail locked={false} theme="amonkhet" />],
+    ["tab bar", () => <TabBar locked={false} />],
+  ])("marks Collection, Commanders and Decks in the %s, each on its own slot", (_, draw) => {
+    const { container } = render(draw());
+    for (const [href, id] of [["/collection", "tour:collection"], ["/commanders", "tour:commanders"], ["/decks", "tour:decks"]]) {
+      const box = container.querySelector(`[data-target="${id}"]`);
+      expect(box?.closest("a")?.getAttribute("href")).toBe(href);
+    }
+    expect(container.querySelector('a[href="/discover"] [data-target]')).toBeNull();
+  });
+});

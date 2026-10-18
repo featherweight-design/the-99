@@ -18,7 +18,7 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertPage } from "../../lib/a11y/inert-page";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { creatorNoteCopy, tourCopy } from "../../lib/copy/discovery";
-import { CARD_W, FRAME, PHONE_DOCK, PICTURE_FOCUS, STEPS, cutoutFor, placeCard, tourPictureSrc, type Box } from "../../lib/discovery/tour-steps";
+import { CARD_W, FRAME, PICTURE_FOCUS, phoneDock, cutoutFor, placeCard, stepsFor, tourPictureSrc, type Box, type Step, type TourMode } from "../../lib/discovery/tour-steps";
 import { overPageCount, subscribeOverPage, useMomentHold } from "../../lib/moments/hold";
 import { takeVisit, withVisitLock } from "../../lib/moments/visit";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
@@ -28,7 +28,7 @@ import { NoteDialog } from "../about/reference/creator-note";
 import { ARRIVE_MS } from "../moments/moments-provider";
 import { ThemePicker, themeInForce } from "../shell/theme-picker";
 import { useIsDesktop } from "../ui/use-is-desktop";
-import { useTargets } from "./targets-provider";
+import { useNavLocked, useTargets } from "./targets-provider";
 
 const c = tourCopy;
 const SCRIM = "rgba(6,5,8,.66)";
@@ -59,10 +59,41 @@ function markSpentHere(account: string | null | undefined) {
   }
 }
 
-/** Mounted on a first-run Home whose tour is due (`tourDue`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). */
-export function FirstRunTour({ precons }: { precons: boolean }) {
+/**
+ * What a step's card says. The checklist's tour is the shipped copy. The tour taken again on a dashboard (R3·2, plan
+ * decision 6) points step 1 at the Collection slot and drops the precon line, and its captions follow the shell's own
+ * `locked`: a dashboard with decks and no cards still draws a locked nav, so it keeps the `once your cards are in`
+ * captions, and only an unlocked nav takes the replay's.
+ */
+export function stepCopy(step: Step, mode: TourMode, navLocked: boolean | null) {
+  const unlocked = navLocked === false;
+  switch (step.key) {
+    case "collection": {
+      const s = c.steps.collection;
+      return { place: s.place, title: s.title, body: unlocked ? s.replayBody : s.body, precons: mode === "first-run" };
+    }
+    case "commanders": {
+      const s = c.steps.commanders;
+      return unlocked ? { ...s, body: s.replayBody, picture: s.replayPicture } : s;
+    }
+    case "decks": {
+      const s = c.steps.decks;
+      return unlocked ? { ...s, picture: s.replayPicture } : s;
+    }
+    default:
+      return c.steps[step.key];
+  }
+}
+
+/**
+ * Mounted on a first-run Home whose tour is due (`tourDue`), and on any Home asked for it again (`/?tour=1`, R3·2;
+ * `HomeTour`). `precons`: step 1's precon line (`PRECONS_ENABLED`, with the ways group). `mode`: the checklist, or the
+ * real app's dashboard. `again`: asked for (`?tour=1`), so this tab's spent mark does not hold it off.
+ */
+export function FirstRunTour({ precons, mode = "first-run", again = false }: { precons: boolean; mode?: TourMode; again?: boolean }) {
   const { userId: account } = useAuth();
-  const [phase, setPhase] = useState<"waiting" | "claiming" | "running" | "done">(() => (spentHere(account) ? "done" : "waiting"));
+  // A tour asked for again runs whatever this tab spent: only the unasked remount of a restored Home is held off.
+  const [phase, setPhase] = useState<"waiting" | "claiming" | "running" | "done">(() => (!again && spentHere(account) ? "done" : "waiting"));
   const [note, setNote] = useState(false);
   // This tab holds the claim: anything that came over Home while the claim was asked waits it out, then the tour
   // opens without asking again.
@@ -85,6 +116,16 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
         if (!clear()) return;
         if (claimed.current) {
           // Under the lock every tab's moments share, so another tab's touch cannot write the visit back untaken.
+          void withVisitLock(() => takeVisit());
+          setPhase("running");
+          return;
+        }
+        // Asked for again (`?tour=1`, R3·2): no claim, which only the tab that stamps a null `tour_seen_at` wins and a
+        // replay never would. The spend still runs, and writes only while the stamp is null, so a replay moves none.
+        if (again) {
+          claimed.current = true;
+          markSpentHere(account);
+          void spendTourAction().catch(() => {});
           void withVisitLock(() => takeVisit());
           setPhase("running");
           return;
@@ -126,12 +167,13 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
       document.removeEventListener("visibilitychange", arm);
       off();
     };
-  }, [phase, account, armed]);
+  }, [phase, account, armed, again]);
 
   if (phase === "running")
     return (
       <TourRun
         precons={precons}
+        mode={mode}
         onEnd={(withNote) => {
           setNote(withNote);
           setPhase("done");
@@ -145,8 +187,11 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
 
 const sameBox = (a: Box | null, b: Box | null) => a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h);
 
-function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boolean) => void }) {
+function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; onEnd: (withNote: boolean) => void }) {
   const targets = useTargets();
+  const navLocked = useNavLocked();
+  const dock = phoneDock(navLocked);
+  const STEPS = stepsFor(mode);
   const desktop = useIsDesktop();
   const [index, setIndex] = useState(0);
   const step = STEPS[index];
@@ -222,7 +267,8 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
       return;
     }
     setAnnounce(`${c.kicker(index + 1, STEPS.length, c.steps[STEPS[index].key].place)}. ${c.steps[STEPS[index].key].title}`);
-  }, [index]);
+    // `STEPS` is one of two module constants (`stepsFor`), fixed for the run: listed, it never fires the effect.
+  }, [index, STEPS]);
   // While it runs, nothing else arrives over the page.
   useMomentHold(true);
 
@@ -232,15 +278,16 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     if (desktop) return;
     const body = document.body;
     const was = body.style.paddingBottom;
-    body.style.paddingBottom = `${PHONE_DOCK + (cardH ?? 0)}px`;
+    body.style.paddingBottom = `${dock + (cardH ?? 0)}px`;
     return () => {
       body.style.paddingBottom = was;
     };
-  }, [desktop, cardH]);
+  }, [desktop, cardH, dock]);
 
-  // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top.
+  // At 390 step 1 brings its controls to the top, the fan above the fold; every other step reads from the top, and so
+  // does the dashboard's step 1, whose slot is in the fixed tab bar.
   useLayoutEffect(() => {
-    const r = !desktop && step.key === "collection" ? targets?.targetRect(step.target) : null;
+    const r = !desktop && step.target === "tour:step-one" ? targets?.targetRect(step.target) : null;
     noteAppScroll();
     window.scrollTo({ top: r ? window.scrollY + r.top - 14 : 0, behavior: "instant" });
   }, [desktop, step.key, step.target, targets, cardH]);
@@ -265,9 +312,9 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   const place = desktop ? placeCard(step.place, rect, { w: CARD_W, h: cardH ?? 0 }, frame) : null;
   const theme = themeInForce(DEFAULT_THEME);
   const picture = step.picture ? { src: tourPictureSrc(theme, step.picture) } : null;
-  const copy = c.steps[step.key];
+  const copy = stepCopy(step, mode, navLocked);
   // The card never runs past the screen: on a short viewport (a phone on its side) its content scrolls inside it.
-  const maxHeight = frame.h - FRAME * 2 - (!desktop && !fallback ? PHONE_DOCK - FRAME : 0);
+  const maxHeight = frame.h - FRAME * 2 - (!desktop && !fallback ? dock - FRAME : 0);
   const glide = "transition-[x,y,width,height,rx] duration-[240ms] ease-[var(--motion-ease-out)] motion-reduce:transition-none";
 
   return createPortal(
@@ -304,7 +351,8 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
             : // At 390 the card is docked above the tab bar, or centred when there is nothing to light (R3 gap 6).
               fallback
               ? { top: Math.max(FRAME, (frame.h - (cardH ?? 0)) / 2), visibility: cardH === null ? "hidden" : "visible" }
-              : { bottom: PHONE_DOCK }),
+              : // 12px above the tab bar the shell draws: 100 with the locked bar (88), 86 open (`phoneDock`).
+                { bottom: dock }),
         }}
       >
         <div className="flex items-center justify-between gap-[10px]">
@@ -335,7 +383,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
 
         {step.key === "collection" && (
           <>
-            {precons && (
+            {precons && "precons" in copy && copy.precons && (
               <p className="m-0 mt-[8px] text-pretty text-[14px] leading-[1.55] md:text-[13.5px]">
                 {c.steps.collection.precons.lead} <b className="font-semibold text-[color:var(--fg)]">{collectionPrecons}</b>{" "}
                 {c.steps.collection.precons.rest}
