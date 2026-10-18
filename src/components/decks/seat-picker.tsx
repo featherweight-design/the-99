@@ -35,6 +35,14 @@ type View = { step: "list" } | { step: "decks" | "commander"; friend: PickerFrie
 const ROW = "flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]";
 const NOTE = "px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]";
 const HEADING = "m-0 px-[14px] pb-[4px] pt-[10px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
+// The ONE scroll body under a view's fixed head (its search field, or the friend's header): the results AND the
+// foot, because at 1300 the panel is held to the room beside its seat (`useAnchoredPanel`'s `maxHeight`), and a
+// foot fixed under the list took that room from the rows and was itself clipped on a short window. A 4px gutter
+// top and bottom, the bottom margin taken back, so the 2px focus ring at its 2px offset is never cut where a row
+// meets this scroller's edge (globals.css's `:focus-visible`). No side gutter: the rows run to the panel's own
+// clipped edge, so one would only push the scrollbar outside the panel. The top is a margin, not a negative one,
+// so the body never overlaps the field above it and takes its presses. In the phone sheet nothing caps it.
+const SCROLL_BODY = "-mb-[4px] mt-[4px] min-h-0 overflow-y-auto py-[4px]";
 
 /** The catalog search for one query: nothing under two letters, and a reply for an older keystroke is dropped. */
 function useCommanderSearch(query: string) {
@@ -88,7 +96,7 @@ function Field({ inputRef, value, onChange, placeholder, describedBy }: {
   describedBy: string;
 }) {
   return (
-    <div className="px-[12px] pt-[12px] md:pt-[10px]">
+    <div className="shrink-0 px-[12px] pt-[12px] md:pt-[10px]">
       <SearchField
         ref={inputRef}
         value={value}
@@ -133,14 +141,15 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
   const none = decks.state === "done" && decks.items.length === 0;
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="flex items-center gap-[10px] px-[12px] pt-[12px] md:pt-[10px]">
+      <div className="flex shrink-0 items-center gap-[10px] px-[12px] pt-[12px] md:pt-[10px]">
         <button type="button" onClick={onBack} aria-label={copy.back} autoFocus className="flex h-[32px] w-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[14px] text-[color:var(--fg-muted)]">
           ‹
         </button>
         <Face name={friend.displayName} commander={{ artCropUri: friend.commanderArt }} size={26} />
         <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.theirDecks(friend.displayName)}</h3>
       </div>
-      <ul className="m-0 mt-[8px] min-h-0 list-none overflow-y-auto p-0 pb-[6px]">
+      <div data-seat-body className={SCROLL_BODY}>
+      <ul className="m-0 list-none p-0 pb-[6px]">
         {decks.state === "busy" && <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>}
         {decks.state === "failed" && <li role="alert" className={NOTE}>{copy.decksFailed(friend.displayName)}</li>}
         {none && <li className={NOTE}>{copy.noDecks(friend.displayName)}</li>}
@@ -183,6 +192,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
         )}
       </ul>
       <Foot id={describedBy}>{none ? copy.footNoDecks(friend.displayName) : copy.footDecks(friend.displayName)}</Foot>
+      </div>
     </div>
   );
 }
@@ -266,7 +276,8 @@ function Body({
   return (
     <div className="flex min-h-0 flex-col">
       <Field inputRef={inputRef} value={query} onChange={change} placeholder={placeholder} describedBy={describedBy} />
-      <ul className="m-0 mt-[8px] min-h-0 list-none overflow-y-auto p-0 pb-[6px]">
+      <div data-seat-body className={SCROLL_BODY}>
+      <ul className="m-0 list-none p-0 pb-[6px]">
         {!friend && friends.state === "failed" && <li role="alert" className={NOTE}>{copy.friendsFailed}</li>}
         {shown.length > 0 && <li role="presentation"><h3 className={HEADING}>{copy.friends}</h3></li>}
         {shown.map((f) => {
@@ -294,6 +305,7 @@ function Body({
         />
       </ul>
       <Foot id={describedBy}>{!friend && list.length > 0 ? copy.footFriends : copy.footAnyone}</Foot>
+      </div>
     </div>
   );
 }
@@ -357,8 +369,8 @@ export function SeatPicker({
       ref={placedRef}
       role="dialog"
       aria-label={copy.title}
-      // Held to the room on the side it hangs (`useAnchoredPanel`'s `maxHeight`) and a column, so the list inside it
-      // scrolls under its field instead of running off a short window or covering its own trigger.
+      // Held to the room on the side it hangs (`useAnchoredPanel`'s `maxHeight`) and a column, so the list and its foot
+      // scroll under the view's head (`SCROLL_BODY`) instead of running off a short window or covering its own trigger.
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
       style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
