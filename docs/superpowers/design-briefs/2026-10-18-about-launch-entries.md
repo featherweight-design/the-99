@@ -9,6 +9,9 @@ together, with one `ABOUT_VERSION` bump at the end of the launch.
 **What this brief asks.** One per-entry artboard for each of the three entries, at 390 and 1300, and the call on what
 each entry's picture shows. It proposes one Design round and one addendum folder.
 
+The drafts come from two of the orchestrator's boards, which live outside this repository. Each draft is quoted in
+full below, so nothing here needs those files open; their line numbers are kept only for the orchestrator.
+
 ## The batch
 
 The words below are the CURRENT DRAFTS, quoted from the boards they were written on. They are copy, owned by
@@ -17,7 +20,7 @@ draft line that names something the app does not draw is listed under "Draft vs 
 
 ### Entry 1 · Getting help on any screen (`getting-help`)
 
-Source: `boards/about-drafts-discovery-2026-10-18.md:54-87`. Screen `account`, chapter `04`, route `/`, opens `from the
+Source: the orchestrator's board `about-drafts-discovery-2026-10-18.md:54-87`. Screen `account`, chapter `04`, route `/`, opens `from the
 ? on any screen`, switch `HELP_PANEL_ENABLED`; the tour paragraph and key 4 follow `FIRST_RUN_TOUR_ENABLED`.
 
 > Every screen has a ? with the About entries for what you’re looking at. Open one for the short version, or read the
@@ -35,7 +38,7 @@ of About.`
 
 ### Entry 2 · About, rebuilt (`about-rebuilt`)
 
-Source: `boards/about-drafts-discovery-2026-10-18.md:154-183`. Screen `account`, chapter `04`, route `/about`, NO
+Source: the orchestrator's board `about-drafts-discovery-2026-10-18.md:154-183`. Screen `account`, chapter `04`, route `/about`, NO
 switch (so it is the entry the bump announces); three caption lines follow `HELP_PANEL_ENABLED`,
 `HELP_ME_CHOOSE_ENABLED` and `FIRST_RUN_TOUR_ENABLED`.
 
@@ -52,7 +55,7 @@ note on why The 99 exists now closes the Reference.`
 
 ### Entry 3 · Checking tonight’s table (`rule-zero`)
 
-Source: `boards/about-drafts-rule-zero-2026-10-18.md:90-120`. Screen `friends`, chapter `04`, route `/friends`, opens
+Source: the orchestrator's board `about-drafts-rule-zero-2026-10-18.md:90-120`. Screen `friends`, chapter `04`, route `/friends`, opens
 `from a pod’s “Rule 0 check”`, switch `RULE_ZERO_ENABLED`; the last paragraph follows `SOCIAL_GAMES_ENABLED`.
 
 > The Rule 0 check puts tonight’s decks side by side before anyone shuffles. One of you seats the players from a pod and
@@ -74,13 +77,13 @@ closes 24 hours after it’s set. Its logged games stay.`
 
 ## What an entry draws today (read from the shipped code)
 
-The per-entry template was drawn for the one-page About (R3 §8, `STATES-about-r3.md:44-50`: title, route, opens,
+The per-entry template was drawn for the one-page About (R3 §8, `design/design_handoff_the99_about/README.md:115-117`: title, route, opens,
 chapter, width, caption, specimen component, fixture props, up to four keys, phone reduction, `since`, copy file). The
 discovery reshape (R2·6b, #2013) changed what an entry renders. Today:
 
 - **`/about` opens on Tools and the Reference is `?tab=reference`** (`src/app/about/page.tsx:120-132`;
   `src/components/about/tools/about-tabs.tsx`). An entry lives in the Reference as a row (its title and the caption's
-  first sentence) that opens in place (`src/components/about/reference/reference-tab.tsx:38-75`).
+  first sentence) that opens in place (`EntryRow`, `src/components/about/reference/reference-tab.tsx:85-115`; the first sentence is `entry.first`, `:104`).
 - **An opened entry draws a picture, the caption and a numbered key list.** The picture is `EntryFrame`
   (`src/components/about/reference/entry-frame.tsx:1-3`): the entry's SCREEN's real capture in a 3:2 window, moved so
   the entry's control is in view, the control haloed and the rest dimmed. It is 330px wide from `lg`, full width below
@@ -98,7 +101,7 @@ discovery reshape (R2·6b, #2013) changed what an entry renders. Today:
 - **The ? panel** shows the same entry as a row with its first sentence, then the rest of the first paragraph and two
   keys when opened (`src/components/help/help-panel.tsx:359-390`). It draws no picture.
 - **`width` and `marksPending` have no reader.** Both are typed on `AboutEntry` (`src/lib/copy/about.ts:162,183`), and no
-  file under `src/` outside the entries reads either.
+  renderer reads either (only `visible.test.ts:390`, `:430` assert `width`).
 
 ## Decided (do not reopen)
 
@@ -123,10 +126,13 @@ Per entry: what the picture depicts (which element is haloed on the frame), and 
 is captured in. Each is constrained by "Decided" 5 and 6.
 
 1. **`getting-help`.** Its screen is `account`, whose frame is the account menu sheet over Home
-   (`capture-about.mjs:235-241`). The ? is not on that frame: it lives in the header and rail, outside the dialog the
-   `account` locators start from, and the shipped `account.webp` (amonkhet) shows only the `S` account button in the
-   header. Call one: halo the `Take the tour` row (which exists only with `FIRST_RUN_TOUR_ENABLED` on,
-   `src/components/shell/account-menu.tsx:96-99`), halo another menu row as the way in, or ask for a different screen.
+   (`capture-about.mjs:235-241`). The ? is on no frame at all: the capture starts the server with `HELP_PANEL_ENABLED`,
+   `FIRST_RUN_TOUR_ENABLED`, `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to `off`, so no bubble, tour or sheet is
+   photographed (`scripts/capture-about.mjs:11-12`, `docs/probes.md` capture:about). The shipped `account.webp`
+   (amonkhet) shows only the `S` account button in the header. Call one: halo the `Take the tour` row (which exists only
+   with `FIRST_RUN_TOUR_ENABLED` on, `src/components/shell/account-menu.tsx:96-99`), halo another menu row as the way
+   in, or ask for a different screen. **Either ?-based or tour-row picture reverses that capture rule**: the capture
+   would need those switches on for this frame, which is engineering's change and owed before the entry ships.
 2. **`about-rebuilt`.** Also on `account`. The `About The 99` row is on the shipped frame and reaches `/about`; whether
    that is the halo, and whether the artboard also shows the reshaped `/about` itself (Tools at 390 and 1300) as context.
 3. **`rule-zero`.** Its screen is `friends`, whose frame is `/friends` (`capture-about.mjs:234`). The shipped
@@ -169,7 +175,7 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
    table, head meta line, number marks, phone primary with R2's desktop boards). The Reference draws the `friends` screen's
    frame (`/friends`), not the table, and places no numbers on it (see "What an entry draws today").
 6. **The Rule 0 fixture is the handoff's** ("Colin's pod Thursday night", rule-zero board line 199). The capture's
-   fixture is Sam with Alex in `About pod` (`scripts/about-fixtures.mts:15,94,100`).
+   fixture is Sam with Alex in `About pod` (`scripts/about-fixtures.mts:14`, the pod made at `:285`).
 7. **`width: 'plate'` and `marksPending: true`** in all three drafts, and the discovery board's own `marksPending` note.
    Neither field is read by any renderer today (see above).
 8. **`HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` are not in `AboutSwitch`**
@@ -177,8 +183,8 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
 9. **A `?` pressed on the table page offers nothing.** `screenForPath` maps only the exact path `/friends`
    (`screen-for-path.ts:46`), so the entry about `/friends/table/[id]` is never offered there. The Rule 0 board says so.
 10. **Rule 0's last paragraph gates two sentences of ONE line as two lines.** `resolveLine` removes a literal substring
-    (`src/lib/about/visible.ts:92-94`), so with `SOCIAL_GAMES_ENABLED` off the two removals leave the paragraph break and
-    a space behind.
+    (`src/lib/about/visible.ts:92-94`), so with `SOCIAL_GAMES_ENABLED` off the two removals leave a stray line break and a
+    space behind.
 11. **Holds, but partial:** entry 2's doors line names the zero-deck doors on Decks, Home and Commanders. Help me choose
     also has doors on the create picker and Discover's result line regardless of decks
     (`src/lib/copy/help-me-choose.ts:27`), and an entry of its own (`src/lib/copy/about-entries.ts:482`).
