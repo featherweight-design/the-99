@@ -35,8 +35,8 @@ export const dynamic = "force-dynamic";
  *   of ours with no payment record yet answers 500, so Stripe redelivers it after the record lands. Every
  *   refund, dispute and shortfall logs at error level so it is seen.
  *
- * - `invoice.paid`, `customer.subscription.updated` and `.deleted` are the monthly plan's (`handlePlanEvent`,
- *   `src/lib/payments/subscribe.ts`): the same rules. An object not tagged as this app's is 200 and ignored, the
+ * - `invoice.paid`, `customer.subscription.updated` and `.deleted` are the monthly plan's (`handlePlanEvent` below, which
+ *   calls `src/lib/payments/subscribe.ts`): the same rules. An object not tagged as this app's is 200 and ignored, the
  *   invoice and the subscription are retrieved and judged there, and only a failure to reach Stripe or the database
  *   answers 500. They read no switch either.
  *
