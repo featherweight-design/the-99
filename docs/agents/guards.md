@@ -219,3 +219,16 @@ directory (social, collection, decks, account, invites, payments, switches, wish
 `cookies()`, `headers()`, `auth()`, `@clerk/*`) or an import from `src/app` / `src/components`. It is an ALLOWLIST because
 `schemaTables`'s per-user test only sees tables that name `user_id`, `deck_id` or `version_id`. Adding a table is a deliberate,
 reviewed diff. The same test asserts the proxy's public list does not yet name a card or commander route.
+
+- `scripts/lib/prompt-identity.test.mts` (in `pnpm test`) holds the privacy page's claim that no model prompt carries
+  who the player is (launch epic B1). What a prompt can say is bounded by what its builder is handed, so it walks the
+  TYPES of every registered builder's parameters with the type checker, through objects, arrays, maps, unions and index
+  signatures, and fails on a property named like an identity field: a user or Clerk id, an email, a display, first,
+  last or full name, a username, a public id, a friend's name snapshot. It also fails a builder that imports Clerk, the
+  auth helpers, `src/lib/social/` or the admin account readers. Coverage is a CHECKED registry: every file under `src/`
+  or `scripts/` that sends a model request (`callModel(`, `new Anthropic(`, a fetch of `/v1/messages`, the eval
+  harness's `buildParams(`) must be listed in `CALLERS` with its builders, so a new prompt path fails until it is.
+  It cannot see an email typed into a plain `string`: a player's own words (intent, notes) go through `playerText` and
+  are not identity fields. Audited 2026-10-18 before it was written: no prompt path carried one. Proved by its failure
+  paths: an email nested in a cuts card, a display name on the tuning pack, an auth import in a builder, and an
+  unregistered caller each fail it.
