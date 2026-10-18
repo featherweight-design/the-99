@@ -105,7 +105,7 @@ export function ReturnBand({ sessionId, initial, timing = BAND_TIMING, read = re
       <span aria-hidden="true" className={`mt-[6px] h-[10px] w-[10px] flex-none rounded-full ${slow ? "bg-[color:var(--fg-muted)]" : "bg-[color:var(--accent)]"}`} />
       <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
         <b className="text-[14.5px] font-semibold text-[color:var(--fg)]">{slow ? c.slowTitle : c.procTitle(state.units)}</b>
-        <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{slow ? <>{c.slowSays.before}<SupportLink />{c.slowSays.after}</> : c.procSays}</p>
+        <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{slow ? <>{c.slowSays.before}<SupportLink ground="raised" />{c.slowSays.after}</> : c.procSays}</p>
       </div>
       {slow ? null : (
         <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden bg-[color:var(--border)]">

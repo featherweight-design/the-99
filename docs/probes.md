@@ -2492,6 +2492,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `stripe_customers` row are put back in the `finally`. It WRITES that lot and event, so it refuses anything but a scratch branch
   (`assertScratchBranch`) and deletes both in a `finally`.
   `PROBE_BASE=… PROBE_DATABASE_URL=… pnpm probe:admin-payments`, the server reading the same database.
+- `pnpm probe:payments-reduced` proves `/credits` blocked and off (buying-credits U4, B1 and O4) in a real browser,
+  signed in as the audit account, over every case of the payments switch (an account `flag_overrides` row, then a
+  31-second wait for the switch memo), something held (a gift lot), something bought (a pack lot, fully revoked when
+  nothing is held) and buying paused (`stripe_customers.purchase_blocked_at`): with the switch off and nothing held or
+  bought the page is the not-found page (judged by what is drawn: the route streams, so its status is 200); otherwise
+  the balances and Purchase history are drawn, the offers and every Buy only with the switch on and buying not paused,
+  and the pause band only with the switch on and buying paused. The paused cases and the switch-off case are also
+  checked at 390. It WRITES the account's lots (its own parked, every unit revoked and its paid lots standing as gifts
+  for a never-bought case), its switch override and its customer row, so it refuses anything but a scratch branch
+  (`assertScratchBranch`) and puts all three back, every column, in a `finally`. `PROBE_SHOTS=<dir>` saves the paused
+  and switch-off pages at both widths.
+  `PROBE_BASE=… PROBE_DATABASE_URL=… pnpm probe:payments-reduced`, the server reading the same database.
 - `pnpm probe:delete-warning` proves the Manage account deletion warning (buying-credits §7, D1/D2; plan E6, U5) in a
   real browser at 1300 (the popover) and 390 (the sheet). On the signed-in test account it seeds lots and a
   `PAYMENTS_ENABLED` account override, presses Manage account, and records any navigation off the origin (Clerk's page)

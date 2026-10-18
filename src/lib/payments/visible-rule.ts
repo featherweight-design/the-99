@@ -10,7 +10,18 @@ export function readerSeesCredits(input: { switchOn: boolean; held: boolean; eve
   return input.switchOn || input.held || input.everBought || input.returning;
 }
 
-/** Whether the page draws its buying offers: only while the switch is on for the reader. */
-export function readerSeesOffers(input: { switchOn: boolean }): boolean {
-  return input.switchOn;
+/**
+ * Whether the page draws its buying offers: only while the switch is on for the reader AND their buying is not paused
+ * (K2's purchase block, `purchaseBlocked`). Absent, never disabled (handoff O1, B1).
+ */
+export function readerSeesOffers(input: { switchOn: boolean; blocked: boolean }): boolean {
+  return input.switchOn && !input.blocked;
+}
+
+/**
+ * Whether the page draws the pause band (handoff B1): in place of the offers, while the switch is on and a dispute has
+ * paused this reader's buying. With the switch off there is nothing to buy, so nothing to explain (O2 to O4).
+ */
+export function readerSeesPause(input: { switchOn: boolean; blocked: boolean }): boolean {
+  return input.switchOn && input.blocked;
 }

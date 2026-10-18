@@ -291,6 +291,7 @@
     "probe:deck-own": "tsx scripts/probe-deck-own.ts",
     "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
     "probe:plan-cancel": "tsx scripts/probe-plan-cancel.ts",
+    "probe:payments-reduced": "node scripts/probe-payments-reduced.mjs",
     "reconcile:payments": "tsx scripts/reconcile-payments.ts",
     "probe:credits-return": "tsx scripts/probe-credits-return.ts",
     "probe:delete-warning": "node scripts/probe-delete-warning.mjs",
