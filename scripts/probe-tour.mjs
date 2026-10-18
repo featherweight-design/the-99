@@ -425,6 +425,8 @@ async function switchedOff(browser, widths) {
       const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
       const page = await context.newPage();
       await signIn(page);
+      // Held before the clear and put back after, as every other leg does: the fixture's About state is not this leg's.
+      const about = await captureAboutSeen(userId, sql);
       try {
         await clearAboutSheet(page, userId);
         await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
@@ -439,6 +441,7 @@ async function switchedOff(browser, widths) {
         await fresh.waitForTimeout(3_000);
         report("off: /?tour=1 runs no tour", (await fresh.locator("[data-tour-card]").count()) === 0);
       } finally {
+        await restoreAboutSeen(about, sql);
         await context.close();
       }
     }
