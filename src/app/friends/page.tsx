@@ -15,12 +15,12 @@ import { loadInviteCount } from "../../lib/invites/read";
 import { wishlistEnabled } from "../../lib/wishlist/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { perfRoute } from "../../lib/perf/timing";
-import { ensureProfile, friendPublicId, loadFriendsAndLinks } from "../../lib/social/friends";
+import { ensureProfile, friendPublicId, loadFriendsAndLinks, profileAgeMs } from "../../lib/social/friends";
 import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
 import { PodsPane } from "../../components/social/pods-pane";
-import { MAX_OPEN_INVITES } from "../../lib/social/rules";
+import { MAX_OPEN_INVITES, profileNeedsClerk } from "../../lib/social/rules";
 import { ACCEPTED_PARAM, INVITE_PARAM, originFrom } from "../../lib/social/client-rules";
 import { FriendsView } from "../../components/social/friends-view";
 import { pageLanding } from "../../lib/discovery/page-landing";
@@ -41,7 +41,11 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
-  const user = await perf.timed("currentUser", () => currentUser());
+  // Asked of Clerk only for a profile that is missing or new (`profileNeedsClerk`): the Backend call was 124 of the page's 180 ms
+  // on staging (2026-10-18), and a returning reader's name is stored. Every path that writes a profile has attempted the invite spend by then (the spend itself,
+  // this page, and `ensureSenderProfile`), so an old profile has nothing left for this page to recover.
+  const needsClerk = profileNeedsClerk(await perf.timed("profileAge", () => profileAgeMs(userId)));
+  const user = needsClerk ? await perf.timed("currentUser", () => currentUser()) : null;
   // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
   // not yet; the spend is idempotent, so this runs it when the account's own invitation names a reservation, and the
   // receipt is then drawn once from the edge, whichever of the two ran first.

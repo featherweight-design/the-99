@@ -87,3 +87,16 @@ export function friendshipRows(a: string, b: string): { userId: string; friendUs
     { userId: high, friendUserId: low },
   ];
 }
+
+/**
+ * How long a profile is "new": while it is, `/friends` still asks Clerk for the account (its first name, and the invitation
+ * the account arrived with), because the webhook that normally spends the invite may not have run yet. After this the name is
+ * stored and the webhook has long since had its retries' first attempts, so the Backend call (~125 ms measured on staging,
+ * 2026-10-18, of a 180 ms page) is skipped. No profile at all is new.
+ */
+export const NEWCOMER_WINDOW_MS = 15 * 60_000;
+
+/** Whether a profile that is `ageMs` old (null: none yet) still needs the Clerk read. */
+export function profileNeedsClerk(ageMs: number | null): boolean {
+  return ageMs === null || ageMs < NEWCOMER_WINDOW_MS;
+}
