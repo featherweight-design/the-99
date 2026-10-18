@@ -67,7 +67,7 @@ export function LandingColumn({
   kicker: string;
   /** L1, the signed-out link (invites pr5 table, Friend link signed out, Column): the kicker is the landing's mark in
    * the accent at 500 11px .2em; the heading 22px (26px from md) at 1.25; the body 14px (15px from md) at 1.6; the
-   * press 10px under the body; the fine line in --fg-muted at 1.6, 4px more under the press than the column's gap. */
+   * press 10px more under the body than the section's gap; the fine line in --fg-muted at 1.6, 4px more under the press than the column's gap. */
   signedOut?: boolean;
   title: string;
   body?: string;
@@ -80,7 +80,7 @@ export function LandingColumn({
   const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
   return (
     <section aria-labelledby="friend-landing-title" className="flex w-full min-w-0 flex-col gap-[8px] text-center [overflow-wrap:anywhere] md:w-[380px] md:gap-[10px] md:text-left">
-      <p className={`m-0 font-mono font-medium uppercase max-md:hidden ${signedOut ? "text-[11px] tracking-[.2em] text-[color:var(--accent)]" : "text-[10.5px] tracking-[.14em] text-[color:var(--fg-faint)]"}`}>
+      <p className={`m-0 font-mono font-medium uppercase max-md:hidden ${signedOut ? "text-[11px] leading-[normal] tracking-[.2em] text-[color:var(--accent)]" : "text-[10.5px] tracking-[.14em] text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none font-bold text-[color:var(--fg)] ${signedOut ? "text-[22px] leading-[1.25] md:text-[26px]" : "text-[21px] leading-[1.15] md:text-[28px]"} ${land}`}>
