@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
 import { cards, decks } from "../../db/schema";
 import { readAllowance, type Billed } from "../model/allowance";
+import { withPayments } from "../payments/flag";
 import type { Allowance } from "../model/allowance-rule";
 import { callModel, type ModelOutcome } from "../model/client";
 import type { FitsRead } from "./fits";
@@ -86,7 +87,7 @@ export async function readFitsRead(
 }
 
 async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date, env: NodeJS.ProcessEnv): Promise<FitsReadPanel> {
-  const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
+  const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read").then((a) => withPayments(a, env))]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
   const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding, (v) => candidateHashes(load.inputs, model, v));

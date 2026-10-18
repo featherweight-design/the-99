@@ -14,13 +14,49 @@ import { PendingReporter } from "../shell/pending-reporter";
  * the handoff draws it (find-a-deck-read design table, "Credits link (R2)").
  */
 export function CreditsText({ text }: { text: string }) {
+  // `Get more credits` (L4) is its own line under the spent line: the model appends it after a line break.
+  const more = `\n${creditsCopy.getMore}`;
+  if (text.endsWith(more)) {
+    return (
+      <>
+        <Phrases text={text.slice(0, -more.length)} />
+        <Link
+          href={BUY_HREF}
+          className="mt-[4px] block text-[color:var(--accent)] underline decoration-[color:var(--accent-shadow)] underline-offset-2"
+        >
+          {creditsCopy.getMore} {"→"}
+          <PendingReporter href={BUY_HREF} />
+        </Link>
+      </>
+    );
+  }
+  return <Phrases text={text} />;
+}
+
+/** Where `Get more credits` leads. */
+const BUY_HREF = "/credits";
+
+/** L7: a cancelled plan's expiry, at the end of the line, in `--warning` (the words carry it; the colour only agrees). */
+function Expiring({ text }: { text: string }) {
+  const m = creditsCopy.expiringPattern.exec(text);
+  if (!m) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, m.index)}
+      <span data-testid="credit-expiring" style={{ color: "var(--warning)" }}>{m[0]}</span>
+      {text.slice(m.index + m[0].length)}
+    </>
+  );
+}
+
+function Phrases({ text }: { text: string }) {
   const parts = text.split(creditsCopy.link);
-  if (parts.length === 1) return <>{text}</>;
+  if (parts.length === 1) return <Expiring text={text} />;
   return (
     <>
       {parts.map((part, i) => (
         <Fragment key={i}>
-          {part}
+          <Expiring text={part} />
           {i < parts.length - 1 ? (
             <Link
               href={CREDITS_HREF}

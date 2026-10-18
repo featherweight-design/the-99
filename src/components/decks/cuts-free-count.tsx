@@ -5,7 +5,8 @@ import type { ComponentPropsWithoutRef, ReactNode, Ref } from "react";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { hasCredit } from "../../lib/model/allowance-rule";
+import { creditSpent, creditStanding } from "../../lib/model/credit-line";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
 import type { CountRow } from "../../lib/tuning/cuts-count";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
@@ -33,8 +34,8 @@ export const overWords = (n: number) => overCopy.trim.words[n] ?? String(n);
 export function cutsStanding(panel: CutsPanel): string {
   const a = panel.allowance;
   if (a.ownerShare) return creditsCopy.ownerShare(new Date());
-  if (!hasCredit(a)) return creditsCopy.spent(a.limit, a.reopensAt ?? a.nextAt);
-  return creditsCopy.standing(freeCount(a), a.limit, a.nextAt);
+  if (!hasCredit(a)) return creditSpent(a);
+  return creditStanding(a);
 }
 
 /** Look deeper cannot be pressed: no credit, the owner's share spent, or nothing it may name. */

@@ -13,7 +13,8 @@ import { SynopsisModal } from "./synopsis-body";
 import { Press, RefusedSlot, WriteRow } from "./synopsis-controls";
 import { SynopsisText } from "./synopsis-text";
 import { WorkPulse } from "./work-pulse";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { hasCredit } from "../../lib/model/allowance-rule";
+import { creditFirst, creditSpent } from "../../lib/model/credit-line";
 
 /**
  * The Analysis tab's Overview (handoff §2 row 1; `SYNOPSIS-modal.md`): the overview's own
@@ -127,7 +128,6 @@ export function SynopsisOverview({
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
     // No write can reserve: every credit out, or the owner's share used.
   // Each disables the press in 7g's form and says which, never "uses a credit".
-  const left = freeCount(allowance);
   const spent = !freeLeft && (!hasCredit(allowance) || !!allowance.ownerShare);
   // A withheld overview offers no write at all (the server refuses one before its reservation).
   const canWrite = readingFresh && settled && !state.pending && !state.illegal;
@@ -138,8 +138,8 @@ export function SynopsisOverview({
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
   const spentNote = allowance.ownerShare
     ? creditsCopy.ownerShare(new Date())
-    : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
-  const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
+    : creditSpent(allowance);
+  const spendNote = creditFirst(allowance);
   // While a free try is left the press spends nothing, so no credit note stands over it.
   const note = freeLeft ? null : spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = freeLeft ? null : spent ? spentNote : spendNote;

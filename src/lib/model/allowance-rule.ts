@@ -137,6 +137,9 @@ export type Allowance = {
   paidBackAt?: Date | null;
   /** When a cancelled plan's remaining credits lapse. Unset until the Subscription PR fills it. */
   planExpiresAt?: Date | null;
+  /** `PAYMENTS_ENABLED` for this reader, stamped by the read that knows the request's switches. Absent reads as off:
+   *  the credit line then draws its shipped forms and never offers `Get more credits` (L8). */
+  payments?: boolean;
 };
 
 /**
@@ -165,6 +168,16 @@ export function freeCount(a: { used: number; limit: number }): number {
  */
 export function paidRoom(a: { paidUsed: number; paidLimit: number }): boolean {
   return a.paidUsed < a.paidLimit;
+}
+
+/**
+ * The paid limit is shut for a player who holds paid credits: they have lots, today's paid runs have reached
+ * `paidLimit`. The credit line asks this to say "the limit" (L5, L6) instead of "out of credits", so the
+ * comparison stays here with `paidRoom`. A player with no lot, or an Allowance without the counter, is never at it.
+ */
+export function paidAtLimit(a: { plan?: number | null; pack?: number | null; paidUsedToday?: number | null; paidLimit?: number | null }): boolean {
+  if ((a.plan ?? 0) + (a.pack ?? 0) <= 0) return false;
+  return a.paidUsedToday != null && a.paidLimit != null && !paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
 export function hasCredit(a: {

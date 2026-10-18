@@ -24,4 +24,22 @@ describe("CreditsText", () => {
     render(<p><CreditsText text={`${creditsCopy.spent(5, null)} · Nothing was changed.`} /></p>);
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
+
+  it("L4: Get more credits is its own line under the spent line, a link to /credits", () => {
+    render(<p><CreditsText text={`${creditsCopy.spent(5, null)}\n${creditsCopy.getMore}`} /></p>);
+    expect(screen.getByRole("link", { name: /Get more credits/ })).toHaveAttribute("href", "/credits");
+    expect(screen.getByRole("link", { name: creditsCopy.link })).toHaveAttribute("href", CREDITS_HREF);
+  });
+
+  it("L7: the expiry phrase at the end of a line is drawn in --warning, and nothing else is", () => {
+    render(<p><CreditsText text="4 of 5 free · reset at 2:01 AM · 114 paid · 74 plan credits expire Nov 16" /></p>);
+    const mark = screen.getByTestId("credit-expiring");
+    expect(mark).toHaveTextContent("74 plan credits expire Nov 16");
+    expect(mark).toHaveStyle({ color: "var(--warning)" });
+  });
+
+  it("a line with no expiry draws no warning", () => {
+    render(<p><CreditsText text="4 of 5 left · reset at 2:01 AM" /></p>);
+    expect(screen.queryByTestId("credit-expiring")).toBeNull();
+  });
 });

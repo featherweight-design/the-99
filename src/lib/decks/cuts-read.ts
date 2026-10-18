@@ -18,6 +18,7 @@ import {
 } from "../../db/schema";
 import { canonicalPair } from "../edhrec/pair";
 import { readAllowance, settleModelCall } from "../model/allowance";
+import { withPayments } from "../payments/flag";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
@@ -265,7 +266,7 @@ export async function readCutsState(
       }));
       return { newest, lastOk, rows: live, reviewed: reviewed ?? null };
     }, { isolationLevel: "repeatable read" }),
-    readAllowance(userId, now, "proposed_cuts"),
+    readAllowance(userId, now, "proposed_cuts").then((a) => withPayments(a, env)),
   ]);
 
   const run: CutsRun | null = newest ? { ...newest, status: newest.status as CutsRun["status"] } : null;

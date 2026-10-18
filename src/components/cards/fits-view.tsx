@@ -24,7 +24,8 @@ import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
+import { hasCredit } from "../../lib/model/allowance-rule";
+import { creditCount, creditFirst, creditSpent, creditStanding } from "../../lib/model/credit-line";
 
 const copy = swapToolsCopy.fits;
 const read = copy.read;
@@ -338,15 +339,14 @@ export function FitsView({
 
   // ── What the band draws ────────────────────────────────────────────
   const allowance = panel?.allowance;
-  const left = allowance ? freeCount(allowance) : 0;
   const spent = allowance ? !hasCredit(allowance) : false;
   const closed = allowance?.ownerShare === true;
   const blocked = !allowance || spent || closed || running !== null;
   const standing = !allowance ? "" : allowance.ownerShare
     ? creditsCopy.ownerShare(new Date())
     : spent
-      ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
-      : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
+      ? creditSpent(allowance)
+      : creditStanding(allowance);
   const stored = panel?.view.stored ?? null;
   // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
   // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.
@@ -391,8 +391,8 @@ export function FitsView({
   const staleLine = blocked
     ? standing
     : stale?.outcome === "noFit"
-      ? creditsCopy.first(left, allowance!.limit, allowance!.nextAt)
-      : read.again(creditsCopy.standing(left, allowance!.limit, allowance!.nextAt));
+      ? creditFirst(allowance!)
+      : read.again(creditCount(allowance!));
   const staleNote = stale && staleText ? (
     <section data-testid="read-stale" className="flex flex-col gap-[10px] rounded-[10px] px-[14px] py-[12px] border border-dashed border-[color:var(--border-dashed)]">
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{staleText}</p>
