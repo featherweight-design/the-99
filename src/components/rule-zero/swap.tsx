@@ -10,6 +10,7 @@ import type { OfferDeck } from "../../lib/social/rule-zero-table";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 import { BracketChip } from "../decks/bracket-chip";
 import { FadingImg } from "../ui/hydrated-art";
+import { TOUCH_HIT } from "../ui/touch-hit";
 
 const copy = ruleZeroCopy.swap;
 
@@ -47,7 +48,8 @@ export function SeatOffer() {
             aria-disabled={swap.busy || undefined}
             aria-label={`${copy.swapIn}: ${d.name}`}
             onClick={() => (swap.busy ? undefined : swap.swap(d.deckId))}
-            className="inline-flex min-h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] bg-transparent px-[13px] font-sans text-[13px] font-semibold text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] aria-disabled:cursor-default aria-disabled:opacity-50"
+            // Drawn at 36px; TOUCH_HIT gives a coarse pointer 44px, inside the row's 6px padding.
+            className={`${TOUCH_HIT} inline-flex min-h-[36px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] bg-transparent px-[13px] font-sans text-[13px] font-semibold text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] aria-disabled:cursor-default aria-disabled:opacity-50`}
           >
             {copy.swapIn}
           </button>
