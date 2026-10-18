@@ -17,6 +17,8 @@ import { db } from "../../db";
 import { cards, deckGameOpponents, deckGames } from "../../db/schema";
 import { isCommanderCandidate } from "../recs/score";
 import { resolveFriendSeatsIn, type FriendSeatAsk, type FriendSeatFacts } from "../social/games";
+import { SEATS_MAX } from "../social/client-rules";
+import type { TableSeatResolution } from "../social/rule-zero-log";
 import { cleanName, isUuid } from "../social/rules";
 import { canPair, partnerAbility } from "./partner";
 
@@ -35,12 +37,20 @@ export type OpponentInput = {
   label?: string;
   /** This opponent won a game the player lost (Q15). */
   won?: boolean;
+  /**
+   * A seat of the Rule 0 table the game was logged from (plan §PR 8), by its number. Alone, beside `won` only: who sat
+   * there, and with what, is read on the server under the table's grant (decision 5), never sent.
+   */
+  tableSeat?: number;
 };
 
-export type ParsedOpponent =
+export type ResolvedOpponent =
   | { kind: "friendDeck"; friend: string; deck: string; won: boolean }
   | { kind: "friend"; friend: string; commander: string | null; partner: string | null; won: boolean }
   | { kind: "other"; commander: string | null; partner: string | null; label: string | null; won: boolean };
+
+/** A table seat is resolved into one of the other kinds (`withTableSeats`) before anything is written. */
+export type ParsedOpponent = ResolvedOpponent | { kind: "tableSeat"; seat: number; won: boolean };
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const absent = (v: unknown) => v === undefined || v === null;
@@ -56,12 +66,22 @@ export function parseOpponents(raw: unknown, game: { podSize: number; result: st
   if (!Array.isArray(raw) || raw.length > game.podSize - 1) return null;
   const out: ParsedOpponent[] = [];
   const friends = new Set<string>();
+  const tableSeats = new Set<number>();
   for (const item of raw) {
     if (!isObject(item)) return null;
-    const { friend, deck, commander, partner, label, won } = item;
+    const { friend, deck, commander, partner, label, won, tableSeat } = item;
     if (!absent(won) && typeof won !== "boolean") return null;
     const winner = won === true;
     if (winner && game.result !== "loss") return null;
+    if (!absent(tableSeat)) {
+      // A table seat names its number and nothing else: anything beside it would be a claim the table already answers.
+      if (Object.keys(item).some((k) => k !== "tableSeat" && k !== "won")) return null;
+      if (!Number.isInteger(tableSeat) || (tableSeat as number) < 1 || (tableSeat as number) > SEATS_MAX) return null;
+      if (tableSeats.has(tableSeat as number)) return null;
+      tableSeats.add(tableSeat as number);
+      out.push({ kind: "tableSeat", seat: tableSeat as number, won: winner });
+      continue;
+    }
     if (!absent(commander) && !isUuid(commander)) return null;
     if (!absent(partner) && (!isUuid(partner) || absent(commander) || partner === commander)) return null;
     let name: string | null = null;
@@ -95,7 +115,8 @@ export function parseOpponents(raw: unknown, game: { podSize: number; result: st
 
 /** The commanders a parse named, each pair once. */
 function namedCommanders(parsed: readonly ParsedOpponent[]): { commander: string; partner: string | null }[] {
-  return parsed.flatMap((o) => (o.kind !== "friendDeck" && o.commander !== null ? [{ commander: o.commander, partner: o.partner }] : []));
+  // A table seat names no commander: what it resolves to is a deck's own, so it is not the client's claim to check.
+  return parsed.flatMap((o) => ((o.kind === "friend" || o.kind === "other") && o.commander !== null ? [{ commander: o.commander, partner: o.partner }] : []));
 }
 
 /**
@@ -133,10 +154,32 @@ export async function opponentCommandersValid(parsed: readonly ParsedOpponent[])
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
+ * Pure: the parse with each table seat replaced by what the table resolved it to (`resolveTableSeatsIn`, in the order
+ * the table seats appear), or null to refuse: the table refused, or a friend now sits twice (once picked, once from
+ * the table). The seat keeps its place and its `won`.
+ */
+export function withTableSeats(parsed: readonly ParsedOpponent[], table: readonly TableSeatResolution[] | null): ResolvedOpponent[] | "twice" | null {
+  const asked = parsed.filter((o) => o.kind === "tableSeat").length;
+  if (asked > 0 && (table === null || table.length !== asked)) return null;
+  let t = 0;
+  const out = parsed.map((o): ResolvedOpponent => {
+    if (o.kind !== "tableSeat") return o;
+    const r = table![t++];
+    if (r.kind === "other") return { kind: "other", commander: r.commander, partner: r.partner, label: r.label, won: o.won };
+    if (r.deck !== null) return { kind: "friendDeck", friend: r.friend, deck: r.deck, won: o.won };
+    return { kind: "friend", friend: r.friend, commander: null, partner: null, won: o.won };
+  });
+  // A friend picked by hand AND seated from the table: the form cannot see it (a table seat carries no public id), so
+  // the save says so in its own words rather than the generic refusal.
+  const friends = out.flatMap((o) => (o.kind === "other" ? [] : [o.friend]));
+  return new Set(friends).size === friends.length ? out : "twice";
+}
+
+/**
  * The rows one game stores, seat 1 upward. `friends` holds the resolved facts for the friend seats, in
  * the order they appear in `parsed`. Pure.
  */
-export function opponentRows(gameId: string, parsed: readonly ParsedOpponent[], friends: readonly FriendSeatFacts[]) {
+export function opponentRows(gameId: string, parsed: readonly ResolvedOpponent[], friends: readonly FriendSeatFacts[]) {
   let f = 0;
   return parsed.map((o, i) => {
     const base = {
@@ -152,10 +195,11 @@ export function opponentRows(gameId: string, parsed: readonly ParsedOpponent[], 
   });
 }
 
-/** Thrown inside the game's transaction, to roll it back, when a friend seat no longer resolves. */
+/** Thrown inside the game's transaction, to roll it back, when a friend seat or a table seat no longer resolves. */
 export class SeatRefused extends Error {
-  constructor() {
-    super("a friend seat no longer resolves");
+  /** `twice`: one friend in two seats (a hand pick and a table seat), a refusal the form names. */
+  constructor(readonly twice = false) {
+    super(twice ? "a friend is seated twice" : "a friend seat no longer resolves");
   }
 }
 
@@ -169,7 +213,7 @@ export class SeatRefused extends Error {
  * the insert would take the deck and then the friendship, the opposite way round, and a log racing its own
  * account's deletion could deadlock.
  */
-export async function resolveOpponentsIn(tx: Tx, viewerId: string, parsed: readonly ParsedOpponent[]): Promise<FriendSeatFacts[]> {
+export async function resolveOpponentsIn(tx: Tx, viewerId: string, parsed: readonly ResolvedOpponent[]): Promise<FriendSeatFacts[]> {
   const asks = parsed.flatMap((o): FriendSeatAsk[] =>
     o.kind === "friendDeck" ? [{ friend: o.friend, deck: o.deck }] : o.kind === "friend" ? [{ friend: o.friend, deck: null }] : []);
   const friends = await resolveFriendSeatsIn(tx, viewerId, asks);
@@ -178,7 +222,7 @@ export async function resolveOpponentsIn(tx: Tx, viewerId: string, parsed: reado
 }
 
 /** Write one game's seats, from `resolveOpponentsIn`'s facts, in the same transaction. */
-export async function insertOpponentsIn(tx: Tx, gameId: string, parsed: readonly ParsedOpponent[], friends: readonly FriendSeatFacts[]): Promise<void> {
+export async function insertOpponentsIn(tx: Tx, gameId: string, parsed: readonly ResolvedOpponent[], friends: readonly FriendSeatFacts[]): Promise<void> {
   if (parsed.length === 0) return;
   await tx.insert(deckGameOpponents).values(opponentRows(gameId, parsed, friends));
 }

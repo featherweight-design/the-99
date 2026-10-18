@@ -70,7 +70,9 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
+import { tablePrefill } from "../../../lib/social/rule-zero-log";
+import { logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -226,6 +228,13 @@ export default async function DeckBuilderPage({
   const opponentsRead = socialGamesEnabled(env)
     ? early(gamesRead.then((g) => perf.timed("opponents", () => loadDeckOpponents(id, userId, g, env))))
     : null;
+  // The game log's seats from a Rule 0 table (plan §PR 8), when `Log this game` brought the reader here. Read per
+  // request and outside every cached payload: it is one table's seating right now. Any mismatch (not seated, the
+  // table closed, another deck in the seat) or a failed read is null, and the Games tab opens as it always has.
+  const prefillTable = logPrefillTable(query, socialGamesEnabled(env) && ruleZeroEnabled(env));
+  const prefillRead = prefillTable === null
+    ? null
+    : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id)).catch(() => null));
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
   // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is
   // a lie about deck state.
@@ -736,6 +745,7 @@ export default async function DeckBuilderPage({
         : null}
       tuningEnabled={tuned}
       socialGames={socialGamesEnabled(env)}
+      gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}
       manaBalanceEnabled={manaBalanceEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}

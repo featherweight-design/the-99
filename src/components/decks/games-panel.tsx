@@ -3,7 +3,8 @@
 // A peer of the decklist and Consider rather than a drawer beside them, so it
 // owns its own vertical rhythm and does not inherit the decklist's.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { mirrorUrl } from "../../lib/url/mirror";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
@@ -26,6 +27,9 @@ export interface GamesPanelProps {
   opponents?: GameLogFormProps["opponents"];
   /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_GAMES_ENABLED` on. Null: no Matchups, no `vs` lines. */
   gameOpponents?: DeckOpponentsWire | null;
+  /** A Rule 0 table's seats, for the form to open with (plan §PR 8). Passed to whichever form this panel draws. */
+  prefill?: GameLogFormProps["prefill"];
+  onPrefillSpent?: GameLogFormProps["onPrefillSpent"];
 }
 
 type GameRecord = GameSummary["record"];
@@ -237,9 +241,17 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill, onPrefillSpent }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
+  // The table's prefill is held, and spent, by `BuilderShell` (a save or a Cancel in either form mount): this panel
+  // remounts on every tab change. Its `table` parameter leaves the address on arrival, so a reload opens it plain.
+  useEffect(() => {
+    if (!prefill) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("table");
+    mirrorUrl(url);
+  }, [prefill]);
 
   // Nothing on the page draws this record — only the live region says it — so it
   // is a ref rather than state: a re-render would tell no one anything new.
@@ -286,6 +298,8 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
               opponents={opponents}
+              prefill={prefill}
+              onPrefillSpent={onPrefillSpent}
             />
           </div>
         </div>
@@ -307,6 +321,8 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         tuned={tuned}
         isFirstGame={games.length === 0}
         opponents={opponents}
+        prefill={prefill}
+              onPrefillSpent={onPrefillSpent}
         onAnnounce={setAnnouncement}
         onSaved={(isFirst, result) =>
           isFirst

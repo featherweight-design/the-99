@@ -72,8 +72,10 @@ import { EmptyDeckNotes } from "./notes/empty-deck-notes";
 import type { DeckPanel } from "./group-toggle";
 import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
+import { useHeldPrefill } from "./held-prefill";
 import { GamesPanel } from "./games-panel";
 import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
+import type { TablePrefill } from "../../lib/social/rule-zero-log";
 // Types only: `games.ts` reaches for the database, and a value import from a
 // "use client" module would drag drizzle into the browser bundle.
 import type { DeckGame, GameSummary } from "../../lib/decks/games";
@@ -297,6 +299,8 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `socialGamesEnabled(env)` for this reader: the game log draws its "Across the table" row. */
   socialGames?: boolean;
+  /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
+  gamePrefill?: TablePrefill | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
   /** `manaBalanceEnabled(env)`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
@@ -372,12 +376,15 @@ export function BuilderShell({
   neverCut = false,
   tuningEnabled = false,
   socialGames = false,
+  gamePrefill = null,
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
   tuningHubEnabled = false,
   landing = null,
   landingRequest = null,
 }: BuilderShellProps) {
+  // The table's log prefill (Rule 0 PR 8), held here because the Games panel remounts on every tab change.
+  const [offeredPrefill, spendPrefill] = useHeldPrefill(gamePrefill);
   // UI state. A landing on Cheaper stand-ins or Friends' spares opens on Shopping, where their press is.
   const [filter, setFilter] = useState<"all" | "shopping">(
     landing?.lands.kind === "deck" && landing.lands.view === "shopping" ? "shopping" : "all",
@@ -1996,6 +2003,8 @@ export function BuilderShell({
                   onOpenAnalysis={() => setView("analysis")}
                   gameOpponents={gameOpponents}
                   opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
+                  prefill={offeredPrefill ?? undefined}
+                  onPrefillSpent={spendPrefill}
                 />
               </div>
             ) : view === "versions" ? (

@@ -16,7 +16,12 @@ import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { searchGameNoteCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
-import { opponentsFor, podSizeHeld, seatLabelled, seatWith, seatWithout, seatWon, seatsForResult, type Seat } from "../../lib/decks/game-seats";
+import {
+  opponentsFor, podSizeHeld, POD_SIZE_MAX, POD_SIZE_MIN, prefillSeats, seatLabelled, seatWith, seatWithout, seatWon, seatsForResult, type Seat,
+} from "../../lib/decks/game-seats";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import type { TablePrefill } from "../../lib/social/rule-zero-log";
+import { TableGlyph } from "../rule-zero/table-glyph";
 import { GameSeats, type YouSeat } from "./game-seats";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
@@ -41,10 +46,9 @@ export interface GameLogFormProps {
    *  is the tab and there is nothing else on the screen to outrank it. */
   ctaSolid?: boolean;
   /**
-   * Start expanded rather than behind the CTA. False everywhere a player meets
-   * this form — logging a game begins with a press. `/about` passes true: the
-   * entry describing the form is about the fields, and a figure of the
-   * collapsed button would show the door rather than the room.
+   * Start expanded rather than behind the CTA. Logging a game begins with a
+   * press, so nothing passes it today; a `prefill` opens the form the same way,
+   * because that press was `Log this game` on the table page.
    */
   initialOpen?: boolean;
   /**
@@ -52,7 +56,21 @@ export interface GameLogFormProps {
    * absent, the form is the shipped form and no space is kept. The deck's own commander is the You seat.
    */
   opponents?: { you: YouSeat };
+  /**
+   * A Rule 0 table's seats (plan §PR 8), read on the server for the table the player pressed `Log this game` on. The
+   * form opens with the pod size and every other seat filled, under a line saying where they came from. Drawn only
+   * beside `opponents`: the page passes it only while Rule 0 and `SOCIAL_GAMES_ENABLED` are both on.
+   */
+  prefill?: TablePrefill;
+  /**
+   * Told when the prefill is spent: a save, or a Cancel. The holder (`BuilderShell`, which outlives the Games tab and
+   * both of the panel's form mounts) then stops offering it, so no remount draws the table's seats again.
+   */
+  onPrefillSpent?: () => void;
 }
+
+/** The slot `ruleZeroCopy.log.from` is filled with, then split on, so the pod's phrase can be bold. */
+const SLOT = "\u0000";
 
 const POD_SIZES = [2, 3, 4, 5, 6, 7, 8];
 // `<input type="date">` speaks in the player's own calendar day, so this is
@@ -103,6 +121,24 @@ function useRoving<T>(values: readonly T[], onChange: (next: T) => void) {
   return { refs, onKeyDown };
 }
 
+/** Where a prefilled form's seats came from (L2, H2): the table glyph, and the pod's phrase in bold. */
+function FromLine({ pod }: { pod: string }) {
+  const [before, after] = ruleZeroCopy.log.from(SLOT).split(SLOT);
+  return (
+    <div
+      data-testid="log-from"
+      className="mt-[14px] flex min-h-[40px] items-center gap-[8px] rounded-[9px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_35%,transparent)] bg-[color-mix(in_oklab,var(--accent)_8%,transparent)] px-[12px] text-left text-[13px] text-fg-body"
+    >
+      <TableGlyph size={16} />
+      <span>
+        {before}
+        <b className="font-semibold text-fg">{ruleZeroCopy.log.fromPod(pod)}</b>
+        {after}
+      </span>
+    </div>
+  );
+}
+
 const FIELD_LABEL =
   "block font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.14em] text-fg-faint mb-[8px] md:mb-[9px]";
 
@@ -116,12 +152,18 @@ export function GameLogForm({
   initialOpen = false,
   tuned = false,
   opponents,
+  prefill: offered,
+  onPrefillSpent,
 }: GameLogFormProps) {
-  const [open, setOpen] = useState(initialOpen);
+  // A table's seats are only drawn where the row is.
+  const prefill = opponents ? offered : undefined;
+  const [open, setOpen] = useState(initialOpen || prefill !== undefined);
   const [result, setResult] = useState<GameResult | null>(null);
-  const [podSize, setPodSize] = useState(4);
+  const [podSize, setPodSize] = useState(() => (prefill ? Math.min(POD_SIZE_MAX, Math.max(POD_SIZE_MIN, prefill.podSize)) : 4));
   // The seats of "Across the table", and whether a pod size below them was just pressed (the line saying why it held).
-  const [seats, setSeats] = useState<Seat[]>([]);
+  const [seats, setSeats] = useState<Seat[]>(() => (prefill ? prefillSeats(prefill, (n) => `table${n}`) : []));
+  // The pod whose table filled the seats: the from line, until the form collapses.
+  const [from, setFrom] = useState<string | null>(prefill?.podName ?? null);
   const [podHeld, setPodHeld] = useState(false);
   const seatKeys = useRef(0);
   const [playedAt, setPlayedAt] = useState(today);
@@ -218,11 +260,13 @@ export function GameLogForm({
   // and populated through a refusal, and only a successful save or a cancel
   // brings it back through this path.
   function collapse() {
+    if (prefill) onPrefillSpent?.();
     wantsOpenFocus.current = true;
     setOpen(false);
     setResult(null);
     setPodSize(4);
     setSeats([]);
+    setFrom(null);
     setPodHeld(false);
     setPlayedAt(today());
     setDateOpen(false);
@@ -299,6 +343,8 @@ export function GameLogForm({
         note,
         // Absent when there is nothing to say, so a game with no seats is exactly today's payload.
         ...(opponents && seats.length > 0 ? { opponents: opponentsFor(seats, result) } : {}),
+        // The table rides only while a seat still came from it: an edited seat is an ordinary one.
+        ...(prefill && seats.some((s) => s.table) ? { table: prefill.table } : {}),
       });
       if (!outcome.ok) {
         // State 12: nothing is cleared. There is no edit action, so a wiped
@@ -307,6 +353,7 @@ export function GameLogForm({
         return;
       }
       onSaved(isFirstGame, result);
+      if (prefill) onPrefillSpent?.();
       if (isFirstGame) setHolding(true);
       else collapse();
     });
@@ -375,6 +422,8 @@ export function GameLogForm({
           </button>
         )}
       </div>
+
+      {from !== null && <FromLine pod={from} />}
 
       <div className="md:flex md:flex-wrap md:items-start md:gap-[34px] mt-[16px] md:mt-[18px] md:mb-[20px]">
         {/* Result — no default. State 2 opens with nothing chosen. */}

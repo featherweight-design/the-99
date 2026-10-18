@@ -58,8 +58,12 @@ async function main() {
     (await db.execute<{ n: number }>(sql`select count(*)::int as n from deck_games where deck_id = ${deckId}`)).rows[0].n;
   /** One log, as `logGame` runs it: the shape, the catalog, then the game and its seats in one transaction. */
   const log = async (viewer: string, deckId: string, result: "win" | "loss" | "draw", raw: unknown): Promise<string | null> => {
-    const parsed = opp.parseOpponents(raw, { podSize: 4, result });
-    if (parsed === null || !(await opp.opponentCommandersValid(parsed))) return null;
+    const asked = opp.parseOpponents(raw, { podSize: 4, result });
+    if (asked === null || !(await opp.opponentCommandersValid(asked))) return null;
+    // No table seat here (plan §PR 8's are `rule-zero-log.test.ts`'s): the parse passes through as it is.
+    const parsed = opp.withTableSeats(asked, []);
+    // No table seat here, so no friend can be seated twice: "twice" is the table path's alone.
+    if (parsed === null || parsed === "twice") return null;
     try {
       return await db.transaction(async (tx) => {
         const facts = await opp.resolveOpponentsIn(tx, viewer, parsed);
@@ -203,7 +207,7 @@ async function main() {
     const gate = new Promise<void>((r) => { release = r; });
     let wrote!: () => void;
     const written = new Promise<void>((r) => { wrote = r; });
-    const parsed = opp.parseOpponents([{ friend: f.publicId, deck: fay2 }], { podSize: 4, result: "draw" })!;
+    const parsed = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId, deck: fay2 }], { podSize: 4, result: "draw" })!, [])! as import("../src/lib/decks/game-opponents").ResolvedOpponent[];
     let heldGame = "";
     const holding = db.transaction(async (tx) => {
       const facts = await opp.resolveOpponentsIn(tx, V, parsed);
@@ -249,7 +253,7 @@ async function main() {
     const gateW = new Promise<void>((r) => { releaseW = r; });
     let wroteW!: () => void;
     const writtenW = new Promise<void>((r) => { wroteW = r; });
-    const seatF = opp.parseOpponents([{ friend: f.publicId }], { podSize: 4, result: "win" })!;
+    const seatF = opp.withTableSeats(opp.parseOpponents([{ friend: f.publicId }], { podSize: 4, result: "win" })!, [])! as import("../src/lib/decks/game-opponents").ResolvedOpponent[];
     const logging = db.transaction(async (tx) => {
       const facts = await opp.resolveOpponentsIn(tx, W, seatF);
       const { rows: g } = await tx.execute<{ id: string }>(sql`

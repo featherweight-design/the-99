@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   hasRoom, opponentsFor, podSizeHeld, seatCount, seatLabelled, seatName, seatWith, seatWithout, seatWon, seatsForResult,
-  podFill, seatedFriends, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander, type SeatFriend, type SeatPick,
+  podFill, prefillSeats, seatedFriends, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander, type SeatFriend, type SeatPick,
 } from "./game-seats";
 import { OPPONENT_LABEL_MAX, parseOpponents } from "./game-opponents";
 import { cleanName } from "../social/rules";
 
 const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null });
-const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), friend: null, deck: null, label: "", won: false, ...over });
+const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), friend: null, deck: null, label: "", won: false, table: null, ...over });
 const anyone = (c: SeatCommander): SeatPick => ({ friend: null, deck: null, commander: c });
 
 describe("seats and the pod", () => {
@@ -89,7 +89,7 @@ describe("what is sent", () => {
   // The parser checks ids as uuids, so these seats carry real-shaped ones.
   const A = "00000000-0000-4000-8000-00000000000a";
   const B = "00000000-0000-4000-8000-00000000000b";
-  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), friend: null, deck: null, label: "", won: false, ...over });
+  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), friend: null, deck: null, label: "", won: false, table: null, ...over });
   it("is accepted by the server's own parser, for a loss with a winner", () => {
     const seats = [uuidSeat(A, { label: "Sam", won: true }), uuidSeat(B)];
     expect(parseOpponents(opponentsFor(seats, "loss"), { podSize: 4, result: "loss" })).toHaveLength(2);
@@ -171,5 +171,36 @@ describe("Seat a pod", () => {
     expect(fill.podSize).toBe(4);
     expect(fill.add).toEqual([f(2)]);
     expect(fill.unseated).toEqual([]);
+  });
+});
+
+// A seat from a Rule 0 table (plan §PR 8) is drawn from the prefill and sent by its number alone (decision 5).
+describe("seats from a table", () => {
+  const prefill = {
+    seats: [
+      { seat: 2, name: "Colin", deckName: "Zimone Combo", commanderName: "Zimone, Quandrix Prodigy", artCropUri: "z.jpg", friend: true },
+      { seat: 4, name: "Max", deckName: null, commanderName: null, artCropUri: null, friend: false },
+    ],
+  };
+  const seats = prefillSeats(prefill, (n) => `t${n}`);
+
+  it("fills every other seat, a waiting one too, marking the one who is not a friend", () => {
+    expect(seats.map((s) => [s.key, seatName(s), s.table?.deckName, s.table?.mark])).toEqual([
+      ["t2", "Colin", "Zimone Combo", false],
+      ["t4", "Max", null, true],
+    ]);
+  });
+
+  it("sends a table seat as its number, with a winner mark and nothing else", () => {
+    expect(opponentsFor(seatWon(seats, "t4"), "loss")).toEqual([{ tableSeat: 2 }, { tableSeat: 4, won: true }]);
+    expect(parseOpponents(opponentsFor(seats, "loss"), { podSize: 4, result: "loss" })).toHaveLength(2);
+  });
+
+  it("leaves the table path on any edit but the winner mark", () => {
+    expect(seatWon(seats, "t2")[0].table).not.toBeNull();
+    const picked = seatWith(seats, "t2", anyone(cmd("x")), "unused");
+    expect(picked[0].table).toBeNull();
+    expect(opponentsFor(picked, "win")[0]).toEqual({ commander: "x" });
+    expect(seatLabelled(seats, "t4", "Maxine")[1].table).toBeNull();
   });
 });

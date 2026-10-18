@@ -159,6 +159,16 @@ export function middleBrackets(middle: number): Bracket[] {
   return lo === hi ? [lo] : [lo, hi];
 }
 
+/**
+ * The table a deck page's Games tab opens prefilled from (plan §PR 8): the `table` parameter `logGameHref` writes, read
+ * only while the URL lands on Games and both switches are on (`socialGamesEnabled && ruleZeroEnabled`). Anything else
+ * reads nothing; whether the viewer may log from that table is the server's read, `tablePrefill`.
+ */
+export function logPrefillTable(query: Record<string, string | string[] | undefined>, on: boolean): string | null {
+  if (!on || query.tab !== "games") return null;
+  return typeof query.table === "string" ? query.table : null;
+}
+
 /** `/decks/<seated deck>?tab=games&table=<id>` (plan §PR 8), or null while the viewer's seat waits. */
 export function logGameHref(view: Pick<TableView, "tableId" | "viewerDeckId">): string | null {
   if (!view.viewerDeckId) return null;

@@ -17,10 +17,11 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { socialGamesEnabled } from "../../lib/social/flag";
+import { ruleZeroEnabled, socialGamesEnabled } from "../../lib/social/flag";
 import {
-  insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, type OpponentInput,
+  insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
+import { resolveTableSeatsIn } from "../../lib/social/rule-zero-log";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
 import { loadAvailability } from "../../lib/decks/availability-query";
@@ -61,6 +62,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -1149,7 +1151,15 @@ export type LogGameInput = {
   /** Who sat across the table, seat 1 upward (social Feature C). Optional, and refused outright while
    *  `SOCIAL_GAMES_ENABLED` is off for this reader. Shape-checked by `parseOpponents`. */
   opponents?: OpponentInput[];
+  /** The Rule 0 table the game was logged from, and the seating its prefill was drawn from (`TablePrefill.table`).
+   *  Required when any opponent is a `tableSeat`, and ignored when none is. */
+  table?: { id: string; seating: string };
 };
+
+/** A table claim's shape: a uuid and a sha256 in hex. Who sat there is read again under the grant. */
+const isTableRef = (v: unknown): v is { id: string; seating: string } =>
+  typeof v === "object" && v !== null && isUuid((v as { id?: unknown }).id)
+  && typeof (v as { seating?: unknown }).seating === "string" && /^[0-9a-f]{64}$/.test((v as { seating: string }).seating);
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
 const NOTE_MAX_LENGTH = deckTuningCopy.note.maxLength;
@@ -1230,8 +1240,14 @@ export async function logGame(
   // A friend seat is resolved inside the transaction, where the friendship is held until the game commits.
   const opponents = parseOpponents(input.opponents, { podSize: input.podSize, result: input.result });
   if (opponents === null) return refuse;
+  // A seat from a Rule 0 table (plan §PR 8) names only its number; the table it sits at is the claim beside it.
+  const tableSeats = opponents.flatMap((o) => (o.kind === "tableSeat" ? [o.seat] : []));
+  const table = tableSeats.length > 0 ? input.table : null;
+  if (table !== null && !isTableRef(table)) return refuse;
   if (opponents.length > 0) {
-    if (!socialGamesEnabled(await requestSwitchEnv(userId))) return refuse;
+    const env = await requestSwitchEnv(userId);
+    if (!socialGamesEnabled(env)) return refuse;
+    if (tableSeats.length > 0 && !ruleZeroEnabled(env)) return refuse;
     if (!(await opponentCommandersValid(opponents))) return refuse;
   }
 
@@ -1244,8 +1260,12 @@ export async function logGame(
 
   try {
     await db.transaction(async (tx) => {
-      // Friend seats first: their locks come before the game row's (see `resolveOpponentsIn`).
-      const friends = await resolveOpponentsIn(tx, userId, opponents);
+      // Table seats, then friend seats, first: their locks come before the game row's (see `resolveOpponentsIn`).
+      // A table seat is read under the table's grant and becomes a friend ask or anyone by the deck's commanders.
+      const seated = withTableSeats(opponents, table === null ? [] : await resolveTableSeatsIn(tx, userId, table, tableSeats));
+      if (seated === null) throw new SeatRefused();
+      if (seated === "twice") throw new SeatRefused(true);
+      const friends = await resolveOpponentsIn(tx, userId, seated);
       const [game] = await tx
         .insert(deckGames)
         .values({
@@ -1264,11 +1284,11 @@ export async function logGame(
       // Drizzle rejects an empty values array, and no marks is a valid log.
       if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
 
-      await insertOpponentsIn(tx, game.id, opponents, friends);
+      await insertOpponentsIn(tx, game.id, seated, friends);
     });
   } catch (err) {
     // A seat that no longer resolves (not a friend now, or not their deck) is a refusal, not a failure.
-    if (err instanceof SeatRefused) return refuse;
+    if (err instanceof SeatRefused) return err.twice ? { ok: false as const, message: ruleZeroCopy.log.seatedTwice } : refuse;
     // The player sees one generic refusal by design, so the underlying failure
     // has nowhere else to surface.
     console.error("logGame failed", err);

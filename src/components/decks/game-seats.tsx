@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import { faceInitials } from "../../lib/social/initials";
 import type { PickerPod } from "../../lib/social/games";
@@ -35,8 +36,8 @@ function Art({ uri, dim = false, initials = null }: { uri: string | null; dim?: 
   );
 }
 
-/** The line under a seat's name: the friend's deck, the commander a friend played, or nothing. */
-const seatSub = (s: Seat) => (s.deck ? s.deck.name : s.friend && s.commander ? shortName(s.commander.name) : null);
+/** The line under a seat's name: the table's deck, the friend's deck, the commander a friend played, or nothing. */
+const seatSub = (s: Seat) => (s.table ? s.table.deckName : s.deck ? s.deck.name : s.friend && s.commander ? shortName(s.commander.name) : null);
 
 function SeatView({
   seat, lost, busy, editing, onOpen, onClear, onWon, onLabel,
@@ -69,14 +70,22 @@ function SeatView({
         data-seat-key={seat.key}
         className={`shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`}
       >
-        <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? faceInitials(seat.friend.name) : null} />
+        {seat.table ? (
+          // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
+          <Art uri={seat.table.artCropUri} initials={faceInitials(seat.table.name)} />
+        ) : (
+          <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? faceInitials(seat.friend.name) : null} />
+        )}
       </button>
       <span className="min-w-0 flex-1 md:flex-none">
-        <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">{name}</span>
+        <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">
+          {name}
+          {seat.table?.mark && <small className="ml-[6px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">{ruleZeroCopy.log.fromTable}</small>}
+        </span>
         {sub && !seat.won && <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>}
         {seat.won ? (
           <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg)]">{copy.wonLine}</span>
-        ) : seat.friend ? (
+        ) : seat.table ? null : seat.friend ? (
           // A friend has no label: their name is the name. Seated alone, the one thing left to name is the deck.
           !seat.deck && !seat.commander && (
             <button
