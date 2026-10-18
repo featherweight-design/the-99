@@ -3482,6 +3482,10 @@ export const wishlistCollected = pgTable("wishlist_collected", {
  * bucket and window. Written by `recordHit` alone, which also deletes the player's earlier windows
  * for the bucket, so a player holds at most a few rows. Observe-only for now: nothing reads the
  * count to refuse a request. Purged with the account.
+ *
+ * `user_id` also holds ANONYMOUS visitors' keys for the public pages (`anon:` plus a hash of the network address and the
+ * UTC day, `src/lib/rate/anon.ts`). Those rows belong to no account, so `purgeAccount`'s `where user_id = <account>` never
+ * matches one, and `RETAIN_MS` is what bounds them.
  */
 export const rateHits = pgTable("rate_hits", {
   userId: text("user_id").notNull(),
