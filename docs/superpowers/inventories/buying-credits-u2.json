@@ -42,7 +42,7 @@
       "label": "Help me choose, words written: the credit line beside the press (L1 to L7 by state)",
       "view": "src/components/intake/intake-form.tsx",
       "steps": [
-        { "goto": "/decks/new/choose?w=big+dumb+lizards+that+stomp&c=r,g&t=dinosaurs&b=150&k=3", "wait": "textarea", "settle": 3000, "scrollTo": "button:has-text(\"Find commanders\"):visible" }
+        { "goto": "/decks/new/choose?w=big+dumb+lizards+that+stomp&c=r,g&t=dinosaurs&b=150&k=3", "wait": "button:has-text(\"Find commanders\"):visible ~ p", "settle": 1500, "scrollTo": "button:has-text(\"Find commanders\"):visible" }
       ]
     }
   ]
