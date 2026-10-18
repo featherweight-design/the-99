@@ -155,7 +155,8 @@ try {
       snapshot = { row: (await sql`select row_to_json(t)::text as j from stripe_customers t where user_id = ${userId}`)[0]?.j ?? null };
       fixtureMade = true;
       await sql`insert into payment_records (payment_intent_id, checkout_session_id, amount_cents, tax_cents, currency, status, refunded_cents) values (${PI}, ${SESSION}, 1080, 80, 'usd', 'granted', 540)`;
-      await sql`insert into credit_grants (user_id, source, units, external_id, refunded_cents) values (${userId}, 'pack', 40, ${SESSION}, 540)`;
+      // The refund rides the payment record alone, as it does once the lot's account is purged: Paid must still say it.
+      await sql`insert into credit_grants (user_id, source, units, external_id) values (${userId}, 'pack', 40, ${SESSION})`;
       await sql`insert into payment_disputes (dispute_id, payment_intent_id, units_revoked, status) values (${`dp_${MARK}`}, ${PI}, 20, 'open')`;
       await sql`insert into stripe_customers (user_id, stripe_customer_id, purchase_blocked_at) values (${userId}, ${`cus_${MARK}`}, ${BLOCK_AT.replace("Z", "")}::timestamp)
         on conflict (user_id) do update set purchase_blocked_at = excluded.purchase_blocked_at`;

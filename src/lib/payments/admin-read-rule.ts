@@ -2,7 +2,7 @@
 
 /**
  * One currency's payments in the month, as the revenue query groups them. `refundedCents` is what Stripe refunded
- * against those payments (K2's `credit_grants.refunded_cents`, the charge's cumulative refund, tax included), and
+ * against those payments (`payment_records.refunded_cents`, the charge's cumulative refund, tax included, kept through the purge), and
  * `refundedTaxCents` the tax inside it: each payment's refund carries its own share of that payment's tax.
  */
 export type RevenueRow = {
