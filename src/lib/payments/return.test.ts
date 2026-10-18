@@ -39,15 +39,15 @@ describe("readReturn", () => {
 
   it("finds a plan's lot by the Session's invoice id, for this viewer only", async () => {
     state.lots.set("in_1", { userId: "user_a", units: 60 });
-    expect(await readReturn(stripeServing(plan("in_1")), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "added", units: 60 });
-    expect(await readReturn(stripeServing(plan({ id: "in_1" })), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "added", units: 60 });
+    expect(await readReturn(stripeServing(plan("in_1")), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "added", units: 60, plan: true });
+    expect(await readReturn(stripeServing(plan({ id: "in_1" })), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "added", units: 60, plan: true });
     expect(state.asked).toEqual(["in_1", "in_1"]);
     state.lots.set("in_1", { userId: "user_b", units: 60 });
-    expect(await readReturn(stripeServing(plan("in_1")), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "processing", units: 60 });
+    expect(await readReturn(stripeServing(plan("in_1")), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "processing", units: 60, plan: true });
   });
 
   it("is processing while the Session names no invoice yet, asking the table nothing", async () => {
-    expect(await readReturn(stripeServing(plan(null)), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "processing", units: 60 });
+    expect(await readReturn(stripeServing(plan(null)), { sessionId: "cs_test_2", viewerId: "user_a" })).toEqual({ kind: "processing", units: 60, plan: true });
     expect(state.asked).toEqual([]);
   });
 

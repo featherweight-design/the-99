@@ -26,8 +26,10 @@ export const BAND_TIMING: BandTiming = { fastMs: 2000, slowMs: 10_000, slowAfter
 
 const FRAME = "relative flex items-start gap-[12px] rounded-[12px] border border-solid bg-[color:var(--surface)] px-[16px] py-[14px]";
 
-export function ReturnBand({ sessionId, initial, timing = BAND_TIMING, read = readReturnAction, onAdded, onReadFailed, onReceiptFailed }: {
+export function ReturnBand({ sessionId, planRenews = null, initial, timing = BAND_TIMING, read = readReturnAction, onAdded, onReadFailed, onReceiptFailed }: {
   sessionId: string;
+  /** `November 16`: when the plan just started renews, from the page's own re-read; absent until that lands. */
+  planRenews?: string | null;
   /** What the server read at render, or null when it could not. */
   initial: ReturnRead | null;
   timing?: BandTiming;
@@ -88,9 +90,10 @@ export function ReturnBand({ sessionId, initial, timing = BAND_TIMING, read = re
       <div role="status" className={`${FRAME} overflow-hidden border-[color:var(--success)]`}>
         <span aria-hidden="true" className="mt-[1px] flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full bg-[color:var(--success)] text-[12px] font-bold text-[color:var(--bg)]">✓</span>
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
-          <b className="text-[14.5px] font-semibold text-[color:var(--fg)]">{c.addedPack(state.units)}</b>
+          <b className="text-[14.5px] font-semibold text-[color:var(--fg)]">{state.plan ? creditsPageCopy.plan.added(state.units) : c.addedPack(state.units)}</b>
+          {state.plan && planRenews ? <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{creditsPageCopy.plan.addedSays(planRenews)}</p> : null}
           <ReceiptLink
-            sessionId={sessionId}
+            reference={sessionId}
             onFailed={onReceiptFailed}
             className="flex min-h-[32px] cursor-pointer items-center gap-[4px] self-start border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg)] pointer-coarse:min-h-[44px]"
           >

@@ -7,7 +7,7 @@ import { buildCreditsModel, type AllowanceFacts } from "../../lib/payments/page-
 import type { CreditHistoryRow } from "../../lib/payments/return";
 
 const m = vi.hoisted(() => ({ buy: vi.fn(), receipt: vi.fn(), readReturn: vi.fn(), refresh: vi.fn() }));
-vi.mock("../../app/credits/actions", () => ({ buyPackAction: m.buy, receiptAction: m.receipt, readReturnAction: m.readReturn }));
+vi.mock("../../app/credits/actions", () => ({ buyPackAction: m.buy, buyPlanAction: vi.fn(), cancelPlanAction: vi.fn(), keepPlanAction: vi.fn(), manageCardAction: vi.fn(), receiptAction: m.receipt, readReturnAction: m.readReturn }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn() }) }));
 
 import { CreditsView } from "./credits-view";
@@ -15,8 +15,8 @@ import { CreditsView } from "./credits-view";
 const allowance = (over: Partial<AllowanceFacts> = {}): AllowanceFacts => ({ used: 2, limit: 5, nextAt: null, ...over });
 const row: CreditHistoryRow = { id: "g1", source: "pack", units: 40, revokedUnits: 0, createdAt: new Date("2026-10-02T12:00:00Z"), externalId: "cs_test_1", amountCents: 531, currency: "usd" };
 
-function model(over: { switchOn?: boolean; allowance?: AllowanceFacts; history?: CreditHistoryRow[]; offers?: ReturnType<typeof packOffers>; blocked?: boolean } = {}) {
-  const r = buildCreditsModel({ switchOn: true, allowance: allowance(), history: [], offers: packOffers(), ...over });
+function model(over: { switchOn?: boolean; allowance?: AllowanceFacts; history?: CreditHistoryRow[]; offers?: ReturnType<typeof packOffers>; blocked?: boolean; subscription?: { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: Date | null } } = {}) {
+  const r = buildCreditsModel({ switchOn: true, allowance: allowance(), history: [], offers: packOffers(), now: new Date("2026-11-14T12:00:00Z"), ...over });
   if (!r.sees) throw new Error("not seen");
   return r.model;
 }
@@ -27,7 +27,7 @@ afterEach(cleanup);
 describe("the page", () => {
   it("P2: a reader who never bought sees the Free cell alone, the offer, and an empty history", () => {
     render(<CreditsView model={model()} ret={null} />);
-    expect(screen.getAllByRole("listitem").map((li) => li.getAttribute("data-cell"))).toEqual(["free"]);
+    expect(screen.getAllByRole("listitem").filter((li) => li.hasAttribute("data-cell")).map((li) => li.getAttribute("data-cell"))).toEqual(["free"]);
     expect(screen.queryByText(/Spent in this order/i)).toBeNull();
     expect(screen.getByRole("button", { name: "Buy pack: 40 credits · $5" })).toBeTruthy();
     expect(screen.getByText("Nothing bought yet. Receipts show here once you do.")).toBeTruthy();
@@ -263,5 +263,61 @@ describe("the daily paid line (P5, P5b)", () => {
     expect(line).toHaveTextContent(/nothing banked is lost/);
     expect(screen.getByTestId("paid-today-fill")).toHaveStyle({ width: "100%", background: "var(--warning)" });
     expect(line.innerHTML).not.toContain("--danger");
+  });
+});
+
+describe("the plan on the page", () => {
+  const sub = (cancel: boolean, days: number, status = "active") => ({ status, cancelAtPeriodEnd: cancel, currentPeriodEnd: new Date(Date.parse("2026-11-14T12:00:00Z") + days * 86_400_000) });
+  const planRow: CreditHistoryRow = { id: "p1", source: "plan", units: 60, revokedUnits: 0, createdAt: new Date("2026-10-16T12:00:00Z"), externalId: "in_1", billingReason: "subscription_create", amountCents: 500, currency: "usd" };
+
+  it("K1: the plan offer sits under the one Get more credits heading, AFTER the pack (L6: the pack leads)", () => {
+    render(<CreditsView model={model()} ret={null} />);
+    expect(screen.getAllByText("Get more credits")).toHaveLength(1);
+    const subscribe = screen.getByRole("button", { name: /^Subscribe/ });
+    const buy = screen.getByRole("button", { name: /^Buy pack/ });
+    expect(subscribe.closest("section")).toBe(buy.closest("section"));
+    expect(buy.compareDocumentPosition(subscribe) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("K2: a subscribed reader gets Your plan above the pack offer, and no Subscribe", () => {
+    render(<CreditsView model={model({ allowance: allowance({ plan: 74 }), subscription: sub(false, 2), history: [planRow] })} ret={null} />);
+    const plan = screen.getByRole("heading", { name: "Your plan" });
+    const packs = screen.getByRole("heading", { name: "Get more credits" });
+    expect(plan.compareDocumentPosition(packs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Subscribe/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
+    expect(screen.getByText("Monthly plan, first month")).toBeTruthy();
+  });
+
+  it("O2: the switch off keeps a held plan with Cancel and Update card, and no offers", () => {
+    render(<CreditsView model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(false, 20), history: [planRow] })} ret={null} />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Cancel plan", "Update card↗", "Receipt↗"]);
+    expect(screen.queryByText("Get more credits")).toBeNull();
+  });
+
+  it("O3: the switch off and a cancelled plan loses Keep my plan", () => {
+    render(<CreditsView model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(true, 20), history: [planRow] })} ret={null} />);
+    expect(screen.queryByRole("button", { name: "Keep my plan" })).toBeNull();
+    expect(screen.getByText("Ends December 4")).toBeTruthy();
+  });
+
+  it("O1: the switch off, nothing held, nothing bought draws no plan offer", () => {
+    render(<CreditsView model={model({ switchOn: false, allowance: allowance({ pack: 3 }) })} ret={null} />);
+    expect(screen.queryByRole("button", { name: /^Subscribe/ })).toBeNull();
+  });
+
+  it("a plan month's Receipt is fetched by its invoice id", async () => {
+    m.receipt.mockResolvedValue({ ok: false, reason: "none" });
+    render(<CreditsView model={model({ allowance: allowance({ plan: 74 }), subscription: sub(false, 2), history: [planRow] })} ret={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /Receipt/ }));
+    await waitFor(() => expect(m.receipt).toHaveBeenCalledWith("in_1"));
+  });
+
+  it("R3: a plan return says Plan started with the count the grant landed, and when it renews, with Cancel plan below", () => {
+    render(<CreditsView model={model({ allowance: allowance({ plan: 60 }), subscription: sub(false, 2), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 60, plan: true } }} />);
+    expect(screen.getByText("Plan started: 60 credits added")).toBeTruthy();
+    expect(screen.getByText("Renews November 16. Cancel any time below.")).toBeTruthy();
+    expect(screen.queryByText(/pack credits added/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
   });
 });

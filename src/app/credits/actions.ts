@@ -18,8 +18,8 @@ import { purchaseBlocked } from "../../lib/payments/blocked";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { isPackId, isPlanId } from "../../lib/payments/packs";
 import { openCardPortal, setPlanCancelling } from "../../lib/payments/plan-manage";
-import { readReturn, receiptUrlFor } from "../../lib/payments/return";
-import type { ReturnRead } from "../../lib/payments/return-rule";
+import { invoiceReceiptUrlFor, readReturn, receiptUrlFor } from "../../lib/payments/return";
+import { isInvoiceId, type ReturnRead } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
@@ -170,15 +170,18 @@ export async function readReturnAction(sessionId: unknown): Promise<ReturnOutcom
 export type ReceiptOutcome = { ok: true; url: string } | { ok: false; reason: "none" | "failed" };
 
 /**
- * A history row's Receipt link, fetched on demand and never stored. NOT gated on the switch: a receipt is for money
+ * A history row's Receipt link (a pack's Session id or a plan month's invoice id), fetched on demand and never stored. NOT gated on the switch: a receipt is for money
  * already taken, and the reduced page (O4) keeps its history. The ownership check is `receiptUrlFor`'s.
  */
-export async function receiptAction(sessionId: unknown): Promise<ReceiptOutcome> {
+export async function receiptAction(reference: unknown): Promise<ReceiptOutcome> {
   const userId = await requireUserId();
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "failed" };
   try {
-    const url = await receiptUrlFor(stripe, { sessionId, viewerId: userId });
+    // A pack's reference is its Checkout Session; a plan month's is its invoice (`in_`).
+    const url = isInvoiceId(reference)
+      ? await invoiceReceiptUrlFor(stripe, { invoiceId: reference, viewerId: userId })
+      : await receiptUrlFor(stripe, { sessionId: reference, viewerId: userId });
     return url ? { ok: true, url } : { ok: false, reason: "none" };
   } catch (error) {
     console.error(`[checkout] receipt read failed${stripeType(error)}`);

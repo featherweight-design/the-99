@@ -15,8 +15,8 @@ import { isOurSession, isPackId, isPlanId, PACKS, PLANS } from "./packs";
  * - `none`: no band.
  */
 export type ReturnRead =
-  | { kind: "processing"; units: number }
-  | { kind: "added"; units: number }
+  | { kind: "processing"; units: number; plan?: true }
+  | { kind: "added"; units: number; plan?: true }
   | { kind: "none" };
 
 export type ReturnSession = {
@@ -31,13 +31,19 @@ export function decideReturn(session: ReturnSession, viewerId: string, grantUnit
   const plan = session.metadata?.plan;
   // A pack Session, or a plan's: the plan's lot is found by its first INVOICE (`readReturn`), and `grantUnits` is that lot's.
   if (!isPackId(pack) && !isPlanId(plan)) return { kind: "none" };
-  if (grantUnits !== null) return { kind: "added", units: grantUnits };
+  const planBand = isPlanId(plan) ? ({ plan: true } as const) : {};
+  if (grantUnits !== null) return { kind: "added", units: grantUnits, ...planBand };
   // Cards only, so a Session the reader came back from is paid; one that is not has nothing to wait for.
   if (session.paymentStatus !== "paid") return { kind: "none" };
-  return { kind: "processing", units: isPackId(pack) ? PACKS[pack].units : PLANS[plan as keyof typeof PLANS].units };
+  return { kind: "processing", units: isPackId(pack) ? PACKS[pack].units : PLANS[plan as keyof typeof PLANS].units, ...planBand };
 }
 
 /** A Checkout Session id as Stripe writes it: bounded and shaped before it reaches a request or a query. */
 export function isSessionId(value: unknown): value is string {
   return typeof value === "string" && /^cs_[A-Za-z0-9_]{1,200}$/.test(value);
+}
+
+/** An invoice id as Stripe writes it (a plan month's receipt is fetched by it): shaped before it reaches a request or a query. */
+export function isInvoiceId(value: unknown): value is string {
+  return typeof value === "string" && /^in_[A-Za-z0-9_]{1,200}$/.test(value);
 }

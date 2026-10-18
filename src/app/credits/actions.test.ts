@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   createPlanCheckout: vi.fn(),
   readReturn: vi.fn(),
   receiptUrlFor: vi.fn(),
+  invoiceReceiptUrlFor: vi.fn(),
   purchaseBlocked: vi.fn(),
   setPlanCancelling: vi.fn(),
   openCardPortal: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitch
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
 vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout, createPlanCheckout: m.createPlanCheckout }));
-vi.mock("../../lib/payments/return", () => ({ readReturn: m.readReturn, receiptUrlFor: m.receiptUrlFor }));
+vi.mock("../../lib/payments/return", () => ({ readReturn: m.readReturn, receiptUrlFor: m.receiptUrlFor, invoiceReceiptUrlFor: m.invoiceReceiptUrlFor }));
 
 import { buyPackAction, buyPlanAction, cancelPlanAction, keepPlanAction, manageCardAction, readReturnAction, receiptAction } from "./actions";
 
@@ -186,6 +187,17 @@ describe("receiptAction", () => {
     m.receiptUrlFor.mockRejectedValueOnce(new Error("boom"));
     expect(await receiptAction("cs_1")).toEqual({ ok: false, reason: "failed" });
     log.mockRestore();
+  });
+});
+
+describe("receiptAction for a plan month", () => {
+  it("reads an invoice id through the invoice reader, scoped to the signed-in reader, never the Session reader", async () => {
+    m.invoiceReceiptUrlFor.mockResolvedValueOnce("https://invoice.stripe.com/i/1");
+    expect(await receiptAction("in_1")).toEqual({ ok: true, url: "https://invoice.stripe.com/i/1" });
+    expect(m.invoiceReceiptUrlFor).toHaveBeenCalledWith({}, { invoiceId: "in_1", viewerId: "user_a" });
+    expect(m.receiptUrlFor).not.toHaveBeenCalled();
+    m.invoiceReceiptUrlFor.mockResolvedValueOnce(null);
+    expect(await receiptAction("in_other")).toEqual({ ok: false, reason: "none" });
   });
 });
 

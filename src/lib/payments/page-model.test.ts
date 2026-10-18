@@ -119,3 +119,57 @@ describe("buildCreditsModel: an admin's gift (admin plan A-R5)", () => {
     expect(model({ switchOn: true, allowance: allowance({ gift: 0 }), history: [], offers }).cells.map((c) => c.key)).toEqual(["free"]);
   });
 });
+
+describe("buildCreditsModel: the plan card and plan history", () => {
+  const NOW = new Date("2026-11-14T12:00:00Z");
+  const DAY = 24 * 60 * 60 * 1000;
+  const end = (days: number) => new Date(NOW.getTime() + days * DAY);
+  const sub = (status: string, cancel: boolean, days: number) => ({ status, cancelAtPeriodEnd: cancel, currentPeriodEnd: end(days) });
+
+  it("K1: no subscription, switch on: the offer, sized from the registry", () => {
+    expect(model({ switchOn: true, allowance: allowance(), history: [], offers, now: NOW }).plan).toEqual({
+      state: "offer", offer: { id: "plan60", units: 60, price: "$5" }, on: null, credits: 0, days: null,
+    });
+  });
+
+  it("O1 to O4: no offer while the switch is off", () => {
+    expect(model({ switchOn: false, allowance: allowance({ pack: 5 }), history: [], offers, now: NOW }).plan).toBeNull();
+  });
+
+  it("K2: the renewal date is long-form UTC and the credit count is what is held", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 74 }), history: [], offers, now: NOW, subscription: sub("active", false, 2) });
+    expect(m.plan).toMatchObject({ state: "active", on: "November 16", credits: 74 });
+  });
+
+  it("a plan held with the switch off keeps its card (O2): the reduced page manages it", () => {
+    const m = model({ switchOn: false, allowance: allowance({ plan: 74 }), history: [], offers, now: NOW, subscription: sub("active", false, 20) });
+    expect(m.plan?.state).toBe("active");
+    expect(m.offers).toBeNull();
+  });
+
+  it("K3/K4: a cancelled plan states the credits that lapse, which can be fewer than the plan credits held", () => {
+    const m = model({ switchOn: true, allowance: allowance({ plan: 120, planExpiring: 60, planExpiresAt: end(2) }), history: [], offers, now: NOW, subscription: sub("active", true, 2) });
+    expect(m.plan).toMatchObject({ state: "ending", credits: 60, days: 2, on: "November 16" });
+  });
+
+  it("K6: an ended subscription is the offer again, and the history keeps the months", () => {
+    const history = [row({ id: "g2", source: "plan", externalId: "in_2", billingReason: "subscription_cycle" }), row({ id: "g1", source: "plan", externalId: "in_1", billingReason: "subscription_create" })];
+    const m = model({ switchOn: true, allowance: allowance(), history, offers, now: NOW, subscription: sub("canceled", false, -1) });
+    expect(m.plan?.state).toBe("offer");
+    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan", "Monthly plan, first month"]);
+  });
+
+  it("E7: the first invoice is labelled by the stored billing reason, never by position", () => {
+    const m = model({ switchOn: true, allowance: allowance(), offers, now: NOW, history: [
+      row({ id: "a", source: "plan", externalId: "in_a", billingReason: "subscription_create" }),
+      row({ id: "b", source: "plan", externalId: "in_b", billingReason: null }),
+      row({ id: "c", source: "pack", externalId: "cs_c" }),
+    ] });
+    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan, first month", "Monthly plan", "Credit pack"]);
+  });
+
+  it("a plan month's Receipt is fetched by its invoice id, a pack's by its Session", () => {
+    const m = model({ switchOn: true, allowance: allowance(), offers, now: NOW, history: [row({ id: "a", source: "plan", externalId: "in_a" }), row({ id: "c", externalId: "cs_c" })] });
+    expect(m.history.map((h) => [h.sessionId, h.invoiceId])).toEqual([[null, "in_a"], ["cs_c", null]]);
+  });
+});

@@ -17,6 +17,7 @@ import { creditsPageCopy, packOffers } from "../../lib/copy/credits-page";
 import { readAllowance } from "../../lib/model/allowance";
 import { paymentsEnabled } from "../../lib/payments/flag";
 import { purchaseBlocked } from "../../lib/payments/blocked";
+import { readPlanFacts } from "../../lib/payments/plan-read";
 import { buildCreditsModel } from "../../lib/payments/page-model";
 import { listCreditHistory, readReturn } from "../../lib/payments/return";
 import { isSessionId } from "../../lib/payments/return-rule";
@@ -43,12 +44,13 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   try {
     // The pause (B1) is read only while there is something to pause. A failed read draws the offers: the Buy press
     // checks the block again before any Stripe call, so a missed pause still cannot make a Session.
-    const [allowance, history, blocked] = await Promise.all([
+    const [allowance, history, subscription, blocked] = await Promise.all([
       readAllowance(userId),
       listCreditHistory(userId),
+      readPlanFacts(userId),
       switchOn ? purchaseBlocked(userId).catch(() => false) : false,
     ]);
-    built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers(), returning, blocked });
+    built = buildCreditsModel({ switchOn, allowance, history, offers: packOffers(), returning, subscription, blocked });
   } catch (error) {
     console.error(`[credits] read failed${error instanceof Error ? ` (${error.name})` : ""}`);
     return <CreditsReadFailed />;

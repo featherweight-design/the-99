@@ -6,8 +6,9 @@
 import { useState, type ReactNode } from "react";
 import { receiptAction } from "../../app/credits/actions";
 
-export function ReceiptLink({ sessionId, onFailed, className, children }: {
-  sessionId: string;
+export function ReceiptLink({ reference, onFailed, className, children }: {
+  /** A pack's Checkout Session id, or a plan month's invoice id. */
+  reference: string;
   onFailed: () => void;
   className: string;
   children: ReactNode;
@@ -18,7 +19,7 @@ export function ReceiptLink({ sessionId, onFailed, className, children }: {
     setBusy(true);
     const win = window.open("about:blank", "_blank");
     try {
-      const out = await receiptAction(sessionId);
+      const out = await receiptAction(reference);
       if (out.ok) {
         if (win) {
           win.opener = null;

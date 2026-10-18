@@ -2,7 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "../../db";
 import { creditGrants, paymentRecords } from "../../db/schema";
-import { decideReturn, isSessionId, type ReturnRead } from "./return-rule";
+import { decideReturn, isInvoiceId, isSessionId, type ReturnRead } from "./return-rule";
 import { PAID_SOURCES } from "../model/credit-rule";
 import { isOurSession } from "./packs";
 
@@ -49,12 +49,34 @@ export async function receiptUrlFor(stripe: Stripe, input: { sessionId: unknown;
   const session = await retrieveOrNull(stripe, input.sessionId);
   if (!session || !input.viewerId) return null;
   if (!isOurSession(session.metadata) || session.metadata?.user_id !== input.viewerId) return null;
+  // A plan's Checkout has no PaymentIntent of its own: its receipt is the first invoice's.
+  if (session.mode === "subscription") return hostedInvoiceUrl(stripe, idOf(session.invoice));
   const intent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
   if (!intent) return null;
   const pi = await stripe.paymentIntents.retrieve(intent, { expand: ["latest_charge"] });
   const charge = pi.latest_charge;
   const url = charge && typeof charge !== "string" ? charge.receipt_url : null;
   return typeof url === "string" && url.startsWith("https://") ? url : null;
+}
+
+async function hostedInvoiceUrl(stripe: Stripe, invoiceId: string | null): Promise<string | null> {
+  if (!invoiceId) return null;
+  const invoice = await stripe.invoices.retrieve(invoiceId);
+  const url = invoice.hosted_invoice_url;
+  return typeof url === "string" && url.startsWith("https://") ? url : null;
+}
+
+/**
+ * A plan month's receipt link (history, plan E8): the invoice's hosted page, fetched on demand and never stored. The
+ * invoice id is the plan lot's `external_id`, so the proof of ownership is OUR grant row for this viewer and that id;
+ * an invoice id that is not one of the viewer's own lots answers null, whoever it belongs to.
+ */
+export async function invoiceReceiptUrlFor(stripe: Stripe, input: { invoiceId: unknown; viewerId: string }): Promise<string | null> {
+  if (!isInvoiceId(input.invoiceId) || !input.viewerId) return null;
+  const [grant] = await db.select({ id: creditGrants.id }).from(creditGrants)
+    .where(and(eq(creditGrants.externalId, input.invoiceId), eq(creditGrants.userId, input.viewerId), eq(creditGrants.source, "plan")));
+  if (!grant) return null;
+  return hostedInvoiceUrl(stripe, input.invoiceId);
 }
 
 /**
@@ -71,6 +93,8 @@ export type CreditHistoryRow = {
   revokedUnits: number;
   createdAt: Date;
   externalId: string | null;
+  /** Stripe's `billing_reason` on a plan month's invoice (`subscription_create` is the first month); null for a pack. */
+  billingReason?: string | null;
   /** What was paid, in the currency's minor unit, from the kept payment record; null when no record backs the lot. */
   amountCents: number | null;
   currency: string | null;
@@ -86,6 +110,7 @@ export function creditHistoryQuery(userId: string) {
     revokedUnits: creditGrants.revokedUnits,
     createdAt: creditGrants.createdAt,
     externalId: creditGrants.externalId,
+    billingReason: creditGrants.billingReason,
     amountCents: paymentRecords.amountCents,
     currency: paymentRecords.currency,
   }).from(creditGrants)
