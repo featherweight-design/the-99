@@ -152,6 +152,8 @@ export type Allowance = {
   paidNextAt?: Date | null;
   /** When a cancelled plan's remaining credits lapse. Unset until the Subscription PR fills it. */
   planExpiresAt?: Date | null;
+  /** The plan credits that lapse on `planExpiresAt`: a later subscription's lots do not count. */
+  planExpiring?: number;
   /** `PAYMENTS_ENABLED` for this reader, stamped by the read that knows the request's switches. Absent reads as off:
    *  the credit line then draws its shipped forms and never offers `Get more credits` (L8). */
   payments?: boolean;

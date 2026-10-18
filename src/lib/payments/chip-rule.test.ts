@@ -40,12 +40,12 @@ describe("the menu chip (M1b)", () => {
 
   it("plan credits expiring within 3 days: the count, and the words on a line under it", () => {
     const planExpiresAt = new Date(NOW.getTime() + 2 * 86_400_000);
-    expect(chip(a({ used: 5, plan: 74, planExpiresAt }), true, true)).toEqual({ kind: "expiring", label: "74 credits", line: "74 plan credits expire Nov 16", hollow: false });
+    expect(chip(a({ used: 5, plan: 74, planExpiring: 74, planExpiresAt }), true, true)).toEqual({ kind: "expiring", label: "74 credits", line: "74 plan credits expire Nov 16", hollow: false });
   });
 
   it("does not warn four days out", () => {
     const planExpiresAt = new Date(NOW.getTime() + 4 * 86_400_000);
-    expect(chip(a({ plan: 74, planExpiresAt }), true, true)?.kind).toBe("credits");
+    expect(chip(a({ plan: 74, planExpiring: 74, planExpiresAt }), true, true)?.kind).toBe("credits");
   });
 
   it("says 1 credit in the singular", () => {

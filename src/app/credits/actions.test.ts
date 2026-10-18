@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   currentUser: vi.fn(),
   stripeClient: vi.fn(),
   createPackCheckout: vi.fn(),
+  createPlanCheckout: vi.fn(),
   readReturn: vi.fn(),
   receiptUrlFor: vi.fn(),
   purchaseBlocked: vi.fn(),
@@ -17,10 +18,10 @@ vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/payments/stripe", () => ({ stripeClient: m.stripeClient }));
-vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout }));
+vi.mock("../../lib/payments/checkout", () => ({ createPackCheckout: m.createPackCheckout, createPlanCheckout: m.createPlanCheckout }));
 vi.mock("../../lib/payments/return", () => ({ readReturn: m.readReturn, receiptUrlFor: m.receiptUrlFor }));
 
-import { buyPackAction, readReturnAction, receiptAction } from "./actions";
+import { buyPackAction, buyPlanAction, readReturnAction, receiptAction } from "./actions";
 
 const ACTION = "11111111-1111-4111-8111-111111111111";
 const verified = { primaryEmailAddress: { emailAddress: "a@x.dev", verification: { status: "verified" } } };
@@ -85,6 +86,55 @@ describe("buyPackAction", () => {
     expect(await buyPackAction("pack40", ACTION)).toEqual({ ok: false, reason: "failed" });
     expect(log).toHaveBeenCalledWith("[checkout] failed (StripeInvalidRequestError)");
     log.mockRestore();
+  });
+});
+
+describe("buyPlanAction", () => {
+  beforeEach(() => m.createPlanCheckout.mockResolvedValue({ ok: true, url: "https://checkout.stripe.com/plan" }));
+
+  it("returns Checkout's URL for a verified reader with the switch on", async () => {
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: true, url: "https://checkout.stripe.com/plan" });
+    expect(m.createPlanCheckout).toHaveBeenCalledWith({}, { userId: "user_a", email: "a@x.dev", planId: "plan60", actionId: ACTION });
+  });
+
+  it("is off when the switch is off or killed, and asks nothing else", async () => {
+    for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
+      m.requestSwitchEnv.mockResolvedValueOnce(env);
+      expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "off" });
+    }
+    expect(m.createPlanCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses an id outside the plan registry (a pack id included) and a malformed press id", async () => {
+    expect(await buyPlanAction("pack40", ACTION)).toEqual({ ok: false, reason: "invalid" });
+    expect(await buyPlanAction("plan60", "nope")).toEqual({ ok: false, reason: "invalid" });
+    expect(m.createPlanCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses a blocked account before any Stripe call, and fails closed when the block cannot be read", async () => {
+    m.purchaseBlocked.mockResolvedValueOnce(true);
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "blocked" });
+    m.purchaseBlocked.mockRejectedValueOnce(new Error("db down"));
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "failed" });
+    expect(m.currentUser).not.toHaveBeenCalled();
+    expect(m.createPlanCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unverified email and a deployment with no usable key", async () => {
+    m.currentUser.mockResolvedValueOnce({ primaryEmailAddress: { emailAddress: "a@x.dev", verification: { status: "unverified" } } });
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "unverified" });
+    m.stripeClient.mockReturnValueOnce(null);
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "unconfigured" });
+  });
+
+  it("passes through already, throttled and unconfigured, and maps a throw to failed", async () => {
+    for (const reason of ["already", "throttled", "unconfigured"]) {
+      m.createPlanCheckout.mockResolvedValueOnce({ ok: false, reason });
+      expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason });
+    }
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    m.createPlanCheckout.mockRejectedValueOnce(Object.assign(new Error("cus_1 broke"), { type: "StripeAPIError" }));
+    expect(await buyPlanAction("plan60", ACTION)).toEqual({ ok: false, reason: "failed" });
   });
 });
 

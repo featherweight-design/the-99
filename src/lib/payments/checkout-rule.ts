@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { PACKS, PAYMENTS_APP, type PackId } from "./packs";
+import { PACKS, PAYMENTS_APP, PLANS, type PackId, type PlanId } from "./packs";
 
 /**
  * What a Checkout Session for a pack is created with (payments scope §5.4). Pure. SERVER-AUTHORITATIVE:
@@ -71,4 +71,35 @@ export function appOrigin(value: string | undefined, label: string | undefined):
 /** A pack's Price id in this mode, or null while its variable is unset. */
 export function priceIdFor(packId: PackId, env: Record<string, string | undefined>): string | null {
   return env[PACKS[packId].priceEnv]?.trim() || null;
+}
+
+export type PlanCheckoutInput = { userId: string; customerId: string; planId: PlanId; priceId: string; origin: string };
+
+/**
+ * What a Checkout Session for the plan is created with. Pure, and the twin of `packCheckoutParams`: subscription
+ * mode, the same customer, cards only, Stripe Tax, the same return URLs. `subscription_data.metadata` is what makes
+ * the SUBSCRIPTION and every invoice it raises attributable (an invoice carries a snapshot of it in
+ * `parent.subscription_details.metadata`), because the session's own metadata stops at the session.
+ */
+export function planCheckoutParams(input: PlanCheckoutInput): Stripe.Checkout.SessionCreateParams {
+  const metadata = { app: PAYMENTS_APP, plan: input.planId, user_id: input.userId };
+  const back = `${input.origin}${CHECKOUT_RETURN_PATH}`;
+  return {
+    mode: PLANS[input.planId].mode,
+    line_items: [{ price: input.priceId, quantity: 1 }],
+    customer: input.customerId,
+    client_reference_id: input.userId,
+    metadata,
+    subscription_data: { metadata },
+    payment_method_types: ["card"],
+    automatic_tax: { enabled: true },
+    customer_update: { address: "auto" },
+    success_url: `${back}?checkout=done&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${back}?checkout=cancelled`,
+  };
+}
+
+/** The plan's Price id in this mode, or null while its variable is unset (the plan is then not on sale). */
+export function planPriceIdFor(planId: PlanId, env: Record<string, string | undefined>): string | null {
+  return env[PLANS[planId].priceEnv]?.trim() || null;
 }

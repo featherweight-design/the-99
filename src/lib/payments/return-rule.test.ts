@@ -37,6 +37,20 @@ describe("decideReturn", () => {
   });
 });
 
+describe("decideReturn: a plan's Session", () => {
+  const plan = { metadata: { app: "the-99", plan: "plan60", user_id: "user_a" }, paymentStatus: "paid" };
+  it("is processing, sized by the plan, until the first invoice's lot exists, then added at the lot's units", () => {
+    expect(decideReturn(plan, "user_a", null)).toEqual({ kind: "processing", units: 60 });
+    expect(decideReturn(plan, "user_a", 60)).toEqual({ kind: "added", units: 60 });
+  });
+  it("keeps the same refusals: another reader, another app, an unknown plan, an unpaid Session", () => {
+    expect(decideReturn(plan, "user_b", 60)).toEqual({ kind: "none" });
+    expect(decideReturn({ ...plan, metadata: { ...plan.metadata, app: "concert-crawl" } }, "user_a", 60)).toEqual({ kind: "none" });
+    expect(decideReturn({ ...plan, metadata: { app: "the-99", plan: "plan999", user_id: "user_a" } }, "user_a", 60)).toEqual({ kind: "none" });
+    expect(decideReturn({ ...plan, paymentStatus: "unpaid" }, "user_a", null)).toEqual({ kind: "none" });
+  });
+});
+
 describe("isSessionId", () => {
   it("accepts Stripe's shape and nothing else", () => {
     expect(isSessionId("cs_test_a1B2c3")).toBe(true);

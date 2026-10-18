@@ -19,10 +19,16 @@ export async function readReturn(stripe: Stripe, input: { sessionId: unknown; vi
   if (!session) return { kind: "none" };
   const facts = { metadata: session.metadata ?? {}, paymentStatus: session.payment_status };
   if (decideReturn(facts, input.viewerId, null).kind === "none") return { kind: "none" };
+  // A pack's lot is keyed by the Session; a plan's by its first INVOICE, which the Session names once the
+  // subscription is created (null before: nothing to find yet, so the band reads as processing).
+  const lotKey = session.mode === "subscription" ? idOf(session.invoice) : input.sessionId;
+  if (!lotKey) return decideReturn(facts, input.viewerId, null);
   const [grant] = await db.select({ units: creditGrants.units }).from(creditGrants)
-    .where(and(eq(creditGrants.externalId, input.sessionId), eq(creditGrants.userId, input.viewerId)));
+    .where(and(eq(creditGrants.externalId, lotKey), eq(creditGrants.userId, input.viewerId)));
   return decideReturn(facts, input.viewerId, grant?.units ?? null);
 }
+
+const idOf = (v: string | { id: string } | null | undefined): string | null => (v == null ? null : typeof v === "string" ? v : v.id);
 
 async function retrieveOrNull(stripe: Stripe, sessionId: string): Promise<Stripe.Checkout.Session | null> {
   try {

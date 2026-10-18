@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "./allowance-rule";
-import { countsAgainstGrant, creditTotals, isLive, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
+import { countsAgainstGrant, creditTotals, earliestPlanExpiry, isLive, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -118,5 +118,22 @@ describe("creditTotals", () => {
       { grant: lot({ id: "g1", source: "gift" }), remaining: 5 },
     ];
     expect(creditTotals(balances)).toEqual({ welcome: 9, plan: 15, gift: 5, pack: 40 });
+  });
+});
+
+describe("earliestPlanExpiry: the Allowance's planExpiresAt", () => {
+  const at = (days: number) => new Date(now.getTime() + days * DAY);
+  const plan = (id: string, remaining: number, expiresAt: Date | null) => ({ grant: lot({ id, source: "plan", expiresAt }), remaining });
+
+  it("is the earliest expiry among plan lots that still hold credits", () => {
+    expect(earliestPlanExpiry([plan("a", 5, at(9)), plan("b", 2, at(3)), plan("c", 7, null)])).toEqual(at(3));
+  });
+  it("is null while no plan lot expires (a held plan rolls over), or there is none", () => {
+    expect(earliestPlanExpiry([plan("a", 5, null), plan("b", 60, null)])).toBeNull();
+    expect(earliestPlanExpiry([])).toBeNull();
+  });
+  it("skips a spent lot, and any lot that is not a plan lot", () => {
+    const welcome = { grant: lot({ id: "w", source: "welcome", expiresAt: at(1) }), remaining: 9 };
+    expect(earliestPlanExpiry([plan("a", 0, at(2)), welcome, plan("b", 4, at(6))])).toEqual(at(6));
   });
 });

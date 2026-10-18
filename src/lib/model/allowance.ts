@@ -15,7 +15,7 @@ import {
   type ModelFeature,
 } from "./allowance-rule";
 import type { RefundReason } from "./allowance-rule";
-import { creditTotals, pickGrant, remaining, type CreditGrant, type CreditSource, type GrantBalance } from "./credit-rule";
+import { creditTotals, earliestPlanExpiry, pickGrant, planCreditsExpiringAt, remaining, type CreditGrant, type CreditSource, type GrantBalance } from "./credit-rule";
 import type { ModelUsage } from "./client";
 import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
 import {
@@ -246,7 +246,7 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
     : null;
   const allowance: Allowance = {
     ...allowanceFrom(rows, now, limit),
-    ...(paid ? { ...creditTotals(balances), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt, paidNextAt: paid.nextAt } : {}),
+    ...(paid ? { ...creditTotals(balances), planExpiresAt: earliestPlanExpiry(balances), planExpiring: planCreditsExpiringAt(balances, earliestPlanExpiry(balances)), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt, paidNextAt: paid.nextAt } : {}),
   };
   const refusal = spendRefusal({
     ownerMonthMicro: spend,

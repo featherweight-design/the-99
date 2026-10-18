@@ -59,7 +59,7 @@ export const PURGE_ORDER = [
   "invite_reservations", "invite_balances",
   // The Stripe customer mapping before the paid lots: the webhook holds that row while it grants, so a
   // purge taking it first leaves a late payment unattributed, and one waiting on it deletes the new lot.
-  "stripe_customers", "model_calls", "credit_grants",
+  "stripe_customers", "subscriptions", "model_calls", "credit_grants",
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
 

@@ -13,10 +13,10 @@ import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
 import { readChip } from "../../lib/payments/chip";
 import type { ChipState } from "../../lib/payments/chip-rule";
-import { createPackCheckout } from "../../lib/payments/checkout";
+import { createPackCheckout, createPlanCheckout } from "../../lib/payments/checkout";
 import { purchaseBlocked } from "../../lib/payments/blocked";
 import { paymentsEnabled } from "../../lib/payments/flag";
-import { isPackId } from "../../lib/payments/packs";
+import { isPackId, isPlanId } from "../../lib/payments/packs";
 import { readReturn, receiptUrlFor } from "../../lib/payments/return";
 import type { ReturnRead } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
@@ -57,6 +57,36 @@ export async function buyPackAction(packId: unknown, actionId: unknown): Promise
     // A fixed line: a Stripe or driver error's message can carry ids.
     const type = (error as { type?: unknown })?.type;
     console.error(`[checkout] failed${typeof type === "string" && /^Stripe\w+$/.test(type) ? ` (${type})` : ""}`);
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/** The plan's outcomes: the purchase vocabulary plus `already` (the account holds a live plan). */
+export type PlanCheckoutOutcome =
+  | { ok: true; url: string }
+  | { ok: false; reason: "off" | "invalid" | "unverified" | "throttled" | "unconfigured" | "failed" | "already" | "blocked" };
+
+/** Subscribe to the monthly plan. The same rules as `buyPackAction`, the same per-press uuid. */
+export async function buyPlanAction(planId: unknown, actionId: unknown): Promise<PlanCheckoutOutcome> {
+  const userId = await requireUserId();
+  if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+  if (!isPlanId(planId) || !isUuid(actionId)) return { ok: false, reason: "invalid" };
+
+  // Before any Stripe call, failing closed, exactly as the pack's press.
+  const blocked = await purchaseBlocked(userId).catch(() => null);
+  if (blocked === null) return { ok: false, reason: "failed" };
+  if (blocked) return { ok: false, reason: "blocked" };
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress;
+  if (!email || email.verification?.status !== "verified") return { ok: false, reason: "unverified" };
+
+  const stripe = stripeClient();
+  if (!stripe) return { ok: false, reason: "unconfigured" };
+  try {
+    return await createPlanCheckout(stripe, { userId, email: email.emailAddress, planId, actionId: actionId as string });
+  } catch (error) {
+    console.error(`[checkout] plan failed${stripeType(error)}`);
     return { ok: false, reason: "failed" };
   }
 }

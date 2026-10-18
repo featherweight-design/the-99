@@ -73,7 +73,7 @@ describe("which line", () => {
 
 describe("L7: a cancelled plan within three days", () => {
   const exp = (days: number) => new Date(NOW.getTime() + days * 86_400_000);
-  const a = (days: number | null) => base({ used: 5, reopensAt: at(15), plan: 74, paidUsedToday: 0, paidLimit: 20, planExpiresAt: days === null ? null : exp(days) });
+  const a = (days: number | null) => base({ used: 5, reopensAt: at(15), plan: 74, planExpiring: 74, paidUsedToday: 0, paidLimit: 20, planExpiresAt: days === null ? null : exp(days) });
 
   it("appends the phrase to the L2 and L3 forms", () => {
     expect(creditStanding(a(2), NOW)).toMatch(/ · 74 plan credits expire Nov 16$/);
@@ -87,8 +87,12 @@ describe("L7: a cancelled plan within three days", () => {
     expect(expiringPhrase(a(-1), NOW)).toBeNull();
   });
 
+  it("warns with the credits that lapse on the date, not the whole plan balance", () => {
+    expect(expiringPhrase({ ...a(2), plan: 120, planExpiring: 60 }, NOW)).toMatch(/^60 plan credits expire /);
+  });
+
   it("never warns for packs", () => {
-    expect(expiringPhrase({ ...a(1), plan: 0, pack: 40 }, NOW)).toBeNull();
+    expect(expiringPhrase({ ...a(1), plan: 0, planExpiring: 0, pack: 40 }, NOW)).toBeNull();
   });
 
   it("matches the pattern CreditsText colours", () => {

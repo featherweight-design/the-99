@@ -1079,6 +1079,13 @@
       "when": 1792306856329,
       "tag": "0153_sticky_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 154,
+      "version": "7",
+      "when": 1792310898127,
+      "tag": "0154_vengeful_franklin_richards",
+      "breakpoints": true
     }
   ]
 }
