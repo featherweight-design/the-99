@@ -43,7 +43,10 @@ const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
 // Relative to the repository by default, so the command in a checked-in inventory
 // runs the same way on anyone's machine. An absolute `out` still wins, for a run
 // that wants to write somewhere specific.
-const outDir = path.resolve(process.cwd(), inventory.out ?? `contact-sheets/${path.basename(inventoryPath, ".json")}`);
+// Optional: THEME=<key> (amonkhet, kamigawa, ixalan, phyrexia, eldraine, kaldheim) draws every row in that theme, through
+// the `the99_theme` cookie the server reads, and writes into its own sub-directory so a theme pass never overwrites another.
+const THEME = process.env.THEME;
+const outDir = path.resolve(process.cwd(), inventory.out ?? `contact-sheets/${path.basename(inventoryPath, ".json")}`, THEME ?? "");
 await mkdir(outDir, { recursive: true });
 
 const WIDTHS = inventory.widths ?? [
@@ -379,6 +382,7 @@ try {
       // desktop rail draws its labelled touch form (desktop nav labels), at a desktop viewport.
       hasTouch: size.touch === true,
     });
+    if (THEME) await context.addCookies([{ name: "the99_theme", value: THEME, url: BASE }]);
     const page = await context.newPage();
     // An inventory of moments: every load starts with this visit's moment TAKEN, unless the step before it was
     // `clearVisit`, so nothing arrives on the loads that sign in and clear the About gate (the account button carries a
@@ -395,6 +399,12 @@ try {
       });
     }
     await signIn(page);
+    // The server draws Low Sun for a key it does not know and a survivor for a retired one (`themeFor`), so a typo
+    // would photograph another theme under the asked-for folder name. Read back what the page actually drew.
+    if (THEME) {
+      const drawn = await page.evaluate(() => document.documentElement.dataset.theme ?? null);
+      if (drawn !== THEME) throw new Error(`THEME=${THEME}, but the page drew data-theme="${drawn}".`);
+    }
     // `"clearAbout": true` marks the About gate seen before the first row, through the one helper every
     // probe uses, so the first load photographs the surface rather than `/about` (swap tools close-out:
     // the first row of every width failed on the redirect). Opt-in, because the /about inventory
