@@ -29,6 +29,10 @@ export const BUILDERS = [
   { file: "src/lib/synopsis/generate.ts", fns: ["repairPrompt"] },
   { file: "src/lib/labels/prompt.ts", fns: ["buildRequest"] },
   { file: "src/lib/prose/prompt.ts", fns: ["buildProsePrompt", "buildProseRetryPrompt"] },
+  // The eval harness's prompt variants, which append to a shipped builder's system and user. A non-callable export
+  // (a variant table) is walked as a value: every function in it, its parameters and its return.
+  { file: "scripts/eval/variants/tuning.mts", fns: ["TUNING_VARIANTS", "applyVariant", "setStrategyInput"] },
+  { file: "scripts/eval/variants/synopsis.mts", fns: ["SYNOPSIS_VARIANTS", "applySynopsisVariant"] },
 ];
 
 /**
@@ -46,6 +50,7 @@ export const CALLERS = {
   "scripts/generate-commander-prose.ts": { builders: ["src/lib/prose/prompt.ts"] },
   "scripts/build-card-labels.ts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/label-cards-run.mts": { builders: ["src/lib/labels/prompt.ts"] },
+  "scripts/lib/card-labels-build.ts": { builders: ["src/lib/labels/prompt.ts"], note: "sends through the client its caller hands it" },
   "scripts/label-cards-collect.mts": { note: "collects batch results; sends no prompt" },
   "scripts/eval/labels-tiering.mts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/eval/measure-pool-list.mts": { note: "counts tokens of the intake list (catalog only)" },
@@ -68,13 +73,28 @@ export const CALLERS = {
 };
 
 /** An identity field, matched on the property name lowercased with `_` removed. */
-export const IDENTITY = /(userid|clerkid|email|displayname|publicid|firstname|lastname|fullname|username|friendname)/;
+export const IDENTITY =
+  /(userid|clerkid|viewerid|ownerid|senderid|friendid|actorid|inviterid|inviteeid|accountid|playerid|email|displayname|publicid|firstname|lastname|fullname|username|friendname)/;
 
 /** Imports a prompt builder may not take directly. */
 const IDENTITY_IMPORT = /^@clerk\/|(^|\/)auth$|\/social\/|\/admin\/accounts$/;
 
 // `buildParams(` is the eval harness's request: a script that builds one sends it through `eval/lib/batch.mts`.
-const SENDS = [/\bcallModel\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/];
+// The sending calls too, not only a client's construction: a module handed a client sends with it.
+const SENDS = [
+  /\bcallModel\(/, /new Anthropic\(/, /api\.anthropic\.com\/v1\/messages/, /\bbuildParams\(/,
+  /\.messages\.(create|stream|countTokens)\(/, /\.batches\.create\(/,
+  // A module typed to take a client sends with whatever name it gives it (`opts.client.create(`).
+  /Anthropic\["messages"\]/,
+];
+
+/** Library types whose own members are not data a builder was handed. Utility types (`Pick`, `Omit`, `Partial`,
+ *  `Record`) are NOT here: their properties are the app type's, narrowed, and are walked. */
+const BUILTIN = new Set([
+  "Date", "RegExp", "Map", "Set", "ReadonlyMap", "ReadonlySet", "WeakMap", "WeakSet", "Array", "ReadonlyArray",
+  "Promise", "PromiseLike", "Function", "String", "Number", "Boolean", "Symbol", "BigInt", "Error", "Uint8Array",
+  "ArrayBuffer", "Iterator", "IterableIterator", "Generator", "AbortSignal", "URL",
+]);
 
 async function walkFiles(root, dir, out) {
   for (const e of await readdir(join(root, dir), { withFileTypes: true })) {
@@ -139,10 +159,11 @@ export function identityPaths(root, builders = BUILDERS) {
         continue;
       }
       const type = checker.getTypeOfSymbolAtLocation(sym, sf);
-      for (const sig of type.getCallSignatures()) {
+      const sigs = type.getCallSignatures();
+      if (sigs.length === 0) walk(type, `${b.file}#${fn}`, 0, new Set());
+      for (const sig of sigs) {
         for (const p of sig.getParameters()) {
-          const seen = new Set();
-          walk(checker.getTypeOfSymbolAtLocation(p, sf), `${b.file}#${fn}(${p.name})`, 0, seen);
+          walk(checker.getTypeOfSymbolAtLocation(p, sf), `${b.file}#${fn}(${p.name})`, 0, new Set());
         }
       }
     }
@@ -159,10 +180,19 @@ export function identityPaths(root, builders = BUILDERS) {
     // Arrays, tuples, Map, Set, Promise: their element types.
     const args = type.flags & ts.TypeFlags.Object && type.objectFlags & ts.ObjectFlags.Reference ? checker.getTypeArguments(type) : [];
     for (const a of args) walk(a, `${path}[]`, depth + 1, seen);
-    const decl = type.getSymbol()?.declarations?.[0];
-    // A library type (Date, RegExp, Map itself): its own members are not data the builder was handed.
-    if (decl && /node_modules|typescript\/lib/.test(decl.getSourceFile().fileName)) return;
-    if (type.getCallSignatures().length > 0 && checker.getPropertiesOfType(type).length === 0) return;
+    const sym = type.getSymbol();
+    const file = sym?.declarations?.[0]?.getSourceFile().fileName ?? "";
+    // A built-in (Date, Map itself) or a third-party type (zod, drizzle): its own members are not data the builder
+    // was handed. A utility type is declared in the TypeScript lib too, but narrows an app type, so it is walked.
+    if (/[\\/]typescript[\\/]lib[\\/]/.test(file) ? BUILTIN.has(sym?.name ?? "") : /node_modules/.test(file)) return;
+    // A function: what it is handed and what it hands back.
+    for (const sig of type.getCallSignatures()) {
+      for (const p of sig.getParameters()) {
+        const d = p.valueDeclaration ?? p.declarations?.[0];
+        if (d) walk(checker.getTypeOfSymbolAtLocation(p, d), `${path}(${p.name})`, depth + 1, seen);
+      }
+      walk(sig.getReturnType(), `${path}()`, depth + 1, seen);
+    }
     for (const info of checker.getIndexInfosOfType(type)) walk(info.type, `${path}[key]`, depth + 1, seen);
     for (const prop of checker.getPropertiesOfType(type)) {
       const at = `${path}.${prop.name}`;
