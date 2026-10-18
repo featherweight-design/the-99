@@ -224,6 +224,26 @@ describe("cancelPlanAction / keepPlanAction", () => {
       expect(m.setPlanCancelling).toHaveBeenCalledTimes(1);
     }
   });
+  it("KEEP is a purchase: off with the switch off or killed, and nothing is written", async () => {
+    for (const env of [{}, { PAYMENTS_ENABLED: "off" }]) {
+      m.requestSwitchEnv.mockResolvedValue(env);
+      expect(await keepPlanAction()).toEqual({ ok: false, reason: "off" });
+    }
+    expect(m.setPlanCancelling).not.toHaveBeenCalled();
+  });
+  it("KEEP is blocked while buying is paused, and fails closed when the block cannot be read", async () => {
+    m.purchaseBlocked.mockResolvedValueOnce(true);
+    expect(await keepPlanAction()).toEqual({ ok: false, reason: "blocked" });
+    m.purchaseBlocked.mockRejectedValueOnce(new Error("db"));
+    expect(await keepPlanAction()).toEqual({ ok: false, reason: "failed" });
+    expect(m.setPlanCancelling).not.toHaveBeenCalled();
+  });
+  it("CANCEL ignores the switch and the block, and never reads the block", async () => {
+    m.requestSwitchEnv.mockResolvedValue({ PAYMENTS_ENABLED: "off" });
+    m.purchaseBlocked.mockResolvedValue(true);
+    expect(await cancelPlanAction()).toEqual({ ok: true, unchanged: false });
+    expect(m.purchaseBlocked).not.toHaveBeenCalled();
+  });
   it("is unconfigured without a Stripe client", async () => {
     m.stripeClient.mockReturnValue(null);
     expect(await keepPlanAction()).toEqual({ ok: false, reason: "unconfigured" });

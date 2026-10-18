@@ -93,16 +93,25 @@ export async function buyPlanAction(planId: unknown, actionId: unknown): Promise
 }
 
 /**
- * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
+ * The plan card's outcomes (U3a). `ok`: done (`unchanged` when the plan was already in that state). `off` and `blocked`: a KEEP
+ * only (it restores renewal, which is a purchase): payments are off for the reader, or buying is paused. `unconfigured`: no usable key or origin. `not_found`: no live plan of this reader's own
  * (a subscription Stripe does not tag as theirs answers the same, with no detail). `failed`: Stripe or the database did not answer.
  */
 export type PlanChangeOutcome =
   | { ok: true; unchanged: boolean }
-  | { ok: false; reason: "unconfigured" | "not_found" | "failed" };
+  | { ok: false; reason: "off" | "blocked" | "unconfigured" | "not_found" | "failed" };
 
 async function changePlan(cancel: boolean): Promise<PlanChangeOutcome> {
-  // NOT gated on the switch: a reader who holds a plan keeps managing it with payments off (O2, O3), as the receipt does.
+  // A CANCEL is not gated on the switch: a reader who holds a plan keeps managing it with payments off (O2, O3), as the
+  // receipt does. A KEEP puts the renewal back, which is a purchase: it needs the switch and no purchase block, and
+  // fails closed when the block cannot be read.
   const userId = await requireUserId();
+  if (!cancel) {
+    if (!paymentsEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
+    const blocked = await purchaseBlocked(userId).catch(() => null);
+    if (blocked === null) return { ok: false, reason: "failed" };
+    if (blocked) return { ok: false, reason: "blocked" };
+  }
   const stripe = stripeClient();
   if (!stripe) return { ok: false, reason: "unconfigured" };
   try {

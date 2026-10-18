@@ -10,7 +10,7 @@ const sub = (status: string, cancel: boolean, end: Date | null) => ({ status, ca
 
 describe("planCardFacts", () => {
   it("K1: no subscription is the offer", () => {
-    expect(planCardFacts(null, {}, NOW)).toEqual({ state: "offer", endsAt: null, days: null });
+    expect(planCardFacts(null, {}, NOW)).toEqual({ state: "offer", cancelling: false, endsAt: null, days: null });
   });
 
   it.each(["canceled", "incomplete_expired"])("K6: an ended subscription (%s) is the offer again", (status) => {
@@ -20,7 +20,7 @@ describe("planCardFacts", () => {
   });
 
   it.each(["active", "trialing"])("K2: %s and renewing is active, with the renewal date", (status) => {
-    expect(planCardFacts(sub(status, false, at(20 * DAY)), {}, NOW)).toEqual({ state: "active", endsAt: at(20 * DAY), days: null });
+    expect(planCardFacts(sub(status, false, at(20 * DAY)), {}, NOW)).toEqual({ state: "active", cancelling: false, endsAt: at(20 * DAY), days: null });
   });
 
   it.each(["past_due", "unpaid"])("K5: %s is past due, even when it is cancelling", (status) => {
@@ -29,7 +29,7 @@ describe("planCardFacts", () => {
   });
 
   it("K3: cancelled with the month still running is cancelled, with lots of days left", () => {
-    expect(planCardFacts(sub("active", true, at(20 * DAY)), { planExpiresAt: at(20 * DAY) }, NOW)).toEqual({ state: "cancelled", endsAt: at(20 * DAY), days: 20 });
+    expect(planCardFacts(sub("active", true, at(20 * DAY)), { planExpiresAt: at(20 * DAY) }, NOW)).toEqual({ state: "cancelled", cancelling: true, endsAt: at(20 * DAY), days: 20 });
   });
 
   it("K4: the boundary is exactly three days, the credit line's own (inclusive)", () => {
@@ -46,7 +46,7 @@ describe("planCardFacts", () => {
   it("reads the end from the lots' own expiry before the period end, and from the period end without one", () => {
     expect(planCardFacts(sub("active", true, at(30 * DAY)), { planExpiresAt: at(2 * DAY) }, NOW).state).toBe("ending");
     expect(planCardFacts(sub("active", true, at(2 * DAY)), {}, NOW).state).toBe("ending");
-    expect(planCardFacts(sub("active", true, null), {}, NOW)).toEqual({ state: "cancelled", endsAt: null, days: null });
+    expect(planCardFacts(sub("active", true, null), {}, NOW)).toEqual({ state: "cancelled", cancelling: true, endsAt: null, days: null });
   });
 
   it("an incomplete first payment is not an offer (Checkout would refuse it as already)", () => {
@@ -68,13 +68,32 @@ describe("planCardFacts", () => {
 });
 
 describe("reachedChange", () => {
-  it("a cancel is reached by any cancelled state or an ended plan, never by active or past due", () => {
-    const reached = (["offer", "active", "cancelled", "ending", "pastDue"] as PlanCardState[]).filter((s) => reachedChange("cancel", s));
-    expect(reached).toEqual(["offer", "cancelled", "ending"]);
+  const states: PlanCardState[] = ["offer", "active", "cancelled", "ending", "pastDue"];
+  it("a cancel is reached once the plan is cancelling in ANY plan-holding state (past due included), or has ended", () => {
+    expect(states.filter((s) => reachedChange("cancel", s, s === "cancelled" || s === "ending"))).toEqual(["offer", "cancelled", "ending"]);
+    expect(reachedChange("cancel", "pastDue", true)).toBe(true);
+    expect(reachedChange("cancel", "pastDue", false)).toBe(false);
+    expect(reachedChange("cancel", "active", false)).toBe(false);
   });
-  it("a keep is reached by active alone", () => {
-    const reached = (["offer", "active", "cancelled", "ending", "pastDue"] as PlanCardState[]).filter((s) => reachedChange("keep", s));
-    expect(reached).toEqual(["active"]);
+  it("a keep is reached once a plan-holding row is not cancelling, past due included, and never by the offer", () => {
+    expect(reachedChange("keep", "active", false)).toBe(true);
+    expect(reachedChange("keep", "pastDue", false)).toBe(true);
+    expect(reachedChange("keep", "pastDue", true)).toBe(false);
+    expect(reachedChange("keep", "cancelled", true)).toBe(false);
+    expect(reachedChange("keep", "offer", false)).toBe(false);
+  });
+});
+
+describe("planCardFacts: past due and cancelling", () => {
+  it("is past due AND cancelling when the webhook stored cancel_at_period_end while Stripe retries", () => {
+    expect(planCardFacts(sub("past_due", true, at(20 * DAY)), { planExpiresAt: at(20 * DAY) }, NOW)).toEqual({ state: "pastDue", cancelling: true, endsAt: at(20 * DAY), days: 20 });
+    expect(planCardFacts(sub("past_due", false, at(20 * DAY)), {}, NOW)).toEqual({ state: "pastDue", cancelling: false, endsAt: at(20 * DAY), days: null });
+  });
+  it("carries cancelling for the plain states and not for the offer", () => {
+    expect(planCardFacts(sub("active", true, at(20 * DAY)), {}, NOW).cancelling).toBe(true);
+    expect(planCardFacts(sub("active", false, at(20 * DAY)), {}, NOW).cancelling).toBe(false);
+    expect(planCardFacts(null, {}, NOW).cancelling).toBe(false);
+    expect(planCardFacts(sub("canceled", true, at(20 * DAY)), {}, NOW).cancelling).toBe(false);
   });
 });
 
@@ -88,6 +107,12 @@ describe("cardPresses", () => {
       ending: { subscribe: false, keep: true, cancel: false, updateCard: false },
       pastDue: { subscribe: false, keep: false, cancel: true, updateCard: true },
     });
+  });
+  it("past due and cancelling offers Keep and Update card, not Cancel (Keep is a purchase, so reduced takes it)", () => {
+    expect(cardPresses("pastDue", false, true)).toEqual({ subscribe: false, keep: true, cancel: false, updateCard: true });
+    expect(cardPresses("pastDue", true, true)).toEqual({ subscribe: false, keep: false, cancel: false, updateCard: true });
+    expect(cardPresses("pastDue", false, false)).toEqual({ subscribe: false, keep: false, cancel: true, updateCard: true });
+    expect(cardPresses("pastDue", true, false)).toEqual({ subscribe: false, keep: false, cancel: true, updateCard: true });
   });
   it("reduced takes away Subscribe and Keep my plan and nothing else (O2, O3)", () => {
     for (const s of all) {

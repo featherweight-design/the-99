@@ -141,13 +141,16 @@ export const creditsPageCopy = {
     keepSays: (on: string | null) => `Keeps your credits and renews${on ? ` on ${on}` : ""}, as before.`,
     cancelledLive: (n: number, on: string | null) => `Plan canceled. Your ${creditWord(n)} last until ${on ?? "the end of your paid month"}.`,
     keptLive: (on: string | null) => `Plan kept.${on ? ` It renews on ${on}.` : ""}`,
-    dueTitle: (on: string | null) => (on ? `Your ${on} payment didn’t go through` : "Your payment didn’t go through"),
+    /** Never names a date: the subscription's period end is not the failed invoice's date. */
+    dueTitle: "Your payment didn’t go through",
     dueSays: (n: number) => `Stripe will try again over the next few days, and your ${creditWord(n)} still work meanwhile. If every try fails, the plan ends and they expire.`,
     /** A cancel or keep that was accepted but whose new state has not reached the page yet, and the line when it never does. */
     working: "Updating your plan",
     slow: "Still updating your plan. Reload in a moment to see it.",
     /** Why a Cancel, Keep or Update card press did nothing. Placeholders: not in the handoff's strings file. */
     outcome: {
+      off: "Keeping your plan isn’t available right now.",
+      blocked: "Buying is paused on this account, so the plan can’t be kept. Email support@the-99.dev and we’ll sort it out.",
       unconfigured: "Plan changes aren’t set up here yet.",
       not_found: "We couldn’t find a plan on your account.",
       failed: "Couldn’t update your plan. Try again.",

@@ -21,6 +21,7 @@ import { buyPlanAction, cancelPlanAction, keepPlanAction, manageCardAction } fro
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { PlanCardModel } from "../../lib/payments/page-model";
 import { cardPresses, reachedChange, type PlanChange } from "../../lib/payments/plan-card-rule";
+import type { BuyFailure } from "./pack-offers";
 import { OfferArt } from "./offer-art";
 
 const c = creditsPageCopy;
@@ -41,12 +42,14 @@ const NEUTRAL = `${BTN} border border-solid border-[color:var(--border-strong)] 
 const TEXT = "inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] self-start border-0 bg-transparent p-0 text-[13.5px] font-semibold disabled:cursor-default disabled:opacity-70 md:min-h-[32px] pointer-coarse:min-h-[44px]";
 const SAYS = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]";
 
-export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast }: {
+export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast, onFailure }: {
   plan: PlanCardModel;
   /** Payments are off for this reader: no Subscribe, no Keep my plan (plan O2, O3). */
   reduced?: boolean;
   timing?: PlanTiming;
   onToast: (text: string) => void;
+  /** Subscribe answered `off` or `blocked`: the page's shared Buy handler, so the offer leaves and a pause raises its band. */
+  onFailure?: (reason: BuyFailure) => void;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<PlanChange | null>(null);
@@ -65,7 +68,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
     return () => window.removeEventListener("pageshow", restored);
   }, []);
 
-  const waiting = pending !== null && !reachedChange(pending, plan.state);
+  const waiting = pending !== null && !reachedChange(pending, plan.state, plan.cancelling);
   useEffect(() => {
     if (!waiting) return;
     let tries = 0;
@@ -84,7 +87,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
 
   const p = c.plan;
   const { state, offer, on, credits } = plan;
-  const presses = cardPresses(state, reduced);
+  const presses = cardPresses(state, reduced, plan.cancelling);
   const price = offer.price;
 
   async function change(kind: PlanChange) {
@@ -116,6 +119,8 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
       if (out.ok) {
         sent = true;
         window.location.assign(out.url);
+      } else if ((out.reason === "off" || out.reason === "blocked") && onFailure) {
+        onFailure(out.reason);
       } else {
         onToast(c.buy[out.reason]);
       }
@@ -151,6 +156,8 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
 
   const held = busy !== null || waiting;
   const cancelling = state === "cancelled" || state === "ending";
+  // Set to end, whatever the state: past due and cancelling shows the scheduled expiry as well as the payment warning.
+  const scheduled = plan.cancelling && state !== "offer";
   const border = state === "ending" || state === "pastDue" ? BORDER.warn : state === "offer" ? BORDER.plain : cancelling ? BORDER.plain : BORDER.on;
   const warnText = "text-[color:var(--warning)]";
   const liveText = waiting || pending === null ? "" : pending === "cancel" ? p.cancelledLive(credits, on) : p.keptLive(on);
@@ -182,7 +189,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
             </>
           ) : null}
           {cancelling ? <span className={`font-mono text-[12px] ${state === "ending" ? warnText : "text-[color:var(--fg-muted)]"}`}>{p.ended(on)}</span> : null}
-          {state === "pastDue" ? <span className={`font-mono text-[12px] ${warnText}`}>{p.dueTitle(on)}</span> : null}
+          {state === "pastDue" ? <span className={`font-mono text-[12px] ${warnText}`}>{p.dueTitle}</span> : null}
         </div>
         <span className={cancelling ? "opacity-45 saturate-[.3]" : undefined}><OfferArt count={offer.units} /></span>
       </div>
@@ -195,6 +202,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
         </ul>
       ) : null}
       {state === "pastDue" ? <p className={SAYS}>{p.dueSays(credits)}</p> : null}
+      {state === "pastDue" && scheduled ? <p className={`${SAYS} text-[color:var(--fg-body)]`}>{p.endedSays(credits, on)}</p> : null}
       {cancelling ? <p className={`${SAYS} ${state === "ending" ? warnText : "text-[color:var(--fg-body)]"}`}>{state === "ending" ? p.soon(credits, plan.days ?? 0, on) : p.endedSays(credits, on)}</p> : null}
 
       {presses.subscribe ? (
@@ -203,7 +211,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.via}</span>
         </div>
       ) : null}
-      {presses.keep ? (
+      {presses.keep && state !== "pastDue" ? (
         <>
           <button type="button" onClick={() => void change("keep")} disabled={held} aria-busy={busy === "keep" || (waiting && pending === "keep") || undefined} className={OUTLINE}>{p.keep}</button>
           <p className={SAYS}>{p.keepSays(on)}</p>
@@ -222,6 +230,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast 
         <div className="flex flex-col gap-[8px] md:flex-row md:items-center md:gap-[16px]">
           {updateButton}
           {cancelButton}
+          {presses.keep ? <button type="button" onClick={() => void change("keep")} disabled={held} aria-busy={busy === "keep" || (waiting && pending === "keep") || undefined} className={OUTLINE}>{p.keep}</button> : null}
         </div>
       ) : null}
       {waiting ? <p role="status" className={`${SAYS} font-mono`}>{p.working}</p> : null}

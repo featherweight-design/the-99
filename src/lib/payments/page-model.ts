@@ -36,6 +36,8 @@ export type HistoryItem = {
 /** The plan card (K1 to K6), formatted for the client: dates are the server's, in UTC, like the history's. */
 export type PlanCardModel = {
   state: PlanCardState;
+  /** Set to end at the period end, in any plan-holding state (a past-due plan can be cancelling too). */
+  cancelling: boolean;
   offer: PlanOffer;
   /** `November 16`: when the plan renews (active, past due) or ends (cancelled, ending), or null. */
   on: string | null;
@@ -103,9 +105,10 @@ export function buildCreditsModel(input: {
   // The offer is a purchase, so it follows the switch; a plan the reader already holds is theirs to manage (O2, O3).
   const planCard: PlanCardModel | null = facts.state === "offer" && !input.switchOn ? null : {
     state: facts.state,
+    cancelling: facts.cancelling,
     offer: planOffer(),
     on: facts.endsAt ? longDate(facts.endsAt) : null,
-    credits: facts.state === "cancelled" || facts.state === "ending" ? (a.planExpiring ?? plan) : plan,
+    credits: facts.cancelling ? (a.planExpiring ?? plan) : plan,
     days: facts.days,
   };
   return {

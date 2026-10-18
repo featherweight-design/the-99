@@ -6,8 +6,8 @@ import { packOffers } from "../../lib/copy/credits-page";
 import { buildCreditsModel, type AllowanceFacts } from "../../lib/payments/page-model";
 import type { CreditHistoryRow } from "../../lib/payments/return";
 
-const m = vi.hoisted(() => ({ buy: vi.fn(), receipt: vi.fn(), readReturn: vi.fn(), refresh: vi.fn() }));
-vi.mock("../../app/credits/actions", () => ({ buyPackAction: m.buy, buyPlanAction: vi.fn(), cancelPlanAction: vi.fn(), keepPlanAction: vi.fn(), manageCardAction: vi.fn(), receiptAction: m.receipt, readReturnAction: m.readReturn }));
+const m = vi.hoisted(() => ({ buyPlan: vi.fn(), buy: vi.fn(), receipt: vi.fn(), readReturn: vi.fn(), refresh: vi.fn() }));
+vi.mock("../../app/credits/actions", () => ({ buyPackAction: m.buy, buyPlanAction: m.buyPlan, cancelPlanAction: vi.fn(), keepPlanAction: vi.fn(), manageCardAction: vi.fn(), receiptAction: m.receipt, readReturnAction: m.readReturn }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh, push: vi.fn() }) }));
 
 import { CreditsView } from "./credits-view";
@@ -319,5 +319,20 @@ describe("the plan on the page", () => {
     expect(screen.getByText("Renews November 16. Cancel any time below.")).toBeTruthy();
     expect(screen.queryByText(/pack credits added/)).toBeNull();
     expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
+  });
+
+  it("R3 then a cancel on the page: the renew line goes, the band keeps its count", () => {
+    render(<CreditsView model={model({ allowance: allowance({ plan: 60 }), subscription: sub(true, 20), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 60, plan: true } }} />);
+    expect(screen.getByText("Plan started: 60 credits added")).toBeTruthy();
+    expect(screen.queryByText(/Renews .*Cancel any time below/)).toBeNull();
+  });
+
+  it.each([["off", "Buying credits isn’t available right now."], ["blocked", "Buying is paused on this account."]] as const)("a Subscribe answered %s takes the offers away like Buy pack", async (reason, text) => {
+    m.buyPlan.mockResolvedValue({ ok: false, reason });
+    render(<CreditsView model={model()} ret={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Subscribe/ }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: /^Subscribe/ })).toBeNull());
+    expect(screen.queryByRole("button", { name: /^Buy pack/ })).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain(text);
   });
 });
