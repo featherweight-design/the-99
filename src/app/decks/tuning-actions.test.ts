@@ -741,13 +741,12 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
 });
 
 describe("runTuning's refused reservation", () => {
-  it("names the spend cap's pause, the owner's share and the spent allowance apart", async () => {
+  it("names the owner's share and the spent allowance apart", async () => {
     const said = async (kind: string) => {
       calls.startKind = kind;
       const result = await runTuning(DECK, { anyway: true });
       return result.ok ? null : result.message;
     };
-    expect(await said("paused")).toBe(creditsCopy.pausedServer);
     expect(await said("ownerShare")).toBe(creditsCopy.ownerShare(new Date()));
     expect(await said("allowance")).toBe(deckTuningCopy.allowance.spent);
   });

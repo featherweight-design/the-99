@@ -42,7 +42,7 @@ export type FitsReadPanel = {
 
 export type FitsReadPress =
   | { ok: true; panel: FitsReadPanel }
-  | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "paused" | "ownerShare" };
+  | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" };
 
 type Deps = {
   /** `env`: the reader's resolved switches, for `loadFits`' claim read and art. */

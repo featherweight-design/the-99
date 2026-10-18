@@ -29,7 +29,7 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
  *   the results' own retry, which changes only what the page draws while the read is pending.
  * - Otherwise the read is begun: its inputs read and its credit reserved before the redirect, its
  *   two calls run after the response (`after`), and the results attach to it by `r`. A repeat lands
- *   on the stored read, charged nothing. No credit left, the app paused, the owner's share used, or
+ *   on the stored read, charged nothing. No credit left, the owner's share used, or
  *   a read already running: the free results, with the words kept and unread (7l, 7n).
  */
 export async function submitChoose(query: string, from: "form" | "results" = "form"): Promise<{ kind: "refused" }> {

@@ -26,7 +26,7 @@ import {
  * split, as its `outside` (spend no `model_calls` row carries). The ledgers reach it as `evals`, a
  * figure of its own: they are repo files every deployment reads, so they are no environment's
  * System spend and count toward no cap. The month is a UTC calendar month, and a row belongs to the month its
- * `created_at` (or a ledger entry's `at`) falls in, as the spend cap counts it.
+ * `created_at` (or a ledger entry's `at`) falls in, as the owner's share counts it.
  */
 
 // Drizzle drops the table from a column interpolated into a single-table select's projection

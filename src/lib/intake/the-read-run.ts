@@ -35,7 +35,7 @@ export type TheReadOutcome =
   | { kind: "nothing"; readId: string; result: TheReadResult; repeat: boolean }
   | { kind: "failed"; errorClass: ReadErrorClass }
   | { kind: "stopped" }
-  | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" | "reused" };
+  | { kind: "allowance" | "ownerShare" | "in_flight" | "reused" };
 
 /** `cache`: send the system prompt as a cached prefix. Only the whole list, which every unfiltered
  *  press shares, is worth the write premium; a filtered press's own lines are never read back. */

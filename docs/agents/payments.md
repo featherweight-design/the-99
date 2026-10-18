@@ -18,8 +18,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   asks `hasCredit`, the server gates (`tuning/gate.ts`, `synopsis/read.ts`,
   intake's `closedBy`) and the panels alike (tuning, cuts, fits, and the overview's press note and refusal), after the
   owner's `ownerShare`. (The app-wide spend cap was removed on 2026-10-17, and the Anthropic workspace limits
-  bound the whole app's spend. Nothing produces its `paused` state any more; the type and the readers that still
-  branch on it are deleted in two follow-up PRs.) `src/lib/model/credit-gates.test.ts` fails, anywhere else in `src/`, on a
+  bound the whole app's spend. Its `paused` state is gone from the type, the refusals and every reader.) `src/lib/model/credit-gates.test.ts` fails, anywhere else in `src/`, on a
   comparison of `used` against `limit`, on `limit - used` worked out by hand, and on a comparison of the free count.
   The free COUNT a line shows (`N of 5 left`) is still the free allowance's alone: how a paid balance is drawn is the
   buying screens' design (U1). Purged

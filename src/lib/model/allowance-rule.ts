@@ -16,8 +16,8 @@
  * synopsis.
  *
  * Owner 10, friends 5 (3 until 2026-10-09, when Hugh raised it): Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
- * when the app-wide spend cap arrived (`spend-rule.ts`): the cap bounds the month's dollars, so
- * the per-player number only has to share the budget fairly, and the owner — who tests every
+ * when an app-wide spend cap arrived (removed 2026-10-17; the Anthropic workspace limits bound the
+ * month's dollars now), so the per-player number only has to share the budget fairly, and the owner — who tests every
  * change — gets more presses than a friend. Which account is the owner is `MODEL_OWNER_USER_ID`,
  * read once in `allowance.ts` (`dailyLimitFor`). Since 2026-10-13 a group's allowance and the
  * app-wide default (`MODEL_DAILY_ALLOWANCE`) come first; `dailyLimit` below holds the order.
@@ -123,13 +123,11 @@ export type Allowance = {
   /** When the NEXT counted unit leaves the window, spent or not: the credit line's "reset at"
    *  while credits remain as well as once they are gone. Null when nothing counts. */
   nextAt: Date | null;
-  /** Present while the app-wide spend cap refuses every call: until the 1st of next UTC month.
-   *  OPTIONAL, so an Allowance written without it (every fixture) still type-checks. */
-  paused?: { until: Date };
-  /** True for the owner once their month's testing share cannot fit one more call. */
+  /** True for the owner once their month's testing share cannot fit one more call. OPTIONAL, so
+   *  an Allowance written without it (every fixture) still type-checks. */
   ownerShare?: boolean;
   /** Paid credits left (`credit-rule.ts`), spent only once `used` reaches `limit`: plan credits
-   *  first, then pack credits. OPTIONAL like `paused`, and absent while the player holds no lot. */
+   *  first, then pack credits. OPTIONAL like `ownerShare`, and absent while the player holds no lot. */
   plan?: number;
   pack?: number;
   /** Paid runs counted in the window (`PAID_DAILY_LIMIT`'s counter), present with `plan`/`pack`. */
@@ -148,8 +146,8 @@ export type Allowance = {
  *
  * `freeRoom`: the free allowance can fund one more run. `hasCredit`: something can, the free allowance
  * or a paid lot (`plan` and `pack`, spent once the free allowance is gone; `credit-rule.ts`). Neither
- * says anything about the spend cap: `paused` and `ownerShare` refuse a press whatever the credits,
- * and every caller checks them first.
+ * says anything about the owner's share: `ownerShare` refuses a press whatever the credits, and every
+ * caller checks it first.
  */
 export function freeRoom(a: { used: number; limit: number }): boolean {
   return a.used < a.limit;

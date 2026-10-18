@@ -235,7 +235,6 @@ export async function runTuning(
   if (gate && !(gate.kind === "unchanged" && (anyway || notes !== null))) return { ok: false, message: gate.message };
 
   const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
-  if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };

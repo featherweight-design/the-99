@@ -224,7 +224,7 @@ describe("runProposedCuts when the start refuses", () => {
   it.each([
     ["allowance", deckTuningCopy.allowance.spent],
     ["in_flight", deckTuningCopy.announce.started],
-    ["paused", creditsCopy.pausedServer],
+    ["ownerShare", creditsCopy.ownerShare(new Date())],
     ["allLocked", lockedCardsCopy.tuning.allLocked("Gishath")],
   ])("%s makes no model call and settles nothing", async (kind, message) => {
     calls.startKind = kind;

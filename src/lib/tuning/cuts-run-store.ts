@@ -37,7 +37,7 @@ const asStoredReport = (r: CutsReport): ValidationReport => r as unknown as Vali
 
 export type StartedCutsRun =
   | ({ kind: "started" } & RunHandle)
-  | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" };
+  | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" };
 
 /**
  * ONE transaction: re-check that a card is still open to cut, reserve one `proposed_cuts` unit,

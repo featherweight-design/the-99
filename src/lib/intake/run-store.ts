@@ -241,7 +241,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so the results page can name this read. `ask` is stored with the row (`askOf`). */
   opts: { readId?: string; now?: Date; ask?: string } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; readId: string; useful: boolean; result: TheReadResult | null } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; readId: string; useful: boolean; result: TheReadResult | null } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.

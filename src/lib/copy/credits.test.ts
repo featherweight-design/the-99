@@ -33,10 +33,6 @@ describe("the owner's share copy", () => {
     );
   });
 
-  it("has a server twin with no date in it", () => {
-    expect(creditsCopy.pausedServer).toBe("Paused until the 1st of next month. Nothing you did caused this.");
-  });
-
   // ONE FORMAT: the overview composes its own leads around `standing`, so `first` and `again`
   // must be built from the very same line or the two surfaces drift apart.
   it("exports standing, and first and again compose from it", () => {
