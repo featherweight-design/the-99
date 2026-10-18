@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../credits-page";
+import { HISTORY_RETENTION_DAYS } from "../../collection/retention";
 import { HOLD_MS } from "../../invites/rules";
 import { PAID_DAILY_LIMIT } from "../../model/allowance-rule";
 import { PACKS } from "../../payments/packs";
@@ -40,6 +41,17 @@ describe("the numbers", () => {
 });
 
 describe("the words", () => {
+  it("states the undo window as the history retention holds it", () => {
+    expect(HISTORY_RETENTION_DAYS).toBe(90);
+    expect(privacy).toContain(`kept as history for ${HISTORY_RETENTION_DAYS} days`);
+  });
+
+  it("names card images, not mana symbols, as what Scryfall serves to the browser", () => {
+    expect(privacy).toContain("card images load straight from Scryfall");
+    expect(privacy).not.toMatch(/mana symbols load/);
+    expect(readFileSync("src/lib/cards/mana-sprite.ts", "utf8")).toContain("/mana/sprite.svg");
+  });
+
   it("names one support address, the one /credits uses", () => {
     expect(LEGAL_EMAIL).toBe("support@the-99.dev");
     const all = `${privacy}\n${terms}`;

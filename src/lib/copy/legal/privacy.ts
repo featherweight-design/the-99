@@ -15,7 +15,7 @@ export const privacyDoc: LegalDoc = {
       title: "What The 99 keeps",
       blocks: [
         { kind: "p", lead: "Your account.", text: "Sign-in is handled by Clerk, so your email, name and password live with them. The 99 keeps your Clerk account id and builds everything else around it. Your first name becomes your display name for friends: at sign-up if you join through an invite, and otherwise when you first use Friends. You can change it." },
-        { kind: "p", lead: "Your Collection.", text: "When you upload a CSV or paste a list, we keep the cards it matched: each card, how many, which printing, its finish and condition. For each upload we also keep its filename, a few totals, and any lines we couldn’t match, so you can fix them. The file itself isn’t stored. Every later change to your Collection is kept as history, so you can undo it." },
+        { kind: "p", lead: "Your Collection.", text: "When you upload a CSV or paste a list, we keep the cards it matched: each card, how many, which printing, its finish and condition. For each upload we also keep its filename, a few totals, and any lines we couldn’t match, so you can fix them. The file itself isn’t stored. Every later change to your Collection is kept as history for 90 days, so you can undo it within that time." },
         { kind: "p", lead: "Your decks.", text: "Lists, versions, proxies, locks, folders and notes, plus what you write about a deck: its intent, your notes, and the notes on games you log." },
         { kind: "p", lead: "Your games.", text: "When you log a game with a friend, your record keeps their display name and deck name as they were that day, so your history still reads right if they rename things later." },
         { kind: "p", lead: "Smart tools.", text: "Analysis, the Overview, Suggested changes, Help me choose and the other tools that use a credit keep what they produced, so you can read it again. Each run also records which tool ran, how many tokens it used, and what it cost." },
@@ -23,7 +23,7 @@ export const privacyDoc: LegalDoc = {
         { kind: "p", lead: "Credits and purchases.", text: "Your credit balance and where each credit came from. For a purchase we keep Stripe’s ids, the amount, the tax, the currency, the billing country and the status. Your card number never reaches The 99: you type it into Stripe’s checkout." },
         { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting. An invite is valid for up to 7 days, and we erase the address once the invite is resolved or has expired. If that cleanup is delayed, the next sweep does it.` },
         { kind: "p", lead: "Card scanning.", text: "The scanner turns what your camera sees into a short list of numbers on your phone, and only those numbers are sent to match the card. No photo leaves your device." },
-        { kind: "p", lead: "Small things.", text: "Your theme, a few view choices (grid or list, a sort) and which About entries you’ve seen, kept in cookies and your browser’s storage. Recent card searches are kept on your device and cleared when you sign out. The 99 has no analytics or advertising trackers." },
+        { kind: "p", lead: "Small things.", text: "Your theme and a few view choices (grid or list, a sort) are kept in cookies and your browser’s storage. Which About entries you’ve seen is kept with your account, so clearing your browser doesn’t reset it. Recent card searches are kept on your device and cleared when you sign out. The 99 has no analytics or advertising trackers." },
       ],
     },
     {
@@ -40,7 +40,7 @@ export const privacyDoc: LegalDoc = {
             { lead: "Stripe:", text: "checkout, tax and receipts. Stripe gets your email and your account id when you buy, plus the billing address you enter at checkout." },
             { lead: "Resend:", text: "sends the six-digit code when someone joins by QR code." },
             { lead: "Anthropic:", text: "the AI model behind the smart tools. A run sends the deck or the cards it is about, your game records where the tool reads them, and the words you typed for it (a deck’s intent, a run’s notes). It sends no account id, email or name." },
-            { lead: "Scryfall:", text: "card images and mana symbols load straight from Scryfall into your browser, so Scryfall sees your IP address, like any site serving an image." },
+            { lead: "Scryfall:", text: "card images load straight from Scryfall into your browser, so Scryfall sees your IP address, like any site serving an image." },
             { lead: "jsDelivr and Hugging Face:", text: "the card scanner downloads its software and models from these when you start the camera." },
           ],
         },
