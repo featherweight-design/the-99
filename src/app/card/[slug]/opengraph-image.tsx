@@ -56,18 +56,21 @@ async function render(card: OgCardInput, pictured = card.imageUri !== null): Pro
   return Buffer.from(await image.arrayBuffer()).toString("base64");
 }
 
-function png(base64: string): Response {
-  return new Response(Buffer.from(base64, "base64"), { headers: { "content-type": contentType, "cache-control": CACHE_CONTROL } });
+function png(base64: string, cacheControl: string = CACHE_CONTROL): Response {
+  return new Response(Buffer.from(base64, "base64"), { headers: { "content-type": contentType, "cache-control": cacheControl } });
 }
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const [{ slug }, env] = await Promise.all([params, resolveSwitchEnv(null)]);
   if (!publicPagesEnabled(env)) return new Response(null, { status: 404 });
+  // The image's generation is read BEFORE the card: a refresh landing during the card read then stores newer data under an
+  // older key (retired at once), never an older card's picture under the newer key.
+  const generation = await catalogGeneration();
   const result = await readPublicCard(slug);
   const parsed = parsePublicSlug(slug);
   if (result.kind !== "ok" || !parsed) return new Response(null, { status: 404 });
   const { card } = result;
-  const stored = unstable_cache(() => render(card), publicCardImageKey(await catalogGeneration(), parsed.hex), {
+  const stored = unstable_cache(() => render(card), publicCardImageKey(generation, parsed.hex), {
     revalidate: PUBLIC_CARD_REVALIDATE_S,
   });
   try {
@@ -76,6 +79,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     // Scryfall's image host not answering is the likely failure: the no-image form is drawn and served, NOT stored, so the
     // next request tries the art again.
     console.warn(`[og] card image ${parsed.hex} drawn without its art:`, e instanceof Error ? e.message : e);
-    return png(await render(card, false));
+    // `no-store` too: a browser or shared cache must not hold the artless form after Scryfall recovers.
+    return png(await render(card, false), "no-store");
   }
 }

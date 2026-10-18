@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import NotFound from "../../app/not-found";
 import { PublicNotFound } from "./not-found";
+import CardNotFound from "../../app/card/[slug]/not-found";
+import CommanderNotFound from "../../app/commander/[slug]/not-found";
 
 describe("the public not-found (C3)", () => {
   it("draws the top bar, the 404, the shipped heading and caption, and ONE way out, Back home, as a plain link", () => {
@@ -29,5 +31,14 @@ describe("the public not-found (C3)", () => {
     expect(app.container.firstElementChild!.className).toBe(publicBody);
     expect(screen.getByText("View decks").closest("a")?.getAttribute("href")).toBe("/decks");
     expect(screen.getByText("Back home").closest("a")?.getAttribute("href")).toBe("/");
+  });
+
+  it("is what both public routes draw for an unknown address: the card's and the commander's", () => {
+    for (const Boundary of [CardNotFound, CommanderNotFound]) {
+      const { unmount } = render(<Boundary />);
+      expect(screen.getByTestId("public-not-found")).toBeTruthy();
+      expect(screen.queryByText("View decks")).toBeNull();
+      unmount();
+    }
   });
 });

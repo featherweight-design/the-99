@@ -5,10 +5,11 @@ const read = vi.hoisted(() => vi.fn());
 const env = vi.hoisted(() => ({ value: { PUBLIC_PAGES_ENABLED: "true" } as Record<string, string> }));
 const keys = vi.hoisted(() => [] as string[][]);
 const store = vi.hoisted(() => new Map<string, unknown>());
+const gen = vi.hoisted(() => ({ value: "1000" }));
 
 vi.mock("../../../lib/public/cached-card", async (orig) => ({ ...(await orig<typeof import("../../../lib/public/cached-card")>()), readPublicCard: read }));
 vi.mock("../../../lib/switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => env.value as unknown as NodeJS.ProcessEnv) }));
-vi.mock("../../../lib/cache/catalog-generation", () => ({ catalogGeneration: vi.fn(async () => "1000") }));
+vi.mock("../../../lib/cache/catalog-generation", () => ({ catalogGeneration: vi.fn(async () => gen.value) }));
 // A stand-in for Next's data cache: stores what the function returns under its key, and nothing that throws.
 vi.mock("next/cache", () => ({
   unstable_cache: (fn: () => Promise<unknown>, key: string[]) => async () => {
@@ -35,6 +36,7 @@ beforeEach(() => {
   keys.length = 0;
   store.clear();
   env.value = { PUBLIC_PAGES_ENABLED: "true" };
+  gen.value = "1000";
 });
 
 describe("the card's link-preview image (C2)", () => {
@@ -62,6 +64,7 @@ describe("the card's link-preview image (C2)", () => {
     const first = await image("sol-ring-6ad8011d3471");
     expect(first.status).toBe(200);
     expect(first.headers.get("content-type")).toBe("image/png");
+    expect(first.headers.get("cache-control")).toBe("public, max-age=3600");
     const bytes = new Uint8Array(await first.arrayBuffer());
     expect([...bytes.slice(0, 4)]).toEqual(PNG);
     await image("sol-rnig-6ad8011d3471");
@@ -79,7 +82,18 @@ describe("the card's link-preview image (C2)", () => {
     expect(res.status).toBe(200);
     expect([...new Uint8Array(await res.arrayBuffer()).slice(0, 4)]).toEqual(PNG);
     expect(store.size).toBe(0);
+    // Not held by a browser or shared cache either: the next request tries the art again.
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  }, 30_000);
+
+  it("keys the image on the generation read BEFORE the card, so a refresh mid-read never files an old card under the new key", async () => {
+    read.mockImplementation(async () => {
+      gen.value = "2000"; // the catalog refreshes while the card is being read
+      return { kind: "ok", card: sol, canonicalSlug: "sol-ring-6ad8011d3471" };
+    });
+    await image("sol-ring-6ad8011d3471");
+    expect(keys.at(-1)?.[1]).toBe("gen:1000");
   }, 30_000);
 });
