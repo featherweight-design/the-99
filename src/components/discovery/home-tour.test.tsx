@@ -1,6 +1,6 @@
 // The tour taken again (discovery R3·2, plan decision 6): `?tour=1` starts the tour whatever `tour_seen_at` says,
 // strips the parameter through `mirrorUrl`, and a second ask starts a fresh run.
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -50,6 +50,7 @@ describe("HomeTour", () => {
 
   it("runs the first-run tour itself on a first-run Home, precon line and all", () => {
     nav.query = "tour=1";
+    window.history.replaceState(null, "", "/?tour=1");
     render(<HomeTour due={false} mode="first-run" precons />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-mode", "first-run");
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
@@ -64,14 +65,18 @@ describe("HomeTour", () => {
 
   it("starts a fresh run on a second ask, after the first was stripped", () => {
     nav.query = "tour=1";
-    const { rerender } = render(<HomeTour due={false} mode="dashboard" precons={false} />);
+    window.history.replaceState(null, "", "/?tour=1");
+    render(<HomeTour due={false} mode="dashboard" precons={false} />);
     expect(mounts.n).toBe(1);
-    nav.query = "";
-    rerender(<HomeTour due={false} mode="dashboard" precons={false} />);
+    // The strip lands, then a second ask from the menu: both are URL moves on a Home that stays mounted, with nothing
+    // re-rendering it from outside and `useSearchParams` (mocked here) never updating, as on a restored kept tree.
+    act(() => window.history.replaceState(null, "", "/"));
     expect(mounts.n).toBe(1);
-    nav.query = "tour=1";
-    rerender(<HomeTour due={false} mode="dashboard" precons={false} />);
+    act(() => window.history.pushState(null, "", "/?tour=1"));
     expect(mounts.n).toBe(2);
-    expect(mirror).toHaveBeenCalledTimes(2);
+    act(() => window.history.replaceState(null, "", "/"));
+    act(() => window.history.pushState(null, "", "/?tour=1"));
+    expect(mounts.n).toBe(3);
+    expect(mirror).toHaveBeenCalledTimes(3);
   });
 });

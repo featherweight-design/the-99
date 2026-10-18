@@ -10,13 +10,17 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLiveQuery } from "../../lib/commanders/live-query";
 import { TOUR_PARAM } from "../../lib/copy/discovery";
 import type { TourMode } from "../../lib/discovery/tour-steps";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { FirstRunTour } from "./first-run-tour";
 
 export function HomeTour({ due, mode, precons }: { due: boolean; mode: TourMode; precons: boolean }) {
-  const asked = useSearchParams()?.get(TOUR_PARAM) === "1";
+  // The live query, seeded from the server's: a second `Take the tour` from the menu is a same-route navigation that
+  // restores the kept Home tree, which `useSearchParams` can miss (`live-query.ts`), and a missed ask would leave the
+  // finished tour closed.
+  const asked = new URLSearchParams(useLiveQuery(useSearchParams()?.toString() ?? "")).get(TOUR_PARAM) === "1";
   // Each ask is its own run: a second `Take the tour` arrives as a fresh `?tour=1` after the first was stripped, and a
   // new key starts the tour again rather than finding the last one finished. Counted during render, so the tour mounts
   // in the same commit as the ask.

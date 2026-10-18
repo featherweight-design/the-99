@@ -395,9 +395,11 @@ async function replays(browser, vp) {
       const first = await replayDashboard(page, vp, userId, { locked: false, via: "menu" });
       // Taken again once more: the stamp, written by the first spend if it was null, does not move.
       const { card, opened } = await startReplay(page, "about");
+      // The stamp check means nothing unless the second replay ran: an unopened tour writes nothing either.
+      report("dashboard: a second replay opens", opened);
       if (opened) await card.getByRole("button", { name: "Skip the tour" }).click();
       const second = await seenAt(userId);
-      report("dashboard: a second replay moves no stamp", !!first && !!second && first.getTime() === second.getTime());
+      report("dashboard: a second replay moves no stamp", opened && !!first && !!second && first.getTime() === second.getTime());
     } finally {
       await context.close();
     }
