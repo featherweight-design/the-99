@@ -73,9 +73,19 @@ export function dailyLimit(input: { groupAllowances: readonly number[]; owner: b
  * Paid runs per player per rolling 24 hours (Hugh, payments scope board 2026-10-13; plan ruling E2).
  * It bounds what a bought credit can spend in a day, whatever the lot holds, and counts exactly as the
  * free allowance does: the same window, a `reserved` row until its TTL, a `spent` row, never a refund.
- * A group's own number comes with the admin PR; `paidRoom` takes the limit it is handed.
+ * A group can set its own (`paidLimit`); `paidRoom` takes the limit it is handed.
  */
 export const PAID_DAILY_LIMIT = 20;
+
+/**
+ * The player's paid limit: their group's, else `PAID_DAILY_LIMIT`. A player is in at most one group
+ * (`flag_group_members.user_id` is its key); taking the largest only mirrors `dailyLimit`'s group step. Pure.
+ */
+export function paidLimit(input: { groupLimits: readonly number[] }): number {
+  // The column is checked 1 to 1000; anything else read here is not a limit.
+  const limits = input.groupLimits.filter((n) => Number.isSafeInteger(n) && n > 0);
+  return limits.length > 0 ? Math.max(...limits) : PAID_DAILY_LIMIT;
+}
 
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 

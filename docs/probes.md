@@ -2386,10 +2386,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   success on the stranded run is refunded; an expired plan lot and revoked units fund nothing; two concurrent presses
   at a balance of one reserve exactly once; a paid run never counts toward the free window; every press gate
   (`hasCredit`, intake's `closedBy`, the synopsis's `wouldSpend`) reads a lot through the real `readAllowance`, open
-  while it holds a credit and shut once it does not; and the purge takes the lots and the runs naming them. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
-  reports, and staging and production are refused by id. Mutation-checked five ways (the window's lot filter, the
+  while it holds a credit and shut once it does not; a group's paid limit (admin plan A1) refuses the run past it,
+  `readAllowance` names it, a limit lowered below today's count stays shut with a time back, and a member moved
+  mid-day to a group without one takes the default 20; and the purge takes the lots and the runs naming them. It
+  WRITES (case n also its own `flag_groups`), so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
+  reports, and staging and production are refused by id. Mutation-checked six ways (the window's lot filter, the
   per-player lock, the plan-before-pack order, a refunded run read as spend, `hasCredit` reduced to the free
-  allowance); each fails it.
+  allowance, `readAllowance` ignoring the group's paid limit); each fails it.
 - `pnpm probe:precon-add` proves adding a precon to a collection against a real database, through the real
   `addPreconForUser`, `applyCollectionChange` (revert) and `preconAddedOn`, on Multiverse Reforged:
   - one add writes the box's 100 copies at its own printings, Jace and Nissa as foil, as one `precon:<file>` History

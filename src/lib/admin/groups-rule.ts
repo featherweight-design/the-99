@@ -28,13 +28,24 @@ export type GroupInput = {
   name?: unknown;
   description?: unknown;
   dailyAllowance?: unknown;
+  paidDailyLimit?: unknown;
   members?: unknown;
   /** The account count the admin confirmed in the model confirm, or absent before one opens. */
   confirmed?: unknown;
 };
-export type GroupRefusal = "nameRule" | "description" | "allowance" | "members";
-export type Desired = { name: string; description: string | null; dailyAllowance: number | null; members: string[]; confirmed: number | null };
-export type SavedGroup = { id: string; name: string; description: string | null; dailyAllowance: number | null };
+export type GroupRefusal = "nameRule" | "description" | "allowance" | "paidLimit" | "members";
+export type Desired = {
+  name: string;
+  description: string | null;
+  dailyAllowance: number | null;
+  paidDailyLimit: number | null;
+  members: string[];
+  confirmed: number | null;
+};
+export type SavedGroup = { id: string; name: string; description: string | null; dailyAllowance: number | null; paidDailyLimit: number | null };
+
+/** A group number field (daily credits, the paid limit): null, or a whole number the column's check accepts. */
+const inRange = (v: unknown) => v == null || (typeof v === "number" && Number.isInteger(v) && v >= ALLOWANCE_MIN && v <= ALLOWANCE_MAX);
 
 /** Checked before any lock is taken. A refusal writes nothing and records no event. */
 export function validateGroup(input: GroupInput): { ok: true; desired: Desired } | { ok: false; error: GroupRefusal } {
@@ -44,13 +55,22 @@ export function validateGroup(input: GroupInput): { ok: true; desired: Desired }
   const description = typeof input.description === "string" ? input.description.trim() : "";
   if (description.length > DESCRIPTION_MAX) return { ok: false, error: "description" };
   const a = input.dailyAllowance;
-  if (a != null && !(typeof a === "number" && Number.isInteger(a) && a >= ALLOWANCE_MIN && a <= ALLOWANCE_MAX)) return { ok: false, error: "allowance" };
+  if (!inRange(a)) return { ok: false, error: "allowance" };
+  const p = input.paidDailyLimit;
+  if (!inRange(p)) return { ok: false, error: "paidLimit" };
   const raw = input.members ?? [];
   if (!Array.isArray(raw) || raw.some((m) => typeof m !== "string" || m === "")) return { ok: false, error: "members" };
   const confirmed = typeof input.confirmed === "number" && Number.isInteger(input.confirmed) ? input.confirmed : null;
   return {
     ok: true,
-    desired: { name, description: description || null, dailyAllowance: (a as number | null | undefined) ?? null, members: [...new Set(raw as string[])], confirmed },
+    desired: {
+      name,
+      description: description || null,
+      dailyAllowance: (a as number | null | undefined) ?? null,
+      paidDailyLimit: (p as number | null | undefined) ?? null,
+      members: [...new Set(raw as string[])],
+      confirmed,
+    },
   };
 }
 
@@ -73,7 +93,7 @@ export function withMembership(snapshot: SwitchSnapshot, groupId: string, diff: 
 }
 
 export type EventRow = {
-  kind: "group_created" | "group_renamed" | "group_described" | "group_allowance_set" | "member_added" | "member_removed";
+  kind: "group_created" | "group_renamed" | "group_described" | "group_allowance_set" | "group_paid_limit_set" | "member_added" | "member_removed";
   groupId: string;
   userId: string | null;
   oldValue: string | null;
@@ -102,6 +122,9 @@ export function groupEvents(groupId: string, saved: SavedGroup | null, desired: 
   if ((saved?.description ?? null) !== desired.description) out.push(row("group_described", saved?.description ?? null, desired.description));
   if ((saved?.dailyAllowance ?? null) !== desired.dailyAllowance) {
     out.push(row("group_allowance_set", allowanceText(saved?.dailyAllowance ?? null), allowanceText(desired.dailyAllowance)));
+  }
+  if ((saved?.paidDailyLimit ?? null) !== desired.paidDailyLimit) {
+    out.push(row("group_paid_limit_set", allowanceText(saved?.paidDailyLimit ?? null), allowanceText(desired.paidDailyLimit)));
   }
   for (const id of diff.removes) out.push(row("member_removed", null, null, id));
   for (const { userId, from } of diff.adds) {
@@ -260,9 +283,9 @@ export function memberState(row: MemberRow, selected: boolean, groupId: string |
   return { sub, state, unsaved: selected !== savedHere };
 }
 
-export type Draft = { name: string; description: string; credits: string };
+export type Draft = { name: string; description: string; credits: string; paidLimit: string };
 
-/** The credits field as the server will read it: empty is null, a non-number NaN. */
+/** A number field (credits, the paid limit) as the server will read it: empty is null, a non-number NaN. */
 export function parseCredits(text: string): number | null {
   const t = text.trim();
   return t === "" ? null : /^\d+$/.test(t) ? Number(t) : Number.NaN;
@@ -302,6 +325,11 @@ export function pendingSummary(input: {
   if (!Object.is(credits, saved?.dailyAllowance ?? null)) {
     fields++;
     if (!Number.isNaN(credits)) lines.push(copy.pending.credits(credits));
+  }
+  const paidLimit = parseCredits(draft.paidLimit);
+  if (!Object.is(paidLimit, saved?.paidDailyLimit ?? null)) {
+    fields++;
+    if (!Number.isNaN(paidLimit)) lines.push(copy.pending.paidLimit(paidLimit));
   }
   const changed: { row: MemberRow; selected: boolean }[] = [];
   for (const row of rows) {
@@ -353,6 +381,9 @@ export function groupHistory(events: readonly GroupEvent[], accounts: readonly A
         break;
       case "group_allowance_set":
         what = h.credits(who, credits(e.oldValue), credits(e.newValue));
+        break;
+      case "group_paid_limit_set":
+        what = h.paidLimit(who, credits(e.oldValue), credits(e.newValue));
         break;
       case "member_added":
         what = h.added(who, userName(e.userId ?? ""));

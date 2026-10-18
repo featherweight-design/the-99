@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, dailyLimitsFor, groupAllowanceQuery, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
+import type { SQL } from "drizzle-orm";
+import { callMicroFor, dailyLimitFor, dailyLimitsFor, groupAllowanceQuery, groupPaidLimitQuery, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
 import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
@@ -84,6 +85,13 @@ describe("dailyLimitFor", () => {
     const text = new PgDialect().sqlToQuery(groupAllowanceQuery(["u1", "u2"])).sql.replace(/\s+/g, " ");
     expect(text).toContain("g.daily_allowance is not null");
     expect(text).toContain("m.user_id in ($1, $2)");
+  });
+
+  it("reads only groups that set a paid limit, a query of its own so a group with only a paid limit is seen", () => {
+    const text = new PgDialect().sqlToQuery(groupPaidLimitQuery(["u1"])).sql.replace(/\s+/g, " ");
+    expect(text).toContain("g.paid_daily_limit is not null");
+    expect(text).not.toContain("daily_allowance");
+    expect(text).toContain("m.user_id in ($1)");
   });
 
   it("reads many accounts' limits in one statement", async () => {
@@ -223,12 +231,17 @@ describe("reserveModelCall and the owner's share", () => {
 
 describe("reserveModelCall and paid credits (payments PR L)", () => {
   // A select whose `where` answers in order, and a grouped read for the lots' usage.
-  function fakeTx(answers: unknown[][]) {
+  function fakeTx(answers: unknown[][], groupPaidLimits: number[] = []) {
     const wheres: unknown[] = [];
+    const executed: string[] = [];
     let inserted: Record<string, unknown> | undefined;
     const tx = {
-      // The lock, then the group allowance read (no group: the default limit).
-      execute: async () => ({ rows: [] }),
+      // The lock, the group allowance read (no group: the default limit), and the group paid limit read.
+      execute: async (q: SQL) => {
+        const text = new PgDialect().sqlToQuery(q).sql;
+        executed.push(text);
+        return { rows: text.includes("paid_daily_limit") ? groupPaidLimits.map((paid_limit) => ({ user_id: "user_a", paid_limit })) : [] };
+      },
       select: () => ({
         from: () => ({
           where: (w: unknown) => {
@@ -240,7 +253,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       }),
       insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-1" }] }; } }),
     };
-    return { tx, wheres, inserted: () => inserted };
+    return { tx, wheres, executed, inserted: () => inserted };
   }
   const now = new Date("2026-10-13T12:00:00Z");
   const spentToday = (n: number) => Array.from({ length: n }, () => ({ status: "spent", createdAt: new Date(now.getTime() - 60_000) }));
@@ -290,8 +303,8 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const lots = [{ id: "pack-1", source: "pack", units: 100, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
     const paidRows = (n: number, status = "spent", ageMs = 60_000) =>
       Array.from({ length: n }, () => ({ status, createdAt: new Date(now.getTime() - ageMs) }));
-    const reserve = (answers: unknown[][]) => {
-      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers]);
+    const reserve = (answers: unknown[][], groupPaidLimits: number[] = []) => {
+      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers], groupPaidLimits);
       return { f, got: reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now) };
     };
 
@@ -313,9 +326,23 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     });
 
     it("never refuses a run the free allowance can fund", async () => {
-      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)]);
+      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)], [1]);
       expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
       expect(f.inserted()?.creditGrantId).toBeNull();
+      // The paid limit is not even read while the free allowance funds the run.
+      expect(f.executed.some((t) => t.includes("paid_daily_limit"))).toBe(false);
+    });
+
+    it("takes the group's paid limit, read inside the lock", async () => {
+      const three = reserve([paidRows(3)], [3]);
+      expect(await three.got).toEqual({ refused: "allowance" });
+      const lock = three.f.executed.findIndex((t) => t.includes("pg_advisory_xact_lock"));
+      const read = three.f.executed.findIndex((t) => t.includes("paid_daily_limit"));
+      expect(lock).toBeGreaterThanOrEqual(0);
+      expect(read).toBeGreaterThan(lock);
+      expect(await reserve([paidRows(2)], [3]).got).toEqual({ id: "call-1" });
+      // A group's limit above the default lets the twenty-first run through.
+      expect(await reserve([paidRows(20)], [25]).got).toEqual({ id: "call-1" });
     });
   });
 });

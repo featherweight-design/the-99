@@ -4,7 +4,7 @@ import { db } from "../../db";
 import { creditGrants, modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
-  PAID_DAILY_LIMIT,
+  paidLimit,
   RESERVATION_TTL_MS,
   allowanceFrom,
   dailyLimit,
@@ -85,6 +85,24 @@ export function groupAllowanceQuery(userIds: readonly string[]) {
     select m.user_id, g.daily_allowance as allowance from flag_group_members m
     join flag_groups g on g.id = m.group_id
     where m.user_id in (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)}) and g.daily_allowance is not null`;
+}
+
+/**
+ * The player's paid limit (`paidLimit` holds the rule): the largest `paid_daily_limit` among their
+ * groups, else `PAID_DAILY_LIMIT`. Its own query, because a group may set a paid limit and no daily
+ * allowance. Read through `q`, so a reservation reads it inside its lock, the same as `dailyLimitFor`.
+ */
+export async function paidLimitFor(q: Tx | typeof db, userId: string): Promise<number> {
+  const { rows } = await q.execute<{ paid_limit: number }>(groupPaidLimitQuery([userId]));
+  return paidLimit({ groupLimits: rows.map((r) => Number(r.paid_limit)) });
+}
+
+/** Exported for its test: a group with no paid limit must name none, or a member would read 0. */
+export function groupPaidLimitQuery(userIds: readonly string[]) {
+  return sql`
+    select m.user_id, g.paid_daily_limit as paid_limit from flag_group_members m
+    join flag_groups g on g.id = m.group_id
+    where m.user_id in (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)}) and g.paid_daily_limit is not null`;
 }
 
 /**
@@ -222,8 +240,10 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
   const [rows, spend, balances, limit] = await Promise.all([
     ledgerRows(db, userId, now), ownerMonthMicro(db, userId, now), grantBalances(db, userId, now), dailyLimitFor(db, userId),
   ]);
-  // The paid counter is read only for a player who holds a lot, so everyone else costs no extra query.
-  const paid = balances.length > 0 ? allowanceFrom(await ledgerRows(db, userId, now, true), now, PAID_DAILY_LIMIT) : null;
+  // The paid counter and limit are read only for a player who holds a lot, so everyone else costs no extra query.
+  const paid = balances.length > 0
+    ? await Promise.all([ledgerRows(db, userId, now, true), paidLimitFor(db, userId)]).then(([paidRows, paidLim]) => allowanceFrom(paidRows, now, paidLim))
+    : null;
   const allowance: Allowance = {
     ...allowanceFrom(rows, now, limit),
     ...(paid ? { ...creditTotals(balances), paidUsedToday: paid.used, paidLimit: paid.limit, paidBackAt: paid.reopensAt, paidNextAt: paid.nextAt } : {}),
@@ -290,8 +310,8 @@ export async function reserveModelCall(
     if (!grant) return { refused: "allowance" };
     // The paid limit, counted under the lock above like the free window. Only here, so it never
     // refuses a run the free allowance could fund.
-    const paid = allowanceFrom(await ledgerRows(tx, userId, now, true), now, PAID_DAILY_LIMIT);
-    if (!paidRoom({ paidUsed: paid.used, paidLimit: PAID_DAILY_LIMIT })) return { refused: "allowance" };
+    const paid = allowanceFrom(await ledgerRows(tx, userId, now, true), now, await paidLimitFor(tx, userId));
+    if (!paidRoom({ paidUsed: paid.used, paidLimit: paid.limit })) return { refused: "allowance" };
     creditGrantId = grant.id;
   }
   const [row] = await tx

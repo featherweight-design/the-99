@@ -31,7 +31,7 @@ describe("validateGroup", () => {
   it("takes a lowercase name, trims, and drops an empty description to null", () => {
     expect(validateGroup({ name: " testers ", description: "  ", dailyAllowance: null, members: ["a", "a", "b"] })).toEqual({
       ok: true,
-      desired: { name: "testers", description: null, dailyAllowance: null, members: ["a", "b"], confirmed: null },
+      desired: { name: "testers", description: null, dailyAllowance: null, paidDailyLimit: null, members: ["a", "b"], confirmed: null },
     });
     expect(validateGroup({ name: "beta-1_x", dailyAllowance: 8, confirmed: 2 })).toMatchObject({ ok: true, desired: { dailyAllowance: 8, members: [], confirmed: 2 } });
   });
@@ -45,6 +45,8 @@ describe("validateGroup", () => {
     expect(validateGroup({ name: "t", description: "x".repeat(500) }).ok).toBe(true);
     for (const a of [0, 1001, 2.5, "5"]) expect(validateGroup({ name: "t", dailyAllowance: a })).toEqual({ ok: false, error: "allowance" });
     for (const a of [1, 1000]) expect(validateGroup({ name: "t", dailyAllowance: a }).ok).toBe(true);
+    for (const p of [0, 1001, 2.5, "5"]) expect(validateGroup({ name: "t", paidDailyLimit: p })).toEqual({ ok: false, error: "paidLimit" });
+    expect(validateGroup({ name: "t", paidDailyLimit: 3 })).toMatchObject({ ok: true, desired: { paidDailyLimit: 3, dailyAllowance: null } });
     expect(validateGroup({ name: "t", members: "u1" })).toEqual({ ok: false, error: "members" });
     expect(validateGroup({ name: "t", members: ["u1", ""] })).toEqual({ ok: false, error: "members" });
   });
@@ -72,8 +74,8 @@ describe("memberDiff and withMembership", () => {
 });
 
 describe("groupEvents", () => {
-  const saved: SavedGroup = { id: T, name: "testers", description: null, dailyAllowance: 5 };
-  const desired = { name: "testers", description: null, dailyAllowance: 5, members: [], confirmed: null };
+  const saved: SavedGroup = { id: T, name: "testers", description: null, dailyAllowance: 5, paidDailyLimit: null };
+  const desired = { name: "testers", description: null, dailyAllowance: 5, paidDailyLimit: null, members: [], confirmed: null };
 
   it("records nothing for a save that changes nothing", () => {
     expect(groupEvents(T, saved, desired, { adds: [], removes: [] })).toEqual([]);
@@ -100,6 +102,16 @@ describe("groupEvents", () => {
     expect(events.map((e) => e.kind)).toEqual(["group_created", "group_described", "group_allowance_set", "member_added"]);
     expect(events[0].newValue).toBe("testers");
     expect(events[2]).toMatchObject({ oldValue: null, newValue: "8" });
+  });
+
+  it("records a paid limit change after daily credits, with null as the default on either side", () => {
+    const set = groupEvents(T, saved, { ...desired, dailyAllowance: 8, paidDailyLimit: 3 }, { adds: [], removes: [] });
+    expect(set.map((e) => [e.kind, e.oldValue, e.newValue])).toEqual([
+      ["group_allowance_set", "5", "8"],
+      ["group_paid_limit_set", null, "3"],
+    ]);
+    const cleared = groupEvents(T, { ...saved, paidDailyLimit: 3 }, desired, { adds: [], removes: [] });
+    expect(cleared.map((e) => [e.kind, e.oldValue, e.newValue])).toEqual([["group_paid_limit_set", "3", null]]);
   });
 });
 
@@ -165,8 +177,8 @@ describe("memberState", () => {
 });
 
 describe("pendingSummary", () => {
-  const saved: SavedGroup = { id: T, name: "testers", description: null, dailyAllowance: null };
-  const draft = { name: "testers", description: "", credits: "" };
+  const saved: SavedGroup = { id: T, name: "testers", description: null, dailyAllowance: null, paidDailyLimit: null };
+  const draft = { name: "testers", description: "", credits: "", paidLimit: "" };
   const rows = [
     row("u_mara", "Mara", { id: T, name: "testers" }, [], ["Overview v2"]),
     row("u_theo", "Theo", { id: F, name: "friends" }, ["Overview v2", "Swap tools"]),
@@ -197,7 +209,7 @@ describe("pendingSummary", () => {
   });
 
   it("counts field changes and members together", () => {
-    const p = pendingSummary({ saved, draft: { name: "beta", description: "x", credits: "8" }, rows, selected: new Set(["u_mara", "u_jun"]) })!;
+    const p = pendingSummary({ saved, draft: { name: "beta", description: "x", credits: "8", paidLimit: "" }, rows, selected: new Set(["u_mara", "u_jun"]) })!;
     expect(p.count).toBe(4);
     expect(p.title).toBe("4 changes not saved");
     expect(p.body).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
@@ -207,18 +219,29 @@ describe("pendingSummary", () => {
     });
   });
 
+  it("names a paid limit change as a field of its own", () => {
+    expect(pendingSummary({ saved, draft: { ...draft, paidLimit: "3" }, rows, selected: new Set(["u_mara"]) })).toEqual({
+      title: "Not saved",
+      body: "Saving sets daily paid runs to 3.",
+      count: 1,
+    });
+    expect(pendingSummary({ saved: { ...saved, paidDailyLimit: 3 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
+      body: "Saving sets daily paid runs back to the default.",
+    });
+  });
+
   it("names a new group by the name typed", () => {
-    const p = pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "" }, rows, selected: new Set(["u_jun"]) })!;
+    const p = pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set(["u_jun"]) })!;
     expect(p.body).toBe("Saving creates beta. Saving adds Jun to beta. Nothing changes for Jun.");
   });
 
   it("offers Create for a new group with only a name typed, and nothing for an empty one (G3)", () => {
-    expect(pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "" }, rows, selected: new Set() })).toEqual({
+    expect(pendingSummary({ saved: null, draft: { name: "beta", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toEqual({
       title: "Not saved",
       body: "Saving creates beta.",
       count: 1,
     });
-    expect(pendingSummary({ saved: null, draft: { name: "", description: "", credits: "" }, rows, selected: new Set() })).toBeNull();
+    expect(pendingSummary({ saved: null, draft: { name: "", description: "", credits: "", paidLimit: "" }, rows, selected: new Set() })).toBeNull();
   });
 
   it("reads the credits field as the server will", () => {
@@ -287,6 +310,7 @@ describe("groupHistory", () => {
         ev("group_described", { oldValue: "x" }),
         ev("group_allowance_set", { newValue: "8" }),
         ev("group_allowance_set", { oldValue: "8" }),
+        ev("group_paid_limit_set", { newValue: "3" }),
         ev("member_added", { userId: "u_theo" }),
         ev("member_removed", { userId: "u_x" }),
         ev("override_set", { switchName: "SWAP_TOOLS_ENABLED", newValue: "on" }),
@@ -304,6 +328,7 @@ describe("groupHistory", () => {
       "You cleared the description",
       "You set daily credits: default → 8",
       "You set daily credits: 8 → default",
+      "You set daily paid runs: default → 3",
       "You added Theo",
       "You removed Account ·u_x",
       "You set Swap tools: not set → on",

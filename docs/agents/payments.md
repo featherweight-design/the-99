@@ -83,7 +83,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
   `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
 - Spend order is free, welcome, plan, pack (`SOURCE_RANK`). `heldCredits` is the one definition of "holds a lot"; the 20-a-day
-  paid limit applies to welcome runs. The `/credits` history leaves welcome lots out (a gift is not a purchase), and the page
+  paid limit applies to welcome runs. A group can set its own paid limit (`flag_groups.paid_daily_limit`, 1 to 1000, the
+  admin group editor's "Daily paid runs"): `paidLimitFor` reads the largest among the player's groups, else
+  `PAID_DAILY_LIMIT`, and `readAllowance` and `reserveModelCall` (inside its lock) both take it, so the line and the gate
+  never disagree. `PAID_TODAY_SHOWN_FROM` (15) is unchanged: under a group limit of 15 or less the meter shows only once the limit is reached. The `/credits` history leaves welcome lots out (a gift is not a purchase), and the page
   draws a Welcome cell only while it holds a credit.
 - There is NO in-page fallback and no backfill script: a missed webhook means no grant. `user_prefs` carries no creation time,
   so it is not a "new account" signal; a fallback is a D2 decision. Accepted: no per-email dedupe, so a deleted account that

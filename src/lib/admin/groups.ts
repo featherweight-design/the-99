@@ -30,7 +30,7 @@ import { HISTORY_LIMIT } from "./switches";
 export type GroupHead = { id: string; name: string; description: string | null };
 
 type RawState = {
-  groups: (GroupHead & { dailyAllowance: number | null })[];
+  groups: (GroupHead & { dailyAllowance: number | null; paidDailyLimit: number | null })[];
   overrides: OverrideRow[];
   members: { userId: string; groupId: string }[];
   events: (Omit<GroupEvent, "at"> & { at: string })[];
@@ -44,7 +44,7 @@ const utc = (text: string) => new Date(`${text}Z`);
 async function readState(groupId: string | null) {
   const { rows } = await db.execute<RawState>(sql`select
     coalesce((select json_agg(json_build_object(
-      'id', g.id, 'name', g.name, 'description', g.description, 'dailyAllowance', g.daily_allowance
+      'id', g.id, 'name', g.name, 'description', g.description, 'dailyAllowance', g.daily_allowance, 'paidDailyLimit', g.paid_daily_limit
     )) from flag_groups g), '[]'::json) as groups,
     coalesce((select json_agg(json_build_object(
       'switchName', o."switch", 'scope', o.scope, 'groupId', o.group_id, 'userId', o.user_id, 'value', o.value
@@ -128,7 +128,7 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
   const [state, { accounts, clerk }] = await Promise.all([readState(groupId), listAccounts()]);
   const group = groupId === null ? null : state.groups.find((g) => g.id === groupId);
   if (group === undefined) return null;
-  const saved = group && { id: group.id, name: group.name, description: group.description, dailyAllowance: group.dailyAllowance };
+  const saved = group && { id: group.id, name: group.name, description: group.description, dailyAllowance: group.dailyAllowance, paidDailyLimit: group.paidDailyLimit };
   const groupNames = new Map(state.groups.map((g) => [g.id, g.name]));
   const ids = [...new Set([...accounts.map((a) => a.id), ...[...state.snapshot.groupOf].filter(([, g]) => g === groupId).map(([u]) => u)])];
   const effects = memberEffects(state.snapshot, groupId, ids, (snapshot, id) => explainForAccounts(snapshot, [id]).get(id)!);

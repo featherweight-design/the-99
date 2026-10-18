@@ -24,7 +24,7 @@ const dialect = new PgDialect();
 const log: { text: string; params: unknown[] }[] = [];
 let overrides: OverrideRow[] = [];
 let members: { userId: string; groupId: string }[] = [];
-let group: { id: string; name: string; description: string | null; daily_allowance: number | null } | null = null;
+let group: { id: string; name: string; description: string | null; daily_allowance: number | null; paid_daily_limit: number | null } | null = null;
 let nameTaken = false;
 let failOn: RegExp | null = null;
 let failCode: string | null = null;
@@ -35,7 +35,7 @@ const tx = {
     const text = raw.replace(/\s+/g, " ").trim();
     log.push({ text, params });
     if (failOn?.test(text)) throw Object.assign(new Error("boom"), failCode ? { code: failCode } : {});
-    if (text.startsWith("select id, name, description, daily_allowance from flag_groups")) return { rows: group ? [group] : [] };
+    if (text.startsWith("select id, name, description, daily_allowance, paid_daily_limit from flag_groups")) return { rows: group ? [group] : [] };
     if (text.startsWith("select 1 from flag_groups")) return { rows: nameTaken ? [{}] : [] };
     if (text.startsWith("select id from flag_groups")) return { rows: group ? [{ id: params[0] }] : [] };
     if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
@@ -69,7 +69,7 @@ beforeEach(() => {
   order.length = 0;
   overrides = [];
   members = [];
-  group = { id: T, name: "testers", description: null, daily_allowance: null };
+  group = { id: T, name: "testers", description: null, daily_allowance: null, paid_daily_limit: null };
   nameTaken = false;
   failOn = null;
   failCode = null;
@@ -94,7 +94,7 @@ const kinds = () =>
     : text,
   );
 const events = () => log.filter((l) => l.text.startsWith("insert into admin_events")).map((l) => [l.params[1], l.params[2], l.params[3]]);
-const input = (over: Record<string, unknown> = {}) => ({ name: "testers", description: null, dailyAllowance: null, members: [] as string[], ...over });
+const input = (over: Record<string, unknown> = {}) => ({ name: "testers", description: null, dailyAllowance: null, paidDailyLimit: null, members: [] as string[], ...over });
 
 describe("writeGroup", () => {
   it("locks first, reads the group for update, and writes nothing for a save that changes nothing", async () => {
@@ -116,6 +116,28 @@ describe("writeGroup", () => {
       ["member_added", NEW, "u_jun"],
     ]);
     expect(order).toEqual(["begin", "commit", "afterCommit"]);
+  });
+
+  it("writes the paid limit and records group_paid_limit_set, and a create carries it in its insert", async () => {
+    members = [{ userId: "u_hugh", groupId: T }];
+    group = { id: T, name: "testers", description: null, daily_allowance: null, paid_daily_limit: 20 };
+    expect(await writeGroup("u_hugh", T, input({ members: ["u_hugh"], paidDailyLimit: 3 }), deps())).toEqual({ ok: true, id: T });
+    expect(kinds()).toEqual(["lock", "group", "snapshot", "update", "event"]);
+    const update = log.find((l) => l.text.startsWith("update flag_groups"))!;
+    expect(update.text).toContain("paid_daily_limit = $");
+    expect(update.params).toContain(3);
+    expect(log.find((l) => l.text.startsWith("insert into admin_events"))!.params.slice(1, 6)).toEqual(["group_paid_limit_set", T, null, "20", "3"]);
+    log.length = 0;
+    group = null;
+    await writeGroup("u_hugh", null, input({ name: "beta", paidDailyLimit: 5 }), deps());
+    const create = log.find((l) => l.text.startsWith("insert into flag_groups"))!;
+    expect(create.text).toContain("paid_daily_limit");
+    expect(create.params).toContain(5);
+  });
+
+  it("refuses a paid limit out of range before any transaction", async () => {
+    expect(await writeGroup("u_hugh", T, input({ paidDailyLimit: 0 }), deps())).toEqual({ ok: false, error: "paidLimit" });
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it("records a move as member_removed on the old group, then member_added here, and a removal", async () => {
@@ -264,7 +286,7 @@ describe("moveAccount (admin plan 9b, STATES G7)", () => {
     group = null;
     expect(await moveAccount("u_hugh", "u_jun", T, null, deps())).toEqual({ ok: false, error: "group" });
     expect(kinds()).toEqual(["lock", "group"]);
-    group = { id: T, name: "testers", description: null, daily_allowance: null };
+    group = { id: T, name: "testers", description: null, daily_allowance: null, paid_daily_limit: null };
     expect(await moveAccount("u_hugh", "u_stranger", T, null, deps())).toEqual({ ok: false, error: "account" });
     expect(kinds()).not.toContain("add");
     transaction.mockClear();
