@@ -145,7 +145,7 @@ export const creditsPageCopy = {
     keptLive: (on: string | null) => `Plan kept.${on ? ` It renews on ${on}.` : ""}`,
     /** Never names a date: the subscription's period end is not the failed invoice's date. */
     dueTitle: "Your payment didn’t go through",
-    dueSays: (n: number) => `Stripe will try again over the next few days, and your ${creditWord(n)} still work meanwhile. If every try fails, the plan ends and they expire.`,
+    dueSays: (n: number) => `Your ${creditWord(n)} still work for now. Update your card to keep the plan going; if it ends, they expire.`,
     /** A cancel or keep that was accepted but whose new state has not reached the page yet, and the line when it never does. */
     working: "Updating your plan",
     slow: "Still updating your plan. Reload in a moment to see it.",

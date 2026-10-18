@@ -230,7 +230,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
         </>
       ) : null}
       {state === "pastDue" ? (
-        <div className="flex flex-col gap-[8px] md:flex-row md:items-center md:gap-[16px]">
+        <div className="flex flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:gap-[16px]">
           {updateButton}
           {cancelButton}
           {presses.keep ? <button type="button" onClick={() => void change("keep")} disabled={held} aria-busy={busy === "keep" || (waiting && pending === "keep") || undefined} className={OUTLINE}>{p.keep}</button> : null}
