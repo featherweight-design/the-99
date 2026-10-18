@@ -6,7 +6,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
 import { hasCredit } from "../../lib/model/allowance-rule";
-import { creditSpent, creditStanding } from "../../lib/model/credit-line";
+import { creditCount, creditSpent, creditStanding } from "../../lib/model/credit-line";
 import { cutsAsk } from "../../lib/tuning/cuts-ask";
 import type { CountRow } from "../../lib/tuning/cuts-count";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
@@ -36,6 +36,12 @@ export function cutsStanding(panel: CutsPanel): string {
   if (a.ownerShare) return creditsCopy.ownerShare(new Date());
   if (!hasCredit(a)) return creditSpent(a);
   return creditStanding(a);
+}
+
+/** The credit line under a FINISHED result: where the credits stand, never what the next run will spend (L3's "this run uses 1 of N paid"). */
+export function cutsFootStanding(panel: CutsPanel): string {
+  const a = panel.allowance;
+  return a.ownerShare || !hasCredit(a) ? cutsStanding(panel) : creditCount(a);
 }
 
 /** Look deeper cannot be pressed: no credit, the owner's share spent, or nothing it may name. */

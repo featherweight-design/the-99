@@ -27,7 +27,7 @@ import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { FailMark } from "../ui/credit-button";
 import { creditsCopy } from "../../lib/copy/credits";
-import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsStanding } from "./cuts-free-count";
+import { CutsBand, CutsFrame, CutsFreeCount, CutsOffer, cutsBlocked, cutsFootStanding, cutsStanding } from "./cuts-free-count";
 import { ArtLayer } from "../ui/art-layer";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { useTarget } from "../discovery/targets-provider";
@@ -350,7 +350,7 @@ export function CutsPanelView({
           <>
             {over !== 0 && refused ? <MutationError message={refused} /> : null}
             {resultShown && !running ? (
-              <ResultBlock panel={panel} deps={deps} standing={standing} onSettled={verdictSettled} />
+              <ResultBlock panel={panel} deps={deps} standing={cutsFootStanding(panel)} onSettled={verdictSettled} />
             ) : null}
           </>
         )}
