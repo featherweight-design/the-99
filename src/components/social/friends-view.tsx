@@ -133,6 +133,8 @@ export function FriendsView({
   // A control in another open dialog that opened Invite someone new (Rule 0 setup's dashed row): focus goes back into
   // that dialog, whatever the chooser and the link path do to `showOpener`, until Add a friend closes.
   const inviteReturn = useRef<HTMLElement | null>(null);
+  // Opened over another modal (setup): Add a friend is drawn a layer above it while that modal stays open.
+  const [nestedInvite, setNestedInvite] = useState(false);
   const [dialogReturn] = useState(() => ({
     get current(): HTMLElement | null {
       const back = inviteReturn.current;
@@ -376,6 +378,7 @@ export function FriendsView({
   return (
     <FriendInviteContext.Provider value={{ invite: () => void makeLink(), pending: making, held, inviteNew: invites ? (returnTo) => {
       inviteReturn.current = returnTo;
+      setNestedInvite(true);
       setAdding("new");
     } : undefined }}>
       {receipt ? (
@@ -448,12 +451,14 @@ export function FriendsView({
             if (adding === "link") setShown(null);
             closeSheetToast();
             setAdding(null);
+            setNestedInvite(false);
             // Read at the close above, so it goes only once that close has returned focus.
             queueMicrotask(() => {
               inviteReturn.current = null;
             });
           }}
           returnFocusRef={dialogReturn}
+          raised={nestedInvite}
           say={sheetSay}
           onRefresh={refresh}
           toast={toastEl}

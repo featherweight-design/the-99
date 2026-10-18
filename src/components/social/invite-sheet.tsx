@@ -39,6 +39,7 @@ export function InviteSheet({
   link,
   onClose,
   returnFocusRef,
+  raised = false,
   say,
   onRefresh,
   clearToast,
@@ -56,6 +57,8 @@ export function InviteSheet({
   link: SheetLink | null;
   onClose: () => void;
   returnFocusRef?: RefObject<HTMLElement | null>;
+  /** Opened over another open modal (Rule 0's setup): drawn a layer above it. */
+  raised?: boolean;
   say: (text: string, retry?: SocialToastState["retry"]) => void;
   onRefresh: () => void;
   /** Put away the toast showing, if any (a new send starts). */
@@ -129,6 +132,7 @@ export function InviteSheet({
       closeLabel={d.close}
       onClose={onClose}
       returnFocusRef={returnFocusRef}
+      raised={raised}
       onBack={back}
       backLabel={ch.back}
       screen={screen}

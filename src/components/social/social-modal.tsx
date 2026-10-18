@@ -60,6 +60,7 @@ export function SocialModal({
   screen,
   overlay,
   footer,
+  raised = false,
   children,
 }: {
   title: string;
@@ -80,6 +81,8 @@ export function SocialModal({
   overlay?: ReactNode;
   /** A bar under the scrolling body, its top ruled (Rule 0's setup: the count and the step's button). */
   footer?: ReactNode;
+  /** Opened over another open modal (Add a friend over Rule 0's setup): a layer above it. */
+  raised?: boolean;
   children: ReactNode;
 }) {
   const host = useSheetHost(true);
@@ -106,7 +109,7 @@ export function SocialModal({
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10vh]"
+      className={`fixed inset-0 ${raised ? "z-[60]" : "z-50"} flex items-end max-md:bottom-auto max-md:top-[var(--social-vv-top,0px)] max-md:h-[var(--social-vv-h,100%)] justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[10vh]`}
     >
       <div
         ref={panel}
