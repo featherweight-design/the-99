@@ -453,6 +453,20 @@ describe("AccountMenu items", () => {
       expect(heldPaidAction).toHaveBeenCalledTimes(2); // one read per opening
     });
 
+    it("drops a pending Manage account press once Sign out is pressed", async () => {
+      let answer: (v: unknown) => void = () => {};
+      heldPaidAction.mockReturnValueOnce(new Promise((r) => { answer = r; }));
+      signOut.mockReturnValueOnce(new Promise(() => {})); // still signing out when the read lands
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+      await act(async () => answer({ plan: 3, pack: 0 }));
+      await act(async () => {});
+      expect(screen.queryByRole("dialog", { name: /paid credit/ })).toBeNull();
+      expect(redirectToUserProfile).not.toHaveBeenCalled();
+    });
+
     it("waits for the opening's own read still in flight before deciding, asking only once", async () => {
       let answer: (v: unknown) => void = () => {};
       // Any second request would answer "none held" and go straight on to Clerk.

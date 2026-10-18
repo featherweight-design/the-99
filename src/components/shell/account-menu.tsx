@@ -534,6 +534,8 @@ export function AccountMenu({
   // failure — without that release the menu stays dead until a reload.
   function onSignOut() {
     setBusy(true);
+    // Signing out ends this opening for a Manage account press still awaiting its read: it must neither warn nor go on.
+    opening.current++;
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
     void clerk.signOut().catch(() => setBusy(false));

@@ -151,9 +151,11 @@ async function run(browser, userId, w) {
     for (const c of w.cases) {
       await setCase(userId, c.seed);
       if (c.seed.welcome) {
-        // The welcome case proves nothing unless the lot really holds credits: units left after every run that named it.
+        // The welcome case proves nothing unless the lot really holds credits: units left after every run that named it,
+        // a reservation counting only within its 10-minute TTL as `countsAgainstGrant` has it.
         const [lot] = await sql`select coalesce(sum(g.units - g.revoked_units - (select count(*) from model_calls m
-          where m.credit_grant_id = g.id and m.status in ('spent', 'reserved'))), 0)::int as held
+          where m.credit_grant_id = g.id and (m.status = 'spent'
+            or (m.status = 'reserved' and m.created_at > now() at time zone 'utc' - interval '10 minutes')))), 0)::int as held
           from credit_grants g where g.user_id = ${userId} and g.source = 'welcome' and g.expires_at > now() at time zone 'utc'`;
         check(lot.held >= c.seed.welcome, `${w.name} ${c.label}: the welcome lot holds credits`, `held ${lot.held}`);
       }
