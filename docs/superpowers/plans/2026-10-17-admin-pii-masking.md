@@ -67,7 +67,7 @@ Walked at close-out, 2026-10-18: every row loaded at both widths (`docs/superpow
 | `/admin/groups` | Y1 member line masked | ☑ | ☑ | 1 |
 | `/admin/groups/[id]` | C2 members, pending, history | ☑ | ☑ | 1, 2 |
 | `/admin/switches/[name]` | C3 overrides, picker, check, Y2 result, history | ☑ | ☑ | 1, 2 |
-| `/admin/costs` | C5 per account, cap set by | ☑ | ☑ | 2 |
+| `/admin` (Costs) | C5 per account (the cap's "set by" line was retired by #2027, so nothing names who set it) | ☑ | ☑ | 2 |
 
 The existing `admin.json` and `invites-admin.json` rows keep running; PR 2 updates any row whose `wait` selector named an email.
 
