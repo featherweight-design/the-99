@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "../../db";
 import { stripeCustomers } from "../../db/schema";
+import { isTombstoned } from "../account/tombstone";
 import { recordHit } from "../rate/observe";
 import { overLimit, RATE_RULES } from "../rate/rules";
 import { appOrigin, packCheckoutParams, priceIdFor } from "./checkout-rule";
@@ -65,6 +66,14 @@ export async function ensureCustomer(stripe: Stripe, userId: string, email: stri
   if (existing) {
     if (email) await stripe.customers.update(existing, { email });
     return existing;
+  }
+  // An account whose deletion is recorded gets no new Customer and no mapping: the purge's step 0 has already
+  // looked (or is about to) and a Customer made now would outlive it with nothing left pointing at it. The
+  // tombstone is written before the purge starts (`recordDeletion`), so this read closes all but the instant
+  // between it and the insert, which the purge's own transaction catches and retries.
+  if (await isTombstoned(userId)) {
+    console.error("[payments] checkout refused: the account is being deleted");
+    throw new Error("account is being deleted");
   }
   const customer = await stripe.customers.create(
     { ...(email ? { email } : {}), metadata: { app: PAYMENTS_APP, user_id: userId } },

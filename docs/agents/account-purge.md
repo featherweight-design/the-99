@@ -39,3 +39,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the hash and the time remain, and nothing can be purged by them. A failed re-purge keeps its raw id for the next
   sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
   write erased by the sweep and the raw id retired after the day.
+
+  **Stripe first, database second** (payments PR R, scope §6.3). `purgeAccount` step 0, before the transaction, is
+  `deleteStripeCustomerFor` (`src/lib/payments/delete-customer.ts`): no `stripe_customers` row means no Stripe call and
+  no key needed; a row means the Customer is retrieved, checked to carry `metadata.app = the-99` and this account's
+  `user_id` (the Stripe account is shared with Concert Crawl), then deleted, which also cancels its subscriptions. A
+  Customer not so tagged is NEVER deleted: one error-level line, result `foreign`, and the purge goes on (a throw would
+  repeat on every retry for ever). 404 or already-deleted is done. Any other failure, or a mapping with no usable
+  key, THROWS before anything is purged, so the webhook answers 500, Clerk retries, and the sweep re-runs the purge
+  (the mapping row is still there). Between the Stripe delete and the transaction the mapping still exists, so a late
+  `checkout.session.completed` can still grant and the purge then deletes that lot with the account; one completing
+  AFTER the commit finds no mapping and is kept unattributed (refund by hand; `fulfil.ts` reads the mapping FOR
+  SHARE). A Checkout started in that instant fails at `ensureCustomer`: accepted. The restricted key needs Customers
+  write, which it already has. The purge reads no feature switch. `src/lib/account/purge-stripe.test.ts` pins the order.
+  A Checkout racing step 0 is closed twice: `ensureCustomer` refuses an account with a tombstone (no Customer, no mapping), and the transaction deletes `stripe_customers` `returning` the id and rolls back on one step 0 did not handle, so the 500 and its retry delete that Customer.

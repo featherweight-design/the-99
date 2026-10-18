@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 
 // The mapping table and the rate counter, played by hand.
 // `raceWinner`: another request's mapping, stored between this one's read and its insert.
-const state = vi.hoisted(() => ({ mapping: new Map<string, string>(), hits: 0, inserts: 0, raceWinner: null as string | null }));
+const state = vi.hoisted(() => ({ mapping: new Map<string, string>(), hits: 0, inserts: 0, raceWinner: null as string | null, tombstoned: new Set<string>() }));
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
   return {
@@ -30,6 +30,7 @@ vi.mock("../../db", async () => {
     },
   };
 });
+vi.mock("../account/tombstone", () => ({ isTombstoned: async (u: string) => state.tombstoned.has(u) }));
 vi.mock("../rate/observe", () => ({ recordHit: vi.fn(async () => ++state.hits) }));
 
 import { createPackCheckout, ensureCustomer } from "./checkout";
@@ -48,6 +49,7 @@ beforeEach(() => {
   update.mockClear();
   sessionCreate.mockClear();
   state.raceWinner = null;
+  state.tombstoned.clear();
   vi.stubEnv("STRIPE_PRICE_PACK_40", "price_pack40");
   vi.stubEnv("APP_ORIGIN", "https://the-99.dev");
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
@@ -83,6 +85,16 @@ describe("ensureCustomer", () => {
     state.raceWinner = "cus_winner";
     expect(await ensureCustomer(stripe, "user_a", null)).toBe("cus_winner");
     expect(state.inserts).toBe(1);
+  });
+});
+
+describe("ensureCustomer and a deleted account", () => {
+  it("makes no Customer and no mapping for an account with a tombstone", async () => {
+    state.tombstoned.add("user_a");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(ensureCustomer(stripe, "user_a", "a@x.dev")).rejects.toThrow("being deleted");
+    expect(create).not.toHaveBeenCalled();
+    expect(state.inserts).toBe(0);
   });
 });
 
