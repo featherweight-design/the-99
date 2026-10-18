@@ -88,22 +88,23 @@ export function HelpPanel({
   // A link press closes the panel, which unmounts the link and the report its own status would carry to the shell's
   // loading screen. So the navigation runs from the pending provider, which stays mounted and reports it, as the
   // account menu's rows do; the link's own navigation is cancelled so it does not run twice. The sheet's history entry
-  // stays under the new page rather than stepping back, which would cancel the navigation. A press to the page
-  // already open just closes, and one to an entry on it opens that entry in the Reference; a modified press is the
-  // browser's own.
+  // stays under the new page rather than stepping back, which would cancel the navigation. A press to the Reference
+  // already open goes to it through `revealReferenceEntry`, one to any other page already open just closes, and a
+  // modified press is the browser's own.
   const { go } = usePendingPush();
   const leave = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const now = window.location.pathname + window.location.search;
-    if (href.split("#")[0] === now) {
-      // An entry on the Reference already up: the address and the entry move here, since a fragment already in the
-      // address fires no `hashchange` and the Reference's search would hide it anyway.
-      const entry = entryOfHref(href);
-      if (entry !== null) {
+    const page = href.split("#")[0];
+    if (page === now) {
+      // The Reference already up, with an entry or without: every such link takes `revealReferenceEntry`, which clears
+      // the Reference's search and opens the entry or goes to the top. The address moves here, since a fragment
+      // already in it (or none) fires no `hashchange`. Any other page already open (Tools, on Tools) just closes.
+      if (page === REFERENCE_HREF) {
         e.preventDefault();
         mirrorUrl(href, window.history.state);
         onClose();
-        revealReferenceEntry(entry);
+        revealReferenceEntry(entryOfHref(href));
         return;
       }
       onClose();

@@ -12,6 +12,7 @@ import { Report } from "../shell/pending-report";
 import { aboutEntries } from "../../lib/copy/about-entries";
 import { referenceScreens } from "../../lib/about/reference";
 import { ReferenceTab } from "../about/reference/reference-tab";
+import { REVEAL_ENTRY_EVENT } from "../../lib/about/reveal-entry";
 import { ARRIVE_MS, MomentsProvider, useMomentAnchor } from "../moments/moments-provider";
 
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: vi.fn(async () => {}) }));
@@ -388,14 +389,14 @@ describe("a link press", () => {
     expect(screen.queryByRole("dialog")).not.toBeNull();
   });
 
-  it("only closes on a press to the page already open, and pushes nothing", async () => {
+  it("only closes on a press to a page already open other than the Reference (Tools, on Tools), and pushes nothing", async () => {
     stubViewport(1300);
     pathname = "/about";
-    window.history.replaceState(null, "", "/about?tab=reference");
+    window.history.replaceState(null, "", "/about");
     const push = vi.fn();
     draw({ push });
     await openIt();
-    const link = within(panel()).getByRole("link", { name: helpPanelCopy.footAll });
+    const link = within(panel()).getByRole("link", { name: helpPanelCopy.footTools });
     // Read after React's handler (the document hears the click last): the default is left to the link itself.
     let prevented: boolean | null = null;
     const hear = (e: Event) => {
@@ -567,5 +568,64 @@ describe("an entry link on the Reference already up", () => {
     fireEvent.click(panel().querySelector(`[data-help-hit="${target.id}"]`)!, { button: 0 });
     expect(openOf()).toBe(target.id);
     expect(window.location.pathname + window.location.search + window.location.hash).toBe(`/about?tab=reference#${target.id}`);
+  });
+
+  // Round 3: the fragment-free links to the Reference (the none line's See every entry, the foot's All of About) only
+  // closed the ?, so a Reference search the reader had entered stayed, and the Reference's hash rule ignores an empty
+  // fragment. Every same-page Reference link takes the one path: no entry clears the search and goes to the top.
+  for (const width of [1300, 390]) {
+    for (const link of ["noneOut", "footAll"] as const) {
+      it(`${link} at ${width} clears the Reference's search and takes the page to its top`, async () => {
+        stubViewport(width);
+        window.history.replaceState(null, "", `/about?tab=reference#${target.id}`);
+        window.scrollY = 800;
+        const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(((a: number | ScrollToOptions, b?: number) => {
+          window.scrollY = typeof a === "number" ? (b ?? 0) : (a.top ?? window.scrollY);
+        }) as typeof window.scrollTo);
+        drawAbout();
+        fireEvent.change(refField(), { target: { value: "deck" } });
+        await openIt();
+        if (link === "noneOut") fireEvent.change(within(panel()).getByRole("searchbox"), { target: { value: "zqxjvkw" } });
+        const a = within(panel()).getByRole("link", { name: helpPanelCopy[link] });
+        expect(a.getAttribute("href")).toBe("/about?tab=reference");
+        expect(fireEvent.click(a, { button: 0 })).toBe(false);
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(refField().value).toBe("");
+        expect(window.location.pathname + window.location.search + window.location.hash).toBe("/about?tab=reference");
+        await waitFor(() => expect(window.scrollY).toBe(0), { timeout: 2000 });
+        // Past the sheet's scroll restoration, which would otherwise put the 800 back.
+        await act(async () => {
+          await new Promise((r) => setTimeout(r, 700));
+        });
+        expect(window.scrollY).toBe(0);
+        scrollTo.mockRestore();
+      });
+    }
+  }
+
+  it("a same-page link to Tools, on Tools, only closes", async () => {
+    stubViewport(1300);
+    window.history.replaceState(null, "", "/about");
+    const scrollTo = vi.spyOn(window, "scrollTo");
+    drawAbout();
+    fireEvent.change(refField(), { target: { value: "deck" } });
+    await openIt();
+    const heard = vi.fn();
+    window.addEventListener(REVEAL_ENTRY_EVENT, heard);
+    let prevented: boolean | null = null;
+    const hear = (e: Event) => {
+      prevented = e.defaultPrevented;
+      e.preventDefault();
+    };
+    document.addEventListener("click", hear);
+    fireEvent.click(within(panel()).getByRole("link", { name: helpPanelCopy.footTools }), { button: 0 });
+    document.removeEventListener("click", hear);
+    window.removeEventListener(REVEAL_ENTRY_EVENT, heard);
+    expect(prevented).toBe(false);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(heard).not.toHaveBeenCalled();
+    expect(refField().value).toBe("deck");
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
   });
 });

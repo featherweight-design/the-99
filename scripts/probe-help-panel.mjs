@@ -306,8 +306,14 @@ async function walk(browser, w, deckPath) {
       check(halo, `${w.name} Show me lands its halo`, `data-target-halo ${halo}`);
       const pressed = await page.evaluate(() => document.querySelector('[aria-modal="true"]') !== null);
       check(!pressed, `${w.name} Show me presses nothing`, `a modal open: ${pressed}`);
-      const bubble = await onPage(page, "[data-moment-bubble]").count();
-      check(bubble === 0, `${w.name} Show me draws no bubble`, `${bubble}`);
+      // Document-wide, never `onPage`: a bubble portals to document.body (or the modal it sits in), outside <main>, so
+      // a count scoped to <main> read 0 whatever was drawn. Watched past the moments' 600ms arrival timer, well inside
+      // the halo's 2.4s, since the panel's close is what restarts that timer.
+      const bubble = await page
+        .waitForSelector("[data-moment-bubble]", { state: "attached", timeout: 1_500 })
+        .then(() => true)
+        .catch(() => false);
+      check(!bubble, `${w.name} Show me draws no bubble through the halo`, `a bubble drawn: ${bubble}`);
       shown = true;
       break;
     }

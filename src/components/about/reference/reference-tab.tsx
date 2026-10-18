@@ -180,14 +180,15 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
       const a = (e.target as Element | null)?.closest?.("a[href^='#']");
       if (a && a.getAttribute("href") === window.location.hash) window.setTimeout(follow, 0);
     };
-    // A press elsewhere on this page that names an entry by its whole URL (the ? panel's results and rows), its
-    // fragment the same as the address's or not: open it as a hash would. The scroll waits for the sheet that sent it
-    // to have stepped off its history entry and the page's scroll to have been put back, or that restoration would
-    // carry the page straight back off the entry. A task later first, so the sheet's release is queued ahead.
+    // A press elsewhere on this page that names the Reference by its whole URL (every ? panel link to it,
+    // `revealReferenceEntry`): with an entry, its fragment the same as the address's or not, open it as a hash would;
+    // with none, clear the search and go to the top. The scroll waits for the sheet that sent it to have stepped off its
+    // history entry and the page's scroll to have been put back, or that restoration would carry the page straight
+    // back. A task later first, so the sheet's release is queued ahead.
     let unscroll = () => {};
     const revealed = (e: Event) => {
-      const id = (e as CustomEvent<string>).detail;
-      if (typeof id !== "string" || !reveal(id)) return;
+      const id = (e as CustomEvent<string | null>).detail;
+      if (id !== null && (typeof id !== "string" || !reveal(id))) return;
       setQuery("");
       unscroll();
       let unrelease = () => {};
@@ -196,7 +197,8 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
         unrelease = afterDialogsReleased(() => {
           unpin = afterScrollRestored(() => {
             noteAppScroll();
-            document.getElementById(id)?.scrollIntoView({ block: "start" });
+            if (id === null) window.scrollTo({ top: 0 });
+            else document.getElementById(id)?.scrollIntoView({ block: "start" });
           });
         });
       }, 0);
