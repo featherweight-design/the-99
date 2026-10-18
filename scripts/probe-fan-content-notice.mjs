@@ -98,19 +98,28 @@ try {
       // The pages whose action dock is `fixed` over the foot of the page (A1b). Scrolled to the end, the notice's last line
       // must clear the TOPMOST fixed dock, not only the tab bar. A page that draws no dock at this width is reported as
       // skipped, never as a pass: the gate-dismiss bar only exists with the About sheet switch off, and the top-off bar
-      // needs PROBE_TOPOFF_PATH (a deck with open slots).
+      // needs PROBE_TOPOFF_PATH (a deck with open slots; the probe presses the strip's door itself).
       const precon = await page.goto(`${BASE}/decks/precons`, { waitUntil: "networkidle" }).then(() => page.evaluate(() => document.querySelector('a[href^="/decks/precons/"]')?.getAttribute("href") ?? null));
       const DOCKED = [
         ["picker", "/decks/new"],
         ["intake", "/decks/new/choose"],
         ["precon", precon],
         ["top-off", process.env.PROBE_TOPOFF_PATH ?? null],
-        ["gate-dismiss", "/about?tab=reference&next=%2Fdecks"],
+        // Not `?tab=reference`: the Reference mounts `RecordVisit`, which WRITES the account's About acknowledgements. The page forces
+        // the Reference itself when the legacy gate is offered (`about/page.tsx`), so this reaches the dismiss bar without the write.
+        ["gate-dismiss", "/about?next=%2Fdecks"],
       ];
       for (const [label, path] of DOCKED) {
         const name = `signed in ${label} dock @${w.label}`;
         if (!path) { console.log(` SKIP  ${name}: no route to open`); continue; }
         await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+        if (label === "top-off") {
+          // The list (and its pinned commit bar) mounts only after the strip's door is pressed. Pressing it is a view state, no write.
+          const door = page.getByRole("button", { name: /^Choose the cards for the last/ });
+          if (!(await door.count())) { console.log(` SKIP  ${name}: no open slots on ${path}, so no top-off door`); continue; }
+          await door.first().click();
+          await page.waitForTimeout(800);
+        }
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
         const m = await page.evaluate(() => {
           const f = document.querySelector("footer[data-fan-content-notice]");
