@@ -103,6 +103,26 @@ describe("useReveal", () => {
     expect(result.current.revealed.has("u1")).toBe(true);
   });
 
+  it("re-masks when the page is left for the back/forward cache, and drops an answer still in flight (D7)", async () => {
+    const d = deferred();
+    const reveal = vi.fn<(id: string) => Promise<RevealResult>>().mockResolvedValueOnce(ok("u1")).mockImplementationOnce(() => d.promise);
+    const { result } = renderHook(() => useReveal(reveal));
+    await act(() => result.current.show("u1", "Colin R."));
+    let shown!: Promise<void>;
+    act(() => {
+      shown = result.current.show("u2", "Max D.");
+    });
+    act(() => window.dispatchEvent(new Event("pagehide")));
+    expect(result.current.revealed.size).toBe(0);
+    expect(result.current.pending.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+    await act(async () => {
+      d.resolve(ok("u2"));
+      await shown;
+    });
+    expect(result.current.revealed.size).toBe(0);
+  });
+
   it("reads the hide time on the UTC clock", () => {
     expect(utcHourMinute(new Date("2026-10-17T09:05:00.000Z"))).toBe("09:05");
   });

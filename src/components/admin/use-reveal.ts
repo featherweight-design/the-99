@@ -28,8 +28,25 @@ export function useReveal(reveal: (id: string) => Promise<RevealResult> = reveal
   useEffect(() => {
     mounted.current = true;
     const all = timers.current;
+    // Leaving by a full-document navigation can keep this view in the back/forward cache without unmounting it, so
+    // leaving re-masks here too (D7): every reveal and timer goes, every answer in flight is retired, and a Show after
+    // the page comes back is a new one. Cleared again on a restore, in case the page froze before the first render.
+    const leave = () => {
+      for (const t of all.values()) window.clearTimeout(t);
+      all.clear();
+      for (const id of asked.current.keys()) asked.current.set(id, (asked.current.get(id) ?? 0) + 1);
+      setRevealed((prev) => (prev.size ? new Map() : prev));
+      setPending((prev) => (prev.size ? new Set() : prev));
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) leave();
+    };
+    window.addEventListener("pagehide", leave);
+    window.addEventListener("pageshow", onPageShow);
     return () => {
       mounted.current = false;
+      window.removeEventListener("pagehide", leave);
+      window.removeEventListener("pageshow", onPageShow);
       for (const t of all.values()) window.clearTimeout(t);
       all.clear();
     };

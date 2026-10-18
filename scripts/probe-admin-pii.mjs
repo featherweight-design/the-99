@@ -25,6 +25,14 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireE
 // Read-only: the waiting invites and the switch with an account override, from the database the server reads.
 const sql = neon(DATABASE_URL);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// A local server only: the Show writes, and the branch check below reads the probe's own DATABASE_URL, which says
+// nothing about a remote server's database. That server must run on this same scratch branch.
+{
+  const u = new URL(BASE);
+  if (u.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(u.hostname) || u.port === "" || u.pathname !== "/") {
+    throw new Error(`refusing PROBE_BASE ${BASE}: a loopback server with a port only (http://localhost:3313)`);
+  }
+}
 // Optional: a directory to photograph A6 (the failed Show) into, the one state the contact sheet cannot reach.
 const SHOTS = process.env.PROBE_SHOTS;
 
@@ -212,6 +220,8 @@ try {
     const user = await (await fetch(`https://api.clerk.com/v1/users/${id}`, { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } })).json();
     const email = (user.email_addresses ?? []).find((e) => e.id === user.primary_email_address_id)?.email_address?.toLowerCase();
     const [{ n: before }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
+    const marks = onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]");
+    const markedBefore = await marks.count();
     const shown = [];
     sink = shown;
     route = `${target} Show`;
@@ -228,8 +238,14 @@ try {
     );
     const [{ n: after }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
     report("the Show writes one account_revealed event", after === before + 1, `${before} then ${after}`);
-    // D8: History draws the Show at once, while the head stays revealed through the page's refresh.
-    const logged = await onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]").first().waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    // D8: History draws THIS Show at once (one more marked line than before it), while the head stays revealed through
+    // the page's refresh. A list already at its cap could not grow, so that is a fixture to reset, not a pass.
+    report("History has room for one more line (reseed the scratch branch if not)", markedBefore < 100, `${markedBefore} marked`);
+    let logged = false;
+    for (let i = 0; i < 40 && !logged; i++) {
+      logged = (await marks.count()) > markedBefore;
+      if (!logged) await page.waitForTimeout(250);
+    }
     report("History draws the Show's line without a reload, the head still revealed", logged && (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 1);
     await onPageRole(page, "button", /^Hide /).filter({ visible: true }).first().click();
     report("Hide masks the head again", (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 0 && !(await onPage(page, "[data-testid='account-head']").innerText()).toLowerCase().includes(email));
