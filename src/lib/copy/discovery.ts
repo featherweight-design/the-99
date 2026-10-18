@@ -173,3 +173,33 @@ export const creatorNoteCopy = {
   row: 'Why The 99 exists, and who it’s for.',
   close: 'Close',
 } as const;
+
+// ---- R2·8 · the ? and its panel and sheet (README-r2 C4, C6, E8, G21; design table `discovery-r2-8-help.md`).
+
+export const helpPanelCopy = {
+  /** The aria-label of the ? in the rail and the header, and of the panel itself. */
+  button: 'About this screen',
+  eyebrow: 'About this screen',
+  /** `A deck · Shopping`. */
+  screenName: (screen: string, view?: string) => (view ? `${screen} · ${view}` : screen),
+  search: 'Search all of About',
+  clear: 'Clear search',
+  /** Drawn uppercase. */
+  here: (view: string) => `On ${view}`,
+  count: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
+  elsewhere: { deck: 'Elsewhere on this deck', collection: 'Elsewhere in Collection' },
+  /** The Your deck chip while Shopping is in view (the table's row 115): the deck control's own name for it. */
+  all: 'All',
+  showMe: 'Show me',
+  readWhole: 'Read the whole entry ›',
+  hits: (n: number, q: string) =>
+    n === 1 ? `1 entry mentions “${q}”, on every screen` : `${n} entries mention “${q}”, on every screen`,
+  none: (q: string) => `Nothing in About mentions “${q}”.`,
+  noneNote: 'Search reads every entry’s title and text, on every screen.',
+  noneOut: 'See every entry →',
+  /** G21: a screen no visible entry lives on. */
+  empty: 'Nothing in About is about this screen yet.',
+  footTools: 'Tools ›',
+  footAll: 'All of About ›',
+  close: 'Close',
+} as const;

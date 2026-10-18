@@ -24,6 +24,7 @@ import type { ThemeKey } from "../../lib/theme/themes";
 import { reveal } from "../../lib/ui/reveal";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { HelpButton } from "../help/help-root";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -723,6 +724,9 @@ export function NavRail({
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto flex shrink-0 flex-col items-center">
+        {/* The ?, above the offline pill so the pill stays beside the account trigger (discovery R2 gap 15). Drawn only
+            while \`HELP_PANEL_ENABLED\` is on for the reader; off, the wrapper's \`mt-auto\` pins the account trigger alone. */}
+        <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
         <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
@@ -852,8 +856,12 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, friendsMomen
         <InstallSlot />
         {/* Card search, left of the avatar (HP1). Drawn only where the shell mounted the search. */}
         <CardSearchIcon />
-        {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-        <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
+        {/* The ? and the avatar, 6px apart (discovery R2·8 row 15). The ? scrolls with the header, as the avatar does. */}
+        <div className="flex items-center gap-[6px]">
+          <HelpButton place="header" />
+          {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} friendsMoment={friendsMoment} />
+        </div>
       </div>
     </header>
     </>

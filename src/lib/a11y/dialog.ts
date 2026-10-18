@@ -356,6 +356,8 @@ function restoreHref(href: string | null) {
 function pinScrollY(y: number | null) {
   if (y == null) return;
   const offset = y;
+  pinning += 1;
+  let stopped = false;
   // A link click during the reassert window fires none of the three events below
   // — found by Copilot's round-2 review — so the loop would otherwise keep
   // applying the OLD route's offset onto the route the click just committed.
@@ -366,10 +368,17 @@ function pinScrollY(y: number | null) {
   let frames = 0;
   let rafId = requestAnimationFrame(reassert);
   const stop = () => {
+    if (stopped) return;
+    stopped = true;
     cancelAnimationFrame(rafId);
     window.removeEventListener("wheel", stop);
     window.removeEventListener("touchstart", stop);
     window.removeEventListener("keydown", stop);
+    pinning -= 1;
+    if (pinning > 0) return;
+    const waiting = [...afterPin];
+    afterPin.clear();
+    for (const then of waiting) then();
   };
   window.addEventListener("wheel", stop, { passive: true });
   window.addEventListener("touchstart", stop, { passive: true });
@@ -387,6 +396,27 @@ function pinScrollY(y: number | null) {
     if (frames < 30) rafId = requestAnimationFrame(reassert);
     else stop();
   }
+}
+
+/** Scroll restorations running now (`pinScrollY`), and what waits for the last of them to end. */
+let pinning = 0;
+const afterPin = new Set<() => void>();
+
+/**
+ * Runs `then` once no scroll restoration is running: at once when none is, else when the last ends (its 30 frames
+ * out, the reader's own scroll, or the URL moving). For a move the app makes to the page right after a dialog's
+ * release (Show me's reveal), which the restoration would otherwise put straight back where the dialog opened. Wait
+ * for `afterDialogsReleased` first: the restoration starts with the pop that wait ends on. Returns its own cancel.
+ */
+export function afterScrollRestored(then: () => void): () => void {
+  if (pinning === 0) {
+    then();
+    return () => {};
+  }
+  afterPin.add(then);
+  return () => {
+    afterPin.delete(then);
+  };
 }
 
 /** Stand the dialog on a fresh entry at the current URL. */
@@ -607,6 +637,13 @@ export function useDialogA11y(
      */
     closeOnEscape?: boolean;
     /**
+     * Hold Tab inside the dialog. On by default, as an `aria-modal` surface must. A NON-MODAL panel passes false:
+     * the page beside it stays usable (the ? panel at 1280, discovery R2·8 row 26), so Tab walks out of the panel
+     * into the page and back, and a Tab pressed in the page is the page's. Without it, the hook's ambiguous-focus
+     * rule below read a focused page control as "on neither dialog" and pulled it into the panel on every Tab.
+     */
+    trapTab?: boolean;
+    /**
      * Where focus goes on close, when the caller knows better than
      * `document.activeElement` did at mount.
      *
@@ -643,6 +680,7 @@ export function useDialogA11y(
   const returnFocusRef = options?.returnFocusRef;
   const lockScroll = options?.lockScroll ?? true;
   const closeOnEscape = options?.closeOnEscape ?? true;
+  const trapTab = options?.trapTab ?? true;
   const inert = options?.inert ?? false;
 
   // Remember what had focus before the dialog opened; return it on close.
@@ -734,7 +772,7 @@ export function useDialogA11y(
         if (closeOnEscape) onClose();
         return;
       }
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab" || !trapTab) return;
       const focusables = visibleFocusables(root);
       // A modal whose every control is disabled (the replace confirm while it writes) has
       // nowhere to send focus, and letting Tab through would walk out of an `aria-modal`
@@ -778,5 +816,5 @@ export function useDialogA11y(
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogRef, onClose, closeOnEscape, inert]);
+  }, [dialogRef, onClose, closeOnEscape, trapTab, inert]);
 }

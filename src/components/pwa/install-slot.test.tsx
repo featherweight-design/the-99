@@ -7,6 +7,11 @@ import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { DISMISSAL_KEY } from "../../lib/pwa/install-dismissal";
 import { removeRaw } from "../ui/local-store";
 
+// What else shares the phone header with the slot: card search's icon, the ?, and (offline) the Offline pill.
+const crowd = vi.hoisted(() => ({ search: false, help: false }));
+vi.mock("../card-search/card-search", () => ({ useCardSearch: () => (crowd.search ? {} : null) }));
+vi.mock("../help/help-root", () => ({ useHelpOn: () => crowd.help }));
+
 const ANDROID = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36";
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 
@@ -103,5 +108,47 @@ describe("InstallSlot", () => {
     render(<InstallSlot />);
     offerInstall();
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+  });
+});
+
+describe("InstallSlot, stepping aside in a full header", () => {
+  const setOnline = (on: boolean) => Object.defineProperty(navigator, "onLine", { value: on, configurable: true });
+  const slotClass = () => document.querySelector("[data-install-slot]")!.className;
+  afterEach(() => {
+    crowd.search = false;
+    crowd.help = false;
+    setOnline(true);
+  });
+  const draw = (state: { search: boolean; help: boolean; online: boolean }) => {
+    crowd.search = state.search;
+    crowd.help = state.help;
+    setOnline(state.online);
+    as(ANDROID);
+    render(<InstallSlot />);
+    offerInstall();
+  };
+
+  // Round 2 (#2023): offline with card search AND the ?, the header needs 429px, so at 393 (and at 390) the slot
+  // must step aside; the old rule let it stand from 390 up.
+  it("steps aside below 429px when offline beside both card search and the ?, so 390 and 393 both drop it", () => {
+    draw({ search: true, help: true, online: false });
+    expect(slotClass()).toContain("max-[429px]:hidden");
+    expect(slotClass()).not.toContain("max-[390px]:hidden");
+  });
+
+  it("steps aside below 390px when offline beside card search alone, or the ? alone", () => {
+    draw({ search: true, help: false, online: false });
+    expect(slotClass()).toContain("max-[390px]:hidden");
+    cleanup();
+    draw({ search: false, help: true, online: false });
+    expect(slotClass()).toContain("max-[390px]:hidden");
+  });
+
+  it("stays at every width online, and offline with neither beside it", () => {
+    draw({ search: true, help: true, online: true });
+    expect(slotClass()).not.toMatch(/max-\[\d+px\]:hidden/);
+    cleanup();
+    draw({ search: false, help: false, online: false });
+    expect(slotClass()).not.toMatch(/max-\[\d+px\]:hidden/);
   });
 });

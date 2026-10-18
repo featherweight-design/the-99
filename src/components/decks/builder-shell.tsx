@@ -67,6 +67,7 @@ import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { DeckPanelContext } from "./deck-panel";
+import { deckViewOf, usePublishBuilderScreen } from "./builder-screen";
 import { EmptyDeckNotes } from "./notes/empty-deck-notes";
 import type { DeckPanel } from "./group-toggle";
 import type { DeckNotesView } from "../../lib/decks/notes-types";
@@ -407,6 +408,8 @@ export function BuilderShell({
   // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck
   // during render, so no frame draws an empty rail under no selected tab.
   if (view === "versions" && versions.length === 0 && !originApart) setView("deck");
+  // The ? in the shell reads which of the deck's screens this is from here, never the URL (discovery R2·8).
+  usePublishBuilderScreen(deckViewOf(view, filter, deckPanel[0]));
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCardSearch } from "../card-search/card-search";
+import { useHelpOn } from "../help/help-root";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
 import { useCallback, useEffect, useState } from "react";
 
@@ -17,9 +18,10 @@ import { IosInstallSheet } from "./ios-install-sheet";
  * neither a held prompt nor iPhone Safari. It decides after mount, so the server draws nothing.
  */
 export function InstallSlot() {
-  const search = useCardSearch();
+  const search = useCardSearch() !== null;
+  const help = useHelpOn();
   const online = useOnlineStatus();
-  const yieldToSearch = search !== null && !online;
+  const crowd = online ? "" : search && help ? "max-[429px]:hidden" : search || help ? "max-[390px]:hidden" : "";
   const [held, setHeld] = useState<BeforeInstallPromptEvent | null>(null);
   const [ios, setIos] = useState(false);
   const [dismissed, setDismissed] = useState(true);
@@ -67,9 +69,14 @@ export function InstallSlot() {
   if (dismissed || (!held && !ios)) return null;
   return (
     <>
-      {/* Under 390px, while offline, the slot steps aside for card search's icon, and returns the moment the
-          offline pill goes (card search G5): pill, install, search and account do not fit beside the wordmark there. */}
-      <div className={`flex items-center ${yieldToSearch ? "max-[390px]:hidden" : ""}`} data-install-slot>
+      {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
+          goes (card search G5). The widths, from `MobileHeader` in nav.tsx, measured in Chromium with the app's IBM
+          Plex Mono (PR #2023, round 2): padding 40 (px-5 twice), wordmark 64 ("THE" 27 + gap 3 + the 99's 34px
+          svg), Offline pill 96.4 (88.4 + mr 8), this slot 88 (two 44px buttons, its label hidden below sm), card
+          search 46 (44 + mr 2), the ? 50 (44 + the 6px gap), avatar 44 (38 + its 3px ring). With card search AND the ?
+          that is 428.4px, so the slot goes below 429px; with one of them 378.4 (search) or 382.4 (the ?), so G5's
+          390px holds for either. Without the slot the fullest header is 340.4px, inside the narrowest phone (360). */}
+      <div className={`flex items-center ${crowd}`} data-install-slot>
         <button
           type="button"
           onClick={onPress}

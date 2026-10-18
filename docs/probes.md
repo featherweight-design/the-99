@@ -605,6 +605,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   switches off too, where every page landing must draw no halo and write nothing (a route gone for the reader is its
   not-found page).
 
+- `pnpm probe:help-panel` presses the ? (discovery R2·8, C4, E13) in a real browser at 390 (the header's) and 1300
+  (the rail's), on `/collection`, a deck and then each page in turn until one draws a Show me. It asserts the ? holds
+  `aria-expanded` while open; the panel non-modal at 1300 and a modal sheet over a scrim at 390; focus into the panel
+  on open and back to the ? on close, by Escape and by ✕; a row opening in place with its Reference link; an Elsewhere
+  chip swapping the list; a search drawing hits, the none line, and the list back on clear; a deck's title naming the
+  builder's view; and Show me closing the panel, landing its halo (`data-target-halo`), pressing nothing and drawing no
+  bubble. A row, chip or Show me the account cannot draw is SKIP, never PASS. It WRITES NOTHING and holds no database
+  connection (the deck is read off `/decks`), so it needs no scratch branch. Run against `next start` with
+  `HELP_PANEL_ENABLED=true`. Card details under the panel is R2·9's extension.
+
 - `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its
   commander, one twelve short, one six over and one whole and COMMITTED through `commitVersion` (an unowned card over

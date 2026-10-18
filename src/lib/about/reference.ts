@@ -3,6 +3,9 @@ import { entryRow } from "../copy/how-it-works-links";
 import { SCREEN_WHERE, screenName, showcaseCopy } from "../copy/discovery";
 import type { ShowcaseGroup } from "../discovery/showcase";
 import { entryShotFor, type Shot } from "./shots";
+import { firstSentence } from "./caption";
+
+export { firstSentence };
 
 /**
  * The Reference tab's model (discovery R2·6a, README-r2 C5): every visible entry under the screen it lives on, the 21
@@ -48,17 +51,6 @@ export const REFERENCE_SCREENS: readonly Place[] = ABOUT_SCREENS.flatMap((screen
 
 export function screenKey(place: { screen: AboutScreen; view?: DeckView }): string {
   return place.view ? `${place.screen}-${place.view}` : place.screen;
-}
-
-/** The first sentence of the caption's first paragraph (a caption that opens with a list reads its first item). */
-export function firstSentence(caption: string): string {
-  // The caption's own marks (`entry-caption.tsx`): a blank line starts a paragraph, a `- ` line is a list item.
-  const block = caption.split(/\n\s*\n/).map((b) => b.trim()).find((b) => b.length > 0);
-  if (!block) return "";
-  const lines = block.split("\n").map((l) => l.trim());
-  const text = lines.every((l) => l.startsWith("- ")) ? lines[0].slice(2) : lines.join(" ");
-  const m = /^.*?[.?!](?=\s|$)/.exec(text);
-  return m ? m[0] : text;
 }
 
 function tryOf(card: ShowcaseGroup["cards"][number]): EntryTry | null {
