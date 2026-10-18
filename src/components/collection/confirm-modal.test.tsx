@@ -230,7 +230,7 @@ describe("ConfirmModal's capped column", () => {
     }
   });
 
-  it("scrolls the warning's deck list between its pinned title and buttons, filling the column", () => {
+  it("scrolls the warning's notice, explanation and deck list in one body between a pinned title and buttons", () => {
     render(
       <ConfirmModal
         preview={preview}
@@ -240,7 +240,7 @@ describe("ConfirmModal's capped column", () => {
         onConfirm={vi.fn()}
         warning={{
           decks: [{ deckId: "d1", deckName: "Tithe and Tax", oracleId: "o1", cardName: "Smothering Tithe", short: 1 }],
-          changed: false,
+          changed: true,
           fresh: new Set(),
           onConfirm: vi.fn(),
           source: "sync",
@@ -249,10 +249,22 @@ describe("ConfirmModal's capped column", () => {
     );
     const dialog = screen.getByRole("dialog");
     expectCappedBox(dialog);
-    const list = scrollerOf(dialog);
-    expect(list.className).toContain("min-h-0");
-    expect(list.contains(screen.getAllByRole("heading")[0])).toBe(false);
-    expect(list.contains(screen.getByRole("button", { name: "Cancel" }))).toBe(false);
+    // Exactly one scroller (asserted by scrollerOf), and it is the one that shrinks.
+    const body = scrollerOf(dialog);
+    expect(body.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1", "overscroll-contain"]));
+    // Only the title and the actions are pinned; on a short viewport the changed notice and the
+    // explanation would otherwise crowd the list out of the cap.
+    const title = screen.getByRole("heading");
+    expect(body.contains(title)).toBe(false);
+    expect(title.className).toContain("flex-none");
+    for (const name of ["Cancel", "Sync anyway"]) {
+      const button = screen.getByRole("button", { name });
+      expect(body.contains(button)).toBe(false);
+      expect(button.parentElement!.className).toContain("flex-none");
+    }
+    expect(body.contains(screen.getByRole("status"))).toBe(true);
+    expect(body.contains(screen.getByText(/^Nothing about these decks changes/))).toBe(true);
+    expect(body.contains(screen.getByRole("list"))).toBe(true);
     // The warning's root is told to fill the capped column, or its list never meets the cap.
     const fill = dialog.querySelector<HTMLElement>(":scope > .flex-1")!;
     expect(fill.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "*:min-h-0", "*:flex-1"]));

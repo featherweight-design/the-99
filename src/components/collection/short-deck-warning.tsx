@@ -5,8 +5,8 @@
 // and mounting another. One component for every source that can leave a committed deck short;
 // Replace is the first caller. Rows are always decks. A source that moves one card shows `short N`, a source that
 // moves several shows `N cards short` and the row opens onto its cards. Three decks are named and
-// the rest are counted behind `and N more`, which opens inline under a 320px cap. Cancel takes
-// focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
+// the rest are counted behind `and N more`, which opens inline (in the dialog's
+// scrolling body, or under a 320px cap when embedded). Cancel takes focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
 
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -114,6 +114,17 @@ export function ShortDeckWarning({
             {collectionEditCopy.upload.decksShortHeading(rows.length)}
           </h2>
         )}
+        {/* The dialog's one scroller: everything between the pinned title and the pinned buttons, so a capped
+            column on a short viewport shrinks this and never the buttons. The 6px inset keeps focus rings
+            unclipped. Embedded, there is no column to fill and the list keeps its own 320px cap. */}
+        <div
+          data-warning-body
+          className={
+            variant === "dialog"
+              ? "-m-[6px] flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto overscroll-contain p-[6px]"
+              : "flex flex-col gap-[14px]"
+          }
+        >
         {notice ? (
           <p role="status" className="m-0 flex-none text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
             {c.changed}
@@ -123,7 +134,7 @@ export function ShortDeckWarning({
           <p className={`m-0 flex-none text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] ${showAll ? "max-md:hidden" : ""}`}>{body}</p>
         ) : null}
         <ul
-          className={`m-0 min-h-0 list-none overflow-y-auto rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${showAll ? "max-h-[320px]" : ""}`}
+          className={`m-0 flex-none list-none rounded-[10px] border border-[color:var(--border)] bg-[color:var(--bg)] p-0 ${variant === "embedded" ? `overflow-y-auto ${showAll ? "max-h-[320px]" : ""}` : ""}`}
         >
           {named.map((row, index) => {
             const expandable = !oneCard;
@@ -190,6 +201,7 @@ export function ShortDeckWarning({
             {error}
           </p>
         ) : null}
+        </div>
         {/* `mt-auto`: in a host that gives the warning a fixed column (the revert confirmation), the
             buttons sit at its foot however short the list. Elsewhere it is 0, and the 4px is padding. */}
         {variant === "dialog" ? (
