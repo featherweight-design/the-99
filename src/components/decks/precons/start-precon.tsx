@@ -198,10 +198,12 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex w-full flex-col gap-[16px] rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
+        // Capped in dvh at both widths (an open keyboard shrinks it; the frame has no vertical padding) as a
+        // column that never scrolls itself: the title and the buttons are pinned, the body between them scrolls.
+        className="relative z-10 mx-auto flex max-h-[88dvh] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
       >
-        <span aria-hidden className="mx-auto h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)] md:hidden" />
-        <div className="flex items-start justify-between gap-[12px]">
+        <span aria-hidden className="mx-auto h-[4px] w-[36px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
+        <div className="flex flex-none items-start justify-between gap-[12px]">
           <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{copy.title(row.name)}</h2>
           <button
             type="button"
@@ -214,52 +216,58 @@ function StartPreconDialog({ row, cards, body, illegal, addedOn = null, canOwn =
           </button>
         </div>
 
-        <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
-          <CommanderThumb imageUri={row.commanders[0]?.imageUriSmall ?? row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
-          <div className="flex min-w-0 flex-col gap-[2px]">
-            <span className="font-display text-[15px] text-[color:var(--fg)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.beside(ident, body, pair)}</span>
+        <form onSubmit={(e) => { e.preventDefault(); void submit(); }} className="flex min-h-0 flex-1 flex-col gap-[14px]">
+          {/* The body scrolls inside the cap, so the title and the buttons stay in view. The 6px pad and its
+              negative margin keep a focus ring inside the scroller's clip. */}
+          <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
+            <div className="flex items-center gap-[11px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[10px_12px]">
+              <CommanderThumb imageUri={row.commanders[0]?.imageUriSmall ?? row.commanders[0]?.imageUri ?? null} colorIdentity={row.identity} size="list" />
+              <div className="flex min-w-0 flex-col gap-[2px]">
+                <span className="font-display text-[15px] text-[color:var(--fg)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
+                <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.beside(ident, body, pair)}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-[14px]">
+              <label className="flex flex-col gap-[6px]">
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{copy.nameLabel}</span>
+                <TextField
+                  ref={input}
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setFailed(false); }}
+                  maxLength={DECK_NAME_MAX}
+                  readOnly={pending}
+                  aria-invalid={!valid ? true : undefined}
+                  aria-describedby={!valid || failed ? errorId : undefined}
+                  className="w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[16px] [@media(pointer:fine)]:md:text-[14px]"
+                />
+              </label>
+
+              {canOwn && <div className="flex flex-col gap-[4px]">
+                <OptInCheckbox checked={own} disabled={pending} onChange={(next) => { setOwn(next); setFailed(false); }}>
+                  {copy.owned.label}
+                </OptInCheckbox>
+                {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
+              </div>}
+
+              {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}
+              {illegal.length > 0 && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.illegal(illegal)}</p>}
+
+              <div className="flex flex-col">
+                {fact(copy.facts.cards, copy.facts.cardsValue(cards, row.unmapped))}
+                {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
+                {fact(copy.facts.printings, copy.facts.printingsValue)}
+              </div>
+
+              {(failed || !valid) && (
+                <p id={errorId} role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
+                  {failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); void submit(); }} className="flex flex-col gap-[14px]">
-          <label className="flex flex-col gap-[6px]">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{copy.nameLabel}</span>
-            <TextField
-              ref={input}
-              value={name}
-              onChange={(e) => { setName(e.target.value); setFailed(false); }}
-              maxLength={DECK_NAME_MAX}
-              readOnly={pending}
-              aria-invalid={!valid ? true : undefined}
-              aria-describedby={!valid || failed ? errorId : undefined}
-              className="w-full rounded-[8px] px-[11px] py-[9px] font-sans text-[16px] [@media(pointer:fine)]:md:text-[14px]"
-            />
-          </label>
-
-          {canOwn && <div className="flex flex-col gap-[4px]">
-            <OptInCheckbox checked={own} disabled={pending} onChange={(next) => { setOwn(next); setFailed(false); }}>
-              {copy.owned.label}
-            </OptInCheckbox>
-            {addedOn && <p className="m-0 pl-[28px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.owned.addedOn(preconAddedDate(addedOn))}</p>}
-          </div>}
-
-          {already && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.already(already.deckName)}</p>}
-          {illegal.length > 0 && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.illegal(illegal)}</p>}
-
-          <div className="flex flex-col">
-            {fact(copy.facts.cards, copy.facts.cardsValue(cards, row.unmapped))}
-            {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
-            {fact(copy.facts.printings, copy.facts.printingsValue)}
-          </div>
-
-          {(failed || !valid) && (
-            <p id={errorId} role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
-              {failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
-            </p>
-          )}
-
-          <div className="flex gap-[8px] md:justify-end">
+          <div className="flex flex-none gap-[8px] md:justify-end">
             <button
               type="button"
               onClick={dismiss}

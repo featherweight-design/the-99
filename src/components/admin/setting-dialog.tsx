@@ -67,26 +67,31 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
         aria-modal="true"
         aria-labelledby={`${id}-title`}
         tabIndex={-1}
-        className="w-full rounded-[22px_22px_0_0] bg-[color:var(--surface-raised)] p-[18px_18px_28px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[420px] md:rounded-[14px] md:p-[24px] md:[border:1px_solid_var(--border-strong)]"
+        // Capped in dvh at both widths (an open keyboard shrinks it; the frame has no padding) as a column that
+        // never scrolls itself: the title and the buttons are pinned, the fields between them scroll.
+        className="flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-[22px_22px_0_0] bg-[color:var(--surface-raised)] p-[18px_18px_28px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[420px] md:rounded-[14px] md:p-[24px] md:[border:1px_solid_var(--border-strong)]"
       >
-        <h2 id={`${id}-title`} className="m-0 text-[17px] font-semibold text-[color:var(--fg)]">{title}</h2>
-        <form onSubmit={save} className="mt-[16px] flex flex-col gap-[12px]">
-          <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
-            {copy.amount}
-            <input ref={amountRef} name="amount" inputMode="decimal" autoComplete="off" required className={`${FIELD} font-mono`} />
-          </label>
-          {kind === "ceiling" && (
+        <h2 id={`${id}-title`} className="m-0 flex-none text-[17px] font-semibold text-[color:var(--fg)]">{title}</h2>
+        <form onSubmit={save} className="mt-[16px] flex min-h-0 flex-1 flex-col gap-[12px]">
+          {/* The 6px pad and its negative margin keep a focus ring inside the scroller's clip. */}
+          <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[12px] overflow-y-auto overscroll-contain p-[6px]">
             <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
-              {copy.starts}
-              <input name="start" type="month" required min={thisMonth} defaultValue={thisMonth} className={`${FIELD} font-mono`} />
+              {copy.amount}
+              <input ref={amountRef} name="amount" inputMode="decimal" autoComplete="off" required className={`${FIELD} font-mono`} />
             </label>
-          )}
-          <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
-            {copy.note}
-            <input name="note" maxLength={500} autoComplete="off" className={FIELD} />
-          </label>
-          {message && <p role="alert" className="m-0 text-[13px] text-[color:var(--danger)]">{message}</p>}
-          <div className="mt-[6px] flex flex-col-reverse gap-[10px] md:flex-row md:justify-end">
+            {kind === "ceiling" && (
+              <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
+                {copy.starts}
+                <input name="start" type="month" required min={thisMonth} defaultValue={thisMonth} className={`${FIELD} font-mono`} />
+              </label>
+            )}
+            <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
+              {copy.note}
+              <input name="note" maxLength={500} autoComplete="off" className={FIELD} />
+            </label>
+            {message && <p role="alert" className="m-0 text-[13px] text-[color:var(--danger)]">{message}</p>}
+          </div>
+          <div className="mt-[6px] flex flex-none flex-col-reverse gap-[10px] md:flex-row md:justify-end">
             <button type="button" onClick={onClose} disabled={pending} className="h-[44px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[18px] text-[14px] text-[color:var(--fg)] disabled:opacity-60 md:h-[38px]">
               {copy.cancel}
             </button>
