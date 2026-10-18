@@ -38,6 +38,7 @@ import type { ListedJump } from "./announced-parts";
 import { filterAnnounced } from "../../../lib/precons/arrivals";
 import type { AnnouncedProps } from "../../../lib/precons/announced";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 const copy = preconsCopy;
 export const PRECON_ORDER_KEY = "the99:precons:order";
@@ -230,7 +231,7 @@ export function PreconListView({
   return (
     <div className="pb-[96px]">
       <header className="flex flex-col gap-[4px] border-b-[1px] border-solid border-x-0 border-t-0 border-b-[color:var(--border)] p-[12px_16px_12px] md:p-[16px_22px_16px]">
-        <Link href={fromNew ? "/decks/new" : "/decks"} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+        <Link href={fromNew ? "/decks/new" : "/decks"} className={`${TOUCH_HIT} self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline`}>
           {fromNew ? copy.list.backNew : copy.list.back}
           <PendingReporter href={fromNew ? "/decks/new" : "/decks"} />
         </Link>

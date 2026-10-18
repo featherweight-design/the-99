@@ -20,6 +20,7 @@ import { StallWatch } from "../../shell/nav-stall";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 const copy = preconsCopy.list;
 const SHAPE = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
@@ -43,7 +44,7 @@ export function PreconsLoading({ storedView = null }: { storedView?: "tiles" | "
       <span role="status" className="sr-only">{preconsLoadingCopy.status}</span>
       <StallWatch />
       <header className="flex flex-col gap-[4px] border-b-[1px] border-solid border-x-0 border-t-0 border-b-[color:var(--border)] p-[12px_16px_12px] md:p-[16px_22px_16px]">
-        <Link href={back} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+        <Link href={back} className={`${TOUCH_HIT} self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline`}>
           {fromNew ? copy.backNew : copy.back}
           <PendingReporter href={back} />
         </Link>
