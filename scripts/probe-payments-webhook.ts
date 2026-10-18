@@ -340,7 +340,7 @@ async function run() {
     check("o · another app's charge is ignored", (await reverseCharge(stripeReversing(other, { refunded: 100, app: "concert-crawl" }), eventId(), "charge.refunded", "ch_x")).outcome, "ignored");
     const ours = id("pi");
     check("o · ours with no record yet asks for a retry", (await reverseCharge(stripeReversing(ours, { refunded: 100, app: "the-99" }), eventId(), "charge.refunded", "ch_x")).outcome, "retry");
-    check("o · ours with no record, past the grace window, is recorded as unmatched", (await reverseCharge(stripeReversing(ours, { refunded: 100, app: "the-99", ageSeconds: 3 * 3600 }), eventId(), "charge.refunded", "ch_x")).outcome, "unmatched");
+    check("o · ours with no record, past the grace window, is recorded as unmatched", (await reverseCharge(stripeReversing(ours, { refunded: 100, app: "the-99", ageSeconds: 73 * 3600 }), eventId(), "charge.refunded", "ch_x")).outcome, "unmatched");
   }
 
   // p · The same refund event delivered twice at once.

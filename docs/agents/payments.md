@@ -97,7 +97,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - **Refunds and disputes** (K2). The webhook also handles `charge.refunded`, `charge.dispute.created` and
   `charge.dispute.closed` (`reverseCharge`, `src/lib/payments/reverse.ts`; rules in `refund-rule.ts`). The charge,
   dispute and PaymentIntent are RETRIEVED; the event is a trigger. A charge is ours when its PaymentIntent has a
-  `payment_records` row. With none, a PaymentIntent tagged `the-99` answers 500 while the charge is under 2 hours old (not recorded yet, Stripe
+  `payment_records` row. With none, a PaymentIntent tagged `the-99` answers 500 while the charge is under 72 hours old (Stripe's redelivery horizon, so a valid Checkout still failing to fulfil is not mistaken for a refused one; a refused Checkout's hand refund therefore retries for up to 72 hours, bounded and noisy by design) (not recorded yet, Stripe
   redelivers); older, the event is recorded and answered 200 `unmatched` with an error log (a refused Checkout never gets a
   record; `reconcile:payments` covers it),
   anything else is Concert Crawl's and is 200 ignored. One transaction: the `stripe_events` row first, the

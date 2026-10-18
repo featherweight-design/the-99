@@ -35,6 +35,8 @@ export async function createPackCheckout(
   stripe: Stripe,
   input: { userId: string; email: string | null; packId: PackId; actionId: string },
 ): Promise<CheckoutResult> {
+  // NOT a lock: a dispute opening in the few milliseconds between this read and the Session's creation is not stopped.
+  // That Session is still a payment the customer made, and the NEXT purchase is blocked. The block is a brake, not an exact fence.
   // The one place a Session is made, so the one place the purchase block (K2) is enforced: no caller can skip it.
   // A Session made BEFORE a dispute and paid after still fulfils (`fulfilCheckoutSession` is untouched): the
   // payment happened, and refusing it would take money for nothing.

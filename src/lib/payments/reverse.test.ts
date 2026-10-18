@@ -135,10 +135,10 @@ describe("reverseCharge: whose charge it is", () => {
 
   it("stops asking for a retry once the charge is older than the grace window, and records the event", async () => {
     world.record = false;
-    charge.created = Math.floor(NOW.getTime() / 1000) - (2 * 3600 - 1);
+    charge.created = Math.floor(NOW.getTime() / 1000) - (72 * 3600 - 1);
     expect((await refund(500, "evt_young")).outcome).toBe("retry");
     expect(world.events.has("evt_young")).toBe(false);
-    charge.created = Math.floor(NOW.getTime() / 1000) - 2 * 3600;
+    charge.created = Math.floor(NOW.getTime() / 1000) - 72 * 3600;
     expect((await refund(500, "evt_old")).outcome).toBe("unmatched");
     expect(world.events.has("evt_old")).toBe(true);
     expect(world.grant.revokedUnits).toBe(0);
@@ -272,6 +272,17 @@ describe("reverseCharge: the refund claim is monotonic under the lock", () => {
     disputeStatus["dp_1"] = "won";
     await reverseCharge(stripe, "evt_d2", "charge.dispute.closed", "dp_1", NOW, store);
     expect(world.grant.revokedUnits).toBe(20);
+  });
+});
+
+describe("reverseCharge: a late partial refund after a lost dispute", () => {
+  it("keeps the loss's revocation and its shortfall (40 units, 15 spent: 25 revoked, 15 unrecovered)", async () => {
+    world.ledger = spent(15);
+    await disp("charge.dispute.created", "needs_response", "evt_1");
+    await disp("charge.dispute.closed", "lost", "evt_2");
+    expect(world.grant).toMatchObject({ revokedUnits: 25, unrecoveredUnits: 15 });
+    await refund(250, "evt_r");
+    expect(world.grant).toMatchObject({ revokedUnits: 25, unrecoveredUnits: 15 });
   });
 });
 

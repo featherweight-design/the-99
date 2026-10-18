@@ -29,9 +29,13 @@ import {
 export type ReverseOutcome =
   | "duplicate" | "ignored" | "retry" | "unmatched" | "no_grant" | "refund"
   | "dispute_opened" | "dispute_won" | "dispute_lost" | "dispute_unchanged";
-/** How long a charge of ours may wait for its payment record before we stop asking Stripe to retry (a Checkout that
- *  was refused has a tagged PaymentIntent and will never get one). `reconcile:payments` covers what it leaves. */
-export const RECORD_GRACE_MS = 2 * 60 * 60 * 1000;
+/** How long a charge of ours may wait for its payment record before we stop asking Stripe to retry: 72 hours, Stripe's
+ *  own redelivery horizon. A valid Checkout whose fulfilment is failing (config, database) is retried by Stripe for up to
+ *  3 days, and a hand refund arriving before it fulfils must not be recorded as `unmatched` and then let the delayed grant
+ *  through un-revoked. The cost: a Checkout that was REFUSED has a tagged PaymentIntent and will never get a record, so
+ *  its hand refund is retried (500) for up to 72 hours, then recorded `unmatched` (bounded, noisy, accepted).
+ *  `reconcile:payments` lists what it leaves. */
+export const RECORD_GRACE_MS = 72 * 60 * 60 * 1000;
 export type ReverseResult = { outcome: ReverseOutcome; shortfall?: boolean };
 
 export type GrantRow = { id: string; userId: string; units: number; revokedUnits: number; unrecoveredUnits: number; refundedCents: number };
@@ -145,8 +149,13 @@ export async function reverseCharge(
 
     if (plan === null) {
       const next = applyRevocation({ units: grant.units, revoked: grant.revokedUnits, held, target: standing(refund) });
-      await tx.setRevocation(grant.id, next.revoked, next.unrecovered, claim);
-      return { outcome: "refund" as const, shortfall: next.unrecovered > 0 };
+      // The SHORTFALL is read from the strongest standing claim: a LOST dispute is a whole-lot claim too, so a late
+      // half-refund cannot overwrite the loss's shortfall with 0. The revocation target is not raised by it (credits
+      // freed after the loss are not swept: the accepted snapshot), only the shortfall is kept honest.
+      const whole = disputeOpen || others.includes("lost");
+      const unrecovered = whole ? Math.max(0, grant.units - next.revoked) : next.unrecovered;
+      await tx.setRevocation(grant.id, next.revoked, unrecovered, claim);
+      return { outcome: "refund" as const, shortfall: unrecovered > 0 };
     }
 
     if (plan.kind === "restore") {
