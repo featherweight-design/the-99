@@ -124,7 +124,12 @@ export async function findCallers(root) {
   return found.sort();
 }
 
-/** Callers found but not registered, and registered entries naming a builder that is not in BUILDERS. */
+/**
+ * Callers found but not registered, and registered entries naming a builder that is not in BUILDERS.
+ * @param {string[]} found
+ * @param {Record<string, { builders?: string[], note?: string }>} [callers]
+ * @param {{ file: string, fns: string[] }[]} [builders]
+ */
 export function registryGaps(found, callers = CALLERS, builders = BUILDERS) {
   const known = new Set(builders.map((b) => b.file));
   return {
