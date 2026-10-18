@@ -49,6 +49,17 @@ describe("the result row", () => {
     expect(cardSearchCopy.row.aria("X", 0, [], false)).not.toContain(cardSearchCopy.row.wishlistAria);
   });
 
+  it("reads the bookmark's words from the copy key, not a second literal", () => {
+    const row_ = cardSearchCopy.row as { wishlistAria: string };
+    const was = row_.wishlistAria;
+    row_.wishlistAria = "kept for later";
+    try {
+      expect(draw(row()).getAttribute("aria-label")).toMatch(/, kept for later$/);
+    } finally {
+      row_.wishlistAria = was;
+    }
+  });
+
   it("draws ownership, the first deck and how many more", () => {
     const opt = draw(row());
     expect(opt.textContent).toContain("×2 owned");
