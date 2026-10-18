@@ -11,7 +11,7 @@ import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { heldOf } from "../../lib/collection/add-lines";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
 import { comparePrintings, matchesPreference } from "../../lib/collection/browse";
-import { identityGradient } from "../../lib/collection/gradients";
+import { identityGradient } from "../../lib/cards/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";

@@ -1,5 +1,5 @@
 import { ART_STRIPES } from "../../lib/collection/browse";
-import { commanderGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/cards/gradients";
 import { HydratedImg } from "./hydrated-art";
 import { ArtLayer } from "./art-layer";
 

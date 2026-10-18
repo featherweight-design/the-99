@@ -21,7 +21,7 @@
 
 import { Fragment } from "react";
 
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/cards/colors";
 import { faceCosts } from "../../lib/cards/faces";
 import { manaSymbolBackground } from "../../lib/cards/mana-symbols";
 import { manaCopy, spokenFullManaCost } from "../../lib/copy/card-surfaces";

@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/cards/colors";
 import { manaCopy, spokenFullManaCost, spokenManaCost } from "../../lib/copy/card-surfaces";
 import { faceCosts, frontFaceCost } from "../../lib/cards/faces";
 
