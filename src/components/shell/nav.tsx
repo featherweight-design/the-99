@@ -282,8 +282,12 @@ function tabPlace(slot: HTMLElement) {
  * slot, so the pointer can travel onto it (WCAG 1.4.13); it closes on Escape,
  * on focus leaving slot and note, and on a press outside both.
  */
-/** The tour's stops on a locked slot (discovery R3·1b): Commanders, and Decks for steps 3 and 4. */
-const tourSlot = (href: NavHref): TargetId | null => (href === "/commanders" ? "tour:commanders" : href === "/decks" ? "tour:decks" : null);
+/**
+ * The tour's stops on a slot, locked or live: Commanders, and Decks for steps 3 and 4 (discovery R3·1b), and Collection
+ * for step 1 of the tour taken again on a dashboard (R3·2), which runs on whatever state the shell draws.
+ */
+const tourSlot = (href: string): TargetId | null =>
+  href === "/collection" ? "tour:collection" : href === "/commanders" ? "tour:commanders" : href === "/decks" ? "tour:decks" : null;
 
 function RailLock({ pathname, openLock }: { pathname: string; openLock: OpenLock }) {
   const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
@@ -617,6 +621,7 @@ function NavSlot({ href, name, active, pip, className, handlers, moment = false,
       aria-current={active ? "page" : undefined}
       className={`relative ${className}`}
     >
+      <TargetBox id={tourSlot(href)} />
       {children}
       <PendingPip href={href} placement={pip} />
     </Link>
@@ -633,6 +638,8 @@ export type AdminDoorProps = {
   credits?: ChipState | null;
   /** M11 (discovery R1): a game logged and no friend yet, so the account button carries Friends after a game. */
   friendsMoment?: boolean;
+  /** `FIRST_RUN_TOUR_ENABLED` for this reader (discovery R3·2): the account menu's `Take the tour` row. */
+  tour?: boolean;
 };
 
 /** M12 (discovery R1): the reader has no deck, so on the `/commanders` list Discover carries Help me choose. */
@@ -650,6 +657,7 @@ export function NavRail({
   friends,
   credits,
   friendsMoment,
+  tour,
   helpMoment = false,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean } & AdminDoorProps) {
   const pathname = usePathname();
@@ -750,7 +758,7 @@ export function NavRail({
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} tour={tour} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -839,7 +847,7 @@ export function TabBar({ locked, openLock = null, helpMoment = false }: { locked
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, tour }: { theme: ThemeKey } & AdminDoorProps) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -881,7 +889,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} credits={credits} friendsMoment={friendsMoment} tour={tour} />
         </div>
       </div>
     </header>

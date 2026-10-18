@@ -205,6 +205,17 @@ export const helpPanelCopy = {
 } as const;
 
 /**
+ * `Take the tour` (discovery R3·2, plan decision 6): the account menu's row directly under About The 99, and About's
+ * head press after the subtitle, drawn as `Open the Reference →` is. Both go to `TOUR_HREF`. Its own export, so the shell
+ * carries these two strings and not the tour's.
+ */
+export const tourAgainCopy = { menu: 'Take the tour', aboutPress: 'Take the tour →' } as const;
+
+/** Where both presses go: Home, which starts the tour and strips the parameter. */
+export const TOUR_PARAM = 'tour';
+export const TOUR_HREF = `/?${TOUR_PARAM}=1`;
+
+/**
  * The first-run tour (discovery R3·1b; handoff `discovery-r3 · copy strings.ts`, `tourCopy`). The card is a modal
  * dialog labelled by its title; `lit` names what each step points at, for the dialog's description.
  */
@@ -218,6 +229,8 @@ export const tourCopy = {
   litAria: (control: string) => `Pointing at ${control}.`,
   lit: {
     collection: 'Add your collection',
+    /** The tour taken again on a dashboard (R3·2): step 1 points at the Collection slot. */
+    collectionSlot: 'Collection',
     commanders: 'Commanders',
     decks: 'Decks',
     account: 'the account menu',
@@ -231,6 +244,8 @@ export const tourCopy = {
       /** `PRECONS_ENABLED`; the middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
       precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
       foot: 'Six stops · about a minute · ✕ skips the tour',
+      /** The tour taken again with the nav unlocked (R3·2); a locked dashboard keeps `body`. /copy-review 2026-10-17. */
+      replayBody: 'Everything here is built from your collection. Drop in a new file whenever it changes.',
     },
     commanders: {
       place: 'Commanders',
@@ -238,6 +253,9 @@ export const tourCopy = {
       body: 'Every commander your cards can lead, ranked by how much of the 99 you already own. It opens once your cards are in.',
       picture: 'Commanders, once your cards are in',
       pictureAlt: 'Commanders, on a real collection',
+      /** Unlocked replay (R3·2): the shipped body less its lock sentence, and a caption with no lock in it. */
+      replayBody: 'Every commander your cards can lead, ranked by how much of the 99 you already own.',
+      replayPicture: 'Commanders, on someone else’s cards',
     },
     decks: {
       place: 'Decks',
@@ -245,6 +263,8 @@ export const tourCopy = {
       body: 'Pick a commander and the 99 is assembled from your cards. Then tune it, track it and log the games it plays.',
       picture: 'A deck, once you build one',
       pictureAlt: 'A deck page, on a real deck',
+      /** Unlocked replay (R3·2). */
+      replayPicture: 'A deck, built by someone else',
     },
     buying: {
       place: 'Buying',

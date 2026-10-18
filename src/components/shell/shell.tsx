@@ -15,6 +15,7 @@ import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { socialFriendsEnabled } from "../../lib/social/flag";
+import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
@@ -80,6 +81,8 @@ export default async function Shell({
     friends: socialFriendsEnabled(env),
     // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
+    // `Take the tour` under About in the account menu (discovery R3·2), with the tour's own switch.
+    tour: firstRunTourEnabled(env),
   };
   // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
   const cardSearch = cardSearchEnabled(env);
@@ -115,7 +118,8 @@ export default async function Shell({
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider stall={stall}>
       {/* The halo targets (discovery R2), on whatever the switches say: every moment's control registers here. */}
-      <TargetsProvider>
+      {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}
+      <TargetsProvider navLocked={locked}>
       <MomentsProvider live={moments} spent={spentMoments}>
       <CardSearchShell userId={cardSearch ? userId : null}>
       <HelpRoot on={help}>

@@ -33,7 +33,7 @@ export type Step = {
   kind: CutoutKind;
   place: Placement;
   picture: Picture | null;
-  lit: "collection" | "commanders" | "decks" | "account" | "banner";
+  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "account" | "banner";
 };
 
 export const STEPS: readonly Step[] = [
@@ -45,6 +45,20 @@ export const STEPS: readonly Step[] = [
   { key: "look", target: "tour:account", kind: "account", place: "beside-foot", picture: null, lit: "account" },
   { key: "whatsNew", target: "tour:banner", kind: "banner", place: "below-start", picture: null, lit: "banner" },
 ];
+
+/**
+ * Where the tour runs (R3·2, plan decision 6). `first-run`: the checklist Home, step 1 on its card. `dashboard`: the
+ * tour taken again on the real app, where step 1 lights the Collection slot (rail or tab bar) instead, placed beside
+ * it as the other slots are. Steps 2 to 6 are the same stops on both.
+ */
+export type TourMode = "first-run" | "dashboard";
+
+const DASHBOARD_FIRST: Step = { key: "collection", target: "tour:collection", kind: "slot", place: "beside", picture: null, lit: "collectionSlot" };
+const DASHBOARD_STEPS: readonly Step[] = [DASHBOARD_FIRST, ...STEPS.slice(1)];
+
+export function stepsFor(mode: TourMode): readonly Step[] {
+  return mode === "dashboard" ? DASHBOARD_STEPS : STEPS;
+}
 
 export type Box = { x: number; y: number; w: number; h: number };
 export type Cutout = Box & { r: number };
@@ -77,6 +91,15 @@ export const CARD_W = 340;
  * locked tab bar's bracket rather than the bar's own 74px top.
  */
 export const PHONE_DOCK = 100;
+
+/**
+ * The dock for this nav: 12 above the tab bar the shell draws, which is 88 locked (`shell.tsx`) and 74 open
+ * (`globals.css`). The tour's card portals to `<body>`, outside the shell's `--tabbar-h` override, so it cannot read the
+ * bar's height from CSS. Unknown (`null`, no provider value) is the locked bar, as first run always is.
+ */
+export function phoneDock(navLocked: boolean | null): number {
+  return navLocked === false ? 74 + 12 : PHONE_DOCK;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
 

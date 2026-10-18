@@ -630,6 +630,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   production by `neon.branch_id`, and an account holding cards or decks. `PROBE_SHOTS=<dir>` photographs every step
   and the fallback: the tour's contact sheet (`discovery-r2-r3.json`, `needsFixture`).
 
+  It also runs **the tour taken again** (R3·2, plan decision 6) at both widths. A first-run account whose tour is
+  spent: Home opens nothing by itself, About's `Take the tour →` lands on `/?tour=1`, the first-run tour runs, the
+  parameter is stripped and the stamp does not move. A decks-only account (the dedicated account given one empty deck
+  for the leg, deleted in a `finally`, so Home is the dashboard under a locked nav): every stop sits on its real-app
+  slot and the `once your cards are in` captions show. A dashboard account with cards (`E2E_AUDIT_USER_EMAIL`, nav
+  unlocked), started from the account menu's row, which must sit directly under `About The 99`: step 1 lights the
+  Collection slot with no precon line, the replay's captions show, step 6 lights the banner or nothing, and a second
+  replay moves no stamp. That account's only write is the tour's own spend, which writes `tour_seen_at` only while it
+  is null. Last, the switch OFF for the dedicated account, by an ACCOUNT override on `flag_overrides` (waited past the
+  resolver's 30-second memo, deleted in a `finally`): no press at About's head, no menu row, and `/?tour=1` runs
+  nothing. The database must carry R3·1a's `tour_seen_at` migration, and the dedicated account must hold no decks or
+  cards on its way in. `PROBE_SHOTS` adds `tour-again-open-<step>-<width>.png` and
+  `tour-again-locked-<step>-<width>.png`.
+
 - `pnpm fixtures:about` builds the account About's screenshots are taken from (discovery R2·4, READINESS-r2 E9) on
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its
   commander, one twelve short, one six over and one whole and COMMITTED through `commitVersion` (an unowned card over

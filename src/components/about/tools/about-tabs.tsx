@@ -5,7 +5,9 @@
 // no navigation runs. `/about` (R2·6b) hands it both panels and the tab the URL asked for.
 
 import { useState, type ReactNode } from "react";
-import { aboutShapeCopy } from "../../../lib/copy/discovery";
+import Link from "next/link";
+import { aboutShapeCopy, TOUR_HREF, tourAgainCopy } from "../../../lib/copy/discovery";
+import { PendingReporter } from "../../shell/pending-reporter";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { ABOUT_TABS, aboutTabOf, TAB_PARAM, type AboutTab } from "../../../lib/about/tab";
@@ -20,6 +22,8 @@ export type AboutTabsProps = {
   panels: Record<AboutTab, ReactNode>;
   /** The ? is drawn (`HELP_PANEL_ENABLED`): from `md`, a hint beside the tabs points at it. */
   helpHint: boolean;
+  /** `FIRST_RUN_TOUR_ENABLED` for the reader (discovery R3·2): `Take the tour →` after the subtitle. */
+  tour?: boolean;
   /**
    * Mounted from the first time its tab is drawn, and kept after. Both panels are in the document from the start (the
    * one not chosen is `hidden`), so anything that must happen only when a tab is SEEN goes here: About's visit is
@@ -28,7 +32,7 @@ export type AboutTabsProps = {
   onceShown?: Partial<Record<AboutTab, ReactNode>>;
 };
 
-export function AboutTabs({ initial, counts, panels, helpHint, onceShown }: AboutTabsProps) {
+export function AboutTabs({ initial, counts, panels, helpHint, tour = false, onceShown }: AboutTabsProps) {
   const [tab, setTab] = useState<AboutTab>(initial);
   // The tabs drawn so far, adjusted during render as `tab` moves, so a once-shown child mounts in the same commit as
   // its tab.
@@ -61,6 +65,17 @@ export function AboutTabs({ initial, counts, panels, helpHint, onceShown }: Abou
         </h1>
         <p className="m-0 mt-[6px] text-[14.5px] leading-[1.5] text-[color:var(--fg-body)] md:mt-[8px] md:text-[15px] md:leading-normal">
           {tab === "tools" ? aboutShapeCopy.toolsSub : aboutShapeCopy.referenceSub}
+          {/* The tour taken again (plan decision 6): a text press in the accent after the subtitle, drawn as the Tools
+              tab's `Open the Reference →` is. */}
+          {tour && (
+            <>
+              {" "}
+              <Link data-tour-again href={TOUR_HREF} className="whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline">
+                {tourAgainCopy.aboutPress}
+                <PendingReporter href={TOUR_HREF} />
+              </Link>
+            </>
+          )}
         </p>
       </div>
       {/* 390: 10px under the Tools sub (ShowcasePhone), 14px under the Reference sub (ReferencePhone); 26px on both Desk boards. */}
