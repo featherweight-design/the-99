@@ -24,5 +24,8 @@ describe("ModelConfirm", () => {
       "Within 30 seconds, on every server.",
     ]);
     expect(screen.getByRole("button", { name: "Turn on for 2" })).toBeInTheDocument();
+    // A flex item that clips its overflow would shrink under the cap and cut the lower facts off; it must keep
+    // its height so the body scrolls instead.
+    expect(document.querySelector("dl")?.className).toMatch(/(?<![\w-])shrink-0(?![\w-])/);
   });
 });

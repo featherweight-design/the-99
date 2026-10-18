@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { popoverRoom } from "./filter-panel";
+import { popoverPlacement } from "./filter-panel";
 
 // Hugh's modal rule, for every modal: the box has a max height within the viewport, the list or body is a scroll
 // container, the header and footer stay visible, and the shared scroll lock is respected. It is kept in the SHARED
@@ -170,9 +170,13 @@ export function shellFailures(shell: Shell, text?: string): string[] {
   return found;
 }
 
-// The cap is in dvh, never vh: a phone's open keyboard shrinks the dynamic viewport and not the large one, so a
-// vh-capped box keeps its height and its footer sinks under the keyboard. Every height and max-height under
-// src/components is swept, class token or style key, so a new modal cannot bring vh back. `h-screen` is 100vh.
+// The cap is in dvh, never vh: dvh tracks the browser's dynamic toolbars (a phone's address bar showing or
+// hiding), where vh is the large viewport, so a vh-capped box can run under a shown toolbar and lose its footer.
+// dvh does NOT track the on-screen keyboard: on iOS Safari and default Android Chrome the keyboard shrinks the
+// VISUAL viewport, not the layout viewport dvh measures. Keyboard framing is visual-viewport framing, which
+// SocialModal does with --social-vv-h; the other input-bearing shells get it in a follow-up. Every height and
+// max-height under src/components is swept, class token or style key, so a new modal cannot bring vh back.
+// `h-screen` is 100vh.
 const VH_TOKEN = /(?<![\w-])(?:[\w[\]():@-]+:)*(?:max-h-|h-|min-h-)(?:\[[^\]\s]*\]|screen)(?![\w-])/g;
 const VH_STYLE = /\b(?:maxHeight|height|minHeight)\s*:\s*["'`][^"'`]*/g;
 /** A vh length, once dvh, svh and lvh are struck out. */
@@ -250,9 +254,35 @@ describe("modal shells: capped box, scrolling body, pinned header and footer", (
   });
 });
 
-describe("popoverRoom", () => {
-  it("is the room under the trigger less the 6px drop and the 16px gutter, never under 160", () => {
-    expect(popoverRoom(100, 900)).toBe(778);
-    expect(popoverRoom(800, 900)).toBe(160);
+describe("popoverPlacement", () => {
+  const GUTTER = 16;
+  /** The placed box's top and bottom in viewport px, for a trigger [top, bottom] and the box's natural height. */
+  const placed = (top: number, bottom: number, vh: number, wanted: number) => {
+    const p = popoverPlacement(top, bottom, vh, wanted);
+    const h = Math.min(wanted, p.maxHeight);
+    return p.side === "below" ? { ...p, top: bottom + 6, bottom: bottom + 6 + h } : { ...p, top: top - 6 - h, bottom: top - 6 };
+  };
+
+  it("opens below with the room under the trigger, less the 6px drop and the 16px gutter, when it fits", () => {
+    expect(popoverPlacement(60, 100, 900, 500)).toEqual({ side: "below", maxHeight: 778 });
+  });
+
+  it("flips above a trigger near the fold, capped to the room above", () => {
+    expect(popoverPlacement(760, 800, 900, 500)).toEqual({ side: "above", maxHeight: 738 });
+  });
+
+  it("stays below, capped to the room there, when below has at least as much room as above", () => {
+    expect(popoverPlacement(400, 440, 900, 600)).toEqual({ side: "below", maxHeight: 438 });
+  });
+
+  it("never places the box past the viewport, at any trigger and height", () => {
+    const off: string[] = [];
+    for (const vh of [500, 700, 900, 1200])
+      for (let top = 0; top + 40 <= vh; top += 20)
+        for (const wanted of [0, 80, 200, 384, 520, 900, 2000]) {
+          const b = placed(top, top + 40, vh, wanted);
+          if (b.top < GUTTER || b.bottom > vh - GUTTER) off.push(`vh ${vh} trigger ${top} wanted ${wanted}: ${b.side} ${b.top}..${b.bottom}`);
+        }
+    expect(off).toEqual([]);
   });
 });

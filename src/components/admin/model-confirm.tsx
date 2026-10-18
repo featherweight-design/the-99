@@ -81,7 +81,9 @@ export function ModelConfirm({
           <p id={`${id}-lead`} className="m-0 text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
             {lead(context, preview, leadText)}
           </p>
-          <dl className="m-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
+          {/* shrink-0: a flex item that clips its overflow may shrink to nothing, so under the cap the facts would be
+              cut off instead of the body scrolling. */}
+          <dl className="m-0 shrink-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
             {facts.map(([k, v], i) => (
               <div
                 key={k}
