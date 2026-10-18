@@ -248,17 +248,21 @@ try {
     const shown = [];
     sink = shown;
     route = `${target} Show`;
+    // The Show's own answer, read directly: a listener's body read can fail without a trace.
+    const showP = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === new URL(`${BASE}${target}`).pathname, { timeout: 15_000 });
     await onPageRole(page, "button", /^Show /).filter({ visible: true }).first().click();
+    const showAnswer = await showP.then((r) => r.text()).then((t) => t.toLowerCase(), () => null);
     const head = onPage(page, "[data-testid='account-head'][data-revealed]");
     report("Show reveals the head", await head.waitFor({ timeout: 10_000 }).then(() => true, () => false));
     await page.waitForLoadState("networkidle");
     report("the revealed head draws the whole email and the Clerk id", Boolean(email) && (await head.innerText()).toLowerCase().includes(email) && (await head.innerText()).includes(id));
     await drain();
-    const carry = shown.filter((b) => email && holds(b.text, email));
+    // Every other response of the Show (the page's refresh among them) must not carry it.
+    const others = shown.filter((b) => !(b.method === "POST" && b.text === showAnswer) && email && holds(b.text, email));
     report(
       "the whole email reaches the browser once, in the Show action's response",
-      carry.length === 1 && carry[0].method === "POST" && carry[0].type.includes("text/x-component"),
-      carry.map((b) => `${b.method} ${new URL(b.url).pathname}`).join(", ") || "none",
+      Boolean(email) && showAnswer !== null && holds(showAnswer, email) && others.length === 0,
+      showAnswer === null ? "the answer was not read" : others.map((b) => `${b.method} ${new URL(b.url).pathname}`).join(", ") || "the action's answer only",
     );
     const [{ n: after }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
     report("the Show writes one account_revealed event", after === before + 1, `${before} then ${after}`);
@@ -320,25 +324,28 @@ try {
     sink = looked;
     route = "/admin/accounts lookup";
     await field.fill(email.toUpperCase());
-    report("an address waits for Enter, the list whole (A8)", (await onPage(page, "[data-lookup-line='enter']").count()) === 1);
+    const listed = await onPage(page, "[data-testid='account-rows'] li").count();
+    report("an address waits for Enter, the list whole (A8)", (await onPage(page, "[data-lookup-line='enter']").count()) === 1 && listed === accounts.length, `${listed} of ${accounts.length} rows`);
+    // The lookup's own answer, read directly: a listener's body read can fail without a trace.
+    const answerP = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/admin/accounts", { timeout: 15_000 });
     await field.press("Enter");
+    const answer = await answerP.then((r) => r.text()).then((t) => t.toLowerCase(), () => null);
     const hit = await onPage(page, "[data-lookup-line='hit']").waitFor({ timeout: 10_000 }).then(() => true, () => false);
     await page.waitForLoadState("networkidle");
     await shot("masking-lookup-hit");
     const one = onPage(page, "[data-testid='account-rows'] li");
     report("a hit narrows the list to its one masked row, with Show (A3)", hit && (await one.count()) === 1 && (await one.first().getByRole("button", { name: /^Show / }).count()) === 1 && !(await one.first().innerText()).toLowerCase().includes(email));
     await drain();
-    const answers = looked.filter((b) => b.method === "POST");
     report(
       "the lookup's answer carries no name or email, and no response does",
-      answers.length >= 1 && !looked.some((b) => find.some((n) => holds(b.text, n))),
-      `${answers.length} action response(s)`,
+      answer !== null && !find.some((n) => holds(answer, n)) && !looked.some((b) => find.some((n) => holds(b.text, n))),
+      answer === null ? "the answer was not read" : `${answer.length} bytes`,
     );
     await field.fill(`nobody-${Date.now()}@pii-probe.example`);
     await field.press("Enter");
     const miss = await onPage(page, "[data-lookup-line='miss']").waitFor({ timeout: 10_000 }).then(() => true, () => false);
     await shot("masking-lookup-miss");
-    report("a miss draws no rows and no column head (A4)", miss && (await onPage(page, "[data-testid='account-rows']").count()) === 0);
+    report("a miss draws no rows and no column head (A4)", miss && (await onPage(page, "[data-testid='account-card']").count()) === 0);
     await page.route(`${BASE}/admin/accounts`, (r) => (r.request().method() === "POST" ? r.abort() : r.fallback()));
     await field.fill(email);
     await field.press("Enter");

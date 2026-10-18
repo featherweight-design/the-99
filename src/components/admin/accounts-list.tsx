@@ -216,7 +216,7 @@ export function AccountsList({
         {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
         {/* A4: a miss draws no rows and no column head, only the line above. */}
         {answer?.kind !== "miss" && (
-        <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
+        <div data-testid="account-card" className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
             className={`sticky top-[calc(var(--header-offset,0px)+var(--admin-head-h,0px)+var(--admin-pin-h,0px))] z-[1] hidden bg-[color:var(--surface-rail)] px-[16px] py-[9px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)] ${GRID}`}
