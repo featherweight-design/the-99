@@ -893,11 +893,10 @@ export function FilterPanel({
                 ? "border-[color:var(--accent)] focus-within:border-[color:var(--accent)]"
                 : "")
             }
-            // 14px mobile / 13px desktop as specced. 14px sits under Safari's
-            // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
-            // decision, not one to make inside a single control (gap 3).
+            // 14px mobile / 13px desktop as specced, for a mouse. A touch screen draws 16px, Safari's
+            // focus-zoom floor, rather than a global maximum-scale=1 (an App Shell decision, gap 3).
             // The placeholder is the primitive's --fg-placeholder, like every search field.
-            className={bp("text-[13px]", "text-[14px]")}
+            className={bp("text-[16px] [@media(pointer:fine)]:text-[13px]", "text-[16px] [@media(pointer:fine)]:text-[14px]")}
             clearLabel={copy.clearSearch}
             onClear={() => {
               setQuery("");

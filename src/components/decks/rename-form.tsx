@@ -49,7 +49,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         // layout commits on blur.
         readOnly={isPending}
         aria-label={renameCopy.fieldAria}
-        className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans bg-[color:var(--bg)]"
+        className="w-full rounded-[6px] px-[10px] py-[7px] text-[16px] [@media(pointer:fine)]:text-[13px] font-sans bg-[color:var(--bg)]"
       />
       {error && (
         <p className="font-mono text-[11px]" style={{ color: "var(--danger)" }}>

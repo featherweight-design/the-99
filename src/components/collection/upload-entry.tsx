@@ -115,7 +115,7 @@ export function UploadEntry({
         aria-label="Paste your card list"
         maxLength={PASTE_MAX_BYTES}
         placeholder={"3 Sol Ring\n1 Cultivate\nRhystic Study"}
-        className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[13px] resize-none"
+        className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] [@media(pointer:fine)]:text-[13px] resize-none"
         style={{
           background: "var(--surface-sunken)",
           border: "1px solid var(--border-strong)",
