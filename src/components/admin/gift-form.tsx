@@ -68,7 +68,7 @@ export function GiftForm({ accounts, clerkDown }: { accounts: readonly PickAccou
     } catch {
       // A rejected action may have committed before its reply was lost: the id is kept, so pressing again is safe.
       setInFlight(false);
-      setFailure(f.errors.failed);
+      setFailure(f.errors.lost);
       router.refresh();
       return;
     }

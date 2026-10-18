@@ -45,9 +45,8 @@ export function PaymentsView({
   const nextHref = hrefFor(shiftMonth(month, 1), current);
   const nameOf = (id: string) => names[id] ?? id;
   // USD first (the Prices are in USD); any other currency is its own set of tiles, never added in.
-  const [main, ...others] = payments.revenue;
-  const usdRow = main && main.currency.toLowerCase() === "usd" ? main : null;
-  const rest = usdRow ? others : payments.revenue;
+  const usdRow = payments.revenue.find((r) => r.currency.toLowerCase() === "usd") ?? null;
+  const rest = payments.revenue.filter((r) => r !== usdRow);
   const tilesFor = (r: PaymentsMonth["revenue"][number] | null, currency: string) => [
     { label: copy.tiles.gross, fig: money(r?.grossCents ?? 0, currency), sub: [copy.tileSub.payments(r?.payments ?? 0), r?.unattributed ? copy.tileSub.unattributed(r.unattributed) : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.tax, fig: money(r?.taxCents ?? 0, currency), sub: copy.tileSub.tax },

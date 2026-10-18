@@ -39,6 +39,17 @@ describe("PaymentsView", () => {
     expect(screen.getAllByText("5.00 EUR")).toHaveLength(2); // paid and net; no tax
   });
 
+  it("draws USD in the main tiles even when another currency took in more", () => {
+    const eurBigger = { ...payments, revenue: [
+      { currency: "eur", payments: 1, grossCents: 50_000, taxCents: 0, unattributed: 0, netCents: 50_000 },
+      { currency: "usd", payments: 1, grossCents: 400, taxCents: 0, unattributed: 0, netCents: 400 },
+    ] };
+    render(<PaymentsView month={OCT} current={OCT} payments={eurBigger} spendMicro={0} names={{}} accounts={[]} clerk="ok" />);
+    expect(within(screen.getByTestId("payments-tiles")).getAllByText("$4.00")).toHaveLength(2);
+    expect(screen.getByText("In EUR")).toBeInTheDocument();
+    expect(screen.queryByText("In USD")).toBeNull();
+  });
+
   it("names lots and gifts masked, with what was taken back and why", () => {
     view();
     expect(screen.getAllByText("3 · 1 taken back").length).toBeGreaterThan(0);

@@ -76,12 +76,14 @@ describe("GiftForm", () => {
     expect(grant).toHaveBeenCalledOnce();
   });
 
-  it("words each refusal and keeps the form to correct it", async () => {
-    grant.mockResolvedValueOnce({ ok: false, error: "unknown" });
+  it("words each refusal and keeps the form to correct it; a server failure says nothing changed", async () => {
+    grant.mockResolvedValueOnce({ ok: false, error: "unknown" }).mockResolvedValueOnce({ ok: false, error: "failed" });
     render(<GiftForm accounts={ACCOUNTS} clerkDown={false} />);
     fill();
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Grant" })));
     expect(within(pending()!).getByRole("alert")).toHaveTextContent("This environment's Clerk does not know that account.");
+    await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Grant" })));
+    expect(within(pending()!).getByRole("alert")).toHaveTextContent("Couldn't grant the credits, so nothing changed.");
   });
 
   it("says when Clerk could not be read", () => {
