@@ -69,7 +69,9 @@ describe("the states", () => {
   it("K5: payment failed, credits still work, Update card leads and Cancel plan is the text button after it", () => {
     const { container } = render(<PlanCard plan={plan("pastDue")} onToast={vi.fn()} />);
     expect(screen.getByText("Your payment didn’t go through")).toBeTruthy();
-    expect(screen.getByText(/your 74 plan credits still work meanwhile/)).toBeTruthy();
+    expect(screen.getByText(/Your 74 plan credits still work for now/)).toBeTruthy();
+    // Stripe's `unpaid` also lands here: nothing may promise a retry.
+    expect(screen.queryByText(/try again/)).toBeNull();
     expect(buttons()).toEqual(["Update card↗", "Cancel plan"]);
     expect(container.querySelector("[data-plan-state=pastDue]")?.className).toContain("var(--warning)");
     expect(screen.getByRole("button", { name: /Update card/ }).className).toContain("bg-[color:var(--accent)]");
