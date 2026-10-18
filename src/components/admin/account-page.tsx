@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { moveAccountToGroup } from "../../app/admin/accounts/actions";
@@ -12,6 +12,9 @@ import type { ConfirmPreview } from "../../lib/admin/rise-confirm";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Avatar } from "./accounts-list";
+import { RevealFailedToast, ShowButton } from "./show-button";
+import { useReveal, utcHourMinute } from "./use-reveal";
+import { adminMaskCopy } from "../../lib/copy/admin";
 import { SectionHead } from "./costs-detail";
 import { ModelConfirm } from "./model-confirm";
 import { AccountInvitesSection } from "./invites-section";
@@ -336,25 +339,51 @@ function FeatureSpendTable({ page }: { page: AccountPage }) {
 }
 
 export function AccountPageView({ page }: { page: AccountPage }) {
+  // This view's own reveal (D7): a Show made on the list does not carry here. A Show that lands refreshes the page so
+  // History draws its log line at once (D8); the reveal is client state and survives the refresh.
+  const router = useRouter();
+  const refreshPage = useCallback(() => router.refresh(), [router]);
+  const reveal = useReveal(undefined, refreshPage);
+  const rev = reveal.revealed.get(page.id) ?? null;
+  const show = page.canShow && (
+    <ShowButton
+      on={rev !== null}
+      pending={reveal.pending.has(page.id)}
+      label={page.name}
+      onShow={() => void reveal.show(page.id, page.name)}
+      onHide={() => reveal.hide(page.id)}
+    />
+  );
   return (
     <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
       {page.clerk === "down" && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
       {!page.overridesRead && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
-      <div data-testid="account-head" className="flex items-start gap-[14px]">
+      <div data-testid="account-head" data-revealed={rev ? "" : undefined} className="flex items-start gap-[14px]">
         <Avatar text={page.initials} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{page.name}</h1>
-          {page.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{page.email}</span>}
+          <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{rev?.name ?? page.name}</h1>
+          {rev ? (
+            rev.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{rev.email}</span>
+          ) : (
+            page.email && <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{page.email}</span>
+          )}
+          {/* D3: the id appears only on a revealed account, under the email, where it is the thing to copy into Clerk. */}
+          {rev && <span className="break-all font-mono text-[10.5px] text-[color:var(--fg-faint)]">{rev.id}</span>}
           <span className="text-pretty text-[12.5px] text-[color:var(--fg-body)]">{page.role}</span>
+          {rev && <span className="font-mono text-[10.5px] text-[color:var(--accent)]">{adminMaskCopy.reveal.shown(utcHourMinute(rev.hidesAt))}</span>}
         </div>
+        {/* At the head's right from `md`; on the phone it stands under the head at 44px (B2). */}
+        {show && <div className="hidden md:block">{show}</div>}
       </div>
+      {show && <div className="md:hidden">{show}</div>}
       <Tiles page={page} />
       {/* Keyed on the saved left, so a refresh after a save starts the field from what was saved. */}
-      <AccountInvitesSection key={page.invites.left} accountId={page.id} name={page.name} invites={page.invites} />
+      <AccountInvitesSection key={page.invites.left} accountId={page.id} name={page.name} shownName={rev?.name ?? null} invites={page.invites} />
       {/* Keyed on the saved group, so a refresh after a move starts the picker from where the account now is. */}
       <GroupSection key={page.group?.id ?? ""} page={page} />
       <Switches page={page} />
       <FeatureSpendTable page={page} />
+      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
     </div>
   );
 }

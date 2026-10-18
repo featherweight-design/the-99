@@ -129,7 +129,7 @@ export async function listAccounts(
 }
 
 /** One account's whole name and email, for a logged reveal only; null when Clerk has no such user. */
-export type Identity = { id: string; fullName: string | null; email: string | null };
+export type Identity = { id: string; name: string | null; email: string | null };
 
 type GetUser = (id: string) => Promise<ClerkUser | null>;
 type FindByEmail = (email: string) => Promise<{ id: string; emailAddresses: { emailAddress: string }[] }[]>;
@@ -152,8 +152,8 @@ const identityDeps: IdentityDeps = {
 export async function readIdentity(id: string, deps: IdentityDeps = identityDeps): Promise<Identity | null> {
   const u = await withDeadline(() => deps.getUser(id), deps.deadlineMs ?? CLERK_DEADLINE_MS);
   if (!u) return null;
-  const fullName = [u.firstName, u.lastName].map((p) => p?.trim()).filter(Boolean).join(" ") || u.fullName || u.username || null;
-  return { id: u.id, fullName, email: u.primaryEmailAddress?.emailAddress ?? null };
+  const name = [u.firstName, u.lastName].map((p) => p?.trim()).filter(Boolean).join(" ") || u.fullName || u.username || null;
+  return { id: u.id, name, email: u.primaryEmailAddress?.emailAddress ?? null };
 }
 
 /**

@@ -8,7 +8,7 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 
 /** `/admin/accounts`, the fourth tab (admin STATES A1 to A3; plan 9b). */
 export default async function AdminAccountsPage() {
-  const { env } = await requireAdmin();
+  const { userId, env } = await requireAdmin();
   const list = await loadAccountsList();
-  return <AccountsList rows={list.rows} clerk={list.clerk} month={list.month} env={env} />;
+  return <AccountsList rows={list.rows} clerk={list.clerk} month={list.month} env={env} viewerId={userId} />;
 }

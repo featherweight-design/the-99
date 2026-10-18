@@ -2612,8 +2612,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   same-origin response, each route's RSC flight fetched as a client navigation would, and the drawn DOM. It fails when
   any of them holds a Clerk user's whole email or last name (three letters or more), or a waiting invite's address;
   the shell's own `Account: <email>` menu label names the reader to themself and is the one exemption. It also fails
-  when a route answers non-2xx or a picker does not open. Read-only: it presses nothing that writes and never presses
-  Show. Seed the rows it reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
+  when a route answers non-2xx or a picker does not open. Then it presses Show once on the first account page that
+  offers one (D5 to D8): the whole email must reach the browser in the Show action's POST response and in no other, one
+  `account_revealed` event must be written, History must draw the line at once, Hide must mask the head, and a reload
+  must draw the line and no email. Last it aborts one Show's request on `/admin/accounts` (A6, D13): the toast with Try
+  again, no row revealed, nothing logged. `PROBE_SHOTS=<dir>` photographs that toast at both widths. The Shows are its
+  only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
+  reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
   `HELP_PANEL_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is

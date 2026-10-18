@@ -1,6 +1,6 @@
 {
   "feature": "Admin PII masking (Admin R3): every person named masked, computed on the server. PR 1, masked at the source; later PRs add their cells",
-  "note": "Run against a `next start` server with ADMIN_USER_IDS=user_3HdjdocERCjunk0zJQFDWyHkTd4 (the audit account on Clerk's development instance) and ADMIN_ENV_LABEL=staging, on a scratch branch made from local-dev and seeded with `OWNER_ID=user_3HdjdocERCjunk0zJQFDWyHkTd4 pnpm seed:admin-pii-fixture` (group pii-probe holding every account, an account override on HELP_PANEL_ENABLED, a waiting email invite, one player run this month for Costs). The account row takes its Clerk id from ADMIN_PII_ACCOUNT (the owner above holds the waiting invite). Nothing here presses a control that writes: the picker rows open a picker and pick nothing.",
+  "note": "Run against a `next start` server with ADMIN_USER_IDS=user_3HdjdocERCjunk0zJQFDWyHkTd4 (the audit account on Clerk's development instance) and ADMIN_ENV_LABEL=staging, on a scratch branch made from local-dev and seeded with `OWNER_ID=user_3HdjdocERCjunk0zJQFDWyHkTd4 pnpm seed:admin-pii-fixture` (group pii-probe holding every account, an account override on HELP_PANEL_ENABLED, a waiting email invite, one player run this month for Costs). The account row takes its Clerk id from ADMIN_PII_ACCOUNT (the owner above holds the waiting invite). The two Show rows (PR 3) press Show, which writes one `account_revealed` event each and reveals that account's name and email in the photograph: run on the scratch branch only. They take a NON-owner account from ADMIN_PII_SHOW_ACCOUNT (the owner and the viewer carry no Show). Every other row presses nothing that writes: the picker rows open a picker and pick nothing.",
   "rows": [
     {
       "id": "masking-accounts-list",
@@ -15,6 +15,26 @@
       ]
     },
     {
+      "id": "masking-accounts-revealed",
+      "label": "/admin/accounts: A2, one row revealed by Show (the accent ring, its email, id and hide time), every other row masked",
+      "view": "src/components/admin/accounts-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show "
+        },
+        {
+          "wait": "li[data-revealed]",
+          "settle": 1000
+        }
+      ]
+    },
+    {
       "id": "masking-account-head",
       "label": "/admin/accounts/[clerkId]: B1, the masked head, Invites (the waiting email masked) and History",
       "view": "src/components/admin/account-page.tsx",
@@ -22,6 +42,26 @@
         {
           "goto": "/admin/accounts/${ADMIN_PII_ACCOUNT}",
           "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "masking-account-revealed",
+      "label": "/admin/accounts/[clerkId]: B2, the head after Show (full name, email, the id, `Shown and logged · hides at`), Hide in the accent, and History's line with the diamond",
+      "view": "src/components/admin/account-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts/${ADMIN_PII_SHOW_ACCOUNT}",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show "
+        },
+        {
+          "wait": "[data-testid='account-head'][data-revealed]",
           "settle": 1500
         }
       ]
@@ -114,6 +154,18 @@
           "scrollTo": "h2:has-text(\"Per account\")"
         }
       ]
+    }
+  ],
+  "needsFixture": [
+    {
+      "id": "masking-reveal-failed",
+      "label": "/admin/accounts: A6, a failed Show (the toast naming the account masked, Try again; every row masked)",
+      "widths": [
+        "phone",
+        "desktop"
+      ],
+      "photographedBy": "PROBE_SHOTS=<dir> pnpm probe:admin-pii (it aborts the Show action's request): masking-reveal-failed-<width>.png",
+      "why": "a Show fails only when Clerk or the log write refuses, which no step of this runner can cause"
     }
   ]
 }

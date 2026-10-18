@@ -213,7 +213,10 @@ export function HistoryList({ items, foot, empty, testId }: { items: readonly Hi
               >
                 <span className="font-mono text-[11px] leading-[1.6] text-[color:var(--fg-faint)]">{h.when}</span>
                 <div className="flex min-w-0 flex-col gap-[3px]">
-                  <span className="text-[13.5px] leading-[1.45] text-[color:var(--fg)] [overflow-wrap:anywhere]">{h.what}</span>
+                  <span className="text-[13.5px] leading-[1.45] text-[color:var(--fg)] [overflow-wrap:anywhere]">
+                    {h.reveal && <i aria-hidden data-reveal-mark className="mr-[8px] inline-block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)] align-[1px]" />}
+                    {h.what}
+                  </span>
                   {h.note && <span className="text-[12.5px] italic leading-[1.45] text-[color:var(--fg-muted)]">{copy.note(h.note)}</span>}
                 </div>
               </li>

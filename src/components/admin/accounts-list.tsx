@@ -5,11 +5,13 @@ import Link from "next/link";
 import { matchesAccount, type AccountRow } from "../../lib/admin/account-page-rule";
 import { invitedByName, phoneInviteMeta } from "../../lib/admin/invites-rule";
 import type { AdminEnv } from "../../lib/admin/environment";
-import { adminCopy } from "../../lib/copy/admin";
+import { adminCopy, adminMaskCopy } from "../../lib/copy/admin";
 import { inviteCopy } from "../../lib/copy/invites";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SearchField } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
+import { RevealFailedToast, ShowButton } from "./show-button";
+import { useReveal, utcHourMinute, type Revealed } from "./use-reveal";
 
 // The Accounts list (admin STATES A1 to A3; design table, Accounts and the R2 deltas). As on Switches,
 // the shell scrolls the document: the search is pinned under the head at `--admin-head-h`, and the
@@ -17,9 +19,12 @@ import { usePublishedHeight } from "./admin-head";
 
 const copy = adminCopy.accounts;
 const inv = adminCopy.invites;
+const maskCopy = adminMaskCopy.reveal;
 const PIN_HEIGHT_VAR = "--admin-pin-h";
 const GRID = "md:grid md:grid-cols-[minmax(0,2.1fr)_minmax(0,0.6fr)_78px_104px_minmax(0,0.7fr)_52px] md:items-center md:gap-[14px]";
 const MONO_META = "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] leading-[1.5]";
+/** A revealed row's lines wrap rather than clip: the whole email and id are what the Show was for (A2). */
+const MONO_WHOLE = "font-mono text-[10.5px] leading-[1.5] [overflow-wrap:break-word]";
 
 /** The avatar the rows and the account page draw: initials in mono on an accent ring, or the diamond when null (D4). */
 export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" }) {
@@ -35,28 +40,49 @@ export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" 
   );
 }
 
-function Row({ row }: { row: AccountRow }) {
+type RowReveal = { revealed: Revealed | null; pending: boolean; canShow: boolean; onShow: () => void; onHide: () => void };
+
+function Row({ row, reveal }: { row: AccountRow; reveal: RowReveal }) {
   const href = `/admin/accounts/${encodeURIComponent(row.id)}`;
+  const rev = reveal.revealed;
   // The group as the desktop column draws it, `No group` included.
   const phoneHead = [row.group?.name ?? copy.noGroup, row.credits].filter(Boolean).join(" · ");
   const phoneInv = phoneInviteMeta(row.invites);
   const { left, waiting, invitedBy } = row.invites;
   return (
-    <li data-account={row.id} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0]">
-      <Link href={href} className={`flex min-h-[64px] flex-col gap-[5px] px-[14px] py-[11px] text-inherit no-underline md:px-[16px] md:py-[10px] ${GRID}`}>
+    // A revealed row (A2): the raised surface and a 1px inset accent ring, its own fields whole.
+    <li
+      data-account={row.id}
+      data-revealed={rev ? "" : undefined}
+      className={`border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0] ${
+        rev ? "bg-[color:var(--surface-raised)] shadow-[inset_0_0_0_1px_var(--accent)]" : ""
+      }`}
+    >
+      <div className={`flex min-h-[64px] flex-col gap-[5px] py-[11px] pl-[14px] pr-[8px] md:px-[16px] md:py-[10px] ${GRID}`}>
         <div className="flex min-w-0 items-center gap-[11px]">
           <Avatar text={row.initials} size="sm" />
-          <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
+          {/* The name is the link to the account; Show sits beside it, never inside it (D5). */}
+          <Link href={href} className="flex min-w-0 flex-1 flex-col gap-[2px] text-inherit no-underline">
             <span className="min-w-0 text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">
-              {row.name}
+              {rev?.name ?? row.name}
               {row.owner && (
                 <span className="ml-[6px] inline-flex h-[18px] items-center rounded-full border border-solid border-[color:var(--border-strong)] px-[7px] align-[1px] font-mono text-[10px] font-normal tracking-[0.08em] text-[color:var(--fg-muted)]">
                   {inv.tree.owner}
                 </span>
               )}
             </span>
-            {row.email && <span className={`${MONO_META} text-[color:var(--fg-faint)]`}>{row.email}</span>}
-          </div>
+            {rev ? (
+              <>
+                {rev.email && <span className={`${MONO_WHOLE} text-[color:var(--fg-body)]`}>{rev.email}</span>}
+                <span className={`${MONO_WHOLE} text-[color:var(--fg-muted)]`}>{rev.id}</span>
+                <span className={`${MONO_WHOLE} text-[color:var(--accent)]`}>{maskCopy.shown(utcHourMinute(rev.hidesAt))}</span>
+              </>
+            ) : (
+              row.email && <span className={`${MONO_META} text-[color:var(--fg-faint)]`}>{row.email}</span>
+            )}
+            <PendingReporter href={href} />
+          </Link>
+          {reveal.canShow && <ShowButton on={rev !== null} pending={reveal.pending} label={row.name} onShow={reveal.onShow} onHide={reveal.onHide} />}
         </div>
         <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
           {phoneHead} · <i className="not-italic text-[color:var(--accent)]">{phoneInv.figure}</i>
@@ -90,8 +116,7 @@ function Row({ row }: { row: AccountRow }) {
           <span className="sr-only">{copy.featureCols.spent} </span>
           {row.spend}
         </span>
-        <PendingReporter href={href} />
-      </Link>
+      </div>
     </li>
   );
 }
@@ -101,13 +126,16 @@ export function AccountsList({
   clerk,
   month,
   env,
+  viewerId,
 }: {
+  viewerId: string;
   rows: AccountRow[];
   clerk: "ok" | "down";
   month: string;
   env: AdminEnv;
 }) {
   const [query, setQuery] = useState("");
+  const reveal = useReveal();
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
   const shown = useMemo(
@@ -154,12 +182,24 @@ export function AccountsList({
           ) : (
             <ul data-testid="account-rows" className="m-0 list-none border-0 border-solid border-[color:var(--border)] p-0 md:[border-top-width:1px]">
               {shown.map((r) => (
-                <Row key={r.id} row={r} />
+                <Row
+                  key={r.id}
+                  row={r}
+                  reveal={{
+                    revealed: reveal.revealed.get(r.id) ?? null,
+                    pending: reveal.pending.has(r.id),
+                    // The owner and the viewer's own row carry no Show (A1): neither is masked from its reader.
+                    canShow: !r.owner && r.id !== viewerId,
+                    onShow: () => void reveal.show(r.id, r.name),
+                    onHide: () => reveal.hide(r.id),
+                  }}
+                />
               ))}
             </ul>
           )}
         </div>
       </div>
+      {reveal.failure && <RevealFailedToast key={reveal.failure.n} failure={reveal.failure} onRetry={() => void reveal.show(reveal.failure!.id, reveal.failure!.masked)} onDone={reveal.dismissFailure} />}
     </>
   );
 }

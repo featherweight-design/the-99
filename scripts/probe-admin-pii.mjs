@@ -4,8 +4,11 @@
 // loads every admin route, opens each picker (the group editor's members, a switch's Add an account override and
 // Check an account), and keeps the body of every same-origin document, RSC and action response. It reads Clerk's own
 // users from the instance CLERK_SECRET_KEY names and fails when any response holds one's whole email or last name
-// (three letters or more; a first name is the masked name's own first word, D1). Read-only: it presses nothing that
-// writes, and it never presses Show.
+// (three letters or more; a first name is the masked name's own first word, D1). Then it presses Show once, on one
+// account page (D5 to D8): the whole email reaches the browser in that action's response and nowhere else, one
+// `account_revealed` event is written, Hide masks the head, and a reload draws the History line and no email. Then it
+// presses Show a second time with the action's request aborted (A6): the toast, nothing revealed, nothing logged. The
+// Shows are the probe's only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before them.
 //
 //   PROBE_BASE=http://localhost:3313 pnpm probe:admin-pii
 //
@@ -16,11 +19,22 @@ import { chromium } from "playwright";
 import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 // Read-only: the waiting invites and the switch with an account override, from the database the server reads.
 const sql = neon(DATABASE_URL);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// A local server only: the Show writes, and the branch check below reads the probe's own DATABASE_URL, which says
+// nothing about a remote server's database. That server must run on this same scratch branch.
+{
+  const u = new URL(BASE);
+  if (u.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(u.hostname) || u.port === "" || u.pathname !== "/") {
+    throw new Error(`refusing PROBE_BASE ${BASE}: a loopback server with a port only (http://localhost:3313)`);
+  }
+}
+// Optional: a directory to photograph A6 (the failed Show) into, the one state the contact sheet cannot reach.
+const SHOTS = process.env.PROBE_SHOTS;
 
 let failures = 0;
 function report(label, ok, detail = "") {
@@ -104,12 +118,14 @@ try {
   /** Every same-origin response body on the current route, by route. */
   const bodies = [];
   let route = "";
+  // From the Show on, responses go here instead, so the needle check above them stays a check of the masked pages.
+  let sink = bodies;
   page.on("response", async (res) => {
     if (!res.url().startsWith(BASE)) return;
     const type = res.headers()["content-type"] ?? "";
     if (!/text\/html|text\/x-component|application\/json|text\/plain/.test(type)) return;
     try {
-      bodies.push({ route, url: res.url(), text: (await res.text()).toLowerCase() });
+      sink.push({ route, url: res.url(), method: res.request().method(), type, text: (await res.text()).toLowerCase() });
     } catch {
       // A redirect or an aborted request has no body to read.
     }
@@ -186,6 +202,79 @@ try {
       const at = text.indexOf(n);
       console.log(`       near: ${text.slice(Math.max(0, at - 160), at + n.length + 80).replaceAll(n, "[value]")}`);
     }
+  }
+
+  // The one Show (D5 to D8), on the first account page that offers one (not the owner's, not the viewer's own).
+  const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+  assertScratchBranch(branch, "probe:admin-pii's Show");
+  let target = null;
+  for (const href of accounts) {
+    await page.goto(`${BASE}${href}`, { waitUntil: "networkidle" });
+    if ((await onPageRole(page, "button", /^Show /).count()) > 0) {
+      target = href;
+      break;
+    }
+  }
+  if (report("an account page offers Show", Boolean(target))) {
+    const id = decodeURIComponent(target.split("/").pop());
+    const user = await (await fetch(`https://api.clerk.com/v1/users/${id}`, { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } })).json();
+    const email = (user.email_addresses ?? []).find((e) => e.id === user.primary_email_address_id)?.email_address?.toLowerCase();
+    const [{ n: before }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
+    const marks = onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]");
+    const markedBefore = await marks.count();
+    const shown = [];
+    sink = shown;
+    route = `${target} Show`;
+    await onPageRole(page, "button", /^Show /).filter({ visible: true }).first().click();
+    const head = onPage(page, "[data-testid='account-head'][data-revealed]");
+    report("Show reveals the head", await head.waitFor({ timeout: 10_000 }).then(() => true, () => false));
+    await page.waitForLoadState("networkidle");
+    report("the revealed head draws the whole email and the Clerk id", Boolean(email) && (await head.innerText()).toLowerCase().includes(email) && (await head.innerText()).includes(id));
+    const carry = shown.filter((b) => email && holds(b.text, email));
+    report(
+      "the whole email reaches the browser once, in the Show action's response",
+      carry.length === 1 && carry[0].method === "POST" && carry[0].type.includes("text/x-component"),
+      carry.map((b) => `${b.method} ${new URL(b.url).pathname}`).join(", ") || "none",
+    );
+    const [{ n: after }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed' and user_id = ${id}`;
+    report("the Show writes one account_revealed event", after === before + 1, `${before} then ${after}`);
+    // D8: History draws THIS Show at once (one more marked line than before it), while the head stays revealed through
+    // the page's refresh. A list already at its cap could not grow, so that is a fixture to reset, not a pass.
+    report("History has room for one more line (reseed the scratch branch if not)", markedBefore < 100, `${markedBefore} marked`);
+    let logged = false;
+    for (let i = 0; i < 40 && !logged; i++) {
+      logged = (await marks.count()) > markedBefore;
+      if (!logged) await page.waitForTimeout(250);
+    }
+    report("History draws the Show's line without a reload, the head still revealed", logged && (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 1);
+    await onPageRole(page, "button", /^Hide /).filter({ visible: true }).first().click();
+    report("Hide masks the head again", (await onPage(page, "[data-testid='account-head'][data-revealed]").count()) === 0 && !(await onPage(page, "[data-testid='account-head']").innerText()).toLowerCase().includes(email));
+    const reloaded = [];
+    sink = reloaded;
+    route = `${target} reload`;
+    await page.reload({ waitUntil: "networkidle" });
+    report("a reload draws the Show in History with the diamond", (await onPage(page, "[data-testid='account-invites-history'] [data-reveal-mark]").count()) >= 1);
+    report("a reload sends no whole email", !reloaded.some((b) => holds(b.text, email)) && !(await page.content()).toLowerCase().includes(email));
+
+    // A6, D13: a Show that fails (here the action's request dies on the way) shows nothing and logs nothing; the
+    // toast names the account masked and offers Try again.
+    await page.goto(`${BASE}/admin/accounts`, { waitUntil: "networkidle" });
+    const [{ n: atFail }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed'`;
+    await page.route(`${BASE}/admin/accounts`, (r) => (r.request().method() === "POST" ? r.abort() : r.fallback()));
+    await onPageRole(page, "button", /^Show /).filter({ visible: true }).first().click();
+    const toast = page.getByRole("alert").filter({ hasText: "Nothing was shown." });
+    const raised = await toast.waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    if (SHOTS) for (const [w, h, tag] of [[1300, 900, "desktop"], [390, 844, "phone"]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.screenshot({ path: `${SHOTS}/masking-reveal-failed-${tag}.png` });
+    }
+    await page.setViewportSize({ width: 1300, height: 900 });
+    await page.unroute(`${BASE}/admin/accounts`);
+    const [{ n: afterFail }] = await sql`select count(*)::int as n from admin_events where kind = 'account_revealed'`;
+    report(
+      "a failed Show raises the toast with Try again, reveals no row and logs nothing",
+      raised && (await toast.getByRole("button", { name: "Try again" }).count()) === 1 && (await onPage(page, "li[data-revealed]").count()) === 0 && afterFail === atFail,
+    );
   }
 } finally {
   await browser.close();

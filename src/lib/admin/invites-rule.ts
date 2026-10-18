@@ -1,4 +1,4 @@
-import { adminCopy } from "../copy/admin";
+import { adminCopy, adminMaskCopy } from "../copy/admin";
 import { maskEmail, maskInitials } from "./mask";
 import { inviteCopy } from "../copy/invites";
 import { HOLD_MS, holdsInvite, inviteCount, parseInvitesLeft, type HoldingRow, type InviteKind } from "../invites/rules";
@@ -131,10 +131,12 @@ export function accountInvites(input: {
     .filter((r) => r.state !== "qr_open" && holdsInvite(r, input.now))
     .sort((a, b) => a.holdsUntil!.getTime() - b.holdsUntil!.getTime());
 
-  const lines: { at: Date; what: string }[] = [
+  const lines: { at: Date; what: string; reveal?: true }[] = [
     ...input.events.flatMap((e) => {
       if (e.kind === "invites_set") return [{ at: e.at, what: copy.history.set(actor(e.actorId), name, e.oldValue ?? "0", e.newValue ?? "0") }];
       if (e.kind === "invite_revoked") return [{ at: e.at, what: copy.history.revoked(actor(e.actorId), name) }];
+      // D8: a Show's log line, naming the account masked, in this same list rather than a section of its own.
+      if (e.kind === "account_revealed") return [{ at: e.at, what: adminMaskCopy.reveal.history(actor(e.actorId), name), reveal: true as const }];
       return [];
     }),
     ...input.holdsUntil.map((until) => ({ at: new Date(until.getTime() - HOLD_MS), what: copy.history.sent(name) })),
@@ -162,7 +164,7 @@ export function accountInvites(input: {
       sent: fmtDay(new Date(r.holdsUntil!.getTime() - HOLD_MS)),
       returns: fmtDay(r.holdsUntil!),
     })),
-    history: lines.slice(0, input.limit).map((l) => ({ when: fmtWhen(l.at), what: l.what, note: null })),
+    history: lines.slice(0, input.limit).map((l) => ({ when: fmtWhen(l.at), what: l.what, note: null, ...(l.reveal && { reveal: l.reveal }) })),
     historyCut: lines.length > input.limit,
   };
 }
