@@ -227,7 +227,8 @@ file under `src/app/card`, `src/app/commander` and `src/components/public`. From
 
 - a reachable file under a forbidden directory;
 - `cookies()`, `auth()`, `currentUser()` or `@clerk/*` anywhere;
-- `headers()` or `next/headers` anywhere but a page file (which hands them to `observeAnonymousHit`);
+- `headers()` or `next/headers` anywhere but a `page.tsx` (which hands them to `observeAnonymousHit`); a layout may not;
+- a dynamic import, `require` or a side-effect import other than a stylesheet (edges the walk cannot follow);
 - a `"use server"` module;
 - a reach into another `src/app` file;
 - a table off the allowlist, checked only in files that import the schema or write SQL (so a copy string naming "decks" is

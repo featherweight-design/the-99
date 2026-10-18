@@ -110,6 +110,7 @@ describe("the public surface (F3): the page files and every component they draw"
     expect(surface({ "src/components/public/a.tsx": "const h = await headers();" })).toEqual(["src/components/public/a.tsx: calls headers()"]);
     expect(surface({ "src/app/card/[slug]/page.tsx": "const c = await cookies();" })).toEqual(["src/app/card/[slug]/page.tsx: calls cookies()"]);
     expect(surface({ "src/app/card/[slug]/page.tsx": "const { userId } = await auth();" })).toEqual(["src/app/card/[slug]/page.tsx: calls auth()"]);
+    expect(surface({ "src/app/card/layout.tsx": "const h = await headers();" })).toEqual(["src/app/card/layout.tsx: calls headers()"]);
   });
 
   it("fails on the auth library, a server action, and a reach into another page or action", () => {
@@ -117,6 +118,18 @@ describe("the public surface (F3): the page files and every component they draw"
     expect(surface({ "src/components/public/a.tsx": `"use server";\nexport async function f() {}` })).toEqual(["src/components/public/a.tsx: is a server action module"]);
     expect(surface({ "src/components/public/a.tsx": "export {}", "src/app/cards/tag-actions.ts": "export {}" }, ["src/components/public/a.tsx"]))
       .toEqual(["src/app/cards/tag-actions.ts: a public page reaches into src/app (a page or an action)"]);
+  });
+
+  it("fails on an edge the walk cannot follow, and allows a stylesheet", () => {
+    expect(surface({ "src/components/public/a.tsx": `const P = dynamic(() => import("../decks/deck-panel"));` })).toEqual(["src/components/public/a.tsx: uses a dynamic import (the guard cannot follow it)"]);
+    expect(surface({ "src/components/public/a.tsx": `const m = require("../decks/x");` })).toEqual(["src/components/public/a.tsx: uses require (the guard cannot follow it)"]);
+    expect(surface({ "src/components/public/a.tsx": `import "../decks/register";` })).toEqual(["src/components/public/a.tsx: has a side-effect import (the guard cannot follow it)"]);
+    expect(surface({ "src/components/public/a.tsx": `import "./a.css";` })).toEqual([]);
+  });
+
+  it("reads a table in a page file or a component too, not only under src/lib", () => {
+    expect(surface({ "src/app/card/[slug]/page.tsx": `import { decks } from "@/db/schema";\nexport const q = db.select().from(decks);` }))
+      .toEqual(["src/app/card/[slug]/page.tsx: reads `decks`, which is not on the public allowlist"]);
   });
 
   it("reads tables only where a file can: a schema import fails on `decks`, a sentence naming decks does not", () => {

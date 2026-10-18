@@ -18,7 +18,6 @@ import {
   cardArt,
   faceFilm,
   type CardArt,
-  type FoilFinish,
   WUBRG_COLOR,
 } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/cards/gradients";

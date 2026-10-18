@@ -105,8 +105,9 @@ export function publicReadFindings(entries = publicEntries()) {
 // `src/components` and `src/lib`, and fails on:
 //
 //   - a reachable file under FORBIDDEN_DIRS;
-//   - a reachable file that names a request API or the auth library. A page FILE may call `headers()` (it hands them to
-//     `observeAnonymousHit`); nothing it imports may;
+//   - a reachable file that names a request API or the auth library. A page FILE (`page.tsx`, not a layout) may call
+//     `headers()` (it hands them to `observeAnonymousHit`); nothing it imports may;
+//   - a dynamic import, `require` or a side-effect import other than a stylesheet: edges the walk cannot follow;
 //   - a reachable file that is a server action (`"use server"`), or a value import from `src/app` (an action or a page);
 //   - a table off ALLOWED_TABLES, as for the loaders.
 
@@ -127,7 +128,7 @@ export const PUBLIC_SURFACE_COMPONENTS = [
 /** The public routes' and components' own directories: every file in them is an entry. */
 export const PUBLIC_SURFACE_DIRS = ["src/app/card", "src/app/commander", "src/components/public"];
 
-const isPageFile = (file) => /^src\/app\/.*\/(?:page|layout|not-found)\.tsx?$/.test(file);
+const isPageFile = (file) => /^src\/app\/.*\/page\.tsx?$/.test(file);
 
 function filesUnder(dir) {
   if (!existsSync(dir)) return [];
@@ -174,6 +175,11 @@ const SURFACE_TEXT = [
   [/\bcurrentUser\s*\(/, "calls currentUser()"],
   [/@clerk\//, "imports the auth library"],
   [/^\s*["']use server["']/m, "is a server action module"],
+  // The walk follows only static `import ... from`; these make an edge it cannot see (`next/dynamic` included), so they are
+  // refused outright. A stylesheet import is the one side-effect import allowed: it carries no code.
+  [/\bimport\s*\(/, "uses a dynamic import (the guard cannot follow it)"],
+  [/\brequire\s*\(/, "uses require (the guard cannot follow it)"],
+  [/^\s*import\s+["'](?![^"']*\.css["'])/m, "has a side-effect import (the guard cannot follow it)"],
 ];
 
 /**
@@ -192,7 +198,7 @@ export function judgeSurface(files, read, entries, tables = schemaTables()) {
       if (re.test(text)) findings.push({ path: file, why });
     }
     // Only a file that imports the schema or names SQL can read a table. A copy module saying "decks" in a sentence cannot.
-    if (file.startsWith("src/lib/") && (/db\/schema/.test(text) || /\bsql`/.test(text))) {
+    if (/db\/schema/.test(text) || /\bsql`/.test(text)) {
       const named = new Set();
       for (const [binding, t] of tables) if (new RegExp(`\\b${binding}\\b`).test(text)) named.add(t.name);
       for (const name of named) if (!ALLOWED_TABLES.has(name)) findings.push({ path: file, why: `reads \`${name}\`, which is not on the public allowlist` });
