@@ -1,7 +1,7 @@
 # Close-out: Card scanning
 
-**Walked:** 2026-10-18, on `main` with the plan's PRs merged (#1908, #1912, #1915, #1926, #1929, plus the PR 2b match
-seam) and the later rulings and fixes (#1941, #1942, #1961, #1968, #1969, #1978), then again after the close-out's own
+**Walked:** 2026-10-18, on `main` with the plan's PRs merged (#1908, #1906 2a, #1910 2b, #1912 2c, #1915, #1926,
+#1929) and the later rulings and fixes (#1941, #1942, #1961, #1968, #1969, #1978), then again after the close-out's own
 fixes (#2087).
 
 **Where.** A scratch branch made from local-dev, migrated to `main`'s schema. `next start` ran with `CARD_SCAN_ENABLED`
@@ -77,6 +77,8 @@ Left as shipped:
 
 ## About entry
 
-**Not scheduled, by ruling.** The plan deferred it until the About redesign, and no scanning entry is drawn. On
-2026-10-18 the orchestrator left it out of the launch-end batch. Hugh asked for About to cover only what is not evident
-without it, so whether scanning owes an entry is on his list.
+**Not scheduled, by ruling.** The plan deferred it until the About redesign (plan PR 6). The handoff already drafts it:
+`about · scanning your cards.ts` (id `card-scan`, chapter 01, after `collection-add`) and its board `R1 - About-Entry.dc.html`
+(`STATES-card-scan.md`, A1). On 2026-10-18 the orchestrator left it out of the launch-end batch. Hugh asked for About to
+cover only what is not evident without it, so whether scanning owes an entry is on his list; if it does, it reuses that
+draft as invites and card search do.

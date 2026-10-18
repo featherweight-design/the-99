@@ -39,8 +39,8 @@ Every row of both tables matches, except two, fixed in #2080:
 Checked and not counted as gaps:
 - The desktop field sits at top 73, not 69, but lines up with the slot as designed, because the shipped mark is 4px
   taller (`search-desktop.tsx`).
-- The install slot steps aside below 429px on the phone when the help ? is also in the header, as measured and written
-  down in `install-slot.tsx`.
+- While offline, the install slot steps aside below 429px on the phone when the help ? is also in the header (below
+  390px with only one of them), as measured and written down in `src/components/pwa/install-slot.tsx`; online it stays.
 
 ## States not photographed
 
