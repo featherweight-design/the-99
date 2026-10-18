@@ -74,8 +74,7 @@ the same, nothing left out by omission (L1), and as quietly as a footer can be: 
 2. **Type:** size, weight, tracking, line length and the token (muted or faint) that clears AA in all six themes. The
    two passages are 33 words each, 66 together, so the line count at 390 (a 358px measure at 16px gutters) is the
    thing to get right: five or six lines at 11px is acceptable, a wall is not. Say whether the two passages run together or break.
-3. **The "Fan Content Policy" words** and whether they draw as a link (see Open for Hugh); if so, the link treatment
-   that stays quiet and still reads as one.
+3. **The "Fan Content Policy" words** draw as a link (decided, below): the treatment that stays quiet and still reads as one.
 4. **The signed-out shells:** the landing, `/join`, `/sign-up`, the friend card and `/offline` each have their own
    composition. One footer treatment for all, or a tuned margin per shell, and how it sits under Clerk's sign-up card.
 5. **`/privacy` and `/terms`.** One prose-page layout for both, signed in or out: title, a "Last updated" line, section
@@ -84,12 +83,11 @@ the same, nothing left out by omission (L1), and as quietly as a footer can be: 
    or to sign in, and the notice below it. Long prose is written with `/prose-pass` later; Design draws the container,
    not the words.
 
-## Open for Hugh
+## Decided 2026-10-18 (d9 for Hugh)
 
-- **Does "Fan Content Policy" link to Wizards' policy page?** A link is not contact (L1), and linking names the policy
-  a reader might want to read, which is the opposite of leaving something out. The recommendation is to link it, to the
-  policy page the research brief cites, in a new tab with `rel="noopener noreferrer"`, and to link nothing else in the
-  notice.
+- **"Fan Content Policy" links to Wizards' policy page.** Yes, the peer pattern: a link is not contact (L1), and it names
+  the policy a reader may want to read. It opens in a new tab with `rel="noopener noreferrer"`, and nothing else in the
+  notice is a link. Design draws the quiet link treatment (Open 3). Logged as Hugh's proxy; he can override.
 
 ## Every state to draw
 
