@@ -160,6 +160,7 @@ Listed, not fixed. Copy items go to `/copy-review`; engineering items to whoever
 
 1. **`rule-zero` sets `since: 15`** (rule-zero board line 119; section 6 reasons "if that bump is 14 → 15"). `about.ts:77-82`
    says the next bump is 16, never 15, and a switched entry takes the version current when it ships: 14 or 16.
+   **Ruled (orchestrator, 2026-10-18): `since: 16` for all three entries.**
 2. **"What puts it there:"** (rule-zero board line 208, the specimen's second part). The shipped lead is `What puts it here:`
    (`src/lib/copy/rule-zero.ts:140`).
 3. **`“Try it”` is quoted as a shipped label** (entry 2, Tools line; discovery board line 238). No Tools card draws it:
@@ -204,5 +205,7 @@ table (`addendum-social-line/README.md:9-14`).
 
 ## Out of scope
 
-The entry words, the `AboutSwitch` and locator code, the recapture itself, and a Rule 0 tool card in the Tools tab (the
+The entry words, the `AboutSwitch` additions and locator code, and the recapture itself (new locators and halo boxes
+in six themes, with `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` on; eng work for the batch
+PR, assigned by the orchestrator), and a Rule 0 tool card in the Tools tab (the
 board's optional idea, `tools.ts:57-59`; it would need its own crop in every theme, `shots.ts:28-33`).
