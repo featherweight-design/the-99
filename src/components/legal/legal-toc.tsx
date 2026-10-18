@@ -7,32 +7,31 @@ import { legalCopy } from "../../lib/copy/legal/shared";
 /**
  * `On this page`: a real list of anchors, never hidden behind a toggle and never `fixed`. On the phone it is numbered
  * 44px rows in the flow; from `md` it is the sticky 220px column, with the brand diamond on the section in view.
- * The section in view is the first section, in document order, whose heading is inside the top 30% of the screen
- * (`IntersectionObserver`); between bands the last one stays marked. With no observer, or before the first scroll, the first row is marked.
+ * The section in view is the last heading whose top has passed the reading line, 30% down the screen; before the first scroll
+ * the first row is marked.
  */
 export function LegalToc({ sections }: { sections: readonly LegalSection[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "");
 
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
-    const seen = new Set<string>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) seen.add(e.target.id);
-          else seen.delete(e.target.id);
-        }
-        // The first section (document order) with its heading inside the band wins; between bands, keep the last.
-        const first = sections.find((s) => seen.has(s.id));
-        if (first) setActive(first.id);
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    );
-    for (const s of sections) {
-      const el = document.getElementById(s.id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
+    // The last heading whose top has passed the reading line (30% down the screen), by pixels read at each scroll and resize:
+    // a percentage `rootMargin` resolves against the root's own box and is unreliable across engines.
+    const update = () => {
+      const line = window.innerHeight * 0.3;
+      let current = sections[0]?.id ?? "";
+      for (const s of sections) {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) current = s.id;
+      }
+      setActive(current);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [sections]);
 
   return (

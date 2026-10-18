@@ -1,7 +1,6 @@
 import { creditsPageCopy } from "../credits-page";
 import { PACKS } from "../../payments/packs";
 import { PAID_DAILY_LIMIT } from "../../model/allowance-rule";
-import { WELCOME_DAYS, WELCOME_UNITS } from "../../payments/welcome";
 import { ENTITY, LEGAL_UPDATED, type LegalDoc } from "./shared";
 
 const pack = PACKS.pack40;
@@ -38,11 +37,12 @@ export const termsDoc: LegalDoc = {
           kind: "list",
           items: [
             { text: `A pack is ${pack.units} credits for ${packPrice}, and pack credits don’t expire.` },
-            { text: `New accounts get ${WELCOME_UNITS} welcome credits, which expire ${WELCOME_DAYS} days after the account is made.` },
-            { text: "Credits are spent in this order: your free allowance, then welcome credits, then plan credits, then pack credits." },
-            { text: `You can spend up to ${PAID_DAILY_LIMIT} paid credits a day.` },
+            // Literals, not `WELCOME_UNITS` / `WELCOME_DAYS`: their module opens the database, which a static page must not import. `facts.test.ts` pins them.
+            { text: "New accounts get 15 welcome credits, which expire 30 days after the account is made." },
+            { text: "Credits are spent in this order: your free allowance, then welcome credits, then plan credits, then gift credits, then pack credits." },
+            { text: `Welcome, plan, gift and pack credits share one daily limit on how many you can spend, ${PAID_DAILY_LIMIT} a day unless your account has a different one.` },
             { text: "A run that fails gives its credit back on its own." },
-            { text: "Credits can’t be transferred or gifted, and they have no cash value." },
+            { text: "Credits can’t be transferred to another account, and they have no cash value." },
             { text: "Credits left on an account when it’s deleted are forfeited." },
           ],
         },

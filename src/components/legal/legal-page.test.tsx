@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { LegalPage } from "./legal-page";
 import { privacyDoc } from "../../lib/copy/legal/privacy";
 import { termsDoc } from "../../lib/copy/legal/terms";
@@ -46,5 +46,26 @@ describe.each([["privacy", privacyDoc], ["terms", termsDoc]] as const)("LegalPag
     render(<LegalPage doc={doc} />);
     const bad = [...document.querySelectorAll("*")].filter((e) => /(^|\s)(fixed|absolute)(\s|$)/.test(e.getAttribute("class") ?? "") && e.tagName !== "SPAN");
     expect(bad).toEqual([]);
+  });
+});
+
+describe("LegalToc: the section in view", () => {
+  it("marks the last heading whose top has passed the reading line, and follows a scroll", () => {
+    const tops = new Map<string, number>();
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      return { top: tops.get(this.id) ?? 5000 } as DOMRect;
+    };
+    try {
+      render(<LegalPage doc={termsDoc} />);
+      const current = () => screen.getByRole("navigation", { name: legalCopy.onThisPage }).querySelector("[aria-current]")!.getAttribute("href");
+      expect(current()).toBe(`#${termsDoc.sections[0].id}`);
+      tops.set(termsDoc.sections[0].id, -400);
+      tops.set(termsDoc.sections[1].id, 120);
+      act(() => { window.dispatchEvent(new Event("scroll")); });
+      expect(current()).toBe(`#${termsDoc.sections[1].id}`);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+    }
   });
 });

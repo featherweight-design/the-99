@@ -34,7 +34,7 @@ describe("the numbers", () => {
   });
 
   it("states the daily paid limit as the allowance rule holds it", () => {
-    expect(terms).toContain(`up to ${PAID_DAILY_LIMIT} paid credits a day`);
+    expect(terms).toContain(`share one daily limit on how many you can spend, ${PAID_DAILY_LIMIT} a day unless your account has a different one`);
     expect(PAID_DAILY_LIMIT).toBe(20);
   });
 });

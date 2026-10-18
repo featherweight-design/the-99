@@ -1,4 +1,3 @@
-import { INVITATION_DAYS } from "../../invites/clerk";
 import { ENTITY, LEGAL_UPDATED, type LegalDoc } from "./shared";
 
 export const privacyDoc: LegalDoc = {
@@ -15,14 +14,14 @@ export const privacyDoc: LegalDoc = {
       id: "what-the-99-keeps",
       title: "What The 99 keeps",
       blocks: [
-        { kind: "p", lead: "Your account.", text: "Sign-in is handled by Clerk, so your email, name and password live with them. The 99 keeps your Clerk account id and builds everything else around it. Your first name becomes your display name for friends when you first use Friends, and you can change it." },
+        { kind: "p", lead: "Your account.", text: "Sign-in is handled by Clerk, so your email, name and password live with them. The 99 keeps your Clerk account id and builds everything else around it. Your first name becomes your display name for friends: at sign-up if you join through an invite, and otherwise when you first use Friends. You can change it." },
         { kind: "p", lead: "Your Collection.", text: "When you upload a CSV or paste a list, we keep the cards it matched: each card, how many, which printing, its finish and condition. For each upload we also keep its filename, a few totals, and any lines we couldn’t match, so you can fix them. The file itself isn’t stored. Every later change to your Collection is kept as history, so you can undo it." },
         { kind: "p", lead: "Your decks.", text: "Lists, versions, proxies, locks, folders and notes, plus what you write about a deck: its intent, your notes, and the notes on games you log." },
         { kind: "p", lead: "Your games.", text: "When you log a game with a friend, your record keeps their display name and deck name as they were that day, so your history still reads right if they rename things later." },
         { kind: "p", lead: "Smart tools.", text: "Analysis, the Overview, Suggested changes, Help me choose and the other tools that use a credit keep what they produced, so you can read it again. Each run also records which tool ran, how many tokens it used, and what it cost." },
         { kind: "p", lead: "Wishlist, friends and pods.", text: "The cards you want and how many; who you’re friends with; your pods and what you share in them." },
         { kind: "p", lead: "Credits and purchases.", text: "Your credit balance and where each credit came from. For a purchase we keep Stripe’s ids, the amount, the tax, the currency, the billing country and the status. Your card number never reaches The 99: you type it into Stripe’s checkout." },
-        { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting (up to ${INVITATION_DAYS} days), then erase it once the invite is resolved or has expired.` },
+        { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting (up to 7 days), then erase it once the invite is resolved or has expired.` },
         { kind: "p", lead: "Card scanning.", text: "The scanner turns what your camera sees into a short list of numbers on your phone, and only those numbers are sent to match the card. No photo leaves your device." },
         { kind: "p", lead: "Small things.", text: "Your theme, a few view choices (grid or list, a sort) and which About entries you’ve seen, kept in cookies and your browser’s storage. Recent card searches are kept on your device and cleared when you sign out. The 99 has no analytics or advertising trackers." },
       ],
