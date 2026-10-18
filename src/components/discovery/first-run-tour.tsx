@@ -43,8 +43,10 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
   useEffect(() => {
     if (phase !== "waiting") return;
     let timer: number | undefined;
-    // Clear means the page has settled (`load`) and nothing stands over Home; every path into `arm` checks both.
-    const clear = () => document.readyState === "complete" && overPageCount().locks === 0 && overPageCount().holds === 0;
+    // Clear means the page has settled (`load`), the tab is in front, and nothing stands over Home; every path into
+    // `arm` checks all three, so a tour is never spent where nobody is looking.
+    const clear = () =>
+      document.readyState === "complete" && !document.hidden && overPageCount().locks === 0 && overPageCount().holds === 0;
     // Each time the page might be clear, start the wait again; anything opening over Home cancels it.
     const arm = () => {
       window.clearTimeout(timer);
@@ -61,9 +63,12 @@ export function FirstRunTour({ precons }: { precons: boolean }) {
     arm();
     if (document.readyState !== "complete") window.addEventListener("load", settled, { once: true });
     const off = subscribeOverPage(arm);
+    // Leaving the tab cancels the wait (`arm` clears the timer and finds the page not clear); coming back starts it again.
+    document.addEventListener("visibilitychange", arm);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("load", settled);
+      document.removeEventListener("visibilitychange", arm);
       off();
     };
   }, [phase]);
@@ -102,6 +107,11 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     document.body.appendChild(host);
     return () => host.remove();
   }, [host]);
+  // Where focus was before the tour, read during the first render: the page goes inert in a layout effect, before the
+  // dialog hook's own capture runs, and an inert control has already lost focus by then.
+  const [returnTo] = useState<{ current: HTMLElement | null }>(() => ({
+    current: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+  }));
   useInertPage(host, true);
 
   // The lit control's box, read every frame: the page scrolls, the rail settles, a theme changes the type.
@@ -123,7 +133,7 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
   const cardRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   // Esc skips. The tour scrolls the page itself, so the body is never locked.
-  useDialogA11y(cardRef, () => onEnd(false), { initialFocusRef: nextRef, lockScroll: false });
+  useDialogA11y(cardRef, () => onEnd(false), { initialFocusRef: nextRef, lockScroll: false, returnFocusRef: returnTo });
 
   // Null until the card has been measured once; it is hidden only until then.
   const [cardH, setCardH] = useState<number | null>(null);
@@ -136,12 +146,13 @@ function TourRun({ precons, onEnd }: { precons: boolean; onEnd: (withNote: boole
     return () => ro.disconnect();
   }, []);
 
-  // The card is hidden until measured, and a browser ignores focus on a hidden control, so the dialog's own first
-  // focus can land while Next is still invisible. Once the card shows, focus Next if focus is not in the card already.
+  // Focus stays in the card. It is hidden until measured, and a browser ignores focus on a hidden control, so the
+  // dialog's own first focus can land while Next is still invisible; and Back pressed on step 2 is gone on step 1.
+  // So once the card shows, and on every step, focus Next when focus is not in the card already.
   const shown = cardH !== null;
   useEffect(() => {
     if (shown && !cardRef.current?.contains(document.activeElement)) nextRef.current?.focus();
-  }, [shown]);
+  }, [shown, index]);
 
   // At 390 the docked card covers the page's foot, so the page gets that much room to scroll under it while the tour
   // runs: a short first-run page could not otherwise bring step 1's controls clear of the card. Restored on the way out.

@@ -61,6 +61,14 @@ async function signIn(page) {
 }
 
 const seenAt = async (userId) => (await sql`select tour_seen_at from user_prefs where user_id = ${userId}`)[0]?.tour_seen_at ?? null;
+/** The stamp once it has committed: the tour spends itself without waiting on the write, so step 1 can show first. */
+async function committedSeenAt(userId, ms = 10_000) {
+  for (const end = Date.now() + ms; ; ) {
+    const at = await seenAt(userId);
+    if (at || Date.now() > end) return at;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}
 
 /**
  * Each step's real control at this width, and the room its cutout keeps around it. At 390 step 1 lights the card's
@@ -112,7 +120,7 @@ async function walk(browser, vp) {
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     const card = page.locator("[data-tour-card]");
     report("the tour opens on a first-run Home", await card.waitFor({ timeout: 15_000 }).then(() => true, () => false));
-    const first = await seenAt(userId);
+    const first = await committedSeenAt(userId);
     report("tour_seen_at is written as step 1 appears", first !== null);
     // The card is hidden until measured; focus must still land on Next once it shows, so Enter advances at once.
     await page.waitForTimeout(300);

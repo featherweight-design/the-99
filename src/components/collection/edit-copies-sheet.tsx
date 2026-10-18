@@ -32,6 +32,7 @@ import { AddLine } from "./add-line";
 import { SHEET_FOOT_CLASS, SHEET_PANEL_CLASS } from "./sheet-frame";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { useMomentHold } from "../../lib/moments/hold";
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -160,6 +161,8 @@ export function EditCopiesSheet({
   }, [saving, warning, discarding, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: addRef, lockScroll: false, returnFocusRef });
+  // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(true);
   useBackDismiss(true, requestClose);
 
   function afterChoose(res: { lines: EditLineState[]; merged: EditLineState | null; overflow?: true }) {

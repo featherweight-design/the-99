@@ -5,6 +5,20 @@ import type { TargetId } from "../../lib/discovery/targets";
 const spend = vi.fn(() => Promise.resolve());
 vi.mock("../../app/tour-actions", () => ({ spendTourAction: () => spend() }));
 vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn(), noteAppScroll: vi.fn() }));
+// A browser drops focus from a control the moment it goes inert; jsdom does not, so the mock does it, as Chrome would.
+vi.mock("../../lib/a11y/inert-page", async (orig) => {
+  const real = await orig<typeof import("../../lib/a11y/inert-page")>();
+  const { useLayoutEffect } = await import("react");
+  return {
+    useInertPage: (host: HTMLElement | null, active: boolean) => {
+      real.useInertPage(host, active);
+      useLayoutEffect(() => {
+        const el = document.activeElement;
+        if (active && el instanceof HTMLElement && el.closest("[inert]")) el.blur();
+      }, [host, active]);
+    },
+  };
+});
 const takeVisit = vi.fn();
 vi.mock("../../lib/moments/visit", async (orig) => ({ ...(await orig<object>()), takeVisit: () => takeVisit() }));
 
@@ -88,6 +102,37 @@ describe("FirstRunTour", () => {
     arrive();
     expect(card()).toBeInTheDocument();
     ready.mockRestore();
+  });
+
+  it("never opens in a hidden tab, and starts the wait again when the tab comes back", () => {
+    const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    render(<Home />);
+    arrive();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(spend).not.toHaveBeenCalled();
+    hidden.mockReturnValue(false);
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    arrive();
+    expect(card()).toBeInTheDocument();
+    hidden.mockRestore();
+  });
+
+  it("gives focus back to the control that held it before the tour, once it ends", () => {
+    render(<Home />);
+    screen.getByRole("button", { name: "Upload" }).focus();
+    arrive();
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    expect(screen.getByRole("button", { name: "Upload" })).toHaveFocus();
+  });
+
+  it("keeps focus on the card when Back takes step 2 to step 1, which has no Back", () => {
+    render(<Home />);
+    arrive();
+    next();
+    const back = within(card()).getByRole("button", { name: "Back" });
+    back.focus();
+    fireEvent.click(back);
+    expect(within(card()).getByRole("button", { name: "Next" })).toHaveFocus();
   });
 
   it("holds the app inert while it runs, and lets it go when it ends", () => {

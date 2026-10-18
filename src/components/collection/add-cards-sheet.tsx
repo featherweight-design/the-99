@@ -41,6 +41,7 @@ import type { ScanGuess, ScanMode } from "./scan/scan-view";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { useMomentHold } from "../../lib/moments/hold";
 
 const copy = collectionEditCopy.add;
 const scanCopy = collectionEditCopy.scan;
@@ -277,6 +278,8 @@ function AddMode({
   }, [saving, swapping, scanning, closeScanner, discarding, fixing, pickerFor, cancelPicker, dirty, onClose]);
 
   useDialogA11y(panelRef, requestClose, { initialFocusRef: searchRef, lockScroll: false, returnFocusRef });
+  // It locks no scroll, so it holds moments and the tour off itself while it is up (hold.ts).
+  useMomentHold(true);
   // `lockScroll: false` also turns the hook's Back handling off; Back still has to ask before
   // it throws away an unsaved list.
   useBackDismiss(true, requestClose);
