@@ -42,7 +42,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
   // Asked of Clerk only for a profile that is missing or new (`profileNeedsClerk`): the Backend call was 124 of the page's 180 ms
-  // on staging (2026-10-18), and a returning reader's name is already stored and their invitation long since spent.
+  // on staging (2026-10-18), and a returning reader's name is stored. Every path that writes a profile has attempted the invite spend by then (the spend itself,
+  // this page, and `ensureSenderProfile`), so an old profile has nothing left for this page to recover.
   const needsClerk = profileNeedsClerk(await perf.timed("profileAge", () => profileAgeMs(userId)));
   const user = needsClerk ? await perf.timed("currentUser", () => currentUser()) : null;
   // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
