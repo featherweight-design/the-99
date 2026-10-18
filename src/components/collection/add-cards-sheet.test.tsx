@@ -77,7 +77,22 @@ describe("AddCardsSheet (add)", () => {
     expect(field()).toHaveFocus();
     expect(page.hasAttribute("inert")).toBe(true);
     expect(dialog.closest("[inert]")).toBeNull();
-    expect(screen.getByRole("button", { name: copy.save(0) })).toBeDisabled();
+    expect(screen.getByRole("button", { name: copy.save(0) })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("holds Save with aria-disabled, never disabled: it stays in the tab order and a click saves nothing", () => {
+    mount();
+    const save = screen.getByRole("button", { name: copy.save(0) });
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    expect(save).not.toHaveAttribute("disabled");
+    expect(save.className).toContain("aria-disabled:opacity-40");
+    save.focus();
+    expect(save).toHaveFocus();
+    // A click while held saves nothing. (The press handler's own check and save()'s are the same condition, so this
+    // proves the pair, not either alone.)
+    fireEvent.click(save);
+    expect(add).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: copy.save(0) })).toBeInTheDocument();
   });
 
   it("searches the whole catalog and shows no-results", async () => {
@@ -90,7 +105,7 @@ describe("AddCardsSheet (add)", () => {
     expect(await screen.findByText(copy.noResultsTitle("glimmerlite"))).toBeInTheDocument();
   });
 
-  it("makes the printing a required step: nothing selected, search and Save disabled", async () => {
+  it("makes the printing a required step: nothing selected, search disabled and Save held", async () => {
     mount();
     await find("sol ring", [card()]);
     await pickFirst();
@@ -98,7 +113,7 @@ describe("AddCardsSheet (add)", () => {
     expect(radios).toHaveLength(3);
     for (const r of radios) expect(r).toHaveAttribute("aria-checked", "false");
     expect(field()).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^Save/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Save/ })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText(copy.needsPrinting("Sol Ring"))).toBeInTheDocument();
   });
 
@@ -110,7 +125,7 @@ describe("AddCardsSheet (add)", () => {
     await waitFor(() => expect(field()).toHaveFocus());
     expect(screen.getByText("SLD · #1512")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Foil" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("button", { name: copy.save(1) })).toBeEnabled();
+    expect(screen.getByRole("button", { name: copy.save(1) })).not.toHaveAttribute("aria-disabled");
     expect(screen.getByText(copy.summary(1, 1))).toBeInTheDocument();
   });
 

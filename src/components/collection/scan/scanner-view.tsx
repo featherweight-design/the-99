@@ -69,7 +69,7 @@ export function ScannerView(p: ScannerViewProps) {
       ) : (
         <DeskHead {...p} withMode />
       )}
-      <div aria-hidden="true" className={phone ? "absolute inset-0" : "relative h-[250px] w-full"}>
+      <div aria-hidden="true" className={phone ? "absolute inset-0" : "relative h-[250px] w-full flex-none"}>
         {p.feed}
         {p.outline && <CardOutline store={p.outline} look={look} phone={phone} />}
       </div>
@@ -84,8 +84,10 @@ export function ScannerView(p: ScannerViewProps) {
           {p.notice}
         </p>
       )}
-      {/* One live region for the guess: a plain element, since WebKit drops `display: contents` from the tree. */}
-      <div aria-live="polite">
+      {/* One live region for the guess: a plain element, since WebKit drops `display: contents` from the tree. On the
+          desktop it carries the shrink chain (flex column, min-h-0) from the clipping section to the panel, or the
+          printing step overflows the section and Not this card is clipped away. */}
+      <div aria-live="polite" className={phone ? undefined : "flex min-h-0 flex-col"}>
         <Panel {...p} panel={p.screen.panel} />
       </div>
       {phone && p.flipTo && (
@@ -314,7 +316,9 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
       return <SurePanel {...p} panel={panel} box={box} />;
     case "choose":
       return (
-        <div data-testid="scan-panel" data-state="choose" className={box}>
+        // The desktop's panel shrinks to the room the sheet leaves it (its section clips), and the printing grid's box
+        // gives up that height first, so Add this printing and Not this card stay in view under it at 1300x900.
+        <div data-testid="scan-panel" data-state="choose" className={phone ? box : `${box} min-h-0`}>
           <p className={H}>{panel.guess.name}</p>
           {panel.choices === null ? (
             <p className={BODY} role="status">
@@ -470,7 +474,7 @@ function SurePanel(p: ScannerViewProps & { panel: Extract<ScanPanel, { kind: "su
         <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
           <b className="text-[16px] font-semibold text-[color:var(--fg)]">{guess.name}</b>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{guess.typeLine}</span>
-          {again?.kind === "duplicate" && again.count > 0 && <span className="font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
+          {again?.kind === "duplicate" && again.count > 0 && <span className="whitespace-nowrap font-mono text-[12px] text-[color:var(--success)]">{copy.again.stillOn(again.count)}</span>}
           {again?.kind === "second" && <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.again.already(again.count)}</span>}
         </div>
         {!phone && press}
@@ -615,7 +619,8 @@ function ChoosePrintings({ guess, choices, phone, onChoose }: { guess: ScanGuess
   return (
     <>
       {/* The desktop's grid scrolls in its own box, so a card with many printings never pushes Not this card out of
-          the scanner's panel, which clips; the phone's one row scrolls sideways. */}
+          the scanner's panel, which clips: the box is capped, and shrinks below the cap (min-h-0, in a panel that
+          shrinks too) when the sheet is shorter. The phone's one row scrolls sideways. */}
       <div data-testid="scan-printings" className={phone ? "min-w-0" : "max-h-[min(320px,40dvh)] min-h-0 overflow-y-auto"}>
         <PrintingRegion
           role="choose"

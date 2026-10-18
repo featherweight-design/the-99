@@ -177,9 +177,9 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "fast add" }));
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
     const save = await screen.findByRole("button", { name: copy.save(1) });
-    expect((save as HTMLButtonElement).disabled).toBe(true);
+    expect(save).toHaveAttribute("aria-disabled", "true");
     land(TWO);
-    await waitFor(() => expect((screen.getByRole("button", { name: copy.save(2) }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect(screen.getByRole("button", { name: copy.save(2) })).not.toHaveAttribute("aria-disabled"));
   });
 
   it("clears the search when a scanned card lands, so its results never cover the printing step", async () => {
