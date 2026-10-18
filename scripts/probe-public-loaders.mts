@@ -34,7 +34,9 @@ async function run() {
   console.log(`cards ${c.n}; distinct 12-hex prefixes ${c.d12}; distinct 8-hex prefixes ${c.d8} (${Number(c.n) - Number(c.d8)} would have collided)`);
   check("1 · no two cards share a 12-hex prefix", Number(c.n) - Number(c.d12), 0);
 
-  const cardIds = await rows<{ oracle_id: string; name: string }>(sql`select oracle_id::text, name from cards order by oracle_id limit 20 offset 5000`);
+  const cardIds = await rows<{ oracle_id: string; name: string }>(sql`select oracle_id::text, name from cards order by oracle_id limit 20 offset ${Math.max(0, Math.min(5000, Number(c.n) - 20))}`);
+  check("2 · there are cards to load", cardIds.length > 0, true);
+  if (cardIds.length === 0) return;
   const times: number[] = [];
   let cardsOk = 0;
   for (const r of cardIds) {
@@ -61,8 +63,8 @@ async function run() {
   const first = cardIds[0];
   const wrong = await loadPublicCard(`not-the-name-${first.oracle_id.replace(/-/g, "").slice(0, 12)}`);
   check("3 · a wrong name part still resolves, to the canonical address", wrong.kind === "ok" ? wrong.canonicalSlug : wrong.kind, publicSlug(first.name, first.oracle_id));
-  const hex = first.oracle_id.replace(/-/g, "").slice(0, 11);
-  const off = await loadPublicCard(`x-${hex}${hex.endsWith("0") ? "1" : "0"}`);
+  const real12 = first.oracle_id.replace(/-/g, "").slice(0, 12);
+  const off = await loadPublicCard(`x-${real12.slice(0, 11)}${real12[11] === "0" ? "1" : "0"}`);
   check("3 · a prefix no card has is not-found", off.kind, "not-found");
   const notCommander = await loadPublicCommander(publicSlug(first.name, first.oracle_id));
   console.log(`   a card that is not in commander_support: ${notCommander.kind}`);

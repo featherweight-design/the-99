@@ -93,7 +93,7 @@ export function shapeCommander(card: CardRow, support: SupportRow, signature: re
     tags: ok ? support.tags : [], bracketCounts: ok ? support.bracketCounts : {}, budgetCounts: ok ? support.budgetCounts : {},
     engine: ok ? support.engine : null,
     prose: ok && !isSuppressed(card.oracleId) ? support.prose : null,
-    similar: ok ? [...similar].sort((a, b) => (order.get(a.oracleId) ?? 0) - (order.get(b.oracleId) ?? 0)).map(link) : [],
+    similar: ok ? [...similar].sort((a, b) => (order.get(a.oracleId) ?? order.size) - (order.get(b.oracleId) ?? order.size)).map(link) : [],
     signature: ok ? signature.map((r) => ({ ...link(r), inclusion: r.inclusion, synergy: r.synergy })) : [],
   };
 }
@@ -111,7 +111,9 @@ export async function loadPublicCommander(slug: string): Promise<PublicCommander
     support.synergyState === "ok" ? signatureQuery(card.oracleId) : Promise.resolve([]),
     similarIds.length === 0
       ? Promise.resolve([])
-      : db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, similarIds)),
+      // Only commanders: a similar id that is a card with no support row would link to an address that answers not-found.
+      : db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards)
+        .innerJoin(commanderSupport, eq(commanderSupport.commanderOracleId, cards.oracleId)).where(inArray(cards.oracleId, similarIds)),
   ]);
   const commander = shapeCommander(card, support, signature, similar);
   return { kind: "ok", commander, canonicalSlug: commander.slug };

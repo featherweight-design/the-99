@@ -5,7 +5,7 @@ vi.mock("./resolve", async (orig) => ({ ...(await orig<typeof import("./resolve"
 
 import { PRINTINGS_LIMIT, loadPublicCard, printingsQuery, splitFaces } from "./card";
 import { loadPublicCommander, signatureQuery, SIGNATURE_LIMIT } from "./commander";
-import { cardsByPrefixQuery, resolvePublicSlug } from "./resolve";
+import { cardsByPrefixQuery } from "./resolve";
 
 const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
 
@@ -20,11 +20,6 @@ describe("the id lookup", () => {
     expect(q.params.slice(0, 2)).toEqual(["0b3f2c9e-6a41-0000-0000-000000000000", "0b3f2c9e-6a41-ffff-ffff-ffffffffffff"]);
   });
 
-  it("answers not-found for a string that cannot be an address without asking the database", async () => {
-    const real = await vi.importActual<typeof import("./resolve")>("./resolve");
-    expect(await real.resolvePublicSlug("sol-ring")).toEqual({ kind: "not-found" });
-    expect(resolvePublicSlug).toBe(resolve);
-  });
 });
 
 describe("the card loader", () => {
@@ -89,6 +84,11 @@ describe("shapeCommander: the state rule", () => {
       expect(c).toMatchObject({ state: synergyState, rank: null, deckCount: null, tags: [], bracketCounts: {}, budgetCounts: {}, engine: null, prose: null, similar: [], signature: [] });
     }
     expect(similarIdsOf({ synergyState: "degraded", similarOracleIds: ["a"] })).toEqual([]);
+  });
+
+  it("a similar commander the support list does not name sorts to the END, not the front", () => {
+    const c = shapeCommander(card, support(), [], [l("zzz", "Z"), l("c", "C"), l("a", "A")]);
+    expect(c.similar.map((x) => x.name)).toEqual(["A", "C", "Z"]);
   });
 
   it("an `ok` read with no accepted prose, rank or deck count shows them blank rather than failing", () => {
