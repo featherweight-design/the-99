@@ -8,8 +8,12 @@
 //
 // THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its three decks, Alex's
 // spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with the tools'
-// switches on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to
-// `off`, so no bubble, tour or sheet is photographed (docs/probes.md, capture:about).
+// switches on, `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`)
+// ON, so the frames show the ?, the account menu's `Take the tour` row and the pod's `Rule 0 check` row that the
+// launch-end entries point at (About batch brief, 2026-10-18), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
+// `off`, so no bubble or sheet is photographed. The fixture account has decks, so its Home is the dashboard and the
+// tour never opens on its own. A frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`), so a server
+// started with the old switch set cannot ship a stale set (docs/probes.md, capture:about).
 //
 // A tool on a deck is found as the landing finds it: the deck opened with `?tool=<id>`, its target is the element the
 // landing haloes (`data-target-halo`), measured, then photographed once the halo is down. A tool with a page of its own
@@ -468,6 +472,26 @@ async function attempt(page, theme, id, run) {
   }
 }
 
+/**
+ * What the server's switch set must draw on a frame before it is photographed: the ? on every screen
+ * (`HELP_PANEL_ENABLED`), the account menu's `Take the tour` row (`FIRST_RUN_TOUR_ENABLED`) and the pod's `Rule 0 check`
+ * row on /friends (`RULE_ZERO_ENABLED`). The launch-end About entries point at these, so a set captured without them
+ * is refused rather than shipped.
+ */
+const REQUIRED_ON_FRAME = {
+  "*": ["[data-help-button]:visible", "the ? (start the server with HELP_PANEL_ENABLED on)"],
+  account: ["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row (FIRST_RUN_TOUR_ENABLED on)"],
+  friends: ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (RULE_ZERO_ENABLED on)"],
+};
+
+async function requireOnFrame(page, id) {
+  for (const key of ["*", id]) {
+    const need = REQUIRED_ON_FRAME[key];
+    if (!need) continue;
+    if ((await page.locator(need[0]).count()) === 0) throw new Error(`the frame does not draw ${need[1]}`);
+  }
+}
+
 async function shoot(page, theme, f) {
   for (const [id, s] of Object.entries(screens(f))) {
     if (!want(id)) continue;
@@ -476,6 +500,7 @@ async function shoot(page, theme, f) {
       if (s.steps) await s.steps(page);
       if (s.dialog) await page.locator("[role='dialog']").first().waitFor({ state: "visible", timeout: 10_000 });
       await settle(page);
+      await requireOnFrame(page, id);
       const png = await shot(page);
       const { boxes, unplaced } = await measureEntries(page, id, s.dialog || id === "account");
       for (const entry of unplaced) missed.push(`${theme}/${id}#${entry}: its locator draws nothing on the frame`);

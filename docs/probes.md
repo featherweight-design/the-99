@@ -663,8 +663,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   image over 90KB (the cap is never raised; `src/lib/about/shots.test.ts` holds 90KB an image and 18MB the set,
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with the tools' switches
-  on and `MOMENTS_ENABLED`, `FIRST_RUN_TOUR_ENABLED`, `ABOUT_SHEET_ENABLED` and `HELP_PANEL_ENABLED` set to `off`
-  so no bubble, tour or sheet is photographed. It refuses any database but a scratch branch (`assertScratchBranch`)
+  on, `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) on, and
+  `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to `off`, so the frames show the ?, the account menu's `Take the
+  tour` row and the pod's `Rule 0 check` row, and no bubble or sheet. A frame missing any of the three is refused
+  (`REQUIRED_ON_FRAME`). It refuses any database but a scratch branch (`assertScratchBranch`)
   before its first write, and writes only `clearAboutSheet`'s seen marks, put back in a `finally`, and the pending
   upload `tool-collection-sync`'s preview writes (the account's own collection, read as a file in memory so the Sync
   choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
