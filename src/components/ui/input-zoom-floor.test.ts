@@ -33,8 +33,10 @@ export function subSixteenFields(file: string, text?: string): string[] {
       const cls = n.attributes.properties.find((a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "className");
       const written = cls?.initializer?.getText() ?? "";
       const sizes = [...written.matchAll(SIZE)].map((m) => ({ variants: m[1], px: Number(m[2]) }));
-      // A 16px of its own (`text-[16px]`, `text-base`, in any variant) is the touch answer beside a smaller bare size.
-      const unguarded = sizes.some((s) => s.px < 16 && s.variants === "") && !/text-\[16px\]|text-base/.test(written);
+      // The touch answer beside a smaller bare size is a 16px that a phone gets: bare, or under the app's `touch:`
+      // variant. `md:text-[16px]`, a fine-pointer-only 16px or `placeholder:text-base` leave the phone at the small one.
+      const phone16 = sizes.some((s) => s.px >= 16 && (s.variants === "" || s.variants === "touch:")) || /(?<![\w:[-])text-base(?![\w-])|touch:text-base/.test(written);
+      const unguarded = sizes.some((s) => s.px < 16 && s.variants === "") && !phone16;
       if (unguarded) found.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
     }
     ts.forEachChild(n, visit);
@@ -60,5 +62,14 @@ describe("no text input under 16px on a touch screen", () => {
     expect(subSixteenFields("a.tsx", padded)).toEqual(["a.tsx:1"]);
     expect(subSixteenFields("a.tsx", good)).toEqual([]);
     expect(subSixteenFields("a.tsx", hidden)).toEqual([]);
+    // A 16px that only a wide or fine-pointer screen gets does not protect the phone's 15px (CreatePreFilled's old classes).
+    const wide = `export const A = () => <TextField className="text-[15px] md:text-[16px]" />;`;
+    const fine = `export const A = () => <TextField className="text-[15px] [@media(pointer:fine)]:text-[16px]" />;`;
+    const placeholder = `export const A = () => <TextField className="text-[15px] placeholder:text-base" />;`;
+    const touch = `export const A = () => <SearchField className="text-[15px] touch:text-base" />;`;
+    expect(subSixteenFields("a.tsx", wide)).toEqual(["a.tsx:1"]);
+    expect(subSixteenFields("a.tsx", fine)).toEqual(["a.tsx:1"]);
+    expect(subSixteenFields("a.tsx", placeholder)).toEqual(["a.tsx:1"]);
+    expect(subSixteenFields("a.tsx", touch)).toEqual([]);
   });
 });
