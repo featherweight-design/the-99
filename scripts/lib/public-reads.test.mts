@@ -137,6 +137,19 @@ describe("the public surface (F3): the page files and every component they draw"
     expect(surface({ "src/lib/copy/x.ts": `export const s = "your decks";` })).toEqual([]);
   });
 
+  it("names a raw-SQL table off the allowlist, bare, quoted or schema-qualified", () => {
+    for (const q of ["select 1 from payment_records", 'select 1 from "payment_records"', 'select 1 from "public"."payment_records"', "select 1 from public.payment_records"]) {
+      expect(surface({ "src/components/public/a.tsx": `export const q = sql\`${q}\`;` })).toEqual(["src/components/public/a.tsx: reads `payment_records`, which is not on the public allowlist"]);
+    }
+  });
+
+  it("stops at the database entry and the schema, so a page drawing from a public loader is clean", () => {
+    const files = surfaceFiles(["src/lib/public/card.ts", "src/lib/public/commander.ts"]);
+    expect(files).not.toContain("src/db/schema.ts");
+    expect(files).not.toContain("src/db/index.ts");
+    expect(judgeSurface(files, (f: string) => readFileSync(f, "utf8"), [])).toEqual([]);
+  });
+
   it("follows value imports and not type imports", () => {
     const files: Record<string, string> = {
       "src/components/public/a.tsx": `import type { T } from "../../lib/collection/browse";\nimport { b } from "./b";`,

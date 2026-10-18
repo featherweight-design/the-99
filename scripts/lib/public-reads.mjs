@@ -161,7 +161,10 @@ export function surfaceFiles(entries, read = (f) => readFileSync(f, "utf8"), res
       const next = resolveFn(file, spec);
       if (!next || seen.has(next)) continue;
       if (next.startsWith("src/app/")) { stack.push(next); continue; }
-      if (next.startsWith("src/components/") || next.startsWith("src/lib/") || /^src\/db\//.test(next)) stack.push(next);
+      // The database entry and the schema are terminal: the schema declares every table and imports app modules, and
+      // what a caller reads from it is judged in the CALLER (its bindings and SQL), as the loader guard does.
+      if (/^src\/db\/(?:index|schema)\.ts$/.test(next)) continue;
+      if (next.startsWith("src/components/") || next.startsWith("src/lib/") || next.startsWith("src/db/")) stack.push(next);
     }
   }
   return [...seen].sort();
@@ -201,6 +204,8 @@ export function judgeSurface(files, read, entries, tables = schemaTables()) {
     if (/db\/schema/.test(text) || /\bsql`/.test(text)) {
       const named = new Set();
       for (const [binding, t] of tables) if (new RegExp(`\\b${binding}\\b`).test(text)) named.add(t.name);
+      const byName = new Map([...tables.values()].map((t) => [t.name, t]));
+      for (const m of text.matchAll(/\b(?:from|join|into|update)\s+(?:"?public"?\.)?"?([a-z_]+)"?/gi)) if (byName.has(m[1])) named.add(m[1]);
       for (const name of named) if (!ALLOWED_TABLES.has(name)) findings.push({ path: file, why: `reads \`${name}\`, which is not on the public allowlist` });
     }
   }
