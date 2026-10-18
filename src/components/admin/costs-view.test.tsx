@@ -278,6 +278,7 @@ describe("the workspace cap row", () => {
     draw(rows([p(2, 1.06)], { ...billed(1), settings: cap }));
     const { row, segs } = capRow("The 99 workspace cap");
     expect(row).toHaveTextContent("This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.");
+    expect(row).toHaveTextContent("Spend from before a key moved to this workspace stays billed where it ran.");
     expect(row).not.toHaveTextContent("Elsewhere $");
     expect(segs.map((el) => el.style.width).at(-1)).toBe("0%");
   });
