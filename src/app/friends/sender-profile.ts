@@ -9,9 +9,14 @@
 // `user.created` webhook failed and who pressed Add a friend before opening /friends would have a profile and no spend.
 import { currentUser } from "@clerk/nextjs/server";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../lib/invites/spend";
-import { ensureProfile } from "../../lib/social/friends";
+import { ensureProfile, profileAgeMs } from "../../lib/social/friends";
+import { profileNeedsClerk } from "../../lib/social/rules";
 
 export async function ensureSenderProfile(userId: string): Promise<void> {
+  // A profile older than the newcomer window needs nothing from Clerk or from us: the name is stored, and the invite spend was
+  // attempted when the profile was written (here, /friends, or the spend itself). The Backend call is ~125 ms a press
+  // (measured on staging, 2026-10-18, as `/friends`'s `currentUser` span), and this runs on every link, QR and email invite.
+  if (!profileNeedsClerk(await profileAgeMs(userId))) return;
   const user = await currentUser();
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);

@@ -69,3 +69,15 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - Key: `anon:` + the first 16 hex of SHA-256(network address, UTC day). The address is `x-real-ip`, else `x-vercel-forwarded-for`, else the first hop of `x-forwarded-for`; an IPv6 address is reduced to its /64; none readable shares `anon:unknown`. **It is pseudonymous, not unlinkable**: the IPv4 space is small enough to enumerate and no secret is used, so the privacy page must not claim anonymity. CLEANUP IS OPPORTUNISTIC AND WINDOW-BASED: a count deletes the same key's rows from earlier windows (a minute-window row can go within seconds) and every row, anyone's, older than the counting window's start minus `RETAIN_MS`, and a row stays if no count follows. There is no minimum or maximum age to promise. Say only that the hash is "held briefly in a request counter and cleared out as later requests are counted"; never "kept for up to an hour" or "deleted after an hour". A time-based sweep (the account-sweep cron could run it) is the change that would make a bound true.
 - `purgeAccount` deletes `rate_hits` by an account's id, which an `anon:` key never equals, so a visitor's rows are neither an account's data nor a purge's concern.
 
+## Clerk Backend calls on the server
+
+A Clerk BACKEND call is a network round trip to Clerk's API: `currentUser()` and everything on `clerkClient()`. Measured on deployed staging (2026-10-18) as `/friends`'s `currentUser` span: 124-131 ms of a 180 ms page, before #2049 removed it for a returning reader. `auth()` is NOT one (it verifies the session token locally), nor is the browser's `useUser`. `src/lib/clerk-backend-calls.test.ts` lists every file that imports one, with its frequency and why the data lives only in Clerk, found by import; a new one is a reviewed diff to that table.
+
+| Call | Where | Runs | Verdict |
+|---|---|---|---|
+| `currentUser()` | `/friends` page | missing or young profile only | fixed (#2049) |
+| `currentUser()` | `ensureSenderProfile` (Home's Add a friend, link, QR and email invite actions) | missing or young profile only (this PR); was every press | fixed |
+| `currentUser()` | `buyPackAction` | once per Buy press | keep: the VERIFIED primary email lives only in Clerk; Stripe's round trip dwarfs it |
+| `clerkClient().users.*` | admin Accounts pages | per admin page | keep: emails and sign-in times live only in Clerk; admin only |
+| `clerkClient().invitations.*` and `.users.getUserList` | `src/lib/invites/clerk.ts` | once per email invite | keep: Clerk owns invitations |
+
