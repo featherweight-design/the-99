@@ -21,7 +21,7 @@ vi.mock("next/cache", () => ({
 // `React.cache` memoizes per request; outside one it would hold across tests, so each call reads through here.
 vi.mock("react", async (orig) => ({ ...(await orig<typeof import("react")>()), cache: <T,>(fn: T) => fn }));
 
-import { publicCommanderKey, readPublicCommander } from "./cached-commander";
+import { publicCommanderImageKey, publicCommanderKey, readPublicCommander } from "./cached-commander";
 
 const ok = { kind: "ok", commander: { name: "Sol Ring", state: "ok" }, canonicalSlug: "sol-ring-0b3f2c9e6a41" };
 
@@ -35,6 +35,8 @@ beforeEach(() => {
 describe("the public commander cache", () => {
   it("keys on the catalog generation, the deployment and the commander's id", () => {
     expect(publicCommanderKey("1000", "0b3f2c9e6a41", "dpl_1")).toEqual(["public-commander", "gen:1000", "dep:dpl_1", "id:0b3f2c9e6a41"]);
+    // The link-preview image is stored under its own name, the same generation, deployment and id.
+    expect(publicCommanderImageKey("1000", "0b3f2c9e6a41", "dpl_1")).toEqual(["public-commander-image", "gen:1000", "dep:dpl_1", "id:0b3f2c9e6a41"]);
   });
 
   it("stores one copy of a commander however its name part is spelled", async () => {

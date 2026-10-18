@@ -23,6 +23,11 @@ export function publicCommanderKey(generation: string, hex: string, deployment: 
   return ["public-commander", `gen:${generation}`, `dep:${deployment}`, `id:${hex}`];
 }
 
+/** The commander's link-preview image's key (`opengraph-image.tsx`): the page read's parts under the image's own name. */
+export function publicCommanderImageKey(generation: string, hex: string, deployment: string = DEPLOYMENT_ID): string[] {
+  return ["public-commander-image", ...publicCommanderKey(generation, hex, deployment).slice(1)];
+}
+
 class NotStored {
   constructor(readonly result: PublicCommanderResult) {}
 }

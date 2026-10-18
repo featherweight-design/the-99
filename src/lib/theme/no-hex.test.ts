@@ -25,6 +25,8 @@ const ALLOWED = new Set([
   // its colours are literals. A visitor always gets the default theme, and `og-card-image.test.tsx` pins every ink to
   // that theme's tokens read out of globals.css, so it cannot drift.
   "components/public/og-card-image.tsx",
+  // The commander's link-preview image, the same way: its inks are `og-card-image.tsx`'s `INK`; its one literal is the shade.
+  "components/public/og-commander-image.tsx",
   // The theme library's own tests are about hex values, so they contain them.
   "lib/theme/color.test.ts",
   "lib/theme/parse-css.test.ts",
