@@ -77,8 +77,7 @@ Left as shipped:
 
 ## About entry
 
-**Not scheduled, by ruling.** The plan deferred it until the About redesign (plan PR 6). The handoff already drafts it:
+**Owed, and now scheduled.** The plan deferred it until the About redesign (plan PR 6). The handoff already drafts it:
 `about · scanning your cards.ts` (id `card-scan`, chapter 01, after `collection-add`) and its board `R1 - About-Entry.dc.html`
-(`STATES-card-scan.md`, A1). On 2026-10-18 the orchestrator left it out of the launch-end batch. Hugh asked for About to
-cover only what is not evident without it, so whether scanning owes an entry is on his list; if it does, it reuses that
-draft as invites and card search do.
+(`STATES-card-scan.md`, A1). On 2026-10-18 the orchestrator added it to the launch-end About batch as entry 6 of
+`2026-10-18-about-launch-entries.md`, reusing that draft, at `since: 16`.
