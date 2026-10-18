@@ -19,16 +19,16 @@ describe("which line", () => {
   it("L2: a free credit left and paid held counts the paid total once", () => {
     const a = base({ plan: 74, pack: 40, paidUsedToday: 3, paidLimit: 20 });
     expect(creditLineKind(a)).toBe("withPaid");
-    expect(creditStanding(a)).toBe(`4 of 5 free · reset at ${t(a.nextAt!)} · 114 paid`);
-    expect(creditFirst(a)).toBe(`Uses a credit. 4 of 5 free · reset at ${t(a.nextAt!)} · 114 paid.`);
+    expect(creditStanding(a)).toBe(`4 of 5 free · reset at ${t(a.nextAt!)} · 114\u00a0paid`);
+    expect(creditFirst(a)).toBe(`Uses a credit. 4 of 5 free · reset at ${t(a.nextAt!)} · 114\u00a0paid.`);
   });
 
   it("L3: free spent, paid held: the line says the next run uses a paid credit and the press stays live", () => {
     const a = base({ used: 5, reopensAt: at(15), pack: 114, paidUsedToday: 0, paidLimit: 20 });
     expect(creditLineKind(a)).toBe("paidNext");
-    expect(creditStanding(a)).toBe(`0 of 5 free · reset at ${t(at(15))} · this run uses 1 of 114 paid`);
-    expect(creditFirst(a)).toBe(`Uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114 paid.`);
-    expect(creditAgain(a)).toBe(`Replaces these suggestions and uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114 paid.`);
+    expect(creditStanding(a)).toBe(`0 of 5 free · reset at ${t(at(15))} · this run uses 1 of 114\u00a0paid`);
+    expect(creditFirst(a)).toBe(`Uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114\u00a0paid.`);
+    expect(creditAgain(a)).toBe(`Replaces these suggestions and uses a paid credit. 0 of 5 free · reset at ${t(at(15))} · 114\u00a0paid.`);
   });
 
   it("L4: nothing to spend: the shipped spent line, Get more credits on its own line only while payments are on", () => {
@@ -62,7 +62,7 @@ describe("which line", () => {
   it("L8: payments off for the reader: the free-only form, and paid forms if paid is held, never Get more credits", () => {
     const spent = base({ used: 5, payments: false });
     expect(creditSpent(spent)).toBe(creditsCopy.spent(5, spent.nextAt));
-    expect(creditStanding(base({ plan: 5, payments: false }))).toContain("· 5 paid");
+    expect(creditStanding(base({ plan: 5, payments: false }))).toContain("· 5\u00a0paid");
   });
 
   it("the paid limit never closes a line the free allowance can fund (mutation: asking only the paid rule would call this a limit)", () => {

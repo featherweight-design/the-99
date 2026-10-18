@@ -52,7 +52,10 @@ function shortDay(at: Date): string {
 }
 
 /** The paid count a line carries: one number, plan and packs together (`/credits` is where they split). */
-const paid = (n: number) => `${n} paid`;
+// A no-break space: `114 paid.` ends every line it is on, and a narrow line (Help me choose's 380px) otherwise leaves
+// `paid.` alone on the last line (design follow-ups 2026-10-18, item 9). It reads as a space, and a matcher that
+// normalises whitespace sees one, but an exact string comparison must write `\u00a0`.
+const paid = (n: number) => `${n}\u00a0paid`;
 
 export const creditsCopy = {
   /**
@@ -77,7 +80,7 @@ export const creditsCopy = {
     `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${paid(paidTotal)}`,
   /** L3: the free allowance is spent and the next run takes a paid credit. */
   paidNext: (total: number, next: Date | null, paidTotal: number) =>
-    `${next ? `0 of ${total} free · reset at ${clockTime(next)}` : `0 of ${total} free`} · this run uses 1 of ${paidTotal} paid`,
+    `${next ? `0 of ${total} free · reset at ${clockTime(next)}` : `0 of ${total} free`} · this run uses 1 of ${paid(paidTotal)}`,
   /** `first` / `again` beside a press that will spend a paid credit; `line` is `withPaid`'s form. */
   firstPaid: (line: string) => `Uses a paid credit. ${line}.`,
   againPaid: (line: string) => `Replaces these suggestions and uses a paid credit. ${line}.`,
