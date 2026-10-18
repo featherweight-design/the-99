@@ -19,6 +19,7 @@ import { availabilityState, drawsMarker } from "../../lib/decks/availability";
 import { BuyTag } from "../decks/buy-tag";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
+import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 
@@ -231,18 +232,22 @@ export function SynergyRow({
           siblings={siblings}
           imageUri={card.imageUri}
           preview
+          // A 44px-tall coarse-pointer hit past the ~20px name line. On the phone the name sits above the meta line, so
+          // the hit drops 5px to stay inside the 52px row (a scrolling list would clip the first row's top otherwise);
+          // on desktop the name is centred in its 44px row and the hit fills it. The ellipsis sits on the inner span so
+          // the button clips nothing.
+          className={isPhone ? `${TOUCH_HIT_INLINE} pointer-coarse:after:mt-[5px]` : TOUCH_HIT_INLINE}
           style={{
             display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
             fontSize: 13.5,
             color: "var(--fg)",
             textAlign: "left",
             width: "100%",
           }}
         >
-          {card.name}
+          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {card.name}
+          </span>
         </CardDetailTrigger>
 
         {/* Phone meta line: synergy pts · edhrec N% — only shown on phone, hidden on desktop */}

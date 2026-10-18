@@ -11,6 +11,7 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { showcaseCopy } from "../../../lib/copy/discovery";
 import type { Shot } from "../../../lib/about/shots";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 /** Where `How it works ›` opens the tool's entry: the Reference, at that entry. */
 export function entryHref(entry: string): string {
@@ -51,8 +52,9 @@ function Picture({ shot, name }: { shot: Shot | null; name: string }) {
   );
 }
 
+// TOUCH_HIT: drawn at 38px (10px padding round a 12px line), a coarse pointer reaches 44px.
 const HOW =
-  "relative z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]";
+  `${TOUCH_HIT} z-[2] flex-none whitespace-nowrap py-[10px] font-mono text-[12px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]`;
 const MONO_LINE = "pt-[4px] font-mono text-[12px] leading-[1.5] text-[color:var(--fg-muted)]";
 
 export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | null }) {
@@ -105,7 +107,7 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
             {state.kind === "none" && state.door && (
               <Link
                 href={state.door.href}
-                className="relative z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline"
+                className={`${TOUCH_HIT} z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline`}
               >
                 {state.door.label}
                 <PendingReporter href={state.door.href} />

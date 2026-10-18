@@ -25,6 +25,7 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { EntryCaption } from "../entry-caption";
 import { CreatorNote } from "./creator-note";
 import { EntryFrame } from "./entry-frame";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 /** How much of a long field a result shows either side of the match. */
 const CONTEXT = 70;
@@ -58,7 +59,7 @@ function OpenEntry({ entry }: { entry: ReferenceEntry }) {
             {entry.tryIt && (
               <Link
                 href={entry.tryIt.href}
-                className="inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline"
+                className={`${TOUCH_HIT} inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline`}
               >
                 {entry.tryIt.label}
                 <span
@@ -71,7 +72,7 @@ function OpenEntry({ entry }: { entry: ReferenceEntry }) {
               </Link>
             )}
             {entry.row && (
-              <a href={`#${entry.row}`} className="py-[8px] font-mono text-[12px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
+              <a href={`#${entry.row}`} className={`${TOUCH_HIT} py-[8px] font-mono text-[12px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]`}>
                 {referenceCopy.reachesThis}
               </a>
             )}

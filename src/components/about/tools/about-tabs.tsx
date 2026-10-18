@@ -12,6 +12,7 @@ import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { ABOUT_TABS, aboutTabOf, TAB_PARAM, type AboutTab } from "../../../lib/about/tab";
 import { onSegmentKeys } from "../../ui/segment-keys";
+import { TOUCH_HIT } from "../../ui/touch-hit";
 
 const tabId = (t: AboutTab) => `about-tab-${t}`;
 const panelId = (t: AboutTab) => `about-panel-${t}`;
@@ -70,7 +71,7 @@ export function AboutTabs({ initial, counts, panels, helpHint, tour = false, onc
           {tour && (
             <>
               {" "}
-              <Link data-tour-again href={TOUR_HREF} className="whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline">
+              <Link data-tour-again href={TOUR_HREF} className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline`}>
                 {tourAgainCopy.aboutPress}
                 <PendingReporter href={TOUR_HREF} />
               </Link>
