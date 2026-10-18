@@ -239,6 +239,65 @@ async function offerIn(tx: Tx, viewerId: string, seatedDeckId: string, seatedDis
   return offer;
 }
 
+/**
+ * One of the viewer's own decks as `Change deck` lists it (S3, W3): name, commander and art; the chip when it is in the
+ * read (`ready`), else the cards it holds for the `not read yet` line; and whether it is the seated one.
+ */
+export type DeckChoice = {
+  deckId: string;
+  name: string;
+  commanderName: string;
+  artCropUri: string | null;
+  seated: boolean;
+  ready: { permits: Bracket[]; answered: Bracket | null } | null;
+  /** The cards the list holds, the commander in, for a deck not in the read: `94 of 100`. */
+  cards: number;
+};
+
+/** `Change deck`'s order (S3, W3): the seated deck first, then the read decks nearest the middle, then the rest (G8). */
+export function orderChoices<T extends { seated: boolean; distance: number | null; lastPlayed: number; lastEdited: number }>(rows: readonly T[]): T[] {
+  const recent = (a: T, b: T) => b.lastPlayed - a.lastPlayed || b.lastEdited - a.lastEdited;
+  const rank = (r: T) => (r.seated ? 0 : r.distance !== null ? 1 : 2);
+  return [...rows].sort((a, b) => rank(a) - rank(b) || (a.distance ?? 0) - (b.distance ?? 0) || recent(a, b));
+}
+
+/**
+ * Every deck of the viewer's for `Change deck`, through the seat grant: null unless the viewer sits at the open table.
+ * Each is graded the way a seat is, and a deck short of 100 is listed (it seats as not ready, S3).
+ */
+export async function loadDeckChoices(viewerId: string, tableId: unknown): Promise<DeckChoice[] | null> {
+  const view = await loadTable(viewerId, tableId);
+  if (!view) return null;
+  const middle = view.read.kind === "read" ? view.read.middle : null;
+  return db.transaction(async (tx) => {
+    const { rows } = await tx.execute<{ deckId: string; name: string; commanderName: string; artCropUri: string | null; lastPlayed: string | Date | null; lastEdited: string | Date }>(sql`
+      select d.id as "deckId", d.name, c.name as "commanderName", c.art_crop_uri as "artCropUri", d.last_edited_at as "lastEdited",
+        (select max(g.played_at) from ${deckGames} g where g.deck_id = d.id) as "lastPlayed"
+      from ${decks} d
+      join ${cards} c on c.oracle_id = d.commander_oracle_id
+      where d.user_id = ${viewerId}`);
+    const graded = [];
+    for (const r of rows) {
+      const g = await gradeDeckIn(tx, r.deckId, viewerId);
+      const value = g?.verdict ? seatValue(g.verdict.permits, g.declared) : null;
+      const ask = g?.verdict ? declarationAsk(g.verdict.permits, g.declared) : null;
+      graded.push({
+        deckId: r.deckId,
+        name: r.name,
+        commanderName: r.commanderName,
+        artCropUri: r.artCropUri,
+        seated: r.deckId === view.viewerDeckId,
+        ready: g?.verdict && ask ? { permits: [...g.verdict.permits], answered: ask.kind === "answered" ? ask.declared : null } : null,
+        cards: g ? g.legality.built + (100 - g.legality.size) : 0,
+        distance: value && middle !== null ? distanceFrom(value, middle) : null,
+        lastPlayed: r.lastPlayed === null ? -Infinity : new Date(r.lastPlayed).getTime(),
+        lastEdited: new Date(r.lastEdited).getTime(),
+      });
+    }
+    return orderChoices(graded).map(({ distance: _d, lastPlayed: _p, lastEdited: _e, ...c }) => c);
+  }, { isolationLevel: "repeatable read" });
+}
+
 export async function loadTable(viewerId: string, tableId: unknown): Promise<TableView | null> {
   if (!isUuid(tableId)) return null;
   return db.transaction(async (tx) => {

@@ -8,7 +8,7 @@
 import { requireUserId } from "../../../lib/auth";
 import { ruleZeroEnabled } from "../../../lib/social/flag";
 import { markSeen, setSeatDeck } from "../../../lib/social/rule-zero";
-import { loadTable, type TableView } from "../../../lib/social/rule-zero-table";
+import { loadDeckChoices, loadTable, type DeckChoice, type TableView } from "../../../lib/social/rule-zero-table";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
 /** `revision` is the drawn snapshot's `revision` as an ISO string, never the time of the call. */
@@ -33,4 +33,11 @@ export async function swapSeatDeckAction(tableId: unknown, deckId: unknown): Pro
   if (result === "refused") return { ok: false };
   const view = await loadTable(userId, tableId);
   return view ? { ok: true, view } : { ok: false };
+}
+
+/** `Change deck`'s list, read when it is pressed: null when the switch is off or the seat grant has lapsed. */
+export async function loadDeckChoicesAction(tableId: unknown): Promise<DeckChoice[] | null> {
+  const userId = await requireUserId();
+  if (!ruleZeroEnabled(await requestSwitchEnv(userId))) return null;
+  return loadDeckChoices(userId, tableId);
 }
