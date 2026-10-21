@@ -389,7 +389,6 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     let asked: boolean | null = null;
     function Peek() {
       const t = useTargets()!;
-      asked = t.wantsFull("find-a-deck");
       return <button type="button" onClick={() => (asked = t.wantsFull("find-a-deck"))}>peek</button>;
     }
     const read = () => { act(() => screen.getByRole("button", { name: "peek" }).click()); return asked; };

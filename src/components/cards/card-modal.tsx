@@ -981,7 +981,7 @@ export function CardModal({
   // A Find a deck landing that waits (R3 addendum, item 12) has the phone open the next card with a Fits door at the full
   // sheet, where the door draws; read once at construction and spent in the effect below (render stays pure).
   const targets = useTargets();
-  const landsFull = useRef(!startMinimized && narrow && onFindDeck !== null && targets?.wantsFull("find-a-deck") === true).current;
+  const [landsFull] = useState(() => !startMinimized && narrow && onFindDeck !== null && targets?.wantsFull("find-a-deck") === true);
   useEffect(() => {
     if (landsFull) targets?.takeFull("find-a-deck");
   }, [landsFull, targets]);
