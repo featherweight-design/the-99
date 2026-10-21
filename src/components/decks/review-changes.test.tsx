@@ -53,6 +53,9 @@ const { getCardDetail } = vi.hoisted(() => ({ getCardDetail: vi.fn() }));
 vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
 vi.mock("../../lib/cards/fetch-card-detail", () => ({ fetchCardDetail: getCardDetail }));
 
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
+
 const browseCard = (oracleId: string, name: string): BrowseCard => ({
   oracleId, name, typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: "", keywords: [],
   rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0,
