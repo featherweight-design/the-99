@@ -14,14 +14,14 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 44 keys, spelled out rather than derived from :root. Derived, a token
+// The 45 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
   "surface-inset", "elevated", "elevated-hover", "border", "border-strong",
   "border-dashed", "fg", "fg-body", "fg-muted", "fg-faint", "fg-placeholder", "fg-locked",
   "fg-disabled",
-  "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
+  "accent", "accent-hover", "accent-text", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
   "avail-hard-fg", "avail-over-fg", "avail-over-border", "w", "u", "b", "r", "g",
   // Theme-INDEPENDENT, exactly as the WUBRG pips are: `--fact` marks a standing
@@ -58,7 +58,15 @@ const FACE = /^var\(--font-[a-z-]+\)(, "[A-Za-z ]+ Fallback")?$/;
 const ALIASES: Record<string, string> = {
   "avail-soft": "var(--fg-muted)",
   "avail-hard": "var(--accent)",
+  "accent-text": "var(--accent)",
 };
+
+// Themes whose accent cannot be read as text, so --accent-text is a hex of its own rather than the alias (text inks
+// addendum R1). Phyrexia's accent lifted to 4.5:1 lands 0.088 ΔE from its --success, under the 0.10 floor the accent is
+// held to below; its text ink sits 40° of hue away and is never a fill, so it is held to the text floor alone.
+const OWN_TEXT_ACCENT = new Set(["phyrexia"]);
+const aliasOf = (theme: string, key: string) =>
+  key === "accent-text" && OWN_TEXT_ACCENT.has(theme) ? undefined : ALIASES[key];
 
 // The fit bar draws a three-step ramp from --accent-dim through --accent-mid to
 // --accent. Outside that one component the two extra steps have no separate
@@ -68,8 +76,9 @@ const ALIASES: Record<string, string> = {
 const INTENTIONAL_TWINS = [
   ["accent-dim", "accent-shadow"],
   ["accent-mid", "accent-strong"],
-  // A placeholder is the muted ink lifted only where a theme's own would miss 4.5:1 (Kamigawa, Phyrexia), so in the
-  // other four it repeats --fg-faint's hex on purpose, written out so a later --fg-faint change moves nothing here.
+  // A placeholder is written out as a hex so a --fg-faint change moves nothing there. Since the text inks addendum
+  // lifted every --fg-faint, no theme repeats the pair; the entry stays so a placeholder written back onto the faint
+  // ink reads as the deliberate choice it would be.
   ["fg-faint", "fg-placeholder"],
 ];
 
@@ -78,6 +87,8 @@ const SURFACES = [
   "surface-inset", "elevated", "elevated-hover",
 ];
 const BORDERS = ["border", "border-strong", "border-dashed"];
+// The solid grounds text is drawn on.
+const TEXT_GROUNDS = ["bg", "surface", "surface-raised", "surface-sunken", "surface-rail", "elevated"];
 // --fg-disabled rides in the chroma gate below but not in the contrast one: it
 // sits under the 3:1 floor the rest of the ramp clears, which is why nothing
 // wearing it carries meaning of its own — only a padlock glyph and an
@@ -104,14 +115,14 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 44 contract keys", () => {
+    it("declares exactly the 45 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 
     it("writes every value as a hex, except the aliases and the face", () => {
       for (const key of CONTRACT) {
         if (FONTS.has(key)) expect(hex(key)).toMatch(FACE);
-        else if (key in ALIASES) expect(hex(key)).toBe(ALIASES[key]);
+        else if (aliasOf(name, key)) expect(hex(key)).toBe(aliasOf(name, key));
         else expect(hex(key)).toMatch(/^#[0-9A-F]{6}$/i);
       }
     });
@@ -120,7 +131,7 @@ describe("theme contract", () => {
       const twin = new Map(INTENTIONAL_TWINS.flatMap(([a, b]) => [[a, b], [b, a]]));
       const seen = new Map<string, string>();
       for (const key of CONTRACT) {
-        if (key in ALIASES || FONTS.has(key)) continue;
+        if (aliasOf(name, key) || FONTS.has(key)) continue;
         const value = hex(key).toUpperCase();
         const owner = seen.get(value);
         if (owner && twin.get(key) !== owner) {
@@ -146,8 +157,15 @@ describe("theme contract", () => {
       expect(contrast(hex("fg"), hex("bg"))).toBeGreaterThanOrEqual(7);
       expect(contrast(hex("fg-body"), hex("surface"))).toBeGreaterThanOrEqual(4.5);
       expect(contrast(hex("fg-muted"), hex("surface"))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(hex("fg-faint"), hex("surface"))).toBeGreaterThanOrEqual(3);
       expect(contrast(hex("fg-locked"), hex("surface"))).toBeGreaterThanOrEqual(3);
+      // The inks a reader reads as text (text inks addendum R1): 4.5:1 on every solid ground, `--elevated` the weakest.
+      // --fg-faint was once held to 3:1 as decoration; it is read text at hundreds of sites, so it owes the text floor.
+      for (const ink of ["fg-faint", "accent-text", "accent-hover"]) {
+        const value = ink === "accent-text" && aliasOf(name, ink) ? hex("accent") : hex(ink);
+        for (const ground of TEXT_GROUNDS) {
+          expect(contrast(value, hex(ground)), `--${ink} on --${ground}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
       // The accent button's label is --bg, in every theme block present.
       expect(contrast(hex("bg"), hex("accent"))).toBeGreaterThanOrEqual(4.5);
       // The focus ring is the accent, drawn on the canvas.

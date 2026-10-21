@@ -46,10 +46,11 @@
   --fg: #EDE6D8;
   --fg-body: #C0B8A6;
   --fg-muted: #A59C89;
-  --fg-faint: #8B8270;
+  --fg-faint: #948B78;
   /* A field's placeholder: 4.5:1 on --surface-sunken in every theme. Written as hex, not var(--fg-faint), so a later
-     --fg-faint change does not move placeholders. Two themes lift it (Kamigawa, Phyrexia): their --fg-faint reads 4.02
-     and 4.20 there. */
+     --fg-faint change does not move placeholders, and the text inks addendum (R1) was one: every theme's --fg-faint
+     moved and its placeholder stayed. Each placeholder is the --fg-faint that shipped before it, lifted in the two
+     themes (Kamigawa, Phyrexia) whose faint ink then read 4.02 and 4.20 there. */
   --fg-placeholder: #8B8270;
   /* Every theme's --fg-locked clears the 3:1 floor on its own --surface with
      almost nothing to spare (3.02–3.05:1 across all six). Both tokens are
@@ -67,9 +68,13 @@
      each theme dims within its own family rather than towards brass. */
   --fg-disabled: #4A4033;
 
-  /* Flavor (6) — the only family permitted real chroma. */
+  /* Flavor (7) — the only family permitted real chroma. */
   --accent: #CF8745;
   --accent-hover: #DE9757;
+  /* The accent as TEXT: links, kickers, counts. 4.5:1 on all six solid grounds (text inks addendum R1). It is the
+     accent itself in every theme but Phyrexia, whose accent cannot be lifted to 4.5 without landing under 0.10 ΔE
+     of its --success, so it reads a lighter ink as text and keeps #52827A for fills, the ring and the fit bar. */
+  --accent-text: var(--accent);
   --accent-strong: #AB6E37;
   --accent-shadow: #6B482A;
   --accent-dim: #6B482A;
@@ -135,12 +140,13 @@
   --fg: #E6E8F0;
   --fg-body: #B1B6C7;
   --fg-muted: #959AAD;
-  --fg-faint: #6F7486;
+  --fg-faint: #84899B;
   --fg-placeholder: #7D8294;
   --fg-locked: #606476;
   --fg-disabled: #3D404E;
   --accent: #FF4D9A;
   --accent-hover: #FF62A9;
+  --accent-text: var(--accent);
   --accent-strong: #D33E7E;
   --accent-shadow: #843052;
   --accent-dim: #843052;
@@ -236,12 +242,13 @@
   --fg: #E0E7DE;
   --fg-body: #B6C2B3;
   --fg-muted: #98A695;
-  --fg-faint: #808C7C;
+  --fg-faint: #879383;
   --fg-placeholder: #808C7C;
   --fg-locked: #626E5E;
   --fg-disabled: #3E473A;
   --accent: #A3C445;
   --accent-hover: #B2D257;
+  --accent-text: var(--accent);
   --accent-strong: #85A22F;
   --accent-shadow: #3E5220;
   --accent-dim: #3E5220;
@@ -301,12 +308,13 @@
   --fg: #E4E2E6;
   --fg-body: #B5B2BB;
   --fg-muted: #9A96A0;
-  --fg-faint: #78747E;
+  --fg-faint: #87838D;
   --fg-placeholder: #827E88;
   --fg-locked: #64616A;
   --fg-disabled: #403E45;
   --accent: #52827A;
-  --accent-hover: #629189;
+  --accent-hover: #6E9D95;
+  --accent-text: #5D8E85;
   --accent-strong: #3E665F;
   --accent-shadow: #213834;
   --accent-dim: #213834;
@@ -368,12 +376,13 @@
   --fg: #E4DEEE;
   --fg-body: #B9B2C5;
   --fg-muted: #9C95A8;
-  --fg-faint: #898395;
+  --fg-faint: #8F899B;
   --fg-placeholder: #898395;
   --fg-locked: #6A6475;
   --fg-disabled: #443F4D;
   --accent: #AE88E6;
   --accent-hover: #BC9BEE;
+  --accent-text: var(--accent);
   --accent-strong: #8E6AC4;
   --accent-shadow: #4A3568;
   --accent-dim: #4A3568;
@@ -433,12 +442,13 @@
   --fg: #C6D2D3;
   --fg-body: #B3C0C2;
   --fg-muted: #95A4A6;
-  --fg-faint: #7C8A8C;
+  --fg-faint: #8A999B;
   --fg-placeholder: #7C8A8C;
   --fg-locked: #5F6D6E;
   --fg-disabled: #3B4647;
-  --accent: #5C86C9;
-  --accent-hover: #6C95D8;
+  --accent: #6C97DB;
+  --accent-hover: #7CA6EA;
+  --accent-text: var(--accent);
   --accent-strong: #486BA3;
   --accent-shadow: #2C405F;
   --accent-dim: #2C405F;
@@ -509,6 +519,7 @@
   --color-fact: var(--fact);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
   --color-accent-strong: var(--accent-strong);
   --color-accent-shadow: var(--accent-shadow);
   --color-accent-dim: var(--accent-dim);
