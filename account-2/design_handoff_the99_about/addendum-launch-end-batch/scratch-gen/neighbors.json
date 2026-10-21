@@ -1,0 +1,54 @@
+{
+"browse": [
+"Finding a card in your Collection",
+"Your Collection has the standard search, filter and sort options you’d expect to find anywhere else: search by name, filter by color, type or set, sort by name, quantity and more."
+],
+"collection-add": [
+"Adding cards by hand",
+"Cracked a pack and don’t want to export your whole Collection for four cards?"
+],
+"start-without-a-collection": [
+"Starting without a collection file",
+"No export to upload?"
+],
+"availability": [
+"Availability: what’s free, what’s taken, what to buy",
+"This is the one I mentioned earlier and is one of my favorite features, even if it’s a small one."
+],
+"added-copy": [
+"Where a new copy goes",
+"You buy a Sol Ring for your new Brago deck."
+],
+"remove-card": [
+"Removing a card from your Collection",
+"When a card has really left your binder, take it out here."
+],
+"ready-to-build": [
+"Your two daily commanders",
+"Every day, the Home page deals you two commanders you could build right now, picked from the best fits in your Collection that aren’t leading a deck of their own."
+],
+"card-marks": [
+"Bracket marks on every card",
+"A card’s bracket marks follow it everywhere: your Collection, your decklists, “Consider” and search."
+],
+"combo-awareness": [
+"Spotting combos you already own",
+"Some cards do something remarkable next to one other card."
+],
+"friends": [
+"Friends and pods",
+"Playing with the same people every week?"
+],
+"resume": [
+"Pick up where you left off",
+"The Home page opens on the four decks you touched last, so you can jump right back in."
+],
+"commitments": [
+"How much of your Collection is in use",
+"Three numbers on the Home page show how hard your decks are leaning on your Collection."
+],
+"themes": [
+"Picking a color theme",
+"Six themes live in the account menu under “Theme”, from Low Sun to First Frost."
+]
+}
