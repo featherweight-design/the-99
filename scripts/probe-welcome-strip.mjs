@@ -198,7 +198,8 @@ async function dashboard(browser, w, email) {
     }
     check(at !== null, `${w.name} ✕ writes the dismissal`, String(at));
     await page.reload({ waitUntil: "domcontentloaded" });
-    await onPageRole(page, "heading", /Welcome back|Your collection|Home/).first().waitFor({ timeout: 60_000 }).catch(() => {});
+    // Home must have rendered before the absence below means anything: an error page or a pending loader also draws no strip.
+    await onPageRole(page, "heading", /Welcome back|Your collection|Home/).first().waitFor({ timeout: 60_000 });
     await page.waitForTimeout(1500);
     check(await onPage(page, STRIP).count() === 0, `${w.name} a reload draws no strip`, `${await onPage(page, STRIP).count()}`);
   } finally {
