@@ -313,7 +313,7 @@ function BracketSegments({ bracket }: { bracket: NonNullable<TrialFigures["brack
       <Segment>
         <span data-testid="row-bracket" className={tone}>
           <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-muted)]">{copy.results.rowBracket}</span>
-          {copy.results.rowBracketValue(short ? bracket.permits : [bracket.target])}
+          {copy.results.rowBracketValue(bracket.permits)}
         </span>
       </Segment>
       {short && bracket.buyCents !== null && (

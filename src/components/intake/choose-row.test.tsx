@@ -114,6 +114,10 @@ describe("a result row", () => {
     expect(screen.getByTestId("ownership-line").textContent).not.toContain("adds");
     expect(screen.getByTestId("row-bracket").className).not.toContain("--fg-body");
     reached.unmount();
+    // A reached range reads whole: a deck that permits [4,5] is 4-5 whichever of the two was asked.
+    const range = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 4, permits: [4, 5], buyCents: null } } });
+    expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket4-5");
+    range.unmount();
     // Short with nothing to buy: the bracket alone.
     const none = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 4, permits: [3], buyCents: null } } });
     expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket3");
