@@ -194,7 +194,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
           {cancelling ? <span className={`font-mono text-[12px] ${state === "ending" ? warnText : "text-[color:var(--fg-muted)]"}`}>{p.ended(on)}</span> : null}
           {state === "pastDue" ? <span className={`font-mono text-[12px] ${warnText}`}>{p.dueTitle}</span> : null}
         </div>
-        <span className={cancelling ? "opacity-45 saturate-[.3]" : undefined}><OfferArt count={offer.units} /></span>
+        <span className={cancelling ? "opacity-45 saturate-[.3]" : undefined}><OfferArt count={offer.units} crown /></span>
       </div>
 
       {state === "offer" ? (
