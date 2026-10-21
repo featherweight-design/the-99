@@ -1,12 +1,12 @@
 import json, re, os, datetime
 SRC="out"; ROOT="/tmp/claude-0/-home-claude/116595b4-4c7b-52e5-b8be-ce496abd5a28/scratchpad/canvas"
 os.makedirs(ROOT+"/project", exist_ok=True)
-size={json.loads(l)["file"]: json.loads(l)["size"] for l in open("final.jsonl")}
+size={json.loads(l)["file"]: json.loads(l)["size"] for f in ("final.jsonl","r2sizes.jsonl") for l in open(f)}
 BLOB={"art-zimone":"c586eb32234edab401fbae2fe8d2d275","art-giada":"009a5e3ed5f39cd196d604ae78db0717","face-sai":"13cd30f8dea7468223ab3fd53599cfb9"}
-TITLES={"Main":"Welcome credits R1 · calls, rulings, gaps","Placement":"Item 1 · Where it goes (Open 1)","Section":"Items 2 and 3 · The section, and Try it",
-"Line-and-Chip":"Item 4 · The credit line and the chip","Credits-Page":"Item 5 · The Welcome cell","States-A":"Item 6 · Held, partly spent, used up",
-"States-B":"Item 6 · Expiring, expired, no lot","States-C":"Item 6 · Switch off, payments off","States-D":"Item 6 · Paid limit, also bought","Themes":"Low Sun and First Frost"}
-rows=[["Main","Placement","Section","Line-and-Chip"],["States-A","States-B","Credits-Page"],["States-C","States-D","Themes"]]
+TITLES={"R2-Main":"R2 · What changed","R2-Placement":"R2 · The strip on both Homes","R2-Sheet":"R2 · Where they work (sheet and modal)","R2-States":"R2 · Every state","R2-Themes":"R2 · Low Sun and First Frost","Main":"R1 (superseded) · calls, rulings, gaps","Placement":"R1 (superseded) · Item 1 · Where it goes (Open 1)","Section":"R1 (superseded) · Items 2 and 3 · The section, and Try it",
+"Line-and-Chip":"Item 4 · The credit line and the chip","Credits-Page":"Item 5 · The Welcome cell","States-A":"R1 (superseded) · Item 6 · Held, partly spent, used up",
+"States-B":"R1 (superseded) · Item 6 · Expiring, expired, no lot","States-C":"R1 (superseded) · Item 6 · Switch off, payments off","States-D":"R1 (superseded) · Item 6 · Paid limit, also bought","Themes":"R1 (superseded) · Low Sun and First Frost"}
+rows=[["R2-Main","R2-Placement","R2-Sheet","R2-States"],["R2-Themes","Line-and-Chip","Credits-Page"],["Main","Placement","Section","States-A"],["States-B","States-C","States-D","Themes"]]
 pos={}; y=0
 for r in rows:
     x=0;hm=0
@@ -25,7 +25,7 @@ for r in rows:
         open(f"{ROOT}/project/{n}.dc.html","w").write(cs)
         x,yy,w,h=pos[n]; boards[f"{n}.dc.html"]={"x":x,"y":yy,"w":w,"h":h,"title":TITLES[n]}
 c={"v":3,"createdOnFiles":{"v":1,"at":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
-   "title":"The 99 · Welcome credits R1","launch":{"view":"canvas"},"pages":[],"boards":boards,"order":list(boards),"notes":{},"designSystems":[]}
+   "title":"The 99 · Welcome credits","launch":{"view":"canvas"},"pages":[],"boards":boards,"order":list(boards),"notes":{},"designSystems":[]}
 json.dump(c,open(f"{ROOT}/project/canvas.json","w"),ensure_ascii=False,indent=1)
 json.dump(c,open(f"{SRC}/canvas.json","w"),ensure_ascii=False,indent=1)
 for k,v in boards.items(): print(k,v)

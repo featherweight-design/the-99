@@ -1,6 +1,6 @@
-# Readiness · Welcome credits (R1)
+# Readiness · Welcome credits (R2)
 
-**Drawn 2026-10-21 (account 2), awaiting Hugh's audit against the code. Self-assessed: Green for the build once Hugh
+**R1 drawn 2026-10-21; R2 (strip and sheet, after Hugh's feedback) drawn 2026-10-21, awaiting Hugh's review. Self-assessed: Green for the build once Hugh
 approves, with six items engineering settles in the plan.** Every board was rendered headless and checked: no board cut
 off, no broken image, no em dash in any string, never the word "unlock".
 
@@ -15,8 +15,8 @@ off, no broken image, no em dash in any string, never the word "unlock".
 - Expiring 3 days out, dated in the reader's own day.
 
 **Design's calls (for Hugh)**
-1. Placement B, a card on Home (A, C and D drawn for comparison).
-2. No deck: Help me choose leads, the reason line once over the other four.
+1. Placement B as a one-line strip high on Home, the list in the shipped sheet and modal (R2).
+2. Before a collection no Try it (the shipped lock line once); cards in, no deck: Help me choose leads, the reason line once over the other four.
 3. Welcome as its own segment on the line; the chip keeps one number.
 4. Welcome cell `expire Nov 20`.
 5. Expiring in `--warning` on every surface that names the lot.

@@ -1,4 +1,4 @@
-# The 99 · Welcome credits · R1 (drawn, awaiting Hugh's audit)
+# The 99 · Welcome credits · R2 (drawn, awaiting Hugh's review)
 
 Where a new sign-up learns which tools spend their 15 welcome credits, when the lot expires, and that `/credits` exists.
 Launch epic D2. Behind `WELCOME_CREDITS_ENABLED` (which needs `PAYMENTS_ENABLED`). Account 2, 2026-10-21.
@@ -12,7 +12,41 @@ rebuild in the app's stack. Kamigawa (Neon Rain) values unless a board says othe
 dashes. Art is in `art/` by relative path; on the canvas it is uploaded as assets. **No new tokens, no new motion, no new
 dependencies.** Canvas (account 2): https://claude.ai/artifact/NSvXWeJpAUSfjdrfJsQREw
 
-## Start here
+## R2 (2026-10-21), after Hugh's R1 feedback · supersedes R1's placement, section and states
+
+Hugh: the section was too large and a wall of text, fell below the fold on the phone, left a hole under the right
+column on the dashboard, and drew a 0 state where none can happen (nothing runs before a collection).
+
+| Read | For |
+|---|---|
+| **`R2-Main.dc.html`** | What changed, against each point of the feedback. |
+| `R2-Placement.dc.html` | The strip on the first-run Home and the dashboard, 390 (at the fold and full length) and desktop. |
+| `R2-Sheet.dc.html` | `Where credits work` in the shipped sheet (390) and modal (desktop): before a collection, cards in with no deck, with a deck; and from the Welcome cell on `/credits`. |
+| `R2-States.dc.html` | Every state, on the Home it can happen on. |
+| `R2-Themes.dc.html` | Low Sun and First Frost. |
+
+- **The strip.** One line on Home in the About line's family: the lot's mark, `15 welcome credits to try the tools,
+  until Nov 20.`, the link `Where they work`, and a bare ✕ (closes for good, per account). First-run Home: under the
+  About line. Dashboard: heads the main column, over Ready to build; the right column is Friends alone, as shipped. Above
+  the fold at 390 × 844 on both.
+- **The sheet.** The list moves off Home into the shipped SocialModal (sheet at 390, 460 modal on desktop): title, R4's
+  L6 line, the grant line with its date (the free credit goes first), the five rows as name, where and cost (the
+  descriptions are dropped), then the teaser at the foot while payments are on and nothing is bought.
+- **Try it.** Before a collection nothing can run (New deck and Commanders are locked at 0 cards), so no `Try it`: the
+  shipped lock line `Opens once your cards are in` once, over all five. With cards and no deck: Help me choose leads
+  with `Try it ›`, then the needs-a-deck line once. With a deck: About's order, `Try it ›` on the three with a landing.
+- **The reference that stays.** The Welcome cell on `/credits` reads `expire Nov 20 · Where they work`, opening the
+  same sheet (without the teaser), for as long as a credit is held, so closing the strip loses nothing.
+- **States.** Held, expiring, switch off and payments off on the first-run Home; partly spent, used up, the paid limit
+  and also bought on the dashboard only. Used up says `You've used all 15 welcome credits.` with `More on Credits`
+  (payments on, nothing bought) or `Your free credit comes back each day.`; it leaves on the date or ✕. Expired and no
+  lot: nothing.
+- **Unchanged from R1:** the credit line and chip (Line-and-Chip), the Welcome cell's date (Credits-Page), `--warning`
+  at 3 days, the gaps below.
+
+The R1 boards below stay on the canvas as the record; where they differ, R2 wins.
+
+## R1 · Start here
 
 | Read | For |
 |---|---|
