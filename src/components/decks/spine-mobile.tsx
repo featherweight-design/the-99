@@ -639,7 +639,8 @@ export function SpineMobile({
           widths — so this whole row hides rather than sitting under the open editor. */}
       {!renaming && (
         <div
-          className="flex flex-wrap justify-center"
+          data-spine-actions
+          className="flex flex-nowrap justify-center"
           style={{ padding: "4px 16px 14px", gap: 8 }}
         >
           {built > 0 && (
@@ -671,7 +672,9 @@ export function SpineMobile({
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              {deckHeaderCopy.export}
+              {/* Icon-only under 480px so Update, Export, Commit and ⋯ hold one line on a phone;
+                  the label stays as the accessible name. */}
+              <span className="max-[479px]:sr-only">{deckHeaderCopy.export}</span>
             </button>
           )}
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
