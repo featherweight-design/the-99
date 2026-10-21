@@ -20,6 +20,7 @@ import {
   resolvedPrinting,
 } from "./browse";
 import { selectCollectionRows } from "./browse-read";
+import { isBasicLand } from "../decks/grouping";
 
 /** The `cards` columns the modal reads. */
 export type CatalogCardRow = {
@@ -462,7 +463,10 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // WHO WANTS A CARD THE READER OWNS NONE OF (Hugh, 2026-10-20): the claim read with the card read as
   // owning 0, and the draft wants beside it. Its own field, never `availability`, which every other
   // reader takes to mean the collection holds the card (the Fits picker's counts among them).
-  const wanted = (async () => {
+  // Never for a basic land: the claim model excludes basics from its accounting (only its `owned`
+  // CTE filters them, and `unownedAsZero`'s synthetic row sits outside that filter), so a version's
+  // thirty Forests would read `30 wanted · you own 0`. Undefined, not null: not read, not failed.
+  const wanted = isBasicLand(found.typeLine) ? Promise.resolve(undefined) : (async () => {
     const { loadAvailability } = await import("../decks/availability-query");
     return (await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: true, env })).get(oracleId) ?? null;
   })().catch(() => null);

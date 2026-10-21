@@ -2460,7 +2460,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   named twice; a proxied draft add, a basic land and another player's deck are never draft wants; a draft's moved
   commander is one. A card the reader owns NONE of still names every deck that wants it (`unownedAvailability`
   beside `draftWants`, with `availability` left unset), and one nobody wants reads as wanted by nobody (2026-10-21;
-  dropping the unowned read or its `unownedAsZero` fails it). It writes under two per-run user ids and purges both, after the branch guard (`PROBE_DB_BRANCH`,
+  dropping the unowned read or its `unownedAsZero` fails it). An unowned basic land is never read for wants (dropping the
+  `isBasicLand` guard fails it). It writes under two per-run user ids and purges both, after the branch guard (`PROBE_DB_BRANCH`,
   staging and production refused by id). Run on a scratch branch from local-dev. Its first run (2026-10-21) passed,
   and three mutations of `loadDraftWants` each failed it: the version anti-join dropped (b), the user scope dropped (a,
   b, c, e, g), the proxy anti-join dropped (d).

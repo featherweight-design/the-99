@@ -18,6 +18,8 @@
 //      the committed version from `unownedAvailability`, the draft add from `draftWants`, and `availability` stays
 //      unset, because every other reader takes it to mean the collection holds the card
 //   i  an unowned card no deck wants reads as wanted by nobody, so card details draws no block
+//   j  an unowned BASIC land a committed version lists is never read: basics are outside the claim accounting, so
+//      its version's Islands must not read as `N wanted · you own 0`
 //
 // It writes under two per-run `user_id`s and purges both in a `finally`, after the branch guard: `PROBE_DB_BRANCH`
 // must name the branch `DATABASE_URL` reports, and staging and production are refused by id. Point it at a scratch
@@ -94,7 +96,7 @@ async function run() {
   guarded = true;
 
   const names = ["Maddening Cacophony", "Sol Ring", "Arcane Signet", "Swords to Plowshares", "Forest",
-    "Atraxa, Praetors' Voice", "Kykar, Wind's Fury", "Rhystic Study", "Counterspell"];
+    "Atraxa, Praetors' Voice", "Kykar, Wind's Fury", "Rhystic Study", "Counterspell", "Island"];
   const ids = new Map((await rows<{ id: string; name: string }>(sql`
     select oracle_id::text id, name from cards where name in (${sql.join(names.map((n) => sql`${n}`), sql`, `)})`))
     .map((r) => [r.name, r.id]));
@@ -102,14 +104,14 @@ async function run() {
   if (missing.length) throw new Error(`catalog lacks ${missing.join(", ")}`);
   const id = (n: string) => ids.get(n)!;
   // RHYSTIC and COUNTERSPELL are never owned (h, i).
-  const [CACOPHONY, SOL, SIGNET, SWORDS, FOREST, ATRAXA, KYKAR, RHYSTIC, COUNTERSPELL] = names.map(id);
+  const [CACOPHONY, SOL, SIGNET, SWORDS, FOREST, ATRAXA, KYKAR, RHYSTIC, COUNTERSPELL, ISLAND] = names.map(id);
 
   for (const o of [CACOPHONY, SOL, SIGNET, SWORDS, FOREST, KYKAR]) await own(o);
 
   // Mutant Menace: committed v1 lists Sol Ring and Arcane Signet. Its draft adds Cacophony (a), keeps Sol Ring (b),
   // drops Arcane Signet (c), adds Swords as a proxy (d) and a Forest (f).
   const menace = await deck(USER, "HD Tune - Mutant Menace", ATRAXA);
-  await commit(menace, ATRAXA, SOL, SIGNET, RHYSTIC);
+  await commit(menace, ATRAXA, SOL, SIGNET, RHYSTIC, ISLAND);
   await draft(menace, CACOPHONY, SOL, SWORDS, FOREST, RHYSTIC);
   await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${menace}, ${SWORDS})`);
   // Horrors Test: a brew with Cacophony and Sol Ring.
@@ -151,6 +153,8 @@ async function run() {
   check("i · an unowned card no deck wants: nobody",
     { claims: nobody?.unownedAvailability?.claims ?? "unread", drafts: nobody?.draftWants ?? "unread" },
     { claims: [], drafts: [] });
+  const island = await loadCardDetail(USER, ISLAND, undefined, ENV);
+  check("j · an unowned basic is never read for wants", island?.unownedAvailability ?? "unread", "unread");
   check("g · the other player's own read names their deck, so its absence above is the scope",
     (await loadDraftWants(OTHER, CACOPHONY))?.map((d) => d.name), ["Not Yours"]);
 }
