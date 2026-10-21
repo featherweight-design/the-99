@@ -27,7 +27,7 @@ describe("handOffReachOf", () => {
 
   it("short: the buy within the budget LEFT, so the build-around card's cost counts (audit item 10)", () => {
     const within = handOffReachOf({ ...base, permits: [1, 2], reach: short(3200) })!;
-    expect(within.buy).toEqual({ cards: [chip("rhystic")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 5000 });
+    expect(within.buy).toEqual({ cards: [chip("rhystic")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 5000, selectedBuys: [] });
     // $50 budget, a $25 card placed first: $25 left, so a $32 set is $7 over and raises to $57.
     const over = handOffReachOf({ ...base, budgetLeftCents: 2500, permits: [1, 2], reach: short(3200) })!;
     expect(over.buy).toMatchObject({ overBudget: true, overCents: 700, raisedBudgetCents: 5700 });
@@ -43,6 +43,12 @@ describe("handOffReachOf", () => {
     // Owned, every copy held: bought, so named.
     const heldOf = (id: string) => ({ ...chip(id), owned: true, held: { deck: "Other" } });
     expect(handOffReachOf({ ...base, chipOf: heldOf, permits: [1, 2], reach: combo })!.buy!.cards).toHaveLength(2);
+  });
+
+  it("carries the picks the create buys, leaving out owned ones (round 5)", () => {
+    const chipOf = (id: string) => (id === "owned-pick" ? { ...chip(id), owned: true } : chip(id));
+    const r = handOffReachOf({ ...base, chipOf, permits: [1, 2], reach: short(3200), selectedIds: ["bought-pick", "owned-pick"] })!;
+    expect(r.buy!.selectedBuys.map((c) => c.oracleId)).toEqual(["bought-pick"]);
   });
 
   it("short with nothing to buy, or a set it cannot name, is a statement", () => {

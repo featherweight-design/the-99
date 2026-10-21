@@ -59,19 +59,22 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, own
 }
 
 /**
- * The Budget row with *Hit bracket N* picked: the cards the budget pays for first, the build-around
- * card included when it is bought too. Own-only, or over the budget, those cards are the whole buy.
+ * The Budget row with *Hit bracket N* picked: every card the budget pays for first, in the create's
+ * order: the build-around card and the `?select=` picks when they are bought, then the set. Own-only,
+ * or over the budget, those cards are the whole buy. A placed card to buy with no live price is still
+ * a purchase: said, and left out of the total.
  */
 export function budgetLineHit(card: HandOffAnswers["card"], buy: NonNullable<HandOffReach["buy"]>, ownOnly: boolean): string {
-  const bought = card !== null && buysCard(card);
-  const withCard = bought && card.price.kind === "priced";
-  const names = [...(withCard ? [card.name] : []), ...buy.cards.map((c) => c.name)];
-  const cents = buy.cents + (withCard && card.price.kind === "priced" ? card.price.cents : 0);
+  const placed = [...(card !== null && buysCard(card) ? [card] : []), ...buy.selectedBuys]
+    .filter((c, i, all) => all.findIndex((d) => d.oracleId === c.oracleId) === i);
+  const priced = placed.filter((c) => c.price.kind === "priced");
+  const unpriced = placed.filter((c) => c.price.kind !== "priced");
+  const names = [...priced.map((c) => c.name), ...buy.cards.map((c) => c.name)];
+  const cents = buy.cents + priced.reduce((n, c) => n + (c.price.kind === "priced" ? c.price.cents : 0), 0);
   const line = ownOnly || buy.overBudget
     ? reachCopy.budgetHitOnly(names, dollars(cents))
     : reachCopy.budgetHit(names, dollars(cents));
-  // A build-around card the fill must buy with no live price is still a purchase: said, and left out.
-  return bought && !withCard ? `${reachCopy.budgetHitUnknown(card.name)} ${line}` : line;
+  return unpriced.length > 0 ? `${reachCopy.budgetHitUnknown(unpriced.map((c) => c.name))} ${line}` : line;
 }
 
 export function HandOffAnswersBlock({

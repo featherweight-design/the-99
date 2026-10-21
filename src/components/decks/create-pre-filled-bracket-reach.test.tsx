@@ -36,7 +36,7 @@ const handOff = (over: { pool?: "any" | "own"; budgetDollars?: number | null } =
 });
 const SHORT: HandOffReach = {
   target: 3, permits: [1, 2], placed: [],
-  buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 15000 },
+  buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 15000, selectedBuys: [] },
 };
 const rowText = (key: string) => screen.getAllByTestId("hand-off-row").find((r) => r.textContent?.startsWith(key))!.textContent;
 const createButton = () => screen.getByRole("button", { name: /Create deck/ });
@@ -122,7 +122,7 @@ describe("the hand-off's Bracket row, read", () => {
   it("over budget: Hit stays pickable, says what it costs against the budget, and raises it when picked", async () => {
     await settle({
       target: 3, permits: [1, 2], placed: [],
-      buy: { cards: [chip("rhystic", "Rhystic Study"), chip("remora", "Mystic Remora", false, 2600)], cents: 5800, overBudget: true, overCents: 800, raisedBudgetCents: 5800, budgetLeftCents: 5000 },
+      buy: { cards: [chip("rhystic", "Rhystic Study"), chip("remora", "Mystic Remora", false, 2600)], cents: 5800, overBudget: true, overCents: 800, raisedBudgetCents: 5800, budgetLeftCents: 5000, selectedBuys: [] },
     }, handOff({ budgetDollars: 50 }));
     const hit = screen.getByTestId("bracket-choice-hit").textContent;
     expect(hit).toBe("Hit bracket 3over budgetAdds Rhystic Study and Mystic Remora, about $58, to buy: $8 over your $50 budget. Picking it raises the budget to $58.");
@@ -134,7 +134,7 @@ describe("the hand-off's Bracket row, read", () => {
     // $50 budget, a $25 build-around card bought first, a $32 set: $7 more than the $25 left.
     await settle({
       target: 3, permits: [1, 2], placed: [],
-      buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: true, overCents: 700, raisedBudgetCents: 5700, budgetLeftCents: 2500 },
+      buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: true, overCents: 700, raisedBudgetCents: 5700, budgetLeftCents: 2500, selectedBuys: [] },
     }, handOff({ budgetDollars: 50 }));
     expect(screen.getByTestId("bracket-choice-hit").textContent).toBe(
       "Hit bracket 3over budgetAdds Rhystic Study, about $32, to buy: $7 more than the $25 left of your $50 budget. Picking it raises the budget to $57.",
@@ -164,6 +164,29 @@ describe("the hand-off's Bracket row, read", () => {
     fireEvent.click(screen.getByTestId("bracket-choice-hit"));
     expect(rowText("Budget")).toBe("Budget$32Mox Opal has no price on record, so the budget can’t count it, and it is left out of the total. "
       + "Rhystic Study takes $32 of it. The fill buys nothing else for the 99.");
+  });
+
+  it("a selected purchase plus Hit over budget: the line names it with the set, never 'nothing else' without it (round 5)", async () => {
+    // No build-around card, a $25 pick to buy, a $32 set, a $50 budget: $25 left, raised to $57.
+    await settle({
+      target: 3, permits: [1, 2], placed: [],
+      buy: {
+        cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: true, overCents: 700, raisedBudgetCents: 5700, budgetLeftCents: 2500,
+        selectedBuys: [chip("sol", "Mana Vault", false, 2500)],
+      },
+    }, handOff({ budgetDollars: 50 }));
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(rowText("Budget")).toBe("Budget$57Mana Vault and Rhystic Study take $57 of it. The fill buys nothing else for the 99.");
+  });
+
+  it("a selected purchase with no price is said and left out, beside a priced one (round 5)", async () => {
+    await settle({
+      ...SHORT,
+      buy: { ...SHORT.buy!, selectedBuys: [chip("sol", "Mana Vault", false, 2500), { ...chip("mox", "Mox Opal"), price: { kind: "notStocked" } as never }] },
+    });
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(rowText("Budget")).toBe("Budget$150Mox Opal has no price on record, so the budget can’t count it, and it is left out of the total. "
+      + "Mana Vault and Rhystic Study take $57 of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.");
   });
 
   it("hands the ?select= picks to the read, as the create gets them (round 3)", async () => {

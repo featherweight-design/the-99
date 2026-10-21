@@ -77,7 +77,10 @@ export async function handOffBracketReach(
   const permits = trial.permits;
   if (!permits) return null;
 
+  // The picks beside the build-around card: the Hit line names the ones the create buys.
+  const selectedIds = placedIds.filter((id) => id !== cardOracleId);
   const ids = [...new Set([
+    ...selectedIds,
     ...trial.placedRaisers,
     ...(trial.reach?.kind === "short" && trial.reach.buy ? trial.reach.buy.raisers : []),
   ])];
@@ -97,5 +100,6 @@ export async function handOffBracketReach(
     budgetLeftCents: trial.budgetLeftCents,
     chipOf: (id) => chipById.get(id) ?? null,
     isGameChanger: (id) => gameChangers.has(id),
+    selectedIds,
   });
 }

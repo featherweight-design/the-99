@@ -45,6 +45,17 @@ describe("handOffBracketReach's picks", () => {
     expect(m.trial.mock.calls[0][5]).toEqual([GC]);
   });
 
+  it("returns the picks the create buys on the Hit set, for the budget line (round 5)", async () => {
+    m.trial.mockResolvedValue({
+      permits: [1, 2], placedRaisers: [], budgetLeftCents: 2500,
+      reach: { target: 3, kind: "short", collectionPermits: [1, 2], collectionRaisers: [], buy: { raisers: ["0000aaaa-0000-4000-8000-0000000000cc"], buyCents: 3200, overBudget: true } },
+    });
+    const { loadCardChip } = await import("../../../lib/intake/rows");
+    vi.mocked(loadCardChip).mockImplementation(async (_u, id) => ({ oracleId: id, name: id, imageUri: null, owned: false, held: null, price: { kind: "priced", cents: 2500 } }));
+    const r = await handOffBracketReach(COMMANDER, asked, [GC]);
+    expect(r!.buy!.selectedBuys.map((c) => c.oracleId)).toEqual([GC]);
+  });
+
   it("refuses a selection that is not a list of strings", async () => {
     await expect(handOffBracketReach(COMMANDER, asked, [1 as unknown as string])).rejects.toThrow("bad selection");
   });

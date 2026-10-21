@@ -355,7 +355,9 @@ export const helpMeChooseCopy = {
       /** The Budget row once *Hit* is picked: the cards it pays for first (`budgetFirst`'s shape). */
       /** Led into the Hit budget line when the build-around card must be bought and has no live price:
        *  the purchase is still said, and the total leaves it out (`budgetUnknown`'s words). */
-      budgetHitUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it, and it is left out of the total.`,
+      budgetHitUnknown: (cards: readonly string[]) => cards.length === 1
+        ? `${cards[0]} has no price on record, so the budget can’t count it, and it is left out of the total.`
+        : `${nameList(cards)} have no price on record, so the budget can’t count them, and they are left out of the total.`,
       budgetHit: (cards: readonly string[], price: string) =>
         `${nameList(cards)} ${cards.length === 1 ? "takes" : "take"} ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
       /** Own-only, or over the budget, with *Hit* picked: those cards are the whole of what is bought. */

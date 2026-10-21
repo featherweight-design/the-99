@@ -34,6 +34,9 @@ export type HandOffReach = {
     /** What the budget leaves once the build-around card and the picks are charged; null with no
      *  budget. Under the whole budget when a placed card is bought, and "over" is measured from it. */
     budgetLeftCents: number | null;
+    /** The `?select=` picks the create places that must be BOUGHT (`buysCard`), the build-around
+     *  card not among them: charged to the budget before the set, so the Hit line names them too. */
+    selectedBuys: CardChip[];
   } | null;
 };
 
@@ -46,6 +49,8 @@ export function handOffReachOf(args: {
   budgetLeftCents: number | null;
   chipOf: (oracleId: string) => CardChip | null;
   isGameChanger: (oracleId: string) => boolean;
+  /** The picks the create places beside the fill, the build-around card excluded. */
+  selectedIds?: readonly string[];
 }): HandOffReach | null {
   const { target, reach } = args;
   if (target < 3 || !reach || reach.kind === "fixed" || reach.kind === "above") return null;
@@ -74,6 +79,10 @@ export function handOffReachOf(args: {
       // Whole dollars, up, as `buildFillPlan` stores it (`decks_answer_budget_check`).
       raisedBudgetCents: overCents > 0 && args.budgetCents !== null ? Math.ceil((args.budgetCents + overCents) / 100) * 100 : null,
       budgetLeftCents: args.budgetLeftCents,
+      selectedBuys: (args.selectedIds ?? []).flatMap((id) => {
+        const chip = args.chipOf(id);
+        return chip && buysCard(chip) ? [chip] : [];
+      }),
     },
   };
 }
