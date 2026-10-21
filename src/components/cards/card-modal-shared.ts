@@ -14,4 +14,4 @@ export const STACK_DROP_EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
  * take the same slot and never draw together.
  */
 export const RECEIPT_LINK_CLASS =
-  "-my-[16px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] underline underline-offset-2 md:-my-[8px] md:min-h-[32px]";
+  "-my-[16px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)] underline underline-offset-2 md:-my-[8px] md:min-h-[32px]";

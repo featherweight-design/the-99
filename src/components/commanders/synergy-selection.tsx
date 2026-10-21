@@ -167,7 +167,7 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
         type="button"
         aria-label={synergyCopy.select.clearAria(String(picked))}
         onClick={onClear}
-        className="font-mono text-center bg-transparent border-0 p-0 cursor-pointer text-[color:var(--accent)] text-[11px]"
+        className="font-mono text-center bg-transparent border-0 p-0 cursor-pointer text-[color:var(--accent-text)] text-[11px]"
         style={{ marginTop: 8 }}
       >
         {synergyCopy.select.clear(String(picked))}

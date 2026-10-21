@@ -187,7 +187,7 @@ export function FitsRows({
                   disabled={busy !== null}
                   onClick={() => onAdd(deck)}
                   aria-label={copy.addUsesFreeAria(cardName, deck.name)}
-                  className="flex-none inline-flex items-center justify-center h-[44px] min-w-[64px] px-[14px] rounded-[8px] text-[13px] md:h-[32px] md:min-w-0 md:px-[12px] md:rounded-[7px] md:text-[12px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent)] disabled:opacity-60"
+                  className="flex-none inline-flex items-center justify-center h-[44px] min-w-[64px] px-[14px] rounded-[8px] text-[13px] md:h-[32px] md:min-w-0 md:px-[12px] md:rounded-[7px] md:text-[12px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)] disabled:opacity-60"
                 >
                   {copy.addUsesFree}
                 </button>
@@ -207,7 +207,7 @@ export function FitsRows({
             {note ? (
               <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
                 {note}{" "}
-                <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent)] [border-bottom:1px_solid_var(--accent-shadow)]">
+                <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]">
                   {copy.openDeck}
                 </Link>
               </p>
@@ -435,7 +435,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
             <button
               type="button"
               onClick={retry}
-              className="mt-[18px] inline-flex items-center justify-center h-[44px] md:h-auto px-[18px] md:px-[16px] md:py-[7px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent)]"
+              className="mt-[18px] inline-flex items-center justify-center h-[44px] md:h-auto px-[18px] md:px-[16px] md:py-[7px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]"
             >
               {swapToolsCopy.sheet.retry}
             </button>

@@ -266,7 +266,7 @@ export function RackSelect<K extends string>({
                 the worse answer. */}
             <span
               aria-hidden
-              className="inline-flex w-[28px] justify-center text-[color:var(--accent)]"
+              className="inline-flex w-[28px] justify-center text-[color:var(--accent-text)]"
             >
               {pending ? <PendingMark /> : <Chevron open={open} />}
             </span>

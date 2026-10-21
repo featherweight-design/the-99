@@ -230,7 +230,7 @@ function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) 
   return (
     <span data-testid="owned-line" className="inline-flex items-center gap-[8px] font-mono text-[12px]">
       {/* `a.owned` where the availability read landed, for the reason the block below gives. */}
-      <span style={{ color: "var(--accent)" }}>×{a ? a.owned : card.quantity}</span>
+      <span style={{ color: "var(--accent-text)" }}>×{a ? a.owned : card.quantity}</span>
       {a && state !== "free" && (
         <>
           <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
@@ -295,7 +295,7 @@ function AvailabilityDetail({
         <ReceiptHeading owned={owned} onEditCopies={onEditCopies} link={receiptLink} />
         {owned > 0 ? (
           <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
-            <span className="font-mono" style={{ color: "var(--accent)" }}>×{owned}</span>
+            <span className="font-mono" style={{ color: "var(--accent-text)" }}>×{owned}</span>
           </div>
         ) : receiptLink ? (
           // A4: the Shopping door says `none`, so the receipt reads `none → ×1` once a purchase lands.
@@ -346,7 +346,7 @@ function AvailabilityDetail({
             from anywhere but the availability query is how a receipt stops
             adding up. */}
         {a.owned > 0 ? (
-          <span className="font-mono" style={{ color: "var(--accent)" }}>×{a.owned}</span>
+          <span className="font-mono" style={{ color: "var(--accent-text)" }}>×{a.owned}</span>
         ) : (
           // Owned in none: the word the Shopping door's receipt uses (A4), never a `×0`.
           <span className="font-mono" style={{ color: "var(--fg-faint)" }}>{collectionEditCopy.copies.none}</span>
@@ -2908,7 +2908,7 @@ export function CardModal({
                   aria-disabled={!onNext}
                   aria-label={cardCarouselCopy.nextAria}
                   className={
-                    "cursor-pointer text-[15px] text-[color:var(--accent)]"
+                    "cursor-pointer text-[15px] text-[color:var(--accent-text)]"
                     + (onNext ? "" : " opacity-40")
                   }
                 >
@@ -3184,7 +3184,7 @@ function MetaCell({
         <span
           className={quantity || rarity ? "font-mono" : ""}
           style={{
-            color: quantity || rarity ? "var(--accent)" : "var(--fg)",
+            color: quantity || rarity ? "var(--accent-text)" : "var(--fg)",
             fontSize: 13,
           }}
         >
@@ -3222,7 +3222,7 @@ function MetaField({
         )}
         <span
           className={quantity || rarity ? "font-mono text-[14px]" : "text-[14px]"}
-          style={{ color: quantity || rarity ? "var(--accent)" : "var(--fg)" }}
+          style={{ color: quantity || rarity ? "var(--accent-text)" : "var(--fg)" }}
         >
           {value}
         </span>
@@ -3239,7 +3239,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
   const chevron = <Chevron kind="disclosure" open={expanded} />;
   if (picked === null) {
     return (
-      <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>
+      <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent-text)" }}>
         {pickerCopy.triggerCount(count)} {chevron}
       </div>
     );
@@ -3249,7 +3249,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
       <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--accent)" }} />
       <span
         className="font-mono uppercase text-[10px] tracking-[0.14em]"
-        style={{ color: "var(--accent)" }}
+        style={{ color: "var(--accent-text)" }}
       >
         {picked}
       </span>

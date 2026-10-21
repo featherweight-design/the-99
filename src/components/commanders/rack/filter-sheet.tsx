@@ -296,7 +296,7 @@ export function FilterSheet({
             className={[
               "font-sans text-[13.5px] font-medium",
               active > 0
-                ? "cursor-pointer text-[color:var(--accent)]"
+                ? "cursor-pointer text-[color:var(--accent-text)]"
                 : "cursor-default text-[color:var(--fg-locked)]",
             ].join(" ")}
           >

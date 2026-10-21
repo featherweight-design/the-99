@@ -55,7 +55,7 @@ export function FitLegend({ segments, score, width, defaultOpen = false }: FitLe
         "font-mono border border-dashed border-[color:var(--border-strong)]",
         open
           ? "bg-[var(--elevated-hover)] text-[var(--fg-faint)]"
-          : "bg-transparent text-[var(--accent)]",
+          : "bg-transparent text-[var(--accent-text)]",
         isPhone
           ? "flex w-full items-center justify-center rounded-[8px]"
           : "inline-flex items-center rounded-full",

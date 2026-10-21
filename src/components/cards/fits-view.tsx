@@ -583,7 +583,7 @@ export function FitsView({
         {list.load.state === "failed" ? (
           <div role="alert" className="flex flex-col items-start gap-[8px]">
             <p className="m-0 text-[13px] text-[color:var(--fg-body)]">{copy.failed.body}</p>
-            <button type="button" onClick={list.retry} className="bg-transparent border-0 p-0 cursor-pointer text-[13px] font-semibold text-[color:var(--accent)]">
+            <button type="button" onClick={list.retry} className="bg-transparent border-0 p-0 cursor-pointer text-[13px] font-semibold text-[color:var(--accent-text)]">
               {swapToolsCopy.sheet.retry}
             </button>
           </div>

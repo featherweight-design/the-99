@@ -624,7 +624,7 @@ export function CoverageSection({
                 disabled={retrying}
                 aria-busy={retrying}
                 aria-label={recommendationsCopy.coverage.degradedRetryAria}
-                className="bg-transparent border-0 p-0 font-semibold text-accent shrink-0"
+                className="bg-transparent border-0 p-0 font-semibold text-accent-text shrink-0"
                 style={{
                   fontSize: 12.5,
                   borderBottom: "1px solid var(--accent-shadow)",
@@ -653,7 +653,7 @@ export function CoverageSection({
                 disabled={retrying}
                 aria-busy={retrying}
                 aria-label={recommendationsCopy.coverage.degradedRetryAria}
-                className="bg-transparent border-0 flex items-center font-semibold text-accent"
+                className="bg-transparent border-0 flex items-center font-semibold text-accent-text"
                 style={{
                   fontSize: 13,
                   borderBottom: "1px solid var(--accent-shadow)",

@@ -494,7 +494,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             // current, which only the resolver knows.
             onClick={props.onReset}
             aria-label={copy.resetAria}
-            className="shrink-0 cursor-pointer text-[13px] text-[color:var(--accent)]"
+            className="shrink-0 cursor-pointer text-[13px] text-[color:var(--accent-text)]"
           >
             {copy.resetToDefault}
           </button>
@@ -522,7 +522,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
               props.onAnnounce(copy.announceForget);
             }}
             aria-label={copy.dormantClearAria}
-            className="shrink-0 cursor-pointer text-[12.5px] text-[color:var(--accent)]"
+            className="shrink-0 cursor-pointer text-[12.5px] text-[color:var(--accent-text)]"
           >
             {copy.dormantClear}
           </button>
@@ -562,7 +562,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           <button
             type="button"
             onClick={() => onQueryChange("")}
-            className="mt-[10px] cursor-pointer text-[13px] text-[color:var(--accent)]"
+            className="mt-[10px] cursor-pointer text-[13px] text-[color:var(--accent-text)]"
           >
             {copy.clearSearch}
           </button>
@@ -638,7 +638,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             setKeptExtra(extraKey);
             setShowAll(true);
           }}
-          className="mt-[12px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)]"
+          className="mt-[12px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent-text)]"
         >
           {chooseCopy.showAll}
         </button>
@@ -804,7 +804,7 @@ function PrintingTile({
                 : entry.dormant
                   ? "1px solid var(--accent)"
                   : "1px dashed var(--fg-faint)",
-              color: picked ? "var(--bg)" : entry.dormant ? "var(--accent)" : "var(--fg-body)",
+              color: picked ? "var(--bg)" : entry.dormant ? "var(--accent-text)" : "var(--fg-body)",
             }}
           >
             {shownNow ? "◇" : "✓"}
@@ -833,7 +833,7 @@ function PrintingTile({
       {(picked || shownNow || entry.dormant) && (
         <div
           className="mt-[3px] flex items-center gap-[5px] font-mono uppercase text-[9.5px] tracking-[0.14em]"
-          style={{ color: picked || entry.dormant ? "var(--accent)" : "var(--fg-muted)" }}
+          style={{ color: picked || entry.dormant ? "var(--accent-text)" : "var(--fg-muted)" }}
         >
           {(picked || entry.dormant) && (
             <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--accent)" }} />
