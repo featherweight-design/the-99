@@ -37,7 +37,7 @@ const BORDER = {
 } as const;
 const BTN = "flex h-[44px] cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] px-[20px] text-[14px] font-semibold disabled:cursor-default disabled:opacity-70 md:h-[40px] md:self-start pointer-coarse:h-[44px]";
 const FILLED = `${BTN} border-0 bg-[color:var(--accent)] text-[color:var(--bg)]`;
-const OUTLINE = `${BTN} border border-solid border-[color:var(--accent)] bg-transparent text-[color:var(--accent)]`;
+const OUTLINE = `${BTN} border border-solid border-[color:var(--accent)] bg-transparent text-[color:var(--accent-text)]`;
 const NEUTRAL = `${BTN} border border-solid border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg)]`;
 const TEXT = "inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] self-start border-0 bg-transparent p-0 text-[13.5px] font-semibold disabled:cursor-default disabled:opacity-70 md:min-h-[32px] pointer-coarse:min-h-[44px]";
 const SAYS = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]";
@@ -167,7 +167,7 @@ export function PlanCard({ plan, reduced = false, timing = PLAN_TIMING, onToast,
 
   const updateButton = presses.updateCard && !cardHidden ? (
     <button type="button" onClick={() => void updateCard()} disabled={held} aria-busy={busy === "card" || undefined}
-      className={state === "pastDue" ? FILLED : `${TEXT} text-[color:var(--accent)]`}>
+      className={state === "pastDue" ? FILLED : `${TEXT} text-[color:var(--accent-text)]`}>
       {p.updateCard}<span aria-hidden="true" className={`text-[11px] ${state === "pastDue" ? "ml-[6px]" : ""}`}>↗</span>
     </button>
   ) : null;

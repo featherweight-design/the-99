@@ -193,7 +193,7 @@ function HowRow({
                   <a
                     key={e.id}
                     href={`#${e.id}`}
-                    className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent)] min-[1000px]:inline min-[1000px]:min-h-0 min-[1000px]:text-[13px]"
+                    className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent-text)] min-[1000px]:inline min-[1000px]:min-h-0 min-[1000px]:text-[13px]"
                   >
                     {e.title}
                   </a>

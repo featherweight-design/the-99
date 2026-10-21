@@ -253,7 +253,7 @@ function Rail({ draw }: { draw: TableDraw }) {
           className="absolute bottom-[4px] top-[4px] z-0 rounded-[8px] border border-dashed border-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_7%,transparent)]"
           style={{ left: `calc(${COLS} * ${(middle - 1) / 5} + 6px)`, width: `calc(${COLS} / 5 - 4px)` }}
         >
-          <span className="absolute inset-x-0 top-[5px] text-center font-mono text-[8.5px] font-medium tracking-[0.14em] text-[color:var(--accent)]">
+          <span className="absolute inset-x-0 top-[5px] text-center font-mono text-[8.5px] font-medium tracking-[0.14em] text-[color:var(--accent-text)]">
             {copy.read.band}
           </span>
         </span>

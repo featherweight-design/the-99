@@ -46,7 +46,7 @@ function OpenEntry({ entry }: { entry: ReferenceEntry }) {
           <ol className="m-0 flex list-none flex-col gap-[6px] p-0">
             {entry.keys.map((k, i) => (
               <li key={i} className="flex gap-[8px] text-[13.5px] leading-[1.5] text-[color:var(--fg-body)]">
-                <span aria-hidden className="text-[color:var(--accent)]">
+                <span aria-hidden className="text-[color:var(--accent-text)]">
                   {i + 1}
                 </span>
                 <span>{k}</span>
@@ -59,7 +59,7 @@ function OpenEntry({ entry }: { entry: ReferenceEntry }) {
             {entry.tryIt && (
               <Link
                 href={entry.tryIt.href}
-                className={`${TOUCH_HIT} inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline`}
+                className={`${TOUCH_HIT} inline-flex min-h-[42px] items-center gap-[10px] text-[14px] font-semibold text-[color:var(--accent-text)] hover:underline`}
               >
                 {entry.tryIt.label}
                 <span
@@ -96,9 +96,9 @@ function EntryRow({ entry, open, onToggle }: { entry: ReferenceEntry; open: bool
       >
         <span className="text-[14.5px] font-medium text-[color:var(--fg)] [grid-area:title]">
           {entry.title}
-          {entry.inTools && <span className="font-mono text-[10.5px] font-normal text-[color:var(--accent)] lg:hidden"> {referenceCopy.inTools}</span>}
+          {entry.inTools && <span className="font-mono text-[10.5px] font-normal text-[color:var(--accent-text)] lg:hidden"> {referenceCopy.inTools}</span>}
         </span>
-        <span className="hidden font-mono text-[10.5px] text-[color:var(--accent)] [grid-area:mark] lg:inline">
+        <span className="hidden font-mono text-[10.5px] text-[color:var(--accent-text)] [grid-area:mark] lg:inline">
           {entry.inTools ? referenceCopy.inTools : ""}
         </span>
         <span className="text-[13px] leading-[1.45] text-[color:var(--fg-faint)] [grid-area:first] lg:overflow-hidden lg:text-ellipsis lg:whitespace-nowrap">
@@ -254,7 +254,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
 
         {!q && whatsNew.length > 0 && (
           <div id="new" className="flex scroll-mt-[20px] flex-col gap-[10px] rounded-[12px] border border-[color:var(--accent-dim)] bg-[color:var(--surface)] px-[18px] py-[16px]">
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[color:var(--accent)]">
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[color:var(--accent-text)]">
               {aboutCopy.newSinceEyebrow(whatsNew.length)}
             </span>
             <div className="flex flex-wrap gap-[8px]">
@@ -310,7 +310,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
                 field.current?.focus();
                 setQuery("");
               }}
-              className="mt-[6px] self-start py-[8px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline"
+              className="mt-[6px] self-start py-[8px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline"
             >
               {referenceCopy.noneOut}
             </a>

@@ -71,7 +71,7 @@ export function AboutTabs({ initial, counts, panels, helpHint, tour = false, onc
           {tour && (
             <>
               {" "}
-              <Link data-tour-again href={TOUR_HREF} className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline`}>
+              <Link data-tour-again href={TOUR_HREF} className={`${TOUCH_HIT} whitespace-nowrap py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}>
                 {tourAgainCopy.aboutPress}
                 <PendingReporter href={TOUR_HREF} />
               </Link>
@@ -109,7 +109,7 @@ export function AboutTabs({ initial, counts, panels, helpHint, tour = false, onc
               >
                 {aboutShapeCopy.tabs[t]}{" "}
                 <span
-                  className={`font-mono text-[12px] font-medium ${on ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}
+                  className={`font-mono text-[12px] font-medium ${on ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
                 >
                   {counts[t]}
                 </span>

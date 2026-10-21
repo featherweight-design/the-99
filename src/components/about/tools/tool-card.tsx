@@ -98,7 +98,7 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
                 </span>
                 <span
                   aria-hidden
-                  className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border border-[color:var(--accent)] text-[15px] text-[color:var(--accent)]"
+                  className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border border-[color:var(--accent)] text-[15px] text-[color:var(--accent-text)]"
                 >
                   →
                 </span>
@@ -107,7 +107,7 @@ export function ToolCard({ card, shot }: { card: ToolCardModel; shot: Shot | nul
             {state.kind === "none" && state.door && (
               <Link
                 href={state.door.href}
-                className={`${TOUCH_HIT} z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent)] hover:underline`}
+                className={`${TOUCH_HIT} z-[2] ml-auto py-[10px] text-[14px] font-semibold text-[color:var(--accent-text)] hover:underline`}
               >
                 {state.door.label}
                 <PendingReporter href={state.door.href} />

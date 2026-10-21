@@ -35,7 +35,7 @@ export function GetMoreLink({ className = "" }: { className?: string }) {
   return (
     <Link
       href={BUY_HREF}
-      className={`mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent)] md:min-h-[32px] ${className}`}
+      className={`mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px] ${className}`}
     >
       {creditsCopy.getMore}<span aria-hidden="true" className="text-[10px]">→</span>
       <PendingReporter href={BUY_HREF} />
@@ -70,7 +70,7 @@ function Phrases({ text }: { text: string }) {
           {i < parts.length - 1 ? (
             <Link
               href={CREDITS_HREF}
-              className="text-[color:var(--accent)] underline decoration-[color:var(--accent-shadow)] underline-offset-2"
+              className="text-[color:var(--accent-text)] underline decoration-[color:var(--accent-shadow)] underline-offset-2"
             >
               {creditsCopy.link}
               <PendingReporter href={CREDITS_HREF} />

@@ -98,7 +98,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
 
 function Icon() {
   return (
-    <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] text-[color:var(--accent)]">
+    <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] text-[color:var(--accent-text)]">
       <TableGlyph size={18} />
     </span>
   );

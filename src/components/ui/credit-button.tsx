@@ -16,7 +16,7 @@ export function CreditButton({ label, credit, filled, blocked, spent, onPress, a
       onClick={onPress}
       disabled={blocked}
       aria-label={ariaLabel ?? (spent ? `${label}. No credits left.` : `${label}. Uses 1 credit.`)}
-      className={`flex h-[44px] w-full flex-none items-stretch overflow-hidden rounded-[8px] border border-[color:var(--accent)] text-[13px] font-semibold disabled:opacity-50 md:h-[38px] md:w-auto ${filled ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--accent)]"}`}
+      className={`flex h-[44px] w-full flex-none items-stretch overflow-hidden rounded-[8px] border border-[color:var(--accent)] text-[13px] font-semibold disabled:opacity-50 md:h-[38px] md:w-auto ${filled ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--accent-text)]"}`}
     >
       <span className="flex flex-1 items-center justify-center px-[16px]">{label}</span>
       {spent ? null : (

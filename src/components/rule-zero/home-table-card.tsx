@@ -43,7 +43,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
           ))}
         </div>
       ) : null}
-      <span className="relative font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent)]">{copy.homeKicker}</span>
+      <span className="relative font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
       <h3 className="relative m-0 font-display text-[18px] font-bold text-[color:var(--fg)]">{table.podName}</h3>
       <div className="relative flex flex-wrap gap-[6px]">
         {table.seats.map((s, i) => (
