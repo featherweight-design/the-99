@@ -313,7 +313,7 @@ describe("PullControl", () => {
     for (const geometry of ["min-h-[44px]", "md:min-h-[34px]", "px-[16px]", "md:px-[11px]"]) {
       expect(pull).toContain(geometry);
     }
-    expect(pull).toContain("text-[color:var(--accent)]");
+    expect(pull).toContain("text-[color:var(--accent-text)]");
     expect(pull).toContain("font-sans");
   });
 

@@ -493,7 +493,7 @@ export function ComboBody({
           href={SPELLBOOK_SOURCE.variantUrl(combo.variantId)}
           target="_blank"
           rel="noreferrer"
-          className="ml-auto inline-flex min-h-[44px] items-center font-mono text-[10.5px] no-underline text-[color:var(--accent)]"
+          className="ml-auto inline-flex min-h-[44px] items-center font-mono text-[10.5px] no-underline text-[color:var(--accent-text)]"
         >
           <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
         </a>

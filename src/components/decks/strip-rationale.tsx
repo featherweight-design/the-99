@@ -80,9 +80,9 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
           aria-controls={open ? panelId : undefined}
           className={
             open
-              ? `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent cursor-pointer`
+              ? `${TOUCH_HIT_INLINE} font-mono text-[11px] text-accent-text cursor-pointer`
               // Closed, the row sits 12px under the role cells; the hit drops 1px so its 12.75px reach stays off them.
-              : `${TOUCH_HIT_INLINE} pointer-coarse:after:mt-px font-mono text-[11px] text-accent border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
+              : `${TOUCH_HIT_INLINE} pointer-coarse:after:mt-px font-mono text-[11px] text-accent-text border-b border-b-accent-shadow border-accent-shadow pb-[1px] cursor-pointer`
           }
         >
           {addPanelCopy.strip.rationaleToggle}

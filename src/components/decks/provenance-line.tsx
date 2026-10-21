@@ -224,7 +224,7 @@ function LedgerLine({
       <div className="flex items-baseline gap-[8px] md:contents">
         <span
           className="flex-none md:w-[66px] font-mono text-[9.5px] tracking-[0.1em] uppercase whitespace-nowrap"
-          style={{ color: newest ? "var(--accent)" : "var(--fg-faint)" }}
+          style={{ color: newest ? "var(--accent-text)" : "var(--fg-faint)" }}
         >
           {label}
         </span>
@@ -262,8 +262,8 @@ function LedgerLine({
           onClick={() => onMarkChange(marked ? null : pass.id)}
           className={`flex-none flex items-center bg-transparent border-0 p-0 cursor-pointer
             font-mono text-[10.5px] whitespace-nowrap min-h-[44px] md:min-h-0
-            hover:text-[color:var(--accent)] transition-colors ${
-              lit ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
+            hover:text-[color:var(--accent-text)] transition-colors ${
+              lit ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"
             }`}
         >
           {/* The dashed rule is on the text, not the button: at the phone's 44px
@@ -440,7 +440,7 @@ export function FillFailedBanner({
           aria-label={copy.failedRetryAria}
           className="flex-none flex items-center mt-[10px] bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow p-0
             text-[12.5px] font-semibold leading-[1.4]
-            text-accent cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            text-accent-text cursor-pointer disabled:opacity-50 disabled:cursor-default"
         >
           {copy.failedRetry}
         </button>

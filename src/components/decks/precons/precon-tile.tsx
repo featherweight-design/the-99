@@ -98,7 +98,7 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
       <CardTileCaption
         meta={
           <>
-            {isNew && <span className="text-[color:var(--accent)]">{preconsCopy.upcoming.tileNew}</span>}
+            {isNew && <span className="text-[color:var(--accent-text)]">{preconsCopy.upcoming.tileNew}</span>}
             <span className="text-[color:var(--fg-faint)]">{rowCopy.ownLead}</span>
             <span className="font-semibold text-[color:var(--fg)]">{rowCopy.own(row.owned, row.of)}</span>
           </>

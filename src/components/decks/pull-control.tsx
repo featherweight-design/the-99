@@ -46,7 +46,7 @@ const ACTION_BOX =
 
 /** Never solid — see the header. The accent is the pull's alone: it is the one
  *  thing on this page that writes. */
-const PULL_BUTTON = `${ACTION_BOX} text-[color:var(--accent)]`;
+const PULL_BUTTON = `${ACTION_BOX} text-[color:var(--accent-text)]`;
 
 /** The guard's word, in the buy tag's shape: mono, uppercase, on a flat plate.
  *  Three words beside a deck name the row already prints, rather than R1's
@@ -737,7 +737,7 @@ function SourcePickerBody({
           type="button"
           disabled={pending}
           onClick={onConfirm}
-          className={`h-[36px] flex-1 rounded-[7px] font-sans text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--border-strong)] disabled:cursor-default disabled:opacity-50`}
+          className={`h-[36px] flex-1 rounded-[7px] font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)] disabled:cursor-default disabled:opacity-50`}
         >
           {pending ? copy.pulling : sourceCopy.confirm(chosenName)}
         </button>

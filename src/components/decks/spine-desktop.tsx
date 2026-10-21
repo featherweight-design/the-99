@@ -644,7 +644,7 @@ export function SpineDesktop({
                   data-shortcut="proposed-cuts"
                   onClick={onProposedCuts}
                   {...cutsMoment}
-                  className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent)]"
+                  className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent-text)]"
                 >
                   {tuningHubShortcutsCopy.proposedCuts}
                 </button>

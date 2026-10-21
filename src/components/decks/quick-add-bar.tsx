@@ -356,7 +356,7 @@ export function QuickAddBar({
             <button
               type="button"
               onClick={() => setOwnedOnly(false)}
-              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent)] bg-transparent border-none"
+              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent-text)] bg-transparent border-none"
               style={{ padding: 0 }}
             >
               {addPanelCopy.quickAddEmpty.dropFilter}
@@ -558,7 +558,7 @@ function QuickAddRow({
             <span
               aria-hidden
               className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
-              style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent)" }}
+              style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent-text)" }}
             >
               {/* The phone row's meta line has already used the width the words
                   would need, so it keeps the glyph alone. */}
@@ -576,7 +576,7 @@ function QuickAddRow({
               className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
               style={{
                 opacity: isPending ? 0.5 : undefined,
-                color: "var(--accent)",
+                color: "var(--accent-text)",
                 background: "transparent",
                 border: "1px solid var(--border-strong)",
                 borderRadius: 7,

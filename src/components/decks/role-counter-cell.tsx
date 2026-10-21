@@ -175,16 +175,16 @@ export function RoleCounterCell({
               : `rec ${target}`}
         </span>
         {onSeeShelf ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             {addPanelCopy.strip.cellLink}
           </span>
         ) : balance ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             <span className="hidden md:inline">{tuningHubShortcutsCopy.balanceMana}</span>
             <span className="md:hidden">{tuningHubShortcutsCopy.balanceManaShort}</span>
           </span>
         ) : suggest && !inFlight ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             <span className="hidden md:inline">{addPanelCopy.strip.suggestLink}</span>
             <span className="md:hidden">{addPanelCopy.strip.suggestLinkShort}</span>
           </span>

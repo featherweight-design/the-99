@@ -86,7 +86,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
             <button
               type="submit"
               disabled={pending}
-              className="inline-flex items-center h-[40px] md:h-[28px] px-[12px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] font-semibold bg-transparent cursor-pointer disabled:opacity-50 border border-solid border-[color:var(--accent)] text-[color:var(--accent)]"
+              className="inline-flex items-center h-[40px] md:h-[28px] px-[12px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] font-semibold bg-transparent cursor-pointer disabled:opacity-50 border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]"
             >
               {copy.limit.save}
             </button>
