@@ -22,7 +22,7 @@ vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: [] })) } 
 
 import { placedCardsOf } from "../decks/costs-of";
 import { buildFillPlan } from "../decks/fill-plan";
-import { trialFill } from "./trial";
+import { handOffTrial, trialFill } from "./trial";
 
 const commander = { oracleId: "c", name: "C", colorIdentity: ["B"], manaCost: "{B}" };
 
@@ -74,5 +74,29 @@ describe("trialFill's bracket figure (bracket reach R1b)", () => {
     plan(undefined);
     expect((await trialFill("u", commander, answers, ENV_VIEW)).bracket).toBeNull();
     expect(vi.mocked(buildFillPlan)).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("handOffTrial (bracket reach PR 3b)", () => {
+  const commanderC = { oracleId: "c", name: "C", colorIdentity: ["B"], manaCost: "{B}" };
+  const answers = { budgetCents: 5000, bracket: 3 as const, cardOracleId: null };
+
+  it("fills as the create does, and reads the plan's own reach, finished bracket and placed raisers", async () => {
+    vi.mocked(buildFillPlan).mockResolvedValueOnce({
+      rows: [{ oracleId: "gc", quantity: 1, role: "other", source: "bracket" }, { oracleId: "x", quantity: 1, role: "other" }],
+      bracketReach: { target: 3, kind: "collection", raisers: ["gc"] },
+      bracketAfter: { permits: [3], buyCents: null }, budgetLeftCents: 5000,
+    } as never);
+    const t = await handOffTrial("u", commanderC, answers, ENV_VIEW, true);
+    // Own-only: the create's own options, so the choice is drawn over the create's deck.
+    expect(vi.mocked(buildFillPlan).mock.calls.at(-1)![3]).toMatchObject({ pool: "sleeveable", failClosed: true });
+    expect(t).toEqual({ permits: [3], placedRaisers: ["gc"], reach: { target: 3, kind: "collection", raisers: ["gc"] }, budgetLeftCents: 5000 });
+  });
+
+  it("fills from any cards when not own-only, and reads no reach under bracket 3", async () => {
+    vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: [], bracketReach: { target: 2, kind: "fixed" }, bracketAfter: { permits: [1, 2], buyCents: null } } as never);
+    const t = await handOffTrial("u", commanderC, { ...answers, bracket: 2 }, ENV_VIEW, false);
+    expect(vi.mocked(buildFillPlan).mock.calls.at(-1)![3].pool).toBeUndefined();
+    expect(t.permits).toBeNull();
   });
 });

@@ -19,6 +19,9 @@ export type DeckAnswers = {
   budgetCents: number | null;
   bracket: Bracket | null;
   cardOracleId: string | null;
+  /** *Hit bracket N* (bracket reach PR 3b, `decks.answer_bracket_buys`): the fill places the cards
+   *  the reach would buy to hit the bracket. Absent or false, it places owned cards alone. */
+  bracketBuys?: boolean;
 };
 
 /**
@@ -47,13 +50,18 @@ export async function loadFillGate(args: {
    *  for the gate and the reach, so the two cannot see different cards). They must cover every id
    *  this gate is handed: the fixed cards and every candidate. */
   bracketFacts?: GateFacts;
+  /**
+   * The least the budget may cap the fill at once the placed cards are charged: the cost of the
+   * cards the player chose to buy to hit the bracket (*Hit bracket N*, G1). They are charged first
+   * (`planFill`'s raisers step tells the gate each one), so a floor over the budget leaves the rest
+   * of the 99 nothing to buy, and one under it changes nothing.
+   */
+  floorCents?: number;
 }): Promise<FillGate | undefined> {
   const { answers } = args;
   if (answers.budgetCents === null && (answers.bracket === null || answers.bracket >= 4)) return undefined;
 
-  const card = answers.cardOracleId;
-  const placed = [...new Set([...(card ? [card] : []), ...(args.placedIds ?? [])])]
-    .filter((id) => !args.commanderIds.includes(id));
+  const placed = placedIdsOf(args.commanderIds, answers.cardOracleId, args.placedIds);
   const fixedIds = [...args.commanderIds, ...placed];
   const ids = [...new Set([...fixedIds, ...args.candidates.map((c) => c.oracleId)])];
 
@@ -73,19 +81,9 @@ export async function loadFillGate(args: {
       return buysCopy(owned.has(id), availability.get(id));
     };
     const priceOf = (id: string) => prices.get(id)?.liveCents ?? null;
-    // The placed cards go in before the fill, so they are charged first. They are not in the pool
-    // (they were placed), so ownership is read off availability: an absent row there is a card the
-    // player does not own. A basic is never a buy. One never stocked cannot be charged and is placed
-    // anyway (§3.0): the cap then covers the rest, as usual.
-    const placedBasics = placed.length === 0 ? new Set<string>() : new Set(
-      ((await db.execute(sql`select c.oracle_id, c.type_line from cards c where c.oracle_id = any(${sql.param(placed)}::uuid[])`))
-        .rows as { oracle_id: string; type_line: string }[]).filter((r) => isBasicLand(r.type_line)).map((r) => r.oracle_id),
-    );
-    const placedCost = placed
-      .filter((id) => !placedBasics.has(id) && buysCopy(availability.has(id), availability.get(id)))
-      .reduce((sum, id) => sum + (priceOf(id) ?? 0), 0);
+    const placedCost = await chargePlaced(placed, priceOf, availability);
     gates.push(budgetGate({
-      remainingCents: answers.budgetCents - placedCost,
+      remainingCents: Math.max(answers.budgetCents - placedCost, args.floorCents ?? -Infinity),
       // THE CARD'S OWN TYPE LINE, not only the candidate list's: the catalog's basics (`planFill`'s
       // `basics`) are offered to the fill without being candidates, so an id-set test read one as
       // unowned and unpriced, and the budget refused it. A basic is never a buy, whoever offers it.
@@ -104,6 +102,56 @@ export async function loadFillGate(args: {
   }
 
   return allGates(gates);
+}
+
+/** The cards placed before the fill (the build-around card and any selection), the commanders out. */
+function placedIdsOf(commanderIds: readonly string[], card: string | null, placedIds?: readonly string[]): string[] {
+  return [...new Set([...(card ? [card] : []), ...(placedIds ?? [])])].filter((id) => !commanderIds.includes(id));
+}
+
+/**
+ * What the placed cards cost the budget. They go in before the fill, so they are charged first. They
+ * are not in the pool (they were placed), so ownership is read off availability: an absent row there
+ * is a card the player does not own. A basic is never a buy. One never stocked cannot be charged and
+ * is placed anyway (§3.0): the cap then covers the rest, as usual.
+ */
+async function chargePlaced(
+  placed: readonly string[],
+  priceOf: (id: string) => number | null,
+  availability: Awaited<ReturnType<typeof loadAvailability>>,
+): Promise<number> {
+  if (placed.length === 0) return 0;
+  const placedBasics = new Set(
+    ((await db.execute(sql`select c.oracle_id, c.type_line from cards c where c.oracle_id = any(${sql.param([...placed])}::uuid[])`))
+      .rows as { oracle_id: string; type_line: string }[]).filter((r) => isBasicLand(r.type_line)).map((r) => r.oracle_id),
+  );
+  return placed
+    .filter((id) => !placedBasics.has(id) && buysCopy(availability.has(id), availability.get(id)))
+    .reduce((sum, id) => sum + (priceOf(id) ?? 0), 0);
+}
+
+/**
+ * The budget LEFT once the placed cards are charged, `loadFillGate`'s own figure, read for the
+ * bracket reach (audit item 10): a set to buy is over budget against what the build-around card
+ * leaves, not against the whole budget. Null when no budget was asked.
+ */
+export async function loadBudgetLeftCents(args: {
+  userId: string;
+  commanderIds: readonly string[];
+  answers: DeckAnswers;
+  placedIds?: readonly string[];
+  excludeDeckId?: string;
+  env: NodeJS.ProcessEnv;
+}): Promise<number | null> {
+  const { budgetCents } = args.answers;
+  if (budgetCents === null) return null;
+  const placed = placedIdsOf(args.commanderIds, args.answers.cardOracleId, args.placedIds);
+  if (placed.length === 0) return budgetCents;
+  const [prices, availability] = await Promise.all([
+    loadPrices(placed),
+    loadAvailability(args.userId, { oracleIds: placed, excludeDeckId: args.excludeDeckId, env: args.env }),
+  ]);
+  return budgetCents - await chargePlaced(placed, (id) => prices.get(id)?.liveCents ?? null, availability);
 }
 
 /**

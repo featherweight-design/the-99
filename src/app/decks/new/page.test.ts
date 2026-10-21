@@ -43,7 +43,23 @@ describe("/decks/new", () => {
     const p = await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results" });
     expect(p.handOff?.resultsHref).toBe("/decks/new/choose?t=dinosaurs&b=150&v=results");
     expect(p.handOff?.drawBlock).toBe(true);
-    expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], pool: "any", cardOracleId: null, budgetDollars: 150, bracket: null });
+    expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], pool: "any", cardOracleId: null, budgetDollars: 150, bracket: null, bracketBuys: false });
+    // No bracket asked: the Bracket row reads no reach.
+    expect((p.handOff as { readReach?: boolean }).readReach).toBe(false);
+  });
+
+  it("reads the bracket reach from 3 up, and only with the reader's switch on", async () => {
+    stub.answers.mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: 3 });
+    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "true" });
+    const on = await props({ commander: COMMANDER, t: "dinosaurs", k: "3", v: "results" });
+    expect((on.handOff as { readReach?: boolean }).readReach).toBe(true);
+    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "off" });
+    const off = await props({ commander: COMMANDER, t: "dinosaurs", k: "3", v: "results" });
+    expect((off.handOff as { readReach?: boolean }).readReach).toBe(false);
+    stub.answers.mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: 2 });
+    stub.env = envViewWith({ BRACKET_REACH_ENABLED: "true" });
+    const low = await props({ commander: COMMANDER, t: "dinosaurs", k: "2", v: "results" });
+    expect((low.handOff as { readReach?: boolean }).readReach).toBe(false);
   });
 
   it("hands the hand-off read the reader's resolved env, not the environment", async () => {

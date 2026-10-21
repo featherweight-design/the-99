@@ -20,6 +20,9 @@ export type CreateAnswers = {
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: number | null;
+  /** *Hit bracket N* on the hand-off (bracket reach PR 3b): buy the cards that reach the bracket.
+   *  False for *From my collection*, and wherever no choice was drawn. */
+  bracketBuys: boolean;
 };
 
 export type ValidAnswers = {
@@ -30,6 +33,8 @@ export type ValidAnswers = {
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
+  /** Asked, with a bracket of 3 or more. `createDeck` still checks the switch and its own reach. */
+  bracketBuys: boolean;
 };
 
 /** Whole dollars, as the column's check requires, and no more than any real budget. */
@@ -61,6 +66,8 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
     throw new Error("sets are not valid");
   }
   if (raw.pool !== undefined && raw.pool !== "any" && raw.pool !== "own") throw new Error("pool is not valid");
+  // Absent from an older client reads as not asked. Anything but a boolean is refused.
+  if (raw.bracketBuys !== undefined && typeof raw.bracketBuys !== "boolean") throw new Error("bracket choice is not valid");
   return {
     themes: raw.themes.map((t) => t.trim()),
     themeJoin: raw.themeJoin ?? "all",
@@ -69,6 +76,9 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
     cardOracleId,
     budgetDollars,
     bracket: bracket as Bracket | null,
+    // Only a bracket of 3 or more has anything to buy toward: under it the ask is ignored, not
+    // refused, since the deck it would cost is the one the player asked for.
+    bracketBuys: raw.bracketBuys === true && bracket !== null && bracket >= 3,
   };
 }
 
@@ -77,6 +87,7 @@ export type AnswerColumns = {
   answerBracket?: number | null;
   answerCardOracleId?: string | null;
   answerOwnedOnly?: boolean;
+  answerBracketBuys?: boolean;
 };
 
 /**
@@ -95,5 +106,7 @@ export function answerColumnsFor(
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
     answerOwnedOnly: asked.pool === "own",
+    // The ask as validated; `createDeck` writes what it honored on the filled path.
+    answerBracketBuys: asked.bracketBuys,
   };
 }

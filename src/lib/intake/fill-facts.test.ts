@@ -27,3 +27,54 @@ describe("loadFillGate's budget", () => {
     expect(gate!.admits(card({ oracleId: "spell" }))).toBe(false);
   });
 });
+
+describe("loadFillGate's floor (Hit bracket N, G1)", () => {
+  const priced = async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockResolvedValue(new Map([
+      ["rhystic", { liveCents: 3200 }], ["spell", { liveCents: 900 }],
+    ]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
+  };
+
+  it("caps the fill at no less than the floor, so the set charged first still fits", async () => {
+    await priced();
+    const gate = await loadFillGate({
+      userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
+      answers: { budgetCents: 2000, bracket: null, cardOracleId: null }, env: ENV_VIEW, floorCents: 3200,
+    });
+    // The budget alone ($20) would refuse the $32 set; the floor admits it.
+    expect(gate!.admits(card({ oracleId: "rhystic" }))).toBe(true);
+    gate!.place(card({ oracleId: "rhystic" }));
+    // Charged first, it leaves nothing: the rest of the 99 buys nothing more.
+    expect(gate!.admits(card({ oracleId: "spell" }))).toBe(false);
+  });
+
+  it("changes nothing when the floor is under what the budget leaves", async () => {
+    await priced();
+    const gate = await loadFillGate({
+      userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null }, env: ENV_VIEW, floorCents: 3200,
+    });
+    gate!.place(card({ oracleId: "rhystic" }));
+    // $50 less $32 leaves $18: the $9 card still fits.
+    expect(gate!.admits(card({ oracleId: "spell" }))).toBe(true);
+  });
+});
+
+describe("loadBudgetLeftCents (audit item 10)", () => {
+  it("is the budget less the build-around card it has to buy, and null with no budget", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockResolvedValue(new Map([["around", { liveCents: 1500 }]]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
+    const { loadBudgetLeftCents } = await import("./fill-facts");
+    // Unowned (no availability row), not a basic (the catalog read returns none): charged.
+    expect(await loadBudgetLeftCents({
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: "around" }, env: ENV_VIEW,
+    })).toBe(3500);
+    expect(await loadBudgetLeftCents({
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: null }, env: ENV_VIEW,
+    })).toBe(5000);
+    expect(await loadBudgetLeftCents({
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: null, bracket: 3, cardOracleId: "around" }, env: ENV_VIEW,
+    })).toBeNull();
+  });
+});
