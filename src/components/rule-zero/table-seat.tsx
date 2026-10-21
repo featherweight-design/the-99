@@ -194,7 +194,7 @@ export function TableSeat({
 function SeatTag({ draw }: { draw: SeatDraw }) {
   const { seat } = draw;
   if (seat.you) {
-    return <span className="flex-none font-mono text-[9.5px] font-medium tracking-[0.12em] text-[color:var(--accent)]">{copy.you}</span>;
+    return <span className="flex-none font-mono text-[9.5px] font-medium tracking-[0.12em] text-[color:var(--accent-text)]">{copy.you}</span>;
   }
   const tag = seat.podOwner ? socialCopy.pods.ownerTag : seat.publicId === null ? socialCopy.pods.notFriendTag : null;
   if (!tag) return null;
@@ -343,7 +343,7 @@ export function driversSentence(draw: SeatDraw): string | null {
 /** The changed dot and its words (S5), in the accent: a 7px dot, then the line. Shared with the read's `Since you looked`. */
 export function Changed({ text, className = "text-[10.5px]" }: { text: string; className?: string }) {
   return (
-    <span data-testid="changed" className={"inline-flex items-center gap-[6px] font-mono text-[color:var(--accent)] " + className}>
+    <span data-testid="changed" className={"inline-flex items-center gap-[6px] font-mono text-[color:var(--accent-text)] " + className}>
       <i aria-hidden className="block h-[7px] w-[7px] rounded-full bg-[color:var(--accent)]" />
       {text}
     </span>

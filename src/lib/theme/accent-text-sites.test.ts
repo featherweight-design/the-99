@@ -45,26 +45,6 @@ function count(): Map<string, number> {
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
 
-  // S10 (19 files)
-  "src/components/about/how-rows.tsx": 1,
-  "src/components/about/reference/reference-tab.tsx": 6,
-  "src/components/about/tools/about-tabs.tsx": 2,
-  "src/components/about/tools/tool-card.tsx": 2,
-  "src/components/about/tools/tools-tab.tsx": 3,
-  "src/components/credits/history.tsx": 1,
-  "src/components/credits/offer-art.tsx": 1,
-  "src/components/credits/plan-card.tsx": 2,
-  "src/components/rule-zero/change-deck.tsx": 1,
-  "src/components/rule-zero/home-table-card.tsx": 1,
-  "src/components/rule-zero/pod-row.tsx": 1,
-  "src/components/rule-zero/read-card.tsx": 1,
-  "src/components/rule-zero/setup-sheet.tsx": 3,
-  "src/components/rule-zero/table-seat.tsx": 2,
-  "src/components/ui/credit-button.tsx": 1,
-  "src/components/ui/credits-text.tsx": 2,
-  "src/components/ui/filter-panel.tsx": 1,
-  "src/components/ui/provenance-disc.tsx": 1,
-  "src/components/ui/sheet-group.tsx": 1,
 
   // S11 (19 files)
   "src/app/commanders/page.tsx": 2,

@@ -51,7 +51,7 @@ export function ChangeDeck({ tableId }: { tableId: string }) {
         aria-haspopup="dialog"
         onClick={(e) => (choices ? setChoices(null) : void press(e.currentTarget))}
         // Drawn at 36px; a coarse pointer gets TOUCH_HIT's 44px past it (the 2026-10-18 phone sweep measured 76x36).
-        className={`${TOUCH_HIT} inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]`}
+        className={`${TOUCH_HIT} inline-flex min-h-[36px] cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]`}
       >
         {ruleZeroCopy.seat.changeDeck}
       </button>

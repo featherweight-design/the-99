@@ -11,7 +11,7 @@ export function ProvenanceDisc({ label, className = "" }: { label?: string; clas
     <span
       {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
       className={`flex-none flex items-center justify-center rounded-full font-mono w-[18px] h-[18px] md:w-[20px] md:h-[20px] text-[10px] md:text-[11px] ${className}`}
-      style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent)" }}
+      style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent-text)" }}
     >
       i
     </span>

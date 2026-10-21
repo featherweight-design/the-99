@@ -30,7 +30,7 @@ export function History({ items, onReceiptFailed }: { items: readonly HistoryIte
                 <ReceiptLink
                   reference={(item.sessionId ?? item.invoiceId) as string}
                   onFailed={onReceiptFailed}
-                  className="flex min-h-[44px] w-[59px] flex-none cursor-pointer items-center justify-end gap-[4px] border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[color:var(--accent)] md:min-h-[32px] md:w-[90px]"
+                  className="flex min-h-[44px] w-[59px] flex-none cursor-pointer items-center justify-end gap-[4px] border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px] md:w-[90px]"
                 >
                   {c.hist.receipt}<span aria-hidden="true" className="text-[11px]">↗</span>
                 </ReceiptLink>

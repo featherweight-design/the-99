@@ -159,7 +159,7 @@ export function SetupSheet({
             <button
               type="button"
               onClick={() => setScreen({ kind: "who" })}
-              className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]"
+              className="inline-flex min-h-[44px] cursor-pointer items-center gap-[6px] border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[4px]"
             >
               <span aria-hidden>‹</span>
               {copy.back}
@@ -218,7 +218,7 @@ export function SetupSheet({
             onClick={onInvite}
             className="flex min-h-[56px] w-full cursor-pointer items-center gap-[12px] rounded-[10px] bg-transparent px-[12px] py-[8px] text-left text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] [border:1.5px_dashed_var(--border-dashed)]"
           >
-            <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] text-[16px] text-[color:var(--accent)] [border:1px_solid_var(--border-strong)]">
+            <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] text-[16px] text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)]">
               +
             </span>
             <span>
@@ -319,7 +319,7 @@ function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: Se
         <b
           className={`truncate whitespace-nowrap font-sans ${
             line.accent
-              ? "text-[13px] font-medium text-[color:var(--accent)]"
+              ? "text-[13px] font-medium text-[color:var(--accent-text)]"
               : deck
                 ? "text-[14px] font-semibold"
                 : "text-[14px] font-medium text-[color:var(--fg-body)]"

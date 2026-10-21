@@ -40,7 +40,7 @@ function Group({ group, theme }: { group: ShowcaseGroup; theme: string | undefin
 
 function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[]; free: string; allowance: string }) {
   const chip =
-    "self-baseline justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent)] [grid-area:chip] lg:self-center";
+    "self-baseline justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)] [grid-area:chip] lg:self-center";
   return (
     <section aria-label={writtenForYouCopy.title} data-written-for-you className="mx-[16px] mt-[30px] md:mx-0 md:mt-[40px]">
       <div className="mb-[12px] flex items-baseline justify-between gap-[10px] md:mb-[16px] md:justify-start md:gap-[12px]">
@@ -74,7 +74,7 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
           <span className="text-[13.5px] text-[color:var(--fg-muted)]">{free}</span>
           <Link
             href={entryHref("credits")}
-            className={`${TOUCH_HIT} py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] hover:underline`}
+            className={`${TOUCH_HIT} py-[10px] font-mono text-[12.5px] text-[color:var(--accent-text)] hover:underline`}
           >
             {writtenForYouCopy.how}
             <PendingReporter href={entryHref("credits")} />
@@ -106,7 +106,7 @@ export function ToolsTab({ groups, written, allowance, theme }: ToolsTabProps) {
         <span className="text-[14px] text-[color:var(--fg-muted)]">{aboutShapeCopy.toReference}</span>
         <Link
           href="/about?tab=reference"
-          className={`${TOUCH_HIT} py-[10px] text-[14.5px] font-semibold text-[color:var(--accent)] hover:underline`}
+          className={`${TOUCH_HIT} py-[10px] text-[14.5px] font-semibold text-[color:var(--accent-text)] hover:underline`}
         >
           {aboutShapeCopy.toReferencePress}
           <PendingReporter href="/about?tab=reference" />

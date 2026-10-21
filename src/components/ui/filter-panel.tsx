@@ -854,7 +854,7 @@ export function FilterPanel({
         className={[
           `font-sans ${bp("text-[12.5px]", "text-[13.5px]")} font-medium`,
           selected.length > 0
-            ? "text-[color:var(--accent)] cursor-pointer"
+            ? "text-[color:var(--accent-text)] cursor-pointer"
             : "text-[color:var(--border-dashed)] cursor-default",
         ].join(" ")}
       >

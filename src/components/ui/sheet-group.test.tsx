@@ -34,7 +34,7 @@ describe("SheetGroupToggle", () => {
     expect(b.getAttribute("aria-expanded")).toBe("false");
     expect(b.className).toContain("min-h-[44px] md:min-h-[34px]");
     expect(b.className).toContain("pl-[43px]");
-    expect(b.className).toContain("text-[12.5px] font-medium text-[color:var(--accent)]");
+    expect(b.className).toContain("text-[12.5px] font-medium text-[color:var(--accent-text)]");
     expect(b.textContent).toBe("Show all 12 cards▸");
     fireEvent.click(b);
     expect(onToggle).toHaveBeenCalledTimes(1);

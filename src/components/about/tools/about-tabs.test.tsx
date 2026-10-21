@@ -100,7 +100,7 @@ describe("About's head: Take the tour (discovery R3·2)", () => {
       const sub = press.closest("p");
       expect(sub?.textContent?.startsWith(initial === "tools" ? "What each tool is for" : "Every entry")).toBe(true);
       expect(sub?.lastElementChild).toBe(press);
-      for (const cls of ["py-[10px]", "text-[14.5px]", "font-semibold", "text-[color:var(--accent)]", "hover:underline"]) expect(press.classList).toContain(cls);
+      for (const cls of ["py-[10px]", "text-[14.5px]", "font-semibold", "text-[color:var(--accent-text)]", "hover:underline"]) expect(press.classList).toContain(cls);
       unmount();
     }
   });
