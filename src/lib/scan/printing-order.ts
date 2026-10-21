@@ -35,3 +35,12 @@ export function orderPrintings(printings: readonly PrintingChoice[], scored: rea
     rest: printings.filter((p) => !seen.has(p.scryfallId)),
   };
 }
+
+/**
+ * The printing Auto adds a card at, with no printing step: the one the scan matched (the best identified printing),
+ * else the first loaded. Never simply the first loaded when the scan named one: that is the newest set's, which put a
+ * full-art basic on the list as an arbitrary basic.
+ */
+export function matchedPrinting(printings: readonly PrintingChoice[], scored: readonly ScoredPrinting[]): PrintingChoice | null {
+  return orderPrintings(printings, scored).preselected ?? printings[0] ?? null;
+}

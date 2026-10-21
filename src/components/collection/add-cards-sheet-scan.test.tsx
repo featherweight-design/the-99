@@ -9,6 +9,8 @@ const copy = collectionEditCopy.add;
 const scan = collectionEditCopy.scan;
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", typeLine: "Artifact", imageUri: null };
 
+// Sol Ring as the scanner reads a Secret Lair copy: the server scored that printing best (its own scan index row).
+const SOL_MATCHED = { ...SOL, printings: [{ scryfallId: "s2", score: 0.95 }, { scryfallId: "s1", score: 0.6 }] };
 const choices = vi.fn();
 const search = vi.fn(async (_q: string) => [] as unknown[]);
 vi.mock("../../app/collection/edit-actions", () => ({
@@ -30,6 +32,7 @@ vi.mock("./scan/card-scanner", () => ({
       <span data-testid="tray">{listed.get(SOL.oracleId) ?? 0}</span>
       <button type="button" onClick={() => void onAdd(SOL, "fast").then((o) => outcomes.push(o))}>fast add</button>
       <button type="button" onClick={() => onAdd(SOL, "normal")}>normal add</button>
+      <button type="button" onClick={() => void onAdd(SOL_MATCHED, "fast").then((o) => outcomes.push(o))}>fast add matched</button>
       <button type="button" onClick={onClose}>close scanner</button>
     </div>
     );
@@ -97,6 +100,19 @@ describe("AddCardsSheet: the Scan press (card-scan PR 3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
     await waitFor(() => expect(screen.getByText(copy.summary(1, 1))).toBeTruthy());
     expect(screen.queryByText(copy.needsPrinting("Sol Ring"))).toBeNull();
+  });
+
+  // Auto skips the printing step, not the scan's match: a recognized Secret Lair copy lands as that printing, never
+  // as the newest set's (the full-art basic added as an arbitrary basic, Hugh 2026-10-19).
+  it("lands an Auto add at the printing the scan matched, not the first loaded", async () => {
+    render(<AddCardsSheet mode="add" onClose={vi.fn()} totalCards={10} scan />);
+    fireEvent.click(screen.getByRole("button", { name: scan.press }));
+    fireEvent.click(screen.getByRole("button", { name: "fast add matched" }));
+    await waitFor(() => expect(outcomes).toHaveLength(1));
+    expect(await (outcomes[0] as { settled: Promise<boolean> }).settled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "close scanner" }));
+    expect(await screen.findByText("SLD · #1512")).toBeTruthy();
+    expect(screen.queryByText("C21 · #263")).toBeNull();
   });
 
   it("takes an Auto add back off the list when its printings cannot be read", async () => {

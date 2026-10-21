@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PrintingChoice } from "../collection/catalog-read";
-import { orderPrintings } from "./printing-order";
+import { matchedPrinting, orderPrintings } from "./printing-order";
 
 const P = (id: string): PrintingChoice => ({
   scryfallId: id, setCode: id, setName: null, collectorNumber: "1", releasedAt: null, imageUri: null, flavorName: null,
@@ -34,5 +34,20 @@ describe("orderPrintings", () => {
     expect(o.preselected).toBeNull();
     expect(o.rest).toEqual(loaded);
     expect(orderPrintings([], [])).toEqual({ short: [], preselected: null, autoPick: false, rest: [] });
+  });
+});
+
+describe("matchedPrinting", () => {
+  it("takes the printing the scan scored best, not the first loaded", () => {
+    expect(matchedPrinting(loaded, [{ scryfallId: "old", score: 0.8 }, { scryfallId: "mid", score: 0.9 }])?.scryfallId).toBe("mid");
+  });
+
+  it("falls back to the first loaded when the scan named none of them", () => {
+    expect(matchedPrinting(loaded, [])?.scryfallId).toBe("new");
+    expect(matchedPrinting(loaded, [{ scryfallId: "gone", score: 0.99 }])?.scryfallId).toBe("new");
+  });
+
+  it("answers null when no printing loaded", () => {
+    expect(matchedPrinting([], [{ scryfallId: "new", score: 0.9 }])).toBeNull();
   });
 });
