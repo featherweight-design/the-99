@@ -36,6 +36,15 @@ describe("handOffReachOf", () => {
     expect(fromMineBracket(within)).toBe(2);
   });
 
+  it("names only the cards to buy: a free owned piece of the set is placed, never offered as a buy", () => {
+    const combo = { ...short(3200), buy: { raisers: ["owned-piece", "rhystic"], buyCents: 3200, overBudget: false } };
+    const chipOf = (id: string) => (id === "owned-piece" ? { ...chip(id), owned: true } : chip(id));
+    expect(handOffReachOf({ ...base, chipOf, permits: [1, 2], reach: combo })!.buy!.cards.map((c) => c.oracleId)).toEqual(["rhystic"]);
+    // Owned, every copy held: bought, so named.
+    const heldOf = (id: string) => ({ ...chip(id), owned: true, held: { deck: "Other" } });
+    expect(handOffReachOf({ ...base, chipOf: heldOf, permits: [1, 2], reach: combo })!.buy!.cards).toHaveLength(2);
+  });
+
   it("short with nothing to buy, or a set it cannot name, is a statement", () => {
     expect(handOffReachOf({ ...base, permits: [1, 2], reach: { ...short(0), buy: null } })!.buy).toBeNull();
     expect(handOffReachOf({ ...base, chipOf: () => null, permits: [1, 2], reach: short(3200) })!.buy).toBeNull();

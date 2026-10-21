@@ -1,6 +1,7 @@
 import type { BracketReach } from "./bracket-reach";
 import type { Bracket } from "./rank";
 import type { CardChip } from "./rows";
+import { buysCard } from "./buys-card";
 
 /**
  * What the hand-off's Bracket row says (bracket reach PR 3b, Design R1b board C), for the deck
@@ -52,9 +53,13 @@ export function handOffReachOf(args: {
   });
   if (permits.includes(target)) return placed.length > 0 ? { target, permits, placed, buy: null } : null;
   if (reach.kind !== "short" || !reach.buy) return { target, permits, placed, buy: null };
-  const cards = reach.buy.raisers.flatMap((id) => args.chipOf(id) ?? []);
+  const set = reach.buy.raisers.flatMap((id) => args.chipOf(id) ?? []);
   // A set the screen cannot name is not a choice it can offer: the statement stands instead.
-  if (cards.length !== reach.buy.raisers.length) return { target, permits, placed, buy: null };
+  if (set.length !== reach.buy.raisers.length) return { target, permits, placed, buy: null };
+  // The line names only the cards to BUY (`buysCard`): a free owned piece of the set is placed too,
+  // but costs nothing, and `buyCents` charges only the copies missing.
+  const cards = set.filter(buysCard);
+  if (cards.length === 0) return { target, permits, placed, buy: null };
   const cents = reach.buy.buyCents;
   const overCents = args.budgetLeftCents === null ? 0 : Math.max(0, cents - args.budgetLeftCents);
   return {

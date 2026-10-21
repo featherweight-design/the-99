@@ -388,12 +388,11 @@ export async function buildFillPlan(
       candidates: [...gateCandidates, ...boughtRaisers.filter((c) => !gateCandidates.includes(c))],
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
       bracketFacts,
-      // The set's cost, or, when it raised the budget, what the raised budget leaves after the placed
-      // cards: a retry reads the stored (rounded) budget, so the create caps exactly as it will.
-      floorCents: boughtRaisers.length === 0 ? undefined
-        : raisedBudgetCents !== undefined && answers.budgetCents !== null && budgetLeftCents !== null
-          ? raisedBudgetCents - (answers.budgetCents - budgetLeftCents)
-          : reachBuyCents(reach),
+      // Hit took the whole budget (G1): the cap is the set alone, so the whole-dollar remainder of a
+      // raised budget is never spent (`hitTakesBudget`).
+      capCents: boughtRaisers.length > 0 && hitTakesBudget(reachBuyCents(reach), budgetLeftCents)
+        ? reachBuyCents(reach)
+        : undefined,
     })
     : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
@@ -419,7 +418,8 @@ export async function buildFillPlan(
   // Only with a skeleton: with none, the plan builds to the asserted CLASSIFIER bars, and a label count
   // against those is the mismatch this guards. No skeleton means the classifier on both sides.
   const labelRoles = labelsOn && skeleton
-    ? await readLabelRoleSets([...scoped, ...staples, ...held].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
+    // A bought raiser may be in no pool (an unowned top card under own-only): its label is read too.
+    ? await readLabelRoleSets([...scoped, ...staples, ...held, ...boughtRaisers].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
         .catch((err) => { console.warn("buildFillPlan: no labels — filling by the classifier", err); return undefined; })
     : undefined;
   if (labelsOn && !labelRoles && skeleton) {
@@ -481,6 +481,16 @@ export type BracketReachOnPlan = {
 /** The budget raised by `overCents`, in whole dollars rounded up (`decks_answer_budget_check`). */
 export function raisedBudget(budgetCents: number, overCents: number): number {
   return Math.ceil((budgetCents + overCents) / 100) * 100;
+}
+
+/**
+ * Whether *Hit bracket N* takes the whole budget, so the fill buys nothing besides the set (G1): the
+ * set costs more than the budget leaves (the create raises it), or less than a whole dollar is left
+ * after it, which is the stored raised budget's rounding remainder (the retry, which reads that
+ * budget, then caps exactly as the create did).
+ */
+export function hitTakesBudget(buyCents: number | undefined, budgetLeftCents: number | null): boolean {
+  return buyCents !== undefined && budgetLeftCents !== null && budgetLeftCents - buyCents < 100;
 }
 
 function reachBuyCents(reach: BracketReach | undefined): number | undefined {

@@ -51,12 +51,12 @@ export async function loadFillGate(args: {
    *  this gate is handed: the fixed cards and every candidate. */
   bracketFacts?: GateFacts;
   /**
-   * The least the budget may cap the fill at once the placed cards are charged: the cost of the
-   * cards the player chose to buy to hit the bracket (*Hit bracket N*, G1). They are charged first
-   * (`planFill`'s raisers step tells the gate each one), so a floor over the budget leaves the rest
-   * of the 99 nothing to buy, and one under it changes nothing.
+   * The budget's cap EXACTLY, in place of the budget less the placed cards: set when *Hit bracket N*
+   * took the whole budget (G1), to the cost of the set the player chose to buy. The set is charged
+   * first (`planFill`'s raisers step tells the gate each one), so the rest of the 99 buys nothing,
+   * whatever whole-dollar remainder the stored, raised budget carries.
    */
-  floorCents?: number;
+  capCents?: number;
 }): Promise<FillGate | undefined> {
   const { answers } = args;
   if (answers.budgetCents === null && (answers.bracket === null || answers.bracket >= 4)) return undefined;
@@ -83,7 +83,7 @@ export async function loadFillGate(args: {
     const priceOf = (id: string) => prices.get(id)?.liveCents ?? null;
     const placedCost = await chargePlaced(placed, priceOf, availability);
     gates.push(budgetGate({
-      remainingCents: Math.max(answers.budgetCents - placedCost, args.floorCents ?? -Infinity),
+      remainingCents: args.capCents ?? answers.budgetCents - placedCost,
       // THE CARD'S OWN TYPE LINE, not only the candidate list's: the catalog's basics (`planFill`'s
       // `basics`) are offered to the fill without being candidates, so an id-set test read one as
       // unowned and unpriced, and the budget refused it. A basic is never a buy, whoever offers it.

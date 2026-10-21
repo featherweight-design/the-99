@@ -11,6 +11,8 @@ const m = vi.hoisted(() => ({
   bracketReach: vi.fn(),
   budgetLeft: vi.fn(),
   topCards: vi.fn(),
+  skeleton: vi.fn(),
+  readLabels: vi.fn(),
 }));
 
 vi.mock("../../db", () => ({ db: {} }));
@@ -24,7 +26,8 @@ vi.mock("../edhrec/client", () => ({ getEdhrecData: vi.fn(async () => ({ data: {
 vi.mock("../staples/fill-staples", () => ({ gatherFillStaples: vi.fn(async () => []) }));
 vi.mock("./catalog-basics", () => ({ loadCatalogBasics: vi.fn(async () => []) }));
 vi.mock("../../app/commanders/[slug]/synergy-read", () => ({ readSynergyCards: vi.fn(async () => []) }));
-vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: vi.fn(async () => ({ skeleton: null })) }));
+vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: m.skeleton }));
+vi.mock("../labels/read", () => ({ readLabelRoleSets: m.readLabels }));
 vi.mock("./availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map([["rhystic", { liveCents: 3200 }]])) }));
 vi.mock("../intake/fill-facts", () => ({
@@ -70,23 +73,25 @@ beforeEach(() => {
   m.budgetLeft.mockResolvedValue(5000);
   m.topCards.mockResolvedValue([RHYSTIC]);
   m.bracketReach.mockReturnValue(short(3200));
+  m.skeleton.mockResolvedValue({ skeleton: null });
+  m.readLabels.mockResolvedValue(new Map());
 });
 
 describe("buildFillPlan's Hit bracket N", () => {
   it("places nothing to buy without the pick: the reach rides the plan for the choice", async () => {
     const plan = await call();
     expect(planArgs().boughtRaisers).toEqual([]);
-    expect(gateArgs().floorCents).toBeUndefined();
+    expect(gateArgs().capCents).toBeUndefined();
     expect(plan.bracketBought).toBeUndefined();
     expect(plan.bracketReach).toMatchObject({ kind: "short" });
   });
 
-  it("with the pick, hands the set to planFill as full candidates and floors the gate at its cost", async () => {
+  it("with the pick, hands the set to planFill as full candidates, the gate pricing it as usual", async () => {
     const plan = await call({ bracketBuys: true });
     expect(planArgs().boughtRaisers).toEqual([expect.objectContaining({ oracleId: "rhystic", owned: false, manaCost: "{2}{U}" })]);
-    // The gate prices it like any candidate, and caps at no less than what it costs.
+    // The gate prices it like any candidate. Within budget with dollars to spare, the budget caps as usual.
     expect(gateArgs().candidates.some((c: { oracleId: string }) => c.oracleId === "rhystic")).toBe(true);
-    expect(gateArgs().floorCents).toBe(3200);
+    expect(gateArgs().capCents).toBeUndefined();
     expect(plan.bracketBought).toBe(true);
     expect(plan.raisedBudgetCents).toBeUndefined();
   });
@@ -99,8 +104,35 @@ describe("buildFillPlan's Hit bracket N", () => {
     expect(m.bracketReach.mock.calls[0][0].budgetCents).toBe(2050);
     // $50 + ($32.90 - $20.50) = $62.40, up to $63.
     expect(plan.raisedBudgetCents).toBe(6300);
-    // The floor is what the raised budget leaves after the placed card, so a retry caps the same.
-    expect(gateArgs().floorCents).toBe(6300 - (5000 - 2050));
+    // The cap is the set alone: the raised budget's rounding remainder is never spent.
+    expect(gateArgs().capCents).toBe(3290);
+  });
+
+  it("buys nothing but the set when Hit raised the budget, on the create and on its retry (G1)", async () => {
+    // Create: $20 budget, a $32.01 set. Stored budget $33, but the cap is $32.01, not $33.
+    m.budgetLeft.mockResolvedValue(2000);
+    m.bracketReach.mockReturnValue(short(3201));
+    const created = await call({ bracketBuys: true, budgetCents: 2000 });
+    expect(created.raisedBudgetCents).toBe(3300);
+    expect(gateArgs().capCents).toBe(3201);
+    // Retry: reads the stored $33. The 99¢ left after the set is the remainder, not budget to spend.
+    m.loadFillGate.mockClear();
+    m.budgetLeft.mockResolvedValue(3300);
+    const retried = await call({ bracketBuys: true, budgetCents: 3300 });
+    expect(retried.raisedBudgetCents).toBeUndefined();
+    expect(gateArgs().capCents).toBe(3201);
+  });
+
+  it("reads the label of a bought raiser no pool carries (own-only), so it is counted by label", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+    m.skeleton.mockResolvedValue({ skeleton: { roleTargets: { of: "labels", targets: {} }, composition: null, staples: [] } });
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: envViewWith({ BRACKET_REACH_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "true" }),
+      pool: "sleeveable", failClosed: true,
+      answers: { budgetCents: 5000, bracket: 3, cardOracleId: null, bracketBuys: true },
+    });
+    expect(m.readLabels).toHaveBeenCalledWith(expect.arrayContaining(["rhystic"]));
+    vi.unstubAllEnvs();
   });
 
   it("ignores the pick when the reach is no longer short", async () => {
