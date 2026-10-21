@@ -319,7 +319,7 @@ export function RackSelect<K extends string>({
                   onChange(o.key);
                 }}
                 className={[
-                  "flex w-full items-center gap-[10px] rounded-[7px] border-0 px-[12px] py-[9px] text-left",
+                  "flex w-full items-center gap-[10px] rounded-[7px] border-0 px-[12px] py-[9px] text-left pointer-coarse:min-h-[44px]",
                   "cursor-pointer",
                   selected ? "bg-[color:var(--elevated-hover)]" : "bg-transparent",
                 ].join(" ")}
@@ -334,7 +334,7 @@ export function RackSelect<K extends string>({
                   ].join(" ")}
                 />
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] text-[color:var(--fg)]">{o.label}</span>
+                  <span className="block text-[13.5px] pointer-coarse:text-[14px] text-[color:var(--fg)]">{o.label}</span>
                   {/* Three orders that all sound plausible need one line each
                       saying what they actually sort on. An option without a
                       gloss draws a single-line row, as it did before. */}

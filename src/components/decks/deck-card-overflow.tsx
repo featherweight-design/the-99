@@ -27,7 +27,7 @@ import { decksStatsCopy } from "../../lib/copy/decks-stats";
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
  *  menu the Decks frames specify. */
 const ITEM =
-  "flex h-[38px] w-full items-center border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] text-left font-sans text-[13px] transition-colors hover:bg-[color:var(--elevated)]";
+  "flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full items-center border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] text-left font-sans text-[13px] transition-colors hover:bg-[color:var(--elevated)]";
 
 interface DeckCardOverflowProps {
   deckId: string;

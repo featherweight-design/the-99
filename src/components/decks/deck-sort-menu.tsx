@@ -178,7 +178,7 @@ export function OrderMenu<T extends string>({
                 setOpen(false);
                 trigger.current?.focus();
               }}
-              className={`flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-solid px-[13px] text-left font-sans text-[13px] ${
+              className={`flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full cursor-pointer items-center border-x-0 border-b-0 border-solid px-[13px] text-left font-sans text-[13px] ${
                 i === 0 ? "border-t-0" : "border-t border-t-[color:var(--elevated)]"
               } ${
                 sort === option

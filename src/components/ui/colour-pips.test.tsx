@@ -120,4 +120,13 @@ describe("chassisCopy.colour", () => {
     expect(onToggle).toHaveBeenCalledWith("B");
   });
 
+
+  it("draws a coarse pointer's 44px slot per pip, with no gap, only when asked", () => {
+    const { rerender } = render(<ColourPips value={[]} onToggle={() => {}} form="wide" touchSlots />);
+    const slotted = screen.getAllByRole("switch");
+    expect(slotted.every((p) => p.className.includes("pointer-coarse:mx-[11px]") && p.className.includes("pointer-coarse:after:w-[max(44px,100%)]"))).toBe(true);
+    expect(screen.getByRole("group").className).toContain("pointer-coarse:gap-0");
+    rerender(<ColourPips value={[]} onToggle={() => {}} form="wide" />);
+    expect(screen.getAllByRole("switch").some((p) => p.className.includes("pointer-coarse"))).toBe(false);
+  });
 });
