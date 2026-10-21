@@ -157,7 +157,7 @@ function SearchBody(p: SearchLayerProps) {
           <button
             type="button"
             onClick={p.onClear}
-            className="min-h-9 text-[13.5px] font-medium md:min-h-0 md:text-[13px] text-[color:var(--accent)] underline underline-offset-[3px]"
+            className="min-h-9 text-[13.5px] font-medium md:min-h-0 md:text-[13px] text-[color:var(--accent-text)] underline underline-offset-[3px]"
           >
             {cardSearchCopy.recent.clear}
           </button>
@@ -290,7 +290,7 @@ function Empty() {
         <span className={`${card} left-[31px] rotate-[-18deg] border-[color:var(--border-strong)] bg-[color:var(--elevated)]`} />
         <span className={`${card} left-[65px] border-[color:var(--border-dashed)] bg-[color:var(--surface-raised)]`} />
         <span
-          className={`${card} left-[99px] flex rotate-[18deg] items-center justify-center border-[color:var(--accent)] font-display text-[26px] font-bold text-[color:var(--accent)]`}
+          className={`${card} left-[99px] flex rotate-[18deg] items-center justify-center border-[color:var(--accent)] font-display text-[26px] font-bold text-[color:var(--accent-text)]`}
           style={{ background: "color-mix(in srgb, var(--accent) 14%, var(--surface))" }}
         >
           99

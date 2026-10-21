@@ -389,7 +389,7 @@ function Avatar({
         fontSize,
         background: "var(--bg)",
         border: "1px solid var(--accent)",
-        color: "var(--accent)",
+        color: "var(--accent-text)",
       }}
     >
       {identity.initials}
@@ -627,7 +627,7 @@ export function AccountMenu({
               ? "bg-[color:var(--elevated)] border-[color:var(--accent-hover)] text-[color:var(--accent-hover)]"
               : isPopover
                 ? "bg-[color:var(--surface)] border-[color:var(--border-strong)] text-[color:var(--fg-muted)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
-                : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
+                : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent-text)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
           }`}
         >
           {identity.initials}

@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 // design/design_handoff_the99_text_inks/). The two are the same ink in five themes; in Phyrexia --accent stays dark
 // for fills, the focus ring and the fit bar, and only --accent-text reads 4.5:1 on its surfaces. A text site left on
 // --accent therefore looks right in five themes and fails AA in the sixth, which no screenshot in the default theme
-// shows. Fills, borders, rings, underline and caret colors stay on --accent and are not counted.
+// shows. The guard is absolute: any accent TEXT site anywhere under src fails. --accent stays for fills, borders,
+// rings, decoration (underline) and the caret, which are not counted.
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -37,36 +38,6 @@ function count(): Map<string, number> {
   }
   return found;
 }
-
-// A RATCHET, not a list of exceptions. These are the accent text sites on main when the token landed, grouped by the
-// sweep PR that moves them (READINESS.md in the handoff names the boundaries). A sweep deletes its group's entries; a
-// file may hold fewer sites than its entry but never more, and a new file holds none. An entry left over after another
-// change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
-// last sweep empties this object, and the guard is then absolute.
-const ALLOWANCE: Record<string, number> = {
-
-
-  // S11 (19 files)
-  "src/app/commanders/page.tsx": 2,
-  "src/app/page.tsx": 1,
-  "src/components/card-search/search-layer.tsx": 2,
-  "src/components/card-search/search-row.tsx": 2,
-  "src/components/discovery/first-run-tour.tsx": 2,
-  "src/components/home/first-run.tsx": 1,
-  "src/components/home/hero-commander.tsx": 1,
-  "src/components/home/precon-pick-receipt.tsx": 1,
-  "src/components/join/join-flow.tsx": 2,
-  "src/components/join/newcomer-column.tsx": 1,
-  "src/components/scan-lab/scan-controls.tsx": 1,
-  "src/components/sets/cost-strip.tsx": 2,
-  "src/components/sets/delta-strip.tsx": 1,
-  "src/components/sets/set-grid-view.tsx": 2,
-  "src/components/shell/account-menu.tsx": 2,
-  "src/components/shell/credit-chip.tsx": 1,
-  "src/components/shell/nav.tsx": 1,
-  "src/components/wishlist/card-wishlist.tsx": 1,
-  "src/components/wishlist/wishlist-search.tsx": 1,
-};
 
 describe("the accent as text", () => {
   const found = count();
@@ -98,10 +69,8 @@ describe("the accent as text", () => {
     expect(sites("a.css", ".x { color: var(--accent); border-color: var(--accent); }")).toBe(1);
   });
 
-  it("draws no new text in --accent (use --accent-text)", () => {
-    const over = [...found]
-      .filter(([file, n]) => n > (ALLOWANCE[file] ?? 0))
-      .map(([file, n]) => `${file}: ${n} site(s), allowed ${ALLOWANCE[file] ?? 0}`);
+  it("draws no text in --accent (use --accent-text)", () => {
+    const over = [...found].map(([file, n]) => `${file}: ${n} accent text site(s), use --accent-text`);
     expect(over).toEqual([]);
   });
 });

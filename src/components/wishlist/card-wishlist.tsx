@@ -140,7 +140,7 @@ export function CardWishlist({
     >
       <div className="flex items-center justify-between gap-[12px]">
         <div className="flex items-center gap-[6px] font-mono text-[10px] tracking-[0.1em] uppercase" style={{ color: "var(--fg-faint)" }}>
-          {want === null ? null : <span style={{ color: "var(--accent)" }}><Bookmark filled /></span>}
+          {want === null ? null : <span style={{ color: "var(--accent-text)" }}><Bookmark filled /></span>}
           {want === null ? copy.section0 : copy.section}
         </div>
         {want === null ? null : (

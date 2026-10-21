@@ -19,7 +19,7 @@ export function CreditChip({ chip, sheet, onGo }: { chip: ChipState; sheet: bool
     : out
       ? "border-[color:color-mix(in_srgb,var(--accent)_50%,transparent)] bg-transparent text-[color:var(--fg)]"
       : "border-[color:color-mix(in_srgb,var(--accent)_50%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_16%,transparent)] text-[color:var(--fg)]";
-  const ink = warn ? "text-[color:var(--warning)]" : "text-[color:var(--accent)]";
+  const ink = warn ? "text-[color:var(--warning)]" : "text-[color:var(--accent-text)]";
   // Every word on the chip is TEXT that needs 4.5:1 in every theme. --accent falls short twice: on its own 16% tint (the
   // count; 3.4 in Phyrexia and Kaldheim, 4.48 in Low Sun) and straight on the menu (the out state's `Get more credits`;
   // 4.1 in Phyrexia, 4.3 in Kaldheim). --fg clears 8 everywhere; the diamond and the `›` keep the accent. The expiring

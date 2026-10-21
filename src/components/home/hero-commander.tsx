@@ -159,7 +159,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
           </span>
           {/* Free says nothing — the clause is absent at zero, not a printed 0. */}
           {inUse > 0 && (
-            <span className="font-mono text-[10.5px] whitespace-nowrap text-[color:var(--accent)] sm:text-[11px]">
+            <span className="font-mono text-[10.5px] whitespace-nowrap text-[color:var(--accent-text)] sm:text-[11px]">
               {c.inUse(inUse)}
             </span>
           )}

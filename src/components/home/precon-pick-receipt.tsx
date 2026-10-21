@@ -29,7 +29,7 @@ export function PreconPickReceipt({ receipt }: { receipt: PickReceipt }) {
   if (dismissed) return null;
   const href = held.entryIds.length === 1 ? `/collection/history?entry=${held.entryIds[0]}` : "/collection/history";
   const history = (
-    <Link href={href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">
+    <Link href={href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent-text)] underline underline-offset-2">
       {copy.history}
       <PendingReporter href={href} />
     </Link>

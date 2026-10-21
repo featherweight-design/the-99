@@ -110,7 +110,7 @@ export function CostStrip({
           className="flex h-[44px] w-full items-center gap-[8px] px-[12px] text-left md:hidden"
         >
           <span className="flex min-w-0 flex-1 items-baseline gap-[6px] font-mono text-[12px]">
-            <span className="shrink-0" style={{ color: "var(--accent)" }}>{total}</span>
+            <span className="shrink-0" style={{ color: "var(--accent-text)" }}>{total}</span>
             <span className="min-w-0 truncate" style={{ color: "var(--fg-body)" }}>
               {(scope === "extras"
                 ? setPageCopy.cost.collapsedTailExtras
@@ -141,7 +141,7 @@ export function CostStrip({
           {scope === "extras" ? setPageCopy.cost.labelExtras : setPageCopy.cost.label}
         </span>
         <span className="flex flex-wrap items-baseline gap-[8px]">
-          <span className="font-mono text-[19px]" style={{ color: "var(--accent)" }}>
+          <span className="font-mono text-[19px]" style={{ color: "var(--accent-text)" }}>
             {total}
           </span>
           {/* The gap is in the same sentence as the figure, never a footnote. */}

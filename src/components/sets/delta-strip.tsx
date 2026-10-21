@@ -125,7 +125,7 @@ export function DeltaStrip({
         type="button"
         onClick={() => router.refresh()}
         className="ml-auto min-h-[44px] md:min-h-[32px] rounded-[6px] px-[10px] text-[12px]
-                   text-[color:var(--accent)] border border-[color:var(--accent)]
+                   text-[color:var(--accent-text)] border border-[color:var(--accent)]
                    hover:bg-[color:var(--elevated)] transition-colors"
       >
         {setPageCopy.staleAfterUpload.action}

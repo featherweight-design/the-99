@@ -31,9 +31,9 @@ const press = (state: "ready" | "busy" = "ready") =>
 /** N5: the boxes are empty, so Confirm steps back to the outline (`.b2`). */
 const PRESS_QUIET = `${PRESS.replace("mt-[14px]", "mt-[8px]")} bg-transparent font-medium text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] disabled:opacity-60`;
 const link = (cooling: boolean) =>
-  `inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[8px] font-sans text-[13.5px] font-medium no-underline disabled:cursor-default ${cooling ? "text-[color:var(--fg-locked)]" : "text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] disabled:opacity-60"}`;
+  `inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[8px] font-sans text-[13.5px] font-medium no-underline disabled:cursor-default ${cooling ? "text-[color:var(--fg-locked)]" : "text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] disabled:opacity-60"}`;
 // N11, N12: the sign-in link inside the quiet mono line.
-const QUIET_LINK = "cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--accent)] no-underline hover:text-[color:var(--accent-hover)]";
+const QUIET_LINK = "cursor-pointer border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--accent-text)] no-underline hover:text-[color:var(--accent-hover)]";
 const QUIET = "m-0 mt-[22px] text-center font-mono text-[11px] leading-[1.55] text-[color:var(--fg-faint)]";
 const ERR = "m-0 mt-[10px] text-center text-[12.5px] leading-[1.45] text-[color:var(--danger)]";
 const field = (typed: boolean, locked: boolean) =>

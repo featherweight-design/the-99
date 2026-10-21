@@ -22,7 +22,7 @@ export function Matched({ text, query }: { text: string; query: string }) {
   for (let at = lower.indexOf(q); at >= 0; at = lower.indexOf(q, at + q.length)) {
     if (at > from) parts.push(text.slice(from, at));
     parts.push(
-      <em key={at} className="not-italic text-[color:var(--accent)]">
+      <em key={at} className="not-italic text-[color:var(--accent-text)]">
         {text.slice(at, at + q.length)}
       </em>,
     );
@@ -119,7 +119,7 @@ export function SearchRow({
       <span
         aria-hidden
         data-card-search-wishlist
-        className={`flex h-7 w-7 flex-none items-center justify-center text-[color:var(--accent)] ${row.wishlist ? "" : "invisible"}`}
+        className={`flex h-7 w-7 flex-none items-center justify-center text-[color:var(--accent-text)] ${row.wishlist ? "" : "invisible"}`}
       >
         <Bookmark />
       </span>
