@@ -60,6 +60,7 @@ and `buying-credits-closeout-admin.json`. Every cell of every run reached its su
 | Checkout closed | R5 | `/credits?checkout=cancelled` | ☑ | ☑ | contact sheet `rich` |
 | Processing, added, still processing | R1, R2, R4 | `/credits?checkout=done&session_id=` | ☐ | ☐ | not photographed: needs a Session of the account's own; `probe:credits-return` and the component tests |
 | Loading, read failed | P6, P7 | `/credits` | ☐ | ☐ | not photographed; `route-loading.test.ts` and the page tests |
+| The free-views line (R4 item 1, C1) | R4 `Free-Line` placement B | `/credits` | ☑ | ☑ | #2142; photographed 2026-10-21 on the branch (contact sheet `buying-credits-closeout-page.json`, local-dev, `PAYMENTS_ENABLED=true` on the walker's own dev server): the line sits under the sub at both widths, pack above plan at 390 and side by side at 1300. `credits-head.test.tsx` pins it in the page, loading and read-failed heads. R4 items 2 to 4 were already as built. |
 | Buying paused | B1 | `/credits` | ☑ | ☑ | contact sheet `paused`; `probe:payments-reduced` |
 | Switch off, held | O4 | `/credits` | ☑ | ☑ | contact sheet `off`; `probe:payments-reduced` |
 | Switch off, nothing held | G6, O1 | `/credits` | ☑ | ☑ | contact sheet `gone` (the not-found page) |
