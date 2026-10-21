@@ -165,10 +165,13 @@ async function main() {
     check("a reachable answer is reached: 1 to 3 Game Changers, or a counted combo, and no mass land denial",
       ((gameChangers >= 1 && gameChangers <= 3) || reachedFacts.combos.length > 0) && !reachedFacts.flagged.some((f) => f.mld),
       `${gameChangers} Game Changers, ${reachedFacts.combos.length} combos`);
-  } else {
-    check("a short collection is never filled by buying toward the answer", raised.every((id) => owned.has(id)),
-      `kind ${reach?.kind}, lands in ${reach?.kind === "short" ? reach.collectionPermits.join("-") : "n/a"}`);
   }
+  // THE WIRING: the rows filed `source: "bracket"` are exactly the set the reach chose, no more and
+  // no fewer, whichever kind it came back.
+  const chosen = reach?.kind === "collection" ? reach.raisers : reach?.kind === "short" ? reach.collectionRaisers : [];
+  check("the fill places exactly the cards the reach chose",
+    raised.length === chosen.length && chosen.every((id) => raised.includes(id)),
+    `kind ${reach?.kind}, chose ${chosen.length}, placed ${raised.length}${reach?.kind === "short" ? `, lands in ${reach.collectionPermits.join("-")}` : ""}`);
   check("the reach fill still fills the whole body", reached.filled === plain.filled, `${reached.filled} against ${plain.filled}`);
 }
 

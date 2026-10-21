@@ -277,8 +277,9 @@ export async function buildFillPlan(
   const gateCandidates = [...scoped, ...staples.filter((c) => !scoped.includes(c))];
   // THE BRACKET ANSWER AS A TARGET (`bracket-reach.ts`), not only a ceiling: the owned cards that
   // reach it are placed first. NEVER a card to buy (Hugh, 2026-10-20: the app does not make that
-  // choice for the player). When the collection cannot reach the answer the deck lands in the
-  // highest bracket it can, as it always has, and `bracketReach` comes back `short` for the choice.
+  // choice for the player). When the collection cannot reach the answer, the owned cards that reach
+  // the highest bracket below it are placed instead (a bracket-4 ask over one free Game Changer lands
+  // at 3), and `bracketReach` comes back `short` for the choice.
   // The facts are read once, for the reach and the gate, so the two rule over the same cards.
   let bracketFacts: Awaited<ReturnType<typeof loadBracketGateFacts>> | undefined;
   let reach: BracketReach | undefined;

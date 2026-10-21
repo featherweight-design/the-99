@@ -3,7 +3,7 @@ import { permitsOf, type GateFacts } from "./fill-gate";
 
 /**
  * CAN THIS DECK REACH THE BRACKET IT WAS ASKED FOR? (Hugh's ruling, 2026-10-20.) Pure: every fact
- * is injected, and `bracket-reach-load.ts` reads them.
+ * is injected; `buildFillPlan` reads them (`loadBracketGateFacts`, `loadAvailability`).
  *
  * Help me choose's bracket answer was only ever a CEILING (`bracketGate`, `rank.withinBracket`):
  * nothing placed a card to REACH it, so a bracket-3 ask over a collection with a free Game Changer
