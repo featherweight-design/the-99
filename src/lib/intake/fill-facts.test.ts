@@ -59,6 +59,19 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     expect(gate!.admits(card({ oracleId: "penny" }))).toBe(false);
   });
 
+  it("with no cap, a within-budget set leaving 50¢ still admits a 25¢ card", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockResolvedValue(new Map([
+      ["rhystic", { liveCents: 4950 }], ["quarter", { liveCents: 25 }],
+    ]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
+    const gate = await loadFillGate({
+      userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "quarter" })],
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null }, env: ENV_VIEW,
+    });
+    gate!.place(card({ oracleId: "rhystic" }));
+    expect(gate!.admits(card({ oracleId: "quarter" }))).toBe(true);
+  });
+
   it("with no cap, the budget less the set is spent as usual", async () => {
     await priced();
     const gate = await loadFillGate({

@@ -381,6 +381,11 @@ export async function buildFillPlan(
     }
     raisers = ids.flatMap((id) => byId.get(id) ?? []);
   }
+  // THE BUDGET WAS RAISED FOR HIT (G1): raised by this create, or stored raised by the create a retry
+  // replays (`decks.answer_budget_raised`). Recorded, never inferred from what is left: a within-budget
+  // Hit leaving under a dollar keeps that remainder to spend.
+  const budgetRaised = boughtRaisers.length > 0
+    && (raisedBudgetCents !== undefined || answers?.budgetRaised === true);
   const gate = answers
     ? await loadFillGate({
       userId, commanderIds, answers,
@@ -388,11 +393,9 @@ export async function buildFillPlan(
       candidates: [...gateCandidates, ...boughtRaisers.filter((c) => !gateCandidates.includes(c))],
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
       bracketFacts,
-      // Hit took the whole budget (G1): the cap is the set alone, so the whole-dollar remainder of a
-      // raised budget is never spent (`hitTakesBudget`).
-      capCents: boughtRaisers.length > 0 && hitTakesBudget(reachBuyCents(reach), budgetLeftCents)
-        ? reachBuyCents(reach)
-        : undefined,
+      // Raised for Hit: the cap is the set alone, so the raised budget's whole-dollar remainder is
+      // never spent, on the create or its retry.
+      capCents: budgetRaised ? reachBuyCents(reach) : undefined,
     })
     : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
@@ -461,6 +464,7 @@ export async function buildFillPlan(
     ...plan, bracketReach: reach, bracketAfter: after, budgetLeftCents,
     ...(raisedBudgetCents !== undefined ? { raisedBudgetCents } : {}),
     ...(boughtRaisers.length > 0 ? { bracketBought: true } : {}),
+    ...(budgetRaised ? { budgetRaised: true } : {}),
   };
 }
 
@@ -476,21 +480,13 @@ export type BracketReachOnPlan = {
   raisedBudgetCents?: number;
   /** True when the plan placed the reach's buying set (the player's *Hit*, honored). */
   bracketBought?: boolean;
+  /** True when that set took the whole budget, raised for it (`decks.answer_budget_raised`). */
+  budgetRaised?: boolean;
 };
 
 /** The budget raised by `overCents`, in whole dollars rounded up (`decks_answer_budget_check`). */
 export function raisedBudget(budgetCents: number, overCents: number): number {
   return Math.ceil((budgetCents + overCents) / 100) * 100;
-}
-
-/**
- * Whether *Hit bracket N* takes the whole budget, so the fill buys nothing besides the set (G1): the
- * set costs more than the budget leaves (the create raises it), or less than a whole dollar is left
- * after it, which is the stored raised budget's rounding remainder (the retry, which reads that
- * budget, then caps exactly as the create did).
- */
-export function hitTakesBudget(buyCents: number | undefined, budgetLeftCents: number | null): boolean {
-  return buyCents !== undefined && budgetLeftCents !== null && budgetLeftCents - buyCents < 100;
 }
 
 function reachBuyCents(reach: BracketReach | undefined): number | undefined {

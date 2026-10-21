@@ -1,5 +1,5 @@
 {
-  "id": "a69d28ae-0ab6-4b17-9309-8a85194120ea",
+  "id": "f0609e87-a651-4d3e-a3f2-02b742e437cc",
   "prevId": "43adc89d-e5e2-442d-8f8d-d1975392a54a",
   "version": "7",
   "dialect": "postgresql",
@@ -5390,6 +5390,13 @@
         },
         "answer_bracket_buys": {
           "name": "answer_bracket_buys",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "answer_budget_raised": {
+          "name": "answer_budget_raised",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

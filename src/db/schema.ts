@@ -676,6 +676,9 @@ export const decks = pgTable("decks", {
    *  validated ask, so the retry can honor it, and the retry rewrites it from its own reach. False for
    *  every other deck. */
   answerBracketBuys: boolean("answer_bracket_buys").notNull().default(false),
+  /** The budget `answer_budget_cents` holds was RAISED to pay for *Hit bracket N*'s set (G1), so the
+   *  fill buys nothing besides it, at the create and again by a retry. False for every other deck. */
+  answerBudgetRaised: boolean("answer_budget_raised").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics

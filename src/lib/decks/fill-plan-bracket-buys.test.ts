@@ -56,10 +56,13 @@ const short = (buyCents: number) => ({
   target: 3, kind: "short", collectionPermits: [1, 2], collectionRaisers: [],
   buy: { raisers: ["rhystic"], buyCents, overBudget: false },
 });
-const call = (over: { bracketBuys?: boolean; budgetCents?: number | null; own?: boolean } = {}) =>
+const call = (over: { bracketBuys?: boolean; budgetCents?: number | null; own?: boolean; budgetRaised?: boolean } = {}) =>
   buildFillPlan("u", commanders, new Set(), {
     selected: [], env: ON,
-    answers: { budgetCents: over.budgetCents ?? 5000, bracket: 3, cardOracleId: null, bracketBuys: over.bracketBuys ?? false },
+    answers: {
+      budgetCents: over.budgetCents ?? 5000, bracket: 3, cardOracleId: null, bracketBuys: over.bracketBuys ?? false,
+      ...(over.budgetRaised ? { budgetRaised: true } : {}),
+    },
     ...(over.own ? { pool: "sleeveable" as const, failClosed: true } : {}),
   });
 const planArgs = () => m.planFill.mock.calls[0][1];
@@ -114,13 +117,26 @@ describe("buildFillPlan's Hit bracket N", () => {
     m.bracketReach.mockReturnValue(short(3201));
     const created = await call({ bracketBuys: true, budgetCents: 2000 });
     expect(created.raisedBudgetCents).toBe(3300);
+    expect(created.budgetRaised).toBe(true);
     expect(gateArgs().capCents).toBe(3201);
     // Retry: reads the stored $33. The 99¢ left after the set is the remainder, not budget to spend.
     m.loadFillGate.mockClear();
     m.budgetLeft.mockResolvedValue(3300);
-    const retried = await call({ bracketBuys: true, budgetCents: 3300 });
+    // The retry knows it was raised from the stored column (`answer_budget_raised`), not the remainder.
+    const retried = await call({ bracketBuys: true, budgetCents: 3300, budgetRaised: true });
     expect(retried.raisedBudgetCents).toBeUndefined();
+    expect(retried.budgetRaised).toBe(true);
     expect(gateArgs().capCents).toBe(3201);
+  });
+
+  it("a within-budget Hit leaving under a dollar is not capped: the 50¢ left can still buy (review round 2)", async () => {
+    // $50 budget, a $49.50 set: never raised, so no exact-cost cap and the remainder stays spendable.
+    m.budgetLeft.mockResolvedValue(5000);
+    m.bracketReach.mockReturnValue(short(4950));
+    const plan = await call({ bracketBuys: true, budgetCents: 5000 });
+    expect(plan.raisedBudgetCents).toBeUndefined();
+    expect(plan.budgetRaised).toBeUndefined();
+    expect(gateArgs().capCents).toBeUndefined();
   });
 
   it("reads the label of a bought raiser no pool carries (own-only), so it is counted by label", async () => {

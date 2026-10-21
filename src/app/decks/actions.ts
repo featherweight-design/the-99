@@ -269,6 +269,7 @@ export async function createDeck(
       ...answerColumns,
       answerBracketBuys: asked.bracketBuys && plan.bracketBought === true,
       ...(asked.bracketBuys && plan.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
+      answerBudgetRaised: asked.bracketBuys && plan.budgetRaised === true,
     };
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
@@ -557,7 +558,10 @@ export async function fillDeck(deckId: string): Promise<void> {
   const answers: DeckAnswers | null = budgetCents === null && bracket === null && buildAround === null
     ? null
     // *Hit bracket N*, as the create stored it, so the retry places the same set to buy.
-    : { budgetCents, bracket, cardOracleId: buildAround, bracketBuys: deck.answerBracketBuys === true };
+    : {
+      budgetCents, bracket, cardOracleId: buildAround, bracketBuys: deck.answerBracketBuys === true,
+      budgetRaised: deck.answerBudgetRaised === true,
+    };
   const plan = await buildFillPlan(
     userId,
     partner ? [commander, partner] : [commander],
@@ -633,6 +637,7 @@ export async function fillDeck(deckId: string): Promise<void> {
       // false when this retry's reach no longer had a set to buy, as a create would have stored.
       ...(deck.answerBracketBuys ? { answerBracketBuys: plan.bracketBought === true } : {}),
       ...(deck.answerBracketBuys && plan.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
+      ...(deck.answerBracketBuys ? { answerBudgetRaised: plan.budgetRaised === true } : {}),
     }).where(eq(decks.id, deckId));
   });
   revalidateClaims(deckId, userId);

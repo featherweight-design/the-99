@@ -88,6 +88,7 @@ export type AnswerColumns = {
   answerCardOracleId?: string | null;
   answerOwnedOnly?: boolean;
   answerBracketBuys?: boolean;
+  answerBudgetRaised?: boolean;
 };
 
 /**

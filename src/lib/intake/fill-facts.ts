@@ -22,6 +22,9 @@ export type DeckAnswers = {
   /** *Hit bracket N* (bracket reach PR 3b, `decks.answer_bracket_buys`): the fill places the cards
    *  the reach would buy to hit the bracket. Absent or false, it places owned cards alone. */
   bracketBuys?: boolean;
+  /** The stored budget was raised to pay for that set (`decks.answer_budget_raised`, G1): a retry
+   *  caps the fill at the set alone, as the create did. */
+  budgetRaised?: boolean;
 };
 
 /**

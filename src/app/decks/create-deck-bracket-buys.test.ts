@@ -89,7 +89,7 @@ beforeEach(() => {
   m.updates.length = 0;
   m.deck = null;
   m.failTransaction = false;
-  m.plan.mockReset().mockResolvedValue(shortPlan({ bracketBought: true, raisedBudgetCents: 5800 }));
+  m.plan.mockReset().mockResolvedValue(shortPlan({ bracketBought: true, raisedBudgetCents: 5800, budgetRaised: true }));
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -97,13 +97,19 @@ describe("createDeck: Hit bracket N", () => {
   it("asks the plan to buy, and stores the pick and the raised budget when the plan placed the set", async () => {
     await run(asked);
     expect(planAnswers()).toMatchObject({ bracket: 3, bracketBuys: true, budgetCents: 5000 });
-    expect(deckInsert()).toMatchObject({ filled: true, answerBracketBuys: true, answerBudgetCents: 5800 });
+    expect(deckInsert()).toMatchObject({ filled: true, answerBracketBuys: true, answerBudgetCents: 5800, answerBudgetRaised: true });
+  });
+
+  it("stores the budget as not raised for a Hit within budget", async () => {
+    m.plan.mockResolvedValue(shortPlan({ bracketBought: true }));
+    await run(asked);
+    expect(deckInsert()).toMatchObject({ answerBracketBuys: true, answerBudgetCents: 5000, answerBudgetRaised: false });
   });
 
   it("stores false, and the budget asked, when the plan's own reach had nothing to buy", async () => {
     m.plan.mockResolvedValue({ rows: [], bracketReach: { target: 3, kind: "collection", raisers: [] } });
     await run(asked);
-    expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000 });
+    expect(deckInsert()).toMatchObject({ answerBracketBuys: false, answerBudgetCents: 5000, answerBudgetRaised: false });
   });
 
   it("drops the pick with the reader's switch off: nothing asked of the plan, false stored", async () => {
@@ -140,8 +146,17 @@ describe("fillDeck: the retry reads the pick back", () => {
   it("fills to the stored pick and stores the budget it raised", async () => {
     m.deck = stored;
     await fillDeck("deck-1");
-    expect(planAnswers()).toMatchObject({ bracket: 3, bracketBuys: true, budgetCents: 5000 });
-    expect(m.updates.find((u) => u.table === "decks")!.values).toMatchObject({ filled: true, answerBracketBuys: true, answerBudgetCents: 5800 });
+    expect(planAnswers()).toMatchObject({ bracket: 3, bracketBuys: true, budgetCents: 5000, budgetRaised: false });
+    expect(m.updates.find((u) => u.table === "decks")!.values)
+      .toMatchObject({ filled: true, answerBracketBuys: true, answerBudgetCents: 5800, answerBudgetRaised: true });
+  });
+
+  it("hands a stored raise to the plan, and rewrites it from the retry's own reach", async () => {
+    m.deck = { ...stored, answerBudgetCents: 5800, answerBudgetRaised: true };
+    m.plan.mockResolvedValue(shortPlan({ bracketBought: true }));
+    await fillDeck("deck-1");
+    expect(planAnswers()).toMatchObject({ budgetCents: 5800, bracketBuys: true, budgetRaised: true });
+    expect(m.updates.find((u) => u.table === "decks")!.values).toMatchObject({ answerBracketBuys: true, answerBudgetRaised: false });
   });
 
   it("fills with no buy for a deck that never picked Hit, writing neither column", async () => {
