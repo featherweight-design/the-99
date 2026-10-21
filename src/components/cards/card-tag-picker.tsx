@@ -23,6 +23,8 @@ type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 const GROUP_MAX = 5;
 const REMOTE_MIN_LETTERS = 2;
 const DEBOUNCE_MS = 150;
+/** The room the open list needs under the field: its phone cap (`max-h-[220px]` on the list) and its 4px gap. */
+const LIST_ROOM_PX = 224;
 
 export type CardTagPickerOptions = {
   value: string;
@@ -100,10 +102,25 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     return () => clearTimeout(timer);
   }, [open, query, deckCards, search, scoped]);
 
-  // Opening the picker brings the field to the top of the visible area (K9): a sticky bar and a phone
-  // keyboard would otherwise cover the list under it.
+  // Opening the picker brings the field to the top of the visible area (K9), but only when the list would not fit
+  // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
+  // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
+  // of view). The visible bottom is the visual viewport's, since `getBoundingClientRect` is in layout-viewport
+  // coordinates and a keyboard pans the visible area inside it; and a keyboard still rising when the list opens (a
+  // press from outside the box) resizes the visual viewport, so the room is measured again then.
   useEffect(() => {
-    if (open) reveal(field.current, "start");
+    const el = field.current;
+    if (!open || !el) return;
+    const vv = window.visualViewport;
+    let stop: (() => void) | null = null;
+    const check = () => {
+      if (stop) return;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      if (el.getBoundingClientRect().bottom + LIST_ROOM_PX > visibleBottom) stop = reveal(el, "start");
+    };
+    check();
+    vv?.addEventListener("resize", check);
+    return () => vv?.removeEventListener("resize", check);
   }, [open, field]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;

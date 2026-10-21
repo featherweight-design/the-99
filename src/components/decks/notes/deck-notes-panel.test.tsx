@@ -174,13 +174,30 @@ describe("adding", () => {
     expect(stub.addNote).toHaveBeenCalledWith(DECK, "see [[Mana Crypt]]");
   });
 
-  it("inserts [[]] with the [[ ]] button and opens the picker", async () => {
+  /** The field's box on screen, in a window `innerHeight` tall (jsdom lays nothing out). */
+  const at = (field: HTMLElement, top: number) => {
+    field.getBoundingClientRect = () => ({ top, bottom: top + 46, left: 0, right: 300, width: 300, height: 46, x: 0, y: top, toJSON: () => ({}) });
+  };
+
+  it("inserts [[]] with the [[ ]] button and opens the picker, leaving a field with room under it where it is", async () => {
+    vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
     const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, 200);
     click(screen.getByRole("button", { name: "Insert a card tag" }));
     expect(field.value).toBe("[[]]");
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-    // The open picker brings its field to the top.
+    // The list fits under the field in the window, so the page does not move (Hugh, 2026-10-20).
+    expect(reveal).not.toHaveBeenCalled();
+  });
+
+  it("brings the field to the top when the open list would not fit under it", async () => {
+    vi.mocked(reveal).mockClear();
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, window.innerHeight - 100);
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     expect(reveal).toHaveBeenCalledWith(field, "start");
   });
 
