@@ -544,6 +544,15 @@ describe("a waiting Find a deck landing (R3 addendum, item 12)", () => {
     expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
   });
 
+  it("opens full over a carried minimized sheet, and says it is no longer minimized", () => {
+    const onMinimizedChange = vi.fn();
+    const { rerender } = render(page([]));
+    rerender(page([{ onFindDeck: () => {}, startMinimized: true, enterFrom: "next", onMinimizedChange }]));
+    expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "full");
+    expect(onMinimizedChange).toHaveBeenCalledWith(false);
+    expect(onMinimizedChange).not.toHaveBeenCalledWith(true);
+  });
+
   it("leaves a card with no door at the teaser and keeps waiting", () => {
     const { rerender } = render(page([]));
     rerender(page([{}]));

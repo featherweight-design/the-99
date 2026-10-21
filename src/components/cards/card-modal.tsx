@@ -981,11 +981,11 @@ export function CardModal({
   // A Find a deck landing that waits (R3 addendum, item 12) has the phone open the next card with a Fits door at the full
   // sheet, where the door draws; read once at construction and spent in the effect below (render stays pure).
   const targets = useTargets();
-  const [landsFull] = useState(() => !startMinimized && narrow && onFindDeck !== null && targets?.wantsFull("find-a-deck") === true);
+  const [landsFull] = useState(() => narrow && onFindDeck !== null && targets?.wantsFull("find-a-deck") === true);
   useEffect(() => {
     if (landsFull) targets?.takeFull("find-a-deck");
   }, [landsFull, targets]);
-  const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : landsFull ? "full" : "teaser");
+  const [snap, setSnapState] = useState<SheetSnap>(landsFull ? "full" : startMinimized ? "min" : "teaser");
   // A card mounts at the snap it was handed, and says so: a remount that is not a page (a step back
   // from a partner, say) starts at the teaser, and the provider must not go on carrying a min the
   // reader can no longer see into the next page.
@@ -993,8 +993,9 @@ export function CardModal({
   useEffect(() => {
     if (reportedMount.current) return;
     reportedMount.current = true;
-    onMinimizedChange?.(startMinimized);
-  }, [onMinimizedChange, startMinimized]);
+    // A pending landing opens the card full even when the reader carried a minimized sheet here: report what is drawn.
+    onMinimizedChange?.(startMinimized && !landsFull);
+  }, [onMinimizedChange, startMinimized, landsFull]);
   // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
   // rule's beat and ease-in-out), and teaser to full keeps the quick snap (`--motion-quick`).
   const [gentle, setGentle] = useState(false);
