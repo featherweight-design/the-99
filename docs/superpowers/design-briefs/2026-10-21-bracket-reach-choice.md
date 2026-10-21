@@ -20,8 +20,8 @@ reached 3 (a free Opposition Agent was in it). Some collections can't.
    - **hit the target**, adding cards they don't own (to buy).
 3. **Never pick for them.** Neither option is pre-selected, and the app never quietly buys toward a bracket.
 
-When the collection CAN reach the target, there is no question to ask: PR 1 (shipping now behind `BRACKET_REACH_ENABLED`)
-places the owned card that gets there. That case may want a quiet "why this card is here" mark (open question 4) but no choice.
+When the collection CAN reach the target, there is no question to ask: PR 1 (behind a new `BRACKET_REACH_ENABLED` switch)
+places the owned card that gets there (PR 1 is in review alongside this brief). That case may want a quiet "why this card is here" mark (open question 4) but no choice.
 
 ## What a bracket needs (so the copy can be specific)
 
@@ -29,7 +29,7 @@ The analysis's own rules. Help me choose uses the same ones.
 
 | Target | The collection reaches it when it holds, free (not every copy in a committed deck) |
 |---|---|
-| 1, 2 | nothing: every deck with no Game Changer, combo or mass land denial is a 1-2 |
+| 1, 2 | nothing: a deck with no Game Changer, combo, mass land denial or extra-turn card is a 1-2; one extra-turn card makes it a 2 |
 | 3 | one Game Changer, or both halves of a two-card combo (not a turn loop) |
 | 4 | four Game Changers, or a two-card combo plus searchers that find both halves |
 | 5 | four Game Changers |
@@ -41,8 +41,8 @@ The app never adds mass land denial or an extra-turn loop to reach a bracket, ev
 | # | Screen | When | What the server knows (no model call) |
 |---|---|---|---|
 | A | **The intake form**, under the Bracket field (`intake-form.tsx`, `BracketRadios`) | A bracket of 3 or more is picked. This is the only screen before the credit: pressing Find with "Anything else?" filled spends one. | Across the colors picked (or all five): `reaches` or `short`. If short: what a collection-only deck lands in (`1-2` or `3`), and the cheapest set to buy (card names, the dollar total, whether it is over the budget). No commander yet. |
-| B | **A result row** (`choose-row.tsx`, the trial figures beside "you own 41 of 99") | Every row, when a bracket of 3+ was asked. | Per commander, the same answer, and the deck it would build: `reaches` / `short, lands 1-2` / `short, can hit 3 for $X (cards)`. |
-| C | **The hand-off** (`create-pre-filled.tsx` → `hand-off-answers.tsx`, the Bracket row: "The fill keeps every card it chooses inside bracket 3's limits.") | The commander is picked and Build is next. | The same as B for the chosen commander. **This is where the choice is made**, as the last answer before Build. |
+| B | **A result row** (`choose-row.tsx`, the trial figures beside "you own 41 of its 99") | Every row, when a bracket of 3+ was asked. | Per commander, the same answer, and the deck it would build: `reaches` / `short, lands 1-2` / `short, can hit 3 for $X (cards)`. |
+| C | **The hand-off** (`create-pre-filled.tsx` → `hand-off-answers.tsx`, the Bracket row: "The fill keeps every card it chooses inside bracket 3's limits.") | The commander is picked and **Create deck →** is next. | The same as B for the chosen commander. **This is where the choice is made**, as the last answer before Create deck. |
 
 A is a heads-up (the commander may change everything); C is the decision. Design may decide B carries only a mark.
 
@@ -50,7 +50,7 @@ A is a heads-up (the commander may change everything); C is the decision. Design
 
 At **C** (the choice), at 390 and desktop:
 1. **Reaches.** No choice. The Bracket row's line changes from the ceiling sentence to one that says the deck is built to land in bracket N (and, if Design wants it, names the card that gets it there).
-2. **Short, buying reaches it, within budget.** Two options, neither selected, Build disabled until one is picked:
+2. **Short, buying reaches it, within budget.** Two options, neither selected, **Create deck →** disabled until one is picked:
    - *From my collection*: "lands in bracket 1-2".
    - *Hit bracket 3*: names the card(s) to buy and the cost (e.g. "adds Rhystic Study, about $32").
 3. **Short, buying reaches it but over the budget.** The buy option is shown as over budget (with what it costs against the budget) and cannot be picked as-is. Design decides whether the row offers raising the budget.
@@ -73,7 +73,7 @@ stored with the deck so a retried build places the same cards.
 ## Open for Design to call
 
 1. The form (A): a line under the radios, a caption change, or nothing until the hand-off? It is the only pre-credit moment.
-2. The choice (C): two radio rows inside the Bracket row, a sheet, or an inline pair of buttons. Build stays where it is.
+2. The choice (C): two radio rows inside the Bracket row, a sheet, or an inline pair of buttons. **Create deck →** stays where it is.
 3. The row (B): a third figure, a mark on the existing ownership figure, or nothing.
 4. The reached case: should the placed card carry a mark on the deck page ("placed to reach bracket 3"), or is the Bracket row enough?
 5. Bracket names: say "bracket 3" or "Upgraded" (`BRACKET_NAMES` in `src/lib/copy/deck-analysis.ts`) or both, as the radios' caption does.
@@ -104,4 +104,4 @@ locked vocabulary: "Game Changer", "combo", "bracket". No "upgrade your collecti
 
 ## Not in this brief
 
-The backend (PR 1, merged or in review). The bracket analysis itself. Any change to the bracket rules or the ceiling.
+The backend (PR 1, in review alongside this brief). The bracket analysis itself. Any change to the bracket rules or the ceiling.
