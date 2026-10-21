@@ -94,7 +94,10 @@ async function signIn(page, email) {
 
 /** Every row the run's user holds, then the user. Only ever this run's own account. */
 async function removeUser(userId) {
-  const tables = await sql`select table_name from information_schema.columns where table_schema = 'public' and column_name = 'user_id'`;
+  const found = await sql`select table_name from information_schema.columns where table_schema = 'public' and column_name = 'user_id'`;
+  // `user_data_stamps` goes last: each delete commits on its own, and a delete from a stamped table fires
+  // `user_data_touch` at commit, which would put the stamp row back if it had already gone.
+  const tables = [...found.filter((r) => r.table_name !== "user_data_stamps"), ...found.filter((r) => r.table_name === "user_data_stamps")];
   const left = [];
   for (const { table_name: t } of tables) {
     const [{ n }] = await sql.query(`select count(*)::int as n from "${t}" where user_id = $1`, [userId]);
