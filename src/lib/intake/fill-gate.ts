@@ -97,11 +97,13 @@ export function permitsOf(commanderIds: readonly string[], ids: Iterable<string>
   const all = [...new Set(ids)];
   const counts = { gameChangers: 0, massLandDenial: 0, extraTurns: 0 };
   const combos = new Map<string, Combo>();
-  const seen = new Set<string>();
+  // Each card's edges against the WHOLE list, not the cards before it: an edge to a piece that must
+  // be the commander runs one way only, so an order-dependent pass missed a combo of two commanders
+  // listed with the target first. Deduped by variant.
+  const everyId = new Set(all);
   for (const id of all) {
     const f = facts.flagsOf(id);
-    for (const c of completesWith(facts, inCommandZone, id, seen)) combos.set(c.variantId, c);
-    seen.add(id);
+    for (const c of completesWith(facts, inCommandZone, id, everyId)) combos.set(c.variantId, c);
     if (f.gameChanger) counts.gameChangers += 1;
     if (f.massLandDenial) counts.massLandDenial += 1;
     if (f.extraTurn) counts.extraTurns += 1;

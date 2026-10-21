@@ -423,6 +423,14 @@ function splitByWeight(colors: string[], weights: Map<string, number>, slots: nu
 /** Owned first, then inclusion descending, absent last, then name. Owned wins
     outright: a bought card is only ever here because the collection ran out,
     which is the promise Shopping makes about every row it prints. */
+/** The cards a bracket reach may place (`bracketReach`), in the fill's own order: owned nonlands.
+ *  A land is never a raiser, since the land sweep's caps could drop it and the deck would silently
+ *  miss the answer; the FRONT face decides, as the role classifier reads it, so a spell with a land
+ *  back stays a candidate. */
+export function reachCandidates(candidates: readonly FillCandidate[]): FillCandidate[] {
+  return candidates.filter((c) => c.owned && !isLandFace(c.typeLine)).sort(byPreference);
+}
+
 export function byPreference(a: FillCandidate, b: FillCandidate): number {
   if (a.owned !== b.owned) return a.owned ? -1 : 1;
   if (a.inclusionPct !== b.inclusionPct) {

@@ -14,7 +14,7 @@ import { readSynergyCards } from "../../app/commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
-import { byPreference, dedupeSelectionFromPool, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
+import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
 import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
 import { bracketReach, type BracketReach } from "../intake/bracket-reach";
@@ -288,11 +288,7 @@ export async function buildFillPlan(
     const fixedIds = [...new Set([...commanderIds, ...excludeOracleIds])];
     const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...gateCandidates.map((c) => c.oracleId)])]);
     bracketFacts = facts;
-    // Owned nonlands, in the fill's own order. A land is never a raiser: the land sweep's caps
-    // could drop it, and the deck would silently miss the answer.
-    const offered = gateCandidates
-      .filter((c) => c.owned && !/\bLand\b/.test(c.typeLine))
-      .sort(byPreference);
+    const offered = reachCandidates(gateCandidates);
     // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. Read
     // only for the cards that could raise a bracket, which are few.
     const raising = offered.filter((c) => facts.flagsOf(c.oracleId).gameChanger

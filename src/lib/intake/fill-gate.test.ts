@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { FillCandidate } from "../decks/fill";
-import { allGates, bracketGate, budgetGate, type ComboEdge, type GateFacts } from "./fill-gate";
+import { allGates, bracketGate, budgetGate, permitsOf, type ComboEdge, type GateFacts } from "./fill-gate";
 
 const card = (oracleId: string, owned = false): FillCandidate => ({
   oracleId, name: oracleId, typeLine: "Artifact", oracleText: null, keywords: [], manaCost: "{2}",
@@ -129,5 +129,15 @@ describe("allGates", () => {
     g.place(card("yes"));
     expect(told).toEqual(["a:yes", "b:yes"]);
     expect(allGates([null])).toBeUndefined();
+  });
+});
+
+describe("permitsOf", () => {
+  it("finds a one-way edge to a commander whichever order the list is in", () => {
+    // `loadComboEdges` stores no edge back to a piece that must be the commander. Both pieces sit
+    // in the command zone, so the combo assembles every game: a 4.
+    const f = facts({ combos: { a: [edge("v", "b", { partnerMustBeCommander: true })] } });
+    expect(permitsOf(["a", "b"], ["a", "b"], f)).toEqual([4]);
+    expect(permitsOf(["a", "b"], ["b", "a"], f)).toEqual([4]);
   });
 });

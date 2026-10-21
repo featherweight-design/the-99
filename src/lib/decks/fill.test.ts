@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill,
+  capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill, reachCandidates,
   type FillCandidate, type FillPlan,
 } from "./fill";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
@@ -1270,5 +1270,16 @@ describe("the raisers step (bracket reach)", () => {
     expect(planFill([...poolOf(200), ...lands], { ...FLAT, raisers: [unowned] }).rows.some((r) => r.source === "bracket")).toBe(false);
     expect(planFill([...poolOf(200), ...lands], { ...FLAT, raisers: [tomb] }).rows.some((r) => r.source === "bracket")).toBe(false);
     expect(planFill([...poolOf(200), ...lands], { ...FLAT, slots: 0, raisers: [agent] }).rows).toEqual([]);
+  });
+});
+
+describe("reachCandidates", () => {
+  it("offers owned nonlands in the fill's order, keeping a spell with a land back", () => {
+    const mdfc = c({ oracleId: "mdfc", name: "mdfc", typeLine: "Instant // Land", inclusionPct: 30 });
+    const land = c({ oracleId: "land", name: "land", typeLine: "Land", inclusionPct: 90 });
+    const back = c({ oracleId: "back", name: "back", typeLine: "Land // Creature — Elf", inclusionPct: 80 });
+    const top = c({ oracleId: "top", name: "top", inclusionPct: 70 });
+    const unowned = { ...top, oracleId: "unowned", owned: false, ownedQuantity: 0 };
+    expect(reachCandidates([mdfc, land, back, unowned, top]).map((x) => x.oracleId)).toEqual(["top", "mdfc"]);
   });
 });

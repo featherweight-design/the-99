@@ -56,7 +56,9 @@ async function main() {
   const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: process.env });
   const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: process.env });
   const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: process.env });
-  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null }, env: process.env });
+  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null },
+    // The ceiling alone: with the reach on, a bracket-4 answer places raisers, which section 5 checks.
+    env: { ...process.env, BRACKET_REACH_ENABLED: "false" } });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
