@@ -104,27 +104,30 @@ describe("L7: a cancelled plan within three days", () => {
 describe("welcome credits on the line (D2, Line-and-Chip W1 to W6)", () => {
   const EXP = new Date("2026-11-20T12:00:00Z");
   const near = new Date(EXP.getTime() - 2 * 86_400_000);
+  // Outside the warning window, so W1 to W3 read the same on any day the suite runs (the real clock reaches EXP's
+  // three days in 2026).
+  const far = new Date(EXP.getTime() - 10 * 86_400_000);
   const day = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const w = (over: Partial<LineAllowance> = {}) =>
     base({ used: 0, limit: 1, nextAt: null, welcome: 15, welcomeExpiresAt: EXP, paidUsedToday: 0, paidLimit: 20, ...over });
 
   it("W1: a free credit left, welcome held: its own segment, never paid", () => {
-    expect(creditStanding(w())).toBe("1 of 1 free · 15 welcome");
-    expect(creditFirst(w())).toBe("Uses a credit. 1 of 1 free · 15 welcome.");
+    expect(creditStanding(w(), far)).toBe("1 of 1 free · 15 welcome");
+    expect(creditFirst(w(), far)).toBe("Uses a credit. 1 of 1 free · 15 welcome.");
   });
 
   it("W2: free spent, the run takes a welcome credit: L3's form, and first says so", () => {
     const a = w({ used: 1, reopensAt: at(2, 1) });
     expect(creditLineKind(a)).toBe("paidNext");
-    expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 15 welcome`);
-    expect(creditFirst(a)).toBe(`Uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
-    expect(creditAgain(a)).toBe(`Replaces these suggestions and uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
+    expect(creditStanding(a, far)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 15 welcome`);
+    expect(creditFirst(a, far)).toBe(`Uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
+    expect(creditAgain(a, far)).toBe(`Replaces these suggestions and uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
   });
 
   it("W3: welcome and paid held, in spend order; paid is held less welcome, a gift still counted in it", () => {
     const a = w({ used: 1, reopensAt: at(2, 1), welcome: 9, pack: 38, gift: 2 });
-    expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 9 welcome · 40 paid`);
-    expect(creditCount({ ...a, used: 0, reopensAt: null })).toBe("1 of 1 free · 9 welcome · 40 paid");
+    expect(creditStanding(a, far)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 9 welcome · 40 paid`);
+    expect(creditCount({ ...a, used: 0, reopensAt: null }, far)).toBe("1 of 1 free · 9 welcome · 40 paid");
   });
 
   it("W4: within three days the welcome tail, in the reader's own day, after the lots (and before a plan's, G5)", () => {
