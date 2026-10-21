@@ -5,7 +5,7 @@ const c = creditsPageCopy;
 
 export const PAGE = "mx-auto flex w-full leading-[normal] max-w-[1040px] flex-col gap-[22px] px-[16px] pb-[28px] pt-[18px] md:gap-[26px] md:px-[48px] md:pb-[40px] md:pt-[34px]";
 
-/** The title and sub, drawn by the page, its loading screen and its read-failed state alike. */
+/** The title, sub and free-views line, drawn by the page, its loading screen and its read-failed state alike. */
 export function CreditsHead() {
   return (
     <div className="flex flex-col gap-[6px]">
@@ -13,6 +13,7 @@ export function CreditsHead() {
       <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">
         <CreditsText text={`${c.sub} · ${c.subLink}`} />
       </span>
+      <p className="m-0 mt-[4px] max-w-[900px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{c.viewsFree}</p>
     </div>
   );
 }
