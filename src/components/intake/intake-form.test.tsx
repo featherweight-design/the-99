@@ -111,6 +111,18 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     expect(screen.getByText("Kept here for when a credit comes back.")).toBeTruthy();
   });
 
+  it("R3 item 10: on the phone, `Get more credits` sits under the box's caption, not in the dock; the desktop line keeps it", () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10, payments: true }} />);
+    const dock = screen.getByTestId("choose-dock");
+    expect(within(dock).getByText(/^Won’t be read/)).toBeTruthy();
+    expect(within(dock).queryByRole("link", { name: /Get more credits/ })).toBeNull();
+    const links = screen.getAllByRole("link", { name: /Get more credits/ });
+    expect(links).toHaveLength(2);
+    const phone = links.find((l) => l.className.includes("md:hidden"))!;
+    expect(phone.previousElementSibling?.textContent).toContain("Kept here for when a credit comes back.");
+    expect(links.find((l) => l !== phone)!.closest("div")!.className).toContain("md:flex");
+  });
+
   it("leaves the line out of the server's HTML, which cannot know the reader's time zone", () => {
     const html = renderToString(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
     expect(html).not.toContain("Won’t be read");
