@@ -20,6 +20,7 @@ import {
   resolvedPrinting,
 } from "./browse";
 import { selectCollectionRows } from "./browse-read";
+import { isBasicLand } from "../decks/grouping";
 
 /** The `cards` columns the modal reads. */
 export type CatalogCardRow = {
@@ -421,8 +422,9 @@ export const loadCardDetail = cache(async function loadCardDetail(
     );
 
   if (owned.length > 0) {
-    // Only for a card the user owns: the availability query is driven by the collection, so
-    // an unowned card has no row there and nothing to report. The import is inside the catch
+    // `availability` only for a card the user owns: the query is driven by the collection, and every
+    // reader of that field takes it to mean the card is held. An unowned card reads the same query
+    // with `unownedAsZero` into `unownedAvailability` instead (below). The import is inside the catch
     // because a module that fails to resolve is as quiet a failure as a query that fails to
     // run — either way the modal omits the block rather than losing the card.
     const availability = (async () => {
@@ -430,8 +432,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       return (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) ?? null;
     })().catch(() => null);
     // The decks wanting it only in a draft, which the claims above cannot name: its own read, beside
-    // the availability one and never folded into it (`loadDraftWants`). Owned-only, as the receipt
-    // that draws it is.
+    // the availability one and never folded into it (`loadDraftWants`). The unowned branch reads it too.
     const draftWants = import("../decks/draft-wants")
       .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
       .catch(() => null);
@@ -459,7 +460,20 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
     // catalog row alone, where a rejection here would have lost the card.
     .catch(() => []);
-  const [pr, p, pb, g] = await Promise.all([printingRows, prices, proxiedBy, gate]);
+  // WHO WANTS A CARD THE READER OWNS NONE OF (Hugh, 2026-10-20): the claim read with the card read as
+  // owning 0, and the draft wants beside it. Its own field, never `availability`, which every other
+  // reader takes to mean the collection holds the card (the Fits picker's counts among them).
+  // Never for a basic land: the claim model excludes basics from its accounting (only its `owned`
+  // CTE filters them, and `unownedAsZero`'s synthetic row sits outside that filter), so a version's
+  // thirty Forests would read `30 wanted · you own 0`. Undefined, not null: not read, not failed.
+  const wanted = isBasicLand(found.typeLine) ? Promise.resolve(undefined) : (async () => {
+    const { loadAvailability } = await import("../decks/availability-query");
+    return (await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: true, env })).get(oracleId) ?? null;
+  })().catch(() => null);
+  const draftWants = import("../decks/draft-wants")
+    .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
+    .catch(() => null);
+  const [pr, p, pb, g, w, dw] = await Promise.all([printingRows, prices, proxiedBy, gate, wanted, draftWants]);
   // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
   // the `cards` row rather than from an aggregation — and without this the block never drew
   // for an unowned Game Changer at all.
@@ -470,6 +484,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
   return assemble({
     ...catalogCard(found, pr, p),
     facts: found.gameChanger ? ["gameChanger"] : undefined,
+    unownedAvailability: w,
+    draftWants: dw,
     prices: p,
     proxiedBy: pb,
     ...g,

@@ -265,6 +265,13 @@ export type BrowseCard = {
    */
   draftWants?: DraftWant[] | null;
   /**
+   * For a card the reader owns NO copy of: the claim read with the card read as owning 0
+   * (`unownedAsZero`), so card details can still name the decks that want it. Set only by
+   * `loadCardDetail`'s unowned branch; null when the read failed. Never merged into `availability`,
+   * which every other reader takes to mean the collection holds the card.
+   */
+  unownedAvailability?: Availability | null;
+  /**
    * The decks printing this card, which is NOT part of `availability.claims` and
    * must never be folded into it: `hardDecks`, `pullSources`, the markers and
    * the pull authorization all read that list, and a proxying deck holds no
