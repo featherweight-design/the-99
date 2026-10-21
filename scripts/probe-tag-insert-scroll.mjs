@@ -9,6 +9,7 @@
 // 1. THE FIELD STAYS IN VIEW: its box is inside the visible viewport and nothing is painted over it after the press.
 // 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it, it
 //    moves no further than bringing the field to the top of the view (K9).
+// 3. THE FILLED LIST IS SEEN: after typing a name, the list (uncapped from `md`) ends inside the visible area.
 //
 // TAG_SCROLL_ROOM=1 adds 2000px under <main>, so a short page's end cannot cut a scroll short and hide a jump.
 //
@@ -118,6 +119,17 @@ async function pressOnce(page, label, field, button, touch, cold) {
   const allowed = roomy ? 1 : Math.max(0, before.top - before.viewTop) + 2;
   check(`${label}: the page ${roomy ? "does not move (the list has room)" : "moves no further than the field's top"}`, Math.abs(moved) <= allowed, { moved, allowed });
   check(`${label}: the field keeps focus and holds the open tag`, after.focused && (await field.inputValue()).includes("[["));
+  if (!cold) {
+    // A name typed in fills the list (from `md` it has no cap): it must still end inside the visible area.
+    await page.keyboard.type("So");
+    await page.waitForTimeout(2000);
+    const list = await page.evaluate(() => {
+      const ul = document.querySelector('[role="listbox"][id$="-list"]');
+      const vv = window.visualViewport;
+      return ul ? { bottom: Math.round(ul.getBoundingClientRect().bottom), options: ul.querySelectorAll('[role="option"]').length, viewBottom: Math.round((vv?.offsetTop ?? 0) + (vv?.height ?? innerHeight)) } : null;
+    });
+    check(`${label}: the filled list ends inside the visible area`, list !== null && list.options > 0 && list.bottom <= list.viewBottom + 1, list);
+  }
   if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/tag-insert-scroll-${label.replace(/\W+/g, "-")}.png` });
 }
 

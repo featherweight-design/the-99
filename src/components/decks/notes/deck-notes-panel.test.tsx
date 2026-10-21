@@ -191,6 +191,27 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
   });
 
+  it("brings the field to the top when the open list itself runs past the window, though the phone cap would fit", async () => {
+    vi.mocked(reveal).mockClear();
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, 200);
+    // From `md` the list has no cap: here it reaches 100px past the window's foot.
+    const own = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      return this.getAttribute("role") === "listbox"
+        ? ({ top: 250, bottom: window.innerHeight + 100, left: 0, right: 440, width: 440, height: window.innerHeight - 150, x: 0, y: 250, toJSON: () => ({}) } as DOMRect)
+        : own.call(this);
+    };
+    try {
+      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+      expect(reveal).toHaveBeenCalledWith(field, "start");
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = own;
+    }
+  });
+
   it("brings the field to the top when the open list would not fit under it", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));

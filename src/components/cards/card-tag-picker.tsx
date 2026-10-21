@@ -105,23 +105,27 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   // Opening the picker brings the field to the top of the visible area (K9), but only when the list would not fit
   // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
   // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
-  // of view). The visible bottom is the visual viewport's, since `getBoundingClientRect` is in layout-viewport
-  // coordinates and a keyboard pans the visible area inside it; and a keyboard still rising when the list opens (a
-  // press from outside the box) resizes the visual viewport, so the room is measured again then.
+  // of view). The room is the list's phone cap, or the list itself where it is taller (from `md` it has no cap, and
+  // grows as the reader types, so it is measured again as it grows). The visible bottom is the visual viewport's,
+  // since `getBoundingClientRect` is in layout-viewport coordinates and a keyboard pans the visible area inside it;
+  // a keyboard still rising when the list opens (a press from outside the box) resizes it, so that measures again too.
   useEffect(() => {
     const el = field.current;
     if (!open || !el) return;
     const vv = window.visualViewport;
-    let stop: (() => void) | null = null;
+    const list = document.getElementById(`${id}-list`);
     const check = () => {
-      if (stop) return;
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-      if (el.getBoundingClientRect().bottom + LIST_ROOM_PX > visibleBottom) stop = reveal(el, "start");
+      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
+      // A later reveal replaces one still running, so a list that grows mid-reveal is measured from where it is.
+      if (needed > visibleBottom) reveal(el, "start");
     };
     check();
     vv?.addEventListener("resize", check);
-    return () => vv?.removeEventListener("resize", check);
-  }, [open, field]);
+    const grows = list && typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    if (list) grows?.observe(list);
+    return () => { vv?.removeEventListener("resize", check); grows?.disconnect(); };
+  }, [open, field, id]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;
   const current = lookup && answer?.query === query ? answer : null;
