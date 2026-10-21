@@ -1,0 +1,98 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-21T18:49:52Z"
+ },
+ "title": "The 99 · Welcome credits R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2292,
+   "title": "Welcome credits R1 · calls, rulings, gaps"
+  },
+  "Placement.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 1900,
+   "h": 6183,
+   "title": "Item 1 · Where it goes (Open 1)"
+  },
+  "Section.dc.html": {
+   "x": 3760,
+   "y": 0,
+   "w": 1800,
+   "h": 2678,
+   "title": "Items 2 and 3 · The section, and Try it"
+  },
+  "Line-and-Chip.dc.html": {
+   "x": 5640,
+   "y": 0,
+   "w": 1400,
+   "h": 5627,
+   "title": "Item 4 · The credit line and the chip"
+  },
+  "States-A.dc.html": {
+   "x": 0,
+   "y": 6303,
+   "w": 2300,
+   "h": 6391,
+   "title": "Item 6 · Held, partly spent, used up"
+  },
+  "States-B.dc.html": {
+   "x": 2380,
+   "y": 6303,
+   "w": 2300,
+   "h": 4738,
+   "title": "Item 6 · Expiring, expired, no lot"
+  },
+  "Credits-Page.dc.html": {
+   "x": 4760,
+   "y": 6303,
+   "w": 2400,
+   "h": 4629,
+   "title": "Item 5 · The Welcome cell"
+  },
+  "States-C.dc.html": {
+   "x": 0,
+   "y": 12814,
+   "w": 2300,
+   "h": 4271,
+   "title": "Item 6 · Switch off, payments off"
+  },
+  "States-D.dc.html": {
+   "x": 2380,
+   "y": 12814,
+   "w": 2300,
+   "h": 4208,
+   "title": "Item 6 · Paid limit, also bought"
+  },
+  "Themes.dc.html": {
+   "x": 4760,
+   "y": 12814,
+   "w": 2300,
+   "h": 4296,
+   "title": "Low Sun and First Frost"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Placement.dc.html",
+  "Section.dc.html",
+  "Line-and-Chip.dc.html",
+  "States-A.dc.html",
+  "States-B.dc.html",
+  "Credits-Page.dc.html",
+  "States-C.dc.html",
+  "States-D.dc.html",
+  "Themes.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
