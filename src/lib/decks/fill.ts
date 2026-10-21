@@ -58,15 +58,16 @@ export type FillCandidate = {
 
 /**
  * One placed card. `role` is the floor it was filed under; `source: "staple"` marks a card the
- * staples step seeded (H25), whatever its role. A staple with no role (Swiftfoot Boots) is filed
- * `other` and is NOT residual: `isResidual` is the one test for that, so a bulk tick or a create's
- * foundation never mistakes a staple for an undoable suggestion.
+ * staples step seeded (H25), whatever its role, and `source: "bracket"` one the raisers step placed
+ * to reach the deck's bracket answer. Either, filed `other` (Swiftfoot Boots, a Game Changer with no
+ * role), is NOT residual: `isResidual` is the one test for that, so a bulk tick or a create's
+ * foundation never mistakes it for an undoable suggestion.
  */
-export type FillRow = { oracleId: string; quantity: number; role: FillRole; source?: "staple" };
+export type FillRow = { oracleId: string; quantity: number; role: FillRole; source?: "staple" | "bracket" };
 
 /** Whether a row is the synergy residual: the suggestions a create files as undoable. */
 export function isResidual(row: Pick<FillRow, "role" | "source">): boolean {
-  return row.role === "other" && row.source !== "staple";
+  return row.role === "other" && row.source === undefined;
 }
 
 /**
@@ -181,6 +182,16 @@ export type PlanFillArgs = {
    * already removed what the deck holds or may not pick (`excludeOracleIds`, `onlyOracleIds`).
    */
   staples?: readonly FillCandidate[];
+  /**
+   * THE CARDS THAT REACH THE DECK'S BRACKET ANSWER (`bracketReach`), placed before the staples, so
+   * the role pass counts them and the gate hears them first. Every one is a nonland the player can
+   * sleeve: the step never places a card to buy (Hugh's ruling: the app does not make that choice).
+   *
+   * Placed WITHOUT asking the gate: the rule already proved the set reaches the answer and stays
+   * inside it, and the gate is told each one, so the rest of the fill stays inside it too. Not under
+   * `FILL_STAPLE_CAP`; under the slot limit and `pool: "sleeveable"` like every placed card.
+   */
+  raisers?: readonly FillCandidate[];
 };
 
 /** The most nonland staples one fill seeds (Hugh, 2026-10-03), so a two-color condition's ~59
@@ -412,7 +423,15 @@ function splitByWeight(colors: string[], weights: Map<string, number>, slots: nu
 /** Owned first, then inclusion descending, absent last, then name. Owned wins
     outright: a bought card is only ever here because the collection ran out,
     which is the promise Shopping makes about every row it prints. */
-function byPreference(a: FillCandidate, b: FillCandidate): number {
+/** The cards a bracket reach may place (`bracketReach`), in the fill's own order: owned nonlands.
+ *  A land is never a raiser, since the land sweep's caps could drop it and the deck would silently
+ *  miss the answer; the FRONT face decides, as the role classifier reads it, so a spell with a land
+ *  back stays a candidate. */
+export function reachCandidates(candidates: readonly FillCandidate[]): FillCandidate[] {
+  return candidates.filter((c) => c.owned && !isLandFace(c.typeLine)).sort(byPreference);
+}
+
+export function byPreference(a: FillCandidate, b: FillCandidate): number {
   if (a.owned !== b.owned) return a.owned ? -1 : 1;
   if (a.inclusionPct !== b.inclusionPct) {
     if (a.inclusionPct == null) return 1;
@@ -518,6 +537,23 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   }));
   const typeTargets = skeleton?.composition?.targets ?? null;
   let scanned = TIE_BREAK_WINDOW;
+
+  // THE RAISERS STEP, before the staples: the cards that reach the bracket the player asked for.
+  // Placed as the staples step places a card; filed `source: "bracket"`.
+  for (const raiser of args.raisers ?? []) {
+    if (spent.has(raiser.oracleId) || !raiser.owned || filledSoFar() >= limit) continue;
+    const roles = rolesOfCandidate(raiser);
+    // A land belongs to the land sweep, whose caps decide it; the reach never offers one.
+    if (roles.includes("land")) continue;
+    spent.add(raiser.oracleId);
+    gate?.place(raiser);
+    for (const r of NON_LAND_ROLES) if (roles.includes(r)) counts[r]++;
+    placed.push({ typeLine: raiser.typeLine, quantity: 1 });
+    rows.push({
+      oracleId: raiser.oracleId, quantity: 1,
+      role: NON_LAND_ROLES.find((r) => roles.includes(r)) ?? "other", source: "bracket",
+    });
+  }
 
   // THE STAPLES STEP (H25), before any floor is weighed. Placed exactly as the role pass places a
   // card: spent, told to the gate, credited to every role it fills, its type tallied. Its row is

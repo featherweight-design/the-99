@@ -14,9 +14,12 @@ import { readSynergyCards } from "../../app/commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
-import { dedupeSelectionFromPool, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
+import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
-import { loadFillGate, type DeckAnswers } from "../intake/fill-facts";
+import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
+import { bracketReach, type BracketReach } from "../intake/bracket-reach";
+import { buysCopy } from "../intake/buys-card";
+import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 
 /** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
  *  share a log line. Never escapes `buildFillPlan`. */
@@ -95,7 +98,7 @@ export async function buildFillPlan(
      *  input: this module is not `"use server"`, so only server code that resolved them can pass it. */
     env: NodeJS.ProcessEnv;
   },
-): Promise<FillPlan> {
+): Promise<FillPlan & { bracketReach?: BracketReach }> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
   let pool = dedupeSelectionFromPool(
@@ -270,11 +273,51 @@ export async function buildFillPlan(
   } catch (err) {
     console.warn("buildFillPlan: no staples — the fill runs without its staples step", err);
   }
+  const commanderIds = commanders.map((c) => c.oracleId);
+  const gateCandidates = [...scoped, ...staples.filter((c) => !scoped.includes(c))];
+  // THE BRACKET ANSWER AS A TARGET (`bracket-reach.ts`), not only a ceiling: the owned cards that
+  // reach it are placed first. NEVER a card to buy (Hugh, 2026-10-20: the app does not make that
+  // choice for the player). When the collection cannot reach the answer, the owned cards that reach
+  // the highest bracket below it are placed instead (a bracket-4 ask over one free Game Changer lands
+  // at 3), and `bracketReach` comes back `short` for the choice.
+  // The facts are read once, for the reach and the gate, so the two rule over the same cards.
+  let bracketFacts: Awaited<ReturnType<typeof loadBracketGateFacts>> | undefined;
+  let reach: BracketReach | undefined;
+  let raisers: FillCandidate[] = [];
+  if (answers?.bracket != null && bracketReachEnabled(fillOptions.env)) {
+    const fixedIds = [...new Set([...commanderIds, ...excludeOracleIds])];
+    const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...gateCandidates.map((c) => c.oracleId)])]);
+    bracketFacts = facts;
+    const offered = reachCandidates(gateCandidates);
+    // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. Read
+    // only for the cards that could raise a bracket, which are few.
+    const raising = offered.filter((c) => facts.flagsOf(c.oracleId).gameChanger
+      || facts.combosOf(c.oracleId).length > 0 || facts.searches(c.oracleId));
+    const availability = raising.length === 0 ? new Map() : await loadAvailability(userId, {
+      oracleIds: raising.map((c) => c.oracleId), excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
+    });
+    const free = new Set(raising.filter((c) => !buysCopy(true, availability.get(c.oracleId))).map((c) => c.oracleId));
+    reach = bracketReach({
+      target: answers.bracket, commanderIds, fixedIds, cards: offered.map((c) => c.oracleId),
+      facts: { ...facts, free: (id) => free.has(id), priceOf: () => null },
+      budgetCents: answers.budgetCents,
+      // The buying half is the choice's (plan PR 3); this fill never buys toward the answer.
+      ownedOnly: true,
+      // The slots the plan will fill: the caller's count, or the body less what is placed beside
+      // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
+      capacity: fillOptions.slots
+        ?? Math.max(0, deckBodySize(hasPartner) - selected.reduce((n, c) => n + (c.quantity ?? 1), 0)),
+    });
+    const ids = reach.kind === "collection" ? reach.raisers : reach.kind === "short" ? reach.collectionRaisers : [];
+    const byId = new Map(offered.map((c) => [c.oracleId, c]));
+    raisers = ids.flatMap((id) => byId.get(id) ?? []);
+  }
   const gate = answers
     ? await loadFillGate({
-      userId, commanderIds: commanders.map((c) => c.oracleId), answers,
-      candidates: [...scoped, ...staples.filter((c) => !scoped.includes(c))],
+      userId, commanderIds, answers,
+      candidates: gateCandidates,
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
+      bracketFacts,
     })
     : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
@@ -314,9 +357,9 @@ export async function buildFillPlan(
       skeleton = null;
     }
   }
-  return planFill(scoped, {
+  const plan = planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
-    staples, labelRoles,
+    staples, labelRoles, raisers,
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
@@ -332,4 +375,6 @@ export async function buildFillPlan(
     basics: (await loadCatalogBasics()).filter((b) =>
       !excludeOracleIds.has(b.oracleId) && (!onlyOracleIds || onlyOracleIds.has(b.oracleId))),
   });
+  // The reach rides the plan, so the choice (plan PR 3) can read the gap a short collection left.
+  return reach ? { ...plan, bracketReach: reach } : plan;
 }

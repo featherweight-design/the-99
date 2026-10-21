@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill,
+  capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill, reachCandidates,
   type FillCandidate, type FillPlan,
 } from "./fill";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
@@ -1237,5 +1237,49 @@ describe("the staples step (H25)", () => {
     const row = plan.rows.find((r) => r.oracleId === "boots")!;
     expect(isResidual(row)).toBe(false);
     expect(plan.rows.filter(isResidual).length).toBeGreaterThan(0);
+  });
+});
+
+describe("the raisers step (bracket reach)", () => {
+  const agent = c({ oracleId: "agent", name: "agent", inclusionPct: 5, typeLine: "Creature — Human Rogue",
+    oracleText: "Flash. You control your opponents while they're searching their libraries." });
+  const sol = c({ oracleId: "sol", name: "sol", inclusionPct: 65 });
+  const tomb = c({ oracleId: "tomb", name: "tomb", typeLine: "Land", inclusionPct: 6, oracleText: "{T}: Add {C}{C}." });
+  const lands = Array.from({ length: 40 }, (_, i) => basic(`b${i}`, 4));
+
+  it("places each raiser first, before the staples, filed apart from the residual", () => {
+    const plan = planFill([agent, ...poolOf(200), ...lands], { ...FLAT, raisers: [agent], staples: [sol] });
+    expect(plan.rows[0]).toEqual({ oracleId: "agent", quantity: 1, role: "other", source: "bracket" });
+    expect(plan.rows[1]).toMatchObject({ oracleId: "sol", source: "staple" });
+    expect(isResidual(plan.rows[0]!)).toBe(false);
+    expect(plan.rows.filter((r) => r.oracleId === "agent")).toHaveLength(1);
+  });
+
+  it("tells the gate without asking it, since the reach already proved the set", () => {
+    const told: string[] = [];
+    const plan = planFill([...poolOf(200), ...lands], {
+      ...FLAT, raisers: [agent],
+      gate: { admits: (x) => x.oracleId !== "agent", place: (x) => { told.push(x.oracleId); } },
+    });
+    expect(plan.rows[0]?.oracleId).toBe("agent");
+    expect(told[0]).toBe("agent");
+  });
+
+  it("never places a card to buy, nor a land, and honors the slot limit", () => {
+    const unowned = { ...agent, owned: false, ownedQuantity: 0 };
+    expect(planFill([...poolOf(200), ...lands], { ...FLAT, raisers: [unowned] }).rows.some((r) => r.source === "bracket")).toBe(false);
+    expect(planFill([...poolOf(200), ...lands], { ...FLAT, raisers: [tomb] }).rows.some((r) => r.source === "bracket")).toBe(false);
+    expect(planFill([...poolOf(200), ...lands], { ...FLAT, slots: 0, raisers: [agent] }).rows).toEqual([]);
+  });
+});
+
+describe("reachCandidates", () => {
+  it("offers owned nonlands in the fill's order, keeping a spell with a land back", () => {
+    const mdfc = c({ oracleId: "mdfc", name: "mdfc", typeLine: "Instant // Land", inclusionPct: 30 });
+    const land = c({ oracleId: "land", name: "land", typeLine: "Land", inclusionPct: 90 });
+    const back = c({ oracleId: "back", name: "back", typeLine: "Land // Creature — Elf", inclusionPct: 80 });
+    const top = c({ oracleId: "top", name: "top", inclusionPct: 70 });
+    const unowned = { ...top, oracleId: "unowned", owned: false, ownedQuantity: 0 };
+    expect(reachCandidates([mdfc, land, back, unowned, top]).map((x) => x.oracleId)).toEqual(["top", "mdfc"]);
   });
 });

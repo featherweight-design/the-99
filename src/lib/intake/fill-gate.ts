@@ -65,6 +65,56 @@ export function budgetGate(args: {
 
 type Combo = { variantId: string; cards: { oracleId: string }[]; loop: boolean };
 
+/** The combos `id` would complete with the cards in `among`. */
+function completesWith(facts: GateFacts, inCommandZone: ReadonlySet<string>, id: string, among: ReadonlySet<string>): Combo[] {
+  return facts.combosOf(id)
+    .filter((e) => among.has(e.partner) && (!e.partnerMustBeCommander || inCommandZone.has(e.partner)))
+    .map((e) => ({ variantId: e.variantId, cards: [{ oracleId: id }, { oracleId: e.partner }], loop: e.loop }));
+}
+
+/** Every reach among these searchers and these combos, the profile builder's pairing: a searcher
+ *  never reaches itself, and a piece in the command zone is never searched for. */
+function reachesAmong(facts: GateFacts, inCommandZone: ReadonlySet<string>, allSearchers: Iterable<string>, allCombos: Iterable<Combo>) {
+  const out: { combo: { variantId: string }; piece: { oracleId: string } }[] = [];
+  for (const s of allSearchers) {
+    for (const combo of allCombos) {
+      for (const piece of combo.cards) {
+        if (piece.oracleId === s || inCommandZone.has(piece.oracleId)) continue;
+        if (facts.reaches(s, piece.oracleId)) out.push({ combo, piece });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The brackets a whole list permits, by the analysis's arithmetic (`violationsFor`, `permitsFor`,
+ * `comboLandsEarly`). Not incremental: for a handful of small lists (`bracket-reach.ts`), where
+ * `bracketGate` below answers the same question one placement at a time across a whole pool.
+ */
+export function permitsOf(commanderIds: readonly string[], ids: Iterable<string>, facts: GateFacts): Bracket[] {
+  const inCommandZone = new Set(commanderIds);
+  const all = [...new Set(ids)];
+  const counts = { gameChangers: 0, massLandDenial: 0, extraTurns: 0 };
+  const combos = new Map<string, Combo>();
+  // Each card's edges against the WHOLE list, not the cards before it: an edge to a piece that must
+  // be the commander runs one way only, so an order-dependent pass missed a combo of two commanders
+  // listed with the target first. Deduped by variant.
+  const everyId = new Set(all);
+  for (const id of all) {
+    const f = facts.flagsOf(id);
+    for (const c of completesWith(facts, inCommandZone, id, everyId)) combos.set(c.variantId, c);
+    if (f.gameChanger) counts.gameChangers += 1;
+    if (f.massLandDenial) counts.massLandDenial += 1;
+    if (f.extraTurn) counts.extraTurns += 1;
+  }
+  const allCombos = [...combos.values()];
+  const v = violationsFor({ ...counts, combos: allCombos.length, loops: allCombos.filter((c) => c.loop).length });
+  const searchers = all.filter((id) => facts.searches(id));
+  const assemblesCombo = comboLandsEarly(allCombos, reachesAmong(facts, inCommandZone, searchers, allCombos), commanderIds);
+  return permitsFor({ ...v, assemblesCombo });
+}
+
 export function bracketGate(args: {
   bracket: Bracket;
   /** The commander (and partner), in the command zone. */
@@ -82,26 +132,9 @@ export function bracketGate(args: {
   const combos = new Map<string, Combo>();
   const searchers = new Set<string>();
 
-  /** The combos `id` would complete with what is already placed. */
-  const completes = (id: string, among: ReadonlySet<string>): Combo[] =>
-    facts.combosOf(id)
-      .filter((e) => among.has(e.partner) && (!e.partnerMustBeCommander || inCommandZone.has(e.partner)))
-      .map((e) => ({ variantId: e.variantId, cards: [{ oracleId: id }, { oracleId: e.partner }], loop: e.loop }));
-
-  /** Every reach among these searchers and these combos, the profile builder's pairing: a
-   *  searcher never reaches itself, and a piece in the command zone is never searched for. */
-  const reachesOf = (allSearchers: Iterable<string>, allCombos: Iterable<Combo>) => {
-    const out: { combo: { variantId: string }; piece: { oracleId: string } }[] = [];
-    for (const s of allSearchers) {
-      for (const combo of allCombos) {
-        for (const piece of combo.cards) {
-          if (piece.oracleId === s || inCommandZone.has(piece.oracleId)) continue;
-          if (facts.reaches(s, piece.oracleId)) out.push({ combo, piece });
-        }
-      }
-    }
-    return out;
-  };
+  const completes = (id: string, among: ReadonlySet<string>): Combo[] => completesWith(facts, inCommandZone, id, among);
+  const reachesOf = (allSearchers: Iterable<string>, allCombos: Iterable<Combo>) =>
+    reachesAmong(facts, inCommandZone, allSearchers, allCombos);
 
   /** The lowest bracket the placed cards, plus `id` when one is given, permit. */
   const lowestPermitted = (id: string | null): number => {

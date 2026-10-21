@@ -39,3 +39,14 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   measured LOOP: an assembled combo Spellbook records as producing infinite turns. The
   self-recurring single card is NOT detected, and the detection copy says so rather than
   letting the absence read as a clean deck.
+
+- **Bracket reach (2026-10-21).** Help me choose built "HD - Horrors Test" for bracket 3 and the
+  analysis read it 1-2. The two already shared every classifier; the defect was that the answer was
+  only a ceiling (`bracketGate`, `rank.withinBracket`), so nothing placed a card to reach it, while
+  the collection held a free Opposition Agent. Bracket 3 needs a B2 violation B3 allows: 1 to 3 Game
+  Changers, or a counted non-loop two-card combo the deck's searchers cannot assemble. `bracketReach`
+  proposes raiser sets smallest first and keeps one only when `permitsOf` says the finished list
+  permits the target. Mass land denial and turn loops are never raisers (plan review, d9 agreed), and
+  lands are excluded because the land sweep's caps could drop them. Hugh's ruling binds the rest:
+  owned cards only, and a short collection is reported, never filled by buying, until the player
+  chooses on the choice screen.

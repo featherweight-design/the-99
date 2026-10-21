@@ -721,6 +721,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
+  BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
   CARD_SCAN_ENABLED: { label: "Card scanning", description: "Scan cards with the camera into Add cards." },
   CARD_SEARCH_ENABLED: { label: "Card search", description: "Look up any card by name from any page: the phone header’s icon, the rail’s slot and ⌘K." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },

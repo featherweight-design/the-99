@@ -30,6 +30,7 @@ export const SWITCHES = [
   { name: "ADDED_COPY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
+  { name: "BRACKET_REACH_ENABLED", kind: "feature", needs: "HELP_ME_CHOOSE_ENABLED" },
   { name: "CARD_SCAN_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "CARD_SEARCH_ENABLED", kind: "feature" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },

@@ -17,6 +17,7 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
+import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 import { momentsEnabled } from "../moments/flag";
 import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
@@ -47,6 +48,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ADDED_COPY_ENABLED: addedCopyEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
+  BRACKET_REACH_ENABLED: bracketReachEnabled,
   CARD_SCAN_ENABLED: cardScanEnabled,
   CARD_SEARCH_ENABLED: cardSearchEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,

@@ -8,9 +8,10 @@ import { loadAvailability } from "../decks/availability-query";
 import { isBasicLand } from "../decks/grouping";
 import type { FillCandidate, FillGate } from "../decks/fill";
 import { loadPrices } from "../discovery/price";
-import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
+import { isCountedCombo } from "../profile/load";
+import { producesInfiniteTurns } from "../spellbook/combo-features";
 import { buysCopy } from "./buys-card";
-import { allGates, bracketGate, budgetGate, type ComboEdge } from "./fill-gate";
+import { allGates, bracketGate, budgetGate, type ComboEdge, type GateFacts } from "./fill-gate";
 import type { Bracket } from "./rank";
 
 /** What a Help me choose deck was asked for, as stored on `decks` (F1). */
@@ -42,6 +43,10 @@ export async function loadFillGate(args: {
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
    *  pending clause. */
   env: NodeJS.ProcessEnv;
+  /** The bracket facts, when the caller already read them (`buildFillPlan`, which reads them once
+   *  for the gate and the reach, so the two cannot see different cards). They must cover every id
+   *  this gate is handed: the fixed cards and every candidate. */
+  bracketFacts?: GateFacts;
 }): Promise<FillGate | undefined> {
   const { answers } = args;
   if (answers.budgetCents === null && (answers.bracket === null || answers.bracket >= 4)) return undefined;
@@ -90,45 +95,55 @@ export async function loadFillGate(args: {
   }
 
   if (answers.bracket !== null && answers.bracket < 4) {
-    const [flags, rows, combos] = await Promise.all([
-      loadBracketFlags(ids),
-      db.execute(sql`
-        select c.oracle_id, c.game_changer, c.oracle_text, c.type_line, c.color_identity, c.cmc
-        from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
-      `).then((r) => r.rows as {
-        oracle_id: string; game_changer: boolean; oracle_text: string | null;
-        type_line: string; color_identity: string[]; cmc: number;
-      }[]),
-      loadComboEdges(ids),
-    ]);
-    const cards = new Map(rows.map((r) => [r.oracle_id, r]));
-    const { tutorIds, landSearchIds, targets } = classifySearches(
-      rows.map((r) => ({ oracleId: r.oracle_id, oracleText: r.oracle_text })),
-    );
     gates.push(bracketGate({
       bracket: answers.bracket,
       commanderIds: args.commanderIds,
       fixedIds,
-      facts: {
-        flagsOf: (id) => ({
-          gameChanger: cards.get(id)?.game_changer ?? false,
-          massLandDenial: flags.get(id)?.massLandDenial ?? false,
-          extraTurn: flags.get(id)?.extraTurn ?? false,
-        }),
-        combosOf: (id) => combos.get(id) ?? [],
-        // Every search pairs for reach, a land search included, as the profile builder pairs them.
-        searches: (id) => tutorIds.has(id) || landSearchIds.has(id),
-        reaches: (s, p) => {
-          const target = targets.get(s);
-          const piece = cards.get(p);
-          return !!target && !!piece
-            && tutorReaches(target, { typeLine: piece.type_line, colorIdentity: piece.color_identity, cmc: piece.cmc });
-        },
-      },
+      facts: args.bracketFacts ?? await loadBracketGateFacts(ids),
     }));
   }
 
   return allGates(gates);
+}
+
+/**
+ * The facts the bracket rules over, for these cards: the stored flags, `cards.game_changer`, the
+ * counted combos among them, and which searches can find which. One read for the gate and the reach
+ * (`bracket-reach.ts`), so both rule over the same cards. The same reads the analysis makes
+ * (`profile/load.ts`), so a fill and the reading of it agree.
+ */
+export async function loadBracketGateFacts(ids: readonly string[]): Promise<GateFacts> {
+  const [flags, rows, combos] = await Promise.all([
+    loadBracketFlags(ids),
+    db.execute(sql`
+      select c.oracle_id, c.game_changer, c.oracle_text, c.type_line, c.color_identity, c.cmc
+      from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
+    `).then((r) => r.rows as {
+      oracle_id: string; game_changer: boolean; oracle_text: string | null;
+      type_line: string; color_identity: string[]; cmc: number;
+    }[]),
+    loadComboEdges(ids),
+  ]);
+  const cards = new Map(rows.map((r) => [r.oracle_id, r]));
+  const { tutorIds, landSearchIds, targets } = classifySearches(
+    rows.map((r) => ({ oracleId: r.oracle_id, oracleText: r.oracle_text })),
+  );
+  return {
+    flagsOf: (id) => ({
+      gameChanger: cards.get(id)?.game_changer ?? false,
+      massLandDenial: flags.get(id)?.massLandDenial ?? false,
+      extraTurn: flags.get(id)?.extraTurn ?? false,
+    }),
+    combosOf: (id) => combos.get(id) ?? [],
+    // Every search pairs for reach, a land search included, as the profile builder pairs them.
+    searches: (id) => tutorIds.has(id) || landSearchIds.has(id),
+    reaches: (s, p) => {
+      const target = targets.get(s);
+      const piece = cards.get(p);
+      return !!target && !!piece
+        && tutorReaches(target, { typeLine: piece.type_line, colorIdentity: piece.color_identity, cmc: piece.cmc });
+    },
+  };
 }
 
 /**
@@ -151,7 +166,8 @@ async function loadComboEdges(ids: readonly string[]): Promise<Map<string, Combo
   `)).rows as { variant_id: string; produces: string[]; self_id: string; other_id: string; other_must_command: boolean }[];
   const out = new Map<string, ComboEdge[]>();
   for (const r of rows) {
-    if (!isInfiniteOrGameEnding(r.produces)) continue;
+    // The analysis's own test (`isCountedCombo`); the SQL above already holds its first two clauses.
+    if (!isCountedCombo({ cardCount: 2, requiresTemplateIds: [], pieces: [r.self_id, r.other_id], produces: r.produces })) continue;
     const list = out.get(r.self_id) ?? [];
     list.push({ variantId: r.variant_id, partner: r.other_id, loop: producesInfiniteTurns(r.produces), partnerMustBeCommander: r.other_must_command });
     out.set(r.self_id, list);
