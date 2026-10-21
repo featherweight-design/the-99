@@ -430,8 +430,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       return (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) ?? null;
     })().catch(() => null);
     // The decks wanting it only in a draft, which the claims above cannot name: its own read, beside
-    // the availability one and never folded into it (`loadDraftWants`). Owned-only, as the receipt
-    // that draws it is.
+    // the availability one and never folded into it (`loadDraftWants`). The unowned branch reads it too.
     const draftWants = import("../decks/draft-wants")
       .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
       .catch(() => null);
@@ -459,7 +458,17 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
     // catalog row alone, where a rejection here would have lost the card.
     .catch(() => []);
-  const [pr, p, pb, g] = await Promise.all([printingRows, prices, proxiedBy, gate]);
+  // WHO WANTS A CARD THE READER OWNS NONE OF (Hugh, 2026-10-20): the claim read with the card read as
+  // owning 0, and the draft wants beside it. Its own field, never `availability`, which every other
+  // reader takes to mean the collection holds the card (the Fits picker's counts among them).
+  const wanted = (async () => {
+    const { loadAvailability } = await import("../decks/availability-query");
+    return (await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: true, env })).get(oracleId) ?? null;
+  })().catch(() => null);
+  const draftWants = import("../decks/draft-wants")
+    .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
+    .catch(() => null);
+  const [pr, p, pb, g, w, dw] = await Promise.all([printingRows, prices, proxiedBy, gate, wanted, draftWants]);
   // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
   // the `cards` row rather than from an aggregation — and without this the block never drew
   // for an unowned Game Changer at all.
@@ -470,6 +479,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
   return assemble({
     ...catalogCard(found, pr, p),
     facts: found.gameChanger ? ["gameChanger"] : undefined,
+    unownedAvailability: w,
+    draftWants: dw,
     prices: p,
     proxiedBy: pb,
     ...g,

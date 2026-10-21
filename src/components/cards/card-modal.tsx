@@ -272,7 +272,9 @@ function ReceiptHeading({ owned, onEditCopies, link = null }: { owned: number; o
 function AvailabilityDetail({
   card, deckPage, onEditCopies = null, receiptLink = null,
 }: { card: BrowseCard; deckPage: boolean; onEditCopies?: (() => void) | null; receiptLink?: ReactNode }) {
-  const a = card.availability;
+  // A card owned in no copy reads its claims from `unownedAvailability` (owned 0), so the decks that
+  // want it are still named. It owns nothing, so it draws no marker: `availabilityState` reads it free.
+  const a = card.availability ?? card.unownedAvailability ?? null;
   const c = availabilityCopy.collection;
   const state = a ? availabilityState(a) : "free";
   // The decks wanting it only in a draft (`loadDraftWants`). Not claims, so no figure below counts
@@ -342,7 +344,12 @@ function AvailabilityDetail({
             queries, and the split below is `a.hard + a.free`. A total taken
             from anywhere but the availability query is how a receipt stops
             adding up. */}
-        <span className="font-mono" style={{ color: "var(--accent)" }}>×{a.owned}</span>
+        {a.owned > 0 ? (
+          <span className="font-mono" style={{ color: "var(--accent)" }}>×{a.owned}</span>
+        ) : (
+          // Owned in none: the word the Shopping door's receipt uses (A4), never a `×0`.
+          <span className="font-mono" style={{ color: "var(--fg-faint)" }}>{collectionEditCopy.copies.none}</span>
+        )}
         {state !== "free" && (
           <>
             <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
@@ -411,13 +418,18 @@ function AvailabilityDetail({
               </li>
             ))}
           </ul>
-          <div
-            className="mt-[8px] font-mono text-[12px]"
-            style={{ color: "var(--fg-muted)" }}
-          >
-            {a.free < 0 ? c.detailSplitOver(a.hard, a.owned) : c.detailSplit(a.hard, a.free)}
-          </div>
-          {brews > 0 && state !== "soft" && (
+          {/* Owned in none and wanted only by drafts and brews, the accounting is `0 in use · 0 free`
+              under a `none` that already said it, and there is no count for the drafts note to
+              qualify. A committed want still prints, as `1 wanted · you own 0`. */}
+          {(a.owned > 0 || a.free < 0) && (
+            <div
+              className="mt-[8px] font-mono text-[12px]"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {a.free < 0 ? c.detailSplitOver(a.hard, a.owned) : c.detailSplit(a.hard, a.free)}
+            </div>
+          )}
+          {brews > 0 && state !== "soft" && (a.owned > 0 || a.free < 0) && (
             <p
               className="m-0 mt-[6px] text-[12.5px] leading-[1.5]"
               style={{ color: "var(--fg-muted)" }}

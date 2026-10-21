@@ -12,6 +12,7 @@ import type { BrowseCard, CardArt } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 vi.mock("../../app/collection/actions", () => ({
   // The real action reports whether it wrote; a bare `vi.fn()` would resolve undefined and
@@ -94,6 +95,49 @@ describe("CardModal availability detail", () => {
       .toHaveAttribute("href", "/decks/m1");
     // Counted nowhere: the split is the claims' alone.
     expect(screen.getByText(availabilityCopy.collection.detailSplit(0, 2))).toBeInTheDocument();
+  });
+
+  // Owned in none (d9 follow-up, 2026-10-21): the block used to be absent, so no deck wanting the
+  // card was named at all.
+  it("names every deck wanting a card the reader owns none of, from the unowned read", () => {
+    mount({
+      ...card,
+      quantity: 0,
+      availability: undefined,
+      unownedAvailability: { owned: 0, hard: 1, soft: 1, free: -1, claims: [
+        { id: "b1", name: "Horrors Test", quantity: 1, mature: false, pending: false, commander: false, senior: false },
+        { id: "c1", name: "Sleeved", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+      ] },
+      draftWants: [{ id: "m1", name: "Mutant Menace" }],
+    });
+    expect(heading()).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").map((r) => r.querySelector("a")?.textContent))
+      .toEqual(["Horrors Test", "Sleeved", "Mutant Menace"]);
+    expect(screen.getByText(availabilityCopy.collection.detailSplitOver(1, 0))).toBeInTheDocument();
+  });
+
+  it("reads none, with no zero accounting, when only drafts want an unowned card", () => {
+    mount({
+      ...card,
+      quantity: 0,
+      unownedAvailability: { owned: 0, hard: 0, soft: 1, free: 0, claims: [
+        { id: "b1", name: "Horrors Test", quantity: 1, mature: false, pending: false, commander: false, senior: false },
+      ] },
+      draftWants: [{ id: "m1", name: "Mutant Menace" }],
+    });
+    expect(screen.getByText("Horrors Test")).toBeInTheDocument();
+    expect(screen.getByText("Mutant Menace")).toBeInTheDocument();
+    expect(screen.getByText(collectionEditCopy.copies.none)).toBeInTheDocument();
+    expect(screen.queryByText(availabilityCopy.collection.detailSplit(0, 0))).toBeNull();
+    // The receipt says `none`, never `×0` (the modal header's own count is not the receipt's).
+    const receipt = heading()!.closest("div.rounded-\\[10px\\]")!;
+    expect(receipt.textContent).toContain(collectionEditCopy.copies.none);
+    expect(receipt.textContent).not.toContain("×0");
+  });
+
+  it("draws nothing for an unowned card no deck wants", () => {
+    mount({ ...card, quantity: 0, unownedAvailability: { owned: 0, hard: 0, soft: 0, free: 0, claims: [] }, draftWants: [] });
+    expect(heading()).toBeNull();
   });
 
   it("draws the block for a free card a draft alone wants", () => {
