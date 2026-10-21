@@ -156,7 +156,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     for (const type of READER) window.addEventListener(type, moved, { capture: true, passive: true });
     check();
     vv?.addEventListener("resize", check);
-    const grows = list && typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    // The list grows as the reader types; the field can grow on its own (an autosized textarea), moving the list down.
+    const grows = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    grows?.observe(el);
     if (list) grows?.observe(list);
     return () => {
       for (const type of READER) window.removeEventListener(type, moved, { capture: true });

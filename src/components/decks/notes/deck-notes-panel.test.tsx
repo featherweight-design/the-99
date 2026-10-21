@@ -266,6 +266,32 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
   });
 
+  it("measures the room again when the field grows on its own, the list's size unchanged", async () => {
+    vi.mocked(reveal).mockClear();
+    const observed: { cb: () => void; els: Element[] }[] = [];
+    vi.stubGlobal("ResizeObserver", class {
+      entry: { cb: () => void; els: Element[] };
+      constructor(cb: () => void) { this.entry = { cb, els: [] }; observed.push(this.entry); }
+      observe(el: Element) { this.entry.els.push(el); }
+      disconnect() {}
+    });
+    try {
+      mount(view([note("a", "x")]));
+      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      at(field, 200);
+      field.focus();
+      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+      expect(reveal).not.toHaveBeenCalled();
+      // An autosized box grows by pasted blank lines: its foot drops to 100px above the window's, the list unchanged.
+      field.getBoundingClientRect = () => ({ top: 200, bottom: window.innerHeight - 100, left: 0, right: 300, width: 300, height: window.innerHeight - 300, x: 0, y: 200, toJSON: () => ({}) });
+      for (const o of observed) if (o.els.includes(field)) o.cb();
+      expect(reveal).toHaveBeenCalledWith(field, "start");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("brings the field to the top when the open list would not fit under it", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
