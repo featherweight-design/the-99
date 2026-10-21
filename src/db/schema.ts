@@ -671,8 +671,10 @@ export const decks = pgTable("decks", {
    *  own cards, at the create and again by a retry. False for every other deck. */
   answerOwnedOnly: boolean("answer_owned_only").notNull().default(false),
   /** Help me choose's *Hit bracket N* (bracket reach PR 3b): the player chose to buy the cards that
-   *  reach the bracket asked for, so the create and its retry place them. Written true only when the
-   *  create's own reach came back short with a set to buy. False for every other deck. */
+   *  reach the bracket asked for, so the create and its retry place them. A filled create writes it
+   *  true only when its own reach came back short with a set to buy; the empty-deck fallback keeps the
+   *  validated ask, so the retry can honor it, and the retry rewrites it from its own reach. False for
+   *  every other deck. */
   answerBracketBuys: boolean("answer_bracket_buys").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
