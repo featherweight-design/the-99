@@ -192,12 +192,18 @@ try {
     const opener = onPageRole(page, "button", /Describe your deck →/);
     await Promise.race([tile.waitFor({ timeout: 60_000 }), desc.waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);
     if (await tile.count()) await tile.click();
-    await Promise.race([desc.waitFor({ timeout: 30_000 }), opener.first().waitFor({ timeout: 30_000 })]);
-    if ((await desc.count()) === 0) await opener.first().click();
-    await desc.waitFor({ timeout: 30_000 });
-    const descButton = desc.locator("xpath=ancestor::*[.//button[@aria-label='Insert a card tag']][1]").getByRole("button", { name: "Insert a card tag" });
-    // The box saves on blur; probeBox puts back what it held after each press, so a save writes the same words.
-    await probeBox(page, `${w.label} deck description`, desc, descButton, w.touch);
+    // A deck that already has a description draws neither (Suggested changes offers the row only while `intent` is
+    // null): that is a deck this check cannot use, so it fails by name rather than timing out the rest of the run.
+    const offered = await Promise.race([desc.waitFor({ timeout: 30_000 }), opener.first().waitFor({ timeout: 30_000 })]).then(() => true, () => false);
+    if (!offered) {
+      check(`${w.label} deck description: the deck offers a description box`, false, `deck ${deck} has a description already; set TAG_SCROLL_DECK to one without`);
+    } else {
+      if ((await desc.count()) === 0) await opener.first().click();
+      await desc.waitFor({ timeout: 30_000 });
+      const descButton = desc.locator("xpath=ancestor::*[.//button[@aria-label='Insert a card tag']][1]").getByRole("button", { name: "Insert a card tag" });
+      // The box saves on blur; probeBox puts back what it held after each press, so a save writes the same words.
+      await probeBox(page, `${w.label} deck description`, desc, descButton, w.touch);
+    }
 
     // Help me choose's "Anything else?".
     await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "domcontentloaded" });

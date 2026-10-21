@@ -127,26 +127,43 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   // inside it), or the top of a shown bar pinned over the window's foot (`data-foot-bar`: the tab bar, a page's
   // dock), whichever is higher. A keyboard still rising when the list opens resizes the visual viewport, so that
   // measures again too. A change while a reveal is moving the page (a list whose cap follows the scroll) waits until
-  // it has settled, so it never restarts the reveal it was caused by.
+  // it has settled, so it never restarts the reveal it was caused by. Once the reader moves the page themselves (a
+  // wheel, a drag, a press outside the box), nothing more is revealed until the list opens again: a reveal they
+  // stopped is never started again behind them. Typing in the box is not that.
   useEffect(() => {
     const el = field.current;
     if (!open || !el) return;
     const vv = window.visualViewport;
     const list = document.getElementById(`${id}-list`);
     let later: ReturnType<typeof setTimeout> | null = null;
+    let readerMoved = false;
     const check = () => {
       if (later !== null) clearTimeout(later);
       later = null;
+      if (readerMoved) return;
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
       const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
       if (needed > floor) reveal(el, "start");
     };
+    const moved = (e: Event) => {
+      if (e.type === "pointerdown" && e.target instanceof Node && el.contains(e.target)) return;
+      readerMoved = true;
+      if (later !== null) clearTimeout(later);
+      later = null;
+    };
+    const READER = ["wheel", "touchmove", "pointerdown"] as const;
+    for (const type of READER) window.addEventListener(type, moved, { capture: true, passive: true });
     check();
     vv?.addEventListener("resize", check);
     const grows = list && typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
     if (list) grows?.observe(list);
-    return () => { vv?.removeEventListener("resize", check); grows?.disconnect(); if (later !== null) clearTimeout(later); };
+    return () => {
+      for (const type of READER) window.removeEventListener(type, moved, { capture: true });
+      vv?.removeEventListener("resize", check);
+      grows?.disconnect();
+      if (later !== null) clearTimeout(later);
+    };
   }, [open, field, id]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;

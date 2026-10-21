@@ -250,6 +250,22 @@ describe("adding", () => {
     expect(reveal).toHaveBeenCalledWith(field, "start");
   });
 
+  it("never starts a reveal again once the reader has moved the page themselves", async () => {
+    vi.mocked(reveal).mockClear();
+    // A reveal is moving the page when the list opens, so the picker's check waits for it to settle...
+    vi.mocked(appScrolling).mockReturnValueOnce(true);
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, window.innerHeight - 100);
+    field.focus();
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+    // ...and the reader wheels the page before it does: the waiting check is dropped, not run.
+    window.dispatchEvent(new WheelEvent("wheel", { deltaY: 40 }));
+    await new Promise((done) => setTimeout(done, 200));
+    expect(reveal).not.toHaveBeenCalled();
+  });
+
   it("brings the field to the top when the open list would not fit under it", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
