@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-21T18:45:46Z"
+ },
+ "title": "The 99 · Bracket reach choice R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1600,
+   "h": 954,
+   "title": "Bracket reach R1 · the calls, rulings, gaps"
+  },
+  "Rows.dc.html": {
+   "x": 1680,
+   "y": 0,
+   "w": 2280,
+   "h": 1447,
+   "title": "B · the reach segment on Best fits and More commanders"
+  },
+  "Choice-Phone.dc.html": {
+   "x": 0,
+   "y": 1567,
+   "w": 1370,
+   "h": 2999,
+   "title": "C · the choice in the hand-off’s Bracket row · 390"
+  },
+  "Choice-Desktop.dc.html": {
+   "x": 1450,
+   "y": 1567,
+   "w": 2756,
+   "h": 3311,
+   "title": "C · the choice in the hand-off’s Bracket row · desktop"
+  },
+  "Form.dc.html": {
+   "x": 0,
+   "y": 4998,
+   "w": 1804,
+   "h": 3998,
+   "title": "A · the heads-up under the Bracket radios (on hold)"
+  },
+  "About-HMC.dc.html": {
+   "x": 1884,
+   "y": 4998,
+   "w": 1846,
+   "h": 2619,
+   "title": "About · Help me choose’s entry, the edit"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Rows.dc.html",
+  "Choice-Phone.dc.html",
+  "Choice-Desktop.dc.html",
+  "Form.dc.html",
+  "About-HMC.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
