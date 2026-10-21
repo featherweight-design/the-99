@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scan not ready</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+.hero{position:relative;height:150px;margin:6px 0 4px;display:flex;align-items:center;justify-content:center}
+.bf{position:relative;width:200px;height:150px}
+.bf span{position:absolute;left:65px;top:14px;width:70px;height:100px;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.bf span:nth-child(1){background:#20222A;border:1.5px solid #262A35;transform:translateX(-34px) rotate(-18deg)}
+.bf span:nth-child(2){background:#1B1D25;border:1.5px solid #343843}
+.bf span:nth-child(3){background:color-mix(in srgb,#FF4D9A 14%,#16181F);border:1.5px solid #FF4D9A;transform:translateX(34px) rotate(18deg);font:700 26px 'Chakra Petch',sans-serif;color:#FF4D9A}
+.bf.go span{animation:fanshuf 2.4s ease-in-out infinite}
+.bf.go span:nth-child(1){animation-delay:-.8s}.bf.go span:nth-child(2){animation-delay:-1.6s}
+@keyframes fanshuf{0%,100%{}50%{transform:translateX(0) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.bf.go span{animation:none}}
+.sm{position:relative;width:132px;height:150px;display:flex;align-items:center;justify-content:center}
+.sm .c{width:84px;height:118px;border-radius:8px;background:color-mix(in srgb,#FF4D9A 10%,#16181F);border:1.5px solid #343843;display:flex;align-items:center;justify-content:center;font:700 28px 'Chakra Petch',sans-serif;color:#FF4D9A;position:relative;overflow:hidden}
+.sm .c em{position:absolute;left:0;right:0;height:2px;background:#FF4D9A;box-shadow:0 0 12px #FF4D9A;top:58%}
+.sm.go .c em{animation:sweep 1.8s ease-in-out infinite alternate}
+@keyframes sweep{from{top:8%}to{top:92%}}
+@media (prefers-reduced-motion:reduce){.sm.go .c em{animation:none}}
+.sm i{position:absolute;width:22px;height:22px;border-color:#FF4D9A;border-style:solid;border-width:0}
+.sm i:nth-of-type(1){left:6px;top:4px;border-left-width:3px;border-top-width:3px;border-top-left-radius:6px}
+.sm i:nth-of-type(2){right:6px;top:4px;border-right-width:3px;border-top-width:3px;border-top-right-radius:6px}
+.sm i:nth-of-type(3){left:6px;bottom:4px;border-left-width:3px;border-bottom-width:3px;border-bottom-left-radius:6px}
+.sm i:nth-of-type(4){right:6px;bottom:4px;border-right-width:3px;border-bottom-width:3px;border-bottom-right-radius:6px}
+.cnt{position:relative;width:62px;height:52px;flex:none}
+.cnt span{position:absolute;top:4px;width:32px;height:45px;border-radius:4px;box-sizing:border-box;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.cnt span:nth-child(1){left:2px;background:#20222A;border:1px solid #262A35;transform:rotate(-8deg)}
+.cnt span:nth-child(2){left:13px;background:#1B1D25;border:1px solid #343843;transform:rotate(-1deg)}
+.cnt span:nth-child(3){left:24px;background:color-mix(in srgb,#FF4D9A 14%,#16181F);border:1px solid #FF4D9A;transform:rotate(7deg);display:flex;align-items:center;justify-content:center;font:700 17px 'Chakra Petch',sans-serif;color:#FF4D9A;overflow:hidden}
+.cnt span:nth-child(3) img{width:100%;height:100%;object-fit:cover;display:block}
+.cnt.flip span:nth-child(3){transform:rotate(7deg) perspective(200px) rotateY(18deg)}
+
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#FF4D9A}
+button{font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.55;color:#959AAD;margin:0;text-wrap:pretty}
+.cap b{color:#E6E8F0;font-weight:600}
+.new{outline:1.5px dashed rgba(255,77,154,.6);outline-offset:4px}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1700px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.row{display:flex;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.fr.p{width:390px}
+.fr.d{width:1300px}
+/* phone shell */
+.ph{width:390px;height:844px;flex:none;border-radius:34px;border:1px solid #262A35;background:#0E0F14;overflow:hidden;position:relative;display:flex;flex-direction:column;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0}
+/* the Add cards sheet, full screen on the phone (sheet-frame.ts) */
+.sh{position:absolute;inset:0;background:#16181F;display:flex;flex-direction:column}
+.shh{display:flex;align-items:center;gap:12px;padding:16px 18px 12px}
+.sht{margin:0;flex:1;font:700 19px 'Chakra Petch',sans-serif}
+.x{width:44px;height:44px;border-radius:10px;background:#20222A;color:#959AAD;border:0;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.srow{display:flex;gap:8px;padding:0 18px}
+.ssf{flex:1;height:48px;border-radius:8px;background:#101219;border:1px solid #262A35;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:16px;color:#7D8294;min-width:0}
+.scan{flex:none;height:48px;padding:0 14px;border-radius:8px;border:1px solid #262A35;background:#101219;color:#E6E8F0;display:inline-flex;align-items:center;gap:8px;font:500 15px 'IBM Plex Sans',sans-serif}
+.scan svg{color:#FF4D9A}
+.sb{flex:1;min-height:0;overflow:hidden;padding:12px 18px;display:flex;flex-direction:column;gap:10px}
+.sb p.e{margin:0;font-size:14px;line-height:1.6;color:#B1B6C7}
+.alt{text-decoration:none;display:flex;align-items:center;gap:12px;min-height:52px;padding:0 14px;border-radius:10px;border:1px solid #181C26;background:#0E0F14;font-size:14px;color:#E6E8F0}
+.alt .ic{display:flex;color:#FF4D9A}.alt .go{color:#FF4D9A}.alt .ch{color:#6F7486;margin-left:auto}
+.lh{display:flex;align-items:baseline;gap:10px;padding:6px 0 0}
+.lh span{font:10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.lines{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.ln{position:relative;display:flex;flex-direction:column;gap:10px;border-radius:10px;border:1px solid #181C26;background:#0E0F14;padding:12px}
+.ln.on{border-color:#FF4D9A}
+.lt{display:flex;align-items:flex-start;gap:12px}
+.th{width:30px;height:42px;border-radius:4px;overflow:hidden;flex:none;background:#101219}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.lnm{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.cardb{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;max-width:100%;min-height:24px;border:0;background:transparent;padding:0;color:#E6E8F0;font:600 14px 'IBM Plex Sans',sans-serif;text-align:left}
+.cardb .cv{color:#6F7486;font-size:11px;flex:none}
+.chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;height:32px;padding:0 10px;border-radius:7px;border:1px solid #262A35;background:transparent;font:11.5px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.chip.need{border:1px dashed #E0913C;color:#E0913C}
+.lx{width:44px;height:44px;margin:-8px -8px 0 0;border:0;background:transparent;color:#6F7486;font-size:13px;flex:none}
+.lc{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fo{height:44px;padding:0 14px;border-radius:999px;border:1px solid #262A35;background:transparent;color:#959AAD;font-size:12.5px;display:inline-flex;align-items:center;gap:6px}
+.st{display:inline-flex;align-items:center;height:44px;border:1px solid #262A35;border-radius:9px;overflow:hidden}
+.st span{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.st b{width:36px;text-align:center;font:400 16px 'IBM Plex Sans',sans-serif;border-left:1px solid #262A35;border-right:1px solid #262A35;line-height:44px}
+.own{font-size:11px;color:#6F7486}
+.own.up{color:#6FA368}
+.col{display:flex;align-items:center;gap:12px;border-radius:10px;border:1px solid #181C26;background:#0E0F14;padding:12px}
+.col .n{flex:1;min-width:0;font:600 14px 'IBM Plex Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col .p{font:11px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.col .q{font-size:13px;color:#959AAD}
+.note{display:flex;align-items:center;gap:10px;border-radius:8px;border:1px solid #181C26;background:#12141B;padding:10px 12px;font-size:13px;color:#B1B6C7}
+.note .ok{color:#6FA368}
+.sf{border-top:1px solid #262A35;background:#12141B;padding:12px 18px 16px;display:flex;align-items:center;gap:12px;flex:none}
+.sf .s{flex:1;font-size:12px;color:#959AAD}
+.sv{height:46px;padding:0 22px;border-radius:10px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif}
+.sv.off{opacity:.4}
+/* region: which card / which printing (printing-region.tsx, row layout) */
+.reg{display:flex;flex-direction:column;gap:12px;border-top:1px solid #181C26;padding-top:12px}
+.reg .q{margin:0;font-size:13.5px;color:#959AAD;display:flex;align-items:center;gap:10px}
+.tiles{display:flex;gap:10px;overflow:hidden}
+.pt{width:96px;flex:none;display:flex;flex-direction:column;border:0;background:transparent;padding:0;text-align:left;color:#E6E8F0}
+.pt .a{position:relative;width:96px;aspect-ratio:63/88;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.pt .a img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pt.on .a{outline:2px solid #FF4D9A;outline-offset:3px}
+.pt .bd{position:absolute;top:8px;right:8px;width:21px;height:21px;border-radius:5px;background:#FF4D9A;color:#0E0F14;font-size:11px;display:flex;align-items:center;justify-content:center}
+.pt .t1{margin-top:7px;font-size:12px;line-height:1.3}
+.pt.on .t1{font-weight:600}
+.pt .t2{margin-top:2px;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.pt .t3{margin-top:3px;display:flex;align-items:center;gap:5px;font:9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#FF4D9A}
+.pt .t3 i{width:7px;height:7px;background:#FF4D9A;transform:rotate(45deg);display:block}
+.photo{width:44px;height:62px;border-radius:5px;overflow:hidden;flex:none;position:relative;background:#2A241C}
+.photo img{position:absolute;width:120%;height:120%;left:-6%;top:-4%;object-fit:cover;transform:rotate(-4deg);filter:blur(.6px) brightness(.8) saturate(.8)}
+.tx{border:0;background:transparent;color:#FF4D9A;font-size:13.5px;padding:0;min-height:44px;text-align:left}
+/* the scanner, phone: full screen camera */
+.cam{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse 80% 55% at 45% 34%,#4A3F31 0%,#2B241C 45%,#15120E 80%,#0D0B09 100%)}
+.cam.dark{background:radial-gradient(ellipse 80% 55% at 45% 34%,#1F1A14 0%,#120F0C 50%,#070605 100%)}
+.cam::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(97deg,rgba(255,255,255,.012) 0 2px,transparent 2px 9px)}
+.card{position:absolute;left:80px;top:122px;width:230px;height:321px;border-radius:12px;overflow:hidden;box-shadow:0 18px 30px rgba(0,0,0,.55);transform:rotate(-2.5deg)}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card.soft img{filter:blur(1.6px)}
+.card.dim img{filter:brightness(.42) saturate(.7) blur(.8px)}
+.card.sleeve::after{content:'';position:absolute;inset:0;background:linear-gradient(118deg,rgba(255,255,255,0) 20%,rgba(255,255,255,.34) 38%,rgba(255,255,255,.05) 52%,rgba(255,255,255,0) 70%)}
+.card.sleeve img{filter:blur(.9px) contrast(.85)}
+.card.held img{filter:brightness(.8)}
+.guide{position:absolute;left:66px;top:108px;width:258px;height:350px;pointer-events:none}
+.guide i{position:absolute;width:34px;height:34px;border-color:rgba(230,232,240,.55);border-style:solid;border-width:0}
+.guide i:nth-child(1){left:0;top:0;border-left-width:3px;border-top-width:3px;border-top-left-radius:14px}
+.guide i:nth-child(2){right:0;top:0;border-right-width:3px;border-top-width:3px;border-top-right-radius:14px}
+.guide i:nth-child(3){left:0;bottom:0;border-left-width:3px;border-bottom-width:3px;border-bottom-left-radius:14px}
+.guide i:nth-child(4){right:0;bottom:0;border-right-width:3px;border-bottom-width:3px;border-bottom-right-radius:14px}
+.guide.lit i{border-color:#FF4D9A}
+.guide.ok i{border-color:#6FA368}
+.guide.dash i{border-style:dashed;border-color:rgba(230,232,240,.35)}
+.top{position:absolute;left:0;right:0;top:0;height:68px;display:flex;align-items:center;gap:10px;padding:12px 12px 0;z-index:3}
+.cx{width:44px;height:44px;border-radius:50%;border:0;background:rgba(14,15,20,.72);color:#E6E8F0;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.seg{margin:0 auto;display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:rgba(14,15,20,.78);border:1px solid rgba(38,42,53,.9)}
+.seg button{height:38px;min-width:76px;padding:0 14px;border-radius:9px;border:0;background:transparent;color:#B1B6C7;font:500 14px 'IBM Plex Sans',sans-serif}
+.seg button.on{background:#20222A;color:#E6E8F0;box-shadow:inset 0 -2px 0 #FF4D9A}
+.torch{width:44px;height:44px;border-radius:50%;border:0;background:rgba(14,15,20,.72);color:#E6E8F0;display:flex;align-items:center;justify-content:center;flex:none}
+.torch.ring{box-shadow:0 0 0 2px #FF4D9A;color:#FF4D9A}
+.torch.lit{background:#E6E8F0;color:#0E0F14}
+.torch.void{visibility:hidden}
+.dark-b{position:absolute;left:12px;right:12px;top:72px;z-index:3;display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:12px;background:rgba(18,20,27,.92);border:1px solid #262A35;font-size:13.5px;line-height:1.5;color:#E6E8F0}
+.dark-b svg{flex:none;margin-top:2px;color:#E0913C}
+.panel{position:absolute;left:8px;right:8px;bottom:92px;z-index:3;border-radius:18px;background:rgba(18,20,27,.94);border:1px solid #262A35;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.panel .m{margin:0;font-size:14px;line-height:1.55;color:#B1B6C7}
+.panel .h{margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.dots{display:flex;gap:6px;align-items:center}
+.dots i{width:8px;height:8px;border-radius:50%;background:#343843;display:block}
+.dots i.on{background:#FF4D9A}
+.guess{display:flex;gap:14px;align-items:center}
+.gc{width:64px;height:89px;border-radius:6px;overflow:hidden;flex:none;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.gc img{width:100%;height:100%;object-fit:cover;display:block}
+.gt{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.gt b{font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.gt span{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.gt .okk{color:#6FA368;font:12px 'IBM Plex Mono',monospace}
+.big{height:52px;border-radius:12px;border:0;background:#FF4D9A;color:#0E0F14;font:600 16px 'IBM Plex Sans',sans-serif;width:100%}
+.big.down{background:#D33E7E;transform:scale(.985)}
+.big2{height:52px;border-radius:12px;border:1px solid #343843;background:transparent;color:#E6E8F0;font:500 15px 'IBM Plex Sans',sans-serif;width:100%}
+.hold{position:absolute;top:14px;right:14px;font:10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#E0913C;border:1px solid #E0913C;border-radius:4px;padding:2px 6px}
+.pick3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pick3 button{border:0;background:transparent;padding:0;text-align:left;color:#E6E8F0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.pick3 .a{width:100%;aspect-ratio:63/88;border-radius:9px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.pick3 .a img{width:100%;height:100%;object-fit:cover;display:block}
+.pick3 span{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tray{position:absolute;left:0;right:0;bottom:0;height:84px;z-index:4;display:flex;align-items:center;gap:12px;padding:0 14px 8px;background:#0E0F14;border-top:1px solid #181C26}
+.stack{position:relative;width:62px;height:52px;flex:none}
+.stack span{position:absolute;top:4px;width:32px;height:45px;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:1px solid #0E0F14}
+.stack span img{width:100%;height:100%;object-fit:cover;display:block}
+.stack span:nth-child(1){left:0;transform:rotate(-8deg)}
+.stack span:nth-child(2){left:13px;transform:rotate(-1deg)}
+.stack span:nth-child(3){left:26px;transform:rotate(7deg)}
+.tray .c{flex:1;font-size:14px;color:#B1B6C7}
+.tray .c b{color:#E6E8F0;font-weight:600}
+.tray .rv{height:48px;padding:0 20px;border-radius:10px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif}
+.tray .rv.off{opacity:.4}
+.fly{position:absolute;z-index:5;left:150px;top:470px;width:110px;height:154px;border-radius:8px;overflow:hidden;transform:rotate(-14deg) perspective(400px) rotateY(24deg);box-shadow:0 14px 30px rgba(0,0,0,.6);opacity:.95}
+.fly img{width:100%;height:100%;object-fit:cover}
+.trail{position:absolute;z-index:4;left:40px;top:560px;width:180px;height:180px;border-left:1.5px dashed rgba(255,77,154,.45);border-bottom:1.5px dashed rgba(255,77,154,.0);border-radius:0 0 0 160px;transform:rotate(8deg)}
+.pulse{position:absolute;z-index:5;left:10px;bottom:16px;width:72px;height:60px;border-radius:12px;box-shadow:0 0 0 2px rgba(255,77,154,.6)}
+/* screens inside the scanner before the camera */
+.pre{position:absolute;inset:0;background:#0E0F14;display:flex;flex-direction:column}
+.pre .body{flex:1;display:flex;flex-direction:column;gap:16px;padding:24px 22px}
+.fan{position:relative;height:150px;margin:6px 0 4px}
+.fan span{position:absolute;top:10px;width:92px;height:128px;border-radius:7px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.55)}
+.fan span img{width:100%;height:100%;object-fit:cover}
+.fan span:nth-child(1){left:70px;transform:rotate(-11deg)}
+.fan span:nth-child(2){left:140px;top:0;transform:rotate(0deg);z-index:2}
+.fan span:nth-child(3){left:210px;transform:rotate(11deg)}
+.pre h3{margin:0;font:700 24px 'Chakra Petch',sans-serif}
+.pre p{margin:0;font-size:15px;line-height:1.6;color:#B1B6C7}
+.pre p.n{font-size:13px;color:#959AAD}
+.bar{height:8px;border-radius:4px;background:#20222A;overflow:hidden}
+.bar i{display:block;height:100%;background:#FF4D9A;border-radius:4px}
+.bar.pause i{background:#E0913C}
+.fig{display:flex;justify-content:space-between;font:12.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.fig b{color:#E6E8F0;font-weight:500}
+.pfoot{padding:14px 22px 22px;display:flex;flex-direction:column;gap:10px}
+.toast{position:absolute;left:12px;right:12px;bottom:24px;z-index:7;display:flex;align-items:center;gap:12px;padding:10px 6px 10px 16px;border-radius:12px;background:#20222A;border:1px solid #343843;box-shadow:0 18px 40px rgba(0,0,0,.5);font-size:14px;color:#E6E8F0}
+.toast span{flex:1}
+.toast a{font-weight:600;text-underline-offset:3px}
+.toast .xx{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:14px}
+/* saved receipt (added-receipt.tsx) */
+.rcpt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:18px 0}
+.rcpt .tk{width:40px;height:40px;border-radius:50%;background:rgba(111,163,104,.14);color:#6FA368;display:flex;align-items:center;justify-content:center;font-size:18px}
+.rcpt h4{margin:4px 0 0;font:700 21px 'Chakra Petch',sans-serif}
+.rcpt p{margin:0;font-size:14px;color:#B1B6C7}
+.rcpt .cn{font:13px 'IBM Plex Mono',monospace;color:#959AAD}
+.rcpt .bt{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
+.b2{min-height:44px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font-size:14px}
+.b1{min-height:44px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+/* desktop */
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.rail{width:64px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:6px}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#959AAD}
+.slot.cur{background:#20222A;color:#E6E8F0}
+.av{margin-top:auto;width:28px;height:28px;border-radius:50%;border:1px solid #262A35;color:#B1B6C7;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.chd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:28px 34px 0}
+.ct{margin:0;font:700 30px/45px 'Chakra Petch',sans-serif}
+.cs{margin:4px 0 0;font:12px/18px 'IBM Plex Mono',monospace;color:#6F7486}
+.gb{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:9px 16px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0}
+.gb.p{background:#FF4D9A;border-color:#FF4D9A;color:#0E0F14;font-weight:600}
+.ctabs{display:flex;gap:4px;height:40px;margin-top:14px;padding:0 24px;border-bottom:1px solid #181C26}
+.ctab{display:flex;align-items:center;padding:0 10px;font-size:14px;color:#959AAD}
+.ctab.on{color:#E6E8F0;font-weight:600;box-shadow:inset 0 -2px 0 #FF4D9A}
+.dgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;padding:18px 34px}
+.dgrid .t{border-radius:10px;overflow:hidden;background:#16181F;border:1px solid #181C26}
+.dgrid .t div{aspect-ratio:63/88;overflow:hidden}
+.dgrid .t img{width:100%;height:100%;object-fit:cover;display:block}
+.dgrid .t span{display:block;padding:7px 10px 9px;font:600 12.5px 'IBM Plex Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsh{position:absolute;top:0;right:0;bottom:0;width:480px;background:#16181F;border-left:1px solid #262A35;box-shadow:-24px 0 60px rgba(0,0,0,.45);z-index:4;display:flex;flex-direction:column}
+.dsh .shh{padding:20px 22px 14px}
+.dsh .sht{font-size:21px}
+.dsh .x{width:34px;height:34px;border-radius:8px;font-size:13px}
+.dsh .srow{padding:0 22px}
+.dsh .ssf{height:46px;font-size:14px}
+.dsh .scan{height:46px;font-size:14px}
+.dsh .sb{padding:12px 22px}
+.dsh .sf{padding:14px 22px 18px}
+.dsh .sv{height:40px;border-radius:8px;font-size:14px}
+.dsh .ln{padding:12px}
+.dsh .chip{height:24px;font-size:11px;border-radius:6px;padding:0 8px}
+.dsh .fo{height:28px;font-size:12px;padding:0 10px}
+.dsh .st{height:28px;border-radius:7px}
+.dsh .st span{width:28px;height:28px}
+.dsh .st b{width:30px;line-height:28px;font-size:13px}
+.dsh .lx{width:28px;height:28px;margin:0}
+.dsh .lc .own{margin-left:auto}
+.dsh .col{padding:10px 12px}
+/* desktop scan area inside the sheet */
+.dscan{margin:0 22px;border:1px solid #262A35;border-radius:12px;overflow:hidden;background:#101219;display:flex;flex-direction:column}
+.dsh-h{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-bottom:1px solid #181C26}
+.dsh-h .k{flex:1}
+.dsh-h .seg{margin:0;background:#0E0F14}
+.dsh-h .seg button{height:30px;min-width:64px;font-size:13px}
+.dsh-h .x{width:34px;height:34px;border-radius:8px;font-size:13px}
+.web{position:relative;height:250px;overflow:hidden;background:radial-gradient(ellipse 70% 60% at 50% 40%,#3C3A42 0%,#26252B 55%,#151418 100%)}
+.web .card{left:162px;top:20px;width:150px;height:209px;border-radius:8px;transform:rotate(3deg)}
+.web .guide{left:150px;top:10px;width:174px;height:229px}
+.web .guide i{width:24px;height:24px}
+.dres{padding:12px 14px;display:flex;flex-direction:column;gap:12px;border-top:1px solid #181C26}
+.dres .guess .gc{width:50px;height:70px}
+.bigd{white-space:nowrap;flex:none;height:40px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif;padding:0 18px}
+.dres .pick3 span{font-size:11.5px}
+.dl{font-size:13px;color:#959AAD;display:flex;align-items:center;gap:8px}
+.dl a{text-underline-offset:3px}
+.ph-row{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:9px;border:1px solid #181C26;background:#0E0F14}
+.ph-row .photo{width:36px;height:50px}
+.ph-row .arrow{color:#6F7486;font-size:12px}
+.ph-row .gc{width:36px;height:50px;border-radius:4px}
+.ph-row .gt b{font-size:13.5px}
+.ph-row .gt span{font-size:10.5px}
+.tag{font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.tag.ok{color:#6FA368;background:rgba(111,163,104,.12)}
+.tag.w{color:#E0913C;background:rgba(224,145,60,.12)}
+.ann{font:12px 'IBM Plex Mono',monospace;color:#FF4D9A;margin:0}
+</style>
+<style>
+.state{display:inline-flex;align-items:center;gap:8px}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.was{color:#959AAD;border:1px solid #343843}
+.pill.now{color:#0E0F14;background:#FF4D9A}
+.pill.ok{color:#6FA368;border:1px solid rgba(111,163,104,.6)}
+.poly{position:absolute;inset:0;pointer-events:none;z-index:2}
+.notice{position:absolute;left:12px;right:12px;top:72px;z-index:3;margin:0;padding:11px 14px;border-radius:12px;background:rgba(18,20,27,.92);border:1px solid #262A35;font-size:13.5px;line-height:1.5;color:#E6E8F0}
+.dnotice{margin:10px 14px 0;padding:11px 14px;border-radius:12px;background:rgba(18,20,27,.92);border:1px solid #262A35;font-size:13.5px;line-height:1.5;color:#E6E8F0}
+.miss{position:absolute;z-index:6;font:600 11px 'IBM Plex Mono',monospace;color:#0E0F14;background:#E0913C;border-radius:999px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(224,145,60,.25)}
+.legend{display:flex;flex-direction:column;gap:10px;width:430px;flex:none;padding-top:30px}
+.li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.55;color:#B1B6C7}
+.li .miss{position:static;flex:none}
+.li b{color:#E6E8F0;font-weight:600}
+.spec{border:1px solid #262A35;border-radius:12px;background:#12141B;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.spec h4{margin:0;font:600 14px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.spec p{margin:0;font-size:13px;line-height:1.55;color:#B1B6C7}
+.spec code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.nr{position:absolute;inset:0;background:#0E0F14;display:flex;flex-direction:column;z-index:8}
+.nr .tb{position:relative;height:60px;padding:12px 12px 0}
+.nr .tb .cx{background:#20222A}
+.nr .bd{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px;padding:24px 22px}
+.ic{display:flex;align-items:center;justify-content:center;background:#20222A;color:#959AAD;flex:none}
+.nr h3{margin:0;font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.nr p{margin:0;font-size:15px;line-height:1.6;color:#B1B6C7}
+.sheetbg{position:absolute;inset:0;background:#16181F}
+</style>
+</helmet>
+<div class="board" style="width:2756px">
+<div class="bh"><span class="k">Addendum · item 1 · card scanning · phone 390 and desktop 1300 · Kamigawa theme</span><h2>Not ready: the scanner stops and says so, in the blocked screen’s form</h2><p class="cap" style="max-width:1640px">When the server answers <b>no-index</b>, the shipped scanner keeps reading: the dashed outline, <b>Show a card to the camera</b>, Auto and Normal and the light all stay live, and the reason flashes for 3s. Every one of them is a press or a promise that cannot work (D3’s Must not). From the first no-index answer the scanner becomes a still screen, drawn as the shipped camera-blocked screen is: the camera off, one title, one line, and only the shipped close.</p></div>
+
+<div class="row">
+<div class="fr p"><span class="state"><span class="pill was">As shipped</span><span class="k">N0 · phone · no-index answered</span></span>
+<div class="ph">
+<div class="cam" aria-hidden="true"><div class="card"><img src="/_blob/7d349cd15905e23d32fbb44611649ded" alt=""></div>
+<svg class="poly" width="390" height="844" viewBox="0 0 390 844" aria-hidden="true"><polygon points="73.1,127.2 302.9,117.1 316.9,437.8 87.1,447.9" fill="none" stroke="rgba(230,232,240,.55)" stroke-width="3" stroke-linejoin="round" stroke-dasharray="9 7"/></svg></div>
+<div class="top"><button class="cx" type="button" aria-label="Close the scanner">✕</button><div class="seg" role="group" aria-label="Printing"><button type="button" class="on" aria-pressed="true">Auto</button><button type="button" aria-pressed="false">Normal</button></div><button class="torch" type="button" aria-label="Light"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0012 3z"/></svg></button></div>
+<p class="notice" role="alert">Scanning isn’t ready yet. Add cards by name for now.</p>
+<div class="panel"><p class="h">Show a card to the camera</p><p class="m"><b style="color:#E6E8F0;font-weight:600">Auto:</b> each card goes on the list as soon as it reads, at its first printing. You can change any of them on the list.</p></div>
+<div class="tray"><span class="cnt" aria-hidden="true"><span></span><span></span><span>0</span></span><span class="c">Nothing on the list yet</span><button class="rv off" type="button" aria-disabled="true">Review</button></div>
+<span class="miss" style="left:290px;top:146px">1</span><span class="miss" style="left:354px;top:80px">2</span><span class="miss" style="left:354px;top:640px">3</span><span class="miss" style="left:248px;top:30px">4</span>
+</div>
+<p class="cap">Today, after the first lookup answers no-index. The notice is gone 3s later, and the screen goes on asking for cards it cannot check.</p></div>
+
+<div class="fr p"><span class="state"><span class="pill now">This addendum</span><span class="k">N1 · phone · not ready</span></span>
+<div class="ph">
+<div class="nr">
+<div class="tb"><button class="cx" type="button" aria-label="Close the scanner">✕</button></div>
+<div class="bd">
+<span class="ic" style="width:56px;height:56px;border-radius:14px;margin-top:30px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 9V5h4M16 5h4v4M20 15v4h-4M8 19H4v-4"/></svg></span>
+<h3>Scanning isn’t ready yet</h3>
+<p>There’s nothing to check cards against yet, so the camera is off.</p>
+<p style="font-size:13px;color:#959AAD">Close this to add cards by name for now.</p>
+</div>
+</div>
+</div>
+<p class="cap">The shipped camera-blocked screen (D6), with its words and without its press: there is nothing to choose here, so ✕ is the only control, and it lands on the sheet’s search.</p></div>
+
+<div class="legend">
+<span class="k">What goes, from the first no-index answer</span>
+<div class="li"><span class="miss">1</span><span><b>The outline.</b> Reading stops and the camera is released, so nothing is outlined and the feed goes with it.</span></div>
+<div class="li"><span class="miss">2</span><span><b>The 3s notice.</b> Not ready is not a passing problem, so it is the screen, not a notice. The notice keeps every other use: under the top bar on the phone (72px, 132px under the dark line), under the feed on desktop. Confirmed as shipped.</span></div>
+<div class="li"><span class="miss">3</span><span><b>Show a card to the camera</b> and the Auto line. The panel and the tray go; nothing was added by scanning, and the sheet’s list is under ✕.</span></div>
+<div class="li"><span class="miss">4</span><span><b>Auto, Normal and the light.</b> Controls for a camera that is off, so they go, as on the blocked screen.</span></div>
+<div class="spec" style="margin-top:8px"><h4>Trigger and exit</h4><p>Shown from the first lookup answered <code>no-index</code> (the hook’s <code>notReady</code>) until ✕ or Stop. Photos already being read keep their shipped row line. A later Scan press opens the camera again and asks again.</p></div>
+<div class="spec"><h4>For engineering (not a design call)</h4><p>If the server can say it has no index before a frame is sent, open straight on this screen and skip the camera prompt. Either way the screen is the same.</p></div>
+<div class="spec"><h4>New words, for /copy-review</h4><p><code>notReady.title</code> Scanning isn’t ready yet<br><code>notReady.body</code> There’s nothing to check cards against yet, so the camera is off.<br><code>notReady.line</code> Close this to add cards by name for now.<br><code>notReady.bodyDesk</code> There’s nothing to check cards against yet, so the webcam is off. Stop takes you back to the search, to add cards by name for now.</p></div>
+</div>
+</div>
+
+<div class="row">
+<div class="fr d"><span class="state"><span class="pill was">As shipped</span><span class="k">N0d · desktop · no-index answered</span></span>
+<div class="dk"><nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+<a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+<a class="slot cur" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+<a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+<a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+<a class="slot" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+<span class="av">HH</span></nav><div class="main"><div class="chd"><div><h1 class="ct">Collection</h1><p class="cs">4,492 cards · 2,871 unique</p></div><div style="display:flex;gap:10px"><button class="gb" type="button">Upload a file</button><button class="gb p" type="button">+ Add cards</button></div></div>
+<div class="ctabs"><span class="ctab on">Cards</span><span class="ctab">Sets</span><span class="ctab">Wishlist</span><span class="ctab">History</span></div>
+<div class="dgrid"><div class="t"><div><img src="/_blob/69f52a513faf217dd238776a349e9012" alt=""></div><span>Ghalta, Primal Hunger</span></div><div class="t"><div><img src="/_blob/f769098bb75f3ac73771c2e6e940d20b" alt=""></div><span>Giada, Font of Hope</span></div><div class="t"><div><img src="/_blob/4a72c7a743017d01111e40aaa3b44681" alt=""></div><span>Lathliss, Dragon Queen</span></div><div class="t"><div><img src="/_blob/d94fd3c9f5d8b4f4d120d9d409ef7842" alt=""></div><span>Miku, Song of the People</span></div><div class="t"><div><img src="/_blob/f6c2919a01cc12385ba7e1af482e85eb" alt=""></div><span>Killian, Decisive Mentor</span></div><div class="t"><div><img src="/_blob/a6b0da3d38f6b8f6d072dfaaa70269c8" alt=""></div><span>Rootha, Mastering the Moment</span></div><div class="t"><div><img src="/_blob/49daaf0b2a49225410e21589d6aac1cb" alt=""></div><span>Quintorius, History Chaser</span></div><div class="t"><div><img src="/_blob/4b66c27fc71438921e13d430b2b58ed9" alt=""></div><span>Ghoulcaller Gisa</span></div><div class="t"><div><img src="/_blob/fcae66d5b6a4252ac67532bc3cbffb6d" alt=""></div><span>Zada, Hedron Grinder</span></div><div class="t"><div><img src="/_blob/aef93d35103bfbc15f5d7015604344a5" alt=""></div><span>Ashling, the Limitless</span></div><div class="t"><div><img src="/_blob/bda3a6c12d57bc14fd8152914c6ecd54" alt=""></div><span>Dina, Essence Brewer</span></div><div class="t"><div><img src="/_blob/6e016f09a64a51eef39a37faa78be5eb" alt=""></div><span>Jace, Multiverse Architect</span></div></div></div>
+<div class="dsh" role="dialog" aria-label="Add cards"><div class="shh"><h2 class="sht">Add cards</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+<div class="dscan" style="position:relative"><div class="dsh-h"><span class="k">Webcam</span><div class="seg" role="group" aria-label="Printing"><button type="button" class="on" aria-pressed="true">Auto</button><button type="button" aria-pressed="false">Normal</button></div><button class="gb" type="button" style="padding:7px 12px">Stop</button></div>
+<div class="web" aria-hidden="true"><div class="card"><img src="/_blob/7d349cd15905e23d32fbb44611649ded" alt=""></div><svg class="poly" width="434" height="250" viewBox="0 0 434 250" aria-hidden="true"><polygon points="167.6,16.2 317.4,24.1 306.4,232.8 156.6,224.9" fill="none" stroke="rgba(230,232,240,.55)" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/></svg></div>
+<p class="dnotice" role="alert">Scanning isn’t ready yet. Add cards by name for now.</p>
+<div class="dres"><p style="margin:0;font-weight:600;font-size:15px">Show a card to the camera</p><p class="cap" style="font-size:14px;color:#B1B6C7"><b>Auto:</b> each card goes on the list as soon as it reads, at its first printing. You can change any of them on the list.</p></div>
+<span class="miss" style="left:300px;top:60px">1</span><span class="miss" style="left:398px;top:308px">2</span><span class="miss" style="left:398px;top:372px">3</span><span class="miss" style="left:262px;top:12px">4</span>
+</div>
+<div class="sb"></div><div class="sf"><span class="s">Nothing on the list yet</span><button class="sv off" type="button">Save</button></div></div></div>
+<p class="cap">The same keep-reading on desktop: the notice under the feed for 3s, then the feed and Show a card to the camera alone.</p></div>
+
+<div class="fr d"><span class="state"><span class="pill now">This addendum</span><span class="k">N1d · desktop · not ready</span></span>
+<div class="dk"><nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+<a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+<a class="slot cur" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+<a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+<a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+<a class="slot" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+<span class="av">HH</span></nav><div class="main"><div class="chd"><div><h1 class="ct">Collection</h1><p class="cs">4,492 cards · 2,871 unique</p></div><div style="display:flex;gap:10px"><button class="gb" type="button">Upload a file</button><button class="gb p" type="button">+ Add cards</button></div></div>
+<div class="ctabs"><span class="ctab on">Cards</span><span class="ctab">Sets</span><span class="ctab">Wishlist</span><span class="ctab">History</span></div>
+<div class="dgrid"><div class="t"><div><img src="/_blob/69f52a513faf217dd238776a349e9012" alt=""></div><span>Ghalta, Primal Hunger</span></div><div class="t"><div><img src="/_blob/f769098bb75f3ac73771c2e6e940d20b" alt=""></div><span>Giada, Font of Hope</span></div><div class="t"><div><img src="/_blob/4a72c7a743017d01111e40aaa3b44681" alt=""></div><span>Lathliss, Dragon Queen</span></div><div class="t"><div><img src="/_blob/d94fd3c9f5d8b4f4d120d9d409ef7842" alt=""></div><span>Miku, Song of the People</span></div><div class="t"><div><img src="/_blob/f6c2919a01cc12385ba7e1af482e85eb" alt=""></div><span>Killian, Decisive Mentor</span></div><div class="t"><div><img src="/_blob/a6b0da3d38f6b8f6d072dfaaa70269c8" alt=""></div><span>Rootha, Mastering the Moment</span></div><div class="t"><div><img src="/_blob/49daaf0b2a49225410e21589d6aac1cb" alt=""></div><span>Quintorius, History Chaser</span></div><div class="t"><div><img src="/_blob/4b66c27fc71438921e13d430b2b58ed9" alt=""></div><span>Ghoulcaller Gisa</span></div><div class="t"><div><img src="/_blob/fcae66d5b6a4252ac67532bc3cbffb6d" alt=""></div><span>Zada, Hedron Grinder</span></div><div class="t"><div><img src="/_blob/aef93d35103bfbc15f5d7015604344a5" alt=""></div><span>Ashling, the Limitless</span></div><div class="t"><div><img src="/_blob/bda3a6c12d57bc14fd8152914c6ecd54" alt=""></div><span>Dina, Essence Brewer</span></div><div class="t"><div><img src="/_blob/6e016f09a64a51eef39a37faa78be5eb" alt=""></div><span>Jace, Multiverse Architect</span></div></div></div>
+<div class="dsh" role="dialog" aria-label="Add cards"><div class="shh"><h2 class="sht">Add cards</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+<div class="dscan"><div class="dsh-h"><span class="k">Webcam</span><button class="gb" type="button" style="padding:7px 12px">Stop</button></div>
+<div style="padding:22px 16px;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><span class="ic" style="width:44px;height:44px;border-radius:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 9V5h4M16 5h4v4M20 15v4h-4M8 19H4v-4"/></svg></span><b style="font:700 18px 'Chakra Petch',sans-serif">Scanning isn’t ready yet</b><p class="cap">There’s nothing to check cards against yet, so the webcam is off. Stop takes you back to the search, to add cards by name for now.</p></div></div>
+<div class="sb"></div><div class="sf"><span class="s">Nothing on the list yet</span><button class="sv off" type="button">Save</button></div></div></div>
+<p class="cap">The shipped no-webcam panel (W6) in the same place, without Choose photos: photos are checked by the same server, so that press could not work either. Stop is the way out, as it is today.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2756,"height":2200}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
