@@ -39,6 +39,7 @@ import { SHEET_PANEL_CLASS } from "./sheet-frame";
 import { CardScanner } from "./scan/card-scanner";
 import type { AddOutcome, ScanCapture, ScanPicked } from "./scan/use-card-scan";
 import type { ScanGuess, ScanMode } from "./scan/scan-view";
+import { matchedPrinting } from "../../lib/scan/printing-order";
 import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
@@ -327,7 +328,7 @@ function AddMode({
    *
    * Auto is OPTIMISTIC (Hugh, 2026-10-16): the card goes on the list at once as a pending line, and its printings are
    * read behind the camera. The scanner says Added straight away and reads on; once the printings land the line takes
-   * the first, and when they cannot be read the line comes back off and `settled` answers false, so the scanner says
+   * the one the scan matched (`matchedPrinting`), and when they cannot be read the line comes back off and `settled` answers false, so the scanner says
    * so. `scanPending` holds the save, the search and the printing step while a line is pending.
    */
   const listRead = () => phaseRef.current === "saving" || phaseRef.current === "saved";
@@ -359,7 +360,7 @@ function AddMode({
     setResults([]);
     setSearched(null);
     const base = { id, oracleId: guess.oracleId, name: guess.name, imageUri: guess.imageUri, choices, scan };
-    const printing = picked?.printing ?? (mode === "fast" || choices.length === 1 ? choices[0] : null);
+    const printing = picked?.printing ?? (mode === "fast" || choices.length === 1 ? matchedPrinting(choices, guess.printings ?? []) : null);
     writeLines((ls) => (printing ? choosePrinting(openLine(ls, base), id, printing).lines : openLine(ls, base)));
     return true;
   }
@@ -389,7 +390,7 @@ function AddMode({
           if (!scanningRef.current) setNotice({ text: copy.printingsFailed, kind: "error" });
           return false;
         }
-        writeLines((ls) => choosePrinting(ls.map((l) => (l.id === id ? { ...l, choices, pending: undefined } : l)), id, choices[0]).lines);
+        writeLines((ls) => choosePrinting(ls.map((l) => (l.id === id ? { ...l, choices, pending: undefined } : l)), id, matchedPrinting(choices, guess.printings ?? [])!).lines);
         return true;
       } finally {
         setScanPending((n) => n - 1);

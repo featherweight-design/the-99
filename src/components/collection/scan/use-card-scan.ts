@@ -480,7 +480,7 @@ export function useCardScan(
     setChoosing(null);
   }, []);
 
-  // A sure answer goes on by itself (Hugh, 2026-10-16): in Auto straight onto the list at its first printing, in
+  // A sure answer goes on by itself (Hugh, 2026-10-16): in Auto straight onto the list at the printing it matched, in
   // Normal to the printing step. A card the scanner has just added and that never left the frame is not taken again
   // (R1), and Add another copy is a press. Below the gate the panel still asks Not sure, Which is it?.
   const sure = reading.kind === "scanning" && reading.panel.kind === "sure" && !reading.panel.held ? reading.panel : null;
