@@ -28,7 +28,7 @@ W = {
     "usedUp": lambda total: f"You’ve used all {total} welcome credits. Your free credit still comes back every day.",
     "intro": "Your free credit each day is spent first, so welcome credits pay for the runs after it.",
     "tryIt": "Try it",
-    "teaser": "Credit packs and the monthly plan are on Credits",
+    "teaser": "See packs and the monthly plan",
     "dismiss": "Close",
 }
 

@@ -1,10 +1,10 @@
 # Readiness · Welcome credits (R2)
 
-**R1 drawn 2026-10-21; R2 (strip and sheet, after Hugh's feedback) drawn 2026-10-21, awaiting Hugh's review. Self-assessed: Green for the build once Hugh
-approves, with six items engineering settles in the plan.** Every board was rendered headless and checked: no board cut
+**Approved (LGTM, Hugh, 2026-10-21), R2 with two fixes: the teaser reads `See packs and the monthly plan`, and `Where they work` sits on its own line in the Welcome cell. Self-assessed: Green for the build,
+with six items engineering settles in the plan.** Every board was rendered headless and checked: no board cut
 off, no broken image, no em dash in any string, never the word "unlock".
 
-**Build from** `Main.dc.html` for the calls and gaps, then the boards in README "Start here".
+**Build from** the `R2-*` boards (README "R2"), with Line-and-Chip and Credits-Page from R1 and `Main.dc.html` for the gaps. Where R1 and R2 differ, R2 wins.
 
 **The brief's rulings, closed and honoured** (table on Main)
 - The lot: 15 credits, 30 days, spent after the free credit and before plan and packs.

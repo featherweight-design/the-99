@@ -1,5 +1,5 @@
 import json, re, os, datetime
-SRC="out"; ROOT="/tmp/claude-0/-home-claude/116595b4-4c7b-52e5-b8be-ce496abd5a28/scratchpad/canvas"
+SRC="out"; ROOT="/tmp/claude-0/-home-claude-the-99/116595b4-4c7b-52e5-b8be-ce496abd5a28/scratchpad/canvas"
 os.makedirs(ROOT+"/project", exist_ok=True)
 size={json.loads(l)["file"]: json.loads(l)["size"] for f in ("final.jsonl","r2sizes.jsonl") for l in open(f)}
 BLOB={"art-zimone":"c586eb32234edab401fbae2fe8d2d275","art-giada":"009a5e3ed5f39cd196d604ae78db0717","face-sai":"13cd30f8dea7468223ab3fd53599cfb9"}

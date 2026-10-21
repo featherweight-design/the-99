@@ -14,7 +14,7 @@ export const welcomeCopy = {
     expiring: "15 welcome credits expire in 3 days, on Nov 20.",
     usedUp: "You’ve used all 15 welcome credits.",
     where: "Where they work", // opens the sheet
-    more: "More on Credits", // used up, payments on, nothing bought
+    more: "See packs and the monthly plan", // used up, payments on, nothing bought
     freeBack: "Your free credit comes back each day.", // used up otherwise
   },
   // The sheet (R2): title, L6 line, grant line, rows (name, where, cost), teaser.
@@ -24,7 +24,7 @@ export const welcomeCopy = {
   partly: "9 of your 15 welcome credits are left, until November 20. Your free credit each day is spent first.",
   expiring: "9 welcome credits expire in 3 days, on November 20. Your free credit each day is spent first.",
   tryIt: "Try it",
-  teaser: "Credit packs and the monthly plan are on Credits",
+  teaser: "See packs and the monthly plan",
   dismiss: "Close", // aria-label on the bare ✕
 };
 

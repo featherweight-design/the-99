@@ -54,7 +54,7 @@ S = {
     "expiringPart": '<b class="w">9 welcome credits</b> expire in 3 days, on Nov 20.',
     "usedUp": "You’ve used all 15 welcome credits.",
     "where": "Where they work",
-    "more": "More on Credits",
+    "more": "See packs and the monthly plan",
     "freeBack": "Your free credit comes back each day.",
 }
 
@@ -146,7 +146,7 @@ CHANGES = [
     ("The right column leaves a hole", "On the dashboard it heads the <b>main column</b>, over Ready to build. The right column is Friends alone, as shipped."),
     ("The 0 state can’t happen before a collection", "Right: every tool needs cards in (New deck and Commanders are locked at 0 cards). Used up, partly spent, the paid limit and also bought are now drawn <b>on the dashboard only</b>. "
      "It also means no <code>Try it</code> before a collection: the first-run sheet shows the shipped lock line, <code>Opens once your cards are in</code>, once over all five."),
-    ("A reference that isn’t clunky", "The same sheet opens from the strip and from the <b>Welcome cell on <code>/credits</code></b> (<u>Where they work</u> beside the date), so the list is one press away for as long as the lot lasts, after the strip is closed."),
+    ("A reference that isn’t clunky", "The same sheet opens from the strip and from the <b>Welcome cell on <code>/credits</code></b> (<u>Where they work</u> on its own line under the date), so the list is one press away for as long as the lot lasts, after the strip is closed."),
 ]
 
 KEPT = ("Kept from R1: welcome as its own segment on the credit line, the chip as one number, the Welcome cell’s <code>expire Nov 20</code>, <code>--warning</code> at 3 days, "
@@ -203,9 +203,9 @@ def r2_sheet():
         dk = frame(f"{t} · desktop · the modal", dkh, "", width=1300)
         secs.append(f'<div class="sec"><h3>{t}</h3>' + frames(ph, dk) + '</div>')
     # the Welcome cell on /credits opens the same sheet
-    bal = bal_w(welcome=9, new=False).replace(CELL["welcomeSub"], f'{CELL["welcomeSub"]} · <u>{S["where"]}</u>')
+    bal = bal_w(welcome=9, new=False).replace(CELL["welcomeSub"], f'{CELL["welcomeSub"]}<br><u>{S["where"]}</u>')
     cr = frame("/credits · the Welcome cell · 390", ph_fr(credits_page(bal, hist_rows=None), h=844, tabs=tabbar("none")),
-               "<u>Where they work</u> beside the date opens the same sheet, while the cell shows (a credit held).")
+               "<u>Where they work</u> on its own line under the date opens the same sheet, while the cell shows (a credit held).")
     cr2 = frame("…the sheet over /credits · 390", ph_fr(credits_page(bal, hist_rows=None), h=844, tabs=tabbar("none"), over=wsheet("deck", left=9, teaser=False)),
                 "Opened from <code>/credits</code> the foot’s teaser is absent: the reader is already there.")
     spec = ('<div class="callout" style="max-width:1900px"><b>The sheet</b>'
@@ -239,7 +239,7 @@ STATES = [
     ("Payments off, lot held", "first", "paymentsEnabled false, welcome > 0", "The strip as held; the sheet has no teaser (absent, never disabled).", dict(state="held")),
     ("Partly spent", "dash", "0 < welcome < 15 (cards in)", "What is left: <code>9 of your 15 welcome credits are left</code>.", dict(state="part", left=9)),
     ("Expiring, partly spent", "dash", "welcome > 0, within 3 days", "As expiring, with what is left.", dict(state="expiring", left=9)),
-    ("Used up", "dash", "welcome = 0, not expired (cards in)", "Says so, with the teaser as its link, <u>More on Credits</u> (payments on, nothing bought). Leaves on Nov 20 or ✕. No <u>Where they work</u>: nothing left to spend there.", dict(state="usedUp")),
+    ("Used up", "dash", "welcome = 0, not expired (cards in)", "Says so, with the teaser as its link, <u>See packs and the monthly plan</u> (payments on, nothing bought). Leaves on Nov 20 or ✕. No <u>Where they work</u>: nothing left to spend there.", dict(state="usedUp")),
     ("Used up, payments off", "dash", "welcome = 0, paymentsEnabled false", "No link: <code>Your free credit comes back each day.</code>", dict(state="usedUp", payments=False)),
     ("Paid limit reached", "dash", "paidAtLimit (needs a purchase)", "The strip adds nothing: as partly spent. The press and the line carry the limit (Line-and-Chip, W6).", dict(state="part", left=9)),
     ("Also bought", "dash", "everBought", "The strip as held; the sheet’s teaser goes. Used up after a purchase reads like payments off.", dict(state="held")),

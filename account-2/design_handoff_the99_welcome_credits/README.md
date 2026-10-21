@@ -1,4 +1,4 @@
-# The 99 · Welcome credits · R2 (drawn, awaiting Hugh's review)
+# The 99 · Welcome credits · R2 (approved by Hugh, 2026-10-21)
 
 Where a new sign-up learns which tools spend their 15 welcome credits, when the lot expires, and that `/credits` exists.
 Launch epic D2. Behind `WELCOME_CREDITS_ENABLED` (which needs `PAYMENTS_ENABLED`). Account 2, 2026-10-21.
@@ -35,10 +35,10 @@ column on the dashboard, and drew a 0 state where none can happen (nothing runs 
 - **Try it.** Before a collection nothing can run (New deck and Commanders are locked at 0 cards), so no `Try it`: the
   shipped lock line `Opens once your cards are in` once, over all five. With cards and no deck: Help me choose leads
   with `Try it ›`, then the needs-a-deck line once. With a deck: About's order, `Try it ›` on the three with a landing.
-- **The reference that stays.** The Welcome cell on `/credits` reads `expire Nov 20 · Where they work`, opening the
+- **The reference that stays.** The Welcome cell on `/credits` reads `expire Nov 20` with `Where they work` on its own line under it, opening the
   same sheet (without the teaser), for as long as a credit is held, so closing the strip loses nothing.
 - **States.** Held, expiring, switch off and payments off on the first-run Home; partly spent, used up, the paid limit
-  and also bought on the dashboard only. Used up says `You've used all 15 welcome credits.` with `More on Credits`
+  and also bought on the dashboard only. Used up says `You've used all 15 welcome credits.` with `See packs and the monthly plan`
   (payments on, nothing bought) or `Your free credit comes back each day.`; it leaves on the date or ✕. Expired and no
   lot: nothing.
 - **Unchanged from R1:** the credit line and chip (Line-and-Chip), the Welcome cell's date (Credits-Page), `--warning`
@@ -100,7 +100,7 @@ welcome credits expire Nov 20`, shaped like a plan's L7) and the chip, with that
 The words carry it: in Low Sun `--warning` sits close to the accent.
 
 ### 6 · The teaser
-One line at the section's foot, `Credit packs and the monthly plan are on Credits ›`, to `/credits`. Packs first (L6).
+One line at the section's foot, `See packs and the monthly plan ›`, to `/credits`. Packs first (L6).
 Absent, never disabled, with payments off for the reader; gone once the reader has bought anything (`everBought`).
 
 ### 7 · Dismissal
