@@ -86,7 +86,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     <p role="alert" className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[12.5px] leading-[1.5] text-[color:var(--danger)]">
       <span>{failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
       {!failed.refused && (
-        <button type="button" onClick={() => run(failed.again)} className="border-0 bg-transparent p-0 text-[12.5px] text-[color:var(--accent)]">
+        <button type="button" onClick={() => run(failed.again)} className="border-0 bg-transparent p-0 text-[12.5px] text-[color:var(--accent-text)]">
           {copy.tryAgain}
         </button>
       )}
@@ -322,7 +322,7 @@ export function RowControls({
         type="button"
         disabled={w.inFlight !== null}
         onClick={() => (pending ? onCleared?.() : w.run({ op: "clear", value: null, note: null }, undefined, () => focusAdd(target.scope)))}
-        className="absolute right-[14px] top-[12px] min-h-[24px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] disabled:text-[color:var(--fg-disabled)] md:static md:flex-none"
+        className="absolute right-[14px] top-[12px] min-h-[24px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)] disabled:text-[color:var(--fg-disabled)] md:static md:flex-none"
       >
         {pending ? copy.cancelAdd : copy.clear}
       </button>

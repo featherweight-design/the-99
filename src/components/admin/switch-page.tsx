@@ -36,7 +36,7 @@ function Ladder({ page }: { page: SwitchPage }) {
             i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""
           } ${r.deciding ? "bg-[color:var(--surface-raised)]" : ""}`}
         >
-          <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${r.deciding ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>
+          <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${r.deciding ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}>
             {copy.rungs[r.key]}
           </span>
           <span className={`min-w-0 text-[13.5px] [overflow-wrap:anywhere] ${RUNG_INK[r.tone]}`}>{r.value}</span>
@@ -71,7 +71,7 @@ function BannerBox({ banner }: { banner: Banner }) {
         <span className="text-[14px] font-semibold leading-[1.4] text-[color:var(--fg)]">{banner.title}</span>
         <span className="text-pretty text-[13px] leading-[1.55] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{banner.body}</span>
         {banner.kind === "compound" && (
-          <Link href={`/admin/switches/${banner.parent}`} className="mt-[2px] self-start text-[13px] text-[color:var(--accent)]">
+          <Link href={`/admin/switches/${banner.parent}`} className="mt-[2px] self-start text-[13px] text-[color:var(--accent-text)]">
             {banner.link}
             <PendingReporter href={`/admin/switches/${banner.parent}`} />
           </Link>

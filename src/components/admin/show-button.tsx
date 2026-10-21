@@ -36,7 +36,7 @@ export function ShowButton({
       disabled={pending}
       onClick={on ? onHide : onShow}
       className={`flex-none rounded-[8px] border border-solid bg-transparent font-sans text-[13px] max-md:h-[44px] max-md:min-w-[64px] max-md:px-[14px] md:h-[32px] md:px-[12px] ${
-        on || pending ? "border-[color:var(--accent)] text-[color:var(--accent)]" : "border-[color:var(--border-strong)] text-[color:var(--fg)]"
+        on || pending ? "border-[color:var(--accent)] text-[color:var(--accent-text)]" : "border-[color:var(--border-strong)] text-[color:var(--fg)]"
       } ${className}`}
     >
       {on ? copy.hide : copy.show}
@@ -71,7 +71,7 @@ export function FailedToast({ kind, title, onRetry, onDone }: { kind: string; ti
         <button
           type="button"
           onClick={onRetry}
-          className="h-[44px] flex-none border-0 bg-transparent px-[10px] text-[13px] font-medium text-[color:var(--accent)] md:h-[36px]"
+          className="h-[44px] flex-none border-0 bg-transparent px-[10px] text-[13px] font-medium text-[color:var(--accent-text)] md:h-[36px]"
         >
           {copy.tryAgain}
         </button>

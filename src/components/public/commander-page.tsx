@@ -168,7 +168,7 @@ function MostPlayed({ short, cards }: { short: string; cards: PublicCommander["s
               <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">
                 {card.inclusion !== null ? `${Math.round(card.inclusion)}%` : null}
               </span>
-              <span aria-hidden="true" className="text-[color:var(--accent)]">→</span>
+              <span aria-hidden="true" className="text-[color:var(--accent-text)]">→</span>
             </a>
           </li>
         ))}
@@ -189,7 +189,7 @@ function Similar({ commanders }: { commanders: PublicCommander["similar"] }) {
               className="flex min-h-[48px] items-center justify-between gap-[10px] rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface)] px-[14px] no-underline"
             >
               <span className="min-w-0 truncate text-[14px] text-[color:var(--fg)]">{s.name}</span>
-              <span aria-hidden="true" className="text-[color:var(--accent)]">→</span>
+              <span aria-hidden="true" className="text-[color:var(--accent-text)]">→</span>
             </a>
           </li>
         ))}
@@ -316,7 +316,7 @@ export function PublicCommanderPage({ commander }: { commander: PublicCommander 
               <a
                 href={cardPagePath(commander.slug)}
                 data-testid="public-commander-card-link"
-                className="inline-flex min-h-[44px] items-center gap-[8px] text-[14px] font-semibold text-[color:var(--accent)] no-underline"
+                className="inline-flex min-h-[44px] items-center gap-[8px] text-[14px] font-semibold text-[color:var(--accent-text)] no-underline"
               >
                 {c.cardLink}
                 <span aria-hidden="true">→</span>

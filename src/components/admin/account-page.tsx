@@ -136,7 +136,7 @@ function GroupSection({ page }: { page: AccountPage }) {
               setFailure(null);
               setOpen(true);
             }}
-            className="inline-flex h-[36px] items-center border-0 bg-transparent px-[4px] text-[13px] text-[color:var(--accent)] md:h-[30px]"
+            className="inline-flex h-[36px] items-center border-0 bg-transparent px-[4px] text-[13px] text-[color:var(--accent-text)] md:h-[30px]"
           >
             {copy.changeGroup}
           </button>
@@ -370,7 +370,7 @@ export function AccountPageView({ page }: { page: AccountPage }) {
           {/* D3: the id appears only on a revealed account, under the email, where it is the thing to copy into Clerk. */}
           {rev && <span className="break-all font-mono text-[10.5px] text-[color:var(--fg-faint)]">{rev.id}</span>}
           <span className="text-pretty text-[12.5px] text-[color:var(--fg-body)]">{page.role}</span>
-          {rev && <span className="font-mono text-[10.5px] text-[color:var(--accent)]">{adminMaskCopy.reveal.shown(utcHourMinute(rev.hidesAt))}</span>}
+          {rev && <span className="font-mono text-[10.5px] text-[color:var(--accent-text)]">{adminMaskCopy.reveal.shown(utcHourMinute(rev.hidesAt))}</span>}
         </div>
         {/* At the head's right from `md`; on the phone it stands under the head at 44px (B2). */}
         {show && <div className="hidden md:block">{show}</div>}

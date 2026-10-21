@@ -181,7 +181,7 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
           {env}
         </span>
         {back && (
-          <Link href={back.href} className="ml-auto text-[13px] text-[color:var(--accent)]">
+          <Link href={back.href} className="ml-auto text-[13px] text-[color:var(--accent-text)]">
             {back.text}
             <PendingReporter href={back.href} />
           </Link>

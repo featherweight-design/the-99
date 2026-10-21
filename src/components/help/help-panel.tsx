@@ -166,7 +166,7 @@ export function HelpPanel({
             <Link
               href={REFERENCE_HREF}
               onClick={leave(REFERENCE_HREF)}
-              className="mt-[6px] self-start py-[8px] text-[14px] font-semibold text-[color:var(--accent)] no-underline"
+              className="mt-[6px] self-start py-[8px] text-[14px] font-semibold text-[color:var(--accent-text)] no-underline"
             >
               {helpPanelCopy.noneOut}
             </Link>
@@ -335,7 +335,7 @@ export function HelpPanel({
           <Link href={TOOLS_HREF} onClick={leave(TOOLS_HREF)} className="py-[10px] font-mono text-[12.5px] text-[color:var(--fg-muted)] no-underline">
             {helpPanelCopy.footTools}
           </Link>
-          <Link href={REFERENCE_HREF} onClick={leave(REFERENCE_HREF)} className="py-[10px] font-mono text-[12.5px] text-[color:var(--accent)] no-underline">
+          <Link href={REFERENCE_HREF} onClick={leave(REFERENCE_HREF)} className="py-[10px] font-mono text-[12.5px] text-[color:var(--accent-text)] no-underline">
             {helpPanelCopy.footAll}
           </Link>
         </footer>
@@ -382,7 +382,7 @@ function Row({
             type="button"
             data-help-show-me={entry.id}
             onClick={() => onShowMe(target)}
-            className="h-[30px] flex-none cursor-pointer whitespace-nowrap rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent px-[10px] font-mono text-[11.5px] text-[color:var(--accent)]"
+            className="h-[30px] flex-none cursor-pointer whitespace-nowrap rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent px-[10px] font-mono text-[11.5px] text-[color:var(--accent-text)]"
           >
             {helpPanelCopy.showMe}
           </button>
@@ -393,11 +393,11 @@ function Row({
           {rest && <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{rest}</p>}
           {entry.keys.slice(0, 2).map((k, i) => (
             <div key={i} data-help-key className="flex gap-[8px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">
-              <span aria-hidden className="text-[color:var(--accent)]">·</span>
+              <span aria-hidden className="text-[color:var(--accent-text)]">·</span>
               <span>{k}</span>
             </div>
           ))}
-          <Link href={href} onClick={onLeave(href)} className="self-start py-[4px] font-mono text-[12px] text-[color:var(--accent)] no-underline">
+          <Link href={href} onClick={onLeave(href)} className="self-start py-[4px] font-mono text-[12px] text-[color:var(--accent-text)] no-underline">
             {helpPanelCopy.readWhole}
           </Link>
         </div>

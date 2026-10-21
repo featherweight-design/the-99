@@ -13,7 +13,7 @@ export function LegalHeader() {
   return (
     <header className="flex h-[64px] items-center justify-between border-0 border-b border-solid border-b-[color:var(--border)] bg-[color:var(--bg)] px-[20px] md:h-[68px] md:px-[34px]">
       <Link href="/" aria-label={legalCopy.homeLabel} className="flex items-end gap-[3px] no-underline">
-        <span aria-hidden className="pb-1 text-[9px] tracking-[0.4em] text-[color:var(--accent)]" style={{ fontFamily: "var(--font-mono)" }}>THE</span>
+        <span aria-hidden className="pb-1 text-[9px] tracking-[0.4em] text-[color:var(--accent-text)]" style={{ fontFamily: "var(--font-mono)" }}>THE</span>
         <Crowned99 variant="mobile-header" />
         <PendingReporter href="/" />
       </Link>

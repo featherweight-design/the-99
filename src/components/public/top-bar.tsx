@@ -23,7 +23,7 @@ export function PublicTopBar() {
         <span aria-hidden="true" className="flex h-[34px] w-[34px] flex-none items-center justify-center">
           <Crowned99 variant="rail-62" className="max-h-[34px] w-auto" />
         </span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.32em] md:tracking-[0.4em] text-[color:var(--accent)]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.32em] md:tracking-[0.4em] text-[color:var(--accent-text)]">
           <span className="md:hidden">{c.wordmarkPhone}</span>
           <span className="max-md:hidden">{c.wordmark}</span>
         </span>
