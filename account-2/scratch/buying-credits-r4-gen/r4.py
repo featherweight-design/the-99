@@ -6,8 +6,8 @@ import ck
 
 # Shipped values (src/lib/copy/credits-page.ts, main 2ad3d1a): the board copy follows the build, not R1's file.
 C["pack.buy"] = "Buy pack"
-FREE_LINE = "Running a tool costs us money, so each run uses a credit. Looking at cards, decks, your collection and recommendations is always free."
-FREE_ALTS = ["Tools cost money to run, so each run uses a credit. Browsing cards, decks, your collection and recommendations is always free."]
+FREE_LINE = "Browsing is always free. Anything we write just for you uses a credit."
+FREE_ALTS = []
 
 ck.CCSS_R4 = r"""
 .vfree{margin:-2px 0 14px;font:400 13px/1.5 'IBM Plex Sans',sans-serif;color:var(--fg-body);text-wrap:pretty;max-width:900px}
@@ -75,7 +75,7 @@ def free_line_board():
         ("A", "Under the Get more credits heading, above the pack card", False,
          "The line opens the offers: the first thing under the heading, before any price. 13px body in <code>--fg-body</code>, two lines at 390.",
          "One line across both columns, since the section spans them while the plan is on offer (P2, P4).",
-         "Subscribed (P1, P3): the section is the right column, so the line wraps to two lines there, so the pack card starts 51px lower than the plan card and is 51px shorter (194 against 245). Their feet stay level, but R1b’s equal heights break in P1 and P3."),
+         "Subscribed (P1, P3): the section is the right column, so the line fits on one line there, but the pack card still starts 32px lower than the plan card and is 32px shorter (214 against 245). Their feet stay level, but R1b’s equal heights break in P1 and P3."),
         ("B", "Under the page sub, in the head", True,
          "The line joins the head: title, the sub, then this. On every state of the page, offers or not.",
          "Desktop: one line under the sub.",
@@ -87,13 +87,11 @@ def free_line_board():
         ph1 = frame(f"{letter}{4} · P1 plan and packs · 390 · full length", mphone(page2(line=letter, **p1), h=None), "")
         secs.append(f'<div class="sec"><h3>{opt_head(letter, where, rec)} {where}</h3><div class="frames">{ph}{ph1}{dk}{dk1}</div></div>')
     spec = (
-        '<div class="spec" style="max-width:1400px"><span class="k">The string, for /copy-review</span>'
+        '<div class="spec" style="max-width:1400px"><span class="k">The string (final)</span>'
         f'<div class="str">{FREE_LINE}</div>'
-        '<div>Key <code>creditsPageCopy.viewsFree</code> (placeholder, owed to /copy-review). R4c (Hugh, 2026-10-21): no “AI” or “model”; the line says a tool run is a real cost to the app, in the page’s own word, <i>tool</i> (the sub: “1 credit is 1 run of any tool”). '
-        'The second sentence keeps L6’s list (cards, decks, collection, recommendations) in plain words. No “unlock”, “premium” or “full access”; no figure, so it never goes stale with a price. C1 in the launch epic quotes “Credits pay for AI model runs” and needs the same amendment.</div>'
-        f'<div><b>Also offered:</b> “{FREE_ALTS[0]}”</div>'
+        '<div>Key <code>creditsPageCopy.viewsFree</code>. <b>Hugh’s words, worked through with the copywriter (2026-10-21)</b>: final, not a placeholder. No “AI” or “model”; no “unlock”, “premium” or “full access”; no figure, so it never goes stale with a price. C1 in the launch epic quotes “Credits pay for AI model runs ... view stays free” and needs amending to this line.</div>'
         '<div><b>Type:</b> IBM Plex Sans 13px / 1.5, <code>--fg-body</code> (the plan card’s fine print weight, one step up from the pack’s 12.5px <code>--fg-muted</code>, so it reads as the section’s own sentence and not a card’s footnote). '
-        '<b>Spacing, B:</b> 4px under the sub, on the head’s own 6px gap, so it reads as the head’s third line; the head keeps its 22px (26px desktop) to the balance. Up to 900px wide: one line on desktop, three at 390. <b>Spacing, A:</b> 10px under the heading (the shipped <code>mb-[10px]</code>, less 2px to sit with it), 14px to the first card (the cards’ own gap). Not a link, no icon, no tint.</div>'
+        '<b>Spacing, B:</b> 4px under the sub, on the head’s own 6px gap, so it reads as the head’s third line; the head keeps its 22px (26px desktop) to the balance. Up to 900px wide: one line on desktop, two at 390. <b>Spacing, A:</b> 10px under the heading (the shipped <code>mb-[10px]</code>, less 2px to sit with it), 14px to the first card (the cards’ own gap). Not a link, no icon, no tint.</div>'
         '<div><b>When it shows:</b> A, wherever the <b>Get more credits</b> section draws (payments on, not paused). Where there is nothing on sale (payments off, O2 to O4; paused, B1) there is no price on the page for it to qualify. '
         'B, on every state, the loading screen and the read-failed state included, since <code>CreditsHead</code> draws the head for all three.</div>'
         '</div>'
@@ -105,7 +103,7 @@ def free_line_board():
                    "<b>A</b> is the placement in the brief (under the heading, above the pack card). <b>B</b>, recommended, puts it in the head: A breaks R1b’s equal card heights on desktop once subscribed, and B says it on every state of the page.")
         + spec + "".join(secs)
     )
-    return doc("Buying credits R4 · the free-views line", body, 3700, 3850)
+    return doc("Buying credits R4 · the free-views line", body, 3700, 3758)
 
 
 
@@ -119,7 +117,7 @@ def main_board(items=None):
                    "No new surface, token, motion or dependency.")
         + '<div class="note" style="max-width:1400px">' + table([], ["#", "Item", "Answer", "Board"]).replace("<tbody></tbody>", f"<tbody>{rows}</tbody>") + '</div>'
     )
-    return doc("Buying credits R4 · items", body, 1520, 523)
+    return doc("Buying credits R4 · items", body, 1520, 503)
 
 
 # ---------------------------------------------------------------- items 2 to 4
@@ -230,7 +228,7 @@ def subscribe_board():
 
 ITEMS = [
     ("1", "Launch blocker (C1): the free-views line",
-     "Drawn. String: “Running a tool costs us money, so each run uses a credit. Looking at cards, decks, your collection and recommendations is always free.” (no “AI” or “model”, Hugh) Placement A (under Get more credits) or B (the page head, recommended), for Hugh.", "Free-Line"),
+     "Drawn. String (Hugh and the copywriter, final): “Browsing is always free. Anything we write just for you uses a credit.” Placement A (under Get more credits) or B (the page head, recommended), for Hugh.", "Free-Line"),
     ("2", "Pack first: K1, P2 and P4’s plan offer",
      "Redrawn to the build: pack above plan on the phone; from md, pack left and plan right at equal heights. Subscribed states unchanged.", "Pack-First"),
     ("3", "K6 and the Plan cell asymmetry",
