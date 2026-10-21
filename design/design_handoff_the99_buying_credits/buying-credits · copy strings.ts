@@ -22,6 +22,8 @@ export const buyingCreditsCopy = {
   page: {
     title: "Credits",
     sub: "1 credit is 1 run of any tool · What uses credits?",
+    // R4 addendum (C1): the head's third line. FINAL, Hugh with the copywriter, 2026-10-21; not a placeholder.
+    viewsFree: "Browsing is always free. Anything we write just for you uses a credit.",
     refunds: "Refunds: email support@the-99.dev within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
     blocked: "Buying is paused on this account. Email support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual.",
   },
@@ -46,7 +48,8 @@ export const buyingCreditsCopy = {
     title: "60 credits a month",
     price: "$5 a month",
     fine: ["Unused plan credits roll over, with no cap, while you stay subscribed.", "Renews every month until you cancel. Cancel any time, in one tap, here.", "If you cancel, plan credits last until the end of the month you paid for, then expire.", "Paid credits are forfeited if you delete your account."],
-    subscribe: "Subscribe",
+    // R4 addendum item 4: the price and interval on the press, as the boards and STATES K1 drew it.
+    subscribe: "Subscribe · $5 a month",
     via: "Checkout on Stripe · US cards",
     active: "Renews November 16 · $5",
     activeLeft: "74 plan credits, rolling over",

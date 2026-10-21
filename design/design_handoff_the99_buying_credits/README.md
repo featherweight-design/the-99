@@ -6,6 +6,10 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-16-buying-credits.md` (
 
 **About these files.** The canvases are design references built in HTML. Open them with `support.js` beside them, then rebuild in the app's stack. Kamigawa (Neon Rain) values, as the shipped shell. **No new tokens, no new motion, no new dependencies.** The pack and plan art is the brand fan (three card backs, the front in accent with the count) in CSS: no images.
 
+## R4 addendum (Hugh, 2026-10-21)
+
+`addendum-r4/` (start with its `README.md`): the free-views line in the page head, `Browsing is always free. Anything we write just for you uses a credit.` (C1, the launch blocker); pack first in K1, P2 and P4; the Plan and Packs cell rule confirmed; `Subscribe · $5 a month` confirmed.
+
 ## Start here
 
 | Read | For |
@@ -54,7 +58,7 @@ Why: Hugh's standing rule is not to add rows to the user menu. The balance is a 
 
 ### 2 · How free and paid balances read side by side
 - **On a spending surface:** one line, free first (it's spent first), then the paid total as one number: `4 of 5 free · reset at 2:01 AM · 114 paid`. `left` becomes `free` only once paid credits are held; a reader who never bought reads today's line unchanged. Plan and packs split only on `/credits`, where expiry matters.
-- **On `/credits`:** one total (`117 credits to spend`) over three cells in spend order (Free, Plan, Packs), joined by the brand diamond and labelled `Spent in this order →`. A cell is drawn only for a source the reader holds or once held.
+- **On `/credits`:** one total (`117 credits to spend`) over three cells in spend order (Free, Plan, Packs), joined by the brand diamond and labelled `Spent in this order →`. A cell is drawn only for a source the reader holds or once held, except the Plan cell, which goes once the plan credits are gone and no plan is held (K6; confirmed in `addendum-r4/`).
 
 ### 3 · How cancel reads, not buried, not pushy
 **Option A (called, drawn on every board):** `Cancel plan` is a full-size neutral button, the plan card's first control, with what it does written directly under it before the press (`Cancelling keeps your 74 plan credits until November 16, then they expire. Pack credits aren't affected.`). One tap cancels. The card turns at once to `Ends November 16` with the expiry restated, and offers `Keep my plan`, which undoes the cancel at no charge until the date. No sheet, no red, no "are you sure", no offer to stay.
