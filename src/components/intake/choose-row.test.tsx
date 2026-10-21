@@ -77,14 +77,14 @@ describe("a result row", () => {
     // The pending bar breathes (Hugh, 2026-10-12).
     expect(screen.getByTestId("ownership-line").querySelectorAll(".anim-skeleton")).toHaveLength(1);
     unmount();
-    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 12_049, unpricedCard: null } });
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 12_049, unpricedCard: null, bracket: null } });
     // Each segment leads with its own separator: the text reads as the one sentence, dots between.
     expect(screen.getByTestId("ownership-line").textContent).toContain("·you own 41 of its 99·about $120 to buy, inside $150");
     expect(screen.queryByTestId("row-unpriced")).toBeNull();
   });
 
   it("says when the build-around card has no price and the figure leaves it out", () => {
-    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: "absent" } });
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: "absent", bracket: null } });
     expect(screen.getByTestId("row-unpriced").textContent).toContain("Regisaur Alpha");
   });
 
@@ -95,8 +95,31 @@ describe("a result row", () => {
       unmount();
     }
     // A ready row's own count decides over the chip.
-    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: null } }, vi.fn(), true);
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: null, bracket: null } }, vi.fn(), true);
     expect(screen.queryByTestId("row-unpriced")).toBeNull();
+  });
+
+  it("adds the bracket the deck lands in, and what buying the target costs, when it falls short (R1b)", () => {
+    const figures = { body: 99, owned: 41, buyCents: 12_049, unpricedCard: null };
+    const { unmount } = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 3, permits: [1, 2], buyCents: 3_190 } } });
+    expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket1-2·3 adds $32");
+    // A short reading is a step brighter than the line.
+    expect(screen.getByTestId("row-bracket").className).toContain("--fg-body");
+    unmount();
+    // Reached: the number alone, in the line's own color.
+    const reached = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 3, permits: [3], buyCents: null } } });
+    expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket3");
+    expect(screen.getByTestId("ownership-line").textContent).not.toContain("adds");
+    expect(screen.getByTestId("row-bracket").className).not.toContain("--fg-body");
+    reached.unmount();
+    // Short with nothing to buy: the bracket alone.
+    const none = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 4, permits: [3], buyCents: null } } });
+    expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket3");
+    expect(screen.getByTestId("ownership-line").textContent).not.toContain("adds");
+    none.unmount();
+    // No bracket asked (or the switch off): no segment.
+    draw(row(), { state: "ready", figures: { ...figures, bracket: null } });
+    expect(screen.queryByTestId("row-bracket")).toBeNull();
   });
 
   it("offers Retry when the count fails, and asks the list to count again", () => {
@@ -133,7 +156,7 @@ describe("own-only (three answers §3)", () => {
       <CardDetailProvider fetchCard={vi.fn()}>
         <ul>
           <ChooseRow row={row()} figures={[]} owned={false} params={{ ...params, pool: "own" }} cardName="Regisaur Alpha" cardUnpriced={false}
-            trial={{ state: "ready", figures: { body: 99, owned: 58, buyCents: 12_000, unpricedCard: null } }} retry={vi.fn()} />
+            trial={{ state: "ready", figures: { body: 99, owned: 58, buyCents: 12_000, unpricedCard: null, bracket: null } }} retry={vi.fn()} />
         </ul>
       </CardDetailProvider>,
     );

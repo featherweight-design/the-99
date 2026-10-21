@@ -8,7 +8,9 @@ import { loadPrices, slotFor } from "../discovery/price";
 import { db } from "../../db";
 import { sql } from "drizzle-orm";
 import { buysCopy } from "./buys-card";
-import type { DeckAnswers } from "./fill-facts";
+import { loadBracketGateFacts, type DeckAnswers } from "./fill-facts";
+import { permitsOf } from "./fill-gate";
+import type { Bracket } from "./rank";
 
 /**
  * One result row's ownership figures (brief §2 ruling 7, §6): the deck this commander would be
@@ -34,6 +36,20 @@ export type TrialFigures = {
   buyCents: number;
   /** Set only when the build-around card must be bought and has no live price. */
   unpricedCard: "notStocked" | "absent" | null;
+  /**
+   * The bracket this deck lands in, when one of 3 or more was asked and `BRACKET_REACH_ENABLED` put
+   * a reach on the plan. Null otherwise. Read by `permitsOf` over the trial's OWN rows (plan review
+   * 5), never `collectionPermits` alone: an "any cards" fill can buy a Game Changer the gate admits
+   * and land at the target with no raiser at all. Under own-only only the rows the player can sleeve
+   * count, since the bought rest is not in that deck.
+   */
+  bracket: {
+    target: Bracket;
+    permits: Bracket[];
+    /** What the cheapest set to buy toward the target costs, when the deck falls short of it and
+     *  one is stocked. Null when the deck reaches the target or nothing buyable does. */
+    buyCents: number | null;
+  } | null;
 };
 
 export async function trialFill(
@@ -42,6 +58,9 @@ export async function trialFill(
   commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
   env: NodeJS.ProcessEnv,
+  /** Only cards I own: the bracket figure counts the rows the player can sleeve. The ownership
+   *  figures stay the ordinary fill's ("its usual 99"). */
+  ownedOnly = false,
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;
   // The card is placed beside the plan below, so the plan counts it, as the create this trial
@@ -54,7 +73,8 @@ export async function trialFill(
   const rows = capToBody([...(card ? [{ oracleId: card, quantity: 1 }] : []), ...plan.rows], deckBodySize(false));
   const ids = [...new Set(rows.map((r) => r.oracleId))];
 
-  const [prices, availability, facts] = await Promise.all([
+  const reach = plan.bracketReach && answers.bracket !== null && answers.bracket >= 3 ? plan.bracketReach : null;
+  const [prices, availability, facts, bracketFacts] = await Promise.all([
     loadPrices(ids),
     loadAvailability(userId, { oracleIds: ids, env }),
     db.execute(sql`
@@ -62,17 +82,20 @@ export async function trialFill(
         exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
       from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
     `).then((r) => new Map((r.rows as { oracle_id: string; type_line: string; owned: boolean }[]).map((x) => [x.oracle_id, x]))),
+    reach ? loadBracketGateFacts([commander.oracleId, ...ids]) : null,
   ]);
 
   let owned = 0;
   let buyCents = 0;
   let unpricedCard: TrialFigures["unpricedCard"] = null;
+  const sleeved: string[] = [];
   for (const r of rows) {
     const f = facts.get(r.oracleId);
     const a = availability.get(r.oracleId);
     const buys = !f || (!isBasicLand(f.type_line) && buysCopy(f.owned, a));
     if (!buys) {
       owned += r.quantity;
+      sleeved.push(r.oracleId);
       continue;
     }
     const price = prices.get(r.oracleId)?.liveCents ?? null;
@@ -85,5 +108,15 @@ export async function trialFill(
     }
     buyCents += price * r.quantity;
   }
-  return { body: rows.reduce((n, r) => n + r.quantity, 0), owned, buyCents, unpricedCard };
+  let bracket: TrialFigures["bracket"] = null;
+  if (reach && bracketFacts) {
+    const permits = permitsOf([commander.oracleId], [commander.oracleId, ...(ownedOnly ? sleeved : ids)], bracketFacts);
+    const short = !permits.includes(reach.target);
+    bracket = {
+      target: reach.target,
+      permits,
+      buyCents: short && reach.kind === "short" && reach.buy ? reach.buy.buyCents : null,
+    };
+  }
+  return { body: rows.reduce((n, r) => n + r.quantity, 0), owned, buyCents, unpricedCard, bracket };
 }

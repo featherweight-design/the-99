@@ -20,6 +20,7 @@ import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/
 import { bracketReach, type BracketReach } from "../intake/bracket-reach";
 import { buysCopy } from "../intake/buys-card";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
+import { loadPrices } from "../discovery/price";
 
 /** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
  *  share a log line. Never escapes `buildFillPlan`. */
@@ -289,20 +290,25 @@ export async function buildFillPlan(
     const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...gateCandidates.map((c) => c.oracleId)])]);
     bracketFacts = facts;
     const offered = reachCandidates(gateCandidates);
-    // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. Read
-    // only for the cards that could raise a bracket, which are few.
+    // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. An
+    // unowned top card is never free, whatever availability says of it (it has no row there). Read
+    // only for the cards that could raise a bracket, which are few, and priced for the same few: the
+    // buying half is the choice's to offer (plan PR 3), never this fill's to place.
     const raising = offered.filter((c) => facts.flagsOf(c.oracleId).gameChanger
       || facts.combosOf(c.oracleId).length > 0 || facts.searches(c.oracleId));
-    const availability = raising.length === 0 ? new Map() : await loadAvailability(userId, {
-      oracleIds: raising.map((c) => c.oracleId), excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
-    });
-    const free = new Set(raising.filter((c) => !buysCopy(true, availability.get(c.oracleId))).map((c) => c.oracleId));
+    const raisingIds = raising.map((c) => c.oracleId);
+    const [availability, prices] = raising.length === 0 ? [new Map(), new Map()] : await Promise.all([
+      loadAvailability(userId, { oracleIds: raisingIds, excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env }),
+      loadPrices(raisingIds),
+    ]);
+    const free = new Set(raising.filter((c) => !buysCopy(c.owned, availability.get(c.oracleId))).map((c) => c.oracleId));
     reach = bracketReach({
       target: answers.bracket, commanderIds, fixedIds, cards: offered.map((c) => c.oracleId),
-      facts: { ...facts, free: (id) => free.has(id), priceOf: () => null },
+      facts: { ...facts, free: (id) => free.has(id), priceOf: (id) => prices.get(id)?.liveCents ?? null },
       budgetCents: answers.budgetCents,
-      // The buying half is the choice's (plan PR 3); this fill never buys toward the answer.
-      ownedOnly: true,
+      // The buying half is computed for the choice to offer, even under own-only (Design R1b: "Hit"
+      // names the card from outside the collection). This fill still places only owned raisers.
+      ownedOnly: false,
       // The slots the plan will fill: the caller's count, or the body less what is placed beside
       // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
       capacity: fillOptions.slots

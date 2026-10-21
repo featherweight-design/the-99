@@ -176,6 +176,20 @@ async function main() {
     raised.length === chosen.length && chosen.every((id) => raised.includes(id)),
     `kind ${reach?.kind}, chose ${chosen.length}, placed ${raised.length}${reach?.kind === "short" ? `, lands in ${reach.collectionPermits.join("-")}` : ""}`);
   check("the reach fill still fills the whole body", reached.filled === plain.filled, `${reached.filled} against ${plain.filled}`);
+  // THE BUYING HALF (plan PR 3a): priced, so a short collection can be offered what hitting the target
+  // costs. Every card it names to buy has a live price, and it is never placed by this fill.
+  if (reach?.kind === "short" && reach.buy) {
+    const buyPrices = await loadPrices(reach.buy.raisers);
+    check("every card the buying half names has a live price, and the total is theirs",
+      reach.buy.raisers.every((id) => buyPrices.get(id)?.liveCents != null)
+        && reach.buy.buyCents <= reach.buy.raisers.reduce((n, id) => n + (buyPrices.get(id)?.liveCents ?? 0), 0),
+      `${reach.buy.raisers.length} to buy, $${(reach.buy.buyCents / 100).toFixed(2)}`);
+  }
+  // THE ROW FIGURE: the trial reads the bracket its own rows land in.
+  const trialed = await trialFill(USER, commanders[0], ask3, on);
+  console.log(`   trial bracket: ${JSON.stringify(trialed.bracket)}`);
+  check("a trial for a bracket-3 answer carries the bracket its rows land in", trialed.bracket !== null && trialed.bracket.permits.length > 0,
+    trialed.bracket ? trialed.bracket.permits.join("-") : "none");
 }
 
 main()
