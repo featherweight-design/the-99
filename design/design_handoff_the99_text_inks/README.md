@@ -102,8 +102,9 @@ The boards draw the two inks side by side on `--elevated` so the step can be jud
   in the other five. `check:tokens` and `contract.test.ts`'s key list both need it.
 - **Which sites move.** The audit counted 308 `--accent` text sites under `src/` on 2026-10-18 (260
   `text-[color:var(--accent)]` classes and 48 inline `color: "var(--accent)"` styles). On `origin/main` on 2026-10-21 the
-  count is 343 in 204 files: 273 classes, 48 inline styles, and 22 uses of the `text-accent` utility the audit did not
-  count. Fills, borders, rings, underline and caret colors, the fit bar and marks stay on `--accent`.
+  count is 367 in 212 files, because three more forms draw accent text and the audit did not count them: the
+  `text-accent` utility, `text-[var(--accent)]` and the arbitrary property `[color:var(--accent)]`, plus inline colors
+  chosen in a ternary. Fills, borders, rings, underline and caret colors, the fit bar and marks stay on `--accent`.
 - **Hover.** The text-link hovers (30 by board 2's count) already step to `--accent-hover`; they keep doing so, now from `--accent-text`.
 - **Placeholders do not move.** `--fg-placeholder` is written as a hex on purpose, so a `--fg-faint` change leaves it
   where it is. It still clears 4.5:1 on `--surface-sunken`.

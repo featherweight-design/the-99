@@ -44,7 +44,7 @@ One new token, `--accent-text`. Nine changed values. No new surface, component, 
 
 ## Accessibility
 
-This addendum is the accessibility fix: the accent text sites (343 today) and the faint text sites (611 at the audit) move from under 4.5:1 to over it
+This addendum is the accessibility fix: the accent text sites (367 today) and the faint text sites (611 at the audit) move from under 4.5:1 to over it
 in the themes that failed.
 
 ## About entry
@@ -58,9 +58,9 @@ None owed. A token value change is cosmetic, not a feature.
    five themes that alias it, and floors of 4.5:1 on all six grounds for `--accent-text`, `--accent-hover` and
    `--fg-faint` in every theme. `pnpm check:tokens` passes.
 2. **Sites**, as independent sweep PRs of about 20 files each (not stacked: `--accent-text` is `--accent` in five
-   themes, so any order is safe). On `origin/main` on 2026-10-21 there are 343 accent text sites in 204 files: 273
-   `text-[color:var(--accent)]` classes, 48 inline `color: "var(--accent)"` styles and 22 `text-accent` utilities, which
-   move to `text-[color:var(--accent-text)]`, `color: "var(--accent-text)"` and `text-accent-text`. Fills, borders,
+   themes, so any order is safe). On `origin/main` on 2026-10-21 there are 367 accent text sites in 212 files, in five forms:
+   `text-[color:var(--accent)]`, `text-[var(--accent)]`, `[color:var(--accent)]`, the `text-accent` utility, and an
+   inline `color` that is `"var(--accent)"` (plain or in a ternary). Each moves to the same form naming `--accent-text`. Fills, borders,
    rings, underline and caret colors, the fit bar and marks stay on `--accent`. PR 1 adds the guard as a ratchet: a
    per-file allowance of today's sites, so a NEW site fails at once, and each sweep deletes its files' entries. The last
    sweep leaves the allowance empty, which makes the guard absolute.
@@ -70,11 +70,11 @@ None owed. A token value change is cosmetic, not a feature.
    | S1 | `components/decks/`, sorted paths `all-brackets-sheet` to `change-commander-review` (17) |
    | S2 | `components/decks/`, `clear-auto` to `games-panel` (17) |
    | S3 | `components/decks/`, `got-it-receipt` to `precons/precon-door` (17) |
-   | S4 | `components/decks/`, `precons/precon-pick-view` to `strip-rationale` (17) |
-   | S5 | `components/decks/`, `suggestion-card` to `version-history` (17) |
-   | S6 | `components/collection/` (20) |
+   | S4 | `components/decks/`, `precons/precon-pick-view` to `strip-rationale` (18) |
+   | S5 | `components/decks/`, `suggestion-card` to the end (20) |
+   | S6 | `components/collection/` (21) |
    | S7 | `components/admin/`, `public/`, `legal/`, `help/` (20) |
-   | S8 | `components/commanders/`, `cards/` (20) |
+   | S8 | `components/commanders/`, `cards/` (24) |
    | S9 | `components/social/`, `intake/` (20) |
-   | S10 | `components/rule-zero/`, `ui/`, `about/`, `credits/` (20) |
+   | S10 | `components/rule-zero/`, `ui/`, `about/`, `credits/` (19) |
    | S11 | everything else: `components/shell/`, `sets/`, `home/`, `wishlist/`, `join/`, `card-search/`, `scan-lab/`, `discovery/`, and `app/` (19) |
