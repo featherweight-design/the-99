@@ -322,7 +322,7 @@ function AddMode({
   }
 
   /**
-   * A scanned card onto the list, as a search pick lands (card-scan PR 3). Auto takes its first printing; Normal's pick
+   * A scanned card onto the list, as a search pick lands (card-scan PR 3). Auto takes the printing the scan matched; Normal's pick
    * in the camera brings the printing it chose. The update is functional, because adds arrive faster than this
    * component re-renders.
    *
