@@ -400,12 +400,22 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     await flush();
     expect(read()).toBe(false);
     unmount();
+    // Leaving the page withdraws the ask: read from a provider that outlives the landing.
+    function Leave() {
+      const [on, setOn] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOn(false)}>leave</button>
+          {on ? <Deferred /> : null}
+        </>
+      );
+    }
     at("?tool=find-a-deck");
-    const again = mountDeferred(<><Peek /><Later /></>);
+    render(<TargetsProvider><MomentsProvider live={["find-a-deck"]} spent={[]}><Peek /><Leave /></MomentsProvider></TargetsProvider>);
     await flush();
     expect(read()).toBe(true);
-    again.unmount();
-    render(<TargetsProvider><Peek /></TargetsProvider>);
+    act(() => screen.getByRole("button", { name: "leave" }).click());
+    await flush();
     expect(read()).toBe(false);
   });
 
