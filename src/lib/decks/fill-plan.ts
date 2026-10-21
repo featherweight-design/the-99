@@ -19,7 +19,7 @@ import { gatherFillStaples } from "../staples/fill-staples";
 import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
 import { bracketReach, type BracketReach } from "../intake/bracket-reach";
 import { buysCopy } from "../intake/buys-card";
-import { bracketReachEnabled } from "../intake/flag";
+import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 
 /** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
  *  share a log line. Never escapes `buildFillPlan`. */
