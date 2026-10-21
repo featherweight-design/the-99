@@ -307,6 +307,13 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
     expect(formReachData).toHaveBeenCalledTimes(1);
   });
 
+  it("reads the budget the submit sends: a typed \"$20\" is twenty dollars, not none", async () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"] }} bracketReach />);
+    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor, about \$41\./)).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: /budget/i }), { target: { value: "$20" } });
+    expect(screen.getByText(/over your \$20 budget/)).toBeTruthy();
+  });
+
   it("makes no read with the switch off, and keeps today's caption", async () => {
     formReachData.mockClear();
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3 }} />);

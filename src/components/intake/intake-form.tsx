@@ -121,11 +121,8 @@ export function IntakeForm({
   }, [bracketReach]);
   const reachCaption = useMemo(() => {
     if (!reachData || bracket === null) return null;
-    const dollars = budget.trim() === "" ? null : Number(budget);
-    return formReachCaption({
-      bracket, colors, data: reachData, ownedOnly: pool === "own",
-      budgetDollars: dollars !== null && Number.isFinite(dollars) && dollars >= 0 ? dollars : null,
-    });
+    // The budget the submit sends (`parseBudget`), so the caption and the search read one figure.
+    return formReachCaption({ bracket, colors, data: reachData, ownedOnly: pool === "own", budgetDollars: parseBudget(budget) });
   }, [reachData, bracket, colors, budget, pool]);
   const themeLabelId = useId();
   const budgetId = useId();

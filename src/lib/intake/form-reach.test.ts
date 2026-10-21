@@ -37,6 +37,14 @@ describe("formReach: the form's estimate across the colors picked", () => {
     ]);
     expect(formReach({ target: 3, colors: ["U"], data: d, budgetCents: null }))
       .toMatchObject({ kind: "short", collectionPermits: [1, 2], buy: { raisers: ["study"], buyCents: 3_200 } });
+    // The claimed copy is the cheapest stocked one: it is bought, not skipped for being owned.
+    const claimedCheapest = data([card("rift", { gameChanger: true, free: false })], [
+      { id: "rift", name: "Cyclonic Rift", identity: ["U"], priceCents: 2_000 },
+      { id: "study", name: "Rhystic Study", identity: ["U"], priceCents: 3_200 },
+      { id: "tutor", name: "Demonic Tutor", identity: ["B"], priceCents: 1_000 },
+    ]);
+    expect(formReach({ target: 3, colors: ["U"], data: claimedCheapest, budgetCents: null }))
+      .toMatchObject({ kind: "short", buy: { raisers: ["rift"], buyCents: 2_000 } });
   });
 });
 
