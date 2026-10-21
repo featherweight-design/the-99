@@ -663,8 +663,8 @@ function AddMode({
                 href="/collection/replace"
                 className="mt-[4px] flex min-h-[52px] items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-[14px] md:hidden"
               >
-                <span className="flex text-[color:var(--accent)]"><ReplaceIcon size={16} /></span>
-                <span className="flex-1">{copy.uploadLead} <span className="text-[color:var(--accent)]">{copy.uploadInstead}</span></span>
+                <span className="flex text-[color:var(--accent-text)]"><ReplaceIcon size={16} /></span>
+                <span className="flex-1">{copy.uploadLead} <span className="text-[color:var(--accent-text)]">{copy.uploadInstead}</span></span>
                 <span aria-hidden className="text-[color:var(--fg-faint)]">{"›"}</span>
                 <PendingReporter href="/collection/replace" />
               </Link>
@@ -683,8 +683,8 @@ function AddMode({
                   }}
                   className="flex min-h-[52px] items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-[14px] md:mt-[4px]"
                 >
-                  <span className="flex text-[color:var(--accent)]"><BoxIcon /></span>
-                  <span className="flex-1">{copy.preconLead} <span className="text-[color:var(--accent)]">{copy.preconPress}</span></span>
+                  <span className="flex text-[color:var(--accent-text)]"><BoxIcon /></span>
+                  <span className="flex-1">{copy.preconLead} <span className="text-[color:var(--accent-text)]">{copy.preconPress}</span></span>
                   <span aria-hidden className="text-[color:var(--fg-faint)]">{"›"}</span>
                 </Link>
               ) : null}
@@ -829,7 +829,7 @@ function ResultRow({
           {at >= 0 ? (
             <>
               {name.slice(0, at)}
-              <span style={{ color: "var(--accent)" }}>{name.slice(at, at + query.length)}</span>
+              <span style={{ color: "var(--accent-text)" }}>{name.slice(at, at + query.length)}</span>
               {name.slice(at + query.length)}
             </>
           ) : (

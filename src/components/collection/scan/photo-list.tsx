@@ -50,7 +50,7 @@ export function PhotoList(p: PhotoListProps) {
     </ul>
   );
   const more = (
-    <button type="button" onClick={p.onChooseMore} className="min-h-[44px] border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)]">
+    <button type="button" onClick={p.onChooseMore} className="min-h-[44px] border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent-text)]">
       {copy.photos.more}
     </button>
   );

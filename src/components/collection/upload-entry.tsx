@@ -270,7 +270,7 @@ export function UploadEntry({
           {/* Icon circle — §Upload Icon Circle: 48×48 mobile / 58×58 desktop, radius 999px, border 1px --accent, color --accent, font 20/26px, margin auto mobile */}
           <div
             className="mx-auto mb-[14px] md:mx-0 md:mb-0 md:flex-none rounded-full flex items-center justify-center text-[20px] md:text-[26px] w-[48px] h-[48px] md:w-[58px] md:h-[58px]"
-            style={{ border: "1px solid var(--accent)", color: "var(--accent)" }}
+            style={{ border: "1px solid var(--accent)", color: "var(--accent-text)" }}
             aria-hidden
           >
             ↑
@@ -306,7 +306,7 @@ export function UploadEntry({
             >
               <span className="md:hidden">
                 Only a Name and Quantity column are required.{" "}
-                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className={`${TOUCH_HIT_INLINE} text-[color:var(--accent)]`}>
+                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className={`${TOUCH_HIT_INLINE} text-[color:var(--accent-text)]`}>
                   {collectionChassisCopy.upload.paste}
                 </button>
               </span>
@@ -325,7 +325,7 @@ export function UploadEntry({
         <button
           type="button"
           onClick={() => setMode("paste")}
-          className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap text-[color:var(--accent)]"
+          className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap text-[color:var(--accent-text)]"
         >
           {collectionChassisCopy.upload.paste} →
         </button>

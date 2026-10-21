@@ -33,7 +33,7 @@ const TAG_INK: Record<HistoryKind, string> = {
   uploadSync: "var(--fg)",
   add: "var(--success)",
   deckAdd: "var(--success)",
-  edit: "var(--accent)",
+  edit: "var(--accent-text)",
   shopping: "var(--success)",
   remove: "var(--danger)",
   revert: "var(--fg-muted)",
@@ -84,7 +84,7 @@ function ShoppingDeckLine({ deck, linked }: { deck: NonNullable<HistoryListEntry
     <p className={cls}>
       {line.pre}{" "}
       {linked ? (
-        <a href={`/decks/${deck.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{line.link}</a>
+        <a href={`/decks/${deck.id}`} className="text-[color:var(--accent-text)] underline underline-offset-2">{line.link}</a>
       ) : (
         // Drawn without links (/about's figure), as the reverted line is: a link out of the page's specimen is a dead end.
         <span>{line.link}</span>
@@ -102,7 +102,7 @@ function DeckNames({ decks, linked }: { decks: CartDecks; linked: boolean }) {
   const bf = gotItCopy.history.boughtFor;
   const items: React.ReactNode[] = [
     ...decks.named.map((d) => (linked
-      ? <a key={d.id} href={`/decks/${d.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{d.name}</a>
+      ? <a key={d.id} href={`/decks/${d.id}`} className="text-[color:var(--accent-text)] underline underline-offset-2">{d.name}</a>
       : <span key={d.id}>{d.name}</span>)),
     ...(decks.more > 0 ? [<span key="more">{bf.more(decks.more)}</span>] : []),
     ...(decks.gone > 0 ? [<span key="gone">{bf.gone(decks.gone)}</span>] : []),
@@ -127,7 +127,7 @@ function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryLi
     <p className={DECK_LINE}>
       {line.pre}{" "}
       {linked ? (
-        <Link href="/decks/shopping" className="text-[color:var(--accent)] underline underline-offset-2">
+        <Link href="/decks/shopping" className="text-[color:var(--accent-text)] underline underline-offset-2">
           {line.link}
           <PendingReporter href="/decks/shopping" />
         </Link>
@@ -202,7 +202,7 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
           <button
             type="button"
             onClick={() => setShown((s) => s + GROUP_STEP)}
-            className="mt-[6px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent)] underline underline-offset-2"
+            className="mt-[6px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent-text)] underline underline-offset-2"
           >
             {c.showMore(Math.min(GROUP_STEP, active.rows.length - shown), active.rows.length - shown)}
           </button>
@@ -285,7 +285,7 @@ export function HistoryEntryItem({
             <>
               {" · "}
               {anchor ? (
-                <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent)] underline underline-offset-2">
+                <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent-text)] underline underline-offset-2">
                   {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
                 </a>
               ) : (
@@ -315,7 +315,7 @@ export function HistoryEntryItem({
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
               {c.loadFailed}{" "}
-              <button type="button" onClick={onRetry} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[color:var(--accent)] underline underline-offset-2">
+              <button type="button" onClick={onRetry} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[color:var(--accent-text)] underline underline-offset-2">
                 {c.loadRetry}
               </button>
             </p>

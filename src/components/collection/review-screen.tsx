@@ -144,7 +144,7 @@ export function ReviewScreen({
             <div className="text-[14px] font-semibold text-[color:var(--fg)]">{syncData ? sr.failedTitleSync : e.failedTitle}</div>
             <p className="m-0 mt-[4px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{failed.body}</p>
             {onRetry ? (
-              <button type="button" onClick={onRetry} disabled={pending} className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2 disabled:opacity-60">
+              <button type="button" onClick={onRetry} disabled={pending} className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent-text)] underline underline-offset-2 disabled:opacity-60">
                 {e.retry}
               </button>
             ) : null}

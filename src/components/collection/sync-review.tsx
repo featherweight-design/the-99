@@ -157,7 +157,7 @@ export function SyncReviewDetail({
                   type="button"
                   onClick={controls.onChangePick}
                   disabled={controls.pending}
-                  className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+                  className="text-[13.5px] text-[color:var(--accent-text)] underline underline-offset-2"
                 >
                   {s.change}
                 </button>
@@ -371,7 +371,7 @@ export function SyncConflicts({
             revealFocus.current = true;
             setAll(true);
           }}
-          className="self-start min-h-[44px] text-[13px] text-[color:var(--accent)] underline underline-offset-2"
+          className="self-start min-h-[44px] text-[13px] text-[color:var(--accent-text)] underline underline-offset-2"
         >
           {c.showAll(rows.length)}
         </button>
