@@ -108,7 +108,9 @@ try {
       }
     }
     if (!measured) fail(`${width}px: no deck drew the action row`);
-    if (!withCommit) console.log(`  note ${width}px: no deck offered a first commit; "Commit as v12" not measured here`);
+    // The four-control row (Update, Export, Commit, ⋯) is the layout that wrapped; a run that
+    // never drew it proves nothing, so it fails rather than passing with a note.
+    if (!withCommit) fail(`${width}px: no deck offered a first commit, so the four-control row was never measured`);
     await context.close();
   }
 } finally {
