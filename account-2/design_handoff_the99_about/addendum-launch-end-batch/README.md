@@ -73,6 +73,11 @@ the six entry objects (all `since: 16`), the `friends` caption edit and the sugg
 - G4 · Copy lane, not drawn: Home's first-run line still says About is "on one page" (`arrivals.ts`
   `aboutFirstRunRest`), which *About, rebuilt* contradicts.
 - G5 · Already fixed on main: `screenForPath` maps `/friends/table/[id]` to `friends` (Draft vs code 9).
+- G7 · R1b: the `card-scan` halo is a 36 square centred on the + glyph. The shipped 44 box (`collection-add-phone`)
+  runs to the frame's right edge, so its halo clips and the + reads off-centre; inset the measured box to the visible
+  press (this also fixes the three entries that share it).
+- G8 · Desktop shows the phone frame too (one 390 capture per screen, Decided 6). Some controls differ on desktop
+  ("+ Add cards", the ? at the rail's foot, the rail's search field): open question for Hugh.
 - G6 · Words are the drafts as quoted, for `/copy-review`; `card-scan`'s are stale per Draft vs code 13.
 
 ## Reading the boards

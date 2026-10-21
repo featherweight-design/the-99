@@ -159,5 +159,5 @@ export const launchEndBatch = [
 //   'rule-zero':     { screen: 'friends',    locator: "[data-testid='pod-rule-zero']" }
 //   'invites':       { screen: 'friends',    locator: the Add a friend press and the [data-invite-count] line under it, as one box }
 //   'card-search':   { screen: 'collection', locator: "header button[aria-label='Search all cards']" }   // header scope (G1)
-//   'card-scan':     { screen: 'collection', locator: "[data-testid='collection-add-phone']", reaches: true,
+//   'card-scan':     { screen: 'collection', locator: "[data-testid='collection-add-phone']", reaches: true, // box inset to the visible 36 press (README G7)
 //                      note: 'the Scan press is inside Add cards; the + opens it' }

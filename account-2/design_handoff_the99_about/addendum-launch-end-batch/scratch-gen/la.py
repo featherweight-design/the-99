@@ -31,7 +31,7 @@ BOX = {
     "rule-zero": ("friends", (0.0795, 0.7841, 0.8410, 0.0625)),      # pod's Rule 0 check row (candidate, measured)
     "invites": ("friends", (0.0410, 0.2231, 0.9179, 0.0569)),        # Add a friend press (shipped `friends` box)
     "card-search": ("collection", (0.5897, 0.0237, 0.1128, 0.0521)), # header search icon, 44 square (CardSearchIcon)
-    "card-scan": ("collection", (0.8769, 0.0954, 0.1128, 0.0521)),   # the + (collection-add-phone), reaches
+    "card-scan": ("collection", (0.8872, 0.1007, 0.0923, 0.0427)),   # the + press, 36 square centred on its glyph (the shipped 44 box clips at the frame edge), reaches
     "cand-tour": ("account", (0.0513, 0.7156, 0.8974, 0.0634)),      # brief's first-listed candidate for 1
 }
 
