@@ -7,8 +7,9 @@
 //   - `Where they work` opens the sheet in the shipped SocialModal, by deck state: before a collection the lock line and
 //     no Try it; cards and no deck, Help me choose first with Try it and the reason line once. The teaser draws from Home.
 //   - The /credits Welcome cell names the date and opens the same sheet WITHOUT the teaser.
-//   - ✕ hides the strip, writes `user_prefs.welcome_strip_dismissed_at`, and a reload draws none; the cell still opens
-//     the sheet after it.
+//   - ✕ hides the strip, writes `user_prefs.welcome_strip_dismissed_at`, and a reload draws none. That the cell still
+//     opens the sheet after a dismissal is not pressed here: `Balance` takes no dismissal at all, so nothing it
+//     draws can depend on one.
 //
 // FIXTURES: a fresh Clerk test user on the DEVELOPMENT instance, made for the run, with a welcome lot (15 credits,
 // expiring in 30 days) inserted for it, then a handful of collection rows for the dashboard states. Nothing of any other

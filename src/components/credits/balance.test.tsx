@@ -52,6 +52,7 @@ describe("the Welcome cell's line", () => {
 
   it("with every row off the date stands alone", () => {
     render(<Balance total={10} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
+    expect(cell().querySelector("[data-welcome-expires]")!.textContent).toBe(`expire ${stripDay(AT)}`);
     expect(within(cell()).queryByRole("button")).toBeNull();
   });
 });
