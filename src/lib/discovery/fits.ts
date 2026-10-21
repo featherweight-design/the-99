@@ -18,7 +18,7 @@ import { deckBodySize } from "../decks/deck-size";
 import { priceFor } from "../decks/price-query";
 import { liveLockedIdsByDeck } from "../decks/locks";
 import { neverCutEnabled } from "../decks/never-cut-flag";
-import { listDecksWithStats } from "../decks/read";
+import { listDecksWithStats, type DeckListItem } from "../decks/read";
 import { readBuyRowPrices } from "../decks/shopping-rollup";
 import { byTouched } from "../decks/touched";
 import { loadFriendSpares } from "../social/spares";
@@ -95,17 +95,30 @@ export async function loadToolFits(
     asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck, env) : new Set<string>(),
     asked.has("friend-spares") ? decksWithSpares(userId, body) : new Set<string>(),
   ]);
-  const facts = [...list].sort(byTouched).map((d): DeckFacts => ({
+  return fitsOf(deckFacts(list, { overLimit, spared, played }), tools);
+}
+
+/** The tools a deck list alone decides (the rest need the Shopping rows or the games `loadToolFits` reads). */
+export const LIST_TOOLS: readonly DeckToolId[] = ["top-off", "proposed-cuts", "suggested-changes", "mana-balance"];
+
+/**
+ * The facts `fitsOf` judges, most recently touched first. Without `extra` only `LIST_TOOLS` are judged truly: a caller that
+ * already holds the reader's deck list (Home's welcome sheet) asks those of it with no further read.
+ */
+export function deckFacts(
+  list: readonly DeckListItem[],
+  extra: { overLimit: ReadonlySet<string>; spared: ReadonlySet<string>; played: ReadonlySet<string> } = { overLimit: new Set(), spared: new Set(), played: new Set() },
+): DeckFacts[] {
+  return [...list].sort(byTouched).map((d): DeckFacts => ({
     id: d.id,
     name: d.name,
     built: d.built,
     unresolved: d.unresolvedCount,
     size: deckBodySize(d.partnerName !== null),
-    overLimit: overLimit.has(d.id),
-    friendSpare: spared.has(d.id),
-    gameWithOpponents: played.has(d.id),
+    overLimit: extra.overLimit.has(d.id),
+    friendSpare: extra.spared.has(d.id),
+    gameWithOpponents: extra.played.has(d.id),
   }));
-  return fitsOf(facts, tools);
 }
 
 type DeckLimit = { id: string; limit: number | null; commander: string; partner: string | null };

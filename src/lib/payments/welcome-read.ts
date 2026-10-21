@@ -2,10 +2,19 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { creditGrants, modelCalls, userPrefs } from "../../db/schema";
 import { RESERVATION_TTL_MS } from "../model/allowance-rule";
+import { dailyLimitFor } from "../model/allowance";
 import { isLive, remaining, type CreditGrant } from "../model/credit-rule";
 import { readEverBought } from "./chip";
 import { paymentsEnabled } from "./flag";
 import { welcomeState, type WelcomeLot, type WelcomeState } from "./welcome-state";
+import { welcomeSheet, type WelcomeSheet } from "./welcome-sheet";
+import { visibleEntries } from "../about/visible";
+import { deckFacts, fitsOf, LIST_TOOLS } from "../discovery/fits";
+import { showcaseGroups, writtenForYou } from "../discovery/showcase";
+import { TOOLS } from "../discovery/tools";
+import type { DeckListItem } from "../decks/read";
+import { SWITCH_FLAGS } from "../switches/flags";
+import type { SwitchName } from "../switches/registry";
 
 type Reader = Pick<typeof db, "select">;
 type Writer = Pick<typeof db, "insert">;
@@ -105,4 +114,37 @@ export async function readWelcomeState(userId: string, env: NodeJS.ProcessEnv, n
     readEverBought(userId),
   ]);
   return welcomeState({ lot, now, dismissedAt, everBought, payments: paymentsEnabled(env) });
+}
+
+/** The reader's own daily free allowance, as the credit line and /credits read it, for the welcome lines that name it. */
+export function readFreeAllowance(userId: string): Promise<number> {
+  return dailyLimitFor(db, userId);
+}
+
+/**
+ * The `Where credits work` sheet's list for this reader (welcome credits R2, G6): the five rows `writtenForYou` keeps
+ * from the RESOLVED credits caption, as About's Written for you does, so every row follows its switch, and each row's
+ * Try it from the shipped resolver (`showcaseGroups`' card states). Null when no row survives (or the credits entry is
+ * not visible): then neither the sheet nor any `Where they work` is drawn.
+ *
+ * No read of its own: the caller hands in the deck list it already holds (Home's cached payload, or /credits' read).
+ * The two deck tools with a row, Proposed cuts and Suggested changes, are judged on the list alone (`LIST_TOOLS`).
+ */
+export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; decks: readonly DeckListItem[] }): WelcomeSheet | null {
+  const visible = visibleEntries(env);
+  const written = writtenForYou(visible.find((e) => e.id === "credits")?.caption ?? null);
+  if (!written) return null;
+  const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
+  const tools = LIST_TOOLS.filter((id) => {
+    const tool = TOOLS.find((t) => t.id === id);
+    return tool !== undefined && (tool.switch === null || isOn(tool.switch));
+  });
+  const groups = showcaseGroups({
+    isOn,
+    visibleEntryIds: new Set(visible.map((e) => e.id)),
+    fits: facts.decks.length > 0 ? fitsOf(deckFacts(facts.decks), tools) : {},
+    deckCount: facts.decks.length,
+    hasSyncBase: false,
+  });
+  return welcomeSheet({ written: written.rows, cards: facts.cards, decks: facts.decks.length, groups });
 }

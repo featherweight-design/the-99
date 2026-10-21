@@ -53,6 +53,11 @@ export type DashboardProps = {
    * payload, because the sheet cookie is per browser.
    */
   about?: AboutLine | null;
+  /**
+   * The welcome-credits strip (welcome credits D2), read per request outside the cached payload, or null. It heads the main
+   * column, over Ready to build; the right column keeps Friends alone.
+   */
+  welcome?: React.ReactNode;
   /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
   cartEnabled?: boolean;
   /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
@@ -213,6 +218,7 @@ export function Dashboard(props: DashboardProps) {
             in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
             every width, which this layout already accepts for Commitments. */}
         <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+          {props.welcome}
           {/* At zero cards it ranks nothing and leaves on its own (S12: absent, not empty). */}
           <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           {/* Sliced here rather than inside the section, so the section draws

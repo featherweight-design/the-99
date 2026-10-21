@@ -74,6 +74,10 @@ export const PER_REQUEST_READS = {
   // Rule 0's `Tonight's table` card (plan decision 1): a reseat by a player who is not the reader's friend, a rename
   // and an expiry move nothing in Home's key, and the seats carry no stamp trigger.
   "src/lib/social/rule-zero-home.ts": "Home's Tonight's table card reads the open tables the reader sits at fresh on every request; no write of theirs moves Home's key",
+  // The welcome-credits strip (welcome credits D2, PR 2): the welcome lot, the strip's dismissal and `everBought`. A run
+  // spending a welcome credit writes `model_calls` and a purchase writes `credit_grants`, neither of which moves the
+  // stamp, so the strip is read fresh beside the chip's read rather than stored in the payload.
+  "src/lib/payments/welcome-read.ts": "Home's welcome strip reads the welcome lot, its dismissal and everBought fresh on every request; a run or a purchase moves no key Home has",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

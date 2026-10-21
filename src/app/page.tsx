@@ -46,6 +46,9 @@ import { cardScanEnabled } from "../lib/card-scan/flag";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
+import { readFreeAllowance, readWelcomeState, welcomeSheetFor } from "../lib/payments/welcome-read";
+import { stripFacts, type WelcomeFacts } from "../lib/payments/welcome-sheet";
+import { WelcomeStrip } from "../components/welcome/welcome-strip";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -266,6 +269,21 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       store: !ranked.degraded,
     };
   }, env);
+  // The welcome-credits strip (welcome credits D2, PR 2): read per request, after the cached load and never stored,
+  // beside the chip's read in the shell, because neither `credit_grants` nor `model_calls` moves the reader's stamp. A
+  // failed read draws no strip. Its sheet's list reads nothing more: it is judged on the deck list the payload holds.
+  let welcome: WelcomeFacts | null = null;
+  try {
+    const [state, free] = await Promise.all([readWelcomeState(userId, env, now), readFreeAllowance(userId)]);
+    welcome = stripFacts(state, now, free);
+  } catch (error) {
+    // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+    console.error("home: the welcome credits could not be read", error instanceof Error ? error.message : "");
+  }
+  const welcomeSheet = welcome && welcome.lot !== "usedUp"
+    ? welcomeSheetFor(env, data.firstRun ? { cards: 0, decks: [] } : { cards: data.stats.uniqueCards, decks: data.decks })
+    : null;
+
   // About's line, decided per request from the cached seen state and THIS browser's sheet cookie, which stays out
   // of the cache because it is per browser: a browser that already showed the sheet for these entries is not told
   // again on Home. The cookie is read, never written; the proxy no longer writes it.
@@ -323,6 +341,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <FirstRunChecklist
         addByHand={collectionEditEnabled(env)}
         about={about}
+        welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
         ways={noCollectionEntry ? { precons: preconsEnabled(env) } : null}
         scan={cardScanEnabled(env)}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites }}
@@ -358,6 +377,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       shopping={data.shopping}
       arrivals={data.arrivals}
       about={about}
+      welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="dashboard" />}
       cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={noCollectionEntry && data.stats.uniqueCards === 0}
