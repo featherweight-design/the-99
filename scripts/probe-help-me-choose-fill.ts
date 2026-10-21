@@ -137,6 +137,39 @@ async function main() {
   const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, process.env);
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
+
+  console.log("\n5. The bracket as a target (BRACKET_REACH_ENABLED), read independently");
+  // The switch is forced on and off here, so the check does not depend on the database's env.
+  const on = { ...process.env, HELP_ME_CHOOSE_ENABLED: "true", BRACKET_REACH_ENABLED: "true" };
+  const off = { ...process.env, BRACKET_REACH_ENABLED: "false" };
+  const ask3 = { budgetCents: null, bracket: 3 as const, cardOracleId: null };
+  const [reached, ceilingOnly] = await Promise.all([
+    buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: on }),
+    buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: off }),
+  ]);
+  const reach = reached.bracketReach;
+  console.log(`   reach: ${JSON.stringify(reach)}`);
+  check("off, the fill places nothing toward the answer and carries no reach",
+    ceilingOnly.bracketReach === undefined && !ceilingOnly.rows.some((r) => r.source === "bracket"), "ceiling only");
+  const raised = reached.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
+  const raisedAvailability = await loadAvailability(USER, { oracleIds: raised, env: process.env });
+  check("every card placed toward the answer is owned with a free copy, never a buy",
+    raised.every((id) => owned.has(id) && (raisedAvailability.get(id)?.free ?? 1) > 0), `${raised.length} placed`);
+  const [reachedFacts, ceilingFacts] = await Promise.all([facts(reached), facts(ceilingOnly)]);
+  // THE BUG THIS SWITCH FIXES is a ceiling-only fill with nothing above bracket 2 in it. Not every
+  // commander shows it (an unowned Game Changer can still arrive as an EDHREC top card), so the line
+  // says which case this run measured: `PROBE_COMMANDER="Captain N'ghathrod"` is the reported one.
+  console.log(`   ceiling only: ${ceilingFacts.flagged.filter((f) => f.gc).length} Game Changers, ${ceilingFacts.combos.length} combos`);
+  const gameChangers = reachedFacts.flagged.filter((f) => f.gc).length;
+  if (reach?.kind === "collection") {
+    check("a reachable answer is reached: 1 to 3 Game Changers, or a counted combo, and no mass land denial",
+      ((gameChangers >= 1 && gameChangers <= 3) || reachedFacts.combos.length > 0) && !reachedFacts.flagged.some((f) => f.mld),
+      `${gameChangers} Game Changers, ${reachedFacts.combos.length} combos`);
+  } else {
+    check("a short collection is never filled by buying toward the answer", raised.every((id) => owned.has(id)),
+      `kind ${reach?.kind}, lands in ${reach?.kind === "short" ? reach.collectionPermits.join("-") : "n/a"}`);
+  }
+  check("the reach fill still fills the whole body", reached.filled === plain.filled, `${reached.filled} against ${plain.filled}`);
 }
 
 main()
