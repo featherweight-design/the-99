@@ -74,6 +74,34 @@ describe("CardModal availability detail", () => {
     expect(heading()).toBeNull();
   });
 
+  // The 2026-10-20 bug: a committed deck with the card only in its draft claims nothing, and the
+  // block either vanished (a free card) or named only the brews beside it.
+  it("names a deck that wants the card only in its draft, after the claims, as in the draft", () => {
+    mount({
+      ...card,
+      quantity: 2,
+      availability: { owned: 2, hard: 0, soft: 1, free: 2, claims: [
+        { id: "b1", name: "Horrors Test", quantity: 1, mature: false, pending: false, commander: false, senior: false },
+      ] },
+      draftWants: [{ id: "m1", name: "Mutant Menace" }],
+    });
+    const rows = screen.getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      `Horrors Test${availabilityCopy.collection.detailClaimWants(1)}`,
+      `Mutant Menace${availabilityCopy.collection.detailClaimInDraft}`,
+    ]);
+    expect(screen.getByRole("link", { name: availabilityCopy.collection.detailDeckLinkAria("Mutant Menace") }))
+      .toHaveAttribute("href", "/decks/m1");
+    // Counted nowhere: the split is the claims' alone.
+    expect(screen.getByText(availabilityCopy.collection.detailSplit(0, 2))).toBeInTheDocument();
+  });
+
+  it("draws the block for a free card a draft alone wants", () => {
+    mount({ ...card, quantity: 2, availability: avail(2, 0), draftWants: [{ id: "m1", name: "Mutant Menace" }] });
+    expect(heading()).toBeInTheDocument();
+    expect(screen.getByTestId("draft-want")).toHaveTextContent("Mutant Menace");
+  });
+
   // The whole reason this surface exists: rows and tiles withhold the deck
   // name, and this is where the player finds out which list has the card.
   it("names the claiming deck, which no row or tile ever does", () => {

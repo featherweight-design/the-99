@@ -275,10 +275,13 @@ function AvailabilityDetail({
   const a = card.availability;
   const c = availabilityCopy.collection;
   const state = a ? availabilityState(a) : "free";
+  // The decks wanting it only in a draft (`loadDraftWants`). Not claims, so no figure below counts
+  // them, but they are rows of "In your decks": a card mid-tune is wanted, never by nobody.
+  const drafts = card.draftWants ?? [];
   // From /collection, and from a Shopping row with I got it on, the receipt draws even when it has
   // nothing to report, because a link lives on its label line: a card with no claims would otherwise
   // have nowhere to put it. Anywhere else a receipt with nothing in it stays absent, as it was.
-  if ((onEditCopies || receiptLink) && (!a || (state === "free" && a.claims.length === 0))) {
+  if ((onEditCopies || receiptLink) && (!a || (state === "free" && a.claims.length === 0 && drafts.length === 0))) {
     const owned = a ? a.owned : card.quantity;
     return (
       <div
@@ -301,8 +304,8 @@ function AvailabilityDetail({
   if (!a) return null;
   // A claim with copies to spare still reads as `free` — that is the state the
   // marker is right to draw — but it is exactly the case #353 was filed about,
-  // so the receipt renders on claims, not on state.
-  if (state === "free" && a.claims.length === 0) return null;
+  // so the receipt renders on claims, not on state. A draft want renders it too.
+  if (state === "free" && a.claims.length === 0 && drafts.length === 0) return null;
   // Who actually gets each copy, from the one implementation of that arithmetic — the same
   // call the arrivals receipt and the chooser's preview make. A row's verb is this and not
   // `claim.mature`: a committed deck that came second to the only copy owned holds nothing.
@@ -355,7 +358,7 @@ function AvailabilityDetail({
           </>
         )}
       </div>
-      {a.claims.length > 0 && (
+      {(a.claims.length > 0 || drafts.length > 0) && (
         <>
           <div
             id="availability-claims-heading"
@@ -383,6 +386,27 @@ function AvailabilityDetail({
                 </Link>
                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
                   {claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
+                </span>
+              </li>
+            ))}
+            {/* After the claims, never merged into them: these rows hold nothing and want no
+                counted copy, which is what sets them apart from a brew's `wants N`. */}
+            {drafts.map((deck) => (
+              <li
+                key={`draft-${deck.id}`}
+                data-testid="draft-want"
+                className="flex items-baseline justify-between gap-[12px] py-[2px] text-[13px]"
+                style={{ color: "var(--fg-body)" }}
+              >
+                <Link
+                  href={`/decks/${deck.id}`}
+                  aria-label={c.detailDeckLinkAria(deck.name)}
+                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
+                >
+                  {deck.name}
+                </Link>
+                <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {c.detailClaimInDraft}
                 </span>
               </li>
             ))}

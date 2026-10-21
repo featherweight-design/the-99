@@ -320,6 +320,11 @@ export const availabilityCopy = {
     detailClaimsHeading: "In your decks",
     detailClaimHolds: (n: number) => `holds ${n}`,
     detailClaimWants: (n: number) => `wants ${n}`,
+    // A COMMITTED deck whose draft has the card and whose sleeved version does not
+    // (`loadDraftWants`). Not `in a draft`, which this file and About already spend on an
+    // uncommitted deck; `in the draft` is swap tools' word for a committed deck's draft. No
+    // count: the row holds nothing and no figure in the block counts its ask.
+    detailClaimInDraft: "in the draft",
     // ALLOCATION IS A THIRD AXIS AND TAKES A THIRD PAIR — the card assignments
     // handoff's vocabulary ruling 4, verbatim: keying `holds` / `wants` on who
     // got the copy would make `wants 1` mean "committed but lost the copy" on one
