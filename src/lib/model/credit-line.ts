@@ -16,9 +16,16 @@ import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowanc
  *   limitFree   L6  a free credit left but the paid limit reached
  *
  * L7 (a cancelled plan within three days of lapsing) is a suffix on L2/L3, drawn in `--warning` by `CreditsText`.
+ *
+ * WELCOME CREDITS (D2, Line-and-Chip W1 to W6) take their own segment, in spend order: `1 of 1 free · 15 welcome · 40
+ * paid`. `paid` is what is held less the welcome lot (a gift stays in it, as shipped). While the welcome lot holds a
+ * credit it funds the next lot-funded run (`SOURCE_RANK`), so L3 reads `this run uses 1 of 15 welcome` and `first` says
+ * `Uses a welcome credit.`; L5 names welcome among what is banked. Within three days of the lot's expiry L2/L3 carry
+ * a welcome tail shaped like L7's, dated in the reader's own day, which `CreditsText` draws only after hydration. A
+ * reader with no welcome credit reads every shipped form byte for byte.
  */
 export type LineAllowance = Pick<Allowance, "used" | "limit" | "nextAt" | "reopensAt"> &
-  Partial<Pick<Allowance, "welcome" | "plan" | "gift" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "planExpiring" | "payments">>;
+  Partial<Pick<Allowance, "welcome" | "plan" | "gift" | "pack" | "paidUsedToday" | "paidLimit" | "paidBackAt" | "planExpiresAt" | "planExpiring" | "welcomeExpiresAt" | "payments">>;
 
 export type CreditLineKind = "free" | "withPaid" | "paidNext" | "spent" | "limit" | "limitFree";
 
@@ -26,6 +33,13 @@ export type CreditLineKind = "free" | "withPaid" | "paidNext" | "spent" | "limit
 export const EXPIRY_WARNING_MS = 3 * 24 * 60 * 60 * 1000;
 
 const paidHeld = (a: LineAllowance) => heldCredits(a);
+/** The welcome credits left, which a line counts in their own segment. */
+const welcomeLeft = (a: LineAllowance) => Math.max(0, a.welcome ?? 0);
+/** The `paid` figure a line shows: what is held less the welcome lot (plan, gift and packs as one number). */
+const paidShown = (a: LineAllowance) => paidHeld(a) - welcomeLeft(a);
+/** The next lot-funded run spends a welcome credit: the welcome lot is first in `SOURCE_RANK` while it holds one. A
+ *  surface that words its own paid form (`againPaid`, `writesPaid`) asks this to say a welcome credit instead. */
+export const welcomeNext = (a: LineAllowance) => welcomeLeft(a) > 0;
 
 export function creditLineKind(a: LineAllowance): CreditLineKind {
   const held = paidHeld(a) > 0;
@@ -50,6 +64,24 @@ export function expiringPhrase(a: LineAllowance, now: Date): string | null {
   return ahead >= 0 && ahead <= EXPIRY_WARNING_MS ? creditsCopy.expiring(plan, a.planExpiresAt) : null;
 }
 
+/**
+ * The welcome lot's warning, or null: credits left and the lot within three days of its expiry (the plan's lead,
+ * `EXPIRY_WARNING_MS`). The whole lot lapses at once, so the figure is every welcome credit left. Exported for the chip.
+ */
+export function welcomeExpiring(a: LineAllowance, now: Date): { n: number; at: Date } | null {
+  const n = welcomeLeft(a);
+  if (!a.welcomeExpiresAt || n <= 0) return null;
+  const ahead = a.welcomeExpiresAt.getTime() - now.getTime();
+  return ahead >= 0 && ahead <= EXPIRY_WARNING_MS ? { n, at: a.welcomeExpiresAt } : null;
+}
+
+/** Every expiry tail L2/L3 carry, in spend order: the welcome lot's, then the plan's (G5: the line names both). */
+function expiringTail(a: LineAllowance, now: Date): string {
+  const w = welcomeExpiring(a, now);
+  const plan = expiringPhrase(a, now);
+  return `${w ? ` · ${creditsCopy.welcomeExpiring(w.n, w.at)}` : ""}${plan ? ` · ${plan}` : ""}`;
+}
+
 /** The earlier of the next free credit and the paid limit's reset: when anything can run again. */
 function backAt(a: LineAllowance): Date | null {
   const free = freeNext(a);
@@ -61,18 +93,16 @@ function backAt(a: LineAllowance): Date | null {
 /** The count a surface composes its own lead around (`read.again(count)`): never the spent or limit forms. */
 export function creditCount(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
-  const expiring = kind === "withPaid" || kind === "paidNext" ? expiringPhrase(a, now) : null;
-  const tail = expiring ? ` · ${expiring}` : "";
-  const held = paidHeld(a);
+  const tail = kind === "withPaid" || kind === "paidNext" ? expiringTail(a, now) : "";
   const left = freeCount(a);
-  if (kind === "withPaid" || kind === "paidNext") return `${creditsCopy.withPaid(left, a.limit, freeNext(a), held)}${tail}`;
+  if (kind === "withPaid" || kind === "paidNext") return `${creditsCopy.withPaid(left, a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${tail}`;
   if (kind === "limitFree") return creditsCopy.limitFree(left, a.limit, a.nextAt, a.paidBackAt!);
   return creditsCopy.standing(left, a.limit, freeNext(a));
 }
 
 /** The line when no press can start: L4 or L5. `Get more credits` is its own line, only on L4 and only while payments are on. */
 export function creditSpent(a: LineAllowance): string {
-  if (creditLineKind(a) === "limit") return creditsCopy.limit(a.paidLimit ?? 0, paidHeld(a), backAt(a));
+  if (creditLineKind(a) === "limit") return creditsCopy.limit(a.paidLimit ?? 0, paidShown(a), backAt(a), welcomeLeft(a));
   const line = creditsCopy.spent(a.limit, a.reopensAt ?? a.nextAt);
   return creditsCopy.withMore(line, a.payments === true);
 }
@@ -82,7 +112,8 @@ export function creditFirst(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "free") return creditsCopy.first(freeCount(a), a.limit, a.nextAt);
-  return kind === "paidNext" ? creditsCopy.firstPaid(creditCount(a, now)) : creditsCopy.usesCredit(creditCount(a, now));
+  if (kind !== "paidNext") return creditsCopy.usesCredit(creditCount(a, now));
+  return (welcomeNext(a) ? creditsCopy.firstWelcome : creditsCopy.firstPaid)(creditCount(a, now));
 }
 
 /** Beside a press that replaces what is on screen. */
@@ -90,16 +121,14 @@ export function creditAgain(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "free") return creditsCopy.again(freeCount(a), a.limit, a.nextAt);
-  return kind === "paidNext" ? creditsCopy.againPaid(creditCount(a, now)) : creditsCopy.replacesUsesCredit(creditCount(a, now));
+  if (kind !== "paidNext") return creditsCopy.replacesUsesCredit(creditCount(a, now));
+  return (welcomeNext(a) ? creditsCopy.againWelcome : creditsCopy.againPaid)(creditCount(a, now));
 }
 
 /** The line standing alone (no lead): the count, or the spent/limit form. L3 reads "this run uses 1 of N paid". */
 export function creditStanding(a: LineAllowance, now: Date = new Date()): string {
   const kind = creditLineKind(a);
   if (kind === "spent" || kind === "limit") return creditSpent(a);
-  if (kind === "paidNext") {
-    const expiring = expiringPhrase(a, now);
-    return `${creditsCopy.paidNext(a.limit, freeNext(a), paidHeld(a))}${expiring ? ` · ${expiring}` : ""}`;
-  }
+  if (kind === "paidNext") return `${creditsCopy.paidNext(a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${expiringTail(a, now)}`;
   return creditCount(a, now);
 }

@@ -37,6 +37,13 @@ describe("pressNote", () => {
   });
 
   // 7d: the list already has its overview, so the press returns it and spends nothing.
+  // Welcome credits D2: the welcome lot is spent before plan and packs, so a run it funds says so.
+  it("says a welcome credit when the welcome lot funds the run", () => {
+    const n = pressNote(ready({ pressWrites: true, allowance: { ...out, welcome: 15, pack: 2, paidUsedToday: 0, paidLimit: 20 } }), "analyze")!;
+    expect(n.text).toMatch(/^Also writes the overview, using a welcome credit\./);
+    expect(n.writes).toBe(true);
+  });
+
   it("draws nothing over a list that already has its overview", () => {
     expect(pressNote(ready({ pressWrites: false }), "reanalyze")).toBeNull();
   });

@@ -136,8 +136,9 @@ export type Allowance = {
   /** True for the owner once their month's testing share cannot fit one more call. OPTIONAL, so
    *  an Allowance written without it (every fixture) still type-checks. */
   ownerShare?: boolean;
-  /** Paid credits left (`credit-rule.ts`), spent only once `used` reaches `limit`: plan credits
-   *  first, then pack credits. OPTIONAL like `ownerShare`, and absent while the player holds no lot. */
+  /** Credits left in lots (`credit-rule.ts`), spent only once `used` reaches `limit`, in `SOURCE_RANK`'s order:
+   *  the welcome lot first, then plan, then gift, then pack credits. OPTIONAL like `ownerShare`, and absent while
+   *  the player holds no lot. */
   welcome?: number;
   plan?: number;
   /** An admin's support grant (admin plan A-R5): held and spent like a lot, never bought. */
@@ -152,6 +153,8 @@ export type Allowance = {
   paidNextAt?: Date | null;
   /** When a cancelled plan's remaining credits lapse. Unset until the Subscription PR fills it. */
   planExpiresAt?: Date | null;
+  /** When the welcome lot stops funding runs, while it holds a credit (`welcomeLotExpiry`); null or absent otherwise. */
+  welcomeExpiresAt?: Date | null;
   /** The plan credits that lapse on `planExpiresAt`: a later subscription's lots do not count. */
   planExpiring?: number;
   /** The plan credits still held, grouped by the instant they lapse (`null`: they roll over). Read server-side by the plan card; not part of `Standing`. */

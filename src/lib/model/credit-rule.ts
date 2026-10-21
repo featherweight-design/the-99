@@ -125,10 +125,23 @@ export function planCreditsByExpiry(balances: readonly GrantBalance[]): { at: Da
  * lots roll over). It is the `Allowance`'s `planExpiresAt`: when the plan credits the player holds begin to lapse.
  */
 export function earliestPlanExpiry(balances: readonly GrantBalance[]): Date | null {
+  return earliestExpiry(balances, "plan");
+}
+
+/**
+ * When the welcome lot stops funding runs, while it still holds a credit, or null (no lot, used up, or expired: the
+ * allowance read drops an expired lot). It is the `Allowance`'s `welcomeExpiresAt`, the date the credit line's welcome
+ * tail and the chip's welcome line name.
+ */
+export function welcomeLotExpiry(balances: readonly GrantBalance[]): Date | null {
+  return earliestExpiry(balances, "welcome");
+}
+
+function earliestExpiry(balances: readonly GrantBalance[], source: CreditSource): Date | null {
   let earliest: Date | null = null;
   for (const b of balances) {
     const at = b.grant.expiresAt;
-    if (b.grant.source !== "plan" || b.remaining <= 0 || !at) continue;
+    if (b.grant.source !== source || b.remaining <= 0 || !at) continue;
     if (!earliest || at.getTime() < earliest.getTime()) earliest = at;
   }
   return earliest;

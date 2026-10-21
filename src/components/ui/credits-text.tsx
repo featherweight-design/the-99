@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Fragment } from "react";
 
 import { CREDITS_HREF, creditsCopy } from "../../lib/copy/credits";
 import { PendingReporter } from "../shell/pending-reporter";
+import { useHydrated } from "./hydrated-art";
 
 /**
  * A credit line as text, with `What uses credits?` drawn as a link to the About `credits` entry
@@ -46,8 +49,39 @@ export function GetMoreLink({ className = "" }: { className?: string }) {
 /** Where `Get more credits` leads. */
 const BUY_HREF = "/credits";
 
-/** L7: a cancelled plan's expiry, at the end of the line, in `--warning` (the words carry it; the colour only agrees). */
+/**
+ * L7: an expiry at the end of the line, in `--warning` (the words carry it; the colour only agrees). Two can stand on
+ * one line (G5: the welcome lot's, then a cancelled plan's), so the welcome tail is taken out first. Its date is the
+ * reader's own day (G4), formatted by the client render that built the line, so the whole tail, its ` · ` included, is
+ * held back until hydration: the server's render and the hydrating one both draw nothing there, and the render after it
+ * draws the reader's date, the way the /credits Free cell draws its reset time.
+ */
 function Expiring({ text }: { text: string }) {
+  const w = creditsCopy.welcomeExpiringPattern.exec(text);
+  if (w) {
+    return (
+      <>
+        <PlanExpiring text={text.slice(0, w.index)} />
+        <WelcomeTail phrase={w[1]} />
+        <PlanExpiring text={text.slice(w.index + w[0].length)} />
+      </>
+    );
+  }
+  return <PlanExpiring text={text} />;
+}
+
+function WelcomeTail({ phrase }: { phrase: string }) {
+  const hydrated = useHydrated();
+  if (!hydrated) return null;
+  return (
+    <>
+      {" · "}
+      <span data-testid="credit-expiring" data-lot="welcome" style={{ color: "var(--warning)" }}>{phrase}</span>
+    </>
+  );
+}
+
+function PlanExpiring({ text }: { text: string }) {
   const m = creditsCopy.expiringPattern.exec(text);
   if (!m) return <>{text}</>;
   return (

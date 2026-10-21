@@ -7,10 +7,15 @@
 // hue and the line carries the meaning, not the colour). Phone: a 44px press inside the sheet. Desktop: a 30px pill.
 
 import Link from "next/link";
+import { creditsCopy } from "../../lib/copy/credits";
 import type { ChipState } from "../../lib/payments/chip-rule";
+import { useHydrated } from "../ui/hydrated-art";
 
 export function CreditChip({ chip, sheet, onGo }: { chip: ChipState; sheet: boolean; onGo: () => void }) {
+  const hydrated = useHydrated();
   const warn = chip.kind === "expiring";
+  // The welcome lot's line is dated in the reader's own day (welcome credits G4), so it is worded here, after hydration.
+  const line = chip.line ?? (chip.welcomeExpiring && hydrated ? creditsCopy.welcomeExpiring(chip.welcomeExpiring.n, new Date(chip.welcomeExpiring.atMs)) : null);
   const out = chip.kind === "out";
   const m = /^(\d+)(.*)$/.exec(chip.label);
   // Whole class names, so Tailwind finds them: the accent for every state but the expiring one.
@@ -55,8 +60,8 @@ export function CreditChip({ chip, sheet, onGo }: { chip: ChipState; sheet: bool
         )}
         <em aria-hidden className={`ml-[1px] not-italic ${ink}`}>{"›"}</em>
       </Link>
-      {chip.line ? (
-        <div data-testid="credit-chip-line" className="mt-[5px] font-mono text-[11px] text-[color:var(--warning)]">{chip.line}</div>
+      {line ? (
+        <div data-testid="credit-chip-line" className="mt-[5px] font-mono text-[11px] text-[color:var(--warning)]">{line}</div>
       ) : null}
     </>
   );

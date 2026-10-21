@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "./allowance-rule";
-import { countsAgainstGrant, creditTotals, earliestPlanExpiry, isLive, planCreditsByExpiry, isPaidSource, pickGrant, remaining, type CreditGrant } from "./credit-rule";
+import { countsAgainstGrant, creditTotals, earliestPlanExpiry, isLive, planCreditsByExpiry, isPaidSource, pickGrant, remaining, welcomeLotExpiry, type CreditGrant } from "./credit-rule";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
@@ -135,6 +135,20 @@ describe("earliestPlanExpiry: the Allowance's planExpiresAt", () => {
   it("skips a spent lot, and any lot that is not a plan lot", () => {
     const welcome = { grant: lot({ id: "w", source: "welcome", expiresAt: at(1) }), remaining: 9 };
     expect(earliestPlanExpiry([plan("a", 0, at(2)), welcome, plan("b", 4, at(6))])).toEqual(at(6));
+  });
+});
+
+describe("welcomeLotExpiry: the Allowance's welcomeExpiresAt (welcome credits G3)", () => {
+  const at = (days: number) => new Date(now.getTime() + days * DAY);
+  const welcome = (remaining: number) => ({ grant: lot({ id: "w", source: "welcome", units: 15, expiresAt: at(2) }), remaining });
+  const plan = { grant: lot({ id: "p", source: "plan", expiresAt: at(1) }), remaining: 5 };
+
+  it("is the welcome lot's expiry while it holds a credit, never a plan lot's", () => {
+    expect(welcomeLotExpiry([plan, welcome(9)])).toEqual(at(2));
+  });
+  it("is null once the lot is used up, or with no welcome lot", () => {
+    expect(welcomeLotExpiry([plan, welcome(0)])).toBeNull();
+    expect(welcomeLotExpiry([plan])).toBeNull();
   });
 });
 

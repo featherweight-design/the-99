@@ -100,3 +100,62 @@ describe("L7: a cancelled plan within three days", () => {
     expect(creditsCopy.expiring(1, exp(1))).toMatch(/^1 plan credit expires /);
   });
 });
+
+describe("welcome credits on the line (D2, Line-and-Chip W1 to W6)", () => {
+  const EXP = new Date("2026-11-20T12:00:00Z");
+  const near = new Date(EXP.getTime() - 2 * 86_400_000);
+  const day = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const w = (over: Partial<LineAllowance> = {}) =>
+    base({ used: 0, limit: 1, nextAt: null, welcome: 15, welcomeExpiresAt: EXP, paidUsedToday: 0, paidLimit: 20, ...over });
+
+  it("W1: a free credit left, welcome held: its own segment, never paid", () => {
+    expect(creditStanding(w())).toBe("1 of 1 free · 15 welcome");
+    expect(creditFirst(w())).toBe("Uses a credit. 1 of 1 free · 15 welcome.");
+  });
+
+  it("W2: free spent, the run takes a welcome credit: L3's form, and first says so", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1) });
+    expect(creditLineKind(a)).toBe("paidNext");
+    expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 15 welcome`);
+    expect(creditFirst(a)).toBe(`Uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
+    expect(creditAgain(a)).toBe(`Replaces these suggestions and uses a welcome credit. 0 of 1 free · reset at ${t(at(2, 1))} · 15 welcome.`);
+  });
+
+  it("W3: welcome and paid held, in spend order; paid is held less welcome, a gift still counted in it", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1), welcome: 9, pack: 38, gift: 2 });
+    expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 9 welcome · 40 paid`);
+    expect(creditCount({ ...a, used: 0, reopensAt: null })).toBe("1 of 1 free · 9 welcome · 40 paid");
+  });
+
+  it("W4: within three days the welcome tail, in the reader's own day, after the lots (and before a plan's, G5)", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1), welcome: 9 });
+    expect(creditStanding(a, near)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 9 welcome · 9 welcome credits expire ${day(EXP)}`);
+    expect(creditFirst(a, near)).toMatch(/ · 9 welcome credits expire [A-Z][a-z]{2} \d{1,2}\.$/);
+    // Four days out, used up, or with no date: no tail.
+    expect(creditStanding(a, new Date(EXP.getTime() - 4 * 86_400_000))).not.toContain("expire");
+    expect(creditStanding({ ...a, welcomeExpiresAt: null }, near)).not.toContain("expire");
+    const both = { ...a, plan: 74, planExpiring: 74, planExpiresAt: new Date(EXP.getTime() - 86_400_000) };
+    expect(creditStanding(both, near)).toMatch(/ · 9 welcome credits expire [A-Z][a-z]{2} \d{1,2} · 74 plan credits expire Nov 19$/);
+    expect(creditsCopy.welcomeExpiringPattern.exec(creditStanding(a, near))?.[1]).toBe(`9 welcome credits expire ${day(EXP)}`);
+    expect(creditsCopy.welcomeExpiring(1, EXP)).toBe(`1 welcome credit expires ${day(EXP)}`);
+  });
+
+  it("W5: welcome used up and nothing else held: the shipped L4, no trace of the lot", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1), welcome: 0, payments: true });
+    expect(creditLineKind(a)).toBe("spent");
+    expect(creditSpent(a)).toBe(`${creditsCopy.spent(1, at(2, 1))}\n${creditsCopy.getMore}`);
+  });
+
+  it("W6: the paid limit names welcome among what is banked", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1), welcome: 9, pack: 21, paidUsedToday: 20, paidBackAt: at(2, 1) });
+    expect(creditLineKind(a)).toBe("limit");
+    expect(creditSpent(a)).toBe(`Today’s 20 credit runs are used. 9 welcome and 21 paid are banked · back at ${t(at(2, 1))}`);
+    expect(creditSpent({ ...a, pack: 0 })).toBe(`Today’s 20 credit runs are used. 9 welcome credits are banked · back at ${t(at(2, 1))}`);
+  });
+
+  it("a paid run after the welcome lot is spent is a paid run again", () => {
+    const a = w({ used: 1, reopensAt: at(2, 1), welcome: 0, pack: 40 });
+    expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 40 paid`);
+    expect(creditFirst(a)).toMatch(/^Uses a paid credit\. /);
+  });
+});

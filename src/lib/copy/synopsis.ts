@@ -45,6 +45,8 @@ export const synopsisCopy = {
     writes: (standing: string) => `Also writes the overview, using a credit. ${standing}.`,
     /** `writes` when the free allowance is spent and the press takes a paid credit (L3). */
     writesPaid: (standing: string) => `Also writes the overview, using a paid credit. ${standing}.`,
+    /** `writesPaid` when the welcome lot funds the run (welcome credits D2). */
+    writesWelcome: (standing: string) => `Also writes the overview, using a welcome credit. ${standing}.`,
     /** 7b: the bracket is still free; only the overview waits. Followed by the used-up line. */
     analyzeUsedUp: "Reads the bracket only; the overview waits for a credit.",
     /** 7e: the overview on screen stays; the used-up line follows. */
