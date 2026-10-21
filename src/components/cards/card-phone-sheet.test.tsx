@@ -2,7 +2,9 @@
 // nothing, so these pin the states, the controls and the gesture wiring; geometry is the walk's.
 import { cardAtProgress, SHEET } from "./card-sheet-gesture";
 import { describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { TargetsProvider, useTargets } from "../discovery/targets-provider";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 
@@ -508,5 +510,53 @@ describe("the sheet's min snap", () => {
     fireEvent.click(grip());
     drag(screen.getByTestId("card-band"), [200, 100], [200, 760]);
     expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+});
+
+describe("a waiting Find a deck landing (R3 addendum, item 12)", () => {
+  let targets!: NonNullable<ReturnType<typeof useTargets>>;
+  // The landing's ask is on the provider before any card opens, as it is when a deferred landing waits.
+  function Landing() {
+    const t = useTargets()!;
+    targets = t;
+    useEffect(() => t.askFull("find-a-deck"), [t]);
+    return null;
+  }
+  function page(cards: Props[]) {
+    return (
+      <TargetsProvider>
+        <Landing />
+        {cards.map((p, i) => (
+          <CardModal key={i} card={card} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} {...p} />
+        ))}
+      </TargetsProvider>
+    );
+  }
+
+  it("opens a card with a door at the full sheet and spends the ask, so the next card opens at the teaser", () => {
+    const { rerender } = render(page([]));
+    expect(targets.wantsFull("find-a-deck")).toBe(true);
+    rerender(page([{ onFindDeck: () => {} }]));
+    expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "full");
+    expect(targets.wantsFull("find-a-deck")).toBe(false);
+    rerender(page([]));
+    rerender(page([{ onFindDeck: () => {} }]));
+    expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("opens full over a carried minimized sheet, and says it is no longer minimized", () => {
+    const onMinimizedChange = vi.fn();
+    const { rerender } = render(page([]));
+    rerender(page([{ onFindDeck: () => {}, startMinimized: true, enterFrom: "next", onMinimizedChange }]));
+    expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "full");
+    expect(onMinimizedChange).toHaveBeenCalledWith(false);
+    expect(onMinimizedChange).not.toHaveBeenCalledWith(true);
+  });
+
+  it("leaves a card with no door at the teaser and keeps waiting", () => {
+    const { rerender } = render(page([]));
+    rerender(page([{}]));
+    expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
+    expect(targets.wantsFull("find-a-deck")).toBe(true);
   });
 });

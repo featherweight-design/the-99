@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { StrictMode, useEffect, useState } from "react";
-import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget } from "./targets-provider";
+import { HALO_ATTR, HALO_MS, TargetsProvider, useTarget, useTargets } from "./targets-provider";
 import { LANDING_WAIT_MS, useToolLanding } from "./use-tool-landing";
 import { ToolLandingMount } from "./tool-landing-mount";
 import { ARRIVE_MS, MomentsProvider, SPENT_AFTER_MS, useMomentAnchor } from "../moments/moments-provider";
@@ -383,6 +383,40 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     expect(screen.queryByRole("note")).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
     expect(window.location.search).toBe("?avail=free");
+  });
+
+  it("asks for the phone's next card to open at the full sheet while it waits, and withdraws the ask once the door draws or the page is left", async () => {
+    let asked: boolean | null = null;
+    function Peek() {
+      const t = useTargets()!;
+      return <button type="button" onClick={() => (asked = t.wantsFull("find-a-deck"))}>peek</button>;
+    }
+    const read = () => { act(() => screen.getByRole("button", { name: "peek" }).click()); return asked; };
+    at("?tool=find-a-deck");
+    const { unmount } = mountDeferred(<><Peek /><Later /></>);
+    await flush();
+    expect(read()).toBe(true);
+    act(() => screen.getByRole("button", { name: "open a card" }).click());
+    await flush();
+    expect(read()).toBe(false);
+    unmount();
+    // Leaving the page withdraws the ask: read from a provider that outlives the landing.
+    function Leave() {
+      const [on, setOn] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOn(false)}>leave</button>
+          {on ? <Deferred /> : null}
+        </>
+      );
+    }
+    at("?tool=find-a-deck");
+    render(<TargetsProvider><MomentsProvider live={["find-a-deck"]} spent={[]}><Peek /><Leave /></MomentsProvider></TargetsProvider>);
+    await flush();
+    expect(read()).toBe(true);
+    act(() => screen.getByRole("button", { name: "leave" }).click());
+    await flush();
+    expect(read()).toBe(false);
   });
 
   it("haloes nothing and spends nothing when the reader leaves the page before opening a card", async () => {

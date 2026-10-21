@@ -28,7 +28,8 @@ export const LANDING_WAIT_MS = 8000;
  * parameter is stripped at once, and the landing waits for the target with no limit while the page stays mounted,
  * haloing it once when it first draws. Leaving the page ends the wait with nothing haloed or spent. The wait is held by
  * its `scope` rather than the address, so an effect replay (React's StrictMode, a dependency moving) after the strip
- * resumes it; a newer `?tool=` on the page ends it unhaloed.
+ * resumes it; a newer `?tool=` on the page ends it unhaloed. While it waits it also asks for the phone's next card that
+ * carries the target to open at the full sheet (`askFull`, spent by the sheet), since the teaser draws no door.
  */
 export function useToolLanding(
   landing: Pick<ToolLanding, "tool" | "target" | "moment"> | null,
@@ -60,12 +61,17 @@ export function useToolLanding(
     }
     const abort = new AbortController();
     const path = window.location.pathname;
+    // A deferred landing's target lives in a card's details, which the phone opens at the teaser (no door there): ask
+    // for the next card that carries the target to open at the full sheet instead, once (R3 addendum, item 12).
+    const withdraw = deferred ? targets.askFull(target) : null;
     if (deferred) {
       waiting.current = scope;
       strip();
     }
     void targets.whenTarget(target, deferred ? Infinity : LANDING_WAIT_MS, abort.signal).then((el) => {
       if (abort.signal.aborted) return;
+      // The target drew: the ask for the full sheet is spent whatever follows, so no later card opens full (once only).
+      withdraw?.();
       // The address moved while the target was awaited (Back or Forward to another `?tool=` on this deck, before its
       // page commits): this landing is no longer asked for, so it neither haloes, spends nor strips the newer one. A
       // deferred landing stripped its own parameter already, so ANY `?tool=` now is a newer request.
@@ -90,6 +96,9 @@ export function useToolLanding(
       }
       if (!deferred) strip();
     });
-    return () => abort.abort();
+    return () => {
+      abort.abort();
+      withdraw?.();
+    };
   }, [tool, target, moment, scope, deferred, targets, suppress, yieldBubble]);
 }

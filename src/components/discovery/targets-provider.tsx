@@ -32,6 +32,12 @@ export type Targets = {
   /** The target's element once it registers, or null when `timeoutMs` passes first (never, for `Infinity`) or `signal`
    *  aborts. */
   whenTarget: (id: TargetId, timeoutMs: number, signal?: AbortSignal) => Promise<HTMLElement | null>;
+  /** A landing that waits for a control inside a card's details asks for the phone's next such card to open at the full
+   *  sheet (R3 addendum, item 12). Returns the call that withdraws the ask. One ask per id; `wantsFull` reads it, `takeFull`
+   *  spends it. */
+  askFull: (id: TargetId) => () => void;
+  wantsFull: (id: TargetId) => boolean;
+  takeFull: (id: TargetId) => void;
 };
 
 type Ctx = Targets & {
@@ -71,6 +77,7 @@ export function useNavLocked(): boolean | null {
 export function TargetsProvider({ children, navLocked = null }: { children: ReactNode; navLocked?: boolean | null }) {
   const regs = useRef(new Map<TargetId, Set<HTMLElement>>());
   const waiters = useRef(new Set<() => void>());
+  const asks = useRef(new Set<TargetId>());
   // Each haloed element and the timer that takes its halo off, so a second halo replaces the first.
   const halos = useRef(new Map<HTMLElement, number>());
 
@@ -204,6 +211,13 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
     [resolve],
   );
 
+  const askFull = useCallback((id: TargetId) => {
+    asks.current.add(id);
+    return () => void asks.current.delete(id);
+  }, []);
+  const wantsFull = useCallback((id: TargetId) => asks.current.has(id), []);
+  const takeFull = useCallback((id: TargetId) => void asks.current.delete(id), []);
+
   // Leaving the shell takes every halo off, and stops a look-again still running.
   useEffect(() => {
     const live = halos.current;
@@ -215,8 +229,8 @@ export function TargetsProvider({ children, navLocked = null }: { children: Reac
   }, [unhalo]);
 
   const ctx = useMemo<Ctx>(
-    () => ({ register, targetRect, scrollToTarget, haloTarget, whenTarget, subscribe, version }),
-    [register, targetRect, scrollToTarget, haloTarget, whenTarget, subscribe, version],
+    () => ({ register, targetRect, scrollToTarget, haloTarget, whenTarget, askFull, wantsFull, takeFull, subscribe, version }),
+    [register, targetRect, scrollToTarget, haloTarget, whenTarget, askFull, wantsFull, takeFull, subscribe, version],
   );
   return (
     <TargetsContext.Provider value={ctx}>
@@ -255,7 +269,15 @@ export function useTargets(): Targets | null {
     () =>
       ctx === null
         ? null
-        : { targetRect: ctx.targetRect, scrollToTarget: ctx.scrollToTarget, haloTarget: ctx.haloTarget, whenTarget: ctx.whenTarget },
+        : {
+            targetRect: ctx.targetRect,
+            scrollToTarget: ctx.scrollToTarget,
+            haloTarget: ctx.haloTarget,
+            whenTarget: ctx.whenTarget,
+            askFull: ctx.askFull,
+            wantsFull: ctx.wantsFull,
+            takeFull: ctx.takeFull,
+          },
     [ctx],
   );
 }
