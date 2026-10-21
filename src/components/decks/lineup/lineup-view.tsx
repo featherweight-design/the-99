@@ -100,7 +100,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   const sharedTop = useMemo(() => (data.shared ? sharedView(data.shared, new Set(decks.map((d) => d.id)), "most") : null), [data.shared, decks]);
   const grid = useMemo(() => jobsGrid(decks, "ramp"), [decks]);
   const expand = (
-    <button type="button" data-stats-expand onClick={() => fold.setAll(!fold.allOpen)} className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent)] md:min-h-[34px]">
+    <button type="button" data-stats-expand onClick={() => fold.setAll(!fold.allOpen)} className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent-text)] md:min-h-[34px]">
       {fold.allOpen ? copy.fold.collapseAll : copy.fold.expandAll}
     </button>
   );

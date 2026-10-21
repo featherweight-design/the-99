@@ -123,7 +123,7 @@ function ExhaustedLine({
       <div
         className="flex flex-none items-center justify-center rounded-full font-mono text-[10px] md:text-[11px] w-[18px] h-[18px] md:w-[20px] md:h-[20px]"
         aria-hidden
-        style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent)" }}
+        style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent-text)" }}
       >
         i
       </div>
@@ -449,7 +449,7 @@ function LastSlotsStripInner({
       <div className="md:flex md:items-baseline md:gap-[10px] md:mb-[11px]">
         <p
           className="font-mono uppercase text-[10px] md:text-[10.5px] mb-[4px] md:mb-0"
-          style={{ letterSpacing: ".14em", color: "var(--accent)" }}
+          style={{ letterSpacing: ".14em", color: "var(--accent-text)" }}
         >
           {topOffCopy.strip.heading(String(openSlots))}
         </p>
@@ -562,7 +562,7 @@ function LastSlotsStripInner({
               "gap-[8px] md:gap-[9px] w-full md:w-auto min-h-[44px] md:min-h-0",
               "md:px-[16px] md:py-[10px] rounded-[8px] bg-transparent",
               "font-semibold text-[14px] md:text-[13px] cursor-pointer",
-              "[border:1px_solid_var(--accent)] [color:var(--accent)]",
+              "[border:1px_solid_var(--accent)] [color:var(--accent-text)]",
             ].join(" ")}
           >
             {topOffCopy.strip.open(String(openSlots))}

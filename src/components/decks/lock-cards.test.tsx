@@ -180,7 +180,7 @@ describe("GroupToggle's Lock cards", () => {
       />,
     );
     const done = doneButton()!;
-    expect(done.className).toContain("text-accent");
+    expect(done.className).toContain("text-accent-text");
     expect(done.className).toContain("border-accent");
     expect(screen.getByRole("button", { name: recommendationsCopy.auto.keepAllAria("4") })).toBeDisabled();
     expect(screen.getByRole("button", { name: recommendationsCopy.auto.clearAllAria("4") })).toBeDisabled();

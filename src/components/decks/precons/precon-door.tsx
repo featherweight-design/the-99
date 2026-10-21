@@ -28,7 +28,7 @@ export function PreconDoor() {
       <Link
         {...preconMoment}
         href={HREF}
-        className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline md:h-[38px]"
+        className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent-text)] no-underline md:h-[38px]"
       >
         {copy.cta}
         <PendingReporter href={HREF} />

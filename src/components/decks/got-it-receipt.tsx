@@ -391,7 +391,7 @@ export function GotItReceipt({
         title={c.undoFailed}
         body={phase.known ? c.undoFailedBody : undefined}
         actions={
-          <Link href={history} className={`${btn} text-[color:var(--accent)]`}>
+          <Link href={history} className={`${btn} text-[color:var(--accent-text)]`}>
             {c.openHistory}
             <PendingReporter href={history} />
           </Link>
@@ -430,7 +430,7 @@ export function GotItReceipt({
             // 32 tall, with the phone's 44 hit area reached through 6px of padding top and bottom,
             // taken back by an equal negative margin so the body line does not grow (design table).
             // Border-box: the 44 minimum INCLUDES that padding, so the phone's is 44 and md's 32.
-            className="ml-[6px] -my-[6px] inline-flex min-h-[44px] md:min-h-[32px] cursor-pointer items-center border-0 bg-transparent px-0 py-[6px] text-[12.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2 md:my-0 md:py-0"
+            className="ml-[6px] -my-[6px] inline-flex min-h-[44px] md:min-h-[32px] cursor-pointer items-center border-0 bg-transparent px-0 py-[6px] text-[12.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2 md:my-0 md:py-0"
           >
             {c.change}
           </button>
@@ -440,7 +440,7 @@ export function GotItReceipt({
         <>
           {/* History steps aside while the undo is checked or written (C3). */}
           {busy ? null : (
-            <Link href={history} className={`${btn} text-[color:var(--accent)]`}>
+            <Link href={history} className={`${btn} text-[color:var(--accent-text)]`}>
               {c.history}
               <PendingReporter href={history} />
             </Link>
@@ -453,7 +453,7 @@ export function GotItReceipt({
             aria-disabled={held || undefined}
             aria-busy={held || undefined}
             onClick={() => { if (!held) void check(); }}
-            className={`${btn} font-semibold ${held ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
+            className={`${btn} font-semibold ${held ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent-text)]"}`}
           >
             {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}
           </button>

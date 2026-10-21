@@ -428,7 +428,7 @@ const HEADER = {
 
 const LABEL =
   "font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.14em] md:tracking-[0.16em] " +
-  "text-[color:var(--accent)] mb-[9px] md:mb-0";
+  "text-[color:var(--accent-text)] mb-[9px] md:mb-0";
 
 const MONEY_SENTENCE =
   "m-0 mb-[12px] md:mb-[14px] md:max-w-[700px] text-[12.5px] md:text-[13px] " +
@@ -463,7 +463,7 @@ const SECONDARY_CTA =
 // Demoted to a link at six changes or fewer, and still a touch target there.
 const REVIEW_LINK =
   "flex-none inline-flex items-center min-h-[44px] md:min-h-0 font-mono text-[11px] " +
-  "text-[color:var(--accent)] no-underline hover:text-[color:var(--accent-hover)] transition-colors";
+  "text-[color:var(--accent-text)] no-underline hover:text-[color:var(--accent-hover)] transition-colors";
 
 // The clean state is not the pending banner — it is a single line — so it keeps
 // the strip it shipped in.
