@@ -44,30 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S6 (21 files)
-  "src/components/collection/add-cards-sheet.tsx": 5,
-  "src/components/collection/add-line.tsx": 2,
-  "src/components/collection/added-receipt.tsx": 1,
-  "src/components/collection/arrivals-summary.tsx": 3,
-  "src/components/collection/collection-empty-doors.tsx": 1,
-  "src/components/collection/collection-place-head.tsx": 2,
-  "src/components/collection/edit-toast.tsx": 1,
-  "src/components/collection/history-list.tsx": 6,
-  "src/components/collection/issue-inspector.tsx": 1,
-  "src/components/collection/replace-flow.tsx": 2,
-  "src/components/collection/replace-review-detail.tsx": 1,
-  "src/components/collection/revert-confirm.tsx": 1,
-  "src/components/collection/review-parts.tsx": 1,
-  "src/components/collection/review-screen.tsx": 1,
-  "src/components/collection/rows-view.tsx": 1,
-  "src/components/collection/scan/photo-list.tsx": 1,
-  "src/components/collection/scan/scanner-view.tsx": 4,
-  "src/components/collection/short-deck-warning.tsx": 1,
-  "src/components/collection/sync-review.tsx": 2,
-  "src/components/collection/upload-choice.tsx": 1,
-  "src/components/collection/upload-entry.tsx": 3,
-
-
   // S8 (24 files)
   "src/components/cards/card-modal-shared.ts": 1,
   "src/components/cards/card-modal.tsx": 8,

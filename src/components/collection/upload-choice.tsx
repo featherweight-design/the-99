@@ -439,7 +439,7 @@ export function UploadChoice({
           <button
             type="button"
             onClick={sync.onRetry}
-            className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+            className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent-text)] underline underline-offset-2"
           >
             {c.retry}
           </button>

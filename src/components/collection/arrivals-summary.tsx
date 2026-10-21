@@ -294,7 +294,7 @@ export function ArrivalsSummary({
               <button
                 type="button"
                 onClick={() => setInspectorOpen(true)}
-                className="underline text-[color:var(--accent)]"
+                className="underline text-[color:var(--accent-text)]"
               >
                 {copy.summary.issuesLink}
               </button>
@@ -331,7 +331,7 @@ export function ArrivalsSummary({
             <button
               type="button"
               onClick={() => setShowAllCleared(true)}
-              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent)]"
+              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent-text)]"
             >
               {copy.summary.showAll(clearedRows.length)}
             </button>
@@ -360,7 +360,7 @@ export function ArrivalsSummary({
             <button
               type="button"
               onClick={() => setShowAllStill(true)}
-              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent)]"
+              className="font-mono text-[11px] mt-[8px] text-[color:var(--accent-text)]"
             >
               {copy.summary.showAll(still.length)}
             </button>

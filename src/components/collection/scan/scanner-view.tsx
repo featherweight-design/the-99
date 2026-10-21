@@ -202,7 +202,7 @@ function TopBar(p: ScannerViewProps) {
             p.torch.on
               ? "bg-[color:var(--fg)] text-[color:var(--bg)]"
               : dark
-                ? `${SCRIM} text-[color:var(--accent)] shadow-[0_0_0_2px_var(--accent)]`
+                ? `${SCRIM} text-[color:var(--accent-text)] shadow-[0_0_0_2px_var(--accent)]`
                 : SCRIM
           }`}
         >
@@ -330,7 +330,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
           <button
             type="button"
             onClick={p.onNotThis}
-            className="min-h-[44px] self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)]"
+            className="min-h-[44px] self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent-text)]"
           >
             {copy.view.notThis}
           </button>
@@ -363,7 +363,7 @@ function Panel(p: ScannerViewProps & { panel: ScanPanel }) {
               <button
                 type="button"
                 onClick={p.onNoneOfThese}
-                className="min-h-[44px] border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)]"
+                className="min-h-[44px] border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent-text)]"
               >
                 {copy.view.noneOfThese}
               </button>
@@ -528,7 +528,7 @@ function CountCard({ count, flipTo }: { count: number; flipTo: string | null }) 
       <span
         data-testid="scan-count-card"
         data-flip={flipTo ? "" : undefined}
-        className={`${back} left-[24px] flex rotate-[7deg] items-center justify-center overflow-hidden border border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--surface))] font-display text-[17px] font-bold text-[color:var(--accent)] transition-transform duration-300 motion-reduce:transition-none ${
+        className={`${back} left-[24px] flex rotate-[7deg] items-center justify-center overflow-hidden border border-[color:var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--surface))] font-display text-[17px] font-bold text-[color:var(--accent-text)] transition-transform duration-300 motion-reduce:transition-none ${
           flipTo ? "motion-safe:[transform:rotate(7deg)_perspective(200px)_rotateY(18deg)]" : ""
         }`}
       >

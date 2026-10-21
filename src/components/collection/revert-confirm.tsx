@@ -265,7 +265,7 @@ export function RevertConfirm({
                       ))}
                     </ul>
                     {!all && lines.length > SHOWN ? (
-                      <button type="button" onClick={() => setAll(true)} className="mt-[6px] min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] underline underline-offset-2">
+                      <button type="button" onClick={() => setAll(true)} className="mt-[6px] min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)] underline underline-offset-2">
                         {collectionEditCopy.upload.showAll(lines.length)}
                       </button>
                     ) : null}

@@ -81,7 +81,7 @@ export function AddedReceipt({ title, body, counts, extra, went, historyHref, hi
       {extra}
       {went ? <WhereItWentBlock {...went} /> : null}
       {/* B8: the entry this write left, one tap away. */}
-      <Link href={historyHref} onNavigate={onNavigate} className="text-[13.5px] text-[color:var(--accent)] underline underline-offset-2">
+      <Link href={historyHref} onNavigate={onNavigate} className="text-[13.5px] text-[color:var(--accent-text)] underline underline-offset-2">
         {historyLabel}
         <PendingReporter href={historyHref} />
       </Link>

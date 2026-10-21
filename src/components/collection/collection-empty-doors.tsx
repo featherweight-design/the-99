@@ -37,7 +37,7 @@ function DoorMark({ children }: { children: React.ReactNode }) {
   return (
     <span
       aria-hidden
-      className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[9px] bg-[color:var(--elevated)] text-[17px] text-[color:var(--accent)]"
+      className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[9px] bg-[color:var(--elevated)] text-[17px] text-[color:var(--accent-text)]"
     >
       {children}
     </span>

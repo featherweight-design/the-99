@@ -189,7 +189,7 @@ export function ShortDeckWarning({
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="flex min-h-[44px] w-full items-center px-[14px] text-left text-[13px] text-[color:var(--accent)]"
+                className="flex min-h-[44px] w-full items-center px-[14px] text-left text-[13px] text-[color:var(--accent-text)]"
               >
                 {c.more(hidden)}
               </button>

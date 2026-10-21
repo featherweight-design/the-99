@@ -533,7 +533,7 @@ export function ReplaceFlow({
           <>
             {/* The phone's page header, the upload step's alone: the review draws its own. */}
             <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
-              <a href="/collection" aria-label={replaceCopy.backAria} className={`${TOUCH_HIT} text-[20px] text-[color:var(--accent)]`}>‹</a>
+              <a href="/collection" aria-label={replaceCopy.backAria} className={`${TOUCH_HIT} text-[20px] text-[color:var(--accent-text)]`}>‹</a>
               <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{pageTitle}</h1>
             </div>
             <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
@@ -596,7 +596,7 @@ export function ReplaceFlow({
                 <button
                   type="button"
                   onClick={() => setAttempt((a) => a + 1)}
-                  className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent)] underline underline-offset-2"
+                  className="mt-[6px] min-h-[44px] text-[13.5px] text-[color:var(--accent-text)] underline underline-offset-2"
                 >
                   {collectionEditCopy.upload.retry}
                 </button>

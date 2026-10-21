@@ -94,7 +94,7 @@ export function Rows({ heading, list, tone }: { heading: string; list: PreviewLi
         <button
           type="button"
           onClick={() => setAll(true)}
-          className="mt-[8px] min-h-[44px] text-[13px] text-[color:var(--accent)] underline underline-offset-2"
+          className="mt-[8px] min-h-[44px] text-[13px] text-[color:var(--accent-text)] underline underline-offset-2"
         >
           {c.showAll(list.rows.length)}
         </button>

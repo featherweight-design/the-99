@@ -311,7 +311,7 @@ function ScanFix({ line, scan, fix, disabled }: {
               </span>
               <span className={`mt-[7px] text-[12px] leading-[1.3] ${on ? "font-semibold" : ""}`}>{g.name}</span>
               {on && (
-                <span className="mt-[3px] flex items-center gap-[5px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent)]">
+                <span className="mt-[3px] flex items-center gap-[5px] font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent-text)]">
                   <span aria-hidden className="h-[7px] w-[7px] rotate-45 bg-[color:var(--accent)]" />
                   {fixCopy.onList}
                 </span>
@@ -324,7 +324,7 @@ function ScanFix({ line, scan, fix, disabled }: {
         type="button"
         disabled={disabled}
         onClick={fix.onSearch}
-        className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent)] disabled:cursor-default"
+        className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent p-0 text-left text-[13.5px] text-[color:var(--accent-text)] disabled:cursor-default"
       >
         {fixCopy.search}
       </button>

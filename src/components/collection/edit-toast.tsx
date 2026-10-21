@@ -197,7 +197,7 @@ export function CollectionEditToast() {
             <button
               type="button"
               onClick={() => setUndoing(true)}
-              className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2"
+              className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
             >
               {toast.removed ? r.undo : c.undo}
             </button>
