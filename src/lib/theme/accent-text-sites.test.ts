@@ -18,7 +18,7 @@ const IN_CODE = [
   /text-\[var\(--accent\)\]/g, // the same class without the type hint
   /(?<![\w-])\[color:var\(--accent\)\]/g, // the arbitrary property, `[color:...]`
   /\btext-accent\b(?!-)/g, // the @theme utility; text-accent-text and text-accent-hover are other tokens
-  /(?<![\w-])color:[^,;}\n]*?["']var\(--accent\)["']/g, // an inline style, plain or in a ternary
+  /(?<![\w[-])color:(?:[^,;}"'`[]|"[^"\n]*"|'[^'\n]*'){0,200}?["']var\(--accent\)["']/g, // an inline style, plain or in a ternary, over lines
 ];
 const IN_CSS = /(?<![\w-])color:\s*var\(--accent\)(?![\w-])/g;
 
@@ -210,7 +210,7 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/commanders/retry-submit.tsx": 1,
   "src/components/commanders/reveal-control.tsx": 2,
   "src/components/commanders/synergy-panel.tsx": 3,
-  "src/components/commanders/synergy-row.tsx": 1,
+  "src/components/commanders/synergy-row.tsx": 3,
   "src/components/commanders/synergy-selection.tsx": 1,
   "src/components/commanders/why-section.tsx": 1,
 
@@ -292,6 +292,8 @@ describe("the accent as text", () => {
       'style={{ color: "var(--accent)" }}',
       "style={{ color: 'var(--accent)' }}",
       'style={{ color: current ? "var(--accent)" : "var(--fg-body)" }}',
+      `style={{\n  color:\n    selected\n      ? "var(--accent)"\n      : "var(--fg-faint)",\n}}`,
+      `style={{ color: selected\n  ? "var(--accent)" : "var(--fg-faint)" }}`,
     ];
     for (const sample of text) expect(sites("a.tsx", sample), sample).toBe(1);
     const notText = [
@@ -300,6 +302,8 @@ describe("the accent as text", () => {
       'className="border-[var(--accent)] outline-[color:var(--accent)]"',
       'style={{ backgroundColor: "var(--accent)", borderColor: "var(--accent)" }}',
       'style={{ color: "var(--fg)", border: "1px solid var(--accent)" }}',
+      // a [color:...] class on one line must not run on into the next line's borderColor
+      `className="[color:var(--fg)]"\n      style={{ borderColor: on ? "var(--accent)" : "var(--border)" }}`,
     ];
     for (const sample of notText) expect(sites("a.tsx", sample), sample).toBe(0);
     expect(sites("a.css", ".x { color: var(--accent); border-color: var(--accent); }")).toBe(1);
