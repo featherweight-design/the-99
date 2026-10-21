@@ -64,6 +64,7 @@ const READ_ROW = `(label) => {
   if (commit && label) commit.textContent = label;
   const kids = [...row.children].map((c) => c.getBoundingClientRect());
   const exp = [...row.querySelectorAll('button')].find((b) => /Export/.test(b.textContent));
+  // Name = text a screen reader gets: an sr-only span is exposed, a display:none one is not.
   return {
     found: true,
     hasCommit: Boolean(commit),
@@ -71,7 +72,7 @@ const READ_ROW = `(label) => {
     right: Math.max(...kids.map((r) => r.right)),
     left: Math.min(...kids.map((r) => r.left)),
     overflow: row.scrollWidth > row.clientWidth,
-    exportName: exp ? (exp.textContent || '').trim() : null,
+    exportName: exp ? ([...exp.querySelectorAll('span')].filter((n) => getComputedStyle(n).display !== 'none' && getComputedStyle(n).visibility !== 'hidden').map((n) => n.textContent).join('').trim()) : null,
     exportW: exp ? Math.round(exp.getBoundingClientRect().width) : null,
     count: kids.length,
   };
