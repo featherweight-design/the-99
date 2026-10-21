@@ -22,7 +22,7 @@ export function PauseBand() {
         <b className="text-[14.5px] font-semibold text-[color:var(--fg)]">{c.title}</b>
         <p className="m-0 text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
           {c.before}
-          <SupportLink ground="raised" />
+          <SupportLink />
           {c.after}
         </p>
       </div>
