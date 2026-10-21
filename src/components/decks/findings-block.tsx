@@ -148,7 +148,7 @@ function FindingItem({
               onClick={onOpen}
               aria-label={copy.openAria(finding.count, label)}
               aria-haspopup="dialog"
-              className="inline-flex min-h-[44px] md:min-h-0 items-center bg-transparent border-0 p-0 font-mono text-[10px] md:text-[9.5px] cursor-pointer text-[color:var(--accent)]"
+              className="inline-flex min-h-[44px] md:min-h-0 items-center bg-transparent border-0 p-0 font-mono text-[10px] md:text-[9.5px] cursor-pointer text-[color:var(--accent-text)]"
             >
               <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">
                 {finding.combos ? copy.openCombo(finding.count) : copy.open(finding.count)}

@@ -413,7 +413,7 @@ function DialogContent({
               </span>
               {/* Commander lines: one per commander, both for a pair */}
               {commanderLines.map((line) => (
-                <span key={line} style={{ color: "var(--accent)" }}>
+                <span key={line} style={{ color: "var(--accent-text)" }}>
                   {line}
                   {"\n"}
                 </span>

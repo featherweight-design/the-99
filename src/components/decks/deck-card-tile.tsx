@@ -475,12 +475,12 @@ export function DeckCardTile({
                   itself, which is exactly what the row does. */}
               {stepperOn ? (
                 fromMarker !== null && (
-                  <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
+                  <span aria-hidden className="flex-none" style={{ color: "var(--accent-text)" }}>
                     {addPanelCopy.basicStepper.from(fromMarker)}
                   </span>
                 )
               ) : draftFigure ? (
-                <span aria-hidden className="flex-none" style={{ color: "var(--accent)" }}>
+                <span aria-hidden className="flex-none" style={{ color: "var(--accent-text)" }}>
                   {draftFigure}
                 </span>
               ) : (

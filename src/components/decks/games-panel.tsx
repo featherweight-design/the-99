@@ -71,7 +71,7 @@ function subFragments(
   const found = (
     [
       [emphasis.denominator, "font-semibold text-fg"],
-      [emphasis.record, "font-mono text-[12px] md:text-[13px] tabular-nums text-accent"],
+      [emphasis.record, "font-mono text-[12px] md:text-[13px] tabular-nums text-accent-text"],
     ] as const
   )
     .map(([value, ink]) => ({ value, ink, at: text.indexOf(value) }))
@@ -342,7 +342,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
       {tuned && onOpenAnalysis ? (
         <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
           {deckTuningGamesCopy.gamesLine.lead}{" "}
-          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline">
+          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent-text)] hover:underline">
             {deckTuningGamesCopy.gamesLine.link}
           </button>
         </p>
@@ -400,7 +400,7 @@ function CardFanMark() {
       <div
         className={
           card +
-          " flex items-center justify-center bg-[color-mix(in_srgb,var(--accent)_14%,var(--surface))] border-accent rotate-[18deg] translate-x-[14px] md:translate-x-[21px] font-display font-extrabold text-[15px] md:text-[22px] text-accent"
+          " flex items-center justify-center bg-[color-mix(in_srgb,var(--accent)_14%,var(--surface))] border-accent rotate-[18deg] translate-x-[14px] md:translate-x-[21px] font-display font-extrabold text-[15px] md:text-[22px] text-accent-text"
         }
       >
         99
