@@ -2454,6 +2454,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   against the reservations the start itself wrote it fails l, and with the reservations dropped before the revert reads
   its "before" it fails m (both Hugh's symptoms on production, 2026-10-14). Case i needs `precon_tokens`, which a
   branch whose precons were ingested before the token columns lacks.
+- `pnpm probe:draft-wants` proves card details' "In your decks" names every deck that WANTS a card, drafts
+  included (Hugh, 2026-10-20), by calling the real `loadCardDetail` and `loadDraftWants`. A committed deck with the card
+  only in its draft is a draft want (`in the draft`), never a claim; a card in the version stays a claim and is never
+  named twice; a proxied draft add, a basic land and another player's deck are never draft wants; a draft's moved
+  commander is one. It writes under two per-run user ids and purges both, after the branch guard (`PROBE_DB_BRANCH`,
+  staging and production refused by id). Run on a scratch branch from local-dev. Its first run (2026-10-21) passed,
+  and three mutations of `loadDraftWants` each failed it: the version anti-join dropped (b), the user scope dropped (a,
+  b, c, e, g), the proxy anti-join dropped (d).
 - `pnpm probe:deck-own` proves the import's `I own these cards. Add them to my collection.` (no-collection entry plan,
   PR 1) against a real database, through the real `buildDeckImport`, `readDeckOwnLines`, `importDeckOwned`,
   `listHistory` and `applyCollectionChange` (revert), the steps `importDeck` takes with the box ticked:

@@ -429,8 +429,14 @@ export const loadCardDetail = cache(async function loadCardDetail(
       const { loadAvailability } = await import("../decks/availability-query");
       return (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) ?? null;
     })().catch(() => null);
-    const [a, p, pb, g] = await Promise.all([availability, prices, proxiedBy, gate]);
-    return assemble({ ...owned[0], availability: a, prices: p, proxiedBy: pb, ...g });
+    // The decks wanting it only in a draft, which the claims above cannot name: its own read, beside
+    // the availability one and never folded into it (`loadDraftWants`). Owned-only, as the receipt
+    // that draws it is.
+    const draftWants = import("../decks/draft-wants")
+      .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
+      .catch(() => null);
+    const [a, p, pb, g, dw] = await Promise.all([availability, prices, proxiedBy, gate, draftWants]);
+    return assemble({ ...owned[0], availability: a, draftWants: dw, prices: p, proxiedBy: pb, ...g });
   }
 
   // `card` is known here: stage 1 returned when the unowned branch found none.

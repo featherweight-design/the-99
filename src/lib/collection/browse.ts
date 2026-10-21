@@ -17,6 +17,7 @@ import type { PrintingPrices } from "../cards/price-lookup";
 import { cardPriceCode, priceSortCents } from "./copy-price";
 import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardFact } from "../copy/card-mark";
+import type { DraftWant } from "../decks/draft-wants";
 
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
@@ -255,6 +256,14 @@ export type BrowseCard = {
    */
   comboPartners?: ModalComboPartner[];
   availability?: Availability | null;
+  /**
+   * The committed decks wanting this card only in their DRAFT (`loadDraftWants`), which
+   * `availability.claims` cannot name: a claim reads the newest version, what is sleeved. Its own
+   * field for the reason `proxiedBy` is: every pull and marker reads `claims`, and a draft add holds
+   * no copy for any of them to count. Set by `loadCardDetail` for an owned card; null when the read
+   * failed, absent where nothing read it.
+   */
+  draftWants?: DraftWant[] | null;
   /**
    * The decks printing this card, which is NOT part of `availability.claims` and
    * must never be folded into it: `hardDecks`, `pullSources`, the markers and

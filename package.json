@@ -290,6 +290,7 @@
     "probe:precon-start": "tsx scripts/probe-precon-start.ts",
     "probe:precon-start-owned": "tsx scripts/probe-precon-start-owned.ts",
     "probe:deck-own": "tsx scripts/probe-deck-own.ts",
+    "probe:draft-wants": "tsx scripts/probe-draft-wants.ts",
     "probe:payments-webhook": "tsx scripts/probe-payments-webhook.ts",
     "probe:plan-cancel": "tsx scripts/probe-plan-cancel.ts",
     "probe:payments-reduced": "tsx scripts/probe-payments-reduced.mjs",
