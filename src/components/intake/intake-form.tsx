@@ -31,7 +31,7 @@ import { ThemePicker } from "./theme-picker";
 import { closedBy, formLine, type Standing } from "../../lib/intake/standing";
 import { submitChoose } from "../../app/decks/new/choose/actions";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
-import { CreditsText } from "../ui/credits-text";
+import { CreditsText, GetMoreLink, splitGetMore } from "../ui/credits-text";
 import { InfoTip } from "../ui/info-tip";
 import { CardTagList, useCardTagPicker } from "../cards/card-tag-picker";
 import { searchTagCards } from "../../app/cards/tag-actions";
@@ -216,6 +216,8 @@ export function IntakeForm({
   // after hydration, so the server's HTML and the first client render agree.
   const hydrated = useHydrated();
   const line = written && standing && hydrated ? formLine(standing) : null;
+  // On the phone `Get more credits` sits under the box, where the credit is missing, not in the dock (R3 item 10).
+  const phoneLine = line === null ? null : splitGetMore(line);
   const caption = !written ? copy.intake.extra.caption : standing && closed !== null ? copy.intake.extra.captionSpent : copy.intake.extra.captionFilled;
 
   // Paid or not as the press WAS when pressed, while its request is in flight.
@@ -336,6 +338,7 @@ export function IntakeForm({
           // Counted as the picker caps it (a tag counts as its name), so the count and the box stop together.
           count={written ? copy.intake.extra.count(picker.count, READ_WORDS_MAX_CHARS) : null}
           tipAnchor
+          after={phoneLine?.more ? <GetMoreLink className="md:hidden" /> : undefined}
           aside={
             <>
               <InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />
@@ -393,7 +396,7 @@ export function IntakeForm({
         <button {...pressProps} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
-        {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={line} /></p>}
+        {phoneLine && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={phoneLine.rest} /></p>}
       </div>
     </form>
   );
@@ -410,6 +413,7 @@ function Field({
   count = null,
   aside,
   tipAnchor = false,
+  after,
   children,
 }: {
   label: string;
@@ -422,6 +426,8 @@ function Field({
   aside?: ReactNode;
   /** The aside holds an ⓘ: its tooltip anchors to this row, so the row is positioned. */
   tipAnchor?: boolean;
+  /** Under the caption: the phone's `Get more credits`, on the paid field. */
+  after?: ReactNode;
   htmlFor?: string;
   labelId?: string;
   caption: string;
@@ -448,6 +454,7 @@ function Field({
         </p>
         {count && <span className="shrink-0 font-mono text-[10px] text-[color:var(--fg-faint)]">{count}</span>}
       </div>
+      {after}
     </div>
   );
 }

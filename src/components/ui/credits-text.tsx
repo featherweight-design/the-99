@@ -14,23 +14,33 @@ import { PendingReporter } from "../shell/pending-reporter";
  * the handoff draws it (find-a-deck-read design table, "Credits link (R2)").
  */
 export function CreditsText({ text }: { text: string }) {
-  // `Get more credits` (L4) is its own line under the spent line: the model appends it after a line break.
+  const { rest, more } = splitGetMore(text);
+  if (!more) return <Phrases text={text} />;
+  return (
+    <>
+      <Phrases text={rest} />
+      <GetMoreLink />
+    </>
+  );
+}
+
+/** `Get more credits` (L4) is its own line under the spent line: the model appends it after a line break. A surface that
+ *  draws it somewhere other than under the line (Help me choose's phone, R3 item 10) splits it off here. */
+export function splitGetMore(text: string): { rest: string; more: boolean } {
   const more = `\n${creditsCopy.getMore}`;
-  if (text.endsWith(more)) {
-    return (
-      <>
-        <Phrases text={text.slice(0, -more.length)} />
-        <Link
-          href={BUY_HREF}
-          className="mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent)] md:min-h-[32px]"
-        >
-          {creditsCopy.getMore}<span aria-hidden="true" className="text-[10px]">→</span>
-          <PendingReporter href={BUY_HREF} />
-        </Link>
-      </>
-    );
-  }
-  return <Phrases text={text} />;
+  return text.endsWith(more) ? { rest: text.slice(0, -more.length), more: true } : { rest: text, more: false };
+}
+
+export function GetMoreLink({ className = "" }: { className?: string }) {
+  return (
+    <Link
+      href={BUY_HREF}
+      className={`mt-[2px] flex min-h-[44px] w-fit items-center gap-[7px] font-sans text-[13px] font-semibold text-[color:var(--accent)] md:min-h-[32px] ${className}`}
+    >
+      {creditsCopy.getMore}<span aria-hidden="true" className="text-[10px]">→</span>
+      <PendingReporter href={BUY_HREF} />
+    </Link>
+  );
 }
 
 /** Where `Get more credits` leads. */
