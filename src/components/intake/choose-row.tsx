@@ -123,7 +123,7 @@ export function ChooseRow({
       {rank !== undefined && (
         <span
           data-testid="best-rank-phone"
-          className="md:hidden flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full font-mono text-[10.5px] font-semibold text-[color:var(--accent)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
+          className="md:hidden flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full font-mono text-[10.5px] font-semibold text-[color:var(--accent-text)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
         >
           {rank}
         </span>
@@ -180,7 +180,7 @@ export function ChooseRow({
           {/* The crop, or the card's own image where the catalog has no crop, as the row's thumb does:
               a best fit is never a blank block. It fades in over the ground (`ArtLayer`). */}
           {row.artCropUri ?? row.imageUri ? <ArtLayer src={(row.artCropUri ?? row.imageUri)!} /> : null}
-          <span data-testid="best-rank" className="absolute left-[10px] top-[10px] hidden md:flex items-center justify-center w-[26px] h-[26px] rounded-full font-mono text-[12px] font-semibold text-[color:var(--accent)] bg-[color:var(--bg)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]">
+          <span data-testid="best-rank" className="absolute left-[10px] top-[10px] hidden md:flex items-center justify-center w-[26px] h-[26px] rounded-full font-mono text-[12px] font-semibold text-[color:var(--accent-text)] bg-[color:var(--bg)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]">
             {best}
           </span>
         </div>
@@ -266,7 +266,7 @@ function Figures({ figures, owned, best = false }: { figures: readonly Figure[];
           <span className={`min-w-0 ${best ? "md:text-[12.5px] text-[12px]" : ""} ${f.dim ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}`}>
             {f.text}
             {f.setsRank && (
-              <span className={`ml-[6px] font-mono text-[8.5px] ${best ? "" : "md:text-[9px]"} tracking-[.12em] text-[color:var(--accent)] whitespace-nowrap`}>
+              <span className={`ml-[6px] font-mono text-[8.5px] ${best ? "" : "md:text-[9px]"} tracking-[.12em] text-[color:var(--accent-text)] whitespace-nowrap`}>
                 {copy.results.setsRank}
               </span>
             )}
@@ -379,7 +379,7 @@ function OwnershipLine({
                 <button
                   type="button"
                   onClick={retry}
-                  className="relative z-[1] font-mono text-[10.5px] p-0 bg-transparent border-0 cursor-pointer text-[color:var(--accent)] underline decoration-[color:var(--accent)] underline-offset-[2px]"
+                  className="relative z-[1] font-mono text-[10.5px] p-0 bg-transparent border-0 cursor-pointer text-[color:var(--accent-text)] underline decoration-[color:var(--accent)] underline-offset-[2px]"
                 >
                   {copy.results.retry}
                 </button>

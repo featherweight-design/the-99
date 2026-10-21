@@ -197,7 +197,7 @@ export function ChooseResults({
       {gone && !picked ? gone : null}
       {best.length > 0 && (
         <section aria-labelledby="best-fits" className="flex flex-col gap-[10px]">
-          <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent)]">
+          <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent-text)]">
             {copy.results.bestFits}
           </h3>
           <ol data-dim={dim || undefined} className={`m-0 p-0 list-none grid grid-cols-1 gap-[10px] md:grid-cols-[repeat(3,minmax(0,1fr))] md:gap-[14px] ${dim ? "opacity-[0.45]" : ""}`}>

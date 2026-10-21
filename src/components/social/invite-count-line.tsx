@@ -35,7 +35,7 @@ export function InviteCountLine({
   className?: string;
 }) {
   const colour =
-    tone === "accent" ? "text-[color:var(--accent)]"
+    tone === "accent" ? "text-[color:var(--accent-text)]"
       : tone === "muted" && count.out ? "text-[color:var(--fg-faint)]"
       : "text-[color:var(--fg-muted)]";
   return (

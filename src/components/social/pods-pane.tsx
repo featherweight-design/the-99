@@ -244,7 +244,7 @@ export function PodsPane({
             if (!creating) createOpening.current += 1;
             setCreating(true);
           }}
-          className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[32px]"
+          className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
         >
           {copy.newPod}
         </button>

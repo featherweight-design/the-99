@@ -31,7 +31,7 @@ export function HelpMeChooseDoor({ pastRuns = false }: { pastRuns?: boolean }) {
       </div>
       <Link
         href={CHOOSE_PATH}
-        className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline md:h-[38px]"
+        className="flex h-[44px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:var(--accent)] px-[16px] text-[13.5px] font-semibold text-[color:var(--accent-text)] no-underline md:h-[38px]"
       >
         {copy.cta}
       </Link>
@@ -45,7 +45,7 @@ function PastRunsLink({ className }: { className: string }) {
       href={`${CHOOSE_PATH}?v=history`}
       prefetch={false}
       data-testid="past-runs-link"
-      className={`${className} text-[12.5px] font-medium text-[color:var(--accent)] no-underline md:text-[13px]`}
+      className={`${className} text-[12.5px] font-medium text-[color:var(--accent-text)] no-underline md:text-[13px]`}
     >
       {helpMeChooseHistoryCopy.doorLink}
     </Link>
@@ -71,7 +71,7 @@ export function DiscoverChooseLink({ colors, exactly, wide }: { colors: readonly
       <Link
         href={qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH}
         className={[
-          "border-0 border-b border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent)] no-underline",
+          "border-0 border-b border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent-text)] no-underline",
           // The words are 12.5px; the press is the whole 44px line they sit on, the lead included:
           // the link's own box is not positioned, so its overlay spans the line rather than the link.
           "after:absolute after:left-0 after:right-0 after:top-1/2 after:h-[44px] after:-translate-y-1/2 after:content-['']",
@@ -93,7 +93,7 @@ export function ChooseDoorPress({ className = "", ...rest }: Omit<ComponentProps
     <Link
       href={CHOOSE_PATH}
       {...rest}
-      className={`${className} text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px]`}
+      className={`${className} text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px]`}
     >
       {copy.cta}
     </Link>

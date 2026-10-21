@@ -115,7 +115,7 @@ export function FriendsHead({
   );
 
   const choose = (
-    <button type="button" onClick={onOpenPicker} className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] md:min-h-[32px] font-sans text-[13.5px] font-medium text-[color:var(--accent)]">
+    <button type="button" onClick={onOpenPicker} className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] md:min-h-[32px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)]">
       {c.choose}
     </button>
   );
@@ -148,7 +148,7 @@ export function FriendsHead({
                   ref={change}
                   type="button"
                   onClick={open}
-                  className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[32px]"
+                  className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
                 >
                   {line.action}
                 </button>

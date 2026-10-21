@@ -218,7 +218,7 @@ export function CommanderPicker({
           <button
             type="button"
             onClick={() => onPick(null)}
-            className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent)]"
+            className="min-h-[44px] flex-none cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)]"
           >
             {c.clear}
           </button>

@@ -61,7 +61,7 @@ export function OpenLinks({
                   type="button"
                   aria-label={v.revokeAria(made)}
                   onClick={() => onRevoke(link)}
-                  className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[32px]"
+                  className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[4px] font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
                 >
                   {v.revoke}
                 </button>

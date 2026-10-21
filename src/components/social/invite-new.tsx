@@ -159,7 +159,7 @@ export function InviteNew({
             <button
               type="button"
               onClick={() => setStage({ kind: "form" })}
-              className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent px-[2px] py-0 font-sans text-[13.5px] font-medium text-[color:var(--accent)] md:min-h-[36px]"
+              className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent px-[2px] py-0 font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] md:min-h-[36px]"
             >
               {t.again}
             </button>

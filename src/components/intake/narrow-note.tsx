@@ -66,7 +66,7 @@ function YourselfLine({ changeHref }: { changeHref: string }) {
   const anchor = (
     <Link
       href={changeHref}
-      className="text-[color:var(--accent)] no-underline [border-bottom:1px_solid_color-mix(in_oklab,var(--accent)_50%,transparent)]"
+      className="text-[color:var(--accent-text)] no-underline [border-bottom:1px_solid_color-mix(in_oklab,var(--accent)_50%,transparent)]"
     >
       {link}
     </Link>
@@ -109,7 +109,7 @@ function Options({ options, column = false }: { options: readonly NarrowOption[]
             </span>
             {/* The first option, the one that brings back most, is lit; the rest step back. */}
             <span className={`flex-none font-mono text-[11px] whitespace-nowrap ${i === 0 ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>{o.count}</span>
-            <span aria-hidden className={`flex-none text-[13px] ${i === 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>→</span>
+            <span aria-hidden className={`flex-none text-[13px] ${i === 0 ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}>→</span>
           </Link>
         </li>
       ))}
