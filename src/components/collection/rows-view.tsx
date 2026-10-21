@@ -129,7 +129,7 @@ export function RowsView({
           // outrank the hover: variants and neither hover state ever lands.
           className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
         >
-          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
+          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent-text, font-weight 500 */}
           <span className={`flex items-center gap-[4px] whitespace-nowrap font-mono text-[13px] md:text-[14px] font-medium${c.imageUri && c.foil && c.quantity >= 1000 ? " max-md:flex-wrap" : ""}`} style={{ color: "var(--accent-text)" }}>
             ×{c.quantity}
             {/* The foil glint in the count column, after `×N` (foil mark addendum): no new column, so every name
