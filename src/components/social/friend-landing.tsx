@@ -80,7 +80,7 @@ export function LandingColumn({
   const land = landing === "go" ? "friend-land-in" : landing === "wait" ? "friend-land-wait" : "";
   return (
     <section aria-labelledby="friend-landing-title" className="flex w-full min-w-0 flex-col gap-[8px] text-center [overflow-wrap:anywhere] md:w-[380px] md:gap-[10px] md:text-left">
-      <p className={`m-0 font-mono font-medium uppercase max-md:hidden ${signedOut ? "text-[11px] leading-[normal] tracking-[.2em] text-[color:var(--accent)]" : "text-[10.5px] tracking-[.14em] text-[color:var(--fg-faint)]"}`}>
+      <p className={`m-0 font-mono font-medium uppercase max-md:hidden ${signedOut ? "text-[11px] leading-[normal] tracking-[.2em] text-[color:var(--accent-text)]" : "text-[10.5px] tracking-[.14em] text-[color:var(--fg-faint)]"}`}>
         {kicker}
       </p>
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none font-bold text-[color:var(--fg)] ${signedOut ? "text-[22px] leading-[1.25] md:text-[26px]" : "text-[21px] leading-[1.15] md:text-[28px]"} ${land}`}>

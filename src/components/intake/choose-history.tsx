@@ -208,7 +208,7 @@ export function ChooseHistory({
                   type="button"
                   onClick={showMore}
                   aria-busy={more === "loading" || undefined}
-                  className={`flex items-center border-0 bg-transparent px-[2px] text-[12.5px] font-medium text-[color:var(--accent)] ${column ? "min-h-[30px]" : "min-h-[44px]"}`}
+                  className={`flex items-center border-0 bg-transparent px-[2px] text-[12.5px] font-medium text-[color:var(--accent-text)] ${column ? "min-h-[30px]" : "min-h-[44px]"}`}
                 >
                   {copy.more}
                 </button>
@@ -263,7 +263,7 @@ function RunRow({ row, column, zoned }: { row: ChooseHistoryRow; column: boolean
           </span>
         ) : null}
         {reading ? (
-          <span className="inline-flex items-center gap-[5px] rounded-full px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--accent)] [background:color-mix(in_srgb,var(--accent)_14%,transparent)]">
+          <span className="inline-flex items-center gap-[5px] rounded-full px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--accent-text)] [background:color-mix(in_srgb,var(--accent)_14%,transparent)]">
             <span aria-hidden="true" className="h-[6px] w-[6px] rounded-full bg-[color:currentColor]" />
             {tail}
           </span>
@@ -289,7 +289,7 @@ function LoadFailed({ onRetry, column, busy }: { onRetry: () => void; column: bo
         type="button"
         onClick={onRetry}
         aria-busy={busy || undefined}
-        className={`flex items-center self-start rounded-[8px] border border-solid border-[color:var(--accent)] bg-transparent px-[18px] text-[13.5px] font-semibold text-[color:var(--accent)] ${column ? "min-h-[40px]" : "min-h-[44px]"}`}
+        className={`flex items-center self-start rounded-[8px] border border-solid border-[color:var(--accent)] bg-transparent px-[18px] text-[13.5px] font-semibold text-[color:var(--accent-text)] ${column ? "min-h-[40px]" : "min-h-[44px]"}`}
       >
         {copy.retry}
       </button>

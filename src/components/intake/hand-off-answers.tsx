@@ -53,7 +53,7 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
             href={changeHref}
             aria-label={copy.changeAria}
             className={[
-              "relative ml-auto font-mono text-[11px] text-[color:var(--accent)] no-underline",
+              "relative ml-auto font-mono text-[11px] text-[color:var(--accent-text)] no-underline",
               // An 11px word is the whole control, so its tap area is widened to 44px around it.
               "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:min-w-[44px] after:w-full",
               "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",

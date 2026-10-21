@@ -236,7 +236,7 @@ export function ReadPanel({
     "inline-flex items-center justify-center md:justify-start gap-[9px] h-[44px] md:h-[38px] pl-[6px] pr-[14px] rounded-full text-[13.5px] font-semibold whitespace-nowrap";
   const pillBase = "inline-flex items-center h-[30px] md:h-[26px] px-[10px] rounded-full font-mono text-[10.5px]";
   const tagTone = {
-    accent: "text-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_12%,transparent)]",
+    accent: "text-[color:var(--accent-text)] bg-[color:color-mix(in_oklab,var(--accent)_12%,transparent)]",
     danger: "text-[color:var(--danger)] bg-[color:color-mix(in_oklab,var(--danger)_12%,transparent)]",
     muted: "text-[color:var(--fg-muted)] bg-[color:color-mix(in_oklab,var(--fg-muted)_12%,transparent)]",
   };
@@ -268,7 +268,7 @@ export function ReadPanel({
           <p data-testid="read-widen" className="m-0 max-w-[520px] text-[12.5px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-muted)]">
             <Link
               href={changeHref}
-              className="text-[color:var(--accent)] no-underline border-0 border-b border-solid border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
+              className="text-[color:var(--accent-text)] no-underline border-0 border-b border-solid border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
             >
               {copy.readAs.change}
             </Link>{" "}

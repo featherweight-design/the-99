@@ -98,7 +98,7 @@ export function GonePicks({ picks }: { picks: readonly GonePick[] }) {
               <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.deck ? copy.goneBuilt(p.deck.name) : copy.goneIndex}</span>
             </span>
             {p.deck ? (
-              <Link href={`/decks/${p.deck.id}`} className="flex-none text-[12px] font-medium text-[color:var(--accent)] no-underline">
+              <Link href={`/decks/${p.deck.id}`} className="flex-none text-[12px] font-medium text-[color:var(--accent-text)] no-underline">
                 {copy.openDeck}
               </Link>
             ) : null}
@@ -119,7 +119,7 @@ export function PastWontOpen({ historyHref }: { historyHref: string }) {
       </div>
       <Link
         href={historyHref}
-        className="flex min-h-[44px] items-center self-start rounded-[8px] border border-solid border-[color:var(--accent)] px-[18px] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline md:min-h-[40px]"
+        className="flex min-h-[44px] items-center self-start rounded-[8px] border border-solid border-[color:var(--accent)] px-[18px] text-[13.5px] font-semibold text-[color:var(--accent-text)] no-underline md:min-h-[40px]"
       >
         {copy.failedBack}
       </Link>

@@ -126,13 +126,13 @@ function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; c
     >
       <div className={`flex h-full w-full flex-col items-center justify-center ${compact ? "gap-[12px] rounded-[12px] [border:2px_solid_var(--border-dashed)]" : "gap-[10px] rounded-[10px] [border:1px_solid_var(--border-dashed)]"} bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(240px_260px_at_50%_46%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018)_0_6px,transparent_6px_12px)]`}>
         <div className="flex flex-col items-center">
-          <span className={`text-[color:var(--accent)] ${compact ? "mb-[8px] text-[16px] tracking-[6px]" : "mb-[6px] text-[13px] tracking-[4px]"}`}>◆ ◆ ◆</span>
+          <span className={`text-[color:var(--accent-text)] ${compact ? "mb-[8px] text-[16px] tracking-[6px]" : "mb-[6px] text-[13px] tracking-[4px]"}`}>◆ ◆ ◆</span>
           <span className={`font-display font-bold leading-none text-[color:var(--fg)] ${compact ? "text-[68px]" : "text-[58px]"}`}>99</span>
         </div>
         {word !== null && (
           <span
             data-testid="friend-card-word"
-            className={`font-mono uppercase text-[color:var(--accent)] ${compact ? "text-[15px] tracking-[.35em]" : "text-[10px] tracking-[.4em]"}`}
+            className={`font-mono uppercase text-[color:var(--accent-text)] ${compact ? "text-[15px] tracking-[.35em]" : "text-[10px] tracking-[.4em]"}`}
           >
             {word}
           </span>
@@ -177,7 +177,7 @@ function CardFront({ face, hidden, compact }: { face: CardFace; hidden: boolean;
         )}
         <div className={`flex flex-none items-center justify-between bg-[color:var(--elevated)] font-display font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[28px] rounded-[6px] px-[12px] text-[15px]" : "h-[26px] rounded-[6px] px-[10px] text-[12.5px]"}`}>
           <span>{face.type}</span>
-          <i className="text-[11px] not-italic text-[color:var(--accent)]">◆</i>
+          <i className="text-[11px] not-italic text-[color:var(--accent-text)]">◆</i>
         </div>
         <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}>{face.rules}</p>
         <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? "text-[12px] tracking-[.15em]" : "text-[9.5px] tracking-[.04em]"}`}>

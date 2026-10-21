@@ -44,27 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S9 (20 files)
-  "src/components/intake/choose-history.tsx": 3,
-  "src/components/intake/choose-results.tsx": 1,
-  "src/components/intake/choose-row.tsx": 4,
-  "src/components/intake/hand-off-answers.tsx": 1,
-  "src/components/intake/help-me-choose-door.tsx": 4,
-  "src/components/intake/history-link.tsx": 1,
-  "src/components/intake/narrow-note.tsx": 2,
-  "src/components/intake/past-run.tsx": 2,
-  "src/components/intake/read-as-bar.tsx": 1,
-  "src/components/intake/read-panel.tsx": 2,
-  "src/components/social/commander-picker.tsx": 1,
-  "src/components/social/friend-card.tsx": 3,
-  "src/components/social/friend-landing.tsx": 1,
-  "src/components/social/friends-head.tsx": 2,
-  "src/components/social/invite-count-line.tsx": 1,
-  "src/components/social/invite-new.tsx": 1,
-  "src/components/social/invite-qr.tsx": 2,
-  "src/components/social/open-links.tsx": 1,
-  "src/components/social/pods-pane.tsx": 1,
-  "src/components/social/social-toast.tsx": 1,
 
   // S10 (19 files)
   "src/components/about/how-rows.tsx": 1,

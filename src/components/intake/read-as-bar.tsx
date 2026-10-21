@@ -109,7 +109,7 @@ export function ReadAsBar({
         <div className="flex gap-[8px] shrink-0">
           <Link
             href={changeHref}
-            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--accent)] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline whitespace-nowrap"
+            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--accent)] text-[13.5px] font-semibold text-[color:var(--accent-text)] no-underline whitespace-nowrap"
           >
             {copy.readAs.change}
           </Link>
