@@ -10,7 +10,7 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
-import { ArrivalsBanner } from "./arrivals-banner";
+import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
 import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
 import { HomeTour } from "../discovery/home-tour";
@@ -98,6 +98,7 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
 export function FirstRunChecklist({
   addByHand = false,
   about = null,
+  welcome = null,
   ways = null,
   scan = false,
   friends = null,
@@ -111,6 +112,8 @@ export function FirstRunChecklist({
   /** `FIRST_RUN_TOUR_ENABLED` on (discovery R3·2): `/?tour=1` runs the tour again, here the first-run tour itself. */
   tourAgain?: boolean;
   about?: AboutLine | null;
+  /** The welcome-credits strip (welcome credits D2), read per request, or null: drawn under About's line. */
+  welcome?: React.ReactNode;
   /** `CARD_SCAN_ENABLED` for the reader: the Add cards sheet's Scan press. */
   scan?: boolean;
   /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
@@ -142,7 +145,8 @@ export function FirstRunChecklist({
         </p>
         {/* No Crown above this: the card fan is the brand moment now, and two
             marks stacked over one heading is one too many. */}
-        <h1 className="m-0 max-md:group-has-[[data-reviewing]]/first-run:sr-only font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
+        {/* Focusable by script only: the welcome strip's ✕ moves focus here once it has closed. */}
+        <h1 id={HOME_HEADING_ID} tabIndex={-1} className="m-0 outline-none max-md:group-has-[[data-reviewing]]/first-run:sr-only font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
           {c.heading}
         </h1>
         {/* The lock's page line (first-run-locked-nav 2.x): desktop only, where
@@ -163,6 +167,7 @@ export function FirstRunChecklist({
           collection), between the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the
           first-run surface itself, and the line goes once About is opened. */}
       {about && <ArrivalsBanner data={null} about={about} closable={false} gutter="checklist" />}
+      {welcome}
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_20px] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
