@@ -8,25 +8,33 @@ const card = (id: string, over: Partial<FormCard> = {}): FormCard => ({
 });
 const data = (cards: FormCard[], buyable: FormReachData["buyable"] = []): FormReachData => ({ cards, buyable });
 const caption = (d: FormReachData, extra: Partial<Parameters<typeof formReachCaption>[0]> = {}) =>
-  formReachCaption({ bracket: 3, colors: ["U"], data: d, budgetDollars: null, ownedOnly: false, ...extra });
+  formReachCaption({ bracket: 3, colors: ["U"], match: "exactly", data: d, budgetDollars: null, ownedOnly: false, ...extra });
 
 describe("formReach: the form's estimate across the colors picked", () => {
   it("reaches 3 with a free Game Changer in these colors", () => {
-    expect(formReach({ target: 3, colors: ["U"], data: data([card("rift", { gameChanger: true })]), budgetCents: null }))
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: data([card("rift", { gameChanger: true })]), budgetCents: null }))
       .toEqual({ target: 3, kind: "collection", raisers: ["rift"] });
+  });
+
+  it("under Any, reads every owned card: a commander with these colors may carry more (blue, a blue-black commander)", () => {
+    const d = data([card("tutor", { gameChanger: true, identity: ["B"] })]);
+    expect(formReach({ match: "contains", target: 3, colors: ["U"], data: d, budgetCents: null }).kind).toBe("collection");
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: d, budgetCents: null }).kind).toBe("short");
+    // Under Any the caption names no colors, since the cards that reach it may lie outside them.
+    expect(caption(d, { match: "contains" })?.text).toBe("3 · Upgraded. Your cards would reach it.");
   });
 
   it("leaves out a card outside the colors picked, and reads all five with none picked", () => {
     const d = data([card("opp", { gameChanger: true, identity: ["W", "B"] })]);
-    expect(formReach({ target: 3, colors: ["U"], data: d, budgetCents: null }).kind).toBe("short");
-    expect(formReach({ target: 3, colors: [], data: d, budgetCents: null }).kind).toBe("collection");
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: d, budgetCents: null }).kind).toBe("short");
+    expect(formReach({ match: "exactly", target: 3, colors: [], data: d, budgetCents: null }).kind).toBe("collection");
   });
 
   it("reaches 3 with a combo whose both halves are owned, and not with one half outside the colors", () => {
     const edge = (partner: string) => ({ variantId: "v", partner, loop: false, partnerMustBeCommander: false });
     const pair = [card("a", { combos: [edge("b")] }), card("b", { combos: [edge("a")], identity: ["R"] })];
-    expect(formReach({ target: 3, colors: ["U", "R"], data: data(pair), budgetCents: null }).kind).toBe("collection");
-    expect(formReach({ target: 3, colors: ["U"], data: data(pair), budgetCents: null }).kind).toBe("short");
+    expect(formReach({ match: "exactly", target: 3, colors: ["U", "R"], data: data(pair), budgetCents: null }).kind).toBe("collection");
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: data(pair), budgetCents: null }).kind).toBe("short");
   });
 
   it("buys the cheapest stocked Game Changer in these colors, and a claimed owned copy is bought too", () => {
@@ -35,7 +43,7 @@ describe("formReach: the form's estimate across the colors picked", () => {
       { id: "study", name: "Rhystic Study", identity: ["U"], priceCents: 3_200 },
       { id: "tutor", name: "Demonic Tutor", identity: ["B"], priceCents: 1_000 },
     ]);
-    expect(formReach({ target: 3, colors: ["U"], data: d, budgetCents: null }))
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: d, budgetCents: null }))
       .toMatchObject({ kind: "short", collectionPermits: [1, 2], buy: { raisers: ["study"], buyCents: 3_200 } });
     // The claimed copy is the cheapest stocked one: it is bought, not skipped for being owned.
     const claimedCheapest = data([card("rift", { gameChanger: true, free: false })], [
@@ -43,7 +51,7 @@ describe("formReach: the form's estimate across the colors picked", () => {
       { id: "study", name: "Rhystic Study", identity: ["U"], priceCents: 3_200 },
       { id: "tutor", name: "Demonic Tutor", identity: ["B"], priceCents: 1_000 },
     ]);
-    expect(formReach({ target: 3, colors: ["U"], data: claimedCheapest, budgetCents: null }))
+    expect(formReach({ match: "exactly", target: 3, colors: ["U"], data: claimedCheapest, budgetCents: null }))
       .toMatchObject({ kind: "short", buy: { raisers: ["rift"], buyCents: 2_000 } });
   });
 });

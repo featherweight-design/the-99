@@ -122,8 +122,8 @@ export function IntakeForm({
   const reachCaption = useMemo(() => {
     if (!reachData || bracket === null) return null;
     // The budget the submit sends (`parseBudget`), so the caption and the search read one figure.
-    return formReachCaption({ bracket, colors, data: reachData, ownedOnly: pool === "own", budgetDollars: parseBudget(budget) });
-  }, [reachData, bracket, colors, budget, pool]);
+    return formReachCaption({ bracket, colors, match, data: reachData, ownedOnly: pool === "own", budgetDollars: parseBudget(budget) });
+  }, [reachData, bracket, colors, match, budget, pool]);
   const themeLabelId = useId();
   const budgetId = useId();
   // Each press is described by its own line, so a keyboard or screen-reader user hears that the

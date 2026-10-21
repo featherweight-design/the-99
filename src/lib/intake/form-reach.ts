@@ -2,6 +2,7 @@ import { bracketReach, type BracketReach } from "./bracket-reach";
 import type { ComboEdge } from "./fill-gate";
 import type { Bracket } from "./rank";
 import { helpMeChooseCopy } from "../copy/help-me-choose";
+import type { JoinMode } from "../commanders/filter";
 
 /**
  * THE FORM'S HEADS-UP (bracket reach R1b, board A; Hugh's ruling, 2026-10-21): before a credit is
@@ -40,9 +41,14 @@ export type BuyCard = { id: string; name: string; identity: string[]; priceCents
 
 export type FormReachData = { cards: FormCard[]; buyable: BuyCard[] };
 
-/** Inside the picked colors; no colors picked reads all five, as the search does. */
-function within(identity: readonly string[], colors: readonly string[]): boolean {
-  if (colors.length === 0) return true;
+/**
+ * A card a commander these answers allow could play. Under Exactly the commander's identity IS the
+ * picked colors; under Any (`contains`, `matchesColors`) it holds them and may hold more, so every
+ * card is playable by some eligible commander, and the estimate is the widest one. No colors picked
+ * reads all five, as the search does.
+ */
+function within(identity: readonly string[], colors: readonly string[], match: JoinMode): boolean {
+  if (colors.length === 0 || match === "contains") return true;
   const allowed = new Set(colors.map((c) => c.toUpperCase()));
   return identity.every((c) => allowed.has(c.toUpperCase()));
 }
@@ -50,14 +56,15 @@ function within(identity: readonly string[], colors: readonly string[]): boolean
 export function formReach(args: {
   target: Bracket;
   colors: readonly string[];
+  match: JoinMode;
   data: FormReachData;
   budgetCents: number | null;
 }): BracketReach {
-  const owned = args.data.cards.filter((c) => within(c.identity, args.colors));
+  const owned = args.data.cards.filter((c) => within(c.identity, args.colors, args.match));
   const ownedIds = new Set(owned.map((c) => c.id));
   // A free copy is the collection's; a claimed one is bought like any other, at its live price.
   const freeIds = new Set(owned.filter((c) => c.free).map((c) => c.id));
-  const buyable = args.data.buyable.filter((c) => within(c.identity, args.colors) && !freeIds.has(c.id));
+  const buyable = args.data.buyable.filter((c) => within(c.identity, args.colors, args.match) && !freeIds.has(c.id));
   const byId = new Map(owned.map((c) => [c.id, c]));
   const prices = new Map(buyable.map((c) => [c.id, c.priceCents]));
   const gameChangers = new Set(buyable.map((c) => c.id));
@@ -101,6 +108,7 @@ export function formNames(ids: readonly string[], data: FormReachData): string[]
 export function formReachCaption(args: {
   bracket: Bracket;
   colors: readonly string[];
+  match: JoinMode;
   data: FormReachData;
   budgetDollars: number | null;
   ownedOnly: boolean;
@@ -108,18 +116,19 @@ export function formReachCaption(args: {
   const n = args.bracket;
   if (n < 3) return null;
   const copy = helpMeChooseCopy.intake.bracketReach;
-  const reach = formReach({ target: n, colors: args.colors, data: args.data, budgetCents: args.budgetDollars === null ? null : args.budgetDollars * 100 });
-  if (reach.kind !== "short") return reach.kind === "above" ? null : { text: copy.reached(n), short: false };
+  const where = copy.colorsWhere(args.match === "exactly", args.colors.length);
+  const reach = formReach({ target: n, colors: args.colors, match: args.match, data: args.data, budgetCents: args.budgetDollars === null ? null : args.budgetDollars * 100 });
+  if (reach.kind !== "short") return reach.kind === "above" ? null : { text: copy.reached(n, where), short: false };
   const lands = helpMeChooseCopy.results.rowBracketValue(reach.collectionPermits);
-  if (!reach.buy) return { text: copy.none(n, lands), short: true };
+  if (!reach.buy) return { text: copy.none(n, where, lands), short: true };
   const price = dollars(reach.buy.buyCents);
   if (reach.buy.overBudget && args.budgetDollars !== null) {
-    return { text: copy.shortOver(n, lands, price, `$${args.budgetDollars.toLocaleString("en-US")}`), short: true };
+    return { text: copy.shortOver(n, where, lands, price, `$${args.budgetDollars.toLocaleString("en-US")}`), short: true };
   }
   // Only the cards to BUY are named or counted: a free Game Changer in the set is the player's already.
   const free = new Set(args.data.cards.filter((c) => c.free).map((c) => c.id));
   const names = formNames(reach.buy.raisers.filter((id) => !free.has(id)), args.data);
-  return { text: args.ownedOnly ? copy.shortOwn(n, lands, names, price) : copy.shortBuy(n, lands, names, price), short: true };
+  return { text: args.ownedOnly ? copy.shortOwn(n, where, lands, names, price) : copy.shortBuy(n, where, lands, names, price), short: true };
 }
 
 const dollars = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;

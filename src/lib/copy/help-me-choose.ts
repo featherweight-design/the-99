@@ -104,18 +104,21 @@ export const helpMeChooseCopy = {
     /**
      * Bracket reach R1b, board A: from 3 up the caption goes on to say what the player's cards in these
      * colors reach, before any commander exists. An ESTIMATE (the commander can move it), so every
-     * line says "would", and promises the choice on the new deck.
+     * line says "would", and promises the choice on the new deck. Under Exactly the cards are those in
+     * the picked colors (`colorsWhere`); under Any a commander may carry more colors, so the estimate
+     * reads every owned card and names no colors.
      */
     bracketReach: {
-      reached: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}. Your cards in these colors would reach it.`,
-      shortBuy: (n: 1 | 2 | 3 | 4 | 5, lands: string, cards: readonly string[], price: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards in these colors, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}. You choose which on the new deck, after you pick a commander.`,
-      shortOver: (n: 1 | 2 | 3 | 4 | 5, lands: string, total: string, budget: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards in these colors, a deck would be bracket ${lands}. Hitting ${n} means buying about ${total} of cards, over your ${budget} budget. You choose which on the new deck, after you pick a commander.`,
-      shortOwn: (n: 1 | 2 | 3 | 4 | 5, lands: string, cards: readonly string[], price: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards in these colors, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}, from outside your collection. You choose which on the new deck, after you pick a commander.`,
-      none: (n: 1 | 2 | 3 | 4 | 5, lands: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards in these colors, a deck would be bracket ${lands}, and no card the fill can place gets one to ${n}.`,
+      colorsWhere: (exactly: boolean, picked: number) => (exactly && picked > 0 ? " in these colors" : ""),
+      reached: (n: 1 | 2 | 3 | 4 | 5, where: string) => `${n} · ${BRACKET_NAMES[n]}. Your cards${where} would reach it.`,
+      shortBuy: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string, cards: readonly string[], price: string) =>
+        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}. You choose which on the new deck, after you pick a commander.`,
+      shortOver: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string, total: string, budget: string) =>
+        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying about ${total} of cards, over your ${budget} budget. You choose which on the new deck, after you pick a commander.`,
+      shortOwn: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string, cards: readonly string[], price: string) =>
+        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}, from outside your collection. You choose which on the new deck, after you pick a commander.`,
+      none: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string) =>
+        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}, and no card the fill can place gets one to ${n}.`,
     },
     submit: "Find commanders", // canvas
   },

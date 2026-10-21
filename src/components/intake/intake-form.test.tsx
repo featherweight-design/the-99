@@ -299,7 +299,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
   it("makes one read when the form opens, and reruns in the browser as the answers change", async () => {
     formReachData.mockClear();
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"] }} bracketReach />);
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"], match: "exactly" }} bracketReach />);
     expect(await screen.findByText("3 · Upgraded. Your cards in these colors would reach it.")).toBeTruthy();
     // Bracket 4 in blue: one free Game Changer and one stocked, short of four, so nothing reaches it.
     fireEvent.click(screen.getByRole("radio", { name: "4" }));
@@ -308,10 +308,18 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
   });
 
   it("reads the budget the submit sends: a typed \"$20\" is twenty dollars, not none", async () => {
-    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"] }} bracketReach />);
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
     expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor, about \$41\./)).toBeTruthy();
     fireEvent.change(screen.getByRole("textbox", { name: /budget/i }), { target: { value: "$20" } });
     expect(screen.getByText(/over your \$20 budget/)).toBeTruthy();
+  });
+
+  it("reruns when the color match changes: under Any a blue-black commander can play the blue card", async () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
+    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor/)).toBeTruthy();
+    const group = screen.getByRole("radiogroup", { name: "Color match" });
+    fireEvent.click(within(group).getAllByRole("radio")[0]);
+    expect(screen.getByText("3 · Upgraded. Your cards would reach it.")).toBeTruthy();
   });
 
   it("makes no read with the switch off, and keeps today's caption", async () => {
