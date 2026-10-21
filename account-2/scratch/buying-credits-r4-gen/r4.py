@@ -63,7 +63,7 @@ def page2(bal=None, plan="none", hist=None, hist_empty=False, line=None, n=74, b
 
 
 def opt_head(letter, title, rec=False):
-    tag = f'<span class="tag{" rec" if rec else ""}">{letter}{" · recommended" if rec else ""}</span>'
+    tag = f'<span class="tag{" rec" if rec else ""}">{letter}{" · picked by Hugh" if rec else " · not picked"}</span>'
     return f'<span class="optk">{tag}</span>'
 
 
@@ -92,7 +92,7 @@ def free_line_board():
         '<div>Key <code>creditsPageCopy.viewsFree</code>. <b>Hugh’s words, worked through with the copywriter (2026-10-21)</b>: final, not a placeholder. No “AI” or “model”; no “unlock”, “premium” or “full access”; no figure, so it never goes stale with a price. C1 in the launch epic quotes “Credits pay for AI model runs ... view stays free” and needs amending to this line.</div>'
         '<div><b>Type:</b> IBM Plex Sans 13px / 1.5, <code>--fg-body</code> (the plan card’s fine print weight, one step up from the pack’s 12.5px <code>--fg-muted</code>, so it reads as the section’s own sentence and not a card’s footnote). '
         '<b>Spacing, B:</b> 4px under the sub, on the head’s own 6px gap, so it reads as the head’s third line; the head keeps its 22px (26px desktop) to the balance. Up to 900px wide: one line on desktop, two at 390. <b>Spacing, A:</b> 10px under the heading (the shipped <code>mb-[10px]</code>, less 2px to sit with it), 14px to the first card (the cards’ own gap). Not a link, no icon, no tint.</div>'
-        '<div><b>When it shows:</b> A, wherever the <b>Get more credits</b> section draws (payments on, not paused). Where there is nothing on sale (payments off, O2 to O4; paused, B1) there is no price on the page for it to qualify. '
+        '<div><b>When it shows (B, the build):</b> on every state, the loading screen and the read-failed state included, since <code>CreditsHead</code> draws the head for all three. <i>A, not picked, would have shown</i> wherever the <b>Get more credits</b> section draws (payments on, not paused). Where there is nothing on sale (payments off, O2 to O4; paused, B1) there is no price on the page for it to qualify. '
         'B, on every state, the loading screen and the read-failed state included, since <code>CreditsHead</code> draws the head for all three.</div>'
         '</div>'
     )
@@ -100,10 +100,10 @@ def free_line_board():
         board_head("Buying credits R4 addendum · item 1 · C1 launch blocker", "The free-views line",
                    "C1 needs <code>/credits</code> to say that viewing is always free and only tool runs cost credits. Drawn over <code>/credits</code> as shipped on main "
                    "(the pack leads, <code>Buy pack</code>, <code>Subscribe · $5 a month</code>, the crown’s diamond). The new line is outlined in dashes. "
-                   "<b>A</b> is the placement in the brief (under the heading, above the pack card). <b>B</b>, recommended, puts it in the head: A breaks R1b’s equal card heights on desktop once subscribed, and B says it on every state of the page.")
+                   "<b>A</b> is the placement in the brief (under the heading, above the pack card). <b>B, picked by Hugh (2026-10-21)</b>, puts it in the head: A breaks R1b’s equal card heights on desktop once subscribed, and B says it on every state of the page. A stays drawn for the record; build B.")
         + spec + "".join(secs)
     )
-    return doc("Buying credits R4 · the free-views line", body, 3700, 3758)
+    return doc("Buying credits R4 · the free-views line", body, 3700, 3798)
 
 
 
@@ -117,7 +117,7 @@ def main_board(items=None):
                    "No new surface, token, motion or dependency.")
         + '<div class="note" style="max-width:1400px">' + table([], ["#", "Item", "Answer", "Board"]).replace("<tbody></tbody>", f"<tbody>{rows}</tbody>") + '</div>'
     )
-    return doc("Buying credits R4 · items", body, 1520, 503)
+    return doc("Buying credits R4 · items", body, 1520, 464)
 
 
 # ---------------------------------------------------------------- items 2 to 4
@@ -228,7 +228,7 @@ def subscribe_board():
 
 ITEMS = [
     ("1", "Launch blocker (C1): the free-views line",
-     "Drawn. String (Hugh and the copywriter, final): “Browsing is always free. Anything we write just for you uses a credit.” Placement A (under Get more credits) or B (the page head, recommended), for Hugh.", "Free-Line"),
+     "Drawn. String (Hugh and the copywriter, final): “Browsing is always free. Anything we write just for you uses a credit.” Placement B, the page head (Hugh, 2026-10-21).", "Free-Line"),
     ("2", "Pack first: K1, P2 and P4’s plan offer",
      "Redrawn to the build: pack above plan on the phone; from md, pack left and plan right at equal heights. Subscribed states unchanged.", "Pack-First"),
     ("3", "K6 and the Plan cell asymmetry",
