@@ -18,15 +18,25 @@ import { DEPLOYMENT_ID } from "../cache/deployment";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../discovery/price";
 import { buysCopy } from "./buys-card";
+import { isLandFace } from "../cards/facet";
 import { loadBracketGateFacts } from "./fill-facts";
 import type { BuyCard, FormCard, FormReachData } from "./form-reach";
 
 type CardRow = { oracle_id: string; name: string; color_identity: string[] | null };
 
+/** The ids a query returns, less every card whose front face is a land (a spell with a land back stays). */
+async function movable(query: ReturnType<typeof sql>): Promise<string[]> {
+  return ((await db.execute(query)).rows as { oracle_id: string; type_line: string }[])
+    .filter((r) => !isLandFace(r.type_line)).map((r) => r.oracle_id);
+}
+
 export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): Promise<FormCard[]> {
-  const ownedIds = ((await db.execute(sql`
-    select distinct oracle_id from collection_items where user_id = ${userId}
-  `)).rows as { oracle_id: string }[]).map((r) => r.oracle_id);
+  // THE BUILDER'S OWN BOUNDS: a Commander-legal card (`ownedColorLegalPool`) whose front face is
+  // not a land (`reachCandidates`), so the form never counts a raiser the fill could not place.
+  const ownedIds = await movable(sql`
+    select distinct c.oracle_id, c.type_line from collection_items ci join cards c on c.oracle_id = ci.oracle_id
+    where ci.user_id = ${userId} and c.commander_legal
+  `);
   if (ownedIds.length === 0) return [];
   const facts = await loadBracketGateFacts(ownedIds);
   const movers = ownedIds.filter((id) => {
@@ -57,8 +67,11 @@ export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): P
 }
 
 export async function loadBuyableGameChangers(): Promise<BuyCard[]> {
-  const rows = (await db.execute(sql`
-    select c.oracle_id, c.name, c.color_identity from cards c where c.game_changer
+  const ids = new Set(await movable(sql`
+    select c.oracle_id, c.type_line from cards c where c.game_changer and c.commander_legal
+  `));
+  const rows = ids.size === 0 ? [] : (await db.execute(sql`
+    select c.oracle_id, c.name, c.color_identity from cards c where c.oracle_id = any(${sql.param([...ids])}::uuid[])
   `)).rows as CardRow[];
   const prices = await loadPrices(rows.map((r) => r.oracle_id));
   return rows.flatMap((r) => {
