@@ -64,7 +64,7 @@ export function NewcomerColumn({
       className={`flex w-full min-w-0 max-w-[380px] flex-col ${COLUMN[variant]} [overflow-wrap:anywhere]`}
     >
       {kicker && (
-        <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent)] max-md:hidden">{kicker}</p>
+        <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent-text)] max-md:hidden">{kicker}</p>
       )}
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land}`}>
         {title}

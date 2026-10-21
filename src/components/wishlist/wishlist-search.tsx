@@ -249,7 +249,7 @@ export function WishlistSearch({
                         aria-label={copy.page.search.add}
                         aria-describedby={`${listId}-${i}`}
                         aria-busy={adding === r.oracleId || undefined}
-                        className="flex h-[44px] md:h-[36px] flex-none cursor-pointer items-center gap-[7px] rounded-[8px] border border-solid border-[color:var(--accent)] bg-transparent px-[13px] text-[13px] font-semibold text-[color:var(--accent)]"
+                        className="flex h-[44px] md:h-[36px] flex-none cursor-pointer items-center gap-[7px] rounded-[8px] border border-solid border-[color:var(--accent)] bg-transparent px-[13px] text-[13px] font-semibold text-[color:var(--accent-text)]"
                       >
                         <BookmarkIcon />
                         <span className="hidden md:inline">{copy.page.search.add}</span>

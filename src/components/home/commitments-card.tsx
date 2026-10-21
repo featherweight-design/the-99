@@ -84,7 +84,7 @@ export function CommitmentsCard({
           // is that file's own private helper, and the rest of Home formats
           // here rather than exporting it.
           value={<CountUp value={commitments.inUse} {...countParts(inUse, commitments.inUse)} />}
-          color="var(--accent)"
+          color="var(--accent-text)"
         />
         <Row
           label={c.overCommittedRow}

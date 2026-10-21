@@ -61,9 +61,9 @@ None owed. A token value change is cosmetic, not a feature.
    themes, so any order is safe). On `origin/main` on 2026-10-21 there are 367 accent text sites in 212 files, in five forms:
    `text-[color:var(--accent)]`, `text-[var(--accent)]`, `[color:var(--accent)]`, the `text-accent` utility, and an
    inline `color` that is `"var(--accent)"` (plain or in a ternary). Each moves to the same form naming `--accent-text`. Fills, borders,
-   rings, underline and caret colors, the fit bar and marks stay on `--accent`. PR 1 adds the guard as a ratchet: a
-   per-file allowance of today's sites, so a NEW site fails at once, and each sweep deletes its files' entries. The last
-   sweep leaves the allowance empty, which makes the guard absolute.
+   rings, underline and caret colors, the fit bar and marks stay on `--accent`. PR 1 added the guard as a ratchet: a
+   per-file allowance of today's sites, so a NEW site fails at once, and each sweep deleted its files' entries. The last
+   sweep (S11) deleted the allowance itself, so the guard is absolute: any accent text site fails.
 
    | Sweep | Files (under `src/`) |
    |---|---|

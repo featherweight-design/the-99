@@ -36,7 +36,7 @@ function CardFan() {
         className="absolute top-[14px] left-[8px] h-[68px] w-[50px] -rotate-[14deg] rounded-[6px] border border-[color:var(--border-strong)] bg-[color-mix(in_srgb,var(--surface-inset)_50%,var(--elevated))] sm:top-[12px] sm:left-[6px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px]"
       />
       <span className="absolute top-[10px] left-[18px] h-[68px] w-[50px] rounded-[6px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] sm:top-[9px] sm:left-[14px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px]" />
-      <span className="absolute top-[14px] left-[30px] flex h-[68px] w-[50px] rotate-[13deg] items-center justify-center rounded-[6px] border border-[color:var(--accent)] bg-[color:var(--surface)] font-display text-[17px] font-bold text-[color:var(--accent)] sm:top-[12px] sm:left-[24px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px] sm:text-[15px]">
+      <span className="absolute top-[14px] left-[30px] flex h-[68px] w-[50px] rotate-[13deg] items-center justify-center rounded-[6px] border border-[color:var(--accent)] bg-[color:var(--surface)] font-display text-[17px] font-bold text-[color:var(--accent-text)] sm:top-[12px] sm:left-[24px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px] sm:text-[15px]">
         99
       </span>
     </div>

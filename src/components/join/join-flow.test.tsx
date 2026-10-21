@@ -326,14 +326,14 @@ describe("JoinFlow", () => {
     expect(resend.className).toContain("min-h-[44px]");
     expect(resend.className).toContain("var(--fg-locked)");
     const other = screen.getByRole("button", { name: joinCopy.otherEmail });
-    expect(other.className).toContain("var(--accent)");
+    expect(other.className).toContain("var(--accent-text)");
     expect(other.className).toContain("no-underline");
   });
 
   it("N11 and N12: the sign-in line is the quiet 11px mono line with an accent link", () => {
     start({ kind: "ended" });
     const link = screen.getByRole("button", { name: joinCopy.signIn });
-    expect(link.className).toContain("var(--accent)");
+    expect(link.className).toContain("var(--accent-text)");
     expect(link.className).toContain("no-underline");
     const quiet = link.closest("p")!;
     expect(quiet.className).toContain("mt-[22px]");

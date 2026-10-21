@@ -1442,7 +1442,7 @@ export function Decklist({
               // heading's half of one mark. The quiet default belongs to the
               // unresolved group's note, which describes rows rather than
               // pointing at them.
-              noteColor="var(--accent)"
+              noteColor="var(--accent-text)"
             />
           );
         })}

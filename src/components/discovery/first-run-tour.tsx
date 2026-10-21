@@ -356,7 +356,7 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
         }}
       >
         <div className="flex items-center justify-between gap-[10px]">
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[color:var(--accent)]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[color:var(--accent-text)]">
             {c.kicker(index + 1, STEPS.length, copy.place)}
           </span>
           <button
@@ -412,7 +412,7 @@ function TourRun({ precons, mode, onEnd }: { precons: boolean; mode: TourMode; o
             <button
               type="button"
               onClick={() => onEnd(true)}
-              className="min-h-[44px] self-start border-0 bg-transparent p-0 text-[14px] text-[color:var(--accent)] underline decoration-[color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px] md:min-h-[24px] md:text-[13px]"
+              className="min-h-[44px] self-start border-0 bg-transparent p-0 text-[14px] text-[color:var(--accent-text)] underline decoration-[color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px] md:min-h-[24px] md:text-[13px]"
             >
               {c.steps.whatsNew.notePress}
             </button>

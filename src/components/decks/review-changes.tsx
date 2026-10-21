@@ -878,7 +878,7 @@ export function ReviewChanges({
     },
     {
       figure: state.pullableCount,
-      tone: "var(--accent)",
+      tone: "var(--accent-text)",
       label: copy.chipPullable,
       total: null,
     },

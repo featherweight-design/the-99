@@ -181,7 +181,7 @@ export function ScanControls({
         <div className="flex min-w-0 flex-col gap-[4px] overflow-hidden text-[14px]">
           {shown?.kind === "card" ? (
             <>
-              <span className={`text-[12px] ${held ? "text-[color:var(--accent)]" : "text-[color:var(--fg-muted)]"}`}>
+              <span className={`text-[12px] ${held ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"}`}>
                 {held ? copy.held : copy.guessing}
               </span>
               <strong className="line-clamp-2 text-[18px] leading-[1.25] [overflow-wrap:anywhere]">{shown.guesses[0]?.name}</strong>

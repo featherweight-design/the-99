@@ -871,7 +871,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             letterSpacing: "0.4em",
-            color: "var(--accent)",
+            color: "var(--accent-text)",
           }}
         >
           THE
