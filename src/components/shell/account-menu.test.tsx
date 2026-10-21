@@ -681,6 +681,15 @@ describe("AccountMenu credit chip (M1b)", () => {
     expect(screen.getByTestId("credit-chip-line")).toHaveTextContent("74 plan credits expire Nov 16");
   });
 
+  it("the welcome lot's expiring line is worded on the client, in the reader's own day (welcome credits G4)", () => {
+    const at = new Date("2026-11-20T12:00:00Z");
+    render(<AccountMenu panel="popover" theme="amonkhet" credits={chip({ kind: "expiring", label: "10 credits", welcomeExpiring: { n: 9, atMs: at.getTime() } })} />);
+    press(trigger());
+    const day = at.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    expect(screen.getByTestId("credit-chip-line")).toHaveTextContent(`9 welcome credits expire ${day}`);
+    expect(screen.getByTestId("credit-chip-line").className).toContain("text-[color:var(--warning)]");
+  });
+
   it("the out state offers Get more credits with a hollow diamond", () => {
     render(<AccountMenu panel="sheet" theme="amonkhet" credits={chip({ kind: "out", label: "Get more credits", hollow: true })} />);
     press(trigger());

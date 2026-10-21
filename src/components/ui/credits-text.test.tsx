@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { CREDITS_HREF, creditsCopy } from "../../lib/copy/credits";
@@ -58,5 +59,30 @@ describe("CreditsText", () => {
     expect(screen.getByText(/Nothing was changed/)).toBeTruthy();
     // Payments off: a plain append, no link.
     expect(creditsCopy.afterLine(creditsCopy.spent(5, null), " · x").endsWith(" · x")).toBe(true);
+  });
+
+  describe("the welcome lot's tail (welcome credits G4, G5)", () => {
+    const line = "0 of 1 free · reset at 2:01 AM · this run uses 1 of 9 welcome · 9 welcome credits expire Nov 20";
+
+    it("draws it in --warning once hydrated, and nothing else", () => {
+      render(<p data-testid="line"><CreditsText text={line} /></p>);
+      const mark = screen.getByTestId("credit-expiring");
+      expect(mark).toHaveTextContent("9 welcome credits expire Nov 20");
+      expect(mark).toHaveStyle({ color: "var(--warning)" });
+      expect(screen.getByTestId("line").textContent).toBe(line);
+    });
+
+    it("holds the whole tail, its separator included, out of the server's render: the date is the reader's day", () => {
+      const html = renderToString(<p><CreditsText text={line} /></p>);
+      expect(html).not.toContain("welcome credits expire");
+      expect(html).toContain("this run uses 1 of 9 welcome</p>");
+    });
+
+    it("draws both tails when a plan's follows it, each in --warning, keeping the line's words in order", () => {
+      const both = `${line} · 74 plan credits expire Nov 19.`;
+      render(<p data-testid="line"><CreditsText text={both} /></p>);
+      expect(screen.getAllByTestId("credit-expiring").map((e) => e.textContent)).toEqual(["9 welcome credits expire Nov 20", "74 plan credits expire Nov 19"]);
+      expect(screen.getByTestId("line").textContent).toBe(both);
+    });
   });
 });

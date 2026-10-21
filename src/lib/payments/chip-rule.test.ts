@@ -59,3 +59,29 @@ describe("the menu chip (M1b)", () => {
     expect(creditsCopy.chip.credits(117)).toBe("117 credits");
   });
 });
+
+describe("the chip with a welcome lot (D2)", () => {
+  const days = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
+
+  it("still one number: free plus every lot", () => {
+    expect(chip(a({ used: 4, welcome: 15 }))).toEqual({ kind: "credits", label: "16 credits", line: null, hollow: false });
+  });
+
+  it("within three days: the expiring chip, with the welcome line's count and instant for the client to date", () => {
+    expect(chip(a({ used: 5, welcome: 9, welcomeExpiresAt: days(2) }))).toEqual({
+      kind: "expiring", label: "9 credits", line: null, welcomeExpiring: { n: 9, atMs: days(2).getTime() }, hollow: false,
+    });
+    expect(chip(a({ used: 5, welcome: 9, welcomeExpiresAt: days(4) }))?.kind).toBe("credits");
+    expect(chip(a({ used: 5, welcome: 0, pack: 3, welcomeExpiresAt: days(2) }), true, true)?.kind).toBe("credits");
+  });
+
+  it("G5: a plan and the welcome lot both within three days: the line names the EARLIER", () => {
+    const both = (plan: number, welcome: number) =>
+      chip(a({ used: 5, welcome: 9, welcomeExpiresAt: days(welcome), plan: 74, planExpiring: 74, planExpiresAt: days(plan) }), true, true);
+    expect(both(2, 1)).toMatchObject({ kind: "expiring", line: null, welcomeExpiring: { n: 9 } });
+    expect(both(1, 2)).toMatchObject({ kind: "expiring", line: "74 plan credits expire Nov 15" });
+    expect(both(1, 2)?.welcomeExpiring).toBeUndefined();
+    // A plan four days out does not outrank a welcome lot two days out.
+    expect(both(4, 2)).toMatchObject({ welcomeExpiring: { n: 9 } });
+  });
+});

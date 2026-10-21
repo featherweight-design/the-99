@@ -57,6 +57,24 @@ function shortDay(at: Date): string {
 // normalises whitespace sees one, but an exact string comparison must write `\u00a0`.
 const paid = (n: number) => `${n}\u00a0paid`;
 
+/**
+ * `Nov 20` in the zone of whatever runtime calls it: the reader's own day on the client (welcome credits G4, ruled
+ * "stored in UTC, shown as the player's own day"). So it is called only where the clock is the reader's, and a surface
+ * draws its result after hydration (`CreditsText` holds the welcome tail back until then; the chip formats its line
+ * itself). The plan's `shortDay` stays UTC as shipped.
+ */
+export function localDay(at: Date): string {
+  return at.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** The welcome lot's segment on a line (welcome credits R1, Open 3): its own word, in spend order after free. */
+const welcome = (n: number) => `${n} welcome`;
+
+/** The lots a line counts after the free count, in spend order: welcome, then paid (plan, gift and packs as one number).
+ *  With no welcome credit it is the shipped `N paid` alone, byte for byte; with welcome and nothing paid, welcome alone. */
+const lots = (paidTotal: number, welcomeLeft: number) =>
+  welcomeLeft > 0 ? (paidTotal > 0 ? `${welcome(welcomeLeft)} · ${paid(paidTotal)}` : welcome(welcomeLeft)) : paid(paidTotal);
+
 export const creditsCopy = {
   /**
    * The count and, when one is out, when the next comes back: `4 of 5 left · reset at 2:01 AM`.
@@ -76,17 +94,25 @@ export const creditsCopy = {
    * PLACEHOLDER wording, owed to /copy-review (buying credits R1, `buying-credits · copy strings.ts`).
    * L2: free credits remain and paid ones are held. `left` becomes `free` once paid credits are held.
    */
-  withPaid: (left: number, total: number, next: Date | null, paidTotal: number) =>
-    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${paid(paidTotal)}`,
-  /** L3: the free allowance is spent and the next run takes a paid credit. */
-  paidNext: (total: number, next: Date | null, paidTotal: number) =>
-    `${next ? `0 of ${total} free · reset at ${clockTime(next)}` : `0 of ${total} free`} · this run uses 1 of ${paid(paidTotal)}`,
+  withPaid: (left: number, total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
+    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${lots(paidTotal, welcomeLeft)}`,
+  /** L3: the free allowance is spent and the next run takes a lot's credit: the welcome lot's while it holds one (it is
+   *  spent first, `SOURCE_RANK`), `this run uses 1 of 15 welcome`, with the paid total after it; a paid one otherwise. */
+  paidNext: (total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
+    `${next ? `0 of ${total} free · reset at ${clockTime(next)}` : `0 of ${total} free`} · this run uses 1 of ${lots(paidTotal, welcomeLeft)}`,
   /** `first` / `again` beside a press that will spend a paid credit; `line` is `withPaid`'s form. */
   firstPaid: (line: string) => `Uses a paid credit. ${line}.`,
   againPaid: (line: string) => `Replaces these suggestions and uses a paid credit. ${line}.`,
-  /** L5: today's paid limit is reached with the free allowance spent. `back` is the earlier of the next free credit and the limit's reset. */
-  limit: (paidLimit: number, banked: number, back: Date | null) =>
-    `Today’s ${paidLimit} paid credits are used. ${banked} more are banked${back ? ` · back at ${clockTime(back)}` : ""}`,
+  /** `first` / `again` beside a press whose run the welcome lot will fund (welcome credits, `firstWelcome`). */
+  firstWelcome: (line: string) => `Uses a welcome credit. ${line}.`,
+  againWelcome: (line: string) => `Replaces these suggestions and uses a welcome credit. ${line}.`,
+  /** L5: today's paid limit is reached with the free allowance spent. `back` is the earlier of the next free credit and the limit's reset.
+   *  Welcome runs count toward the limit like any lot's, so with a welcome credit banked the line says runs, not paid
+   *  credits, and names welcome among what is banked; with none it is the shipped form. */
+  limit: (paidLimit: number, banked: number, back: Date | null, welcomeLeft = 0) =>
+    welcomeLeft > 0
+      ? `Today’s ${paidLimit} credit runs are used. ${banked > 0 ? `${welcomeLeft} welcome and ${banked} paid are` : `${welcomeLeft} welcome ${welcomeLeft === 1 ? "credit is" : "credits are"}`} banked${back ? ` · back at ${clockTime(back)}` : ""}`
+      : `Today’s ${paidLimit} paid credits are used. ${banked} more are banked${back ? ` · back at ${clockTime(back)}` : ""}`,
   /** L6: the paid limit is reached but a free credit is ready. */
   limitFree: (left: number, total: number, next: Date | null, paidBack: Date) =>
     `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · paid back at ${clockTime(paidBack)} (daily limit)`,
@@ -94,6 +120,12 @@ export const creditsCopy = {
   expiring: (n: number, on: Date) => `${n} plan credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${shortDay(on)}`,
   /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
   expiringPattern: /\d+ plan credits? expires? [A-Z][a-z]{2} \d{1,2}(?=\.?(?: · |\n|$))/,
+  /** The welcome lot's L7-shaped tail and the chip's welcome line, within three days of expiry: `9 welcome credits expire
+   *  Nov 20`, dated in the reader's own day (`localDay`), so it is drawn after hydration. */
+  welcomeExpiring: (n: number, on: Date) => `${n} welcome credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${localDay(on)}`,
+  /** Finds `welcomeExpiring`'s tail WITH the ` · ` before it, so `CreditsText` holds the whole tail back until hydration
+   *  (the date is the reader's day) and then draws the phrase in `--warning`, as it does the plan's. */
+  welcomeExpiringPattern: / · (\d+ welcome credits? expires? [A-Z][a-z]{2} \d{1,2})(?=\.?(?: · |\n|$))/,
   /** L4: its own line under the spent line, a link to `/credits`. Only while payments are on for the reader. */
   getMore,
   /** L4's own line under a spent line, only while payments are on for the reader. */

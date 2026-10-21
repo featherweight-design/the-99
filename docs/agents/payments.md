@@ -140,6 +140,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   reads it per request, outside every cached payload. `user_prefs.welcome_strip_dismissed_at` (0159) is the strip's ✕,
   per account, written only while null (the stamp trigger fires on any update) by `dismissWelcomeStripAction`, which
   checks no switch (the strip draws whatever the switches say) and revalidates nothing.
+  The `Allowance` carries `welcomeExpiresAt`. The credit line counts welcome in its own segment (`paid` is held less
+  welcome), and its expiring tail and the chip's welcome line are dated in the reader's own day (`localDay`), drawn only
+  after hydration. A surface wording its own paid form asks `welcomeNext` to say a welcome credit instead.
 
 
 - **Refunds and disputes** (K2). The webhook also handles `charge.refunded`, `charge.dispute.created` and
