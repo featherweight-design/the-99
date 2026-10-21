@@ -123,7 +123,7 @@ export function WhySection({
             <a
               href={`#${roleAnchorId(width, weakest.role)}`}
               aria-label={explainedCopy.prose.gapLinkAria(ROLE_SUBJECTS[weakest.role])}
-              className="text-[var(--accent)] border-b border-b-[color:var(--accent-shadow)]"
+              className="text-[var(--accent-text)] border-b border-b-[color:var(--accent-shadow)]"
             >
               {/* The figures here are not drawn at --fg like the ones in sentence 2: this
                   clause is the link, and a run inside it that changed colour would read as

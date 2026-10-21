@@ -190,7 +190,7 @@ describe("SynergyPanel", () => {
   it("colours the legend's +pts token with the accent", () => {
     wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
     expect(screen.getByText(synergyCopy.panel.legendToken)).toHaveStyle({
-      color: "var(--accent)",
+      color: "var(--accent-text)",
     });
   });
 

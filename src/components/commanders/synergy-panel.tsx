@@ -260,7 +260,7 @@ export function SynergyPanel({
           lineHeight: 1.4,
         }}
       >
-        <span style={{ color: "var(--accent)" }}>{synergyCopy.panel.legendToken}</span>{" "}
+        <span style={{ color: "var(--accent-text)" }}>{synergyCopy.panel.legendToken}</span>{" "}
         {isPhone ? synergyCopy.panel.legendRestMobile : synergyCopy.panel.legendRest}
       </p>
 
@@ -335,7 +335,7 @@ export function SynergyPanel({
           {/* Synergy column — accent per design table */}
           <span
             className="font-mono"
-            style={{ width: 64, flexShrink: 0, fontSize: 9.5, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}
+            style={{ width: 64, flexShrink: 0, fontSize: 9.5, color: "var(--accent-text)", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}
           >
             {synergyCopy.panel.colSynergy}
           </span>
@@ -411,7 +411,7 @@ export function SynergyPanel({
           aria-expanded={expanded}
           aria-controls={listId}
           onClick={() => setExpanded((prev) => !prev)}
-          className="font-mono cursor-pointer w-full flex items-center justify-center gap-[8px] bg-transparent text-[color:var(--accent)] [border:1px_dashed_var(--border-strong)] rounded-[8px]"
+          className="font-mono cursor-pointer w-full flex items-center justify-center gap-[8px] bg-transparent text-[color:var(--accent-text)] [border:1px_dashed_var(--border-strong)] rounded-[8px]"
           style={{
             height: 44,
             fontSize: 12,

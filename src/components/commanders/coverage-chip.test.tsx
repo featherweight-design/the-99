@@ -323,7 +323,7 @@ describe("CoverageDisclosure", () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(screen.getByText(/\+5 more/)).toHaveClass("text-accent");
+    expect(screen.getByText(/\+5 more/)).toHaveClass("text-accent-text");
 
     rerender(
       <CoverageDisclosure

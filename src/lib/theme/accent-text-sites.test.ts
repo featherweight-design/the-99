@@ -44,32 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S8 (24 files)
-  "src/components/cards/card-modal-shared.ts": 1,
-  "src/components/cards/card-modal.tsx": 8,
-  "src/components/cards/combo-partners-detail.tsx": 1,
-  "src/components/cards/fits-door.tsx": 1,
-  "src/components/cards/fits-picker.tsx": 3,
-  "src/components/cards/fits-view.tsx": 1,
-  "src/components/cards/price-tag.tsx": 1,
-  "src/components/cards/printing-region.tsx": 6,
-  "src/components/cards/read-row.tsx": 2,
-  "src/components/commanders/commander-row.tsx": 1,
-  "src/components/commanders/coverage-chip.tsx": 2,
-  "src/components/commanders/coverage-section.tsx": 2,
-  "src/components/commanders/coverage-sort.tsx": 2,
-  "src/components/commanders/excluded-match.tsx": 1,
-  "src/components/commanders/fit-legend.tsx": 1,
-  "src/components/commanders/guided-banner.tsx": 3,
-  "src/components/commanders/rack/filter-sheet.tsx": 1,
-  "src/components/commanders/rack/select.tsx": 1,
-  "src/components/commanders/retry-submit.tsx": 1,
-  "src/components/commanders/reveal-control.tsx": 2,
-  "src/components/commanders/synergy-panel.tsx": 3,
-  "src/components/commanders/synergy-row.tsx": 3,
-  "src/components/commanders/synergy-selection.tsx": 1,
-  "src/components/commanders/why-section.tsx": 1,
-
   // S9 (20 files)
   "src/components/intake/choose-history.tsx": 3,
   "src/components/intake/choose-results.tsx": 1,

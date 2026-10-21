@@ -54,7 +54,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount, helpMeChoose = f
         <div className="flex items-center justify-between">
           <span
             className="font-mono uppercase"
-            style={{ fontSize: 10, letterSpacing: "0.14em", color: "var(--accent)" }}
+            style={{ fontSize: 10, letterSpacing: "0.14em", color: "var(--accent-text)" }}
           >
             {commandersCopy.guidedBanner.step}
           </span>
@@ -127,7 +127,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount, helpMeChoose = f
         >
           <span
             className="font-display font-[700]"
-            style={{ fontSize: 13, color: "var(--accent)", letterSpacing: "0.06em" }}
+            style={{ fontSize: 13, color: "var(--accent-text)", letterSpacing: "0.06em" }}
           >
             XCIX
           </span>
@@ -139,7 +139,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount, helpMeChoose = f
           <div className="flex items-center gap-[16px]">
             <span
               className="font-mono uppercase"
-              style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--accent)" }}
+              style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--accent-text)" }}
             >
               {commandersCopy.guidedBanner.setupCrumb}
             </span>

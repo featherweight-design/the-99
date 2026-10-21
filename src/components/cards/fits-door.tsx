@@ -82,7 +82,7 @@ export function FitsDoor({
         // `relative` paints the door over the coarse-pointer hit of an ExternalLink stacked above it (the card
         // sheet's desktop footer), so a press on the door's top edge opens the door rather than the link.
         "relative inline-flex items-center gap-[8px] self-start whitespace-nowrap bg-transparent border-0 p-0 cursor-pointer "
-        + "font-medium text-[color:var(--accent)] "
+        + "font-medium text-[color:var(--accent-text)] "
         + (layout === "column" ? "min-h-[44px] text-[14px]" : "text-[13.5px]")
       }
     >

@@ -326,7 +326,7 @@ export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; p
             className="font-mono font-[600] shrink-0"
             style={{
               fontSize: 17,
-              color: item.rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+              color: item.rank === 1 ? "var(--accent-text)" : "var(--fg-faint)",
               // minWidth, not width: a two-digit rank in a fixed box crowds the
               // name beside it. The floor still aligns single digits.
               minWidth: 16,

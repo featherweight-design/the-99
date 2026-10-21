@@ -269,7 +269,7 @@ export function SynergyRow({
                 aria-hidden="true"
                 style={{
                   color:
-                    card.synergyPts >= 0 ? "var(--accent)" : "var(--fg-locked)",
+                    card.synergyPts >= 0 ? "var(--accent-text)" : "var(--fg-locked)",
                 }}
               >
                 {synergyDisplay}
@@ -352,7 +352,7 @@ export function SynergyRow({
               card.synergyPts === null
                 ? "var(--fg-locked)"
                 : card.synergyPts >= 0
-                  ? "var(--accent)"
+                  ? "var(--accent-text)"
                   : "var(--fg-locked)",
           }}
           aria-hidden="true"
@@ -408,7 +408,7 @@ export function SynergyRow({
             ? "color-mix(in oklab, var(--accent) 10%, transparent)"
             : "transparent",
           // eslint-disable-next-line no-restricted-syntax -- color changes with selected state; genuinely dynamic
-          color: selected ? "var(--accent)" : "var(--fg-faint)",
+          color: selected ? "var(--accent-text)" : "var(--fg-faint)",
         }}
       >
         {selected ? "✓" : "+"}

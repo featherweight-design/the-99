@@ -327,7 +327,7 @@ export function CoverageDisclosure({
         className="flex w-full items-center justify-center rounded-[8px] border border-dashed border-border-strong"
         style={{ minHeight: "44px" }}
       >
-        <span className="font-mono text-[12px] text-accent">
+        <span className="font-mono text-[12px] text-accent-text">
           {expanded
             ? recommendationsCopy.coverage.showFewer
             : recommendationsCopy.coverage.showAll(n)}
@@ -351,7 +351,7 @@ export function CoverageDisclosure({
       className="inline-flex items-center rounded-full border border-dashed border-border-strong"
       style={{ padding: "0 12px", height: 28 }}
     >
-      <span className={`font-mono text-[11px] ${expanded ? "text-fg-faint" : "text-accent"}`}>
+      <span className={`font-mono text-[11px] ${expanded ? "text-fg-faint" : "text-accent-text"}`}>
         {expanded
           ? recommendationsCopy.coverage.showFewer
           : recommendationsCopy.coverage.moreChips(String(total - COVERAGE_CAP.desktop))}

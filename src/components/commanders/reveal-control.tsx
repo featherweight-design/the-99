@@ -63,7 +63,7 @@ export function RevealControl({
       </span>
       <span
         aria-hidden
-        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--accent)] group-focus-visible:text-[color:var(--accent)] transition-colors"
+        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--accent-text)] group-focus-visible:text-[color:var(--accent-text)] transition-colors"
       >
         ↓
       </span>

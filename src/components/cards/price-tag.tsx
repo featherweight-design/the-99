@@ -118,7 +118,7 @@ export function PriceTag({
   const visual = (
     <span
       className={className ? `${base} ${className}` : base}
-      style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}
+      style={{ color: "var(--accent-text)", border: "1px solid var(--accent-dim)" }}
       aria-label={
         !standalone && qualifier
           ? setPageCopy.cell.qualifiedPriceAria(qualifier, money)

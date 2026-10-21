@@ -106,7 +106,7 @@ export function ReadRow({
       ? "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-locked)] opacity-60 font-medium"
       : toBuy
         ? "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-muted)] font-medium"
-        : "bg-transparent border-[color:var(--accent)] text-[color:var(--accent)] font-semibold";
+        : "bg-transparent border-[color:var(--accent)] text-[color:var(--accent-text)] font-semibold";
   const addClass = added
     ? "bg-[color:var(--fg-body)] border-[color:var(--fg-body)] text-[color:var(--bg)] font-semibold"
     : addOff
@@ -171,7 +171,7 @@ export function ReadRow({
           <Link
             href={analysisHref}
             onClick={() => detail?.close()}
-            className="whitespace-nowrap text-[color:var(--accent)] [border-bottom:1px_solid_var(--accent-shadow)]"
+            className="whitespace-nowrap text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--accent-shadow)]"
           >
             {sourceNote.link}
             <PendingReporter href={analysisHref} />

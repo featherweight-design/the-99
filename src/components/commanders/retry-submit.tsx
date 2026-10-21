@@ -60,7 +60,7 @@ export function RetryLink({
       type="submit"
       aria-busy={pending || undefined}
       // brand focus-visible outline treatment inherited from globals.css
-      className="inline-flex items-center align-middle underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
+      className="inline-flex items-center align-middle underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent-text)]"
       style={{ fontSize, opacity: pending ? PENDING_OPACITY : undefined }}
     >
       <PendingLabel pending={pending}>{children}</PendingLabel>
