@@ -48,6 +48,8 @@ export const creditsPageCopy = {
   sub: "1 credit is 1 run of any tool",
   /** The phrase after the sub, drawn as the shared link (`CreditsText`). */
   subLink: creditsCopy.link,
+  /** C1: browsing costs nothing; only what is written for the reader uses a credit. FINAL (Hugh with the copywriter). */
+  viewsFree: "Browsing is always free. Anything we write just for you uses a credit.",
   supportEmail: "support@the-99.dev",
   /** D1/D2: the Manage account interstitial while paid credits are held (plan E6). */
   del: {
