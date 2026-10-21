@@ -27,7 +27,7 @@ describe("handOffReachOf", () => {
 
   it("short: the buy within the budget LEFT, so the build-around card's cost counts (audit item 10)", () => {
     const within = handOffReachOf({ ...base, permits: [1, 2], reach: short(3200) })!;
-    expect(within.buy).toEqual({ cards: [chip("rhystic")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null });
+    expect(within.buy).toEqual({ cards: [chip("rhystic")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 5000 });
     // $50 budget, a $25 card placed first: $25 left, so a $32 set is $7 over and raises to $57.
     const over = handOffReachOf({ ...base, budgetLeftCents: 2500, permits: [1, 2], reach: short(3200) })!;
     expect(over.buy).toMatchObject({ overBudget: true, overCents: 700, raisedBudgetCents: 5700 });

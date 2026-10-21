@@ -63,12 +63,15 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, own
  * card included when it is bought too. Own-only, or over the budget, those cards are the whole buy.
  */
 export function budgetLineHit(card: HandOffAnswers["card"], buy: NonNullable<HandOffReach["buy"]>, ownOnly: boolean): string {
-  const withCard = card !== null && buysCard(card) && card.price.kind === "priced";
+  const bought = card !== null && buysCard(card);
+  const withCard = bought && card.price.kind === "priced";
   const names = [...(withCard ? [card.name] : []), ...buy.cards.map((c) => c.name)];
   const cents = buy.cents + (withCard && card.price.kind === "priced" ? card.price.cents : 0);
-  return ownOnly || buy.overBudget
+  const line = ownOnly || buy.overBudget
     ? reachCopy.budgetHitOnly(names, dollars(cents))
     : reachCopy.budgetHit(names, dollars(cents));
+  // A build-around card the fill must buy with no live price is still a purchase: said, and left out.
+  return bought && !withCard ? `${reachCopy.budgetHitUnknown(card.name)} ${line}` : line;
 }
 
 export function HandOffAnswersBlock({
@@ -219,7 +222,11 @@ function ReachLine({
   // Over budget, the figures are the raised budget's whole dollars, so "over" and "raises to" agree.
   const raised = buy.raisedBudgetCents;
   const hitText = buy.overBudget && budgetDollars !== null && raised !== null
-    ? reachCopy.hitLineOver(names, price, dollars(raised - budgetDollars * 100), `$${budgetDollars.toLocaleString("en-US")}`, dollars(raised))
+    ? reachCopy.hitLineOver(
+      names, price, dollars(raised - budgetDollars * 100), `$${budgetDollars.toLocaleString("en-US")}`, dollars(raised),
+      // A placed card took part of the budget: say how far past what is LEFT the set goes.
+      buy.budgetLeftCents !== null && buy.budgetLeftCents < budgetDollars * 100 ? dollars(buy.budgetLeftCents) : null,
+    )
     : ownOnly ? reachCopy.hitLineOwn(names, price) : reachCopy.hitLine(names, price);
   return (
     <div data-testid="hand-off-reach">

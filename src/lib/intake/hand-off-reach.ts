@@ -31,6 +31,9 @@ export type HandOffReach = {
     overCents: number;
     /** The budget the create stores when Hit is picked over it (G1); null when no raise. */
     raisedBudgetCents: number | null;
+    /** What the budget leaves once the build-around card and the picks are charged; null with no
+     *  budget. Under the whole budget when a placed card is bought, and "over" is measured from it. */
+    budgetLeftCents: number | null;
   } | null;
 };
 
@@ -70,6 +73,7 @@ export function handOffReachOf(args: {
       overCents,
       // Whole dollars, up, as `buildFillPlan` stores it (`decks_answer_budget_check`).
       raisedBudgetCents: overCents > 0 && args.budgetCents !== null ? Math.ceil((args.budgetCents + overCents) / 100) * 100 : null,
+      budgetLeftCents: args.budgetLeftCents,
     },
   };
 }

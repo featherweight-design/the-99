@@ -1,7 +1,7 @@
 // The hand-off's Bracket row with the bracket reach read (bracket reach PR 3b, Design R1b board C):
 // pending, reached, the short choice (Create waits for a pick, and each pick submits its own args),
 // over budget, own-only, nothing reaches, and a failed read falling back to today's line.
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandOffReach } from "../../lib/intake/hand-off-reach";
 
@@ -36,13 +36,13 @@ const handOff = (over: { pool?: "any" | "own"; budgetDollars?: number | null } =
 });
 const SHORT: HandOffReach = {
   target: 3, permits: [1, 2], placed: [],
-  buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null },
+  buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: false, overCents: 0, raisedBudgetCents: null, budgetLeftCents: 15000 },
 };
 const rowText = (key: string) => screen.getAllByTestId("hand-off-row").find((r) => r.textContent?.startsWith(key))!.textContent;
 const createButton = () => screen.getByRole("button", { name: /Create deck/ });
 const nameIt = () => fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Sai’s Workshop" } });
 const submit = () => act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
-const settle = async (reach: HandOffReach | null, ho = handOff()) => {
+const settle = async (reach: HandOffReach | null, ho: Parameters<typeof CreatePreFilled>[0]["handOff"] = handOff()) => {
   readReach.mockResolvedValueOnce(reach);
   await act(async () => { render(<CreatePreFilled {...base} handOff={ho} />); });
 };
@@ -59,7 +59,7 @@ describe("the hand-off's Bracket row, read", () => {
     nameIt();
     expect(screen.getByTestId("hand-off-reach-pending").getAttribute("aria-busy")).toBe("true");
     expect(createButton().hasAttribute("disabled")).toBe(true);
-    expect(readReach).toHaveBeenCalledWith(COMMANDER, handOff().create);
+    expect(readReach).toHaveBeenCalledWith(COMMANDER, handOff().create, []);
   });
 
   it("reached: names the owned Game Changer, which opens like any card, and Create is live", async () => {
@@ -122,12 +122,54 @@ describe("the hand-off's Bracket row, read", () => {
   it("over budget: Hit stays pickable, says what it costs against the budget, and raises it when picked", async () => {
     await settle({
       target: 3, permits: [1, 2], placed: [],
-      buy: { cards: [chip("rhystic", "Rhystic Study"), chip("remora", "Mystic Remora", false, 2600)], cents: 5800, overBudget: true, overCents: 800, raisedBudgetCents: 5800 },
+      buy: { cards: [chip("rhystic", "Rhystic Study"), chip("remora", "Mystic Remora", false, 2600)], cents: 5800, overBudget: true, overCents: 800, raisedBudgetCents: 5800, budgetLeftCents: 5000 },
     }, handOff({ budgetDollars: 50 }));
     const hit = screen.getByTestId("bracket-choice-hit").textContent;
     expect(hit).toBe("Hit bracket 3over budgetAdds Rhystic Study and Mystic Remora, about $58, to buy: $8 over your $50 budget. Picking it raises the budget to $58.");
     fireEvent.click(screen.getByTestId("bracket-choice-hit"));
     expect(rowText("Budget")).toBe("Budget$58Rhystic Study and Mystic Remora take $58 of it. The fill buys nothing else for the 99.");
+  });
+
+  it("over what a placed card LEFT: says how far past the remainder, not the whole budget (round 3)", async () => {
+    // $50 budget, a $25 build-around card bought first, a $32 set: $7 more than the $25 left.
+    await settle({
+      target: 3, permits: [1, 2], placed: [],
+      buy: { cards: [chip("rhystic", "Rhystic Study")], cents: 3200, overBudget: true, overCents: 700, raisedBudgetCents: 5700, budgetLeftCents: 2500 },
+    }, handOff({ budgetDollars: 50 }));
+    expect(screen.getByTestId("bracket-choice-hit").textContent).toBe(
+      "Hit bracket 3over budgetAdds Rhystic Study, about $32, to buy: $7 more than the $25 left of your $50 budget. Picking it raises the budget to $57.",
+    );
+  });
+
+  it("a build-around card to buy with no price stays said when Hit is picked, its cost left out (round 3)", async () => {
+    const unpriced = { oracleId: "0000aaaa-0000-4000-8000-000000000009", name: "Mox Opal", imageUri: null, owned: false, held: null,
+      price: { kind: "absent" } as const, pct: null };
+    const ho = (pool: "any" | "own", budgetDollars = 150) => {
+      const h = handOff({ pool, budgetDollars });
+      return { ...h, answers: { ...h.answers, card: unpriced } };
+    };
+    await settle(SHORT, ho("any"));
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(rowText("Budget")).toBe("Budget$150Mox Opal has no price on record, so the budget can’t count it, and it is left out of the total. "
+      + "Rhystic Study takes $32 of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.");
+    cleanup();
+    // Own-only: never "the fill buys nothing else" without the card it buys.
+    await settle(SHORT, ho("own"));
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(rowText("Budget")).toBe("Budget$150Mox Opal has no price on record, so the budget can’t count it, and it is left out of the total. "
+      + "Rhystic Study takes $32 of it. The fill buys nothing else for the 99.");
+    cleanup();
+    // Over budget: the same disclosure.
+    await settle({ ...SHORT, buy: { ...SHORT.buy!, overBudget: true, overCents: 200, raisedBudgetCents: 3200, budgetLeftCents: 3000 } }, ho("any", 30));
+    fireEvent.click(screen.getByTestId("bracket-choice-hit"));
+    expect(rowText("Budget")).toBe("Budget$32Mox Opal has no price on record, so the budget can’t count it, and it is left out of the total. "
+      + "Rhystic Study takes $32 of it. The fill buys nothing else for the 99.");
+  });
+
+  it("hands the ?select= picks to the read, as the create gets them (round 3)", async () => {
+    readReach.mockResolvedValueOnce(null);
+    await act(async () => { render(<CreatePreFilled {...base} selectedOracleIds={["0000aaaa-0000-4000-8000-0000000000aa"]} handOff={handOff()} />); });
+    expect(readReach).toHaveBeenCalledWith(COMMANDER, handOff().create, ["0000aaaa-0000-4000-8000-0000000000aa"]);
   });
 
   it("own-only: Hit names the card from outside the collection, and the budget line never says nothing is bought", async () => {

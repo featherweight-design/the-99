@@ -16,6 +16,7 @@ import { isCommanderCandidate } from "../../../lib/recs/score";
 import { validateCardForDeck } from "../../../lib/decks/add-validation";
 import { isBasicLand } from "../../../lib/decks/grouping";
 import { isUuid } from "../../../lib/uuid";
+import { sanitizeSelection } from "../../../lib/decks/selection-param";
 
 /**
  * The hand-off's Bracket row (bracket reach PR 3b): what the deck `createDeck` would build from
@@ -27,29 +28,42 @@ import { isUuid } from "../../../lib/uuid";
  * and the build-around card is dropped where the create would drop it. One fill per call, like one
  * results row's trial. Null when there is nothing to choose and today's ceiling line stands.
  */
-export async function handOffBracketReach(commanderOracleId: string, create: CreateAnswers): Promise<HandOffReach | null> {
+export async function handOffBracketReach(
+  commanderOracleId: string,
+  create: CreateAnswers,
+  /** The `?select=` picks the create places beside the fill, exactly as `CreatePreFilled` hands them
+   *  to `createDeck`: they are the deck's, so they move its bracket, its budget and its slots. */
+  selectedOracleIds: string[] = [],
+): Promise<HandOffReach | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env) || !bracketReachEnabled(env)) throw new Error("not found");
   if (typeof commanderOracleId !== "string" || !isUuid(commanderOracleId)) throw new Error("commander not found");
+  if (!Array.isArray(selectedOracleIds) || !selectedOracleIds.every((id) => typeof id === "string")) throw new Error("bad selection");
   const asked = validateCreateAnswers({ ...create, bracketBuys: false });
   if (asked.bracket === null || asked.bracket < 3) return null;
 
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
   if (!commander || !commander.commanderLegal || !isCommanderCandidate(commander)) throw new Error("commander not found");
 
-  // The create's rule for the build-around card: legal in this deck and not a basic, else dropped.
-  let cardOracleId: string | null = null;
-  if (asked.cardOracleId) {
-    const [card] = await db.select({
-      oracleId: cards.oracleId, name: cards.name, commanderLegal: cards.commanderLegal,
-      colorIdentity: cards.colorIdentity, typeLine: cards.typeLine,
-    }).from(cards).where(eq(cards.oracleId, asked.cardOracleId));
-    if (card && !isBasicLand(card.typeLine) && !validateCardForDeck(card, {
+  // The create's own rules for what it places beside the fill (`createDeck`): the build-around card
+  // first, then the picks, shape-filtered and deduped (`sanitizeSelection`, which also bounds them),
+  // each legal in this deck; a basic named as the build-around card is dropped.
+  const requested = sanitizeSelection([...(asked.cardOracleId ? [asked.cardOracleId] : []), ...selectedOracleIds]);
+  const rows = requested.length === 0 ? [] : await db.select({
+    oracleId: cards.oracleId, name: cards.name, commanderLegal: cards.commanderLegal,
+    colorIdentity: cards.colorIdentity, typeLine: cards.typeLine,
+  }).from(cards).where(inArray(cards.oracleId, requested));
+  const placed = new Set(rows
+    .filter((c) => !(c.oracleId === asked.cardOracleId && isBasicLand(c.typeLine)))
+    .filter((c) => !validateCardForDeck(c, {
       commanderOracleId, commanderColorIdentity: commander.colorIdentity,
       partnerOracleId: null, partnerColorIdentity: null, built: 0,
-    })) cardOracleId = card.oracleId;
-  }
+    }))
+    .map((c) => c.oracleId));
+  const cardOracleId = asked.cardOracleId && placed.has(asked.cardOracleId) ? asked.cardOracleId : null;
+  // In the create's order: the build-around card leads.
+  const placedIds = requested.filter((id) => placed.has(id));
 
   const budgetCents = asked.budgetDollars === null ? null : asked.budgetDollars * 100;
   const trial = await handOffTrial(
@@ -58,6 +72,7 @@ export async function handOffBracketReach(commanderOracleId: string, create: Cre
     { budgetCents, bracket: asked.bracket, cardOracleId },
     env,
     asked.pool === "own",
+    placedIds,
   );
   const permits = trial.permits;
   if (!permits) return null;

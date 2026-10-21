@@ -148,6 +148,9 @@ export async function handOffTrial(
   answers: DeckAnswers,
   env: NodeJS.ProcessEnv,
   ownedOnly: boolean,
+  /** Every card the create places beside the fill: the build-around card and the `?select=` picks.
+   *  Defaults to the card alone. They are fixed in the reach, charged to the budget and take slots. */
+  placedIds: readonly string[] = answers.cardOracleId ? [answers.cardOracleId] : [],
 ): Promise<{
   /** Null when no reach ran: under bracket 3, or the switch off. */
   permits: Bracket[] | null;
@@ -156,9 +159,9 @@ export async function handOffTrial(
   reach: BracketReach | null;
   budgetLeftCents: number | null;
 }> {
-  const card = answers.cardOracleId;
-  const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
-    answers, selected: await placedCardsOf(card ? [card] : []), env,
+  const placed = [...new Set([...(answers.cardOracleId ? [answers.cardOracleId] : []), ...placedIds])];
+  const plan = await buildFillPlan(userId, [commander], new Set(placed), {
+    answers, selected: await placedCardsOf(placed), env,
     ...(ownedOnly ? { pool: "sleeveable" as const, failClosed: true } : {}),
   });
   if (answers.bracket === null || answers.bracket < 3 || !plan.bracketReach || !plan.bracketAfter) {

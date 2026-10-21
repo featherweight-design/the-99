@@ -335,8 +335,11 @@ export const helpMeChooseCopy = {
       hit: (n: number) => `Hit bracket ${n}`,
       hitLine: (cards: readonly string[], price: string) =>
         `Adds ${nameList(cards)}, about ${price}, to buy. ${cards.length === 1 ? "It joins" : "They join"} the deck’s Shopping list.`,
-      hitLineOver: (cards: readonly string[], price: string, over: string, budget: string, raised: string) =>
-        `Adds ${nameList(cards)}, about ${price}, to buy: ${over} over your ${budget} budget. Picking it raises the budget to ${raised}.`,
+      /** `left` is set when a placed card already took part of the budget: "over" is past what is left. */
+      hitLineOver: (cards: readonly string[], price: string, over: string, budget: string, raised: string, left: string | null = null) =>
+        left === null
+          ? `Adds ${nameList(cards)}, about ${price}, to buy: ${over} over your ${budget} budget. Picking it raises the budget to ${raised}.`
+          : `Adds ${nameList(cards)}, about ${price}, to buy: ${over} more than the ${left} left of your ${budget} budget. Picking it raises the budget to ${raised}.`,
       hitLineOwn: (cards: readonly string[], price: string) =>
         `Adds ${nameList(cards)}, about ${price}, to buy: ${cards.length === 1 ? "the one card" : `the ${spelled(cards.length)} cards`} from outside your collection.`,
       overTag: "over budget",
@@ -350,6 +353,9 @@ export const helpMeChooseCopy = {
       /** The error slot while neither row is picked. */
       waiting: "Choose how to build it under Bracket to create the deck.",
       /** The Budget row once *Hit* is picked: the cards it pays for first (`budgetFirst`'s shape). */
+      /** Led into the Hit budget line when the build-around card must be bought and has no live price:
+       *  the purchase is still said, and the total leaves it out (`budgetUnknown`'s words). */
+      budgetHitUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it, and it is left out of the total.`,
       budgetHit: (cards: readonly string[], price: string) =>
         `${nameList(cards)} ${cards.length === 1 ? "takes" : "take"} ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
       /** Own-only, or over the budget, with *Hit* picked: those cards are the whole of what is bought. */

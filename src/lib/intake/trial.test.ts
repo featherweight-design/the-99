@@ -93,6 +93,16 @@ describe("handOffTrial (bracket reach PR 3b)", () => {
     expect(t).toEqual({ permits: [3], placedRaisers: ["gc"], reach: { target: 3, kind: "collection", raisers: ["gc"] }, budgetLeftCents: 5000 });
   });
 
+  it("places the ?select= picks beside the plan with the build-around card, as the create does (round 3)", async () => {
+    vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: [], bracketReach: { target: 3, kind: "fixed" }, bracketAfter: { permits: [3], buyCents: null } } as never);
+    vi.mocked(placedCardsOf).mockClear();
+    await handOffTrial("u", commanderC, { ...answers, cardOracleId: "card-1" }, ENV_VIEW, false, ["card-1", "pick-gc"]);
+    const call = vi.mocked(buildFillPlan).mock.calls.at(-1)!;
+    // Excluded from the pool (so fixed in the reach and charged to the budget) and held (so slots count them).
+    expect([...(call[2] ?? [])]).toEqual(["card-1", "pick-gc"]);
+    expect(vi.mocked(placedCardsOf)).toHaveBeenCalledWith(["card-1", "pick-gc"]);
+  });
+
   it("fills from any cards when not own-only, and reads no reach under bracket 3", async () => {
     vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: [], bracketReach: { target: 2, kind: "fixed" }, bracketAfter: { permits: [1, 2], buyCents: null } } as never);
     const t = await handOffTrial("u", commanderC, { ...answers, bracket: 2 }, ENV_VIEW, false);

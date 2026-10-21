@@ -89,11 +89,12 @@ export function CreatePreFilled({
   useEffect(() => {
     if (!readReach || !create) return;
     let live = true;
-    handOffBracketReach(oracleId, create)
+    // The picks the create places too: the read must see the deck the create builds.
+    handOffBracketReach(oracleId, create, selectedOracleIds ?? [])
       .then((r) => { if (live) setReach({ status: "done", reach: r }); })
       .catch(() => { if (live) setReach({ status: "failed" }); });
     return () => { live = false; };
-  }, [readReach, oracleId, create]);
+  }, [readReach, oracleId, create, selectedOracleIds]);
   const mustChoose = needsBracketChoice(reach);
   const waiting = reach?.status === "pending" || (mustChoose && choice === null);
 
