@@ -252,7 +252,7 @@ function AccountPopover(props: PanelProps) {
           {props.identity.email && (
             <div
               className="truncate font-mono"
-              // RD§1: the handoff's --fg-faint is 4.42:1 here and fails AA.
+              // RD§1: the handoff's --fg-faint was 4.42:1 here and failed AA when this was ruled.
               // --fg-muted is 8.48:1. Do not fix this by enlarging the text.
               style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 2 }}
             >

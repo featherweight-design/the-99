@@ -94,8 +94,8 @@ export function PriceTag({
         // assumed: `--fg-locked` on `--bg` runs 3.23:1 (phyrexia) to 3.49:1, which
         // clears the 3:1 non-text floor a dashed edge answers to and fails the 4.5:1
         // this 10px word does. `--fg-muted` runs 6.61 to 7.35 and clears everywhere;
-        // `--fg-faint` was the handoff's suggestion and still fails two themes at
-        // 4.12 and 4.29.
+        // `--fg-faint` was the handoff's suggestion and failed two themes at 4.12 and
+        // 4.29 when this was ruled (the text inks addendum has since lifted it).
         style={{ color: "var(--fg-muted)", border: "1px dashed var(--fg-locked)" }}
         aria-label={standalone ? undefined : label}
       >

@@ -120,7 +120,7 @@ describe("AccountMenu popover", () => {
     ]);
   });
 
-  // RD§1 — --fg-faint is 4.42:1 on --surface-raised and fails AA at 11px.
+  // RD§1 — --fg-faint was 4.42:1 on --surface-raised and failed AA at 11px when this was ruled.
   it("uses --fg-muted for the popover email, not --fg-faint", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
