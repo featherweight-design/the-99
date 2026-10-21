@@ -40,7 +40,7 @@ The app never adds mass land denial or an extra-turn loop to reach a bracket, ev
 
 | # | Screen | When | What the server knows (no model call) |
 |---|---|---|---|
-| A | **The intake form**, under the Bracket field (`intake-form.tsx`, `BracketRadios`) | A bracket of 3 or more is picked. This is the only screen before the credit: pressing Find with "Anything else?" filled spends one. | Across the colors picked (or all five): `reaches` or `short`. If short: what a collection-only deck lands in (`1-2` or `3`), and the cheapest set to buy (card names, the dollar total, whether it is over the budget). No commander yet. |
+| A | **The intake form**, under the Bracket field (`intake-form.tsx`, `BracketRadios`) | A bracket of 3 or more is picked. This is the only screen before the credit: pressing Find with "Anything else?" filled spends one. | Across the colors picked (or all five): `reaches` or `short`. If short: what a collection-only deck lands in (`1-2`, `2`, `3` or `4`: an extra-turn card alone reads 2, and a combo with tutors that find both halves reads 4), and the cheapest set to buy (card names, the dollar total, whether it is over the budget). No commander yet. |
 | B | **A result row** (`choose-row.tsx`, the trial figures beside "you own 41 of its 99") | Every row, when a bracket of 3+ was asked. | Per commander, the same answer, and the deck it would build: `reaches` / `short, lands 1-2` / `short, can hit 3 for $X (cards)`. |
 | C | **The hand-off** (`create-pre-filled.tsx` → `hand-off-answers.tsx`, the Bracket row: "The fill keeps every card it chooses inside bracket 3's limits.") | The commander is picked and **Create deck →** is next. | The same as B for the chosen commander. **This is where the choice is made**, as the last answer before Create deck. |
 
@@ -72,7 +72,7 @@ stored with the deck so a retried build places the same cards.
 
 ## Open for Design to call
 
-1. The form (A): a line under the radios, a caption change, or nothing until the hand-off? It is the only pre-credit moment.
+1. The form (A): the shortfall MUST be said here when the read would spend a credit (the read starts on submit, before results; `submitChoose`), so A is required, not optional. Open is only its form: a line under the radios, a caption change, or a note beside Find.
 2. The choice (C): two radio rows inside the Bracket row, a sheet, or an inline pair of buttons. **Create deck →** stays where it is.
 3. The row (B): a third figure, a mark on the existing ownership figure, or nothing.
 4. The reached case: should the placed card carry a mark on the deck page ("placed to reach bracket 3"), or is the Bracket row enough?
@@ -99,7 +99,7 @@ locked vocabulary: "Game Changer", "combo", "bracket". No "upgrade your collecti
      expire at the period end after a cancel; gift and pack credits never expire.
    - **Refunds:** a run that fails gives its credit back on its own. A refunded payment takes back the unspent credits it
      bought; a dispute holds them until it's decided.
-   - Paid credits share a daily limit on how many can be spent.
+   - Welcome, plan, gift and pack credits share one daily limit on how many can be spent (the free allowance has its own).
    The entry's screen and halo are Design's call (likely `/credits`'s balance row).
 
 ## Not in this brief
