@@ -251,7 +251,7 @@ describe("the daily paid line (P5, P5b)", () => {
     render(<CreditsView model={model({ allowance: allowance({ ...held, paidUsedToday: 17, paidLimit: 20, paidBackAt: new Date("2026-10-18T08:01:00Z") }) })} ret={null} />);
     const line = screen.getByTestId("paid-today");
     expect(line).toHaveAttribute("data-at-limit", "false");
-    expect(line).toHaveTextContent(/17 of 20 paid credits used today/);
+    expect(line).toHaveTextContent(/17 of 20 banked credits used today/);
     expect(line).toHaveTextContent(/Free credits still run\./);
     expect(screen.getByTestId("paid-today-fill")).toHaveStyle({ width: "85%", background: "var(--fg-muted)" });
   });

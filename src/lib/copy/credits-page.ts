@@ -87,12 +87,13 @@ export const creditsPageCopy = {
     planSub: "roll over",
     packsSub: "never expire",
     added: (units: number) => `+${units}`,
-    /** P5: from 15 paid runs today up to one under the player's paid limit (20 unless their group sets one). `time` is the reader's clock, absent before hydration. */
+    /** P5: from 15 lot-funded runs today up to one under the player's paid limit (20 unless their group sets one). `time` is the reader's clock, absent before hydration.
+     *  "banked", not "paid": the limit counts every run a held lot funds, welcome and gift included (welcome credits D2, Hugh 2026-10-21). */
     near: (used: number, limit: number, time: string | null) =>
-      `${used} of ${limit} paid credits used today${time ? ` · the limit resets at ${time}` : ""}. Free credits still run.`,
+      `${used} of ${limit} banked credits used today${time ? ` · the limit resets at ${time}` : ""}. Free credits still run.`,
     /** P5b: at the limit; nothing banked is lost. */
     atLimit: (used: number, limit: number, time: string | null) =>
-      `${used} of ${limit} paid credits used today.${time ? ` Back at ${time}.` : ""} Free credits still run, and nothing banked is lost.`,
+      `${used} of ${limit} banked credits used today.${time ? ` Back at ${time}.` : ""} Free credits still run, and nothing banked is lost.`,
   },
   pack: {
     k: "Credit pack",
