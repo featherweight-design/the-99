@@ -12,6 +12,11 @@ const searchTag = vi.hoisted(() => vi.fn(async (surface: string, query: string) 
   return [{ oracleId: "3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60", name: "Rhystic Study", typeLine: "Enchantment", imageUri: null, commanderLegal: true }];
 }));
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: searchTag }));
+const formReachData = vi.hoisted(() => vi.fn(async () => ({
+  cards: [{ id: "rift", name: "Cyclonic Rift", identity: ["U"], gameChanger: true, massLandDenial: false, extraTurn: false, free: true, combos: [], searches: false, reaches: [] }],
+  buyable: [{ id: "study", name: "Rhystic Study", identity: ["U"], priceCents: 3_200 }, { id: "tutor", name: "Demonic Tutor", identity: ["B"], priceCents: 4_100 }],
+})));
+vi.mock("../../app/decks/new/choose/form-reach-actions", () => ({ formReachData }));
 
 const { IntakeForm } = await import("./intake-form");
 const { emptyParams } = await import("../../lib/intake/params");
@@ -288,5 +293,40 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect((screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value).toContain("Rhystic Study");
       expect((screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value).not.toContain("3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60");
     });
+  });
+});
+
+describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
+  it("makes one read when the form opens, and reruns in the browser as the answers change", async () => {
+    formReachData.mockClear();
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["u"], match: "exactly" }} bracketReach />);
+    expect(await screen.findByText("3 · Upgraded. Your cards in these colors would reach it.")).toBeTruthy();
+    // Bracket 4 in blue: one free Game Changer and one stocked, short of four, so nothing reaches it.
+    fireEvent.click(screen.getByRole("radio", { name: "4" }));
+    expect(screen.getByText(/a deck would be bracket 3, and no Game Changer to buy gets one to 4 here\./)).toBeTruthy();
+    expect(formReachData).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads the budget the submit sends: a typed \"$20\" is twenty dollars, not none", async () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
+    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor, about \$41\./)).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: /budget/i }), { target: { value: "$20" } });
+    expect(screen.getByText(/over your \$20 budget/)).toBeTruthy();
+  });
+
+  it("reruns when the color match changes: under Any a blue-black commander can play the blue card", async () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} bracketReach />);
+    expect(await screen.findByText(/Hitting 3 means buying Demonic Tutor/)).toBeTruthy();
+    const group = screen.getByRole("radiogroup", { name: "Color match" });
+    fireEvent.click(within(group).getAllByRole("radio")[0]);
+    expect(screen.getByText("3 · Upgraded. Your cards would reach it.")).toBeTruthy();
+  });
+
+  it("makes no read with the switch off, and keeps today's caption", async () => {
+    formReachData.mockClear();
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3 }} />);
+    await act(async () => {});
+    expect(formReachData).not.toHaveBeenCalled();
+    expect(screen.getByText("3 · Upgraded")).toBeTruthy();
   });
 });
