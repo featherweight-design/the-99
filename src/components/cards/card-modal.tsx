@@ -44,6 +44,7 @@ import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
+import { useTargets } from "../discovery/targets-provider";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { SHEET, SWIPE, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
@@ -977,7 +978,14 @@ export function CardModal({
    * per card gives by construction, or the full details column. Set only by the phone's own
    * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
    */
-  const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : "teaser");
+  // A Find a deck landing that waits (R3 addendum, item 12) has the phone open the next card with a Fits door at the full
+  // sheet, where the door draws; read once at construction and spent in the effect below (render stays pure).
+  const targets = useTargets();
+  const landsFull = useRef(!startMinimized && narrow && onFindDeck !== null && targets?.wantsFull("find-a-deck") === true).current;
+  useEffect(() => {
+    if (landsFull) targets?.takeFull("find-a-deck");
+  }, [landsFull, targets]);
+  const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : landsFull ? "full" : "teaser");
   // A card mounts at the snap it was handed, and says so: a remount that is not a page (a step back
   // from a partner, say) starts at the teaser, and the provider must not go on carrying a min the
   // reader can no longer see into the next page.
