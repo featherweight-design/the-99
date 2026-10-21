@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "answer_bracket_buys" boolean DEFAULT false NOT NULL;
