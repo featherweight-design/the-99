@@ -307,6 +307,10 @@ export async function buildFillPlan(
       budgetCents: answers.budgetCents,
       // The buying half is the choice's (plan PR 3); this fill never buys toward the answer.
       ownedOnly: true,
+      // The slots the plan will fill: the caller's count, or the body less what is placed beside
+      // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
+      capacity: fillOptions.slots
+        ?? Math.max(0, deckBodySize(hasPartner) - selected.reduce((n, c) => n + (c.quantity ?? 1), 0)),
     });
     const ids = reach.kind === "collection" ? reach.raisers : reach.kind === "short" ? reach.collectionRaisers : [];
     const byId = new Map(offered.map((c) => [c.oracleId, c]));

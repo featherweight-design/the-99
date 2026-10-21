@@ -69,6 +69,9 @@ export function bracketReach(args: {
   facts: ReachFacts;
   budgetCents: number | null;
   ownedOnly: boolean;
+  /** The slots left for the fill. A set with more cards than this cannot all be placed, so it is
+   *  never offered: a combo whose second piece has no room would leave the deck short. */
+  capacity?: number;
 }): BracketReach {
   const { target, facts } = args;
   const fixed = [...new Set([...args.commanderIds, ...args.fixedIds])];
@@ -123,11 +126,17 @@ function cheapestRaiser(
   const sets: string[][] = [];
   const gameChangers = pool.filter((id) => facts.flagsOf(id).gameChanger);
   const fixedGameChangers = fixed.filter((id) => facts.flagsOf(id).gameChanger).length;
-  /** Every counted combo among usable cards: the piece to place and its partner, which is either
-   *  placeable too or already in the deck. */
-  const pairs = pool.flatMap((id) => facts.combosOf(id)
+  /** Every counted combo among usable and fixed cards: two pieces, each placeable from this source
+   *  or already in the deck. A combo of two fixed cards is here too: it may want only a searcher. */
+  const seenPairs = new Set<string>();
+  const pairs = [...pool, ...fixed].flatMap((id) => facts.combosOf(id)
     .filter((e) => have(e.partner) && (!e.partnerMustBeCommander || inCommandZone.has(e.partner)))
-    .map((e) => ({ pieces: [id, e.partner], loop: e.loop })));
+    .flatMap((e) => {
+      const key = `${e.variantId}`;
+      if (seenPairs.has(key)) return [];
+      seenPairs.add(key);
+      return [{ pieces: [id, e.partner], loop: e.loop }];
+    }));
   const placeable = (ids: string[]) => ids.filter((id) => !fixedSet.has(id) && !inCommandZone.has(id));
 
   if (target === 3) {
@@ -136,25 +145,41 @@ function cheapestRaiser(
   } else if (target >= 4) {
     const need = 4 - fixedGameChangers;
     if (need > 0 && gameChangers.length >= need) sets.push(cheapestFirst(gameChangers, facts, source).slice(0, need));
-    const searchers = pool.filter((id) => facts.searches(id));
+    // A fixed searcher (a commander that tutors) covers a piece as well as a placeable one does.
+    const searchers = [...pool, ...fixed].filter((id) => facts.searches(id));
     for (const p of target === 4 ? pairs.filter((q) => !q.loop) : []) {
       // Every piece outside the command zone must be found by a searcher (`comboLandsEarly`).
       const pieces = p.pieces.filter((id) => !inCommandZone.has(id));
       const covering = (s: string) => pieces.filter((piece) => piece !== s && facts.reaches(s, piece));
-      const one = searchers.find((s) => covering(s).length === pieces.length);
-      if (one) { sets.push([...placeable(p.pieces), one]); continue; }
-      const first = searchers.find((s) => covering(s).length > 0);
-      if (!first) continue;
-      const rest = pieces.filter((piece) => !covering(first).includes(piece));
-      const second = searchers.find((s) => s !== first && rest.every((piece) => covering(s).includes(piece)));
-      if (second) sets.push([...placeable(p.pieces), first, second]);
+      // EVERY cover, one searcher or two, so the ranking below picks the cheapest rather than the
+      // first one found.
+      const covers = searchers.map((s) => ({ s, found: covering(s) })).filter((c) => c.found.length > 0);
+      for (const [i, a] of covers.entries()) {
+        if (a.found.length === pieces.length) { sets.push([...placeable(p.pieces), a.s]); continue; }
+        for (const b of covers.slice(i + 1)) {
+          if (pieces.every((piece) => a.found.includes(piece) || b.found.includes(piece))) {
+            sets.push([...placeable(p.pieces), a.s, b.s]);
+          }
+        }
+      }
     }
   }
+
+  /** A raiser never brings mass land denial or a turn loop into the deck, whichever route proposed
+   *  it: a Game Changer can carry the flag, and two pieces can share a loop variant as well as the
+   *  non-loop one that proposed them. */
+  const forbidden = (raisers: readonly string[]) => {
+    const all = new Set([...fixed, ...raisers]);
+    return raisers.some((id) => facts.flagsOf(id).massLandDenial
+      || facts.combosOf(id).some((e) => e.loop && all.has(e.partner)));
+  };
 
   let best: { raisers: string[]; buyCents: number; bought: number; at: number } | null = null;
   for (const raw of sets) {
     const raisers = [...new Set(raw)].filter((id) => !fixedSet.has(id));
     if (raisers.length === 0) continue;
+    if (args.capacity !== undefined && raisers.length > args.capacity) continue;
+    if (forbidden(raisers)) continue;
     if (source === "collection" && !raisers.every((id) => facts.free(id))) continue;
     if (!permitsOf(args.commanderIds, [...fixed, ...raisers], facts).includes(target)) continue;
     const toBuy = raisers.filter((id) => !facts.free(id));

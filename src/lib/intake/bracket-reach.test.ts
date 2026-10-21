@@ -131,6 +131,35 @@ describe("bracketReach", () => {
     });
   });
 
+  it("never chooses a set the remaining slots cannot hold", () => {
+    const f = world({ combos: [{ a: "a", b: "b" }], free: ["a", "b"] });
+    expect(bracketReach({ target: 3, commanderIds: ["cmd"], fixedIds: ["cmd"], cards: ["a", "b"], facts: f, budgetCents: null, ownedOnly: false, capacity: 1 }))
+      .toMatchObject({ kind: "short" });
+    expect(bracketReach({ target: 3, commanderIds: ["cmd"], fixedIds: ["cmd"], cards: ["a", "b"], facts: f, budgetCents: null, ownedOnly: false, capacity: 2 }))
+      .toMatchObject({ kind: "collection", raisers: ["a", "b"] });
+  });
+
+  it("refuses a pair that also shares a turn-loop variant, and a Game Changer that denies lands", () => {
+    const loopToo = world({ combos: [{ a: "a", b: "b" }, { a: "a", b: "b", loop: true }], free: ["a", "b", "t"], reaches: { t: ["a", "b"] } });
+    expect(reach(4, ["a", "b", "t"], loopToo)).toMatchObject({ kind: "short" });
+    const gc = { gameChanger: true };
+    const mld = world({ flags: { g1: gc, g2: gc, g3: gc, g4: { gameChanger: true, massLandDenial: true }, g5: gc }, free: ["g1", "g2", "g3", "g4", "g5"] });
+    expect(reach(4, ["g1", "g2", "g3", "g4", "g5"], mld)).toMatchObject({ kind: "short" });
+  });
+
+  it("finds the tutor for a combo the fixed cards already hold, and counts a commander that tutors", () => {
+    const fixedCombo = world({ combos: [{ a: "card", b: "cmd" }], free: ["t"], reaches: { t: ["card"] } });
+    expect(reach(4, ["t"], fixedCombo, { fixedIds: ["cmd", "card"] })).toEqual({ target: 4, kind: "collection", raisers: ["t"] });
+    const tutoringCommander = world({ combos: [{ a: "a", b: "b" }], free: ["a", "b"], reaches: { cmd: ["a", "b"] } });
+    expect(reach(4, ["a", "b"], tutoringCommander)).toEqual({ target: 4, kind: "collection", raisers: ["a", "b"] });
+  });
+
+  it("buys the cheapest cover, not the first one found", () => {
+    const f = world({ combos: [{ a: "a", b: "b" }], free: ["a", "b"], prices: { dear: 1000, cheap: 100 }, reaches: { dear: ["a", "b"], cheap: ["a", "b"] } });
+    expect(reach(4, ["a", "b", "dear", "cheap"], f, { budgetCents: 500 }))
+      .toMatchObject({ kind: "short", buy: { raisers: ["a", "b", "cheap"], buyCents: 100, overBudget: false } });
+  });
+
   it("never places a fixed card again", () => {
     const f = world({ flags: { card: { gameChanger: true } }, free: ["card"] });
     expect(reach(3, ["card"], f, { fixedIds: ["cmd", "card"] })).toEqual({ target: 3, kind: "fixed" });
