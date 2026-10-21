@@ -421,8 +421,9 @@ export const loadCardDetail = cache(async function loadCardDetail(
     );
 
   if (owned.length > 0) {
-    // Only for a card the user owns: the availability query is driven by the collection, so
-    // an unowned card has no row there and nothing to report. The import is inside the catch
+    // `availability` only for a card the user owns: the query is driven by the collection, and every
+    // reader of that field takes it to mean the card is held. An unowned card reads the same query
+    // with `unownedAsZero` into `unownedAvailability` instead (below). The import is inside the catch
     // because a module that fails to resolve is as quiet a failure as a query that fails to
     // run — either way the modal omits the block rather than losing the card.
     const availability = (async () => {
