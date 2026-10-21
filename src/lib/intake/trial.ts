@@ -8,9 +8,7 @@ import { loadPrices, slotFor } from "../discovery/price";
 import { db } from "../../db";
 import { sql } from "drizzle-orm";
 import { buysCopy } from "./buys-card";
-import { loadBracketGateFacts, type DeckAnswers } from "./fill-facts";
-import { permitsOf } from "./fill-gate";
-import { bracketReach } from "./bracket-reach";
+import type { DeckAnswers } from "./fill-facts";
 import type { Bracket } from "./rank";
 
 /**
@@ -82,7 +80,7 @@ export async function trialFill(
         exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
       from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
     `).then((r) => new Map((r.rows as { oracle_id: string; type_line: string; owned: boolean }[]).map((x) => [x.oracle_id, x]))),
-    bracketFigure(userId, commander, answers, env, ownedOnly, plan, rows),
+    bracketFigure(userId, commander, answers, env, ownedOnly, plan),
   ]);
 
   let owned = 0;
@@ -110,17 +108,11 @@ export async function trialFill(
 }
 
 /**
- * `TrialFigures.bracket`: the bracket the deck the create would build lands in, and what is LEFT to
- * buy to hit the target. Under own-only that deck is the sleeveable fill under the create's own
- * options (`pool: "sleeveable"`, `failClosed`), never the ordinary fill filtered: the sleeveable fill
- * drops claimed cards BEFORE choosing replacements, so it can pick a raiser the ordinary one never
- * reached.
- *
- * The cost is re-asked of the buying set over the deck's own rows, with those rows fixed: the reach
- * priced its set before the fill ran, and an "any cards" fill can already have bought part of it (a
- * $20 budget buying two $10 Game Changers of a $120 set leaves $100, not $120). The re-ask takes the
- * cheapest part of the set that still reaches the target, so a card the fill bought is never counted
- * twice.
+ * `TrialFigures.bracket`: the bracket the deck the create would build lands in, and what is left to
+ * buy to hit the target, both by the rule over that deck's finished rows (`buildFillPlan`'s
+ * `bracketAfter`). Under own-only that deck is the sleeveable fill under the create's own options
+ * (`pool: "sleeveable"`, `failClosed`), never the ordinary fill filtered: the sleeveable fill drops
+ * claimed cards BEFORE choosing replacements, so it can pick a raiser the ordinary one never reached.
  */
 async function bracketFigure(
   userId: string,
@@ -129,42 +121,14 @@ async function bracketFigure(
   env: NodeJS.ProcessEnv,
   ownedOnly: boolean,
   plan: Awaited<ReturnType<typeof buildFillPlan>>,
-  rows: { oracleId: string; quantity: number }[],
 ): Promise<TrialFigures["bracket"]> {
   if (answers.bracket === null || answers.bracket < 3 || !plan.bracketReach) return null;
   const card = answers.cardOracleId;
-  let deckRows = rows;
-  let reach = plan.bracketReach;
-  if (ownedOnly) {
-    const owned = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
+  const deck = ownedOnly
+    ? await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
       answers, selected: await placedCardsOf(card ? [card] : []), pool: "sleeveable", failClosed: true, env,
-    });
-    if (!owned.bracketReach) return null;
-    reach = owned.bracketReach;
-    deckRows = capToBody([...(card ? [{ oracleId: card, quantity: 1 }] : []), ...owned.rows], deckBodySize(false));
-  }
-  const deckIds = [...new Set(deckRows.map((r) => r.oracleId))];
-  const inDeck = new Set(deckIds);
-  const toBuy = reach.kind === "short" && reach.buy ? reach.buy.raisers.filter((id) => !inDeck.has(id)) : [];
-  const [facts, prices, availability, owned] = await Promise.all([
-    loadBracketGateFacts([commander.oracleId, ...deckIds, ...toBuy]),
-    toBuy.length > 0 ? loadPrices(toBuy) : new Map<string, { liveCents: number | null }>(),
-    toBuy.length > 0 ? loadAvailability(userId, { oracleIds: toBuy, env }) : new Map(),
-    toBuy.length === 0 ? new Set<string>() : db.execute(sql`
-      select ci.oracle_id from collection_items ci
-      where ci.user_id = ${userId} and ci.oracle_id = any(${sql.param(toBuy)}::uuid[])
-    `).then((r) => new Set((r.rows as { oracle_id: string }[]).map((x) => x.oracle_id))),
-  ]);
-  const permits = permitsOf([commander.oracleId], [commander.oracleId, ...deckIds], facts);
-  if (permits.includes(reach.target) || toBuy.length === 0) return { target: reach.target, permits, buyCents: null };
-  const left = bracketReach({
-    target: reach.target, commanderIds: [commander.oracleId], fixedIds: deckIds, cards: toBuy,
-    facts: {
-      ...facts,
-      free: (id) => !buysCopy(owned.has(id), availability.get(id)),
-      priceOf: (id) => prices.get(id)?.liveCents ?? null,
-    },
-    budgetCents: null, ownedOnly: false,
-  });
-  return { target: reach.target, permits, buyCents: left.kind === "short" && left.buy ? left.buy.buyCents : null };
+    })
+    : plan;
+  if (!deck.bracketReach || !deck.bracketAfter) return null;
+  return { target: deck.bracketReach.target, ...deck.bracketAfter };
 }

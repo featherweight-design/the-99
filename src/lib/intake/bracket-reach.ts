@@ -57,6 +57,33 @@ export type BracketReach =
       buy: { raisers: string[]; buyCents: number; overBudget: boolean } | null;
     };
 
+/**
+ * WHAT A FINISHED DECK LANDS IN, AND WHAT IS LEFT TO BUY TO HIT THE TARGET, asked of its own rows.
+ * The reach before the fill priced the cheapest set over the fixed cards alone, and the fill can then
+ * buy part of that set, a cheaper route, or a tutor that carries a combo past the target. So the
+ * rows are fixed and the reach asked again over the whole eligible pool less what the deck holds:
+ * a card the fill bought is never counted twice, and a set the fill made invalid is never offered.
+ */
+export function reachOverRows(args: {
+  target: Bracket;
+  commanderIds: readonly string[];
+  /** Every card in the finished deck: the fixed cards and the fill's rows. */
+  rowIds: readonly string[];
+  /** The whole eligible pool, in the fill's order. */
+  cards: readonly string[];
+  facts: ReachFacts;
+}): { permits: Bracket[]; buyCents: number | null } {
+  const rowIds = [...new Set([...args.commanderIds, ...args.rowIds])];
+  const inDeck = new Set(rowIds);
+  const permits = permitsOf(args.commanderIds, rowIds, args.facts);
+  if (permits.includes(args.target)) return { permits, buyCents: null };
+  const left = bracketReach({
+    target: args.target, commanderIds: args.commanderIds, fixedIds: rowIds,
+    cards: args.cards.filter((id) => !inDeck.has(id)), facts: args.facts, budgetCents: null, ownedOnly: false,
+  });
+  return { permits, buyCents: left.kind === "short" && left.buy ? left.buy.buyCents : null };
+}
+
 type Source = "collection" | "buying";
 
 export function bracketReach(args: {
