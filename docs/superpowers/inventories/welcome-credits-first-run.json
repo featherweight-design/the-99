@@ -1,0 +1,27 @@
+{
+  "feature": "Welcome credits, the first-run Home (launch D2; handoff design_handoff_the99_welcome_credits, R2; plan 2026-10-21-welcome-credits.md, PR 2)",
+  "note": "The first-run half of `welcome-credits.json`, for an account with no cards and no deck: `pnpm probe:welcome-strip` with WELCOME_PROBE_KEEP=1 WELCOME_PROBE_STAGE=first-run, and the same server switches. About's line sits above the strip (ABOUT_SHEET_ENABLED on).",
+  "shares": {
+    "module": "src/components/welcome/where-credits-work.tsx",
+    "binding": "WhereCreditsWork",
+    "note": "The same sheet as the dashboard's and the Welcome cell's."
+  },
+  "rows": [
+    {
+      "id": "first-run",
+      "label": "/ first-run: the strip under About's line, above the fold at 390",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [{ "goto": "/", "wait": "section[aria-label='Welcome credits']", "settle": 2000 }]
+    },
+    {
+      "id": "first-run-sheet",
+      "label": "/ first-run, Where they work: the lock line once over all five, no Try it, the teaser at the foot",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [
+        { "goto": "/", "wait": "section[aria-label='Welcome credits']", "settle": 2000 },
+        { "clickRole": "button", "name": "^Where they work$" },
+        { "wait": "[data-where-credits-work]", "settle": 800 }
+      ]
+    }
+  ]
+}

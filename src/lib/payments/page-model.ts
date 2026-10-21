@@ -4,6 +4,7 @@ import { paidToday, type PaidToday } from "./paid-today-rule";
 import { readerSeesCredits, readerSeesOffers, readerSeesPause } from "./visible-rule";
 import { creditsPageCopy, dollars, longDate, planOffer, shortDate, type PackOffer, type PlanOffer } from "../copy/credits-page";
 import { planCardFacts, type PlanCardState, type PlanSubscriptionFacts } from "./plan-card-rule";
+import { daysUntil, expiringAt } from "./welcome-sheet";
 
 /**
  * What `/credits` draws, from what the server read. Pure: the page reads, this decides.
@@ -17,7 +18,13 @@ import { planCardFacts, type PlanCardState, type PlanSubscriptionFacts } from ".
  *   reader holds now or has held once (a grant row of that source), never an empty one for a reader who never
  *   bought. The total is the sum of every source, drawn or not.
  */
-export type BalanceCell = { key: "free" | "welcome" | "plan" | "gift" | "pack"; value: number };
+export type BalanceCell = {
+  key: "free" | "welcome" | "plan" | "gift" | "pack";
+  value: number;
+  /** The Welcome cell's lot (welcome credits R2): when it stops funding runs, whether that is within the 3 days the
+   *  credit line warns at, and the whole days left. Absent on every other cell. */
+  expires?: { atMs: number; expiring: boolean; days: number };
+};
 
 export type HistoryItem = {
   id: string;
@@ -64,7 +71,7 @@ export type CreditsModel = {
   plan: PlanCardModel | null;
 };
 
-export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null; planExpiresAt?: Date | null; planExpiring?: number; planByExpiry?: { at: Date | null; n: number }[] };
+export type AllowanceFacts = { used: number; limit: number; nextAt: Date | null; welcome?: number; plan?: number; gift?: number; pack?: number; paidUsedToday?: number; paidLimit?: number; paidBackAt?: Date | null; paidNextAt?: Date | null; planExpiresAt?: Date | null; welcomeExpiresAt?: Date | null; planExpiring?: number; planByExpiry?: { at: Date | null; n: number }[] };
 
 export function buildCreditsModel(input: {
   switchOn: boolean;
@@ -95,7 +102,16 @@ export function buildCreditsModel(input: {
   const cells: BalanceCell[] = [{ key: "free", value: freeLeft }];
   // The welcome lot is spent after the free allowance and before the others, so its cell sits second. It is drawn only
   // while it holds a credit: it is never bought, so there is no empty cell to explain (D1; D2 owns its wording).
-  if (welcome > 0) cells.push({ key: "welcome", value: welcome });
+  // Its line names when the lot expires (R1 Open 4), counted from the same clock as the plan card's days.
+  const welcomeAt = a.welcomeExpiresAt ?? null;
+  const now = input.now ?? new Date();
+  if (welcome > 0) {
+    cells.push({
+      key: "welcome",
+      value: welcome,
+      ...(welcomeAt ? { expires: { atMs: welcomeAt.getTime(), expiring: expiringAt(welcomeAt, now), days: daysUntil(welcomeAt, now) } } : {}),
+    });
+  }
   // The Plan cell goes once the plan credits are gone and no plan is held (K6): never a cell at 0 forever. A held plan with
   // everything spent still draws it, because the card beside it says the plan renews.
   if (plan > 0 || facts.state !== "offer") cells.push({ key: "plan", value: plan });

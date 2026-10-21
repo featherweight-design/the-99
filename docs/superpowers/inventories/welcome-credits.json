@@ -1,0 +1,43 @@
+{
+  "feature": "Welcome credits: the Home strip, the Where credits work sheet and the /credits Welcome cell (launch D2; handoff design_handoff_the99_welcome_credits, R2; plan 2026-10-21-welcome-credits.md, PR 2)",
+  "note": "Photographed over `pnpm probe:welcome-strip`'s fixture account, kept with WELCOME_PROBE_KEEP=1: a fresh Clerk test user holding a welcome lot (15, 30 days). A Home is first-run or the dashboard for one account at a time, so the two Homes are two runs: `welcome-credits-first-run.json` with WELCOME_PROBE_STAGE=first-run (no cards), and this one after the probe's twelve collection rows (cards, no deck). The server needs ABOUT_SHEET_ENABLED, PAYMENTS_ENABLED, TUNING_ENABLED, HELP_ME_CHOOSE_ENABLED, PROPOSED_CUTS_ENABLED, SWAP_TOOLS_ENABLED, FIND_A_DECK_READ_ENABLED and ANALYSIS_TAB_ENABLED on. The sheet is one component from the strip and from the cell (`shares`).",
+  "shares": {
+    "module": "src/components/welcome/where-credits-work.tsx",
+    "binding": "WhereCreditsWork",
+    "note": "The sheet the strip opens and the sheet the Welcome cell opens are the same component; only the teaser differs (absent from /credits)."
+  },
+  "rows": [
+    {
+      "id": "dashboard",
+      "label": "/ dashboard, cards and no deck: the strip heads the main column, over Ready to build",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [{ "goto": "/", "wait": "section[aria-label='Welcome credits']", "settle": 2000 }]
+    },
+    {
+      "id": "dashboard-sheet",
+      "label": "/ dashboard, Where they work: Help me choose leads with Try it, the reason line once, the teaser at the foot",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [
+        { "goto": "/", "wait": "section[aria-label='Welcome credits']", "settle": 2000 },
+        { "clickRole": "button", "name": "^Where they work$" },
+        { "wait": "[data-where-credits-work]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "credits-cell",
+      "label": "/credits: the Welcome cell, `expire` and its date, then Where they work on its own line",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [{ "goto": "/credits", "wait": "[data-cell=welcome] [data-welcome-where]", "settle": 2000 }]
+    },
+    {
+      "id": "credits-sheet",
+      "label": "/credits, Where they work from the cell: the same sheet, no teaser",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-cell=welcome] [data-welcome-where]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Where they work$" },
+        { "wait": "[data-where-credits-work]", "settle": 800 }
+      ]
+    }
+  ]
+}

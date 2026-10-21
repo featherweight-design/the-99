@@ -4,11 +4,56 @@
 // is given). The cells share one strip, split by a hairline with a small chevron at each join, pointing the way
 // credits are spent. "Reset at" is the reader's own clock, so it is drawn after hydration only.
 
+import { useRef, useState } from "react";
 import { clockTime } from "../../lib/copy/credits";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
+import { stripDay, welcomeCreditsCopy } from "../../lib/copy/welcome-credits";
 import type { BalanceCell } from "../../lib/payments/page-model";
 import type { PaidToday } from "../../lib/payments/paid-today-rule";
+import type { WelcomeFacts, WelcomeSheet } from "../../lib/payments/welcome-sheet";
 import { useHydrated } from "../ui/hydrated-art";
+import { TOUCH_HIT } from "../ui/touch-hit";
+import { useLocalDay, WhereCreditsWork } from "../welcome/where-credits-work";
+
+/** What the Welcome cell's `Where they work` opens: the lot and the sheet's list (welcome credits R2). */
+export type BalanceWelcome = { facts: WelcomeFacts; sheet: WelcomeSheet };
+
+/**
+ * The Welcome cell's line (R1 Open 4, R2): `expire Nov 20`, or `expire in 3 days, Nov 20` in `--warning`, in the reader's
+ * own day after hydration, then `Where they work` on its own line, opening the same sheet as Home's strip without its
+ * teaser (the reader is already on /credits). So closing the strip loses nothing while a credit is held.
+ */
+function WelcomeSub({ cell, welcome }: { cell: BalanceCell & { expires: NonNullable<BalanceCell["expires"]> }; welcome: BalanceWelcome | null }) {
+  const day = useLocalDay(cell.expires.atMs, stripDay);
+  const [open, setOpen] = useState(false);
+  const where = useRef<HTMLButtonElement>(null);
+  const w = welcomeCreditsCopy.cell;
+  return (
+    <>
+      <span
+        data-welcome-expires={cell.expires.expiring ? "expiring" : "held"}
+        className={`${day.ready ? "" : "invisible"} ${cell.expires.expiring ? "text-[color:var(--warning)]" : ""}`}
+      >
+        {cell.expires.expiring ? w.expiring(cell.value, cell.expires.days, day.text) : w.expire(cell.value, day.text)}
+      </span>
+      {welcome ? (
+        <>
+          <br />
+          <button
+            ref={where}
+            type="button"
+            data-welcome-where
+            onClick={() => setOpen(true)}
+            className={`${TOUCH_HIT} cursor-pointer border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] leading-[inherit] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]`}
+          >
+            {w.where}
+          </button>
+          {open ? <WhereCreditsWork facts={welcome.facts} sheet={welcome.sheet} teaser={false} onClose={() => setOpen(false)} returnFocusRef={where} /> : null}
+        </>
+      ) : null}
+    </>
+  );
+}
 
 const c = creditsPageCopy.bal;
 
@@ -19,7 +64,7 @@ const LABEL = { free: c.free, welcome: c.welcome, plan: c.plan, gift: c.gift, pa
 const JOIN =
   "before:absolute before:left-[-5px] before:top-1/2 before:-mt-[4px] before:h-[8px] before:w-[8px] before:rotate-45 before:border-t before:border-r before:border-solid before:border-t-[color:var(--border-strong)] before:border-r-[color:var(--border-strong)] before:bg-[color:var(--surface)] before:content-['']";
 
-export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = null }: {
+export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = null, welcome = null }: {
   total: number;
   cells: readonly BalanceCell[];
   freeLimit: number;
@@ -30,6 +75,8 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = 
   added?: number | null;
   /** P5 / P5b: the daily paid line and its meter, or null. */
   paidToday?: PaidToday | null;
+  /** The Welcome cell's `Where they work` and its sheet, or null (every row off): the date line stands alone. */
+  welcome?: BalanceWelcome | null;
 }) {
   const hydrated = useHydrated();
   return (
@@ -60,6 +107,7 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = 
             <span className="min-h-[14.7px] font-mono text-[10.5px] leading-[14.7px] text-[color:var(--fg-muted)]">
               {cell.key === "free"
                 ? nextAtMs === null ? c.freeFull(freeLimit) : hydrated ? c.freeNext(clockTime(new Date(nextAtMs))) : null
+                : cell.key === "welcome" && cell.expires ? <WelcomeSub cell={{ ...cell, expires: cell.expires }} welcome={welcome} />
                 : cell.key === "plan" ? c.planSub : cell.key === "pack" ? c.packsSub : null}
             </span>
           </li>

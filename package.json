@@ -198,6 +198,7 @@
     "probe:about": "node scripts/probe-about.mjs",
     "probe:about-how-it-works": "node scripts/probe-about-how-it-works.mjs",
     "probe:arrivals-banner": "node scripts/probe-arrivals-banner.mjs",
+    "probe:welcome-strip": "node scripts/probe-welcome-strip.mjs",
     "probe:about-banner": "tsx scripts/probe-about-banner.mts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "probe:delete-confirm": "node scripts/probe-delete-confirm.mjs",
