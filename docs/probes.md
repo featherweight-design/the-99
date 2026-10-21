@@ -3083,6 +3083,20 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   keys; the account's `user_prefs` row (its seen keys and About fields, or its absence) is read before any page and put
   back exactly, then re-read as a check. `PROBE_BASE` must be loopback with a port. Needs a `next start` on `PROBE_BASE` over the same database with `PRECONS_ENABLED=true
   UPCOMING_PRECONS_ENABLED=true LIST_CACHE_ENABLED=true ABOUT_SHEET_ENABLED=true`; stop it by its own PID.
+- `pnpm probe:welcome-strip` presses Home's welcome-credits strip (plan `2026-10-21-welcome-credits.md`, PR 2) at
+  390x844 and 1300x900, through `lib/surface.mjs`: the strip is above the fold on the first-run Home and on the
+  dashboard (under the page head); `Where they work` opens `Where credits work` in the shipped SocialModal, before a
+  collection with the lock line once, no Try it, five rows and the teaser, and with cards and no deck with Help me choose
+  first carrying Try it and the reason line once; Escape closes it; the /credits Welcome cell reads `expire <date>` once
+  hydrated and opens the same sheet with no teaser; ✕ hides the strip, writes `user_prefs.welcome_strip_dismissed_at`
+  (polled) and a reload draws none. FIXTURES: a fresh Clerk test user on the DEVELOPMENT instance (`sk_test_` refused
+  otherwise), a welcome lot inserted for it (15, expiring in 30 days) and twelve collection rows for the dashboard; no
+  other account is read or written, and the user and every row it holds are removed in its `finally`.
+  `WELCOME_PROBE_KEEP=1` keeps the account for a contact sheet (`WELCOME_PROBE_STAGE=first-run` stops before the
+  collection rows) and prints its address; `WELCOME_PROBE_CLEAN=<address>` removes a kept one. The database is the
+  worktree's `.env` (local-dev or a scratch branch; production and staging refused by branch id). Needs a server on
+  `PROBE_BASE` (loopback with a port) with `ABOUT_SHEET_ENABLED PAYMENTS_ENABLED TUNING_ENABLED HELP_ME_CHOOSE_ENABLED PROPOSED_CUTS_ENABLED
+  SWAP_TOOLS_ENABLED FIND_A_DECK_READ_ENABLED ANALYSIS_TAB_ENABLED` all `true`; stop it by its own PID.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
   naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to

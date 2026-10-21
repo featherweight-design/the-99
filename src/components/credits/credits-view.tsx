@@ -11,7 +11,7 @@ import { CreditsHead, PAGE } from "./credits-head";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import type { CreditsModel } from "../../lib/payments/page-model";
 import type { ReturnRead } from "../../lib/payments/return-rule";
-import { Balance } from "./balance";
+import { Balance, type BalanceWelcome } from "./balance";
 import { CreditsToast, type CreditsToastState } from "./credits-toast";
 import { History } from "./history";
 import { PackOffers, type BuyFailure } from "./pack-offers";
@@ -24,7 +24,14 @@ const c = creditsPageCopy;
 /** How the reader came back from Checkout: closed on Stripe's page, or finished (with the Session to follow). */
 export type ReturnProp = { kind: "cancelled" } | { kind: "done"; sessionId: string; initial: ReturnRead | null };
 
-export function CreditsView({ model, ret, timing, planTiming }: { model: CreditsModel; ret: ReturnProp | null; timing?: BandTiming; planTiming?: PlanTiming }) {
+export function CreditsView({ model, ret, timing, planTiming, welcome = null }: {
+  model: CreditsModel;
+  ret: ReturnProp | null;
+  timing?: BandTiming;
+  planTiming?: PlanTiming;
+  /** The Welcome cell's `Where they work` and its sheet (welcome credits R2), or null: no lot, or every row off. */
+  welcome?: BalanceWelcome | null;
+}) {
   const router = useRouter();
   const [toast, setToast] = useState<CreditsToastState | null>(null);
   // What a Buy press was answered (`off` or `blocked`), and the model it was answered against: it stands only until the
@@ -66,7 +73,7 @@ export function CreditsView({ model, ret, timing, planTiming }: { model: Credits
           onReceiptFailed={() => say(c.hist.receiptFailed)}
         />
       ) : null}
-      <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} />
+      <Balance total={model.total} cells={model.cells} freeLimit={model.freeLimit} nextAtMs={model.nextAtMs} added={added} paidToday={model.paidToday} welcome={welcome} />
       {/* `contents` below `md`, so the sections stack in the page's own column as ever; two columns from `md` (K2 to K5). */}
       {hasCards ? (
       <div className="contents md:grid md:grid-cols-2 md:items-stretch md:gap-[18px]">

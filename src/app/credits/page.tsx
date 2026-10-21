@@ -23,6 +23,11 @@ import { listCreditHistory, readReturn } from "../../lib/payments/return";
 import { isSessionId } from "../../lib/payments/return-rule";
 import { stripeClient } from "../../lib/payments/stripe";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import type { BalanceWelcome } from "../../components/credits/balance";
+import { listDecksWithStats } from "../../lib/decks/read";
+import { getCollectionStats } from "../../lib/home/summary";
+import { readWelcomeState, welcomeSheetFor } from "../../lib/payments/welcome-read";
+import { lotFacts } from "../../lib/payments/welcome-sheet";
 
 export const metadata: Metadata = { title: creditsPageCopy.title };
 
@@ -30,7 +35,8 @@ type Params = Record<string, string | string[] | undefined>;
 
 export default async function CreditsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const userId = await requireUserId();
-  const switchOn = paymentsEnabled(await requestSwitchEnv(userId));
+  const env = await requestSwitchEnv(userId);
+  const switchOn = paymentsEnabled(env);
   const params = await searchParams;
 
   // The return is read FIRST, so a grant it observes was committed before the balances and history below are read and
@@ -67,7 +73,30 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
     notFound();
   }
 
-  return <CreditsView model={built.model} ret={ret} />;
+  const welcome = built.model.cells.some((cell) => cell.key === "welcome") ? await readCellWelcome(userId, env, built.model.freeLimit) : null;
+  return <CreditsView model={built.model} ret={ret} welcome={welcome} />;
+}
+
+/**
+ * The Welcome cell's `Where they work` (welcome credits R2): the lot and the sheet's list, read only while the cell
+ * shows. The sheet's Try it follows the reader's cards and decks, as Home's does. A read that fails draws the cell's date
+ * line alone, since the cell is the reference that stays, not a place an error belongs.
+ */
+async function readCellWelcome(userId: string, env: NodeJS.ProcessEnv, free: number): Promise<BalanceWelcome | null> {
+  const now = new Date();
+  try {
+    const [state, stats, decks] = await Promise.all([
+      readWelcomeState(userId, env, now),
+      getCollectionStats(userId),
+      listDecksWithStats(userId, "name", { env }),
+    ]);
+    const facts = lotFacts(state, now, free);
+    const sheet = facts ? welcomeSheetFor(env, { cards: stats.uniqueCards, decks }) : null;
+    return facts && sheet ? { facts, sheet } : null;
+  } catch (error) {
+    console.error("[credits] the welcome sheet could not be read", error instanceof Error ? error.message : "");
+    return null;
+  }
 }
 
 /** The return band's start: a quiet line on a cancel (only while sales are on), the Session's read on a finish (always). */
