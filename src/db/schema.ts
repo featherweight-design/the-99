@@ -2095,6 +2095,12 @@ export const userPrefs = pgTable(
      * tour never taken.
      */
     tourSeenAt: timestamp("tour_seen_at", { withTimezone: true }),
+    /**
+     * When this reader closed Home's welcome-credits strip for good (welcome credits D2, `lib/payments/welcome-read.ts`):
+     * written once, only while null (`dismissWelcomeStripWrite`), because of the stamp trigger above. Null is a strip
+     * never closed. Per account, so it holds on every device; a purchase never clears it.
+     */
+    welcomeStripDismissedAt: timestamp("welcome_strip_dismissed_at", { withTimezone: true }),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),

@@ -1114,6 +1114,13 @@
       "when": 1792563357144,
       "tag": "0158_bracket_reach_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 159,
+      "version": "7",
+      "when": 1792617262505,
+      "tag": "0159_welcome_strip_dismissed",
+      "breakpoints": true
     }
   ]
 }

@@ -131,6 +131,15 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   so it is not a "new account" signal; a fallback is a D2 decision. Accepted: no per-email dedupe, so a deleted account that
   signs up again gets another lot.
 - Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
+- **What the reader is told (D2, plan `2026-10-21-welcome-credits.md`).** `readWelcomeLot` (`src/lib/payments/welcome-read.ts`)
+  is the one read that tells a lot used up, expired and absent apart (the allowance drops an expired lot and reads a
+  used-up one as `welcome: 0`): one indexed read of the welcome row whose correlated subqueries gather its ledger rows,
+  with `remaining` and `isLive` from `credit-rule.ts` deciding what is left. `welcomeState` (`welcome-state.ts`, pure)
+  maps it, with `now`, the dismissal, `everBought` (the chip's `boughtFrom`, never restated) and `PAYMENTS_ENABLED`, to
+  held, partly, expiring (3 days, `EXPIRY_WARNING_MS`), usedUp, none (expired or no row) or dismissed; `readWelcomeState`
+  reads it per request, outside every cached payload. `user_prefs.welcome_strip_dismissed_at` (0159) is the strip's ✕,
+  per account, written only while null (the stamp trigger fires on any update) by `dismissWelcomeStripAction`, which
+  checks no switch (the strip draws whatever the switches say) and revalidates nothing.
 
 
 - **Refunds and disputes** (K2). The webhook also handles `charge.refunded`, `charge.dispute.created` and
