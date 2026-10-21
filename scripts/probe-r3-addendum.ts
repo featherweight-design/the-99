@@ -30,15 +30,19 @@
 import { requireEnv } from "./lib/env.mjs";
 import { mkdirSync } from "node:fs";
 import { setupClerkTestingToken, clerkSetup } from "@clerk/testing/playwright";
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { sql } from "drizzle-orm";
-import { onPage } from "./lib/surface.mjs";
+import { onPage as onPageUntyped } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
 const { PROBE_DB_BRANCH, CLERK_SECRET_KEY } = requireEnv(["PROBE_DB_BRANCH", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+// The branch guard names the database, not the Clerk instance: a live key would create and delete a production user.
+if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
+/** `surface.mjs` is untyped; this gives its locator its type. */
+const onPage = (page: Page, selector: string): Locator => onPageUntyped(page, selector);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const SHOTS = process.env.PROBE_SHOTS ?? "./probe-r3-addendum-shots";
 const RUN = `probe-r3-${Date.now()}`;
@@ -185,9 +189,9 @@ async function case2(page: Page, width: number) {
       const press = [...document.querySelectorAll("main button[type='submit']")].find((b) => b.getClientRects().length > 0 && getComputedStyle(b).display !== "none");
       const l = a.getBoundingClientRect();
       const p = press?.getBoundingClientRect();
-      return p ? { linkTop: l.top, pressTop: p.top, pressBottom: p.bottom } : null;
+      return p ? { linkTop: l.top, linkBottom: l.bottom, pressTop: p.top, pressBottom: p.bottom } : null;
     });
-    report(`2 · ${width} the link is on the press's row`, beside !== null && Math.abs(beside.linkTop - beside.pressTop) < 120, beside ? `link top ${round(beside.linkTop)}px, press ${round(beside.pressTop)}–${round(beside.pressBottom)}px` : "no press found");
+    report(`2 · ${width} the link is on the press's row`, beside !== null && beside.linkTop < beside.pressBottom && beside.linkBottom > beside.pressTop, beside ? `link ${round(beside.linkTop)}–${round(beside.linkBottom)}px, press ${round(beside.pressTop)}–${round(beside.pressBottom)}px` : "no press found");
     await shot(page, `2-choose-link-${width}`);
   }
 }
