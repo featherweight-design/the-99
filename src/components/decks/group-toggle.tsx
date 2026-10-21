@@ -154,7 +154,7 @@ export function LockModeButton({ lockMode, onToggle }: { lockMode: boolean; onTo
       type="button"
       onClick={onToggle}
       className={`${BULK_BUTTON_BASE} inline-flex items-center gap-[7px] min-w-[116px] justify-center ${
-        lockMode ? "text-accent border-accent" : "text-fg-body border-border-strong"
+        lockMode ? "text-accent-text border-accent" : "text-fg-body border-border-strong"
       }`}
     >
       <LockMark ink={lockMode ? "var(--accent)" : "var(--fg-muted)"} />

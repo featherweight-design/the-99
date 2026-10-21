@@ -82,24 +82,6 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/decks/game-log-form.tsx": 2,
   "src/components/decks/games-panel.tsx": 3,
 
-  // S3 (17 files)
-  "src/components/decks/got-it-receipt.tsx": 4,
-  "src/components/decks/group-toggle.tsx": 1,
-  "src/components/decks/guided-banner.tsx": 1,
-  "src/components/decks/last-slots-strip.tsx": 3,
-  "src/components/decks/lean-line.tsx": 2,
-  "src/components/decks/lineup/among-card.tsx": 1,
-  "src/components/decks/lineup/deck-link.tsx": 1,
-  "src/components/decks/lineup/lineup-view.tsx": 1,
-  "src/components/decks/lineup/worth-card.tsx": 1,
-  "src/components/decks/mana-evidence.tsx": 2,
-  "src/components/decks/mana-improve-door.tsx": 6,
-  "src/components/decks/mana-sections.tsx": 1,
-  "src/components/decks/manifest-rows.tsx": 3,
-  "src/components/decks/notices-body.tsx": 1,
-  "src/components/decks/pending-banner.tsx": 2,
-  "src/components/decks/precons/announced-parts.tsx": 1,
-  "src/components/decks/precons/precon-door.tsx": 1,
 
   // S4 (18 files)
   "src/components/decks/precons/precon-pick-view.tsx": 1,

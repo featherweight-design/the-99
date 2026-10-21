@@ -33,7 +33,7 @@ const INNER_EDGE = "pointer-events-none absolute inset-0 rounded-[inherit] shado
 /** 2px `--accent`, 2px off (STATES H8, C3). */
 export const FOCUS_RING = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 /** The `new` tag (design table: `new` tag). */
-export const NEW_TAG = "flex-none rounded-[4px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_45%,transparent)] px-[5px] font-mono text-[10px] leading-[16px] tracking-[0.06em] text-[color:var(--accent)]";
+export const NEW_TAG = "flex-none rounded-[4px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_45%,transparent)] px-[5px] font-mono text-[10px] leading-[16px] tracking-[0.06em] text-[color:var(--accent-text)]";
 
 /** A set's dots: its revealed commanders' identities, in WUBRG order. */
 export function setIdentity(commanders: readonly RevealedCommander[]): string[] {

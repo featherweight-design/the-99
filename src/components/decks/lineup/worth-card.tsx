@@ -49,7 +49,7 @@ export function WorthBody({ decks, chosenId, pricesAsOf, now }: { decks: readonl
                 <span className={`anim-grow-x origin-left absolute top-[5px] bottom-[5px] left-0 rounded-r-[3px] ${on ? "bg-[var(--accent)]" : "bg-[var(--fg-muted)] opacity-75"}`} style={{ width: pct(r.share) }} />
                 <span className="absolute -top-[2px] -bottom-[2px] border-l border-dashed border-l-[color:var(--fg-body)]" style={{ left: pct(med) }} />
               </div>
-              <span className={`whitespace-nowrap text-right font-mono text-[11.5px] [grid-area:f] ${on ? "font-semibold text-[color:var(--accent)]" : "text-[color:var(--fg)]"}`}>{copy.money(r.cents)}</span>
+              <span className={`whitespace-nowrap text-right font-mono text-[11.5px] [grid-area:f] ${on ? "font-semibold text-[color:var(--accent-text)]" : "text-[color:var(--fg)]"}`}>{copy.money(r.cents)}</span>
             </div>
           );
         })}

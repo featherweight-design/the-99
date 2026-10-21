@@ -149,7 +149,7 @@ describe("LineupView: brackets and colors", () => {
     draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, build: b })) }, "spread,among");
     expect(within(card("among")).getByRole("combobox", { name: "Choose a deck" })).toBeTruthy();
     expect(card("spread").querySelector('[class*="border-[color:var(--accent)]"]')).toBeNull();
-    expect(card("spread").querySelector('[class*="text-[color:var(--accent)]"]')).toBeNull();
+    expect(card("spread").querySelector('[class*="text-[color:var(--accent-text)]"]')).toBeNull();
     expect([...card("spread").querySelectorAll("[data-stats-color] [aria-hidden] > span")].some((s) => (s as HTMLElement).style.boxShadow)).toBe(false);
   });
 });
@@ -190,7 +190,7 @@ describe("LineupView: among, jobs and worth", () => {
     fireEvent.change(within(card("among")).getByRole("combobox"), { target: { value: "brago" } });
     expect(within(card("among").querySelector('[data-stats-strip="valueCents"]') as HTMLElement).getByText("1st of 3")).toBeTruthy();
     expect(card("jobs").querySelector('[data-stats-job-row="brago"]')?.className).toContain("shadow-");
-    expect(within(card("worth")).getByRole("link", { name: "HD - Brago".replace("HD - ", "") }).className).toContain("text-[color:var(--accent)]");
+    expect(within(card("worth")).getByRole("link", { name: "HD - Brago".replace("HD - ", "") }).className).toContain("text-[color:var(--accent-text)]");
   });
 
   it("sorts Jobs by a pressed column, most first, and says which", () => {

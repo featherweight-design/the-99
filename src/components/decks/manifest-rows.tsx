@@ -79,7 +79,7 @@ export function ManifestRows({
             <button
               type="button"
               onClick={onLogGame}
-              className="flex h-[44px] flex-none items-center rounded-[6px] px-[12px] text-[12.5px] font-semibold text-[color:var(--accent)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:h-[38px]"
+              className="flex h-[44px] flex-none items-center rounded-[6px] px-[12px] text-[12.5px] font-semibold text-[color:var(--accent-text)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:h-[38px]"
             >
               {copy.logGame}
             </button>
@@ -107,7 +107,7 @@ export function ManifestRows({
             <button
               type="button"
               onClick={onDescribe}
-              className="flex h-[44px] flex-none items-center rounded-[6px] px-[12px] text-[12.5px] font-semibold text-[color:var(--accent)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:h-[38px]"
+              className="flex h-[44px] flex-none items-center rounded-[6px] px-[12px] text-[12.5px] font-semibold text-[color:var(--accent-text)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] md:h-[38px]"
             >
               {row.actionLabel}
             </button>
@@ -179,7 +179,7 @@ function Mark({ kind }: { kind: "pending" | "read" | "none" | "writing" }) {
       {kind === "pending" ? (
         <span className="size-[5px] rounded-full" style={{ background: "var(--fg-locked)" }} />
       ) : kind === "read" ? (
-        <span className="text-[12px] font-semibold leading-none" style={{ color: "var(--accent)" }}>
+        <span className="text-[12px] font-semibold leading-none" style={{ color: "var(--accent-text)" }}>
           ✓
         </span>
       ) : kind === "writing" ? (

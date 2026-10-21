@@ -130,7 +130,7 @@ function ArticleLink({ label }: { label: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={copy.newTab(label)}
-      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
+      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
     >
       {label}
       <LinkOut />
@@ -158,7 +158,7 @@ export function NeedsExplainer() {
           onClick={() => setOpen((was) => !was)}
           aria-expanded={open}
           aria-controls={open ? panelId : undefined}
-          className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent)] md:min-h-[32px]"
+          className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent-text)] md:min-h-[32px]"
         >
           <span className={open ? "" : "border-b border-b-[color:var(--accent-dim)] pb-[1px]"}>{copy.needs.toggle}</span>
         </button>

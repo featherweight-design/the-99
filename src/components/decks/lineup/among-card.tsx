@@ -55,7 +55,7 @@ export function AmongBody({ decks, chosen, onChoose }: { decks: readonly LineupD
                     ))}
                     <span className="absolute top-[17px] -ml-[1px] h-[20px] w-[2px] bg-[var(--fg)]" style={{ left: pct(s.median.at) }} />
                     <span className="absolute top-[21px] -ml-[6px] h-[12px] w-[12px] rounded-full bg-[var(--accent)] shadow-[0_0_0_2px_var(--surface-sunken)]" style={{ left: pct(s.chosen.at) }} />
-                    <span className="absolute top-0 whitespace-nowrap font-mono text-[11px] font-semibold text-[color:var(--accent)]" style={edge}>{figure(key, s.chosen.value)}</span>
+                    <span className="absolute top-0 whitespace-nowrap font-mono text-[11px] font-semibold text-[color:var(--accent-text)]" style={edge}>{figure(key, s.chosen.value)}</span>
                   </div>
                   <span className="flex flex-col items-end gap-[1px]">
                     <span className="whitespace-nowrap font-mono text-[12px] text-[color:var(--fg)]">{copy.rank(s.chosen.rank, s.total, s.chosen.tied)}</span>

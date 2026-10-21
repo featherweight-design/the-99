@@ -23,7 +23,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — step label */}
         <p
           className="font-mono uppercase text-[10px] tracking-[0.14em] md:tracking-[0.16em]"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "var(--accent-text)" }}
         >
           Step 3 of 3
         </p>

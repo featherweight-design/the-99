@@ -18,7 +18,7 @@ export function DeckName({ id, name, identity, small = false, accent = false, bo
       <IdentityMark identity={identity} />
       <Link
         href={`/decks/${id}`}
-        className={`min-w-0 truncate underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] ${small ? "text-[12.5px]" : "text-[13px]"} leading-[1.4] ${accent ? "text-[color:var(--accent)]" : "text-[color:var(--fg)]"} ${bold ? "font-semibold" : ""}`}
+        className={`min-w-0 truncate underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] ${small ? "text-[12.5px]" : "text-[13px]"} leading-[1.4] ${accent ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg)]"} ${bold ? "font-semibold" : ""}`}
       >
         {name}
       </Link>

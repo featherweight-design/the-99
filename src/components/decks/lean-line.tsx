@@ -88,7 +88,7 @@ export function LeanLine({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="self-start mt-[2px] inline-flex min-h-[44px] md:min-h-0 items-center gap-[6px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--accent)]"
+        className="self-start mt-[2px] inline-flex min-h-[44px] md:min-h-0 items-center gap-[6px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--accent-text)]"
       >
         {/* The arrow because it opens a sheet: every opener on the tab carries one (§2). */}
         <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">{copy.lean.open}</span>
@@ -295,7 +295,7 @@ function ReasoningModal({
               href={SPELLBOOK_SOURCE.variantUrl(receipt.combo.variantId)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-[44px] md:min-h-0 items-center font-mono text-[10.5px] no-underline text-[color:var(--accent)]"
+              className="inline-flex min-h-[44px] md:min-h-0 items-center font-mono text-[10.5px] no-underline text-[color:var(--accent-text)]"
             >
               <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{copy.provenance.source(copy.receipt.spellbook)}</span>
             </a>

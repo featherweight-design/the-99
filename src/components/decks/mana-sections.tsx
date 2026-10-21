@@ -122,7 +122,7 @@ function CardNames({ pattern, ids, art }: { pattern: PatternEvidence; ids: Reado
             type="button"
             aria-expanded={all}
             onClick={() => setAll((v) => !v)}
-            className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent)] md:min-h-0"
+            className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent-text)] md:min-h-0"
           >
             {all ? copy.patterns.fewer : copy.patterns.more(hidden)}
           </button>

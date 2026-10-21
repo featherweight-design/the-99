@@ -261,7 +261,7 @@ export function ImproveDoor({
           type="button"
           aria-expanded={one ? undefined : false}
           onClick={open}
-          className="inline-flex h-[44px] flex-[1_1_100%] cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[16px] text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-[32px] md:flex-none transition-colors"
+          className="inline-flex h-[44px] flex-[1_1_100%] cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[16px] text-[13px] font-semibold text-[color:var(--accent-text)] hover:bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-[32px] md:flex-none transition-colors"
         >
           {copy.door.button}
         </button> : null}
@@ -423,7 +423,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
           {state.kind === "failed" ? null : <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{have}</span>}
         </div>
         {onChange ? (
-          <button type="button" onClick={onChange} className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent)] md:min-h-[32px]">
+          <button type="button" onClick={onChange} className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--accent-text)] md:min-h-[32px]">
             {copy.help.change}
           </button>
         ) : null}
@@ -434,7 +434,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
             <span className="mt-[1px] text-[color:var(--danger)]"><FailureMark size={18} label={copy.help.failedMark} /></span>
             <p className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.help.failed(word)}</p>
           </div>
-          <button type="button" onClick={onRetry} className="inline-flex h-[44px] w-full cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[14px] text-[13px] font-semibold text-[color:var(--accent)] md:h-[32px] md:w-auto md:self-start">
+          <button type="button" onClick={onRetry} className="inline-flex h-[44px] w-full cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[14px] text-[13px] font-semibold text-[color:var(--accent-text)] md:h-[32px] md:w-auto md:self-start">
             {copy.help.retry}
           </button>
         </div>
@@ -449,7 +449,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
                 aria-expanded={how}
                 aria-describedby={how ? howId : undefined}
                 onClick={() => setHow((v) => !v)}
-                className={`inline-flex size-[18px] cursor-pointer items-center justify-center rounded-full border font-sans text-[10.5px] font-semibold ${how ? "border-[color:var(--accent)] text-[color:var(--accent)]" : "border-[color:var(--fg-faint)] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] transition-colors"}`}
+                className={`inline-flex size-[18px] cursor-pointer items-center justify-center rounded-full border font-sans text-[10.5px] font-semibold ${how ? "border-[color:var(--accent)] text-[color:var(--accent-text)]" : "border-[color:var(--fg-faint)] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] transition-colors"}`}
               >
                 i
               </button>
@@ -555,7 +555,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
               target="_blank"
               rel="noopener noreferrer"
               aria-label={copy.help.buyAria(staple.name)}
-              className="text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
+              className="text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
               {copy.help.buyLink}
             </a>}
@@ -589,7 +589,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
             onClick={() => onApply(trade)}
             aria-disabled={busy !== null || undefined}
             disabled={busy !== null}
-            className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
+            className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
             {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.out.name)}
           </button>
