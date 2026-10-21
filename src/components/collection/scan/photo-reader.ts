@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SCAN_MODEL } from "../../../lib/card-scan/match";
 import { lookupCard } from "../../../lib/scan/lookup";
 import type { Source } from "../../../lib/scan/pipeline";
@@ -173,7 +173,9 @@ export function usePhotoReader(
   const rowsRef = useRef(rows);
   // The mode at each add, not at the press: a change mid-batch applies to the cards after it, as on the camera.
   const modeRef = useRef(mode);
-  useEffect(() => {
+  // A layout effect, so the refs hold what is on screen before a press can reach it: a passive effect can still be
+  // pending when a Sure row is drawn and pressed, and the press then finds no sure row and adds nothing.
+  useLayoutEffect(() => {
     rowsRef.current = rows;
     modeRef.current = mode;
   });
