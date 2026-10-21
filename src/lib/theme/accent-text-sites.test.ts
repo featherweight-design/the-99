@@ -44,25 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S1 (17 files)
-  "src/components/decks/all-brackets-sheet.tsx": 1,
-  "src/components/decks/analysis-banner.tsx": 1,
-  "src/components/decks/analysis-empty.tsx": 1,
-  "src/components/decks/arrival-strip.tsx": 2,
-  "src/components/decks/auto-tag.tsx": 1,
-  "src/components/decks/benchmark-ledger.tsx": 1,
-  "src/components/decks/benchmarks-block.tsx": 1,
-  "src/components/decks/bracket-climb.tsx": 2,
-  "src/components/decks/builder-shell.tsx": 2,
-  "src/components/decks/builder-spine.tsx": 1,
-  "src/components/decks/builder-tabs.tsx": 1,
-  "src/components/decks/card-search-row.tsx": 1,
-  "src/components/decks/cart/cart-got-it.tsx": 1,
-  "src/components/decks/cart/cart-view.tsx": 1,
-  "src/components/decks/cart/deck-select.tsx": 1,
-  "src/components/decks/change-commander-banner.tsx": 2,
-  "src/components/decks/change-commander-review.tsx": 1,
-
   // S2 (17 files)
   "src/components/decks/clear-auto.tsx": 1,
   "src/components/decks/commit-sheet.tsx": 2,

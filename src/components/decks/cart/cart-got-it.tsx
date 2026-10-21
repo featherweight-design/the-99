@@ -316,7 +316,7 @@ function CartConfirm({
                   setPicked(null);
                   setAnnounce(copy.confirm.cleared(firstListed, line.name));
                 }}
-                className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[12px] text-[color:var(--accent)]"
+                className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-[12px] text-[color:var(--accent-text)]"
               >
                 {copy.confirm.backToDefault}
               </button>

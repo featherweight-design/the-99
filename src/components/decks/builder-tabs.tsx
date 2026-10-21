@@ -83,7 +83,7 @@ function Tab({
           className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
             // A zero count is never accent, even on the active tab: accent is the
             // colour of something worth walking over to.
-            selected && count > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
+            selected && count > 0 ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"
           }`}
         >
           {count}

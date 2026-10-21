@@ -54,7 +54,7 @@ export function CommanderNameLine({ state, tileClass }: { state: DraftState; til
   const pair = state.commander.to.partnerOracleId !== null;
   return (
     <li ref={ref} tabIndex={-1} data-testid="banner-commander-line" data-commander-line="true" className="flex items-center gap-[9px] min-h-[34px] outline-none">
-      <span aria-hidden="true" className="flex-none w-[13px] font-mono text-[12px] text-[color:var(--accent)]">⇄</span>
+      <span aria-hidden="true" className="flex-none w-[13px] font-mono text-[12px] text-[color:var(--accent-text)]">⇄</span>
       <span className="flex-1 min-w-0 text-[13px] leading-[1.35] text-[color:var(--fg)]">
         {deckVersioningCopy.history.commanderChange(pairName(state, state.commander.from), pairName(state, state.commander.to))}
       </span>
@@ -79,7 +79,7 @@ export function CommanderSentence({ state, sentenceClass }: { state: DraftState;
   return (
     // The money sentence's type, on its own 6px foot (handoff §4): the money line sits directly under.
     <p ref={ref} tabIndex={-1} data-testid="banner-commander-sentence" data-commander-line="true" className={twMerge(sentenceClass, "mb-[6px] md:mb-[6px] outline-none")}>
-      <span aria-hidden="true" className="mr-[7px] font-mono text-[12px] text-[color:var(--accent)]">⇄</span>
+      <span aria-hidden="true" className="mr-[7px] font-mono text-[12px] text-[color:var(--accent-text)]">⇄</span>
       {text}
     </p>
   );

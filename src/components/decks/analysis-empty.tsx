@@ -269,7 +269,7 @@ export function AnalysisEmpty({
                       type="button"
                       onClick={see.onPress}
                       data-testid="press-note-see"
-                      className="cursor-pointer whitespace-nowrap border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--accent)] hover:border-[color:var(--accent-hover)] hover:text-[color:var(--accent-hover)] transition-colors"
+                      className="cursor-pointer whitespace-nowrap border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--accent-text)] hover:border-[color:var(--accent-hover)] hover:text-[color:var(--accent-hover)] transition-colors"
                     >
                       {see.label} <span aria-hidden="true">→</span>
                     </button>

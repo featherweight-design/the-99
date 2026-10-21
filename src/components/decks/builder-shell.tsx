@@ -2102,7 +2102,7 @@ export function BuilderShell({
                       {/* §Front card — "99" numeral */}
                       <span
                         className="font-display font-extrabold text-[18px]"
-                        style={{ color: "var(--accent)" }}
+                        style={{ color: "var(--accent-text)" }}
                       >
                         99
                       </span>
@@ -2150,7 +2150,7 @@ export function BuilderShell({
                     <button
                       type="button"
                       onClick={() => setView("consider")}
-                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent hover:text-accent-hover active:text-accent-mid transition-colors"
+                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent-text hover:text-accent-hover active:text-accent-mid transition-colors"
                     >
                       {recommendationsCopy.sweptEmpty.cta}
                     </button>

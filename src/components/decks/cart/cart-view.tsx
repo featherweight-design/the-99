@@ -206,7 +206,7 @@ export function CartView({
           <div className="flex max-w-[420px] flex-col items-center gap-[8px] text-center">
             <h2 className="m-0 font-display text-[20px] text-[color:var(--fg)]">{copy.empty.title}</h2>
             <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)]">{copy.empty.body(cart.totalDecks)}</p>
-            <Link href="/decks" data-cart-empty-back className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent)]">
+            <Link href="/decks" data-cart-empty-back className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent-text)]">
               {copy.empty.back}
               <PendingReporter href="/decks" />
             </Link>

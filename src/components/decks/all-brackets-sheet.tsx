@@ -167,7 +167,7 @@ function Note({
 function SourceLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noreferrer"
-      className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent)] md:min-h-0">
+      className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] text-[color:var(--accent-text)] md:min-h-0">
       <span className="border-b border-b-[color:var(--accent)] border-[color:var(--accent)]">{children}</span>
     </a>
   );

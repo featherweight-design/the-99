@@ -76,7 +76,7 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
             " text-[9.5px] leading-none" +
             " border bg-elevated" +
             (active
-              ? " text-accent border-accent-shadow"
+              ? " text-accent-text border-accent-shadow"
               : " text-fg-locked border-transparent")
           }
         >
