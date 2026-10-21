@@ -484,7 +484,7 @@ export function ConsiderPanel({
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="p-0 text-[12.5px] underline border-none bg-transparent cursor-pointer text-accent hover:text-accent-hover transition-colors"
+              className="p-0 text-[12.5px] underline border-none bg-transparent cursor-pointer text-accent-text hover:text-accent-hover transition-colors"
             >
               {addPanelCopy.degraded.retry}
             </button>

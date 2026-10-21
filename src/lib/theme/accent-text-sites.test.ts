@@ -44,26 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S2 (17 files)
-  "src/components/decks/clear-auto.tsx": 1,
-  "src/components/decks/commit-sheet.tsx": 2,
-  "src/components/decks/consider-panel.tsx": 1,
-  "src/components/decks/copy-line.tsx": 1,
-  "src/components/decks/cuts-panel.tsx": 2,
-  "src/components/decks/deck-card-tile.tsx": 2,
-  "src/components/decks/deck-card-undo-tile.tsx": 1,
-  "src/components/decks/deck-card.tsx": 1,
-  "src/components/decks/deck-stats-results.tsx": 1,
-  "src/components/decks/decklist-row.tsx": 1,
-  "src/components/decks/decks-zero.tsx": 1,
-  "src/components/decks/declaration.tsx": 1,
-  "src/components/decks/export-dialog.tsx": 1,
-  "src/components/decks/fan-shuffle.tsx": 1,
-  "src/components/decks/findings-block.tsx": 1,
-  "src/components/decks/game-log-form.tsx": 2,
-  "src/components/decks/games-panel.tsx": 3,
-
-
   // S4 (18 files)
   "src/components/decks/precons/precon-pick-view.tsx": 1,
   "src/components/decks/precons/precon-suggestion.tsx": 2,

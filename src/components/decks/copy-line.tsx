@@ -69,7 +69,7 @@ export function CopyLine({
       aria-controls={panel}
       aria-label={copy.changeAria(cardName)}
       onClick={toggle}
-      className="text-[13.5px] min-h-[44px] flex-none text-[color:var(--accent)]"
+      className="text-[13.5px] min-h-[44px] flex-none text-[color:var(--accent-text)]"
     >
       {open ? copy.done : copy.change}
     </button>

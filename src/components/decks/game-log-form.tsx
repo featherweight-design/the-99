@@ -499,7 +499,7 @@ export function GameLogForm({
                     "font-semibold text-[14px] cursor-pointer border " +
                     (podSizeHeld(n, seats.length) ? "opacity-[.36] " : "") +
                     (on
-                      ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-accent"
+                      ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-accent-text"
                       : "border-border-strong bg-transparent text-fg-body")
                   }
                 >
@@ -566,7 +566,7 @@ export function GameLogForm({
         <div className="flex items-baseline gap-[8px] mb-[8px] md:mb-[9px]">
           <label
             htmlFor={noteId}
-            className="font-mono text-[9.5px] md:text-[10px] tracking-[0.14em] uppercase text-[color:var(--accent)]"
+            className="font-mono text-[9.5px] md:text-[10px] tracking-[0.14em] uppercase text-[color:var(--accent-text)]"
           >
             {deckTuningGamesCopy.note.label}
           </label>

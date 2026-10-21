@@ -259,7 +259,7 @@ export function CommitSheet({
                 </div>
                 <a
                   href="#review"
-                  className="hidden md:block font-mono text-[10.5px] mb-[13px] text-[color:var(--accent)]"
+                  className="hidden md:block font-mono text-[10.5px] mb-[13px] text-[color:var(--accent-text)]"
                 >
                   {copy.buyBackLink(state.unfreeCount)}
                 </a>
@@ -273,7 +273,7 @@ export function CommitSheet({
                     href={shopHref}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex items-center justify-center w-full md:w-auto min-h-[44px] md:min-h-0 md:py-[9px] md:px-[14px] rounded-[8px] md:rounded-[7px] font-sans font-semibold text-[13px] md:text-[12.5px] no-underline text-[color:var(--accent)] [border:1px_solid_var(--border-strong)]"
+                    className="inline-flex items-center justify-center w-full md:w-auto min-h-[44px] md:min-h-0 md:py-[9px] md:px-[14px] rounded-[8px] md:rounded-[7px] font-sans font-semibold text-[13px] md:text-[12.5px] no-underline text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)]"
                   >
                     {copy.linkOut}
                   </a>

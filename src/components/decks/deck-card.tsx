@@ -112,7 +112,7 @@ function detailFor(
   // uncommitted short deck says `Draft`, so keying on the word would have
   // dropped this line from every brew that had it.
   if (statusDetail === null && figureFor === "Building" && deck.inUseElsewhere > 0) {
-    return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
+    return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent-text)" };
   }
   // SECOND fallback, ranked after the clause above: that one answers "what is
   // holding this deck up", and a proxy is not holding anything up.

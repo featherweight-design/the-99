@@ -27,7 +27,7 @@ function CardFanMark() {
         className={`${CARD} left-[28px] top-[11px] border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] sm:left-[32px] sm:top-[13px]`}
       />
       <div
-        className={`${CARD} left-[44px] top-[16px] flex rotate-[14deg] items-center justify-center border-[color:var(--accent)] bg-[color:var(--surface-inset)] font-display text-[18px] font-bold text-[color:var(--accent)] sm:left-[50px] sm:top-[18px] sm:rotate-[15deg] sm:text-[20px]`}
+        className={`${CARD} left-[44px] top-[16px] flex rotate-[14deg] items-center justify-center border-[color:var(--accent)] bg-[color:var(--surface-inset)] font-display text-[18px] font-bold text-[color:var(--accent-text)] sm:left-[50px] sm:top-[18px] sm:rotate-[15deg] sm:text-[20px]`}
       >
         99
       </div>

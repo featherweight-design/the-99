@@ -48,7 +48,7 @@ export function FanShuffle({ size }: { size: keyof typeof SIZES }) {
           }}
         >
           {k === 2 ? (
-            <span className="font-display font-extrabold" style={{ fontSize: s.face, color: "var(--accent)" }}>
+            <span className="font-display font-extrabold" style={{ fontSize: s.face, color: "var(--accent-text)" }}>
               99
             </span>
           ) : null}

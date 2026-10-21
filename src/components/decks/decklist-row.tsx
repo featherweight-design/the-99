@@ -1089,7 +1089,7 @@ function UndoRow({
             className={`flex-none flex items-center px-0 ${TOUCH_HIT}
               bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow
               text-[12.5px] font-semibold leading-[1.4]
-              text-accent hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
+              text-accent-text hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
             aria-label={addPanelCopy.undo.actionAria(deckRowName(card))}
           >
             {addPanelCopy.undo.action}

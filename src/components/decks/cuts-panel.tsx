@@ -498,7 +498,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
       <div className="flex flex-col gap-[9px] md:flex-row md:items-center md:justify-between md:gap-[12px]">
         <span className="flex min-w-0 items-center gap-[10px]">
           <span className="w-[86px] flex-none rounded-full px-[8px] py-[2px] text-center font-mono text-[9px] uppercase tracking-[0.1em]"
-            style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}>{copy.suggestion}</span>
+            style={{ color: "var(--accent-text)", border: "1px solid var(--accent-dim)" }}>{copy.suggestion}</span>
           <span aria-hidden {...previewHandlers} className="relative h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] [border:1px_solid_var(--border-strong)]">
             {item.cutImageUri ? <ArtLayer src={item.cutImageUri} /> : null}
           </span>
@@ -509,7 +509,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         </span>
         <span className="flex gap-[8px] md:flex-none md:gap-[7px]">
           <button type="button" disabled={busy !== null} onClick={() => void answer("cut")}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] transition-colors">
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] transition-colors">
             {copy.cut}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer("keep")}

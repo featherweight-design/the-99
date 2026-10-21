@@ -27,7 +27,7 @@ export function Bead({ result, className }: { result: GameResult; className: str
   );
 }
 
-const LINK = "border-b border-b-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] font-mono text-[11px] text-[color:var(--accent)]";
+const LINK = "border-b border-b-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] font-mono text-[11px] text-[color:var(--accent-text)]";
 
 export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onLogGame?: () => void }) {
   const copy = deckStatsCopy.results;
