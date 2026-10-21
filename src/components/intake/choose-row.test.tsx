@@ -105,6 +105,8 @@ describe("a result row", () => {
     expect(screen.getByTestId("ownership-line").textContent).toContain("·bracket1-2·3 adds $32");
     // A short reading is a step brighter than the line.
     expect(screen.getByTestId("row-bracket").className).toContain("--fg-body");
+    // The label is read text, so it takes an ink that clears 4.5:1 on the card (--fg-locked does not).
+    expect(screen.getByTestId("row-bracket").firstElementChild!.className).toContain("--fg-muted");
     unmount();
     // Reached: the number alone, in the line's own color.
     const reached = draw(row(), { state: "ready", figures: { ...figures, bracket: { target: 3, permits: [3], buyCents: null } } });

@@ -312,7 +312,7 @@ function BracketSegments({ bracket }: { bracket: NonNullable<TrialFigures["brack
     <>
       <Segment>
         <span data-testid="row-bracket" className={tone}>
-          <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-locked)]">{copy.results.rowBracket}</span>
+          <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-muted)]">{copy.results.rowBracket}</span>
           {copy.results.rowBracketValue(short ? bracket.permits : [bracket.target])}
         </span>
       </Segment>
@@ -374,7 +374,7 @@ function OwnershipLine({
         <div className="flex flex-wrap items-center gap-y-[3px] -ml-[14px]">
           <Segment>
             {ownOnly && (
-              <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-locked)]">{copy.results.rowCommander}</span>
+              <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-muted)]">{copy.results.rowCommander}</span>
             )}
             <Mark mark={mark} />
           </Segment>
