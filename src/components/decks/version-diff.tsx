@@ -242,7 +242,7 @@ function InitialPanel() {
     <div className="flex items-start gap-[11px] rounded-[9px] px-[15px] py-[12px] max-w-[640px] bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--elevated)] [border-left:3px_solid_var(--accent)]">
       <span
         aria-hidden
-        className="flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full [border:1.5px_solid_var(--accent)] font-display font-bold text-[12px] text-[color:var(--accent)]"
+        className="flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full [border:1.5px_solid_var(--accent)] font-display font-bold text-[12px] text-[color:var(--accent-text)]"
       >
         i
       </span>

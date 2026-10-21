@@ -114,7 +114,7 @@ export function TokenControls({
         // 44 on a phone, 24 from md up; regular weight until it is held.
         className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
           byHand
-            ? "font-medium text-[color:var(--accent)]"
+            ? "font-medium text-[color:var(--accent-text)]"
             : "font-normal text-[color:var(--fg-muted)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
         }`}
       >

@@ -419,7 +419,7 @@ export function TuningHub({
                 >
                   {id ? (
                     // The mark's own ink by state (design table `TuningToolMark`), apart from its label's.
-                    <span style={{ color: active ? "var(--accent)" : view?.inert ? "var(--fg-locked)" : "var(--fg-body)" }}>
+                    <span style={{ color: active ? "var(--accent-text)" : view?.inert ? "var(--fg-locked)" : "var(--fg-body)" }}>
                       <TuningToolMark tool={id} size={14} />
                     </span>
                   ) : null}
@@ -501,7 +501,7 @@ const TILE_TARGETS: Partial<Record<TuningTool, TargetId>> = {
 function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
   const name = NAMES[view.tool];
   const targetRef = useTarget(TILE_TARGETS[view.tool] ?? null);
-  const markInk = view.running ? "var(--accent)" : view.inert ? "var(--fg-locked)" : "var(--fg-body)";
+  const markInk = view.running ? "var(--accent-text)" : view.inert ? "var(--fg-locked)" : "var(--fg-body)";
   const body = (
     <>
       <span className="flex items-center gap-[10px]">
@@ -524,7 +524,7 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
               <span aria-hidden="true" className="anim-dots h-[6px] w-[6px] rounded-full" style={{ background: "var(--accent)", boxShadow: "0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)" }} />
             ) : null}
             {view.status ? (
-              <span style={{ color: view.running ? "var(--accent)" : view.offer ? "var(--fg-muted)" : "var(--fg-faint)" }}>
+              <span style={{ color: view.running ? "var(--accent-text)" : view.offer ? "var(--fg-muted)" : "var(--fg-faint)" }}>
                 <span className="hidden md:inline">{view.status}</span>
                 <span className="md:hidden">{view.statusPhone}</span>
               </span>

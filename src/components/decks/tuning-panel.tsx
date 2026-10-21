@@ -1156,7 +1156,7 @@ export function TuningPanel({
               type="button"
               onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null || priorResult || reviewing))}
               aria-disabled={blocked || undefined}
-              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
+              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
             >
               {unchangedShown ? copy.unchangedCta : primary.label}
             </button>
@@ -1243,7 +1243,7 @@ function DescribingInPlace({
           type="button"
           onClick={onSave}
           disabled={saving || over}
-          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] disabled:cursor-default disabled:opacity-50"
+          className="h-[36px] rounded-[7px] px-[14px] text-[12.5px] font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] disabled:cursor-default disabled:opacity-50"
         >
           {descCopy.save}
         </button>

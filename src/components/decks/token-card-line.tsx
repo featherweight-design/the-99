@@ -35,7 +35,7 @@ export function TokenCardLine({ oracleId, onShowTokens }: { oracleId: string; on
         {state ? (
           <>
             <span aria-hidden> · </span>
-            <span className="font-mono text-[11px]" style={{ color: "var(--accent)" }}>{state}</span>
+            <span className="font-mono text-[11px]" style={{ color: "var(--accent-text)" }}>{state}</span>
           </>
         ) : null}
       </span>
@@ -44,7 +44,7 @@ export function TokenCardLine({ oracleId, onShowTokens }: { oracleId: string; on
           type="button"
           onClick={onShowTokens}
           aria-label={tokensCopy.details.linkAria}
-          className="ml-auto min-h-[44px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] md:min-h-0"
+          className="ml-auto min-h-[44px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)] md:min-h-0"
         >
           {tokensCopy.details.link}
         </button>

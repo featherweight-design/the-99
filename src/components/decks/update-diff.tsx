@@ -132,7 +132,7 @@ function Group({
           // Named unconditionally, unlike the menus: this container holds the
           // first four rows at rest, so it is on the page in both states.
           aria-controls={rowsId}
-          className="mt-[10px] font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
+          className="mt-[10px] font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent-text)] transition-colors"
         >
           {expanded ? copy.showFewer : copy.showMore(String(hidden ?? total - ROW_CAP))}
         </button>
@@ -466,7 +466,7 @@ function UnchangedGroup({ rows }: { rows: DeckUpdatePreview["unchanged"] }) {
         // Omitted while collapsed: this group renders nothing at rest, so the
         // id it would name does not exist yet.
         aria-controls={expanded ? rowsId : undefined}
-        className="font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
+        className="font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent-text)] transition-colors"
       >
         {expanded ? copy.showFewer : copy.unchangedDisclosure(String(copiesOf(rows)))}
       </button>

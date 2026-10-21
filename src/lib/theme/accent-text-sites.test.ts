@@ -84,27 +84,6 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/decks/stand-ins-sheet.tsx": 5,
   "src/components/decks/strip-rationale.tsx": 2,
 
-  // S5 (20 files)
-  "src/components/decks/suggestion-card.tsx": 3,
-  "src/components/decks/suggestion-line.tsx": 2,
-  "src/components/decks/suggestion-lists.tsx": 1,
-  "src/components/decks/swap-receipt.tsx": 1,
-  "src/components/decks/synopsis-overview.tsx": 2,
-  "src/components/decks/synopsis-version.tsx": 1,
-  "src/components/decks/token-card-line.tsx": 2,
-  "src/components/decks/token-deck-box.tsx": 1,
-  "src/components/decks/token-row.tsx": 1,
-  "src/components/decks/tokens-group.tsx": 1,
-  "src/components/decks/top-off-list.tsx": 3,
-  "src/components/decks/tuning-history.tsx": 5,
-  "src/components/decks/tuning-hub.tsx": 2,
-  "src/components/decks/tuning-panel.tsx": 2,
-  "src/components/decks/unresolved-banner.tsx": 1,
-  "src/components/decks/unresolved-row.tsx": 1,
-  "src/components/decks/update-diff-row.tsx": 1,
-  "src/components/decks/update-diff.tsx": 2,
-  "src/components/decks/version-diff.tsx": 1,
-  "src/components/decks/version-history.tsx": 4,
 
   // S6 (21 files)
   "src/components/collection/add-cards-sheet.tsx": 5,

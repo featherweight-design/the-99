@@ -138,7 +138,7 @@ export function SuggestionLine({
       onClick={() => answer("apply")}
       aria-disabled={busy !== null || undefined}
       disabled={busy !== null}
-      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-[32px] md:flex-none md:rounded-[7px] md:px-[13px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
+      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-[32px] md:flex-none md:rounded-[7px] md:px-[13px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
     >
       {busy === "apply" ? copy.working : isAdd ? copy.add : copy.cut}
     </button>
@@ -164,7 +164,7 @@ export function SuggestionLine({
         <span
           aria-hidden
           className="w-[12px] flex-none text-center font-mono text-[14px] font-semibold"
-          style={{ color: isAdd ? "var(--accent)" : "var(--fg-faint)" }}
+          style={{ color: isAdd ? "var(--accent-text)" : "var(--fg-faint)" }}
         >
           {isAdd ? "+" : "−"}
         </span>

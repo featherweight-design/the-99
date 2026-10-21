@@ -142,7 +142,7 @@ export function SwapReceiptRow({ receipt }: { receipt: SwapReceipt }) {
           onClick={() => void undo()}
           disabled={busy}
           aria-label={copy.undoSwapAria(receipt.cut, receipt.add)}
-          className={`flex-none inline px-0 text-[12.5px] leading-[1.4] [border-bottom:1px_solid_var(--accent-shadow)] ${TOUCH_HIT} font-semibold bg-transparent border-0 cursor-pointer disabled:opacity-50 text-[color:var(--accent)]`}
+          className={`flex-none inline px-0 text-[12.5px] leading-[1.4] [border-bottom:1px_solid_var(--accent-shadow)] ${TOUCH_HIT} font-semibold bg-transparent border-0 cursor-pointer disabled:opacity-50 text-[color:var(--accent-text)]`}
         >
           {copy.undoSwap}
         </button>
