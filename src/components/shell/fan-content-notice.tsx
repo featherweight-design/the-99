@@ -5,9 +5,10 @@ import { FAN_CONTENT_POLICY_URL, passageOneParts, fanContentNotice, policyLinkAr
  * after every page, signed in or out. It is page content, never `position: fixed`, never dismissible, and it carries no state:
  * a server component with no request API, which is also what lets another layout render it unchanged.
  *
- * INK IS `--fg-muted` ALONE (measured 6.61 to 7.35:1 on `--bg` in all six themes, `fan-content-notice.test.tsx`); `--fg-faint`
- * fails in two themes and is not used for text. The hairline is `--border`. The link keeps the notice's ink, underlined in
- * `--fg-faint` (a decorative line, 4.12:1 or better), `--fg` on hover, the shipped accent ring on focus.
+ * INK IS `--fg-muted` ALONE (measured 6.61 to 7.35:1 on `--bg` in all six themes, `fan-content-notice.test.tsx`). It was ruled
+ * when `--fg-faint` failed 4.5:1 in two themes; the text inks addendum has since lifted the faint ink, and the notice keeps the
+ * ink it was drawn in. The hairline is `--border`. The link keeps the notice's ink, underlined in `--fg-faint` (a decorative
+ * line, 5.28:1 or better), `--fg` on hover, the shipped accent ring on focus.
  *
  * Two mounts and only two, both in `shell.tsx`: after `ShellMain` inside the signed-in column, and after `children` in the
  * bare signed-out branch (`align="center"`, with its own gutter and the device's bottom inset). The signed-in column's own

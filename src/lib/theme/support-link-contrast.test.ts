@@ -33,7 +33,7 @@ describe("the support link", () => {
 });
 
 // The deletion warning's Plan and Packs labels name what deletion forfeits, so they take the same 4.5:1 floor on both
-// modal grounds, in the ink the component draws (the board's `--fg-faint` is under it in four themes).
+// modal grounds, in the ink the component draws (the board's `--fg-faint` was under it in four themes when this was drawn).
 describe("the deletion warning's balance labels", () => {
   const source = ON_SURFACE.find(([f]) => f === "delete-warning.tsx")![1];
   const label = /tracking-\[0\.12em\] text-\[color:var\(--([a-z-]+)\)\]">\{cell\.label\}/.exec(source);

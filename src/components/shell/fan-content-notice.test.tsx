@@ -90,10 +90,6 @@ describe("the notice's ink on --bg", () => {
     expect(ratio, name).toBeCloseTo(measured, 1);
   });
 
-  it("is why --fg-faint is not used for text: it fails in two themes", () => {
-    const failing = [...THEMES].filter(([, t]) => contrast(t.get("fg-faint")!, t.get("bg")!) < 4.5).map(([n]) => n).sort();
-    expect(failing).toEqual(["kamigawa", "phyrexia"]);
-  });
 });
 
 // A page that is SHORT must fill the screen, so the notice that follows it starts below the fold: the shell's 404 and its error
