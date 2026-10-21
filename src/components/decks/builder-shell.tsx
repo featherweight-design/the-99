@@ -2282,6 +2282,8 @@ export function BuilderShell({
             {(isDesktop || !unresolvedExpanded) && (
               <div
                 data-testid="quick-add-dock"
+                // A bar pinned over the window's foot: an open `[[` list keeps clear of it (card-tag-picker.tsx).
+                data-foot-bar=""
                 className={[
                   "sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]",
                   // On a phone the bar is for the All list only (Hugh, 2026-10-12): Shopping, Notes and Stats

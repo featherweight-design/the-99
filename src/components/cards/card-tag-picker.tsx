@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
-import { reveal } from "../../lib/ui/reveal";
+import { appScrolling, reveal } from "../../lib/ui/reveal";
 
 /** A card the surface holds, for the picker's local "In this deck" group. */
 export type DeckCardOption = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
@@ -23,6 +23,24 @@ type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 const GROUP_MAX = 5;
 const REMOTE_MIN_LETTERS = 2;
 const DEBOUNCE_MS = 150;
+/**
+ * The visible bottom raised past every shown bar pinned over the window's foot (`data-foot-bar`), walking up from
+ * `bottom`: a bar counts only while its foot meets the floor so far (the tab bar, then a dock sitting on it), so a
+ * sticky bar still in the page's flow above the foot is not over the list. A bar holding the field is not over it.
+ */
+function footFloor(bottom: number, field: Element): number {
+  const bars = [...document.querySelectorAll("[data-foot-bar]")]
+    .filter((b) => !b.contains(field) && getComputedStyle(b).display !== "none")
+    .map((b) => b.getBoundingClientRect())
+    .filter((r) => r.height > 0)
+    .sort((a, b) => b.bottom - a.bottom);
+  let floor = bottom;
+  for (const r of bars) if (r.bottom >= floor - 2 && r.top < floor) floor = r.top;
+  return floor;
+}
+
+/** The room the open list needs under the field: its phone cap (`max-h-[220px]` on the list) and its 4px gap. */
+const LIST_ROOM_PX = 224;
 
 export type CardTagPickerOptions = {
   value: string;
@@ -100,11 +118,55 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     return () => clearTimeout(timer);
   }, [open, query, deckCards, search, scoped]);
 
-  // Opening the picker brings the field to the top of the visible area (K9): a sticky bar and a phone
-  // keyboard would otherwise cover the list under it.
+  // Opening the picker brings the field to the top of the visible area (K9), but only when the list would not fit
+  // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
+  // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
+  // of view). The room is the list's phone cap, or the list itself where it is taller (from `md` it has no cap, and
+  // grows as the reader types, so it is measured again as it grows). It must end above the visible bottom: the
+  // visual viewport's (`getBoundingClientRect` is in layout-viewport coordinates and a keyboard pans the visible area
+  // inside it), or the top of a shown bar pinned over the window's foot (`data-foot-bar`: the tab bar, a page's
+  // dock), whichever is higher. A keyboard still rising when the list opens resizes the visual viewport, so that
+  // measures again too. A change while a reveal is moving the page (a list whose cap follows the scroll) waits until
+  // it has settled, so it never restarts the reveal it was caused by. Once the reader moves the page themselves (a
+  // wheel, a drag, a press outside the box), nothing more is revealed until the list opens again: a reveal they
+  // stopped is never started again behind them. Typing in the box is not that.
   useEffect(() => {
-    if (open) reveal(field.current, "start");
-  }, [open, field]);
+    const el = field.current;
+    if (!open || !el) return;
+    const vv = window.visualViewport;
+    const list = document.getElementById(`${id}-list`);
+    let later: ReturnType<typeof setTimeout> | null = null;
+    let readerMoved = false;
+    const check = () => {
+      if (later !== null) clearTimeout(later);
+      later = null;
+      if (readerMoved) return;
+      if (appScrolling()) { later = setTimeout(check, 120); return; }
+      const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
+      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
+      if (needed > floor) reveal(el, "start");
+    };
+    const moved = (e: Event) => {
+      if (e.type === "pointerdown" && e.target instanceof Node && el.contains(e.target)) return;
+      readerMoved = true;
+      if (later !== null) clearTimeout(later);
+      later = null;
+    };
+    const READER = ["wheel", "touchmove", "pointerdown"] as const;
+    for (const type of READER) window.addEventListener(type, moved, { capture: true, passive: true });
+    check();
+    vv?.addEventListener("resize", check);
+    // The list grows as the reader types; the field can grow on its own (an autosized textarea), moving the list down.
+    const grows = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    grows?.observe(el);
+    if (list) grows?.observe(list);
+    return () => {
+      for (const type of READER) window.removeEventListener(type, moved, { capture: true });
+      vv?.removeEventListener("resize", check);
+      grows?.disconnect();
+      if (later !== null) clearTimeout(later);
+    };
+  }, [open, field, id]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;
   const current = lookup && answer?.query === query ? answer : null;

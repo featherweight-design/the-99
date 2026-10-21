@@ -386,6 +386,8 @@ export function IntakeForm({
       <div
         ref={dockRef}
         data-testid="choose-dock"
+        // A bar pinned over the window's foot: an open `[[` list keeps clear of it (card-tag-picker.tsx).
+        data-foot-bar=""
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
         <button {...pressProps} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
