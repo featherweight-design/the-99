@@ -94,7 +94,7 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
             {text.lines.link ? (
               <>
                 {" "}
-                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent)] underline underline-offset-2">
+                <Link href={text.lines.link.href} prefetch={false} className="-my-[11px] inline-block py-[11px] text-[color:var(--accent-text)] underline underline-offset-2">
                   {text.lines.link.label}
                   <PendingReporter href={text.lines.link.href} />
                 </Link>
@@ -125,7 +125,7 @@ export function ArrivalDismiss({ onDismiss, label = copy.dismiss }: { onDismiss:
       type="button"
       onClick={onDismiss}
       aria-label={label}
-      className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center bg-transparent border-0 p-0 -my-[12px] -mr-[12px] ml-auto text-[12px] md:h-[32px] md:w-[32px] md:-my-[6px] md:-mr-[8px] md:text-[13px] text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
+      className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center bg-transparent border-0 p-0 -my-[12px] -mr-[12px] ml-auto text-[12px] md:h-[32px] md:w-[32px] md:-my-[6px] md:-mr-[8px] md:text-[13px] text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent-text)] transition-colors"
     >
       <span aria-hidden>✕</span>
     </button>

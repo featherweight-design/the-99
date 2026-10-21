@@ -36,7 +36,7 @@ export function DeckSelect({
     <button
       type="button"
       onClick={() => onAll(!allOn)}
-      className="min-h-[44px] flex-none text-[13px] text-[color:var(--accent)]"
+      className="min-h-[44px] flex-none text-[13px] text-[color:var(--accent-text)]"
     >
       {allOn ? copy.selections.unselectAll : copy.selections.selectAll}
     </button>

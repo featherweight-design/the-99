@@ -362,7 +362,7 @@ describe("QuickAddBar — result rows", () => {
     // once as the desktop type-line cell — exactly as it already does the type line.
     const hits = screen.getAllByText("Olymp");
     expect(hits).toHaveLength(2);
-    for (const hit of hits) expect(hit).toHaveStyle({ color: "var(--accent)" });
+    for (const hit of hits) expect(hit).toHaveStyle({ color: "var(--accent-text)" });
   });
 
   it("leaves an ordinary row's meta line alone", async () => {
@@ -380,7 +380,7 @@ describe("QuickAddBar — result rows", () => {
 
     // "stu" is mid-name here, so a prefix-only highlight would find nothing.
     const hit = screen.getByText("Stu");
-    expect(hit).toHaveStyle({ color: "var(--accent)" });
+    expect(hit).toHaveStyle({ color: "var(--accent-text)" });
     expect(hit.parentElement).toHaveTextContent("Rhystic Study");
   });
 

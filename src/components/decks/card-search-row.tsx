@@ -37,7 +37,7 @@ export function HighlightedName({
   return (
     <>
       {name.slice(0, at)}
-      <span style={{ color: "var(--accent)" }}>{name.slice(at, end)}</span>
+      <span style={{ color: "var(--accent-text)" }}>{name.slice(at, end)}</span>
       {name.slice(end)}
     </>
   );

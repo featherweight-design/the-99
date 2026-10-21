@@ -75,7 +75,7 @@ export function CommanderSection({ state }: { state: DraftState }) {
   return (
     <section data-testid="review-commander" data-commander-change="true" className="mb-[16px] flex flex-col md:mb-[20px]">
       <div className="mb-[10px] flex items-baseline justify-between gap-[10px] pb-[10px] [border-bottom:1px_solid_var(--elevated)]">
-        <h2 className="m-0 flex-none font-mono text-[11px] tracking-[0.16em] uppercase" style={{ color: "var(--accent)" }}>
+        <h2 className="m-0 flex-none font-mono text-[11px] tracking-[0.16em] uppercase" style={{ color: "var(--accent-text)" }}>
           {pair ? copy.review.headingPair : copy.review.heading}
         </h2>
         <span className="text-right font-mono text-[10px] text-[color:var(--fg-locked)]">{note}</span>
