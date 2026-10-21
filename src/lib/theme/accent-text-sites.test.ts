@@ -15,8 +15,10 @@ const SRC = join(ROOT, "src");
 
 const IN_CODE = [
   /text-\[color:var\(--accent\)\]/g, // the arbitrary-value class, under any variant
+  /text-\[var\(--accent\)\]/g, // the same class without the type hint
+  /(?<![\w-])\[color:var\(--accent\)\]/g, // the arbitrary property, `[color:...]`
   /\btext-accent\b(?!-)/g, // the @theme utility; text-accent-text and text-accent-hover are other tokens
-  /(?<![\w-])color:\s*["']var\(--accent\)["']/g, // an inline style
+  /(?<![\w-])color:[^,;}\n]*?["']var\(--accent\)["']/g, // an inline style, plain or in a ternary
 ];
 const IN_CSS = /(?<![\w-])color:\s*var\(--accent\)(?![\w-])/g;
 
@@ -84,7 +86,7 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/decks/got-it-receipt.tsx": 4,
   "src/components/decks/group-toggle.tsx": 1,
   "src/components/decks/guided-banner.tsx": 1,
-  "src/components/decks/last-slots-strip.tsx": 2,
+  "src/components/decks/last-slots-strip.tsx": 3,
   "src/components/decks/lean-line.tsx": 2,
   "src/components/decks/lineup/among-card.tsx": 1,
   "src/components/decks/lineup/deck-link.tsx": 1,
@@ -99,11 +101,11 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/decks/precons/announced-parts.tsx": 1,
   "src/components/decks/precons/precon-door.tsx": 1,
 
-  // S4 (17 files)
+  // S4 (18 files)
   "src/components/decks/precons/precon-pick-view.tsx": 1,
   "src/components/decks/precons/precon-suggestion.tsx": 2,
   "src/components/decks/precons/precon-tile.tsx": 1,
-  "src/components/decks/provenance-line.tsx": 3,
+  "src/components/decks/provenance-line.tsx": 4,
   "src/components/decks/provenance-panel.tsx": 2,
   "src/components/decks/pull-control.tsx": 2,
   "src/components/decks/put-back-control.tsx": 1,
@@ -112,32 +114,36 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/decks/resolution-expander.tsx": 3,
   "src/components/decks/role-counter-cell.tsx": 3,
   "src/components/decks/role-counter-strip.tsx": 1,
-  "src/components/decks/spine-mobile.tsx": 1,
+  "src/components/decks/spine-desktop.tsx": 1,
+  "src/components/decks/spine-mobile.tsx": 2,
   "src/components/decks/stand-in-door.tsx": 1,
   "src/components/decks/stand-in-limit.tsx": 1,
   "src/components/decks/stand-ins-sheet.tsx": 5,
   "src/components/decks/strip-rationale.tsx": 2,
 
-  // S5 (17 files)
+  // S5 (20 files)
   "src/components/decks/suggestion-card.tsx": 3,
-  "src/components/decks/suggestion-line.tsx": 1,
+  "src/components/decks/suggestion-line.tsx": 2,
   "src/components/decks/suggestion-lists.tsx": 1,
   "src/components/decks/swap-receipt.tsx": 1,
+  "src/components/decks/synopsis-overview.tsx": 2,
+  "src/components/decks/synopsis-version.tsx": 1,
   "src/components/decks/token-card-line.tsx": 2,
   "src/components/decks/token-deck-box.tsx": 1,
   "src/components/decks/token-row.tsx": 1,
   "src/components/decks/tokens-group.tsx": 1,
-  "src/components/decks/top-off-list.tsx": 2,
-  "src/components/decks/tuning-history.tsx": 2,
+  "src/components/decks/top-off-list.tsx": 3,
+  "src/components/decks/tuning-history.tsx": 5,
+  "src/components/decks/tuning-hub.tsx": 2,
   "src/components/decks/tuning-panel.tsx": 2,
   "src/components/decks/unresolved-banner.tsx": 1,
   "src/components/decks/unresolved-row.tsx": 1,
   "src/components/decks/update-diff-row.tsx": 1,
   "src/components/decks/update-diff.tsx": 2,
   "src/components/decks/version-diff.tsx": 1,
-  "src/components/decks/version-history.tsx": 2,
+  "src/components/decks/version-history.tsx": 4,
 
-  // S6 (20 files)
+  // S6 (21 files)
   "src/components/collection/add-cards-sheet.tsx": 5,
   "src/components/collection/add-line.tsx": 2,
   "src/components/collection/added-receipt.tsx": 1,
@@ -146,6 +152,7 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/collection/collection-place-head.tsx": 2,
   "src/components/collection/edit-toast.tsx": 1,
   "src/components/collection/history-list.tsx": 6,
+  "src/components/collection/issue-inspector.tsx": 1,
   "src/components/collection/replace-flow.tsx": 2,
   "src/components/collection/replace-review-detail.tsx": 1,
   "src/components/collection/revert-confirm.tsx": 1,
@@ -181,27 +188,31 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/public/printings.tsx": 1,
   "src/components/public/top-bar.tsx": 1,
 
-  // S8 (20 files)
+  // S8 (24 files)
   "src/components/cards/card-modal-shared.ts": 1,
-  "src/components/cards/card-modal.tsx": 6,
+  "src/components/cards/card-modal.tsx": 8,
   "src/components/cards/combo-partners-detail.tsx": 1,
   "src/components/cards/fits-door.tsx": 1,
   "src/components/cards/fits-picker.tsx": 3,
   "src/components/cards/fits-view.tsx": 1,
   "src/components/cards/price-tag.tsx": 1,
-  "src/components/cards/printing-region.tsx": 4,
+  "src/components/cards/printing-region.tsx": 6,
   "src/components/cards/read-row.tsx": 2,
+  "src/components/commanders/commander-row.tsx": 1,
   "src/components/commanders/coverage-chip.tsx": 2,
   "src/components/commanders/coverage-section.tsx": 2,
   "src/components/commanders/coverage-sort.tsx": 2,
   "src/components/commanders/excluded-match.tsx": 1,
+  "src/components/commanders/fit-legend.tsx": 1,
   "src/components/commanders/guided-banner.tsx": 3,
   "src/components/commanders/rack/filter-sheet.tsx": 1,
   "src/components/commanders/rack/select.tsx": 1,
   "src/components/commanders/retry-submit.tsx": 1,
   "src/components/commanders/reveal-control.tsx": 2,
   "src/components/commanders/synergy-panel.tsx": 3,
+  "src/components/commanders/synergy-row.tsx": 1,
   "src/components/commanders/synergy-selection.tsx": 1,
+  "src/components/commanders/why-section.tsx": 1,
 
   // S9 (20 files)
   "src/components/intake/choose-history.tsx": 3,
@@ -270,6 +281,29 @@ const ALLOWANCE: Record<string, number> = {
 
 describe("the accent as text", () => {
   const found = count();
+
+  it("counts every form a text site takes, and nothing that is not one", () => {
+    const text = [
+      'className="text-[color:var(--accent)]"',
+      'className="hover:text-[color:var(--accent)]"',
+      'className="text-[var(--accent)]"',
+      'className="[border:1px_solid_var(--accent)] [color:var(--accent)]"',
+      'className="text-accent"',
+      'style={{ color: "var(--accent)" }}',
+      "style={{ color: 'var(--accent)' }}",
+      'style={{ color: current ? "var(--accent)" : "var(--fg-body)" }}',
+    ];
+    for (const sample of text) expect(sites("a.tsx", sample), sample).toBe(1);
+    const notText = [
+      'className="text-[color:var(--accent-text)] text-accent-text text-accent-hover"',
+      'className="bg-[color:var(--accent)] border-[color:var(--accent)] decoration-[color:var(--accent)]"',
+      'className="border-[var(--accent)] outline-[color:var(--accent)]"',
+      'style={{ backgroundColor: "var(--accent)", borderColor: "var(--accent)" }}',
+      'style={{ color: "var(--fg)", border: "1px solid var(--accent)" }}',
+    ];
+    for (const sample of notText) expect(sites("a.tsx", sample), sample).toBe(0);
+    expect(sites("a.css", ".x { color: var(--accent); border-color: var(--accent); }")).toBe(1);
+  });
 
   it("draws no new text in --accent (use --accent-text)", () => {
     const over = [...found]
