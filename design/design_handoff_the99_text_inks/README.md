@@ -29,7 +29,7 @@ on all six solid grounds in every theme, each lift holding its hue.*
 
 | # | Question | Call |
 |---|---|---|
-| 1 | `--accent` as text fails AA in Phyrexia and Kaldheim | **Kaldheim lifts `--accent` in place**, fills included (`#5C86C9` to `#6C97DB`). **Phyrexia gets a separate text accent**, `--accent-text` (`#5D8E85`), and its `--accent` stays `#52827A` for fills, the focus ring and the fit bar. In the other five themes `--accent-text` is declared as `var(--accent)`, the way `--avail-hard` is. The 308 text sites move onto `--accent-text`. |
+| 1 | `--accent` as text fails AA in Phyrexia and Kaldheim | **Kaldheim lifts `--accent` in place**, fills included (`#5C86C9` to `#6C97DB`). **Phyrexia gets a separate text accent**, `--accent-text` (`#5D8E85`), and its `--accent` stays `#52827A` for fills, the focus ring and the fit bar. In the other five themes `--accent-text` is declared as `var(--accent)`, the way `--avail-hard` is. Every accent text site moves onto `--accent-text` (the audit counted 308; see the engineering notes for today's count). |
 | 2 | Is `--fg-faint` read text or decoration? | **Read text, so 4.5:1 on all six grounds.** No site moves to `--fg-muted`; the faint ink is lifted in all six themes instead. |
 
 ### Why Phyrexia needs its own text accent (board 2)
@@ -100,8 +100,10 @@ The boards draw the two inks side by side on `--elevated` so the step can be jud
 
 - **`--accent-text` is a new contract key.** It is declared in all six theme blocks: a hex in Phyrexia, `var(--accent)`
   in the other five. `check:tokens` and `contract.test.ts`'s key list both need it.
-- **Which sites move.** The audit counts 308 `--accent` text sites under `src/` (260 `text-[color:var(--accent)]`
-  classes and 48 inline `color: "var(--accent)"` styles). Fills, borders, rings, the fit bar and marks stay on `--accent`.
+- **Which sites move.** The audit counted 308 `--accent` text sites under `src/` on 2026-10-18 (260
+  `text-[color:var(--accent)]` classes and 48 inline `color: "var(--accent)"` styles). On `origin/main` on 2026-10-21 the
+  count is 343 in 204 files: 273 classes, 48 inline styles, and 22 uses of the `text-accent` utility the audit did not
+  count. Fills, borders, rings, underline and caret colors, the fit bar and marks stay on `--accent`.
 - **Hover.** The text-link hovers (30 by board 2's count) already step to `--accent-hover`; they keep doing so, now from `--accent-text`.
 - **Placeholders do not move.** `--fg-placeholder` is written as a hex on purpose, so a `--fg-faint` change leaves it
   where it is. It still clears 4.5:1 on `--surface-sunken`.

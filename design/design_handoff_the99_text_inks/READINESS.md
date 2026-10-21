@@ -23,8 +23,8 @@ Audited 2026-10-21 against `origin/main` at the time of the audit, by lane 9b.
 
 - **Every shipped value in the ledger matches `globals.css`.** All ten rows.
 - **Every proposed figure on all six grounds reproduces to two decimals.** All 60 pairs.
-- **The two grounds the six do not name also clear.** On `--elevated-hover` and `--surface-inset` the proposed inks read
-  4.89 to 8.80 (Phyrexia's `--fg-faint` on `--elevated-hover` is the lowest).
+- **The two grounds the six do not name also clear.** On `--elevated-hover` and `--surface-inset` the ten changed inks
+  read 4.89 (Phyrexia's `--fg-faint` on `--elevated-hover`) to 6.95 (Kaldheim's `--accent-hover` on `--surface-inset`).
 - **ΔE from `--warning`** for each proposed value: 0.151 (Canopy `--fg-faint`) to 0.251 (Kaldheim `--accent`).
 - **Kaldheim's `--accent` from `--u`:** 0.101 shipped, 0.155 proposed, as the ledger says.
 - **Phyrexia's `--accent-text` from `--success`:** 0.088, under the 0.10 floor the contract asks of `--accent`. This is the
@@ -44,7 +44,7 @@ One new token, `--accent-text`. Nine changed values. No new surface, component, 
 
 ## Accessibility
 
-This addendum is the accessibility fix: 308 accent text sites and 611 faint text sites move from under 4.5:1 to over it
+This addendum is the accessibility fix: the accent text sites (343 today) and the faint text sites (611 at the audit) move from under 4.5:1 to over it
 in the themes that failed.
 
 ## About entry
@@ -57,6 +57,24 @@ None owed. A token value change is cosmetic, not a feature.
    `var(--accent)` in the other five). In `contract.test.ts`: `--accent-text` in the key list and in `ALIASES` for the
    five themes that alias it, and floors of 4.5:1 on all six grounds for `--accent-text`, `--accent-hover` and
    `--fg-faint` in every theme. `pnpm check:tokens` passes.
-2. **Sites.** The `--accent` text sites move to `--accent-text` (on `origin/main` today: 271
-   `text-[color:var(--accent)]` classes in 171 files and 48 inline `color: "var(--accent)"` styles in 32 files), with a
-   guard that fails on a new one. Fills, borders, rings, the fit bar and marks stay on `--accent`.
+2. **Sites**, as independent sweep PRs of about 20 files each (not stacked: `--accent-text` is `--accent` in five
+   themes, so any order is safe). On `origin/main` on 2026-10-21 there are 343 accent text sites in 204 files: 273
+   `text-[color:var(--accent)]` classes, 48 inline `color: "var(--accent)"` styles and 22 `text-accent` utilities, which
+   move to `text-[color:var(--accent-text)]`, `color: "var(--accent-text)"` and `text-accent-text`. Fills, borders,
+   rings, underline and caret colors, the fit bar and marks stay on `--accent`. PR 1 adds the guard as a ratchet: a
+   per-file allowance of today's sites, so a NEW site fails at once, and each sweep deletes its files' entries. The last
+   sweep leaves the allowance empty, which makes the guard absolute.
+
+   | Sweep | Files (under `src/`) |
+   |---|---|
+   | S1 | `components/decks/`, sorted paths `all-brackets-sheet` to `change-commander-review` (17) |
+   | S2 | `components/decks/`, `clear-auto` to `games-panel` (17) |
+   | S3 | `components/decks/`, `got-it-receipt` to `precons/precon-door` (17) |
+   | S4 | `components/decks/`, `precons/precon-pick-view` to `strip-rationale` (17) |
+   | S5 | `components/decks/`, `suggestion-card` to `version-history` (17) |
+   | S6 | `components/collection/` (20) |
+   | S7 | `components/admin/`, `public/`, `legal/`, `help/` (20) |
+   | S8 | `components/commanders/`, `cards/` (20) |
+   | S9 | `components/social/`, `intake/` (20) |
+   | S10 | `components/rule-zero/`, `ui/`, `about/`, `credits/` (20) |
+   | S11 | everything else: `components/shell/`, `sets/`, `home/`, `wishlist/`, `join/`, `card-search/`, `scan-lab/`, `discovery/`, and `app/` (19) |
