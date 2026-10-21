@@ -20,6 +20,10 @@ const IN_CODE = [
   /(?<![\w-])\[color:var\(--accent\)\]/g, // the arbitrary property, `[color:...]`
   /\btext-accent\b(?!-)/g, // the @theme utility; text-accent-text and text-accent-hover are other tokens
   /(?<![\w[-])color:(?:[^,;}"'`[]|"[^"\n]*"|'[^'\n]*'){0,200}?["']var\(--accent\)["']/g, // an inline style, plain or in a ternary, over lines
+  // a text color held in a variable or a prop, which the inline forms above cannot see (the NAMES are the contract:
+  // a fill, stroke or border colour is named for its property, so it stays out)
+  /(?<![\w-])(?:(?:label|note|figure|text)Color|tone)(?:\s*[:=]\s*|=\{)(?:[^"'\n;]*?\?\s*)?["']var\(--accent\)["']/g,
+  /(?<![\w-])color=\{?["']var\(--accent\)["']/g, // a `color` prop handed to a text component
 ];
 const IN_CSS = /(?<![\w-])color:\s*var\(--accent\)(?![\w-])/g;
 
@@ -54,6 +58,11 @@ describe("the accent as text", () => {
       'style={{ color: current ? "var(--accent)" : "var(--fg-body)" }}',
       `style={{\n  color:\n    selected\n      ? "var(--accent)"\n      : "var(--fg-faint)",\n}}`,
       `style={{ color: selected\n  ? "var(--accent)" : "var(--fg-faint)" }}`,
+      'const labelColor = gapClause ? "var(--accent)" : "var(--fg)";',
+      '{ figureColor: "var(--accent)", barColor: "var(--accent-mid)" }',
+      '<Row noteColor="var(--accent)" />',
+      '{ tone: "var(--accent)", label: copy.chipPullable }',
+      '<Row color="var(--accent)" />',
     ];
     for (const sample of text) expect(sites("a.tsx", sample), sample).toBe(1);
     const notText = [
@@ -62,6 +71,10 @@ describe("the accent as text", () => {
       'className="border-[var(--accent)] outline-[color:var(--accent)]"',
       'style={{ backgroundColor: "var(--accent)", borderColor: "var(--accent)" }}',
       'style={{ color: "var(--fg)", border: "1px solid var(--accent)" }}',
+      'const labelColor = gapClause ? "var(--accent-text)" : "var(--fg)";',
+      '{ barColor: "var(--accent)", ink: "var(--accent)", stroke: "var(--accent)", fill: "var(--accent)" }',
+      '<LockMark ink={lockMode ? "var(--accent)" : "var(--fg-muted)"} />',
+      '{ borderLeftColor: "var(--accent)", backgroundColor: "var(--accent)" }',
       // a [color:...] class on one line must not run on into the next line's borderColor
       `className="[color:var(--fg)]"\n      style={{ borderColor: on ? "var(--accent)" : "var(--border)" }}`,
     ];

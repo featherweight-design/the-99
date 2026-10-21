@@ -59,12 +59,12 @@ export function DecklistGroupHeader({
 }: DecklistGroupHeaderProps) {
   // The mobile gap was absent, not zero by intent: "Lands 1" rendered as
   // "Lands1". 6px matches the tab's own label/count pairing.
-  // Shopping groups use mono 10px --accent for the label; normal groups use the
+  // Shopping groups use mono 10px --accent-text for the label; normal groups use the
   // standard sans/display weight.
   const labelClass = gapClause
     ? "font-mono text-[10px] m-0 uppercase tracking-[.14em]"
     : "font-sans md:font-display font-semibold text-[12.5px] md:text-[15px] m-0";
-  const labelColor = gapClause ? "var(--accent)" : "var(--fg)";
+  const labelColor = gapClause ? "var(--accent-text)" : "var(--fg)";
 
   return (
     <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-b-[color:var(--border)] md:border-[color:var(--border)]">

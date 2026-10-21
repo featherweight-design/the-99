@@ -145,7 +145,7 @@ describe("roleCellState", () => {
   // the quietest. It read as body text until #184.
   it("below-rec is an accent figure over an accent-mid bar", () => {
     expect(roleCellState({ have: 4, target: 10 })).toEqual({
-      figureColor: "var(--accent)", barColor: "var(--accent-mid)", pct: 40,
+      figureColor: "var(--accent-text)", barColor: "var(--accent-mid)", pct: 40,
     });
   });
   it("met-rec turns green", () => {
