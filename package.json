@@ -297,6 +297,7 @@
     "probe:payments-reduced": "tsx scripts/probe-payments-reduced.mjs",
     "reconcile:payments": "tsx scripts/reconcile-payments.ts",
     "probe:credits-return": "tsx scripts/probe-credits-return.ts",
+    "probe:r3-addendum": "tsx scripts/probe-r3-addendum.ts",
     "probe:delete-warning": "node scripts/probe-delete-warning.mjs",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
