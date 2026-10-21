@@ -21,40 +21,40 @@
    "x": 1680,
    "y": 0,
    "w": 2280,
-   "h": 938,
-   "title": "B · the result row’s reach segment"
+   "h": 1447,
+   "title": "B · the reach segment on Best fits and More commanders"
   },
   "Choice-Phone.dc.html": {
    "x": 0,
-   "y": 1074,
+   "y": 1567,
    "w": 1370,
-   "h": 3017,
+   "h": 2999,
    "title": "C · the choice in the hand-off’s Bracket row · 390"
   },
   "Choice-Desktop.dc.html": {
    "x": 1450,
-   "y": 1074,
+   "y": 1567,
    "w": 2756,
    "h": 3311,
    "title": "C · the choice in the hand-off’s Bracket row · desktop"
   },
   "Form.dc.html": {
    "x": 0,
-   "y": 4505,
+   "y": 4998,
    "w": 1804,
-   "h": 4016,
-   "title": "A · the heads-up under the Bracket radios"
+   "h": 3998,
+   "title": "A · the heads-up under the Bracket radios (on hold)"
   },
   "About-HMC.dc.html": {
    "x": 1884,
-   "y": 4505,
+   "y": 4998,
    "w": 1846,
    "h": 2619,
    "title": "About · Help me choose’s entry, the edit"
   },
   "About-Credits.dc.html": {
    "x": 3810,
-   "y": 4505,
+   "y": 4998,
    "w": 1846,
    "h": 1781,
    "title": "About · How credits work, redrawn"

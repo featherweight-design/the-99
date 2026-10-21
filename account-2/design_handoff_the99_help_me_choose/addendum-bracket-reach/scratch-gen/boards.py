@@ -16,20 +16,20 @@ REMORA = '<span class="cn">Mystic Remora</span>'
 RIFT = '<span class="cn">Cyclonic Rift</span>'
 
 STATES = {
-    "reached": dict(lead=f"The fill places {RIFT}, a Game Changer you own, so the deck lands in bracket 3.", opts=None),
-    "within": dict(lead="From your cards this deck lands in bracket 1-2. Choose how to build it:",
-                   opts=[("From my collection", "Builds from your cards and lands in bracket 1-2.", False),
+    "reached": dict(lead=f"The fill places {RIFT}, a Game Changer you own, so the deck is bracket 3.", opts=None),
+    "within": dict(lead="From your cards this deck is bracket 1-2. Choose how to build it:",
+                   opts=[("From my collection", "Builds from your cards: bracket 1-2.", False),
                          ("Hit bracket 3", f"Adds {RHYSTIC}, about $32, to buy. It joins the deck’s Shopping list.", False)]),
-    "picked": dict(lead="From your cards this deck lands in bracket 1-2. Choose how to build it:",
-                   opts=[("From my collection", "Builds from your cards and lands in bracket 1-2.", False),
+    "picked": dict(lead="From your cards this deck is bracket 1-2. Choose how to build it:",
+                   opts=[("From my collection", "Builds from your cards: bracket 1-2.", False),
                          ("Hit bracket 3", f"Adds {RHYSTIC}, about $32, to buy. It joins the deck’s Shopping list.", True)]),
-    "over": dict(lead="From your cards this deck lands in bracket 1-2. Choose how to build it:",
-                 opts=[("From my collection", "Builds from your cards and lands in bracket 1-2.", False),
+    "over": dict(lead="From your cards this deck is bracket 1-2. Choose how to build it:",
+                 opts=[("From my collection", "Builds from your cards: bracket 1-2.", False),
                        ("Hit bracket 3", f"Adds {RHYSTIC} and {REMORA}, about $58, to buy: $8 over your $50 budget. Picking it raises the budget to $58.", False, True)]),
-    "own": dict(lead="From your cards this deck lands in bracket 1-2. Choose how to build it:",
-                opts=[("From my collection", "Builds from your cards only and lands in bracket 1-2.", False),
+    "own": dict(lead="From your cards this deck is bracket 1-2. Choose how to build it:",
+                opts=[("From my collection", "Builds from your cards only: bracket 1-2.", False),
                       ("Hit bracket 3", f"Adds {RHYSTIC}, about $32, to buy: the one card from outside your collection.", False)]),
-    "none": dict(lead="No Game Changer or two-card combo the fill can place fits this commander, so the deck lands in bracket 1-2.", opts=None),
+    "none": dict(lead="No Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket 1-2.", opts=None),
 }
 
 
@@ -111,7 +111,7 @@ def handoff_desk(state):
 
 
 C_STATES = [
-    ("reached", "1 · Reaches", "No choice. The ceiling sentence becomes a statement of where the deck lands, naming the owned card that gets it there (press opens it, as <b>Built around</b>’s card does)."),
+    ("reached", "1 · Reaches", "No choice. The ceiling sentence becomes a statement of the deck’s bracket, naming the owned card that gets it there (press opens it, as <b>Built around</b>’s card does)."),
     ("within", "2 · Short, buying reaches it, within budget", "Two radio rows inside the Bracket row, <b>neither selected</b>. <b>Create deck →</b> stays where it is, disabled, and the line in the error slot says why."),
     ("picked", "2b · The same, after a pick", "Picking enables <b>Create deck →</b>. With Hit picked, the Budget row’s line names the card the budget pays for first, as the shipped <code>budgetFirst</code> does for Built around."),
     ("over", "3 · Short, over the budget", "The buy row says what it costs against the budget and that picking it raises the budget. Neither is selected; one press is one decision."),
@@ -147,11 +147,11 @@ def choice_board(kind):
 FORM = {
     "two": dict(b=2, cap="2 · Core", mut=False, new=False),
     "reached": dict(b=3, cap="3 · Upgraded. Your cards in these colors reach it.", mut=False, new=True),
-    "within": dict(b=3, cap="3 · Upgraded. From your cards in these colors, a deck lands in bracket 1-2. Hitting 3 means buying Rhystic Study, about $32. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
-    "over": dict(b=3, budget="50", cap="3 · Upgraded. From your cards in these colors, a deck lands in bracket 1-2. Hitting 3 means buying about $58 of cards, over your $50 budget. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
-    "own": dict(b=3, own=True, cap="3 · Upgraded. From your cards in these colors, a deck lands in bracket 1-2. Hitting 3 means buying Rhystic Study, about $32, from outside your collection. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
-    "none": dict(b=3, cap="3 · Upgraded. From your cards in these colors, a deck lands in bracket 1-2, and no card the fill can place gets one to 3.", mut=True, new=True),
-    "five": dict(b=5, cap="5 · cEDH. From your cards in these colors, a deck lands in bracket 3. Hitting 5 means buying three more Game Changers, about $140. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
+    "within": dict(b=3, cap="3 · Upgraded. From your cards in these colors, a deck is bracket 1-2. Hitting 3 means buying Rhystic Study, about $32. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
+    "over": dict(b=3, budget="50", cap="3 · Upgraded. From your cards in these colors, a deck is bracket 1-2. Hitting 3 means buying about $58 of cards, over your $50 budget. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
+    "own": dict(b=3, own=True, cap="3 · Upgraded. From your cards in these colors, a deck is bracket 1-2. Hitting 3 means buying Rhystic Study, about $32, from outside your collection. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
+    "none": dict(b=3, cap="3 · Upgraded. From your cards in these colors, a deck is bracket 1-2, and no card the fill can place gets one to 3.", mut=True, new=True),
+    "five": dict(b=5, cap="5 · cEDH. From your cards in these colors, a deck is bracket 3. Hitting 5 means buying three more Game Changers, about $140. You choose which on the new deck, after you pick a commander.", mut=True, new=True),
 }
 
 
@@ -193,17 +193,17 @@ def form_desk(st):
 
 def form_board():
     ph = [
-        ("within", "A2 · Short, buying reaches it", "The caption under the radios is the heads-up: one line, in <code>--fg-muted</code> rather than faint, so it reads as news. It names what a collection-only deck lands in and the cheapest buy, and says the choice comes later. It sits above the credit press, the only screen before the credit."),
+        ("within", "A2 · Short, buying reaches it", "The caption under the radios is the heads-up: one line, in <code>--fg-muted</code> rather than faint, so it reads as news. It names the bracket a collection-only deck is and the cheapest buy, and says the choice comes later. It sits above the credit press, the only screen before the credit."),
         ("reached", "A1 · Reaches", "Quiet: the caption gains one clause. No color change."),
         ("over", "A3 · Short, over the budget", "The total against the budget; card names drop out when the set is more than one card."),
         ("own", "A4 · Short, only cards I own", "Says the buy comes from outside the collection."),
         ("none", "A5 · Nothing reaches it", "Statement only. Nothing to choose later."),
-        ("five", "A6 · Target 5, short (lands 3)", "Lines for 4 and 5 count the Game Changers to buy rather than naming them."),
+        ("five", "A6 · Target 5, short (3 from your cards)", "Lines for 4 and 5 count the Game Changers to buy rather than naming them."),
         ("two", "A0 · Bracket 2: no line", "Any collection reaches 1-2, and an extra-turn card is never added to make a 2, so 1 and 2 keep today’s caption."),
     ]
     fr = [frame(f"{lab} · 390 · from Cards for the 99 down", form_phone(st), cap) for st, lab, cap in ph]
     dk = [frame(f"{lab} · desktop 1300 · scrolled to Bracket", form_desk(st), cap) for st, lab, cap in ph[:2]]
-    head = board_head("A · the intake form · /decks/new/choose · BracketRadios",
+    head = board_head("A · the intake form · /decks/new/choose · BracketRadios · ON HOLD: Hugh is checking with engineering that the server can tell this before submit",
                       "The heads-up under the Bracket radios",
                       "Open call 1: <b>a caption change</b>, not a note beside Find or a new block. The Bracket field’s caption already restates the pick (<code>3 · Upgraded</code>); from 3 up it goes on to say what the server read across the colors picked (or all five). There is no commander yet, so it promises the choice on the new deck rather than asking for it here. It updates as colors, pool, budget or bracket change, with no motion.")
     w = 4*390 + 3*44 + 112
@@ -212,62 +212,90 @@ def form_board():
     return doc("Intake heads-up", body, max(w, 1300 + 112))
 
 
-# ---------------------------------------------------------------- B · the result row
+# ---------------------------------------------------------------- B · the result row and the best fits
 
-ROWS = [
-    dict(key="sai", name="Sai, Master Thopterist", pips=["u"], fig=82, owned=44, buy=135, br=[("lands 1-2", True), ("3 adds $32", True)]),
-    dict(key="zimone", name="Zimone, Infinite Analyst", pips=["u", "g"], fig=61, owned=52, buy=98, br=[("lands 3", False)]),
-    dict(key="rootha", name="Rootha, Mastering the Moment", pips=["u", "r"], fig=47, owned=38, buy=160, br=[("lands 1-2", True)]),
+BEST = [
+    dict(key="sai", art="art-sai", name="Sai, Master Thopterist", pips=["u"], fig=82, owned=44, buy=135, mark=("buy", "$4.20"),
+         why="Makes a Thopter whenever you cast an artifact spell, the army you described, and wins wide with it.",
+         br=[("1-2", True), ("3 adds $32", True)]),
+    dict(key="zimone", art="art-zimone", name="Zimone, Infinite Analyst", pips=["u", "g"], fig=61, owned=52, buy=98, mark=("free", None),
+         why="Grows a construct army off the extra counters you already run in two of your decks.",
+         br=[("3", False)]),
+    dict(key="rootha", art="art-rootha", name="Rootha, Mastering the Moment", pips=["u", "r"], fig=47, owned=38, buy=160, mark=("buy", "$0.65"),
+         why="Copies the artifact spells that make tokens, so the army comes twice as fast.",
+         br=[("1-2", True)]),
 ]
+MORE = [dict(key="jace", name="Jace, Vryn’s Prodigy", pips=["u"], fig=12, owned=61, buy=72, mark=("free", None), why=None,
+             br=[("1-2", True), ("3 adds $32", True)])]
+
+
+def mark_html(m):
+    if m[0] == "free":
+        return '<span class="free"><span class="dot"></span>owned · free</span>'
+    return f'<span class="buy">buy&nbsp;&nbsp;{m[1]}</span>'
+
+
+def own_line(r, own_only=False):
+    if own_only:
+        segs = (f'<span class="sg"><span class="lk">commander</span>{mark_html(r["mark"])}</span>'
+                f'<span class="sg">99 from your cards</span><span class="sg">{r["owned"]} of its usual 99 are yours</span>')
+    else:
+        segs = (f'<span class="sg">{mark_html(r["mark"])}</span>'
+                f'<span class="sg">you own {r["owned"]} of its 99</span><span class="sg">about ${r["buy"]} to buy, inside $150</span>')
+    for i, (t, short) in enumerate(r["br"]):
+        lk = '<span class="lk">bracket</span>' if i == 0 else ""
+        segs += f'<span class="sg new{" short" if short else ""}">{lk}{t}</span>'
+    return f'<div class="own"><div>{segs}</div></div>'
+
+
+def pips_html(r):
+    return '<span class="pips">' + "".join(f'<i style="background:var(--{p})"></i>' for p in r["pips"]) + "</span>"
+
+
+def best_card(r, n, own_only=False):
+    return (f'<li class="bf"><div class="art"><img src="{img(r["art"])}" alt=""><span class="rk">{n}</span></div>'
+            f'<div class="bd"><div class="bn"><span class="no">{n}</span><b>{r["name"]}</b>{pips_html(r)}</div>'
+            f'<p class="why">{r["why"]}</p><div class="bfg"><b>{r["fig"]}%</b><span>of its decks are Artifacts</span></div><hr>'
+            f'{own_line(r, own_only)}</div></li>')
 
 
 def result_row(r, own_only=False):
-    pips = "".join(f'<i style="background:var(--{p})"></i>' for p in r["pips"])
-    if own_only:
-        segs = (f'<span class="sg"><span class="lk">commander</span><span class="free"><span class="dot"></span>owned · free</span></span>'
-                f'<span class="sg">99 from your cards</span><span class="sg">{r["owned"]} of its usual 99 are yours</span>')
-    else:
-        segs = (f'<span class="sg"><span class="free"><span class="dot"></span>owned · free</span></span>'
-                f'<span class="sg">you own {r["owned"]} of its 99</span><span class="sg">about ${r["buy"]} to buy, inside $150</span>')
-    br = ""
-    for i, (t, short) in enumerate(r["br"]):
-        lk = '<span class="lk">bracket</span>' if i == 0 else ""
-        br += f'<span class="sg new{" short" if short else ""}">{lk}{t}</span>'
     return (f'<li class="rr"><span class="th"><img src="{img(r["key"])}" alt=""></span>'
-            f'<span class="nm"><b>{r["name"]}</b><span class="pips">{pips}</span></span>'
+            f'<span class="nm"><b>{r["name"]}</b>{pips_html(r)}</span>'
             f'<span class="fg"><b>{r["fig"]}%</b><span>of its decks are Artifacts</span></span>'
-            f'<div class="ow own"><div>{segs}{br}</div></div><span class="chev">›</span></li>')
+            f'<div class="ow">{own_line(r, own_only)}</div><span class="chev">›</span></li>')
 
 
-def rows_list(own_only=False):
-    return ('<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">'
-            + "".join(result_row(r, own_only) for r in ROWS) + "</ul>")
+def results(own_only=False, desk_=False):
+    grid = "display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px" if desk_ else "display:flex;flex-direction:column;gap:10px"
+    return ('<div style="display:flex;flex-direction:column;gap:6px"><h2 class="dsp" style="margin:0;font-size:%dpx;font-weight:600">Ordered by what you wrote</h2>'
+            '<p style="margin:0;font-size:%spx;line-height:1.5;color:var(--fg-muted)">The read’s three picks lead, closest first, each with a line on why. The rest follow in your answers’ order.</p></div>'
+            % (22 if desk_ else 18, "14.5" if desk_ else "13")
+            + '<p class="sech" style="color:var(--accent)">Best fits</p>'
+            + f'<ul style="margin:0;padding:0;list-style:none;{grid}">' + "".join(best_card(r, i + 1, own_only) for i, r in enumerate(BEST)) + "</ul>"
+            + '<p class="sech" style="color:var(--fg-faint);margin-top:8px">More commanders</p>'
+            + '<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">' + "".join(result_row(r, own_only) for r in MORE) + "</ul>")
 
 
 def rows_phone(own_only=False):
-    inner = ('<div style="padding:16px 14px 18px;display:flex;flex-direction:column;gap:12px">'
-             '<div><p class="m" style="margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">More commanders</p></div>'
-             + rows_list(own_only) + "</div>")
+    inner = '<div style="padding:16px 14px 18px;display:flex;flex-direction:column;gap:12px">' + results(own_only) + "</div>"
     return phone(inner, "rows-phone" + ("-own" if own_only else ""))
 
 
 def rows_desk():
-    inner = ('<div style="padding:34px 40px 40px;display:flex;flex-direction:column;gap:12px">'
-             '<p class="m" style="margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)">More commanders</p>'
-             + rows_list() + "</div>")
+    inner = '<div style="padding:30px 40px 40px;display:flex;flex-direction:column;gap:12px">' + results(desk_=True) + "</div>"
     return desk(inner, "rows-desk")
 
 
 def rows_board():
-    head = board_head("B · a result row · choose-row.tsx · the ownership line",
-                      "The row’s reach: one more segment on the ownership line",
-                      "Open call 3: <b>a segment, not a third figure and not a mark.</b> The ownership line already wraps by unbreakable segments; reach joins as one or two more, led by a locked <code>BRACKET</code> label the way own-only rows lead with <code>COMMANDER</code>. Short readings draw in <code>--fg-body</code>, a step brighter than the line, so a scan finds them; a reached row stays the line’s own color. Drawn only when a bracket of 3 or more was asked. The row stays one press to the hand-off, where the choice is made.")
-    fr = [frame("B · 390 · results, rows 13–15", rows_phone(), "Sai is short but buying reaches 3; Zimone reaches it from owned cards; Rootha is short with nothing to buy."),
-          frame("B · own-only · 390", rows_phone(True), "Under “Only cards I own” the segment follows the usual-99 figure. The buy amount still shows: the hand-off offers it."),
-          frame("B · desktop 1300", rows_desk(), "Desktop: the same segment on the ownership line under the name; the figure column is untouched.")]
-    w = 2*390 + 1300 + 2*44 + 112
+    head = board_head("B · the results · choose-row.tsx · the ownership line, on Best fits and More commanders",
+                      "The reach: one more segment on the ownership line",
+                      "Open call 3: <b>a segment, not a third figure and not a mark.</b> It goes on <b>every</b> result: the three Best fits cards under their rule, and each More commanders row. The ownership line already wraps by unbreakable segments; reach joins as one or two more, led by a locked <code>BRACKET</code> label the way own-only rows lead with <code>COMMANDER</code>, then just the number: <code>BRACKET 1-2 · 3 adds $32</code>, <code>BRACKET 3</code>. Short readings draw in <code>--fg-body</code>, a step brighter than the line; a reached one stays the line’s own color. Drawn only when a bracket of 3 or more was asked. Each result stays one press to the hand-off, where the choice is made. New segments are underlined dashed.")
+    fr = [frame("B · desktop 1300 · the read’s results", rows_desk(), "Sai is short but buying reaches 3; Zimone reaches it from your cards; Rootha is short with nothing to buy. The card’s own figure and reason are untouched."),
+          frame("B · 390 · the same results", rows_phone(), "Phone: the best fit is a row with the art down its left edge, and the segment wraps onto the ownership line’s next line as the line already does."),
+          frame("B · own-only · 390", rows_phone(True), "Under “Only cards I own” the segment follows the usual-99 figure. The buy amount still shows: the hand-off offers it.")]
     body = head + '<div class="frames">' + "".join(fr) + "</div>"
-    return doc("Result row reach", body, w)
+    return doc("Result reach", body, 1300 + 2*390 + 2*44 + 112)
 
 
 # ---------------------------------------------------------------- About · Help me choose and credits

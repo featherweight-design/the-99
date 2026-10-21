@@ -2,33 +2,33 @@
 // Locked vocabulary: "Game Changer", "combo", "bracket". Never "unlock" or "upgrade your collection".
 
 export const bracketReachCopy = {
-  /** A · the Bracket field's caption, from 3 up. `colors` reads "in these colors" (or nothing with no colors picked). */
+  /** A · ON HOLD (Hugh checking with engineering, 2026-10-21). The Bracket field's caption, from 3 up. `colors` reads "in these colors" (or nothing with no colors picked). */
   form: {
     reached: (n: number, name: string) => `${n} · ${name}. Your cards in these colors reach it.`,
     shortOne: (n: number, name: string, lands: string, card: string, price: string) =>
-      `${n} · ${name}. From your cards in these colors, a deck lands in bracket ${lands}. Hitting ${n} means buying ${card}, about ${price}. You choose which on the new deck, after you pick a commander.`,
+      `${n} · ${name}. From your cards in these colors, a deck is bracket ${lands}. Hitting ${n} means buying ${card}, about ${price}. You choose which on the new deck, after you pick a commander.`,
     shortOver: (n: number, name: string, lands: string, total: string, budget: string) =>
-      `${n} · ${name}. From your cards in these colors, a deck lands in bracket ${lands}. Hitting ${n} means buying about ${total} of cards, over your ${budget} budget. You choose which on the new deck, after you pick a commander.`,
+      `${n} · ${name}. From your cards in these colors, a deck is bracket ${lands}. Hitting ${n} means buying about ${total} of cards, over your ${budget} budget. You choose which on the new deck, after you pick a commander.`,
     shortOwn: (n: number, name: string, lands: string, card: string, price: string) =>
-      `${n} · ${name}. From your cards in these colors, a deck lands in bracket ${lands}. Hitting ${n} means buying ${card}, about ${price}, from outside your collection. You choose which on the new deck, after you pick a commander.`,
+      `${n} · ${name}. From your cards in these colors, a deck is bracket ${lands}. Hitting ${n} means buying ${card}, about ${price}, from outside your collection. You choose which on the new deck, after you pick a commander.`,
     shortCount: (n: number, name: string, lands: string, count: string, total: string) =>
-      `${n} · ${name}. From your cards in these colors, a deck lands in bracket ${lands}. Hitting ${n} means buying ${count} more Game Changers, about ${total}. You choose which on the new deck, after you pick a commander.`,
+      `${n} · ${name}. From your cards in these colors, a deck is bracket ${lands}. Hitting ${n} means buying ${count} more Game Changers, about ${total}. You choose which on the new deck, after you pick a commander.`,
     none: (n: number, name: string, lands: string) =>
-      `${n} · ${name}. From your cards in these colors, a deck lands in bracket ${lands}, and no card the fill can place gets one to ${n}.`,
+      `${n} · ${name}. From your cards in these colors, a deck is bracket ${lands}, and no card the fill can place gets one to ${n}.`,
   },
   /** B · the ownership line's segments. */
   row: {
     label: "bracket",
-    lands: (b: string) => `lands ${b}`,
+    value: (b: string) => b, // after the BRACKET label: the number alone, never "lands"
     adds: (n: number, price: string) => `${n} adds ${price}`,
   },
   /** C · the hand-off's Bracket row. */
   handOff: {
-    reached: (card: string, n: number) => `The fill places ${card}, a Game Changer you own, so the deck lands in bracket ${n}.`,
-    shortLead: (lands: string) => `From your cards this deck lands in bracket ${lands}. Choose how to build it:`,
+    reached: (card: string, n: number) => `The fill places ${card}, a Game Changer you own, so the deck is bracket ${n}.`,
+    shortLead: (lands: string) => `From your cards this deck is bracket ${lands}. Choose how to build it:`,
     fromMine: "From my collection",
-    fromMineLine: (lands: string) => `Builds from your cards and lands in bracket ${lands}.`,
-    fromMineLineOwn: (lands: string) => `Builds from your cards only and lands in bracket ${lands}.`,
+    fromMineLine: (lands: string) => `Builds from your cards: bracket ${lands}.`,
+    fromMineLineOwn: (lands: string) => `Builds from your cards only: bracket ${lands}.`,
     hit: (n: number) => `Hit bracket ${n}`,
     hitLine: (cards: string, price: string) => `Adds ${cards}, about ${price}, to buy. It joins the deck’s Shopping list.`,
     hitLineOver: (cards: string, price: string, over: string, budget: string) =>
@@ -36,7 +36,7 @@ export const bracketReachCopy = {
     hitLineOwn: (card: string, price: string) => `Adds ${card}, about ${price}, to buy: the one card from outside your collection.`,
     overTag: "over budget",
     none: (n: number, lands: string) =>
-      `No Game Changer or two-card combo the fill can place fits this commander, so the deck lands in bracket ${lands}.`,
+      `No Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket ${lands}.`,
     waiting: "Choose how to build it under Bracket to create the deck.",
   },
   /** About · help-me-choose: the sentence added to the caption's third paragraph, if Hugh rules it owed. */
