@@ -380,7 +380,7 @@ describe("role counter strip — the draft sub-run (#389, surface 1)", () => {
   it("draws the note in accent, at the source line's size and breakpoint", () => {
     render(<RoleCounterStrip mix={TEST_MIX} cards={[]} wasCounts={ZERO} />);
     const note = screen.getByText(deckVersioningCopy.pending.mixStripDraftNote);
-    expect(note.getAttribute("style")).toContain("var(--accent)");
+    expect(note.getAttribute("style")).toContain("var(--accent-text)");
     expect(note.className).toContain("text-[10.5px]");
     expect(note.className).toContain("md:inline");
   });

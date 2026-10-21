@@ -89,7 +89,7 @@ export function StandInDoor({
       onClick={() => tools.openStandIns(card, "card")}
       className={
         "inline-flex items-center gap-[7px] whitespace-nowrap bg-transparent border-0 p-0 cursor-pointer "
-        + "text-[13px] font-semibold text-[color:var(--accent)] "
+        + "text-[13px] font-semibold text-[color:var(--accent-text)] "
         + (layout === "strip" ? "flex-none min-h-[44px] px-[10px]" : "")
       }
     >

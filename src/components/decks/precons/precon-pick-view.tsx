@@ -433,7 +433,7 @@ function PickToast({ text, lift, onRetry, onDone }: { text: string; lift: number
         <button
           type="button"
           onClick={onRetry}
-          className="h-[36px] flex-none cursor-pointer rounded-[8px] border-0 bg-transparent px-[12px] font-sans text-[13px] font-semibold text-[color:var(--accent)] underline underline-offset-2"
+          className="h-[36px] flex-none cursor-pointer rounded-[8px] border-0 bg-transparent px-[12px] font-sans text-[13px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
         >
           {copy.tryAgain}
         </button>

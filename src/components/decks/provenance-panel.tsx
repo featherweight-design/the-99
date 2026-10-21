@@ -42,7 +42,7 @@ export function ProvenanceOpener({
   className?: string;
   /**
    * `quiet` is the findings head row's (10px, `--fg-faint`); `accent` is the empty state's
-   * (11px, `--accent`), where it sits beside the one call to action (handoff §2, 2a).
+   * (11px, `--accent-text`), where it sits beside the one call to action (handoff §2, 2a).
    */
   tone?: "quiet" | "accent";
 }) {
@@ -57,7 +57,7 @@ export function ProvenanceOpener({
         data-testid="provenance-opener"
         className={
           "inline-flex min-h-[44px] items-center gap-[8px] bg-transparent border-0 p-0 font-mono cursor-pointer "
-          + (accent ? "text-[11px] text-[color:var(--accent)] " : "md:min-h-0 text-[10px] text-[color:var(--fg-faint)] ")
+          + (accent ? "text-[11px] text-[color:var(--accent-text)] " : "md:min-h-0 text-[10px] text-[color:var(--fg-faint)] ")
           + className
         }
       >
@@ -130,7 +130,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
                       href={row.link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-[10.5px] no-underline border-b border-b-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--accent)]"
+                      className="font-mono text-[10.5px] no-underline border-b border-b-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--accent-text)]"
                     >
                       {copy.provenance.source(row.link.name)}
                     </a>

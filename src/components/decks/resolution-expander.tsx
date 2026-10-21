@@ -214,7 +214,7 @@ export function ResolutionExpander({
         <button
           type="button"
           onClick={onCollapse}
-          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)] transition-colors"
+          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent-text)] transition-colors"
         >
           {copy.collapse} <Chevron kind="disclosure" open />
         </button>
@@ -507,7 +507,7 @@ function ResultRow({
             <span
               aria-hidden
               className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[96px]"
-              style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent)" }}
+              style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent-text)" }}
             >
               <span className="md:hidden">↵</span>
               <span className="hidden md:inline">{copy.activeRowHint}</span>
@@ -518,7 +518,7 @@ function ResultRow({
               className="flex-none font-semibold text-[13px] md:text-[12.5px] flex items-center justify-center w-[96px] h-[40px] md:h-auto md:py-[6px] rounded-[7px]"
               style={{
                 opacity: pending ? 0.5 : undefined,
-                color: "var(--accent)",
+                color: "var(--accent-text)",
                 background: "transparent",
                 border: "1px solid var(--border-strong)",
               }}

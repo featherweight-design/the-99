@@ -44,27 +44,6 @@ function count(): Map<string, number> {
 // change took its file's last site does not fail, so no other lane's CI breaks on this list; the sweep deletes it. The
 // last sweep empties this object, and the guard is then absolute.
 const ALLOWANCE: Record<string, number> = {
-  // S4 (18 files)
-  "src/components/decks/precons/precon-pick-view.tsx": 1,
-  "src/components/decks/precons/precon-suggestion.tsx": 2,
-  "src/components/decks/precons/precon-tile.tsx": 1,
-  "src/components/decks/provenance-line.tsx": 4,
-  "src/components/decks/provenance-panel.tsx": 2,
-  "src/components/decks/pull-control.tsx": 2,
-  "src/components/decks/put-back-control.tsx": 1,
-  "src/components/decks/quick-add-bar.tsx": 3,
-  "src/components/decks/receipt-modal.tsx": 1,
-  "src/components/decks/resolution-expander.tsx": 3,
-  "src/components/decks/role-counter-cell.tsx": 3,
-  "src/components/decks/role-counter-strip.tsx": 1,
-  "src/components/decks/spine-desktop.tsx": 1,
-  "src/components/decks/spine-mobile.tsx": 2,
-  "src/components/decks/stand-in-door.tsx": 1,
-  "src/components/decks/stand-in-limit.tsx": 1,
-  "src/components/decks/stand-ins-sheet.tsx": 5,
-  "src/components/decks/strip-rationale.tsx": 2,
-
-
   // S6 (21 files)
   "src/components/collection/add-cards-sheet.tsx": 5,
   "src/components/collection/add-line.tsx": 2,

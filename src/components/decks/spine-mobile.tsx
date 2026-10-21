@@ -628,7 +628,7 @@ export function SpineMobile({
             data-shortcut="proposed-cuts"
             onClick={onProposedCuts}
             {...cutsMoment}
-            className="mx-auto flex h-[44px] items-center font-mono text-[11.5px] text-[var(--accent)]"
+            className="mx-auto flex h-[44px] items-center font-mono text-[11.5px] text-[var(--accent-text)]"
           >
             {tuningHubShortcutsCopy.proposedCuts}
           </button>
@@ -655,7 +655,7 @@ export function SpineMobile({
             <button
               type="button"
               onClick={onExport}
-              className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent)]"
+              className="flex min-h-[44px] items-center gap-[5px] rounded-[7px] border border-[color:var(--border-strong)] bg-transparent px-[9px] py-[6px] font-mono text-[11px] text-[color:var(--accent-text)]"
             >
               <svg
                 width="16"

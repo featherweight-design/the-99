@@ -16,10 +16,10 @@ const copy = preconsCopy.link.suggestion;
 
 const LINK =
   "inline-flex h-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid "
-  + "border-[color:var(--accent)] bg-transparent px-[14px] font-sans text-[13.5px] font-semibold text-[color:var(--accent)] md:h-[36px]";
+  + "border-[color:var(--accent)] bg-transparent px-[14px] font-sans text-[13.5px] font-semibold text-[color:var(--accent-text)] md:h-[36px]";
 const CLOSE =
   "flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 "
-  + "text-[13px] text-[color:var(--fg-muted)] md:hover:text-[color:var(--accent)] transition-colors";
+  + "text-[13px] text-[color:var(--fg-muted)] md:hover:text-[color:var(--accent-text)] transition-colors";
 
 export function PreconSuggestion({ deckId, deckName, suggestions }: {
   deckId: string;

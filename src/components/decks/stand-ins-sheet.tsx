@@ -76,7 +76,7 @@ const factOf = (cents: number, foilOnly: boolean, asOf: Date): PriceFact =>
   ({ cents: foilOnly ? null : cents, foilCents: foilOnly ? cents : null, etchedCents: null, asOf });
 
 const APPLY =
-  "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] leading-none bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors";
+  "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] leading-none bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors";
 const QUIET =
   "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] leading-none font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors";
 
@@ -262,7 +262,7 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
             <button
               type="button"
               onClick={take.refused.onReread}
-              className="inline-flex items-center justify-center h-[44px] px-[14px] rounded-[8px] text-[13px] md:h-auto md:px-[13px] md:py-[6px] md:rounded-[7px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+              className="inline-flex items-center justify-center h-[44px] px-[14px] rounded-[8px] text-[13px] md:h-auto md:px-[13px] md:py-[6px] md:rounded-[7px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]"
             >
               {copy.refused.reread}
             </button>
@@ -622,7 +622,7 @@ export function StandInsSheet({
           type="button"
           onClick={press}
           aria-label={copy.takeAria(row.name, name)}
-          className="flex h-[34px] min-w-0 items-center rounded-[8px] px-[14px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+          className="flex h-[34px] min-w-0 items-center rounded-[8px] px-[14px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]"
         >
           <span className="truncate">{takeLabel}</span>
         </button>
@@ -643,7 +643,7 @@ export function StandInsSheet({
           aria-label={copy.takeAria(row.name, name)}
           // Bounded and truncated as the teaser's is: a long name (a `Front // Back` card) must not
           // push the note out or run past the sheet's edge (round 1).
-          className="flex h-[44px] min-w-0 max-w-[62%] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+          className="flex h-[44px] min-w-0 max-w-[62%] flex-none items-center rounded-[8px] px-[16px] text-[13.5px] font-medium whitespace-nowrap bg-transparent cursor-pointer text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]"
         >
           <span className="truncate">{takeLabel}</span>
         </button>
@@ -741,7 +741,7 @@ export function StandInsSheet({
             <button
               type="button"
               onClick={retry}
-              className="mt-[18px] inline-flex items-center justify-center h-[44px] md:h-auto px-[18px] md:px-[16px] md:py-[7px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent)]"
+              className="mt-[18px] inline-flex items-center justify-center h-[44px] md:h-auto px-[18px] md:px-[16px] md:py-[7px] rounded-[8px] md:rounded-[7px] text-[13px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]"
             >
               {copy.retry}
             </button>
