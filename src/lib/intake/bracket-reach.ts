@@ -124,7 +124,19 @@ function cheapestRaiser(
   const have = (id: string) => fixedSet.has(id) || inCommandZone.has(id) || order.has(id);
 
   const sets: string[][] = [];
-  const gameChangers = pool.filter((id) => facts.flagsOf(id).gameChanger);
+  /** A raiser never brings mass land denial or a turn loop into the deck, whichever route proposed
+   *  it: a Game Changer can carry the flag, and two pieces can share a loop variant as well as the
+   *  non-loop one that proposed them. A loop whose partner must be the commander completes only
+   *  when it is, the rule `completesWith` counts by. */
+  const forbidden = (raisers: readonly string[]) => {
+    const all = new Set([...fixed, ...raisers]);
+    return raisers.some((id) => facts.flagsOf(id).massLandDenial
+      || facts.combosOf(id).some((e) => e.loop && all.has(e.partner)
+        && (!e.partnerMustBeCommander || inCommandZone.has(e.partner))));
+  };
+  // A Game Changer that is forbidden on its own is never offered, so the four-card route takes the
+  // next one rather than failing on it.
+  const gameChangers = pool.filter((id) => facts.flagsOf(id).gameChanger && !forbidden([id]));
   const fixedGameChangers = fixed.filter((id) => facts.flagsOf(id).gameChanger).length;
   /** Every counted combo among usable and fixed cards: two pieces, each placeable from this source
    *  or already in the deck. A combo of two fixed cards is here too: it may want only a searcher. */
@@ -164,15 +176,6 @@ function cheapestRaiser(
       }
     }
   }
-
-  /** A raiser never brings mass land denial or a turn loop into the deck, whichever route proposed
-   *  it: a Game Changer can carry the flag, and two pieces can share a loop variant as well as the
-   *  non-loop one that proposed them. */
-  const forbidden = (raisers: readonly string[]) => {
-    const all = new Set([...fixed, ...raisers]);
-    return raisers.some((id) => facts.flagsOf(id).massLandDenial
-      || facts.combosOf(id).some((e) => e.loop && all.has(e.partner)));
-  };
 
   let best: { raisers: string[]; buyCents: number; bought: number; at: number } | null = null;
   for (const raw of sets) {

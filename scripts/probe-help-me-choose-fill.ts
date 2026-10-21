@@ -149,6 +149,7 @@ async function main() {
   ]);
   const reach = reached.bracketReach;
   console.log(`   reach: ${JSON.stringify(reach)}`);
+  check("on, a bracket answer always comes back with a reach", reach !== undefined, reach?.kind ?? "none");
   check("off, the fill places nothing toward the answer and carries no reach",
     ceilingOnly.bracketReach === undefined && !ceilingOnly.rows.some((r) => r.source === "bracket"), "ceiling only");
   const raised = reached.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);

@@ -144,7 +144,12 @@ describe("bracketReach", () => {
     expect(reach(4, ["a", "b", "t"], loopToo)).toMatchObject({ kind: "short" });
     const gc = { gameChanger: true };
     const mld = world({ flags: { g1: gc, g2: gc, g3: gc, g4: { gameChanger: true, massLandDenial: true }, g5: gc }, free: ["g1", "g2", "g3", "g4", "g5"] });
-    expect(reach(4, ["g1", "g2", "g3", "g4", "g5"], mld)).toMatchObject({ kind: "short" });
+    expect(reach(4, ["g1", "g2", "g3", "g4", "g5"], mld)).toEqual({ target: 4, kind: "collection", raisers: ["g1", "g2", "g3", "g5"] });
+  });
+
+  it("counts a loop whose partner must be the commander only when it is", () => {
+    const f = world({ flags: { g: { gameChanger: true } }, combos: [{ a: "g", b: "card", loop: true, bMustCommand: true }], free: ["g"] });
+    expect(reach(3, ["g"], f, { fixedIds: ["cmd", "card"] })).toEqual({ target: 3, kind: "collection", raisers: ["g"] });
   });
 
   it("finds the tutor for a combo the fixed cards already hold, and counts a commander that tutors", () => {
