@@ -14,7 +14,7 @@ const c = adminCopy.payments;
 export type BlockedRow = { userId: string; name: string; since: string; openDisputes: number };
 
 const LINE = "flex min-h-[44px] flex-wrap items-center justify-between gap-[10px] border-0 border-t border-solid border-[color:var(--border)] py-[8px] first:border-t-0";
-const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60 md:min-h-[32px]";
+const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent-text)] disabled:opacity-60 md:min-h-[32px]";
 
 export function BlockedList({ rows, emptyClassName }: { rows: readonly BlockedRow[]; emptyClassName: string }) {
   const router = useRouter();

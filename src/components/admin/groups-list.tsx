@@ -9,7 +9,7 @@ import { ResolvedDot } from "./switches-list";
 // phone and two from `md` up. No disagreement banner (R2: one group per account).
 
 const copy = adminCopy.groups;
-const LINK = "text-[13px] text-[color:var(--accent)]";
+const LINK = "text-[13px] text-[color:var(--accent-text)]";
 
 export function NewGroupLink() {
   return (

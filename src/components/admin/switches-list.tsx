@@ -58,7 +58,7 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
   const base = "whitespace-nowrap rounded-[4px] border border-solid px-[6px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.08em]";
   return (
     <>
-      {row.kind === "model" && <span className={`${base} border-[color:var(--accent)] text-[color:var(--accent)]`}>{copy.tagModel}</span>}
+      {row.kind === "model" && <span className={`${base} border-[color:var(--accent)] text-[color:var(--accent-text)]`}>{copy.tagModel}</span>}
       {row.parent && (
         <span className={`${base} border-[color:var(--border-strong)] text-[color:var(--fg-muted)]`}>{copy.tagNeeds(switchCopy[row.parent].label)}</span>
       )}
@@ -237,7 +237,7 @@ export function SwitchesList({
                   setFilter("all");
                   setQuery("");
                 }}
-                className="border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)]"
+                className="border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)]"
               >
                 {copy.showAll}
               </button>

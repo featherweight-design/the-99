@@ -88,27 +88,6 @@ const ALLOWANCE: Record<string, number> = {
   "src/components/collection/upload-choice.tsx": 1,
   "src/components/collection/upload-entry.tsx": 3,
 
-  // S7 (20 files)
-  "src/components/admin/account-page.tsx": 2,
-  "src/components/admin/accounts-list.tsx": 3,
-  "src/components/admin/admin-head.tsx": 1,
-  "src/components/admin/blocked-list.tsx": 1,
-  "src/components/admin/group-editor.tsx": 1,
-  "src/components/admin/group-page.tsx": 1,
-  "src/components/admin/groups-list.tsx": 1,
-  "src/components/admin/invite-tree.tsx": 1,
-  "src/components/admin/invites-section.tsx": 1,
-  "src/components/admin/override-controls.tsx": 2,
-  "src/components/admin/setting-dialog.tsx": 1,
-  "src/components/admin/show-button.tsx": 2,
-  "src/components/admin/switch-page.tsx": 2,
-  "src/components/admin/switches-list.tsx": 2,
-  "src/components/help/help-panel.tsx": 5,
-  "src/components/legal/legal-header.tsx": 1,
-  "src/components/public/card-page.tsx": 3,
-  "src/components/public/commander-page.tsx": 3,
-  "src/components/public/printings.tsx": 1,
-  "src/components/public/top-bar.tsx": 1,
 
   // S8 (24 files)
   "src/components/cards/card-modal-shared.ts": 1,

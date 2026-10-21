@@ -45,7 +45,7 @@ export function GroupPageView({ page }: { page: GroupPage }) {
                       <ResolvedDot state={o.value} />
                       {o.value === "on" ? adminCopy.switches.app.on : adminCopy.switches.app.off}
                     </span>
-                    <Link href={href} className="col-span-2 text-[13px] text-[color:var(--accent)] md:col-span-1">
+                    <Link href={href} className="col-span-2 text-[13px] text-[color:var(--accent-text)] md:col-span-1">
                       {copy.openSwitch}
                       <PendingReporter href={href} />
                     </Link>

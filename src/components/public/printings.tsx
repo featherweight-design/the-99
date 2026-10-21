@@ -93,7 +93,7 @@ export function PublicPrintings({
           type="button"
           onClick={() => setOpen(true)}
           data-testid="public-printings-show-all"
-          className="md:hidden mt-[12px] w-full min-h-[44px] rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-transparent font-mono text-[12px] text-[color:var(--accent)] cursor-pointer"
+          className="md:hidden mt-[12px] w-full min-h-[44px] rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-transparent font-mono text-[12px] text-[color:var(--accent-text)] cursor-pointer"
         >
           {capped ? c.showAllCapped : c.showAll(printings.length)}
         </button>

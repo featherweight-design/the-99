@@ -29,7 +29,7 @@ const CELL: Record<RailCell, string> = {
 const ROW = "relative flex min-h-[52px] items-center gap-[8px] border-0 border-t-0 border-solid [border-bottom:1px_solid_var(--border)] text-[13.5px] text-[color:var(--fg-body)] md:h-[46px] md:min-h-0 md:gap-[10px]";
 const FACE = "flex h-[26px] w-[26px] flex-none items-center justify-center overflow-hidden rounded-[7px] md:h-[28px] md:w-[28px]";
 const SMALL = "font-mono text-[10.5px] text-[color:var(--fg-faint)] md:text-[11px]";
-const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] no-underline disabled:opacity-60 md:min-h-[32px]";
+const TEXT_BUTTON = "inline-flex min-h-[44px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent-text)] no-underline disabled:opacity-60 md:min-h-[32px]";
 
 function Rails({ cells }: { cells: readonly RailCell[] }) {
   if (cells.length === 0) return null;

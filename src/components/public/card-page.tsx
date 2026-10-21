@@ -115,7 +115,7 @@ function FactsRow({ card }: { card: PublicCard }) {
         </span>
       </Fact>
       <Fact label="rarity">
-        <span className="font-mono text-[color:var(--accent)]">{rarityLabel(card.rarity)}</span>
+        <span className="font-mono text-[color:var(--accent-text)]">{rarityLabel(card.rarity)}</span>
       </Fact>
       <Fact label="commander">
         <span className="text-[color:var(--fg)]">{card.commanderLegal ? c.legal : c.notLegal}</span>
@@ -134,10 +134,10 @@ function LinksOut({ card, commanderLinks }: { card: PublicCard; commanderLinks: 
           className="flex min-h-[52px] items-center justify-between gap-[12px] border-t border-[color:var(--border)] py-[10px] no-underline"
         >
           <span className="flex flex-col gap-[3px]">
-            <span className="text-[15px] font-semibold text-[color:var(--accent)]">{c.asCommander(shortName(card.name))}</span>
+            <span className="text-[15px] font-semibold text-[color:var(--accent-text)]">{c.asCommander(shortName(card.name))}</span>
             <span className="text-[12.5px] text-[color:var(--fg-faint)]">{c.asCommanderSub}</span>
           </span>
-          <span aria-hidden="true" className="text-[18px] text-[color:var(--accent)]">→</span>
+          <span aria-hidden="true" className="text-[18px] text-[color:var(--accent-text)]">→</span>
         </a>
       ) : null}
       <div className="flex min-h-[52px] items-center border-t border-[color:var(--border)]">

@@ -25,7 +25,7 @@ const LINE = "flex min-h-[44px] items-center gap-[10px] border-0 border-t border
 // Dates are desktop only (the phone frames draw none).
 const META = "hidden font-mono text-[11px] text-[color:var(--fg-faint)] md:inline";
 const FACE = "flex h-[26px] w-[26px] flex-none items-center justify-center overflow-hidden rounded-[7px] md:h-[28px] md:w-[28px]";
-const TEXT_BUTTON = "inline-flex min-h-[44px] md:min-h-[32px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent)] disabled:opacity-60";
+const TEXT_BUTTON = "inline-flex min-h-[44px] md:min-h-[32px] items-center border-0 bg-transparent px-[4px] text-[13px] font-medium text-[color:var(--accent-text)] disabled:opacity-60";
 
 /** The numeric field, its label and its help line, as the group editor draws a field. */
 export function NumberField({ label, help, helpPhone, value, onChange, invalid, disabled, edited }: { label: string; help: string; helpPhone?: string; value: string; onChange: (v: string) => void; invalid: boolean; disabled: boolean; edited: boolean }) {

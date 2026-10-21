@@ -37,7 +37,7 @@ export function Avatar({ text, size }: { text: string | null; size: "sm" | "lg" 
   return (
     <span
       aria-hidden
-      className={`inline-flex flex-none items-center justify-center border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] font-mono text-[color:var(--accent)] ${box}`}
+      className={`inline-flex flex-none items-center justify-center border border-solid border-[color:var(--accent)] bg-[color:var(--bg)] font-mono text-[color:var(--accent-text)] ${box}`}
       data-mark={text === null ? "diamond" : undefined}
     >
       {text ?? <i className="block h-[8px] w-[8px] rotate-45 bg-[color:var(--accent)]" />}
@@ -80,7 +80,7 @@ function Row({ row, reveal }: { row: AccountRow; reveal: RowReveal }) {
               <>
                 {rev.email && <span className={`${MONO_WHOLE} text-[color:var(--fg-body)]`}>{rev.email}</span>}
                 <span className={`${MONO_WHOLE} text-[color:var(--fg-muted)]`}>{rev.id}</span>
-                <span className={`${MONO_WHOLE} text-[color:var(--accent)]`}>{maskCopy.shown(utcHourMinute(rev.hidesAt))}</span>
+                <span className={`${MONO_WHOLE} text-[color:var(--accent-text)]`}>{maskCopy.shown(utcHourMinute(rev.hidesAt))}</span>
               </>
             ) : (
               row.email && <span className={`${MONO_META} text-[color:var(--fg-faint)]`}>{row.email}</span>
@@ -90,7 +90,7 @@ function Row({ row, reveal }: { row: AccountRow; reveal: RowReveal }) {
           {reveal.canShow && <ShowButton on={rev !== null} pending={reveal.pending} label={row.name} onShow={reveal.onShow} onHide={reveal.onHide} />}
         </div>
         <span data-invite-meta className="pl-[45px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
-          {phoneHead} · <i className="not-italic text-[color:var(--accent)]">{phoneInv.figure}</i>
+          {phoneHead} · <i className="not-italic text-[color:var(--accent-text)]">{phoneInv.figure}</i>
           {phoneInv.after} · {phoneInv.by} ·{" "}
           <span data-testid="account-spend-phone">
             <span className="sr-only">{copy.featureCols.spent} </span>

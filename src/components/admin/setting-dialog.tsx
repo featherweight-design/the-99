@@ -112,7 +112,7 @@ export function SettingAction({ kind, label }: { kind: SettingKind; label: strin
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="min-h-[24px] bg-transparent p-0 text-left text-[12.5px] text-[color:var(--accent)]">
+      <button type="button" onClick={() => setOpen(true)} className="min-h-[24px] bg-transparent p-0 text-left text-[12.5px] text-[color:var(--accent-text)]">
         {label}
       </button>
       {open && <SettingDialog kind={kind} title={label} onClose={() => setOpen(false)} />}

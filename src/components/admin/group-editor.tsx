@@ -121,7 +121,7 @@ function MemberButton({ row, selected, groupId, onToggle }: { row: MemberRow; se
       </span>
       <span
         className={`hidden flex-none whitespace-nowrap font-mono text-[10.5px] md:inline ${
-          selected && unsaved ? "text-[color:var(--accent)]" : selected ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"
+          selected && unsaved ? "text-[color:var(--accent-text)]" : selected ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"
         }`}
       >
         {state}
