@@ -11,8 +11,9 @@ import { describe, expect, it } from "vitest";
 
 const TRUSTED = new Set(["userId", "env"]);
 
+// A dot entry is never source: list-cache-tables.test.mts makes `.switch-*` temp dirs under src/lib while this walks.
 function sources(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
+  return readdirSync(dir).filter((name) => !name.startsWith(".")).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sources(path);
     return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
@@ -97,6 +98,8 @@ describe("a Server Action never takes the reader's identity or switches as an ar
     expect(isServerModule(`import x from "y";\n"use server";`)).toBe(false);
   });
 
+  // Reads and parses the whole source tree synchronously; vitest's 5s default is too short on a loaded machine
+  // (it timed out at 8-20s under load), so this gets 30s. A false red, not a slow test.
   it("holds across every \"use server\" module", () => {
     let scanned = 0;
     const offenders = sources("src").flatMap((path) => {
@@ -111,5 +114,5 @@ describe("a Server Action never takes the reader's identity or switches as an ar
     // A scan that found no action module would pass over anything.
     expect(scanned).toBeGreaterThan(20);
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 });

@@ -19,6 +19,7 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".")) continue; // list-cache-tables.test.mts makes `.switch-*` temp dirs under src/lib
     const path = join(dir, entry.name);
     if (entry.isDirectory()) walk(path, out);
     else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) out.push(path);
@@ -104,9 +105,11 @@ export function leaks(files: Map<string, string> = tree): string[] {
 }
 
 describe("client imports", () => {
+  // Reads and parses the whole source tree synchronously; vitest's 5s default is too short on a loaded machine
+  // (it timed out at 8-20s under load), so this gets 30s. A false red, not a slow test.
   it("never reach drizzle-orm, the Neon driver, src/db or the GitHub token reader", () => {
     expect(leaks()).toEqual([]);
-  });
+  }, 30_000);
 
   // The walk's own failure paths: each is a form that, unread, would pass a leak.
   it("follows named, default, re-exported and dynamic imports, and skips type-only ones", () => {

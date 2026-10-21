@@ -12,7 +12,7 @@ const FIELDS = new Set(["input", "textarea", "select", "SearchField", "TextField
 const NOT_TEXT = /type\s*=\s*\{?["'](hidden|checkbox|radio|file|range|submit|button)["']/;
 
 const walk = (d: string): string[] =>
-  readdirSync(d).flatMap((f) => {
+  readdirSync(d).filter((f) => !f.startsWith(".")).flatMap((f) => {
     const p = join(d, f);
     return statSync(p).isDirectory() ? walk(p) : /\.tsx$/.test(f) && !/\.test\./.test(f) ? [p] : [];
   });
@@ -47,10 +47,12 @@ export function subSixteenFields(file: string, text?: string): string[] {
 }
 
 describe("no text input under 16px on a touch screen", () => {
+  // Reads and parses the whole source tree synchronously; vitest's 5s default is too short on a loaded machine
+  // (it timed out at 8-20s under load), so this gets 30s. A false red, not a slow test.
   it("no field draws a bare size under 16px", () => {
     const offenders = walk(join(process.cwd(), "src")).flatMap((p) => subSixteenFields(p));
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 
   it("sees a bare size and a size next to a 16px padding, and passes the pointer-fine pair", () => {
     const bad = `export const A = () => <SearchField className="text-[14px]" />;`;

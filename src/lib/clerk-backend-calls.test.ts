@@ -16,8 +16,9 @@ const ALLOWED: Record<string, { names: string[]; why: string }> = {
   "src/lib/invites/clerk.ts": { names: ["clerkClient"], why: "email invitations and the 'already has an account' check: Clerk owns invitations; once per email invite" },
 };
 
+// A dot entry is never source: list-cache-tables.test.mts makes `.switch-*` temp dirs under src/lib while this walks.
 function sources(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
+  return readdirSync(dir).filter((name) => !name.startsWith(".")).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sources(path);
     return /\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
@@ -57,6 +58,8 @@ export function backendImports(text: string): string[] {
 }
 
 describe("Clerk Backend calls on the server", () => {
+  // Reads and parses the whole source tree synchronously; vitest's 5s default is too short on a loaded machine
+  // (it timed out at 8-20s under load), so this gets 30s. A false red, not a slow test.
   it("are imported only where the table above says, with the names it says", () => {
     const found: Record<string, string[]> = {};
     for (const file of sources(join(process.cwd(), "src"))) {
@@ -64,7 +67,7 @@ describe("Clerk Backend calls on the server", () => {
       if (names.length > 0) found[file.slice(process.cwd().length + 1)] = names;
     }
     expect(found).toEqual(Object.fromEntries(Object.entries(ALLOWED).map(([f, v]) => [f, [...v.names].sort()])));
-  });
+  }, 30_000);
 
   it("sees an aliased, multi-line and re-exported import, and ignores auth(), type imports, comments and strings", () => {
     expect(backendImports('import { auth, currentUser as me } from "@clerk/nextjs/server";')).toEqual(["currentUser"]);
