@@ -106,6 +106,7 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
           { oracleId: id, name: c.name, colorIdentity: c.color_identity ?? [], manaCost: c.mana_cost },
           answers,
           env,
+          p.pool === "own",
         ).catch(() => null)
         : null;
     }

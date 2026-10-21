@@ -54,6 +54,32 @@ Carries every piece whose only caller is the UI, so nothing ships dead:
 - The "build from my collection" choice submits the lower bracket as the answer. The screen draws the outcome from the trial's actual rows (review 5), not from `collectionPermits` alone: under the "any" pool the fill can still place an unowned card the gate admits.
 - Any cached results payload keys the new switch (review 12).
 
+## PR 3 as built: the split and the board's amendments (2026-10-21)
+
+Design's handoff (#2144, R1b, approved by Hugh) drew three surfaces; the readiness audit found no red, and d9 approved the
+amendments below. PR 3 is split by surface, each one whole (no caller ships dead):
+
+- **3a, the rows (B):** the buying half priced in `buildFillPlan` (`loadPrices` over the bracket-raising candidates;
+  still never placed), `TrialFigures.bracket` by `permitsOf` over the trial's OWN rows (review 5: an "any cards" fill can
+  buy a Game Changer the gate admits and read 3 with no raiser), own-only counting only the rows the player can sleeve,
+  and the ownership line's `BRACKET` segment. Also fixes PR 1's free test, which passed `owned: true` for every raising
+  candidate, so an unowned EDHREC top card could be called free and placed as a raiser (production never had the switch).
+- **3b, the choice (C):** `decks.answer_bracket_buys`, the hand-off's two radio rows, *Create deck →* waiting for a pick,
+  bought raisers as full `FillCandidate`s behind the player's explicit Hit, and "From my collection" submitting the
+  highest bracket the collection permits (so a retry builds the same deck).
+- **3c, the form (A):** one read when the form opens (the owned cards that can move a bracket, with their identity and
+  facts), color changes rerunning `bracketReach` in the browser, the buying half per color identity on the catalog
+  generation; the payload measured on staging for the busiest account.
+
+Amendments to the PR 3 list above, each the board's call:
+- **Over budget is pickable** (not refused): picking Hit raises the stored budget to what the placed cards and the raisers
+  cost, and the raisers are charged to the cap first, as the build-around card is (G1).
+- **Own-only offers Hit** (not refused): the buying half runs with `ownedOnly: false`; a bought raiser passes the
+  sleeveable pool only behind the player's explicit Hit. The automatic fill still never buys.
+- **The range** needs no rule change: `permitsFor` returns only [1,2], [2], [3], [4] and [4,5], drawn low-high.
+- **Cache keys:** nothing caches the Help me choose results or the trial figures today, and `cachePageForUser` already
+  keys every switch, so review 12 is a no-op.
+
 ## About
 
 Whether the choice owes an About entry (or an edit to Help me choose's) is Hugh's call; prompt 9 asks Design to draw it beside the credits entry.

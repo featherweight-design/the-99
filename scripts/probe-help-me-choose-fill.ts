@@ -176,6 +176,26 @@ async function main() {
     raised.length === chosen.length && chosen.every((id) => raised.includes(id)),
     `kind ${reach?.kind}, chose ${chosen.length}, placed ${raised.length}${reach?.kind === "short" ? `, lands in ${reach.collectionPermits.join("-")}` : ""}`);
   check("the reach fill still fills the whole body", reached.filled === plain.filled, `${reached.filled} against ${plain.filled}`);
+  // THE BUYING HALF (plan PR 3a): priced, so a short collection can be offered what hitting the target
+  // costs. Every card in it the player must buy has a live price, the total is exactly theirs, and
+  // this fill places none of them.
+  if (reach?.kind === "short" && reach.buy) {
+    const ids = reach.buy.raisers;
+    const [buyPrices, buyAvailability] = await Promise.all([
+      loadPrices(ids), loadAvailability(USER, { oracleIds: ids, env: process.env }),
+    ]);
+    const toBuy = ids.filter((id) => !owned.has(id) || (buyAvailability.get(id)?.free ?? 1) <= 0);
+    check("the buying half prices every card it would buy, and its total is their sum",
+      toBuy.length > 0 && toBuy.every((id) => buyPrices.get(id)?.liveCents != null)
+        && reach.buy.buyCents === toBuy.reduce((n, id) => n + (buyPrices.get(id)?.liveCents ?? 0), 0),
+      `${toBuy.length} to buy of ${ids.length}, $${(reach.buy.buyCents / 100).toFixed(2)}`);
+    check("the fill places no card the buying half would buy", !raised.some((id) => toBuy.includes(id)), `${raised.length} placed`);
+  }
+  // THE ROW FIGURE: the trial reads the bracket its own rows land in.
+  const trialed = await trialFill(USER, commanders[0], ask3, on);
+  console.log(`   trial bracket: ${JSON.stringify(trialed.bracket)}`);
+  check("a trial for a bracket-3 answer carries the bracket its rows land in", trialed.bracket !== null && trialed.bracket.permits.length > 0,
+    trialed.bracket ? trialed.bracket.permits.join("-") : "none");
 }
 
 main()

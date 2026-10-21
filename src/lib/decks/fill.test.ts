@@ -1274,12 +1274,13 @@ describe("the raisers step (bracket reach)", () => {
 });
 
 describe("reachCandidates", () => {
-  it("offers owned nonlands in the fill's order, keeping a spell with a land back", () => {
+  it("offers nonlands, owned first, in the fill's order, keeping a spell with a land back", () => {
     const mdfc = c({ oracleId: "mdfc", name: "mdfc", typeLine: "Instant // Land", inclusionPct: 30 });
     const land = c({ oracleId: "land", name: "land", typeLine: "Land", inclusionPct: 90 });
     const back = c({ oracleId: "back", name: "back", typeLine: "Land // Creature — Elf", inclusionPct: 80 });
     const top = c({ oracleId: "top", name: "top", inclusionPct: 70 });
     const unowned = { ...top, oracleId: "unowned", owned: false, ownedQuantity: 0 };
-    expect(reachCandidates([mdfc, land, back, unowned, top]).map((x) => x.oracleId)).toEqual(["top", "mdfc"]);
+    // The unowned one is weighed by the buying half alone; the collection half needs a free copy.
+    expect(reachCandidates([mdfc, land, back, unowned, top]).map((x) => x.oracleId)).toEqual(["top", "mdfc", "unowned"]);
   });
 });

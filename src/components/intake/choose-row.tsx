@@ -302,6 +302,29 @@ function Mark({ mark }: { mark: CommanderMark }) {
   }
 }
 
+/** Bracket reach (R1b): `BRACKET 3` when the deck reaches the bracket asked for, else the bracket it
+ *  lands in (`BRACKET 1-2`) and, when buying reaches it, what that costs (`3 adds $32`). Short
+ *  readings draw in `--fg-body`, a step brighter than the line. */
+function BracketSegments({ bracket }: { bracket: NonNullable<TrialFigures["bracket"]> }) {
+  const short = !bracket.permits.includes(bracket.target);
+  const tone = short ? "text-[color:var(--fg-body)]" : undefined;
+  return (
+    <>
+      <Segment>
+        <span data-testid="row-bracket" className={tone}>
+          <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-muted)]">{copy.results.rowBracket}</span>
+          {copy.results.rowBracketValue(bracket.permits)}
+        </span>
+      </Segment>
+      {short && bracket.buyCents !== null && (
+        <Segment>
+          <span className={tone}>{copy.results.rowBracketAdds(bracket.target, dollars(bracket.buyCents))}</span>
+        </Segment>
+      )}
+    </>
+  );
+}
+
 /** One unbreakable piece of the ownership line, led by its separator (see `OwnershipLine`). */
 function Segment({ children }: { children: ReactNode }) {
   return (
@@ -351,7 +374,7 @@ function OwnershipLine({
         <div className="flex flex-wrap items-center gap-y-[3px] -ml-[14px]">
           <Segment>
             {ownOnly && (
-              <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-locked)]">{copy.results.rowCommander}</span>
+              <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-muted)]">{copy.results.rowCommander}</span>
             )}
             <Mark mark={mark} />
           </Segment>
@@ -372,7 +395,9 @@ function OwnershipLine({
                 )}
               </Segment>
             </>
-          ) : trial.state === "failed" ? (
+          ) : null}
+          {ready?.bracket && <BracketSegments bracket={ready.bracket} />}
+          {ready ? null : trial.state === "failed" ? (
             <Segment>
               <span role="status" className="inline-flex items-center gap-[7px] text-[10.5px] text-[color:var(--fg-muted)]">
                 {copy.results.rowFailed}

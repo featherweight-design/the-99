@@ -199,6 +199,12 @@ export const helpMeChooseCopy = {
     rowCommander: "commander",
     rowOwn: "99 from your cards",
     rowUsual: (owned: number) => `${owned} of its usual 99 are yours`,
+    /** Bracket reach (R1b): a locked label, then the bracket the deck lands in, never "lands". */
+    rowBracket: "bracket",
+    /** The brackets a deck permits, as a range: `1-2`, `3`, `4-5` (`permitsFor`'s shapes). */
+    rowBracketValue: (permits: readonly number[]) =>
+      permits.length > 1 ? `${permits[0]}-${permits[permits.length - 1]}` : `${permits[0]}`,
+    rowBracketAdds: (target: number, price: string) => `${target} adds ${price}`,
     /** The row's set tag, spoken: its code is drawn, the set named. */
     printedIn: (set: string) => `Printed in ${set}`,
     bestFits: "Best fits",

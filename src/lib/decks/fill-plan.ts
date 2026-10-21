@@ -17,9 +17,11 @@ import { readLabelRoleSets } from "../labels/read";
 import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
 import { loadBracketGateFacts, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
-import { bracketReach, type BracketReach } from "../intake/bracket-reach";
+import { bracketReach, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
+import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
+import { loadPrices } from "../discovery/price";
 
 /** Thrown to step over a read this mode cannot use, so the skip and a real failure do not
  *  share a log line. Never escapes `buildFillPlan`. */
@@ -98,7 +100,12 @@ export async function buildFillPlan(
      *  input: this module is not `"use server"`, so only server code that resolved them can pass it. */
     env: NodeJS.ProcessEnv;
   },
-): Promise<FillPlan & { bracketReach?: BracketReach }> {
+): Promise<FillPlan & {
+  bracketReach?: BracketReach;
+  /** The bracket the finished rows permit, and the cheapest buy over them that reaches the target
+   *  (null when they reach it, or nothing buyable does). Set whenever `bracketReach` is. */
+  bracketAfter?: { permits: Bracket[]; buyCents: number | null };
+}> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
   let pool = dedupeSelectionFromPool(
@@ -181,6 +188,9 @@ export async function buildFillPlan(
   // The predicate is `canSeed`'s rather than a second one written from memory: owned, and free
   // unless nothing is known about it. Degraded rather than fatal — without the read the pool
   // is as wide as it was before — except under own-only, where it fails closed (`failClosed`).
+  /** Owned cards the sleeveable narrowing dropped, every copy claimed: never this fill's to place,
+   *  but a card the reach's buying half can offer, since a claimed copy is bought like any other. */
+  let claimed: typeof pool = [];
   if (sleeveableOnly && pool.length > 0) {
     const read = loadAvailability(userId, {
       oracleIds: pool.map((c) => c.oracleId),
@@ -189,10 +199,12 @@ export async function buildFillPlan(
     });
     const seen = options.failClosed ? await read : await read.catch(() => null);
     if (seen) {
+      const whole = pool;
       pool = pool.filter((c) => {
         const a = seen.get(c.oracleId);
         return a === undefined || a.free > 0;
       });
+      claimed = whole.filter((c) => !pool.includes(c));
     }
   }
 
@@ -233,13 +245,14 @@ export async function buildFillPlan(
   );
 
   const { answers, selected, onlyOracleIds, ...fillOptions } = options;
+  const ownedCandidate = (c: (typeof pool)[number]): FillCandidate => ({
+    oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+    oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
+    layout: c.layout, owned: true, ownedQuantity: c.ownedQuantity,
+    inclusionPct: inclusionOf(c.name),
+  });
   const candidates: FillCandidate[] = [
-    ...pool.map((c) => ({
-      oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
-      oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
-      layout: c.layout, owned: true, ownedQuantity: c.ownedQuantity,
-      inclusionPct: inclusionOf(c.name),
-    })),
+    ...pool.map(ownedCandidate),
     ...unownedTop.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
@@ -284,25 +297,35 @@ export async function buildFillPlan(
   let bracketFacts: Awaited<ReturnType<typeof loadBracketGateFacts>> | undefined;
   let reach: BracketReach | undefined;
   let raisers: FillCandidate[] = [];
+  let reachInputs: { fixedIds: string[]; offered: string[]; facts: ReachFacts } | undefined;
   if (answers?.bracket != null && bracketReachEnabled(fillOptions.env)) {
     const fixedIds = [...new Set([...commanderIds, ...excludeOracleIds])];
-    const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...gateCandidates.map((c) => c.oracleId)])]);
+    const claimedCandidates = claimed.map(ownedCandidate).filter((c) => !onlyOracleIds || onlyOracleIds.has(c.oracleId));
+    const offered = reachCandidates([...gateCandidates, ...claimedCandidates]);
+    const facts = await loadBracketGateFacts([...new Set([...fixedIds, ...offered.map((c) => c.oracleId), ...gateCandidates.map((c) => c.oracleId)])]);
     bracketFacts = facts;
-    const offered = reachCandidates(gateCandidates);
-    // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. Read
-    // only for the cards that could raise a bracket, which are few.
+    // FREE, the Shopping list's rule: owned, and not every copy claimed by a committed deck. An
+    // unowned top card is never free, whatever availability says of it (it has no row there). Read
+    // only for the cards that could raise a bracket, which are few, and priced for the same few: the
+    // buying half is the choice's to offer (plan PR 3), never this fill's to place.
     const raising = offered.filter((c) => facts.flagsOf(c.oracleId).gameChanger
       || facts.combosOf(c.oracleId).length > 0 || facts.searches(c.oracleId));
-    const availability = raising.length === 0 ? new Map() : await loadAvailability(userId, {
-      oracleIds: raising.map((c) => c.oracleId), excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
-    });
-    const free = new Set(raising.filter((c) => !buysCopy(true, availability.get(c.oracleId))).map((c) => c.oracleId));
+    const raisingIds = raising.map((c) => c.oracleId);
+    const [availability, prices] = raising.length === 0 ? [new Map(), new Map()] : await Promise.all([
+      loadAvailability(userId, { oracleIds: raisingIds, excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env }),
+      loadPrices(raisingIds),
+    ]);
+    const free = new Set(raising.filter((c) => !buysCopy(c.owned, availability.get(c.oracleId))).map((c) => c.oracleId));
+    const reachFacts: ReachFacts = { ...facts, free: (id) => free.has(id), priceOf: (id) => prices.get(id)?.liveCents ?? null };
+    reachInputs = { fixedIds, offered: offered.map((c) => c.oracleId), facts: reachFacts };
     reach = bracketReach({
       target: answers.bracket, commanderIds, fixedIds, cards: offered.map((c) => c.oracleId),
-      facts: { ...facts, free: (id) => free.has(id), priceOf: () => null },
+      facts: reachFacts,
       budgetCents: answers.budgetCents,
-      // The buying half is the choice's (plan PR 3); this fill never buys toward the answer.
-      ownedOnly: true,
+      // The buying half is computed for the choice to offer (Design R1b), from the unowned top cards
+      // and staples among the candidates. Under own-only the pool holds owned cards alone, so there
+      // it can name only a card whose copies are all claimed. This fill still places only owned raisers.
+      ownedOnly: false,
       // The slots the plan will fill: the caller's count, or the body less what is placed beside
       // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
       capacity: fillOptions.slots
@@ -376,5 +399,10 @@ export async function buildFillPlan(
       !excludeOracleIds.has(b.oracleId) && (!onlyOracleIds || onlyOracleIds.has(b.oracleId))),
   });
   // The reach rides the plan, so the choice (plan PR 3) can read the gap a short collection left.
-  return reach ? { ...plan, bracketReach: reach } : plan;
+  if (!reach || !reachInputs) return plan;
+  // What the finished deck lands in, and what is left to buy over it (`reachOverRows`): the reach
+  // above ran before the fill, which can buy part of its set, a cheaper route, or a tutor.
+  const after = reachOverRows({ target: reach.target, commanderIds, rowIds: [...reachInputs.fixedIds, ...plan.rows.map((r) => r.oracleId)],
+    cards: reachInputs.offered, facts: reachInputs.facts });
+  return { ...plan, bracketReach: reach, bracketAfter: after };
 }

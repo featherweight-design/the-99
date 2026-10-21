@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bracketReach, type ReachFacts } from "./bracket-reach";
+import { bracketReach, reachOverRows, type ReachFacts } from "./bracket-reach";
 import type { ComboEdge } from "./fill-gate";
 import type { Bracket } from "./rank";
 
@@ -168,5 +168,45 @@ describe("bracketReach", () => {
   it("never places a fixed card again", () => {
     const f = world({ flags: { card: { gameChanger: true } }, free: ["card"] });
     expect(reach(3, ["card"], f, { fixedIds: ["cmd", "card"] })).toEqual({ target: 3, kind: "fixed" });
+  });
+});
+
+describe("reachOverRows: what the finished deck lands in, and what is left to buy", () => {
+  const over = (target: Bracket, rowIds: string[], cards: string[], facts: ReachFacts) =>
+    reachOverRows({ target, commanderIds: ["cmd"], rowIds, cards, facts });
+
+  it("never counts a card the fill already bought: a $120 set with $20 of it in the deck leaves $100", () => {
+    const facts = world({
+      flags: { g0: { gameChanger: true }, g1: { gameChanger: true }, g2: { gameChanger: true }, g3: { gameChanger: true } },
+      free: ["g0"], prices: { g1: 1_000, g2: 1_000, g3: 10_000 },
+    });
+    expect(over(4, ["g0", "g1", "g2", "x"], ["g0", "g1", "g2", "g3"], facts)).toEqual({ permits: [3], buyCents: 10_000 });
+  });
+
+  it("takes the cheaper route the fill opened: one combo piece bought leaves the $1 other, not the $10 Game Changer", () => {
+    // Before the fill the reach prefers one card to buy (the Game Changer) over two (the combo).
+    const facts = world({ flags: { gc: { gameChanger: true } }, combos: [{ a: "p1", b: "p2" }], prices: { gc: 1_000, p1: 100, p2: 100 } });
+    expect(reach(3, ["gc", "p1", "p2"], facts)).toMatchObject({ kind: "short", buy: { raisers: ["gc"], buyCents: 1_000 } });
+    expect(over(3, ["p1", "x"], ["gc", "p1", "p2"], facts)).toEqual({ permits: [1, 2], buyCents: 100 });
+  });
+
+  it("drops a set the fill made invalid: a tutor that finds both halves carries the combo past 3", () => {
+    const facts = world({
+      flags: { gc: { gameChanger: true } }, combos: [{ a: "p1", b: "p2" }],
+      prices: { gc: 1_000, p1: 100, p2: 100 }, reaches: { tutor: ["p1", "p2"] },
+    });
+    // With the tutor in the deck, the combo assembles (4), so only the Game Changer reaches 3.
+    expect(over(3, ["tutor", "x"], ["gc", "p1", "p2"], facts)).toEqual({ permits: [1, 2], buyCents: 1_000 });
+  });
+
+  it("reads reached, with nothing to buy, when the rows already hit the target", () => {
+    const facts = world({ flags: { gc: { gameChanger: true } }, prices: { gc: 1_000 } });
+    expect(over(3, ["gc"], ["gc"], facts)).toEqual({ permits: [3], buyCents: null });
+  });
+
+  it("offers a claimed copy the player owns, priced like any buy", () => {
+    // Owned but not free: the collection half cannot take it, the buying half can.
+    const facts = world({ flags: { gc: { gameChanger: true } }, prices: { gc: 2_500 } });
+    expect(over(3, ["x"], ["gc"], facts)).toEqual({ permits: [1, 2], buyCents: 2_500 });
   });
 });
