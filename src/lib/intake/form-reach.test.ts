@@ -86,7 +86,7 @@ describe("formReachCaption: board A's caption, from 3 up", () => {
 
   it("says when nothing stocked reaches it", () => {
     expect(caption(data([]))).toEqual({
-      text: "3 · Upgraded. From your cards in these colors, a deck would be bracket 1-2, and no card the fill can place gets one to 3.",
+      text: "3 · Upgraded. From your cards in these colors, a deck would be bracket 1-2, and no Game Changer to buy gets one to 3 here. The new deck checks again once you pick a commander.",
       short: true,
     });
   });

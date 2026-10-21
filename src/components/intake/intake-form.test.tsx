@@ -303,7 +303,7 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
     expect(await screen.findByText("3 · Upgraded. Your cards in these colors would reach it.")).toBeTruthy();
     // Bracket 4 in blue: one free Game Changer and one stocked, short of four, so nothing reaches it.
     fireEvent.click(screen.getByRole("radio", { name: "4" }));
-    expect(screen.getByText(/a deck would be bracket 3, and no card the fill can place gets one to 4\./)).toBeTruthy();
+    expect(screen.getByText(/a deck would be bracket 3, and no Game Changer to buy gets one to 4 here\./)).toBeTruthy();
     expect(formReachData).toHaveBeenCalledTimes(1);
   });
 
