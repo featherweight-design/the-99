@@ -1,6 +1,6 @@
 # About · launch-end batch, six entries (addendum)
 
-Account 2, 2026-10-21. Status: **R1, awaiting Hugh's audit.** Brief:
+Account 2, 2026-10-21. Status: **approved by Hugh, 2026-10-21** (R1b: the card-scan halo centred on the +; desktop keeps the phone picture). Brief:
 `docs/superpowers/design-briefs/2026-10-18-about-launch-entries.md` (#2072). Canvas (account 2):
 https://claude.ai/artifact/9LxtYGxzDzb6zPtudXpB5p
 
@@ -76,8 +76,9 @@ the six entry objects (all `since: 16`), the `friends` caption edit and the sugg
 - G7 · R1b: the `card-scan` halo is a 36 square centred on the + glyph. The shipped 44 box (`collection-add-phone`)
   runs to the frame's right edge, so its halo clips and the + reads off-centre; inset the measured box to the visible
   press (this also fixes the three entries that share it).
-- G8 · Desktop shows the phone frame too (one 390 capture per screen, Decided 6). Some controls differ on desktop
-  ("+ Add cards", the ? at the rail's foot, the rail's search field): open question for Hugh.
+- G8 · Desktop shows the phone frame too (one 390 capture per screen, Decided 6), though some controls differ on
+  desktop ("+ Add cards", the ? at the rail's foot, the rail's search field). **Ruled by Hugh 2026-10-21: keep the
+  phone picture at both widths.** A desktop capture set would be its own round, for every entry.
 - G6 · Words are the drafts as quoted, for `/copy-review`; `card-scan`'s are stale per Draft vs code 13.
 
 ## Reading the boards
