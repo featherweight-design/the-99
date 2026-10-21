@@ -130,10 +130,10 @@ credit carries on.
 | G4 | Dates in the reader's own day: the shipped `expiring` and `shortDay` read UTC. The welcome forms render after hydration. | Eng |
 | G5 | With a plan and the welcome lot both within 3 days, the chip's line names the earlier; the credit line names both. | Eng |
 | G6 | Rows follow `captionLineSwitches`, as Written for you does; with every row off the section is absent. | Eng |
-| G7 | About entry not drawn: it joins the launch-end batch (launch plan G1). New entry or an edit to `credits` is Hugh's call. | Hugh |
+| G7 | About: the `credits` entry was redrawn in #2144 (`design_handoff_the99_about/addendum-credits-entry/`) and already names welcome credits in spend order. Whether this surface also owes its own entry is Hugh's call at the launch About batch. | Hugh |
 | G8 | Every string is a placeholder in `welcome-credits · copy strings.ts`, for /copy-review. | Note |
 
 ## Not drawn
 - Converting the leftover on purchase (out of scope; nothing promises it).
 - Invite credits, the value recap at the wall, email reminders.
-- The About entry (G7).
+- A new About entry (G7).
