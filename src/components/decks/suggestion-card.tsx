@@ -155,12 +155,12 @@ export function SuggestionCard({
           <Name item={item} side="cut" />
         </span>
         <span className="flex min-w-0 items-center gap-[9px]">
-          <span aria-hidden className="hidden flex-none font-mono text-[13px] md:inline" style={{ color: "var(--accent)" }}>
+          <span aria-hidden className="hidden flex-none font-mono text-[13px] md:inline" style={{ color: "var(--accent-text)" }}>
             {"→"}
           </span>
           <Thumb item={item} side="add" />
           <span className="flex min-w-0 flex-auto items-center gap-[7px]">
-            <span aria-hidden className="flex-none font-mono text-[12px] md:hidden" style={{ color: "var(--accent)" }}>
+            <span aria-hidden className="flex-none font-mono text-[12px] md:hidden" style={{ color: "var(--accent-text)" }}>
               {"→"}
             </span>
             <OwnershipDot owned={item.owned} size={7} />
@@ -207,7 +207,7 @@ export function SuggestionCard({
             onClick={() => answer("apply")}
             aria-disabled={busy !== null || undefined}
             disabled={busy !== null}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
             {busy === "apply" ? copy.applying : copy.apply}
           </button>

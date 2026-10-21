@@ -120,7 +120,7 @@ export function UnresolvedRow({
         <span
           aria-hidden
           className="hidden md:inline flex-none text-[12px] font-semibold"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "var(--accent-text)" }}
         >
           {copy.rowFix}
         </span>

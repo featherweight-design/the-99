@@ -260,7 +260,7 @@ export function TuningHistory({
                 data-history-more=""
                 aria-busy={state.more === "loading" || undefined}
                 onClick={showMore}
-                className="flex min-h-[44px] items-center justify-center text-[12.5px] font-medium text-[var(--accent)] md:min-h-[30px]"
+                className="flex min-h-[44px] items-center justify-center text-[12.5px] font-medium text-[var(--accent-text)] md:min-h-[30px]"
               >
                 {copy.more}
               </button>
@@ -322,7 +322,7 @@ const OUTCOME_STYLE: Record<HistoryOutcome, { color: string; background: string 
   refused: { color: "var(--fg-body)", background: "var(--elevated)" },
   stopped: { color: "var(--fg-muted)", background: "var(--elevated)" },
   failed: { color: "var(--danger)", background: "transparent" },
-  running: { color: "var(--accent)", background: "color-mix(in srgb, var(--accent) 14%, transparent)" },
+  running: { color: "var(--accent-text)", background: "color-mix(in srgb, var(--accent) 14%, transparent)" },
 };
 
 export function TierPill({ tier }: { tier: HistoryTier }) {
@@ -330,7 +330,7 @@ export function TierPill({ tier }: { tier: HistoryTier }) {
     ? { color: "var(--fg-faint)" }
     : tier === "credit"
       ? { color: "var(--fg-body)" }
-      : { color: "var(--accent)", border: "1px solid var(--accent-dim)", background: "color-mix(in srgb, var(--accent) 12%, transparent)", padding: "1px 8px" };
+      : { color: "var(--accent-text)", border: "1px solid var(--accent-dim)", background: "color-mix(in srgb, var(--accent) 12%, transparent)", padding: "1px 8px" };
   return (
     <span data-tier={tier} className="inline-flex items-center gap-[5px] whitespace-nowrap rounded-full font-mono text-[10px]" style={style}>
       {tier === "free" ? null : <span aria-hidden="true" className="h-[6px] w-[6px] flex-none rotate-45" style={{ background: "currentColor" }} />}
@@ -356,7 +356,7 @@ function Row({ row, onOpen }: { row: HistoryRow; onOpen: () => void }) {
     >
       <span className="col-start-2 row-start-1 whitespace-nowrap font-mono text-[11px] md:col-start-1" style={{ color: "var(--fg-faint)" }}>{date}</span>
       <span className="col-start-1 row-start-1 flex w-[96px] items-center gap-[7px] text-[12px] font-medium md:col-start-2 md:w-[104px]" style={{ color: "var(--fg-body)" }}>
-        <span style={{ color: running ? "var(--accent)" : "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
+        <span style={{ color: running ? "var(--accent-text)" : "var(--fg-body)" }}><TuningToolMark tool={row.tool} size={14} /></span>
         {copy.tool[row.tool]}
       </span>
       <span className="col-span-full row-start-2 min-w-0 text-[12.5px] leading-[1.45] md:col-span-1 md:col-start-3 md:row-start-1" style={{ color: "var(--fg-body)" }}>{summary}</span>
@@ -382,7 +382,7 @@ function LoadFailed({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="flex min-h-[44px] items-center self-start rounded-[8px] border border-[var(--accent)] bg-transparent px-[18px] text-[13.5px] font-semibold text-[var(--accent)] md:min-h-[40px]"
+        className="flex min-h-[44px] items-center self-start rounded-[8px] border border-[var(--accent)] bg-transparent px-[18px] text-[13.5px] font-semibold text-[var(--accent-text)] md:min-h-[40px]"
       >
         {copy.retry}
       </button>

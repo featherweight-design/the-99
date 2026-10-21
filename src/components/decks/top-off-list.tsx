@@ -1204,7 +1204,7 @@ export function TopOffList({
                 ? "[border:1px_solid_var(--accent-shadow)] [color:var(--fg-faint)]"
                 : tickedCount === 0
                   ? "[border:1px_solid_var(--border)] [color:var(--fg-locked)]"
-                  : "[border:1px_solid_var(--accent)] [color:var(--accent)]",
+                  : "[border:1px_solid_var(--accent)] [color:var(--accent-text)]",
             ].join(" ")}
           >
             {primaryLabel}
@@ -1418,7 +1418,7 @@ function CandidateRow({
             ? {
                 border: "1px solid var(--accent)",
                 background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-                color: "var(--accent)",
+                color: "var(--accent-text)",
               }
             : {
                 border: `1px solid var(--${inert ? "border" : "border-strong"})`,
@@ -1600,7 +1600,7 @@ function CandidateRow({
             <span
               aria-hidden
               className="flex-none md:order-6 md:w-[60px] md:text-right md:text-[12px]"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "var(--accent-text)" }}
             >
               {c.synergyPts === null
                 ? synergyCopy.figure.synergyNone

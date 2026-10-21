@@ -42,7 +42,7 @@ export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onS
           onClick={() => press(() => setTokenHeld(ctx.deckId, token.oracleId, !byHand), token)}
           className={`mt-[6px] flex min-h-[44px] items-center border-0 bg-transparent p-0 text-left text-[13px] disabled:opacity-60 md:min-h-[30px] ${
             byHand
-              ? "font-medium text-[color:var(--accent)]"
+              ? "font-medium text-[color:var(--accent-text)]"
               : "font-normal text-[color:var(--fg-body)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
           }`}
         >

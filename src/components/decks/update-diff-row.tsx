@@ -535,7 +535,7 @@ export function DiffRowKeep({
         `font-mono text-[11.5px] ${ROW_RADIUS} h-[38px] md:h-[34px] min-w-[64px] flex-none`,
         "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
         kept
-          ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+          ? "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
           : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
       ].join(" ")}
     >

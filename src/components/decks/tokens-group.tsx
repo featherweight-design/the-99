@@ -87,7 +87,7 @@ export function TokensGroup() {
               <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{tokensCopy.unknown.body}</p>
               <Link
                 href="/collection"
-                className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent)] md:min-h-[30px]"
+                className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent-text)] md:min-h-[30px]"
               >
                 {tokensCopy.unknown.action}
                 <PendingReporter href="/collection" />

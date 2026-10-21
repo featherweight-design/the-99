@@ -85,7 +85,7 @@ function Delta({
 function CurrentMarker({ phone }: { phone: boolean }) {
   return (
     <span
-      className={`flex-none font-mono uppercase tracking-[0.12em] rounded-[4px] border border-solid border-[color:var(--accent-shadow)] text-[color:var(--accent)] ${
+      className={`flex-none font-mono uppercase tracking-[0.12em] rounded-[4px] border border-solid border-[color:var(--accent-shadow)] text-[color:var(--accent-text)] ${
         phone ? "text-[9.5px] px-[6px] py-[1px]" : "text-[10px] px-[7px] py-[2px]"
       }`}
     >
@@ -192,7 +192,7 @@ function RailRow({
         <span className="flex items-baseline gap-[9px]">
           <span
             className="font-mono text-[13px]"
-            style={{ color: version.current ? "var(--accent)" : "var(--fg-body)" }}
+            style={{ color: version.current ? "var(--accent-text)" : "var(--fg-body)" }}
           >
             {`v${version.number}`}
           </span>
@@ -212,7 +212,7 @@ function RailRow({
           className="flex-none font-mono text-[13px]"
           style={{
             width: NUMBER_SLOT,
-            color: version.current ? "var(--accent)" : "var(--fg-body)",
+            color: version.current ? "var(--accent-text)" : "var(--fg-body)",
           }}
         >
           {`v${version.number}`}
@@ -346,7 +346,7 @@ function OriginActions({ deckId, deckName, origin }: { deckId: string; deckName:
   return (
     <>
       <div data-origin-actions className="flex flex-wrap items-center gap-x-[18px] mt-[6px]">
-        <Link href={`/decks/precons/${encodeURIComponent(origin.fileName)}`} className={`${action} text-[color:var(--accent)] no-underline`}>
+        <Link href={`/decks/precons/${encodeURIComponent(origin.fileName)}`} className={`${action} text-[color:var(--accent-text)] no-underline`}>
           {historyOriginCopy.originOpen(origin.name)}
           <PendingReporter href={`/decks/precons/${encodeURIComponent(origin.fileName)}`} />
         </Link>
