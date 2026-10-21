@@ -119,6 +119,14 @@ describe("add lines", () => {
       expect(lines[0].scan?.guesses.map((g) => g.oracleId)).toEqual([OID, OTHER]);
     });
 
+    it("takes the printing the scan matched for the other card, not its first", () => {
+      const first = choice({ scryfallId: "p1", setCode: "c13" });
+      const seen = choice({ scryfallId: "p2", setCode: "wwk", finishes: ["foil"] });
+      const scored = { ...scan, guesses: [scan.guesses[0], { ...scan.guesses[1], printings: [{ scryfallId: "p2", score: 0.9 }, { scryfallId: "p1", score: 0.5 }] }] };
+      const lines = setQuantity(choosePrinting([{ ...openLine([], base([choice()]))[0], scan: scored }], "a", choice()).lines, "a", 2);
+      expect(swapScannedCard(lines, "a", OTHER, [first, seen]).lines[0]).toMatchObject({ oracleId: OTHER, printing: seen, finish: "foil", quantity: 2 });
+    });
+
     it("folds into a line that already holds the card it becomes", () => {
       const c = choice({ setCode: "wwk", collectorNumber: "133" });
       const twin: AddLineState = { id: "b", oracleId: OTHER, name: "Mind Stone", imageUri: null, choices: [c], printing: c, finish: "nonfoil", quantity: 1 };

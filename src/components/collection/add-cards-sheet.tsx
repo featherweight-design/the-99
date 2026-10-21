@@ -398,7 +398,7 @@ function AddMode({
     })();
   }
 
-  /** L2: the scanned line becomes another of the cards its scan named, at that card's first printing. */
+  /** L2: the scanned line becomes another of the cards its scan named, at the printing its scan matched for that card. */
   async function swapCard(lineId: string, oracleId: string, name: string) {
     if (swapping || scanPending > 0) return;
     setNotice(null);
