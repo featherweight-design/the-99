@@ -6,6 +6,7 @@ import { lookupCard } from "../../../lib/scan/lookup";
 import type { Source } from "../../../lib/scan/pipeline";
 import type { ScanSource } from "../../../lib/collection/add-lines";
 import type { ScanGuess, ScanMode } from "./scan-view";
+import { toScanGuess } from "./screen-state";
 import { addKept, nextFrame, type AddOutcome, type FrameRead } from "./use-card-scan";
 
 /**
@@ -121,7 +122,7 @@ export function usePhotoReader(
       onProblemRef.current(notReady ? "notReady" : "photoFailed");
       return notReady ? { kind: "failed", notReady: true } : { kind: "failed" };
     }
-    const guesses = r.guesses.map((g) => ({ oracleId: g.oracleId, name: g.name, typeLine: g.typeLine, imageUri: g.imageUri }));
+    const guesses = r.guesses.map(toScanGuess);
     if (guesses.length === 0) return { kind: "failed" };
     if (r.sure) return { kind: "sure", guess: guesses[0], guesses: guesses.slice(0, 3) };
     return { kind: "notSure", guesses: guesses.slice(0, 3) };
@@ -183,7 +184,7 @@ export function usePhotoReader(
     async (id: number, guess: ScanGuess, named: ScanGuess[] = [guess]): Promise<boolean> => {
       // A photo's line carries its closest cards for the fix, the added one first. No photo: a thumbnail's object URL
       // is released with the scanner, before the review the fix is read in.
-      const guesses = [guess, ...named.filter((g) => g.oracleId !== guess.oracleId)].map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri }));
+      const guesses = [guess, ...named.filter((g) => g.oracleId !== guess.oracleId)].map(({ oracleId, name, imageUri, printings }) => ({ oracleId, name, imageUri, printings }));
       // A photo's row waits for the add to settle: it has no feed to keep live, and its row says Added only once kept.
       if (!(await addKept(await onAdd(guess, modeRef.current, { photo: null, guesses })))) {
         onProblemRef.current("notAdded");

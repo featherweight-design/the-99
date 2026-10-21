@@ -1,5 +1,7 @@
 import type { PrintingChoice } from "./catalog-read";
 import type { Finish } from "./key";
+import type { ScoredPrinting } from "../card-scan/match";
+import { matchedPrinting } from "../scan/printing-order";
 
 /**
  * The list the Add cards sheet builds (collection screens plan, PR 2, handoff B4/B5).
@@ -33,10 +35,13 @@ export type AddLineState = {
   pending?: true;
 };
 
-/** What a scan saw: the card's photo as it was read, and the closest cards, the one on the line first. */
+/**
+ * What a scan saw: the card's photo as it was read, and the closest cards, the one on the line first, each with the
+ * printings the server scored near the scan (`printings`, best first), so a swap takes the printing in the photo.
+ */
 export type ScanSource = {
   photo: string | null;
-  guesses: { oracleId: string; name: string; imageUri: string | null }[];
+  guesses: { oracleId: string; name: string; imageUri: string | null; printings?: readonly ScoredPrinting[] }[];
 };
 
 /** The finish a printing is added in until the player says otherwise (plan PR 1 note 3). */
@@ -83,8 +88,8 @@ export function choosePrinting<L extends AddLineState>(lines: L[], id: string, p
 }
 
 /**
- * A scanned line put right (card-scan L2): it becomes another of the cards its scan named, at that card's first
- * printing, keeping its count and its scan. The guesses keep the scan's order (the card first added leads, as L2
+ * A scanned line put right (card-scan L2): it becomes another of the cards its scan named, at the printing the scan
+ * matched for that card (`matchedPrinting`), else its first, keeping its count and its scan. The guesses keep the scan's order (the card first added leads, as L2
  * draws it), so the tiles do not move under a keyboard reader's arrows: the tick moves instead.
  * A line that becomes a holding another line names folds into it, as any printing change does.
  */
@@ -92,9 +97,10 @@ export function swapScannedCard(lines: AddLineState[], id: string, oracleId: str
   const line = lines.find((l) => l.id === id);
   const guess = line?.scan?.guesses.find((g) => g.oracleId === oracleId);
   if (!line?.scan || !guess || choices.length === 0) return { lines, merged: null };
+  const printing = matchedPrinting(choices, guess.printings ?? [])!;
   const next = lines.map((l) =>
     l.id === id
-      ? { ...l, oracleId, name: guess.name, imageUri: guess.imageUri, choices, printing: choices[0], finish: defaultFinish(choices[0]) }
+      ? { ...l, oracleId, name: guess.name, imageUri: guess.imageUri, choices, printing, finish: defaultFinish(printing) }
       : l,
   );
   return fold(next, id);

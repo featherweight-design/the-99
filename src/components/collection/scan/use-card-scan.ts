@@ -353,7 +353,7 @@ export function useCardScan(
         heldSnap.current = null;
         const capture: ScanCapture = {
           photo: snap.crop ? (depsRef.current.photo ?? photoOf)(snap.crop) : null,
-          guesses: [g, ...snap.named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri }) => ({ oracleId, name, imageUri })),
+          guesses: [g, ...snap.named.filter((x) => x.oracleId !== g.oracleId)].slice(0, 3).map(({ oracleId, name, imageUri, printings }) => ({ oracleId, name, imageUri, printings })),
         };
         out = await onAdd(g, mode, capture, picked);
       } finally {
