@@ -9,7 +9,8 @@
 // 1. THE FIELD STAYS IN VIEW: its box is inside the visible viewport and nothing is painted over it after the press.
 // 2. THE PAGE DOES NOT JUMP: with the open list's room under the field it does not move at all; without it, it
 //    moves no further than bringing the field to the top of the view (K9).
-// 3. THE FILLED LIST IS SEEN: after typing a name, the list (uncapped from `md`) ends inside the visible area.
+// 3. THE FILLED LIST IS SEEN: after typing a name, the list (uncapped from `md`) ends inside the visible area and
+//    above any shown bar pinned over the window's foot (`data-foot-bar`: the tab bar, Help me choose's dock).
 //
 // TAG_SCROLL_ROOM=1 adds 2000px under <main>, so a short page's end cannot cut a scroll short and hide a jump.
 //
@@ -58,6 +59,25 @@ async function signIn(page) {
   }, EMAIL);
 }
 
+/**
+ * Installs `window.__footFloor()`: the visible bottom raised past every shown bar pinned over the window's foot,
+ * walking up while a bar's foot meets the floor so far. The picker's own rule (`footFloor`, card-tag-picker.tsx).
+ */
+const installFloor = (page) =>
+  page.evaluate(() => {
+    window.__footFloor = () => {
+      const vv = window.visualViewport;
+      const bars = [...document.querySelectorAll("[data-foot-bar]")]
+        .filter((b) => getComputedStyle(b).display !== "none")
+        .map((b) => b.getBoundingClientRect())
+        .filter((r) => r.height > 0)
+        .sort((a, b) => b.bottom - a.bottom);
+      let floor = (vv?.offsetTop ?? 0) + (vv?.height ?? innerHeight);
+      for (const r of bars) if (r.bottom >= floor - 2 && r.top < floor) floor = r.top;
+      return Math.round(floor);
+    };
+  });
+
 /** Where the field and the page stand: the field's box against the visible viewport, below the page's scroll padding. */
 const measure = (field) =>
   field.evaluate((el) => {
@@ -70,7 +90,7 @@ const measure = (field) =>
     const x = r.left + Math.min(r.width / 2, 40), y = r.top + Math.min(r.height / 2, 12);
     const hit = document.elementFromPoint(x, y);
     const covered = !(hit && (el === hit || el.contains(hit) || hit.contains(el))) ? (hit?.closest("header,nav,[class*=sticky],[class*=fixed]")?.outerHTML.slice(0, 120) ?? hit?.tagName ?? "nothing") : null;
-    return { covered, scrollY: Math.round(window.scrollY), top: Math.round(r.top), bottom: Math.round(r.bottom), viewTop: Math.round(top), viewBottom: Math.round(bottom), focused: document.activeElement === el };
+    return { covered, scrollY: Math.round(window.scrollY), top: Math.round(r.top), bottom: Math.round(r.bottom), viewTop: Math.round(top), viewBottom: Math.round(bottom), floor: window.__footFloor(), focused: document.activeElement === el };
   });
 
 async function press(page, button, touch) {
@@ -100,6 +120,7 @@ async function pressOnce(page, label, field, button, touch, cold) {
     room.style.height = "2000px";
     document.querySelector("main")?.append(room);
   });
+  await installFloor(page);
   await field.scrollIntoViewIfNeeded();
   if (cold) {
     // The reader presses the button without first going into the box: the press itself puts the caret there.
@@ -115,7 +136,8 @@ async function pressOnce(page, label, field, button, touch, cold) {
   // A field with the list's room under it in the visible area stays put; one without may be brought up to the top
   // of the view (K9), never past it.
   const moved = after.scrollY - before.scrollY;
-  const roomy = before.bottom + LIST_ROOM_PX <= before.viewBottom;
+  // Judged against the lower floor: a dock may grow once the list opens (Help me choose's does), taking room with it.
+  const roomy = before.bottom + LIST_ROOM_PX <= Math.min(before.floor, after.floor);
   const allowed = roomy ? 1 : Math.max(0, before.top - before.viewTop) + 2;
   check(`${label}: the page ${roomy ? "does not move (the list has room)" : "moves no further than the field's top"}`, Math.abs(moved) <= allowed, { moved, allowed });
   check(`${label}: the field keeps focus and holds the open tag`, after.focused && (await field.inputValue()).includes("[["));
@@ -126,7 +148,7 @@ async function pressOnce(page, label, field, button, touch, cold) {
     const list = await page.evaluate(() => {
       const ul = document.querySelector('[role="listbox"][id$="-list"]');
       const vv = window.visualViewport;
-      return ul ? { bottom: Math.round(ul.getBoundingClientRect().bottom), options: ul.querySelectorAll('[role="option"]').length, viewBottom: Math.round((vv?.offsetTop ?? 0) + (vv?.height ?? innerHeight)) } : null;
+      return ul ? { bottom: Math.round(ul.getBoundingClientRect().bottom), options: ul.querySelectorAll('[role="option"]').length, viewBottom: window.__footFloor() } : null;
     });
     check(`${label}: the filled list ends inside the visible area`, list !== null && list.options > 0 && list.bottom <= list.viewBottom + 1, list);
   }
@@ -164,7 +186,8 @@ try {
     // The deck's description box, on the Analysis tab (the empty state, or Suggested changes' editor).
     await page.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded" });
     await onPageRole(page, "tab", /analysis/i).first().click();
-    const desc = onPage(page, "#deck-description-field");
+    // The empty state's field, or the Suggested changes editor's (`DescribingInPlace`).
+    const desc = onPage(page, "#deck-description-field, #tuning-describing-field").first();
     const tile = onPage(page, "button[data-tool-tile='suggested']");
     const opener = onPageRole(page, "button", /Describe your deck →/);
     await Promise.race([tile.waitFor({ timeout: 60_000 }), desc.waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);

@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
-import { reveal } from "../../lib/ui/reveal";
+import { appScrolling, reveal } from "../../lib/ui/reveal";
 
 /** A card the surface holds, for the picker's local "In this deck" group. */
 export type DeckCardOption = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
@@ -23,6 +23,22 @@ type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 const GROUP_MAX = 5;
 const REMOTE_MIN_LETTERS = 2;
 const DEBOUNCE_MS = 150;
+/**
+ * The visible bottom raised past every shown bar pinned over the window's foot (`data-foot-bar`), walking up from
+ * `bottom`: a bar counts only while its foot meets the floor so far (the tab bar, then a dock sitting on it), so a
+ * sticky bar still in the page's flow above the foot is not over the list. A bar holding the field is not over it.
+ */
+function footFloor(bottom: number, field: Element): number {
+  const bars = [...document.querySelectorAll("[data-foot-bar]")]
+    .filter((b) => !b.contains(field) && getComputedStyle(b).display !== "none")
+    .map((b) => b.getBoundingClientRect())
+    .filter((r) => r.height > 0)
+    .sort((a, b) => b.bottom - a.bottom);
+  let floor = bottom;
+  for (const r of bars) if (r.bottom >= floor - 2 && r.top < floor) floor = r.top;
+  return floor;
+}
+
 /** The room the open list needs under the field: its phone cap (`max-h-[220px]` on the list) and its 4px gap. */
 const LIST_ROOM_PX = 224;
 
@@ -106,25 +122,31 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   // under it there: a sticky bar and a phone keyboard would otherwise cover the list. A field that already has the
   // room stays where it is (Hugh, 2026-10-20: every `[[ ]]` press scrolled the page down, often taking the field out
   // of view). The room is the list's phone cap, or the list itself where it is taller (from `md` it has no cap, and
-  // grows as the reader types, so it is measured again as it grows). The visible bottom is the visual viewport's,
-  // since `getBoundingClientRect` is in layout-viewport coordinates and a keyboard pans the visible area inside it;
-  // a keyboard still rising when the list opens (a press from outside the box) resizes it, so that measures again too.
+  // grows as the reader types, so it is measured again as it grows). It must end above the visible bottom: the
+  // visual viewport's (`getBoundingClientRect` is in layout-viewport coordinates and a keyboard pans the visible area
+  // inside it), or the top of a shown bar pinned over the window's foot (`data-foot-bar`: the tab bar, a page's
+  // dock), whichever is higher. A keyboard still rising when the list opens resizes the visual viewport, so that
+  // measures again too. A change while a reveal is moving the page (a list whose cap follows the scroll) waits until
+  // it has settled, so it never restarts the reveal it was caused by.
   useEffect(() => {
     const el = field.current;
     if (!open || !el) return;
     const vv = window.visualViewport;
     const list = document.getElementById(`${id}-list`);
+    let later: ReturnType<typeof setTimeout> | null = null;
     const check = () => {
-      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      if (later !== null) clearTimeout(later);
+      later = null;
+      if (appScrolling()) { later = setTimeout(check, 120); return; }
+      const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
       const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
-      // A later reveal replaces one still running, so a list that grows mid-reveal is measured from where it is.
-      if (needed > visibleBottom) reveal(el, "start");
+      if (needed > floor) reveal(el, "start");
     };
     check();
     vv?.addEventListener("resize", check);
     const grows = list && typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
     if (list) grows?.observe(list);
-    return () => { vv?.removeEventListener("resize", check); grows?.disconnect(); };
+    return () => { vv?.removeEventListener("resize", check); grows?.disconnect(); if (later !== null) clearTimeout(later); };
   }, [open, field, id]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;

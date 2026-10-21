@@ -20,11 +20,12 @@ vi.mock("../../../app/decks/notes-actions", () => ({
 vi.mock("../../../lib/ui/reveal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../lib/ui/reveal")>()),
   reveal: vi.fn(),
+  appScrolling: vi.fn(() => false),
 }));
 vi.mock("../../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: stub.open }) }));
 
 const { DeckNotesPanel } = await import("./deck-notes-panel");
-const { reveal } = await import("../../../lib/ui/reveal");
+const { reveal, appScrolling } = await import("../../../lib/ui/reveal");
 
 const DECK = "22222222-2222-4222-8222-222222222222";
 const SOL = "6d0a5f7e-1111-4222-8333-444455556666";
@@ -210,6 +211,43 @@ describe("adding", () => {
     } finally {
       HTMLElement.prototype.getBoundingClientRect = own;
     }
+  });
+
+  it("brings the field to the top when the list's room would end under a bar pinned over the window's foot", async () => {
+    vi.mocked(reveal).mockClear();
+    const bar = document.createElement("nav");
+    bar.setAttribute("data-foot-bar", "");
+    // A 74px tab bar: a field ending 260px above the window's foot has its 224px of room inside the window, but the
+    // last 38px of it under the bar.
+    bar.getBoundingClientRect = () => ({ top: window.innerHeight - 74, bottom: window.innerHeight, left: 0, right: 390, width: 390, height: 74, x: 0, y: window.innerHeight - 74, toJSON: () => ({}) });
+    document.body.appendChild(bar);
+    try {
+      mount(view([note("a", "x")]));
+      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      at(field, window.innerHeight - 306);
+      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+      expect(reveal).toHaveBeenCalledWith(field, "start");
+    } finally {
+      bar.remove();
+    }
+  });
+
+  it("waits for a reveal moving the page to settle before measuring again, so it never restarts that reveal", async () => {
+    vi.mocked(reveal).mockClear();
+    // A reveal is moving the page when the list opens; it settles on the next check.
+    vi.mocked(appScrolling).mockReturnValueOnce(true);
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, window.innerHeight - 100);
+    // The caret is in the box already, as when the reader presses from inside it: the list stays open.
+    field.focus();
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+    expect(reveal).not.toHaveBeenCalled();
+    await new Promise((done) => setTimeout(done, 200));
+    expect(reveal).toHaveBeenCalledTimes(1);
+    expect(reveal).toHaveBeenCalledWith(field, "start");
   });
 
   it("brings the field to the top when the open list would not fit under it", async () => {
