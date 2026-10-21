@@ -306,8 +306,9 @@ export async function buildFillPlan(
       target: answers.bracket, commanderIds, fixedIds, cards: offered.map((c) => c.oracleId),
       facts: { ...facts, free: (id) => free.has(id), priceOf: (id) => prices.get(id)?.liveCents ?? null },
       budgetCents: answers.budgetCents,
-      // The buying half is computed for the choice to offer, even under own-only (Design R1b: "Hit"
-      // names the card from outside the collection). This fill still places only owned raisers.
+      // The buying half is computed for the choice to offer (Design R1b), from the unowned top cards
+      // and staples among the candidates. Under own-only the pool holds owned cards alone, so there
+      // it can name only a card whose copies are all claimed. This fill still places only owned raisers.
       ownedOnly: false,
       // The slots the plan will fill: the caller's count, or the body less what is placed beside
       // it, the same figure `slots` below is built from. A set that cannot fit is never chosen.
