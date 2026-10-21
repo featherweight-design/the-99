@@ -50,23 +50,34 @@ describe("trialFill", () => {
 });
 
 describe("trialFill's bracket figure (bracket reach R1b)", () => {
+  const gcs = new Set(["gc", "g0", "g1", "g2", "g3"]);
   const facts = {
-    flagsOf: (id: string) => ({ gameChanger: id === "gc", massLandDenial: false, extraTurn: false }),
+    flagsOf: (id: string) => ({ gameChanger: gcs.has(id), massLandDenial: false, extraTurn: false }),
     combosOf: () => [], searches: () => false, reaches: () => false,
   };
   const answers = { budgetCents: null, bracket: 3 as const, cardOracleId: null };
   const shortReach = { target: 3, kind: "short", collectionPermits: [1, 2], collectionRaisers: [], buy: { raisers: ["gc"], buyCents: 3_190, overBudget: false } };
+  const PRICES: Record<string, number> = { gc: 3_190, g1: 1_000, g2: 1_000, g3: 10_000 };
 
   beforeEach(async () => {
     const { loadBracketGateFacts } = await import("./fill-facts");
     vi.mocked(loadBracketGateFacts).mockResolvedValue(facts);
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockImplementation((async (ids: string[]) =>
+      new Map(ids.filter((id) => id in PRICES).map((id) => [id, { liveCents: PRICES[id] }]))) as never);
+    vi.mocked(buildFillPlan).mockReset();
   });
   const plan = (rows: string[], bracketReach: unknown) =>
     vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: rows.map((oracleId) => ({ oracleId, quantity: 1 })), bracketReach } as never);
-  /** Every row is a card the player owns with no claims, except `unowned`. */
-  const owns = (unowned: string[] = []) => vi.mocked(db.execute).mockImplementation((async () => ({
-    rows: ["gc", "x"].map((id) => ({ oracle_id: id, type_line: "Creature", owned: !unowned.includes(id) })),
-  })) as never);
+  /** The player owns every card but `unowned`, with no claims. */
+  const owns = (unowned: string[] = []) => vi.mocked(db.execute).mockImplementation((async (q: unknown) => {
+    const all = ["gc", "x", "g0", "g1", "g2", "g3"];
+    // The bracket figure's own ownership read answers with owned ids only.
+    if (JSON.stringify(q).includes("select ci.oracle_id")) {
+      return { rows: all.filter((id) => !unowned.includes(id)).map((id) => ({ oracle_id: id })) };
+    }
+    return { rows: all.map((id) => ({ oracle_id: id, type_line: "Creature", owned: !unowned.includes(id) })) };
+  }) as never);
 
   it("reads the deck's own rows: a fill that placed a Game Changer reaches 3, with nothing to buy", async () => {
     owns();
@@ -75,8 +86,8 @@ describe("trialFill's bracket figure (bracket reach R1b)", () => {
     expect(f.bracket).toEqual({ target: 3, permits: [3], buyCents: null });
   });
 
-  it("falls short with the cheapest buy toward the target", async () => {
-    owns();
+  it("falls short with what is left to buy toward the target", async () => {
+    owns(["gc"]);
     plan(["x"], shortReach);
     const f = await trialFill("u", commander, answers, ENV_VIEW);
     expect(f.bracket).toEqual({ target: 3, permits: [1, 2], buyCents: 3_190 });
@@ -89,11 +100,28 @@ describe("trialFill's bracket figure (bracket reach R1b)", () => {
     expect(f.bracket).toEqual({ target: 3, permits: [3], buyCents: null });
   });
 
-  it("under own-only counts only the rows the player can sleeve", async () => {
+  it("never counts a card the fill already bought: a $120 set with $20 of it in the deck leaves $100", async () => {
+    owns(["g1", "g2", "g3"]);
+    // One free Game Changer and the two $10 ones the budget bought already: three of four.
+    plan(["g0", "g1", "g2", "x"], {
+      target: 4, kind: "short", collectionPermits: [3], collectionRaisers: ["g0"],
+      buy: { raisers: ["g0", "g1", "g2", "g3"], buyCents: 12_000, overBudget: true },
+    });
+    const f = await trialFill("u", commander, { ...answers, bracket: 4 }, ENV_VIEW);
+    expect(f.bracket).toEqual({ target: 4, permits: [3], buyCents: 10_000 });
+  });
+
+  it("under own-only reads the sleeveable fill the create builds, not the ordinary fill filtered", async () => {
     owns(["gc"]);
+    // The ordinary fill (the ownership figures) buys gc; the sleeveable fill replaces it and, from the
+    // player's own cards, places g0, which reaches 3.
     plan(["gc", "x"], shortReach);
+    plan(["g0", "x"], { target: 3, kind: "collection", raisers: ["g0"] });
     const f = await trialFill("u", commander, answers, ENV_VIEW, true);
-    expect(f.bracket).toEqual({ target: 3, permits: [1, 2], buyCents: 3_190 });
+    expect(vi.mocked(buildFillPlan).mock.calls[1][3]).toMatchObject({ pool: "sleeveable", failClosed: true });
+    expect(f.bracket).toEqual({ target: 3, permits: [3], buyCents: null });
+    // The ownership figures stay the ordinary fill's.
+    expect(f.owned).toBe(1);
   });
 
   it("draws no figure under bracket 3, or with no reach on the plan (the switch off)", async () => {
