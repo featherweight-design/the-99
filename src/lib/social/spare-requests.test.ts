@@ -175,15 +175,18 @@ describe("Ask instead (G1: one transaction)", () => {
   async function scripted(results: unknown[], prior: unknown[] = []) {
     const { db } = await import("../../db");
     const ran: SQL[] = [];
+    const seen = { rolledBack: false, inserted: [] as Record<string, unknown>[], priorWhere: [] as SQL[] };
     const tx = {
       execute: vi.fn(async (s: SQL) => { ran.push(s); return results.shift(); }),
-      select: () => ({ from: () => ({ where: async () => prior }) }),
-      insert: () => ({ values: () => ({ returning: async () => [{ id: "new" }] }) }),
+      select: () => ({ from: () => ({ where: async (w: SQL) => { seen.priorWhere.push(w); return prior; } }) }),
+      insert: () => ({ values: (v: Record<string, unknown>) => { seen.inserted.push(v); return { returning: async () => [{ id: "new" }] }; } }),
     };
-    vi.mocked(db.transaction).mockImplementationOnce((async (fn: (t: unknown) => Promise<unknown>) => fn(tx)) as never);
+    vi.mocked(db.transaction).mockImplementationOnce((async (fn: (t: unknown) => Promise<unknown>) => {
+      try { return await fn(tx); } catch (e) { seen.rolledBack = true; throw e; }
+    }) as never);
     vi.mocked(resolveFriend).mockResolvedValueOnce("h2");
     vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: REQ, displayName: "Hope", commander: null, pods: [] }, spare: 2 }]);
-    return ran;
+    return Object.assign(ran, { seen });
   }
   const FRIENDS = { rows: [{ user_id: "a" }, { user_id: "h2" }] };
 
@@ -199,13 +202,30 @@ describe("Ask instead (G1: one transaction)", () => {
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW)).toEqual({ ok: false, reason: "declined" });
     // The withdraw ran, then the ask's own lock, friendship and expire: the refusal threw, so the transaction rolled back.
     expect(render(ran[2]).q).toMatch(/set status = 'withdrawn'/);
+    expect(ran.seen.rolledBack).toBe(true);
+  });
+
+  it("reads every prior ask for the cooldown, cleared ones included (a cleared No still holds that friend back)", async () => {
+    const no = [{ holderUserId: "h2", status: "no", createdAt: new Date("2026-10-15T00:00:00Z"), answeredAt: new Date("2026-10-16T00:00:00Z") }];
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }], no);
+    await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW);
+    expect(ran.seen.priorWhere.length).toBeGreaterThan(0);
+    for (const w of ran.seen.priorWhere) expect(render(w).q).not.toMatch(/asker_cleared_at/);
   });
 
   it("lands the new ask after the withdraw, with the copies capped at the friend's spare count", async () => {
-    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [] }]);
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }]);
     expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 7, deckId: CARD })).toEqual({ ok: true, id: "new" });
+    expect(ran.seen.rolledBack).toBe(false);
+    expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD });
     // The deck is checked as the asker's own before it is stored.
     expect(render(ran[6]).q).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2`);
+  });
+
+  it("stores no deck the asker does not own", async () => {
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [] }]);
+    expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
+    expect(ran.seen.inserted[0]).toMatchObject({ copies: 1, deckId: null });
   });
 });
 
