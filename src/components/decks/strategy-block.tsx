@@ -7,7 +7,7 @@ import { useRef } from "react";
 
 import { strategyFocusCopy as copy, strategyName } from "@/lib/copy/strategy-focus";
 import type { StrategyRead } from "@/lib/strategy/load";
-import type { StrategyKey } from "@/lib/strategy/score";
+import { MIN_NONLAND, type StrategyKey } from "@/lib/strategy/score";
 import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { StrategyIcon } from "./strategy-icon";
 import { RING, arcPath, legendCount, ringArcs, type RingRow, type RingSize } from "./strategy-ring";
@@ -49,7 +49,7 @@ export function StrategyBlock({
       ) : (
         <p data-strategy-empty={strategy.state} className="m-0 rounded-[10px] border border-dashed border-[color:var(--border-dashed)] px-[16px] py-[14px] text-[13px] leading-[1.6] text-[color:var(--fg-body)]">
           <b className="font-semibold text-[color:var(--fg)]">{strategy.state === "none" ? copy.none.lead : copy.tooSmall.lead}</b>{" "}
-          {strategy.state === "none" ? copy.none.body : copy.tooSmall.body(strategy.nonland)}
+          {strategy.state === "none" ? copy.none.body : copy.tooSmall.body(strategy.nonland, MIN_NONLAND)}
         </p>
       )}
     </section>

@@ -9,11 +9,11 @@ import type { FixedAxis } from "../strategy/axes";
 import type { StrategyKey } from "../strategy/score";
 
 const THEME_NAMES: Record<LabelTheme, string> = {
-  counters: "+1/+1 counters", pump: "Pump", haste: "Haste", evasion: "Evasion", etbDraw: "Draw on arrival",
+  counters: "+1/+1 counters", pump: "Pump", haste: "Haste", evasion: "Evasion", etbDraw: "Draws on entering",
   draw: "Card draw", tokens: "Tokens", treasure: "Treasure", protection: "Protection", recursion: "Recursion",
-  blink: "Blink", finisher: "Finishers", castFree: "Free spells", mill: "Mill", sacOutlet: "Sacrifice outlets",
+  blink: "Blink", finisher: "Finishers", castFree: "Free casts", mill: "Mill", sacOutlet: "Sacrifice outlets",
   deathTrigger: "Death triggers", lifegain: "Life gain", drain: "Drain", spellslinger: "Spells matter",
-  landfall: "Landfall", tribal: "Creature types", graveyardHate: "Graveyard hate", discard: "Discard", stax: "Stax",
+  landfall: "Landfall", tribal: "Tribal", graveyardHate: "Graveyard hate", discard: "Discard", stax: "Stax",
   clones: "Clones", theft: "Theft", poison: "Poison", goad: "Goad", doublers: "Doublers", fog: "Fogs",
 };
 
@@ -69,10 +69,10 @@ export const strategyFocusCopy = {
   refused: "That didn’t save. Try again.",
   none: {
     lead: "No strategy stands out yet.",
-    body: "One shows here once five or more cards share a theme, a type or a creature type more often than Commander cards do overall. Until then Suggested changes keeps the deck balanced.",
+    body: "One shows once five or more cards share a theme or a type more often than Commander cards usually do. Until then Suggested changes keeps the deck balanced.",
   },
   tooSmall: {
     lead: "Too early to read.",
-    body: (nonland: number) => `The deck’s strategy shows once it has 30 cards besides lands. This one has ${nonland}.`,
+    body: (nonland: number, min: number) => `The deck’s strategy shows once it has ${min} cards besides lands. This one has ${nonland}.`,
   },
 };
