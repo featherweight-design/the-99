@@ -14,11 +14,11 @@ describe("packCheckoutParams", () => {
     expect(p.payment_intent_data?.metadata).toEqual(p.metadata);
   });
 
-  // The account's prefix is FEATHERWT; Stripe caps the joined descriptor at 22 and refuses < > \\ ' " *.
-  it("gives the pack's charge the suffix that makes the statement read FEATHERWT* THE 99", () => {
+  // The account's prefix is FWDESIGN; Stripe caps the joined descriptor at 22 and refuses < > \\ ' " *.
+  it("gives the pack's charge the suffix that makes the statement read FWDESIGN* THE 99", () => {
     expect(p.payment_intent_data?.statement_descriptor_suffix).toBe(STATEMENT_DESCRIPTOR_SUFFIX);
-    const joined = `FEATHERWT* ${STATEMENT_DESCRIPTOR_SUFFIX}`;
-    expect(joined).toBe("FEATHERWT* THE 99");
+    const joined = `FWDESIGN* ${STATEMENT_DESCRIPTOR_SUFFIX}`;
+    expect(joined).toBe("FWDESIGN* THE 99");
     expect(joined.length).toBeLessThanOrEqual(22);
     expect(STATEMENT_DESCRIPTOR_SUFFIX).toMatch(/^[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*$/);
   });

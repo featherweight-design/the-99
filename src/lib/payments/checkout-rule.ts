@@ -25,8 +25,8 @@ export type CheckoutInput = {
 };
 
 /**
- * What a card statement says after the account's shortened descriptor (`FEATHERWT`, set in the Dashboard): the
- * suffix Stripe joins as `FEATHERWT* THE 99`. The Stripe account is shared with Concert Crawl, so without it a
+ * What a card statement says after the account's shortened descriptor (`FWDESIGN`, set in the Dashboard): the
+ * suffix Stripe joins as `FWDESIGN* THE 99`. The Stripe account is shared with Concert Crawl, so without it a
  * The 99 charge reads as the account's default and is the kind a cardholder fails to recognise and disputes (a
  * dispute revokes the credits). Stripe's limits: the whole descriptor is at most 22 characters, with no
  * `< > \ ' " *`, and at least one letter in the suffix. A pack's PaymentIntent takes it directly. A plan's
