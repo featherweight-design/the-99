@@ -57,3 +57,12 @@ same in the average as in the deck it is compared with.
   the spears every creature type shares (`tribal` too) and a dashed fallback for a theme added later. Five are the
   handoff's drawings; the rest are drawn to match (24 grid, 1.6 stroke, round caps). A new theme owes a glyph:
   `strategy-icon.test.tsx` fails until it has one.
+
+## The block on Analysis
+
+`StrategyBlock` (`src/components/decks/strategy-block.tsx`) draws last in the reading, above Tuning, and only over a
+reading (`AnalysisPanel`'s `strategy` slot); the page reads `loadDeckStrategy` per request, uncached. The ring's geometry
+is pure in `strategy-ring.ts` (arcs from 12 o'clock by live count, the focus pulled out, its pending growth split off;
+other strategies' changes are said by the legend alone). The shell holds the focus (`useStrategyFocus`, over
+`useHeldPick`, the declaration's ordering rules), so Suggested changes reads the same pick. Rank colours derive per
+theme from `--fg-muted` over `--surface-rail`. Proof: `pnpm probe:strategy-focus`; inventory `strategy-focus.json`.

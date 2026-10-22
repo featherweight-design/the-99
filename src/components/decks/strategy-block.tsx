@@ -92,7 +92,7 @@ function Reading({
             <button
               type="button"
               onClick={() => onPick(null)}
-              className={`${TOUCH_HIT_INLINE} ml-[6px] font-mono text-[11px] text-[color:var(--accent)] underline decoration-[color:var(--accent-shadow)] underline-offset-4`}
+              className={`${TOUCH_HIT_INLINE} ml-[6px] font-mono text-[11px] text-[color:var(--accent-text)] underline decoration-[color:var(--accent-shadow)] underline-offset-4`}
             >
               {copy.keepBalanced}
             </button>
@@ -142,7 +142,7 @@ function Medallion({ size, focus }: { size: RingSize; focus: StrategyKey }) {
   return (
     <span
       data-centre="medallion"
-      className="relative flex items-center justify-center rounded-full text-[color:var(--accent)]"
+      className="relative flex items-center justify-center rounded-full text-[color:var(--accent-text)]"
       style={{
         width: size.medallion,
         height: size.medallion,
@@ -213,17 +213,17 @@ function Legend({
               onKeyDown={(e) => onKeyDown(e, i)}
               className={`flex min-h-[44px] items-center gap-[10px] px-[6px] text-left text-[13px] md:min-h-[40px] ${
                 i === 0 ? "" : !picked && !after ? "border-t border-[color:var(--border)]" : "border-t border-transparent"
-              } ${picked ? "rounded-[7px] bg-[color:color-mix(in_oklab,var(--accent)_9%,transparent)] font-semibold text-[color:var(--accent)]" : "text-[color:var(--fg)]"}`}
+              } ${picked ? "rounded-[7px] bg-[color:color-mix(in_oklab,var(--accent)_9%,transparent)] font-semibold text-[color:var(--accent-text)]" : "text-[color:var(--fg)]"}`}
             >
-              <StrategyIcon strategy={r.key} size={16} className={picked ? "shrink-0 text-[color:var(--accent)]" : "shrink-0 text-[color:var(--fg-muted)]"} />
+              <StrategyIcon strategy={r.key} size={16} className={picked ? "shrink-0 text-[color:var(--accent-text)]" : "shrink-0 text-[color:var(--fg-muted)]"} />
               <span className="min-w-0 truncate">
                 {strategyName(r.key)}
                 {r.outside ? <span className="ml-[6px] font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.outsideTop}</span> : null}
               </span>
               <span className="ml-auto shrink-0 font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">
                 {n.base}
-                {n.added ? <em className="not-italic text-[color:var(--accent)]"> +{n.added}</em> : null}
-                {n.removed ? <em className="not-italic text-[color:var(--accent)]"> −{n.removed}</em> : null} {copy.cards(r.copies)}
+                {n.added ? <em className="not-italic text-[color:var(--accent-text)]"> +{n.added}</em> : null}
+                {n.removed ? <em className="not-italic text-[color:var(--accent-text)]"> −{n.removed}</em> : null} {copy.cards(r.copies)}
               </span>
               <span
                 aria-hidden
