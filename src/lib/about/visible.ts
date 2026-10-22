@@ -30,6 +30,7 @@ import { lineupEnabled } from "../decks/lineup-flag";
 import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
 import { cardSearchEnabled } from "../card-search/flag";
 import { cardScanEnabled } from "../card-scan/flag";
+import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 
@@ -87,7 +88,21 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   CARD_SEARCH_ENABLED: cardSearchEnabled,
   CARD_SCAN_ENABLED: cardScanEnabled,
+  PAYMENTS_ENABLED: paymentsEnabled,
+  // Already reads PAYMENTS_ENABLED inside its own function.
+  WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
 };
+
+/**
+ * The entry a reader is drawn for an id: the entry itself, or the one drawn in its place (`replaces`). A link or a reader
+ * that names an entry by id (`#credits`, the credits text) asks here, so it follows the form the reader actually has.
+ */
+export function drawnEntry(id: string, visible: readonly AboutEntry[]): AboutEntry | undefined {
+  return visible.find((e) => e.id === id) ?? visible.find((e) => e.replaces === id);
+}
+
+/** The credits entry this reader is drawn: `buying-credits` with payments on, else the shipped `credits`. */
+export const creditsEntryOf = (visible: readonly AboutEntry[]) => drawnEntry("credits", visible);
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
 function lineKept(sw: AboutLineSwitch, env: NodeJS.ProcessEnv): boolean {
@@ -123,14 +138,17 @@ export function resolveEntry(base: AboutEntry, env: NodeJS.ProcessEnv): AboutEnt
   return { ...entry, caption, keys };
 }
 
-/** The entries this deployment draws, in page order. An entry with no switch always draws. */
+/**
+ * The entries this deployment draws, in page order. An entry with no switch always draws, unless an entry drawn in its
+ * place (`replaces`) draws.
+ */
 export function visibleEntries(
   env: NodeJS.ProcessEnv,
   entries: readonly AboutEntry[] = aboutEntries,
 ): AboutEntry[] {
-  return entries
-    .filter((e) => !e.switch || SWITCHES[e.switch](env))
-    .map((e) => resolveEntry(e, env));
+  const drawn = entries.filter((e) => !e.switch || SWITCHES[e.switch](env));
+  const replaced = new Set(drawn.flatMap((e) => (e.replaces ? [e.replaces] : [])));
+  return drawn.filter((e) => !replaced.has(e.id)).map((e) => resolveEntry(e, env));
 }
 
 /**

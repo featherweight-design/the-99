@@ -21,6 +21,7 @@
 /** @type {Record<string, { screen: string, locator: string, reaches?: true, note?: string }>} */
 export const ABOUT_LOCATORS = {
   // ---- home ----------------------------------------------------------------
+  "getting-help": { screen: "home", locator: "header [data-help-button='header']:visible" },
   "ready-to-build": { screen: "home", locator: "[data-testid='hero-art-link'] >> nth=0" },
   resume: {
     screen: "home",
@@ -36,11 +37,20 @@ export const ABOUT_LOCATORS = {
   },
 
   // ---- collection ----------------------------------------------------------
+  // The + entries box its VISIBLE press, `data-about-press` (launch-end batch G7, R1b): beside five tabs a 36 square on
+  // the glyph, since the 44 button runs to the frame's edge; with "Add" drawn, the button itself.
   browse: { screen: "collection", locator: "input[aria-label='Search your cards']:visible" },
-  "collection-add": { screen: "collection", locator: "[data-testid='collection-add-phone']" },
+  "collection-add": { screen: "collection", locator: "[data-testid='collection-add-phone'][data-about-press], [data-testid='collection-add-phone'] [data-about-press]" },
+  "card-scan": {
+    screen: "collection",
+    locator: "[data-testid='collection-add-phone'][data-about-press], [data-testid='collection-add-phone'] [data-about-press]",
+    reaches: true,
+    note: "the Scan press is inside Add cards; the + opens it",
+  },
+  "card-search": { screen: "collection", locator: "header button[aria-label='Search all cards']:visible" },
   "start-without-a-collection": {
     screen: "collection",
-    locator: "[data-testid='collection-add-phone']",
+    locator: "[data-testid='collection-add-phone'][data-about-press], [data-testid='collection-add-phone'] [data-about-press]",
     reaches: true,
     note: "the empty Collection's doors draw only with no cards; + Add is the way in on a held one",
   },
@@ -50,7 +60,7 @@ export const ABOUT_LOCATORS = {
   },
   "added-copy": {
     screen: "collection",
-    locator: "[data-testid='collection-add-phone']",
+    locator: "[data-testid='collection-add-phone'][data-about-press], [data-testid='collection-add-phone'] [data-about-press]",
     reaches: true,
     note: "the receipt follows a Save in Add cards",
   },
@@ -259,5 +269,16 @@ export const ABOUT_LOCATORS = {
 
   // ---- friends, account --------------------------------------------------------
   friends: { screen: "friends", locator: "button:has-text('Add a friend') >> nth=0" },
+  invites: { screen: "friends", locator: "[data-about-invite]", note: "Add a friend with the count line under it, one box" },
+  "rule-zero": { screen: "friends", locator: "[data-testid='pod-rule-zero'] >> nth=0" },
   themes: { screen: "account", locator: "[role='dialog'] [role='radiogroup']" },
+  "about-rebuilt": {
+    screen: "account",
+    locator: "[role='dialog'] a[href='/about'], [role='menu'] a[href='/about']",
+    reaches: true,
+    note: "the account menu's About The 99 row opens the page it describes",
+  },
+
+  // ---- credits -------------------------------------------------------------------
+  "buying-credits": { screen: "credits", locator: "section:has([data-testid='credits-total'])", note: "the balance strip" },
 };

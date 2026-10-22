@@ -48,6 +48,27 @@ export const aboutEntries: readonly AboutEntry[] = [
     marksPending: true,
     since: 12,
   },
+  // The launch-end batch (handoff `addendum-launch-end-batch/`, #2156): every new entry is `since: 16`, announced by its
+  // switch. Words: the handoff's drafts through prose-pass, stale facts corrected against the code (brief Draft vs code 13:
+  // matching is on the server, Fast shipped as Auto, Normal picks the printing in the camera).
+  {
+    id: 'card-scan',
+    screen: 'collection',
+    switch: 'CARD_SCAN_ENABLED',
+    chapter: '01',
+    title: 'Scanning your cards',
+    route: '/collection',
+    opens: 'opens Add cards',
+    caption:
+      'Typing in a stack of new cards gets old fast. Press “Add cards”, then “Scan”, and hold each card up to your camera. We work out which card it is and put it on the list.\n\nWhen we’re not sure, you get the three closest to pick from. Then check the list, fix anything we got wrong, and one Save adds the lot.',
+    keys: [
+      'In Auto, a card goes on at its first printing as soon as it reads. In Normal, you pick the printing as you scan.',
+      'Scanning needs a connection: we check each card as you scan it.',
+      'A card that stays in view is never added twice. In Auto, take it out of frame to add a second copy.',
+      'Press a scanned card’s name on the list to swap it for one of the closest matches.',
+    ],
+    since: 16,
+  },
   {
     id: 'import',
     screen: 'upload',
@@ -316,6 +337,27 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 1,
+  },
+  {
+    id: 'card-search',
+    screen: 'collection',
+    switch: 'CARD_SEARCH_ENABLED',
+    chapter: '01',
+    title: 'Looking up any card',
+    // The search is on every page; the link lands on the screen whose frame shows its icon.
+    route: '/collection',
+    opens: 'opens Search all cards',
+    caption:
+      'Saw a card across the table, or in a friend’s deck? Look it up by name from any page: the search icon at the top of your phone, or at the top of the side rail on a computer (⌘K, or Ctrl K).\n\nEach card says how many you own and which of your decks hold it. It also says whether it’s on your wishlist. Press one for its full details.',
+    // The wishlist sentence is the search's own `onWishlist`, drawn only with the wishlist on (`card-search/search.ts`).
+    captionLineSwitches: { ' It also says whether it’s on your wishlist.': 'SOCIAL_WISHLIST_ENABLED' },
+    keys: [
+      'Search reads card names only, including the names printed on Secret Lair cards.',
+      'The last 8 cards you opened from search wait in the field before you type.',
+      'On a deck’s page, the “Add a card by name” field adds to that deck, in its colors.',
+      'On a phone, the top bar comes back as soon as you scroll up a little.',
+    ],
+    since: 16,
   },
 
   // ---- 02 · Finding a commander -------------------------------------------
@@ -1253,8 +1295,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'Friends and pods',
     route: '/friends',
     width: 'plate',
+    // Launch-end batch (E4): with invites on, Add a friend opens a chooser, so the link path names its choice.
+    captionLineSwitches: { ' pick “They’re on The 99”,': 'SOCIAL_INVITES_ENABLED' },
     caption:
-      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
+      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, pick “They’re on The 99”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
     keys: [
       'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
       'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
@@ -1263,6 +1307,46 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 14,
+  },
+  {
+    id: 'invites',
+    screen: 'friends',
+    switch: 'SOCIAL_INVITES_ENABLED',
+    chapter: '04',
+    title: 'Inviting someone new',
+    route: '/friends',
+    opens: 'opens Add a friend',
+    caption:
+      'The 99 is invite-only, so new players arrive through the people already in it. On Friends, press “Add a friend”, then “Invite someone new”. At the table, show an invite QR: they scan it, type their own email, and confirm it with a code. Or type their email here, and The 99 sends the invitation.\n\nOnce they make their account, you’re friends. Adding someone who already plays? Pick “They’re on The 99” and send a friend link: it uses no invite.',
+    keys: [
+      'An invite is used only when someone makes an account. One that isn’t used within 7 days comes back.',
+      'An invite QR holds one invite for its 15 minutes, and gives it back if nobody uses it.',
+      'Whatever the email, you’re told “Invitation sent”, so nobody can use an invite to find out who’s on The 99.',
+      'How many you have left shows under “Add a friend”. Invites are given out by The 99, not bought.',
+    ],
+    since: 16,
+  },
+  {
+    id: 'rule-zero',
+    screen: 'friends',
+    switch: 'RULE_ZERO_ENABLED',
+    chapter: '04',
+    title: 'Checking tonight’s table',
+    route: '/friends',
+    opens: 'from a pod’s “Rule 0 check”',
+    caption:
+      'The Rule 0 check puts tonight’s decks side by side before anyone shuffles. One of you seats the players from a pod and picks the decks for yourself and your friends. Everyone seated sees the same table, and it waits for them on Home.\n\nEach complete deck lands on the five brackets, measured from the middle of the table. A deck a bracket or more away is flagged above or below, with what puts it there, like a two-card combo it can tutor for or one Game Changer too many. Better to know now than on turn four.\n\nFlagged? We’ll show you a few of your own decks that sit closer, and a swap shows up for everyone at the table. The bracket is read from each list, so a flag is where the conversation starts.\n\nAfter the game, log it from the table and the seats come filled in. Anyone who isn’t your friend comes in by name and commander, marked “from the table”.',
+    // The whole last paragraph is ONE line, so its removal leaves no stray break (brief Draft vs code 10).
+    captionLineSwitches: {
+      'After the game, log it from the table and the seats come filled in. Anyone who isn’t your friend comes in by name and commander, marked “from the table”.': 'SOCIAL_GAMES_ENABLED',
+    },
+    keys: [
+      'Start one from a pod’s “Rule 0 check”, for 2 to 8 players.',
+      'When you set the table, friends’ decks are listed. Anyone else picks their own.',
+      '“Swap in” or “Change deck” changes yours. “Undo” changes it back.',
+      'A table closes 24 hours after it’s set. Its logged games stay.',
+    ],
+    since: 16,
   },
   {
     id: 'opponents',
@@ -1449,6 +1533,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   {
     id: 'credits',
+    // Launch-end batch (option b, 2026-10-21): this form stays for a reader without payments, whose /credits is a 404.
+    // With payments on, `buying-credits` below is drawn in its place (`replaces`). Still seen by `since`.
     screen: 'deck',
     view: 'analysis',
     chapter: '04',
@@ -1502,6 +1588,37 @@ export const aboutEntries: readonly AboutEntry[] = [
     },
     marksPending: true,
     since: 11,
+  },
+  {
+    id: 'buying-credits',
+    // The redraw for buying credits (#2144), on the Credits screen: drawn while payments is on, in place of `credits`,
+    // and announced by its switch. Its two OVERVIEW_V2 keys are dropped (Hugh, 2026-10-21, option b). "Running a deck's
+    // Analysis" is not a spender (the Analysis calls no model, `allowance-rule.ts`) and is left out, a Design erratum.
+    screen: 'credits',
+    switch: 'PAYMENTS_ENABLED',
+    replaces: 'credits',
+    chapter: '04',
+    title: 'How credits work',
+    route: '/credits',
+    caption:
+      'Browsing is always free. Anything we write just for you uses a credit.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n- Each “Look deeper” in Proposed cuts\n\nEvery card, deck and collection view is free, and so is reading a deck’s bracket.\nOpening a past “Help me choose” run from History is free.\n\nCredits come from these, and are spent in this order:\n\n- Your free credits: {allowance}, each back 24 hours after you use it\n- 15 welcome credits when you join\n- A monthly plan: 60 credits a month\n- A gift from us, now and then\n- Packs: 40 credits for $5',
+    // Each spender follows its own feature, as `credits` does; the welcome lot follows its own switch.
+    captionLineSwitches: {
+      '- Writing a deck’s Overview': 'ANALYSIS_TAB_ENABLED',
+      '- Each “Suggested changes” run': 'TUNING_ENABLED',
+      '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
+      '- Each “Look deeper” in Proposed cuts': 'PROPOSED_CUTS_ENABLED',
+      '- Each “Which deck needs it most?” read': 'FIND_A_DECK_READ_ENABLED',
+      'Opening a past “Help me choose” run from History is free.': 'HELP_ME_CHOOSE_ENABLED',
+      '- 15 welcome credits when you join': 'WELCOME_CREDITS_ENABLED',
+    },
+    keys: [
+      'Welcome credits expire 30 days after you join. Plan credits roll over while you’re subscribed, and end with the period after you cancel. Gift and pack credits never expire.',
+      'A run that fails gives its credit back on its own. A refunded payment takes back the credits it bought that you haven’t spent. A disputed one takes them back, and returns them if the dispute goes your way.',
+      'Welcome, plan, gift and pack credits share one daily limit on how many you can spend. Your free credits have their own.',
+      'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
+    ],
+    since: 16,
   },
   {
     id: 'statuses',
@@ -1573,6 +1690,28 @@ export const aboutEntries: readonly AboutEntry[] = [
     marksPending: true,
     since: 1,
   },
+  {
+    id: 'getting-help',
+    screen: 'home',
+    switch: 'HELP_PANEL_ENABLED',
+    chapter: '04',
+    title: 'Getting help on any screen',
+    route: '/',
+    opens: 'from the ? on any screen',
+    caption:
+      'Every screen has a ? with the About entries for what you’re looking at. Open one for the short version, or read the whole entry in the Reference.\n\nWhere an entry is about a tool on the page, “Show me” scrolls to it and lights it up. Looking for something that lives on another screen? Search reads all of About from right there.\n\nAnd if you’d like the walk-through again, “Take the tour” in the account menu runs it on your own app. Six stops, about a minute.',
+    captionLineSwitches: {
+      'And if you’d like the walk-through again, “Take the tour” in the account menu runs it on your own app. Six stops, about a minute.': 'FIRST_RUN_TOUR_ENABLED',
+    },
+    keys: [
+      'The ? sits at the foot of the rail, or in the header on a phone.',
+      'On a deck or in Collection, chips open the other tabs’ entries.',
+      'On desktop, the ? works over a card’s details too.',
+      '“Take the tour →” also sits at the top of About.',
+    ],
+    keySwitches: { '“Take the tour →” also sits at the top of About.': 'FIRST_RUN_TOUR_ENABLED' },
+    since: 16,
+  },
   // 'reservations' (chapter 04, 'Which deck gets a shared copy') was retired 2026-10-04 (Hugh,
   // no Design round — a removal): it demonstrated overriding the default FROM A DECK'S REVIEW
   // PAGE, and that override no longer exists there (the per-row panel on /decks/[id]/changes
@@ -1615,5 +1754,27 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Your pick is saved in this browser, so pick again on another device.',
     ],
     since: 1,
+  },
+  {
+    id: 'about-rebuilt',
+    screen: 'account',
+    // No switch: the entry the bump to 16 announces.
+    chapter: '04',
+    title: 'About, rebuilt',
+    route: '/about',
+    opens: 'opens About',
+    caption:
+      'About used to be one long page. Now it starts with what the app can do for you.\n\n- Tools: what each tool is for, pictured on a real screen. Press one and it takes you there and lights it up.\n- Reference: every entry, by the screen it lives on, with search and what’s new since your last visit.\n- A ? on every screen, with that screen’s entries.\n- Help me choose, waiting on Decks, Home and Commanders while you have no decks yet.\n- A one-minute tour the first time you open Home.',
+    captionLineSwitches: {
+      '- A ? on every screen, with that screen’s entries.': 'HELP_PANEL_ENABLED',
+      '- Help me choose, waiting on Decks, Home and Commanders while you have no decks yet.': 'HELP_ME_CHOOSE_ENABLED',
+      '- A one-minute tour the first time you open Home.': 'FIRST_RUN_TOUR_ENABLED',
+    },
+    keys: [
+      'A tool that needs a deck opens one that fits.',
+      '“How it works ›” on a tool opens its full entry.',
+      'My note on why The 99 exists now closes the Reference.',
+    ],
+    since: 16,
   },
 ] as const;

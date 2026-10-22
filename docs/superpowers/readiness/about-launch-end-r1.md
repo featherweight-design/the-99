@@ -62,3 +62,21 @@ The words are drafts. They go through the copy lane before they ship. These are 
   "Fast" (shipped as "Auto"), and the Auto clause.
 - **G4.** Home's first-run line (`arrivals.ts`, `aboutFirstRunRest`) still says About is "on one page", which
   *About, rebuilt* contradicts.
+
+## Errata found at build (2026-10-21)
+
+These are Design errata with no Design round (orchestrator, 2026-10-21). The code is what was checked.
+
+- **The credits redraw (#2144) lists "Running a deck’s Analysis" as a spender.** The Analysis makes no model call: the
+  spenders are tuning, synopsis, intake, proposed cuts and the fits read (`src/lib/model/allowance-rule.ts`). The line
+  is left out of `buying-credits`.
+- **The credits redraw points at `/credits`, which 404s for a reader without payments** (`readerSeesCredits`). The
+  shipped `credits` entry stays for those readers (`buying-credits` declares `replaces: 'credits'`). The redraw ships as a new entry,
+  `buying-credits`, behind `PAYMENTS_ENABLED`, and is announced by it (option b).
+- **Fact corrections through prose-pass.**
+  - `card-scan`: Auto instead of Fast; Normal now picks the printing in the camera; scanning needs a connection (the
+    words had claimed a 27 MB offline index); a second copy needs the card taken out of frame in Auto.
+  - `card-search`: the rail holds an icon, not a field; the wishlist sentence follows `SOCIAL_WISHLIST_ENABLED`; the deck
+    field is "Add a card by name"; the route is `/collection`, since "any page" is not a route.
+  - `rule-zero`: the setter picks decks for themselves and their friends, and anyone else picks their own.
+  - `about-rebuilt`: no Tools card draws "Try it". The Tools line says a card takes you there.

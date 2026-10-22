@@ -23,8 +23,8 @@ const tools = (over: Partial<ShowcaseInput> = {}) =>
   });
 
 describe("the Reference's screens", () => {
-  it("are the 21 screens in the order a reader meets them, a deck's seven views each one", () => {
-    expect(REFERENCE_SCREENS).toHaveLength(21);
+  it("are the 22 screens in the order a reader meets them, a deck's seven views each one", () => {
+    expect(REFERENCE_SCREENS).toHaveLength(22);
     expect(REFERENCE_SCREENS.map(screenKey)).toEqual(
       ABOUT_SCREENS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => `deck-${v}`) : [s])),
     );

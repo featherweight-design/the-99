@@ -4,10 +4,10 @@ import { aboutEntries } from "../copy/about-entries";
 import { sheetCookieValue, sheetDecision } from "./gate";
 import { aboutNotice } from "./notice";
 import { readSheetState } from "./sheet-state";
-import { isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
+import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", NO_COLLECTION_ENTRY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SEARCH_ENABLED: "true", CARD_SCAN_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -52,10 +52,12 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
   it("ties exactly the launch entries to their switches, and the version to the rest", () => {
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["collection-add", "COLLECTION_EDIT_ENABLED"],
+      ["card-scan", "CARD_SCAN_ENABLED"],
       ["start-without-a-collection", "NO_COLLECTION_ENTRY_ENABLED"],
       ["upload-choice", "COLLECTION_EDIT_ENABLED"],
       ["all-decks-cart", "ALL_DECKS_CART_ENABLED"],
       ["added-copy", "ADDED_COPY_ENABLED"],
+      ["card-search", "CARD_SEARCH_ENABLED"],
       ["edit-copies", "COLLECTION_EDIT_ENABLED"],
       ["remove-card", "COLLECTION_EDIT_ENABLED"],
       ["collection-history", "COLLECTION_EDIT_ENABLED"],
@@ -76,6 +78,8 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["change-commander", "CHANGE_COMMANDER_ENABLED"],
       ["deck-printings", "DECK_PRINTINGS_ENABLED"],
       ["friends", "SOCIAL_FRIENDS_ENABLED"],
+      ["invites", "SOCIAL_INVITES_ENABLED"],
+      ["rule-zero", "RULE_ZERO_ENABLED"],
       ["opponents", "SOCIAL_GAMES_ENABLED"],
       ["suggested-changes", "TUNING_ENABLED"],
       ["proposed-cuts", "PROPOSED_CUTS_ENABLED"],
@@ -83,13 +87,16 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
       ["deck-stats", "DECK_STATS_ENABLED"],
       ["decks-stats", "LINEUP_ENABLED"],
       ["notes", "DECK_NOTES_ENABLED"],
+      ["buying-credits", "PAYMENTS_ENABLED"],
+      ["getting-help", "HELP_PANEL_ENABLED"],
     ]);
     // Versions 12 (collection edit), 13 (evidence benchmarks) and 14 (deck printings and I got it, and later every
-    // switched entry since, a way in without a collection included) added only switched entries, so
-    // the newest UNSWITCHED entry is still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
-    // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
-    expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
-    expect(ABOUT_VERSION).toBeGreaterThanOrEqual(11);
+    // switched entry since, a way in without a collection included) added only switched entries; 16 (the launch-end
+    // batch) adds `about-rebuilt`, the one unswitched entry the bump announces. Pinned exactly, so an unswitched entry
+    // added (or since moved) without a deliberate edit here fails.
+    expect(Math.max(...unswitched.map((e) => e.since))).toBe(16);
+    expect(unswitched.filter((e) => e.since === 16).map((e) => e.id)).toEqual(["about-rebuilt"]);
+    expect(ABOUT_VERSION).toBe(16);
   });
 
   it("draws every unswitched entry with the switches off, and every entry with them on", () => {
@@ -97,7 +104,7 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
     // on top of (or with no) entry-level switch — resolved the same way `visibleEntries` itself
     // resolves it, rather than hand-duplicating the string surgery here.
     expect(visibleEntries(OFF)).toEqual(unswitched.map((e) => resolveEntry(e, OFF)));
-    expect(visibleEntries(ON)).toEqual(aboutEntries.map((e) => resolveEntry(e, ON)));
+    expect(visibleEntries(ON)).toEqual(aboutEntries.filter((e) => e.id !== "buying-credits").map((e) => resolveEntry(e, ON)));
   });
 
   it("makes the same proxy decision, sheet and cookie as before at every seen", () => {
@@ -139,8 +146,11 @@ describe("an entry tied to a switch", () => {
     // `mana-balance`, `all-decks-cart`, `precons`, `upcoming-precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats`, `find-a-deck-read` and `proposed-cuts` since: 14 too, the current
     // version, with no bump of their own. `start-without-a-collection` (2026-10-15) is since: 14 too: it briefly
     // bumped to 15 (#1840), and went back, since a switched entry is announced by its id.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection", "friends", "opponents", "wishlist", "friend-spares"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist, friendSpares] = later.map((id) => launch.filter((e) => e.id === id));
+    // The launch-end batch (2026-10-21): every switched entry it adds is since: 16, the bump's own version.
+    const batch = ["card-scan", "card-search", "invites", "rule-zero", "buying-credits", "getting-help"];
+    expect(launch.filter((e) => batch.includes(e.id)).map((e) => e.since)).toEqual(batch.map(() => 16));
+    const later = [...batch, "suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "upcoming-precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read", "proposed-cuts", "start-without-a-collection", "friends", "opponents", "wishlist", "friend-spares"];
+    const [, , , , , , suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, upcoming, deckTokens, notes, addedCopy, decksStats, fitsRead, proposedCuts, startWithout, friends, opponents, wishlist, friendSpares] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
@@ -156,10 +166,12 @@ describe("an entry tied to a switch", () => {
     expect(friendSpares.map((e) => e.since)).toEqual([14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
+      "card-scan",
       "start-without-a-collection",
       "upload-choice",
       "all-decks-cart",
       "added-copy",
+      "card-search",
       "edit-copies",
       "remove-card",
       "collection-history",
@@ -180,6 +192,8 @@ describe("an entry tied to a switch", () => {
       "change-commander",
       "deck-printings",
       "friends",
+      "invites",
+      "rule-zero",
       "opponents",
       "suggested-changes",
       "proposed-cuts",
@@ -187,6 +201,7 @@ describe("an entry tied to a switch", () => {
       "deck-stats",
       "decks-stats",
       "notes",
+      "getting-help",
     ]);
   });
 
@@ -444,7 +459,8 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
     const entry = aboutEntries.find((e) => e.id === "start-without-a-collection")!;
     expect(entry.switch).toBe("NO_COLLECTION_ENTRY_ENABLED");
     expect(entry.since).toBe(14);
-    expect(ABOUT_VERSION).toBe(14);
+    // 16 is the launch-end batch's bump, for its unswitched `about-rebuilt` alone; this entry moved nothing.
+    expect(ABOUT_VERSION).toBe(16);
     const ids = visibleEntries(env(LINE)).map((e) => e.id);
     expect(ids[ids.indexOf("import") + 1]).toBe("start-without-a-collection");
   });
@@ -453,35 +469,34 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   // rule (`proxy.ts`, `seen: behind ? 0 : ABOUT_VERSION`), never on the version alone.
   const behind = (visible: readonly AboutEntry[], s: SeenState) => isFirstRun(s) || unseenEntries(visible, s).length > 0;
 
-  // With the switch off (production), a reader current at 14 is told nothing on any path: no Home line, no sheet,
+  // With the switch off (production), a current reader is told nothing on any path: no Home line, no sheet,
   // and no redirect.
   it("announces nothing to a current reader while its switch is off", () => {
     const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
     // Current: has met every entry it can see, the switched ones by id.
-    const current: SeenState = { version: 14, ids: switchedIds(visible) };
+    const current: SeenState = { version: ABOUT_VERSION, ids: switchedIds(visible) };
     expect(unseenEntries(visible, current)).toEqual([]);
     expect(aboutNotice(current, visible, false)).toBeNull();
     expect(sheetDecision({ userId: "u", seen: current, visible }).show).toBe(false);
     expect(behind(visible, current)).toBe(false);
   });
 
-  // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version, ahead of 14. That state is
-  // "nothing new": every unswitched entry reads seen, nothing errors and nothing redirects.
-  it("reads a reader ahead of the version (seen 15 against 14) as having nothing new", () => {
+  // #1840 briefly shipped ABOUT_VERSION 15, so a reader may hold 15 as their seen version. The next bump skipped it, so
+  // that reader is behind 16 by exactly the unswitched entry 16 added, and by nothing 15 claimed.
+  it("reads a reader who holds the spent 15 as behind 16 by about-rebuilt alone", () => {
     const visible = visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true", PRECONS_ENABLED: "true" }));
-    const ahead: SeenState = { version: 15, ids: switchedIds(visible) };
+    const held: SeenState = { version: 15, ids: switchedIds(visible) };
+    expect(unseenEntries(visible, held).map((e) => e.id)).toEqual(["about-rebuilt"]);
+    const ahead: SeenState = { version: ABOUT_VERSION + 1, ids: switchedIds(visible) };
     expect(unseenEntries(visible, ahead)).toEqual([]);
-    expect(aboutNotice(ahead, visible, false)).toBeNull();
-    expect(sheetDecision({ userId: "u", seen: ahead, visible }).show).toBe(false);
     expect(behind(visible, ahead)).toBe(false);
   });
 
   // Flipped on, it is announced by its own id to everyone current, the way a switched entry always is.
-  it("is announced by its id, alone, when its switch flips on, to a reader current at 14 or ahead at 15", () => {
+  it("is announced by its id, alone, when its switch flips on, to a current reader", () => {
     const before = switchedIds(visibleEntries(env({ COLLECTION_EDIT_ENABLED: "true" })));
     const visible = visibleEntries(env(LINE));
-    expect(unseenEntries(visible, { version: 14, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
-    expect(unseenEntries(visible, { version: 15, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
+    expect(unseenEntries(visible, { version: ABOUT_VERSION, ids: before }).map((e) => e.id)).toEqual(["start-without-a-collection"]);
   });
 
   it("draws only with the line's switch, which needs collection editing", () => {
@@ -515,10 +530,10 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
 });
 
 describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bump)", () => {
-  // A reader one version behind who never met the entry: production, where the switch is off.
-  const behind = seen(ABOUT_VERSION - 1);
+  // A current reader who never met the entry: production, where the switch is off.
+  const behind = seen(ABOUT_VERSION);
 
-  it("shows a reader one version behind no sheet while the switch is off", () => {
+  it("shows a current reader no sheet while the switch is off", () => {
     expect(unseenEntries(visibleEntries({} as NodeJS.ProcessEnv), behind)).toEqual([]);
   });
 
@@ -530,7 +545,7 @@ describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bum
   it("is seen by id, so a reader who met the entry before the rewrite is not shown it again", () => {
     // No bump: an entry with a switch is announced by its switch flipping, and its id stays stable.
     const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION - 1, ["help-me-choose"]))).toEqual([]);
+    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION, ["help-me-choose"]))).toEqual([]);
   });
 
   it("names the read’s credit in the credits entry only with the switch on", () => {
@@ -590,5 +605,35 @@ describe("proposed-cuts follows PROPOSED_CUTS_ENABLED, and its hub paragraph the
     expect(alone.endsWith("the tool closes.\n")).toBe(true);
     expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", MANA_BALANCE_ENABLED: "true" }))).toContain(HUB);
     expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", TUNING_ENABLED: "true" }))).toContain(HUB);
+  });
+});
+
+describe("an entry drawn in another's place (`replaces`, the launch-end batch)", () => {
+  const PAID = { ...ON, PAYMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const ids = (env: NodeJS.ProcessEnv) => visibleEntries(env).map((e) => e.id);
+
+  it("draws the shipped credits entry without payments, and buying-credits in its place with them", () => {
+    expect(ids(ON)).toContain("credits");
+    expect(ids(ON)).not.toContain("buying-credits");
+    expect(ids(PAID)).toContain("buying-credits");
+    expect(ids(PAID)).not.toContain("credits");
+  });
+
+  it("sees the replaced entry by its version, so a reader who read it is never told it is new", () => {
+    const credits = aboutEntries.find((e) => e.id === "credits")!;
+    expect(isSeen(credits, seen(credits.since))).toBe(true);
+    expect(switchedIds(visibleEntries(ON))).not.toContain("credits");
+  });
+
+  it("hands a reader of the credits text, or a #credits link, the form they are drawn", () => {
+    expect(creditsEntryOf(visibleEntries(ON))?.id).toBe("credits");
+    expect(creditsEntryOf(visibleEntries(PAID))?.id).toBe("buying-credits");
+    expect(drawnEntry("notes", visibleEntries(PAID))?.id).toBe("notes");
+  });
+
+  it("announces buying-credits by its id when payments turns on", () => {
+    const paid = visibleEntries(PAID);
+    expect(unseenEntries(paid, seen(ABOUT_VERSION)).map((e) => e.id)).toContain("buying-credits");
+    expect(unseenEntries(paid, seen(ABOUT_VERSION, switchedIds(paid))).map((e) => e.id)).toEqual([]);
   });
 });

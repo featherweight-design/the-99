@@ -8,7 +8,7 @@ import { readEverBought } from "./chip";
 import { paymentsEnabled } from "./flag";
 import { welcomeState, type WelcomeLot, type WelcomeState } from "./welcome-state";
 import { welcomeSheet, type WelcomeSheet } from "./welcome-sheet";
-import { visibleEntries } from "../about/visible";
+import { creditsEntryOf, visibleEntries } from "../about/visible";
 import { deckFacts, fitsOf, LIST_TOOLS } from "../discovery/fits";
 import { showcaseGroups, writtenForYou } from "../discovery/showcase";
 import { TOOLS } from "../discovery/tools";
@@ -132,7 +132,7 @@ export function readFreeAllowance(userId: string): Promise<number> {
  */
 export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; decks: readonly DeckListItem[] }): WelcomeSheet | null {
   const visible = visibleEntries(env);
-  const written = writtenForYou(visible.find((e) => e.id === "credits")?.caption ?? null);
+  const written = writtenForYou(creditsEntryOf(visible)?.caption ?? null);
   if (!written) return null;
   const isOn = (name: SwitchName) => SWITCH_FLAGS[name](env);
   const tools = LIST_TOOLS.filter((id) => {

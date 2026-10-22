@@ -8,10 +8,11 @@
 //
 // THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its three decks, Alex's
 // spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
-// reader-facing switch on (the registry's, less the plumbing ones and the payments line; a deck's Stats and Notes tabs, the
-// all-decks cart and the Shopping buy tag each have their own), `HELP_PANEL_ENABLED`, `FIRST_RUN_TOUR_ENABLED` and `RULE_ZERO_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`)
-// ON, so the frames show the ?, the account menu's `Take the tour` row and the pod's `Rule 0 check` row that the
-// launch-end entries point at (About batch brief, 2026-10-18), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
+// reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
+// a deck's Stats and Notes tabs, the all-decks cart and the Shopping buy tag each have their own), `HELP_PANEL_ENABLED`,
+// `FIRST_RUN_TOUR_ENABLED`, `RULE_ZERO_ENABLED` and `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and
+// `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
+// the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21), and `MOMENTS_ENABLED` and `ABOUT_SHEET_ENABLED` set to
 // `off`, so no bubble or sheet is photographed. The fixture account has decks, so its Home is the dashboard and the
 // tour never opens on its own. A SCREEN frame missing what those switches draw is refused (`REQUIRED_ON_FRAME`; tool crops and
 // tour pictures are not checked), so a server
@@ -246,6 +247,8 @@ function screens(f) {
         await settle(page);
       },
     },
+    // The buying-credits entry's frame (launch-end batch): drawn only with the payments line on.
+    credits: { path: "/credits" },
   };
 }
 
@@ -477,14 +480,20 @@ async function attempt(page, theme, id, run) {
 /**
  * What the server's switch set must draw on a frame before it is photographed: the ? on every screen
  * (`HELP_PANEL_ENABLED`), the account menu's `Take the tour` row (`FIRST_RUN_TOUR_ENABLED`) and the pod's `Rule 0 check`
- * row on /friends (`RULE_ZERO_ENABLED`). The launch-end About entries point at these, so a set captured without them
+ * row and the invite count line on /friends (`RULE_ZERO_ENABLED`, `SOCIAL_INVITES_ENABLED`), and the balance on /credits
+ * (`PAYMENTS_ENABLED`). The launch-end About entries point at these, so a set captured without them
  * is refused rather than shipped.
  */
 const REQUIRED_ON_FRAME = {
   // Every screen frame but a deck view's (shot with the tabs at the top, its header scrolled away).
-  "*": ["[data-help-button]:visible", "the ? (start the server with HELP_PANEL_ENABLED on)"],
-  account: ["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row (FIRST_RUN_TOUR_ENABLED on)"],
-  friends: ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (RULE_ZERO_ENABLED on)"],
+  "*": [["[data-help-button]:visible", "the ? (start the server with HELP_PANEL_ENABLED on)"]],
+  account: [["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row (FIRST_RUN_TOUR_ENABLED on)"]],
+  friends: [
+    ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (RULE_ZERO_ENABLED on)"],
+    // The invites entry's box takes in the count line (launch-end batch G2), drawn only with invites on.
+    ["[data-invite-count]", "the invite count line under Add a friend (SOCIAL_INVITES_ENABLED on)"],
+  ],
+  credits: [["[data-testid='credits-total']", "the balance on /credits (PAYMENTS_ENABLED on)"]],
 };
 
 /** True when some match of `selector` has a box inside the 390x844 frame: drawn where the photograph will see it. */
@@ -500,9 +509,9 @@ async function requireOnFrame(page, id) {
   // A deck's views are shot with its tabs at the top (`scrollToTabs`), which scrolls the phone header and its ? off the
   // frame by design; every other screen in the same run proves the ? is drawn.
   for (const key of id.startsWith("deck-") ? [id] : ["*", id]) {
-    const need = REQUIRED_ON_FRAME[key];
-    if (!need) continue;
-    if (!(await inFrame(page, need[0]))) throw new Error(`the frame does not show ${need[1]}`);
+    for (const [selector, what] of REQUIRED_ON_FRAME[key] ?? []) {
+      if (!(await inFrame(page, selector))) throw new Error(`the frame does not show ${what}`);
+    }
   }
 }
 

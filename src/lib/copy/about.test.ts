@@ -134,7 +134,12 @@ describe("about content", () => {
     const ids = aboutEntries.map((e) => e.id);
     const titles = aboutEntries.map((e) => e.title);
     expect(new Set(ids).size, "duplicate id").toBe(ids.length);
-    expect(new Set(titles).size, "duplicate title").toBe(titles.length);
+    // An entry and the one it is drawn in place of (`replaces`) are never drawn together, so they alone may share a
+    // title: the replacement is left out of the count, and it must replace an entry that exists.
+    for (const e of aboutEntries) if (e.replaces) expect(ids, `${e.id} replaces`).toContain(e.replaces);
+    const counted = aboutEntries.filter((e) => !e.replaces).map((e) => e.title);
+    expect(new Set(counted).size, "duplicate title").toBe(counted.length);
+    expect(titles.length - counted.length).toBe(1);
     for (const e of aboutEntries) {
       expect(e.route, `${e.id} has no route`).toBeTruthy();
       // Rule 3 of the copy file: zero keys is a finished answer, four is the
@@ -181,10 +186,10 @@ describe("every entry's place (discovery R2, E8)", () => {
     }
   });
 
-  it("covers all 21 places the Reference lists, so no screen is drawn empty by accident", () => {
+  it("covers all 22 places the Reference lists, so no screen is drawn empty by accident", () => {
     const places = new Set(aboutEntries.map((e) => (e.view ? `${e.screen}/${e.view}` : e.screen)));
     expect(places.size).toBe(ABOUT_SCREENS.length - 1 + DECK_VIEWS.length);
-    expect(places.size).toBe(21);
+    expect(places.size).toBe(22);
   });
 });
 

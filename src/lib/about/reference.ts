@@ -33,6 +33,8 @@ export type ReferenceEntry = {
   tryIt: EntryTry | null;
   /** The How it works row that explains it, when one does. */
   row: string | null;
+  /** The entry it is drawn in place of (`AboutEntry.replaces`), so a link to that id lands here. */
+  replaces?: string;
 };
 
 export type ReferenceScreen = {
@@ -43,7 +45,7 @@ export type ReferenceScreen = {
   entries: ReferenceEntry[];
 };
 
-/** The 21 screens, in order. */
+/** The 22 screens, in order. */
 type Place = { screen: AboutScreen; view?: DeckView };
 export const REFERENCE_SCREENS: readonly Place[] = ABOUT_SCREENS.flatMap((screen): Place[] =>
   screen === "deck" ? DECK_VIEWS.map((view) => ({ screen, view })) : [{ screen }],
@@ -90,6 +92,7 @@ export function referenceScreens(
           inTools: card !== undefined,
           tryIt: card ? tryOf(card) : null,
           row: entryRow[e.id] ?? null,
+          ...(e.replaces ? { replaces: e.replaces } : {}),
         };
       }),
     };

@@ -21,6 +21,7 @@ export const SCREEN_NAMES: Record<AboutScreen, string> = {
   deck: 'A deck',
   friends: 'Friends',
   account: 'Account menu',
+  credits: 'Credits',
 };
 
 export const DECK_VIEW_NAMES: Record<DeckView, string> = {
@@ -150,6 +151,7 @@ export const SCREEN_WHERE: Record<AboutScreen, string> = {
   deck: 'a deck',
   friends: '/friends',
   account: 'everywhere',
+  credits: '/credits',
 };
 
 export const referenceCopy = {

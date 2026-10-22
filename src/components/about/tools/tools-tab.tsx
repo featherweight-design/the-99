@@ -38,7 +38,7 @@ function Group({ group, theme }: { group: ShowcaseGroup; theme: string | undefin
   );
 }
 
-function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[]; free: string; allowance: string }) {
+function WrittenForYou({ rows, free, allowance, entry }: { rows: readonly WrittenRow[]; free: string; allowance: string; entry: string }) {
   const chip =
     "self-baseline justify-self-end whitespace-nowrap rounded-full border border-[color:var(--accent-dim)] px-[9px] py-[2px] font-mono text-[11px] text-[color:var(--accent-text)] [grid-area:chip] lg:self-center";
   return (
@@ -73,11 +73,11 @@ function WrittenForYou({ rows, free, allowance }: { rows: readonly WrittenRow[];
         <div className="flex flex-wrap items-center justify-between gap-x-[20px] gap-y-[8px] border-t border-t-[color:var(--border)] pt-[12px]">
           <span className="text-[13.5px] text-[color:var(--fg-muted)]">{free}</span>
           <Link
-            href={entryHref("credits")}
+            href={entryHref(entry)}
             className={`${TOUCH_HIT} py-[10px] font-mono text-[12.5px] text-[color:var(--accent-text)] hover:underline`}
           >
             {writtenForYouCopy.how}
-            <PendingReporter href={entryHref("credits")} />
+            <PendingReporter href={entryHref(entry)} />
           </Link>
         </div>
       </div>
@@ -89,19 +89,21 @@ export type ToolsTabProps = {
   groups: readonly ShowcaseGroup[];
   /** Null when no spender is visible to this reader. */
   written: { rows: readonly WrittenRow[]; free: string } | null;
+  /** The credits entry this reader is drawn (`creditsEntryOf`), which "How credits work" opens. */
+  creditsEntry: string;
   /** The reader's own daily allowance, spelled as the credits entry spells it. */
   allowance: string;
   /** The theme cookie's value: each picture is the reader's theme's capture, else the default's. */
   theme: string | undefined;
 };
 
-export function ToolsTab({ groups, written, allowance, theme }: ToolsTabProps) {
+export function ToolsTab({ groups, written, creditsEntry, allowance, theme }: ToolsTabProps) {
   return (
     <div data-about-tools>
       {groups.map((g) => (
         <Group key={g.group} group={g} theme={theme} />
       ))}
-      {written && <WrittenForYou rows={written.rows} free={written.free} allowance={allowance} />}
+      {written && <WrittenForYou rows={written.rows} free={written.free} allowance={allowance} entry={creditsEntry} />}
       <div className="mx-[16px] mt-[34px] flex flex-col items-start gap-[4px] border-t border-t-[color:var(--border)] pt-[18px] md:mx-0 md:mt-[48px] md:flex-row md:items-center md:justify-between md:gap-[20px] md:pt-[22px]">
         <span className="text-[14px] text-[color:var(--fg-muted)]">{aboutShapeCopy.toReference}</span>
         <Link
