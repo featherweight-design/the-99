@@ -101,6 +101,22 @@ export function afterAsk(asks: readonly AskStateLine[], press: AskPress, id: str
   ];
 }
 
+/** An ask still open to its holder: the press's own when the card was pressed since the read was sent. */
+const isOpenAsk = (a: AskStateLine) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
+
+/**
+ * A read landing over the asks held now. A card no press moved since the read was sent takes the read whole. A pressed
+ * card keeps what the press left and adds the read's answered and expired asks it does not hold, never an open one:
+ * the read was sent before the press, so its open ask is the one an Ask instead withdrew.
+ */
+export function mergeRead(now: readonly AskStateLine[], read: readonly AskStateLine[], pressed: ReadonlySet<string>): AskStateLine[] {
+  const held = new Set(now.map((a) => a.id));
+  return [
+    ...now.filter((a) => pressed.has(a.oracleId)),
+    ...read.filter((a) => !pressed.has(a.oracleId) || (!isOpenAsk(a) && !held.has(a.id))),
+  ];
+}
+
 const SparesContext = createContext<Ctx | null>(null);
 
 /** Null outside the provider: the switch is off, and no row reserves the column. */
@@ -143,8 +159,9 @@ export function FriendSparesProvider({
       live = false;
     };
   }, [key]);
-  // The asks land after the page, as the spares do. A press that answers before a read lands wins: the read keeps
-  // only the cards no press has moved since it was sent.
+  // The asks land after the page, as the spares do. A press that answers before a read lands wins for that card: its
+  // open ask (and the one an Ask instead withdrew) is the press's, and the read adds only that card's ANSWERED and
+  // expired asks the press did not know about (a No still holding a friend back must still read Declined).
   const pressed = useRef(new Set<string>());
   useEffect(() => {
     if (!requests || !key) return;
@@ -153,7 +170,7 @@ export function FriendSparesProvider({
     pressed.current = sent;
     void fetchAsks(key.split(",")).then((rows) => {
       if (!live) return;
-      setAsks((now) => [...now.filter((a) => sent.has(a.oracleId)), ...rows.filter((a) => !sent.has(a.oracleId))]);
+      setAsks((now) => mergeRead(now, rows, sent));
     });
     return () => {
       live = false;
@@ -182,8 +199,10 @@ export function FriendSparesProvider({
     const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
+    // The asks are NOT cut to the cards asked for now: a row only draws its own card's, and a sheet left open on a card
+    // that just left the list (a stand-in taken) must still draw Requested, not offer an Ask the write would refuse.
     const asksByCard = new Map<string, AskStateLine[]>();
-    for (const a of asks) if (asked.has(a.oracleId)) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
+    for (const a of asks) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
     const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
     return { byCard, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req };
   }, [spares, asks, opened, key, newestAsOf, requests, ask]);

@@ -231,6 +231,19 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const seq = useRef(0);
+  // FOCUS AFTER AN ASK. The pressed Ask gives way to the row's Requested, so the focused control leaves the document
+  // and focus would fall to <body>. It lands on that status instead (focusable, so a screen reader reads Requested),
+  // unless the reader has moved on (as `StandInsSheet` does after a take).
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const [landOn, setLandOn] = useState<string | null>(null);
+  useEffect(() => {
+    if (!landOn) return;
+    setLandOn(null);
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    const row = [...(listRef.current?.querySelectorAll<HTMLElement>("li[data-friend]") ?? [])].find((li) => li.dataset.friend === landOn);
+    row?.querySelector<HTMLElement>('[data-testid="friend-spare-status"]')?.focus();
+  }, [landOn]);
   async function press(s: FriendSpare, fromRequestId?: string) {
     if (busy) return;
     setBusy(s.friend.publicId);
@@ -242,6 +255,7 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
     });
     setBusy(null);
     if (!ok) setToast({ id: ++seq.current, text: spareCopy.request.failed });
+    else setLandOn(s.friend.publicId);
   }
   return (
     <section aria-label={spareCopy.modalTitleSpares} data-testid="friend-spares" className="flex flex-col">
@@ -260,9 +274,9 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
           />
         </span>
       </div>
-      <ul role="list" className="m-0 list-none p-0">
+      <ul ref={listRef} role="list" className="m-0 list-none p-0">
         {rows.map(({ s, ask }) => (
-          <li key={s.friend.publicId} data-testid="friend-spare" data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
+          <li key={s.friend.publicId} data-testid="friend-spare" data-friend={s.friend.publicId} data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
             <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
               <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]">{s.friend.displayName}</b>
@@ -305,7 +319,7 @@ function RowEnd({ ask, friend, card, busy, locked, onAsk }: {
   }
   if (ask.kind === "requested") {
     return (
-      <span data-testid="friend-spare-status" className={`${STATUS} text-[color:var(--accent-text)]`}>
+      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--accent-text)]`}>
         <i aria-hidden="true" className="size-[7px] rounded-full bg-[color:var(--accent)]" />
         {r.requested}
       </span>
@@ -313,14 +327,14 @@ function RowEnd({ ask, friend, card, busy, locked, onAsk }: {
   }
   if (ask.kind === "accepted") {
     return (
-      <span data-testid="friend-spare-status" className={`${STATUS} text-[color:var(--success)]`}>
+      <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--success)]`}>
         <i aria-hidden="true" className="text-[12px] not-italic">✓</i>
         {r.accepted}
       </span>
     );
   }
   return (
-    <span data-testid="friend-spare-status" className={`${STATUS} text-[color:var(--fg-muted)]`}>
+    <span data-testid="friend-spare-status" tabIndex={-1} className={`${STATUS} text-[color:var(--fg-muted)]`}>
       <i aria-hidden="true" className="size-[7px] rounded-full bg-[color:var(--fg-faint)]" />
       {r.declined}
     </span>

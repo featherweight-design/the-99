@@ -2,14 +2,15 @@
 // `Shopping` and `Asker-States`): the modal's friend row in each state, its sub line, the ⓘ, the state line, Ask and
 // Ask instead through the actions, the toast on a failed ask, the row press's mark and name, and the key's items.
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { useContext } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import { spareCopy } from "../../lib/copy/social";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { ShoppingKey } from "../decks/shopping-key";
-import { FriendSparesProvider, OtherWaysPress } from "./spare-markers";
-import { cardMark, rowAsk, stateLine } from "./friend-spares";
+import { FriendSparesProvider, mergeRead, OtherWaysPress } from "./spare-markers";
+import { cardMark, rowAsk, SpareRequestsContext, stateLine } from "./friend-spares";
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), askInsteadAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -165,6 +166,54 @@ describe("pressing Ask", () => {
     expect(screen.getByTestId("spare-glyph").getAttribute("data-mark")).toBe("requested");
   });
 
+  it("lands focus on the row's Requested once the pressed Ask gives way to it", async () => {
+    served = { spares: [spare("Colin", 2)], asks: [] };
+    actions.askSpareAction.mockResolvedValue({ ok: true, id: "new-1" });
+    await mount(<Press />);
+    const d = await openModal();
+    const button = within(rowOf(d, "Colin")).getByTestId("friend-spare-ask");
+    button.focus();
+    await act(async () => { fireEvent.click(button); });
+    expect(document.activeElement).toBe(within(rowOf(d, "Colin")).getByTestId("friend-spare-status"));
+  });
+
+  it("keeps a read's answers that land after a press, and never its withdrawn open ask", async () => {
+    let land: (v: unknown) => void = () => {};
+    served = { spares: [spare("Colin", 2), spare("Max", 1), spare("Gus", 1)], asks: [] };
+    fetchMock.mockImplementation((url: string) =>
+      url.startsWith("/api/spare-requests")
+        ? new Promise((res) => { land = res; })
+        : Promise.resolve({ ok: true, json: async () => ({ spares: served.spares }) }));
+    actions.askSpareAction.mockResolvedValue({ ok: true, id: "new-1" });
+    await mount(<Press />);
+    const d = await openModal();
+    await act(async () => { fireEvent.click(within(rowOf(d, "Colin")).getByTestId("friend-spare-ask")); });
+    // The read was sent before the press: Max's No still holds him back; Gus's open ask is one the server had.
+    await act(async () => {
+      land({ ok: true, json: async () => ({ asks: [ask("Max", "no", { answeredAt: "2026-10-19T00:00:00Z" }), ask("Gus", "open")] }) });
+    });
+    expect(within(rowOf(d, "Colin")).getByTestId("friend-spare-status").textContent).toBe(r.requested);
+    expect(within(rowOf(d, "Max")).getByTestId("friend-spare-status").textContent).toBe(r.declined);
+    expect(within(rowOf(d, "Gus")).getByTestId("friend-spare-ask").textContent).toBe(r.askInstead);
+  });
+
+  it("still serves a card's asks after the card leaves the list (a stand-in taken, its sheet left open)", async () => {
+    served = { spares: [spare("Colin", 2)], asks: [ask("Colin", "open")] };
+    let seen: AskStateLine[] = [];
+    function Probe() {
+      seen = useContext(SpareRequestsContext)?.asksFor(JACE.oracleId) ?? [];
+      return null;
+    }
+    const ui = (ids: string[]) => (
+      <FriendSparesProvider oracleIds={ids} newestAsOf={asOf} requests deckId="deck-1"><Probe /></FriendSparesProvider>
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(ui([JACE.oracleId])); });
+    expect(seen.map((a) => a.state)).toEqual(["open"]);
+    await act(async () => { view.rerender(ui([])); });
+    expect(seen.map((a) => a.state)).toEqual(["open"]);
+  });
+
   it("sends no deck from the cart", async () => {
     served = { spares: [spare("Colin", 2)], asks: [] };
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new-1" });
@@ -267,6 +316,13 @@ describe("the key's request items", () => {
 });
 
 describe("the rules the rows draw from", () => {
+  it("mergeRead: an unpressed card takes the read whole; a pressed one keeps the press and adds only unheld answers", () => {
+    const press = ask("Colin", "open", { id: "new-1" });
+    const read = [ask("Max", "no"), ask("Gus", "open"), ask("Ed", "expired")];
+    expect(mergeRead([], read, new Set())).toEqual(read);
+    expect(mergeRead([press], read, new Set([JACE.oracleId]))).toEqual([press, read[0], read[2]]);
+  });
+
   it("rowAsk: an open ask the holder no longer offers still blocks the card, so the others read Ask instead", () => {
     const asks = [ask("Colin", "unavailable", { daysLeft: 3 })];
     expect(rowAsk(asks, "p-Max")).toEqual({ kind: "askInstead", fromRequestId: "req-Colin-unavailable", from: "Colin" });
