@@ -1,6 +1,6 @@
 {
   "feature": "Friend decks (handoff design_handoff_the99_friend_decks, R2): a friend's deck read-only, friend tiles, Hidden from friends, Settings' Your decks",
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and FRIEND_DECKS_ENABLED on, and a friend of the audit account with decks: FRIEND_ID is their public id; FRIEND_DECK a deck with a list, FRIEND_DECK_REPEAT one whose name repeats its commander, FRIEND_DECK_EMPTY one with a commander and no cards, FRIEND_DECK_HIDDEN one hidden from friends. Built on a scratch branch by a throwaway seed, never committed. The owner's rules include drafts, since none of those decks commits. The picker row also needs SOCIAL_GAMES_ENABLED on and OWN_DECK_DRAFT, an own deck to log a game against.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and FRIEND_DECKS_ENABLED on, and a friend of the audit account with decks: FRIEND_ID is their public id; FRIEND_DECK a deck with a list, FRIEND_DECK_REPEAT one whose name repeats its commander, FRIEND_DECK_EMPTY one with a commander and no cards, FRIEND_DECK_HIDDEN one hidden from friends. Built on a scratch branch by a throwaway seed, never committed. The owner's rules include drafts, since none of those decks commits. PR 4 adds the owner's rows on the audit account itself: OWN_DECK_HIDDEN is a committed deck hidden on its own, OWN_DECK_DRAFT an uncommitted one the default Settings rule hides. The picker row also needs SOCIAL_GAMES_ENABLED on, and opens the game log on OWN_DECK_DRAFT.",
   "rows": [
     {
       "id": "decks-tab",
@@ -77,6 +77,88 @@
           "goto": "/friends/${FRIEND_ID}/decks/${FRIEND_DECK_HIDDEN}",
           "wait": "h1",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "own-decks",
+      "label": "/decks: the hidden deck's glyph in its chips row, and the key",
+      "view": "src/components/decks/deck-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-hidden-from-friends-glyph]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "own-deck-header",
+      "label": "/decks/[id]: the header's Hidden from friends mark",
+      "view": "src/components/decks/hidden-from-friends-mark.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${OWN_DECK_HIDDEN}",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "own-deck-menu",
+      "label": "the deck ⋯ menu: Hidden from friends, ticked, above Delete",
+      "view": "src/components/decks/deck-card-overflow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${OWN_DECK_HIDDEN}",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "own-deck-menu-locked",
+      "label": "the ⋯ menu on a Draft the Settings rule hides: ticked, locked, Set in Settings",
+      "view": "src/components/decks/deck-card-overflow.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${OWN_DECK_DRAFT}",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "label": "/settings: Your decks, after Spares",
+      "view": "src/components/settings/friend-decks-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "[data-friend-decks-row='see']",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "friends",
+      "label": "/friends: the privacy line, default variant, Settings linked",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1",
+          "settle": 2500
         }
       ]
     },
