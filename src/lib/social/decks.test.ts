@@ -185,6 +185,16 @@ describe("loadFriendDeck", () => {
     expect(page.cards[1]).not.toHaveProperty("printedScryfallId");
   });
 
+  it("carries no printing identity when the set and number name two printings", async () => {
+    m.printingRows.mockResolvedValue([
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-one", backImageUri: null },
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-two", backImageUri: "https://back/two.jpg" },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.cards[0]).not.toHaveProperty("printedScryfallId");
+    expect(page.cards[0]).not.toHaveProperty("printedBackImageUri");
+  });
+
   it("keeps a commander's mana value", async () => {
     m.getDeckDetail.mockResolvedValue({ ...DETAIL, commander: { ...COMMANDER, cmc: 3 } });
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.commanders[0].cmc).toBe(3);

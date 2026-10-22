@@ -259,7 +259,13 @@ async function printingFaces(cards: readonly Printed[]) {
     .from(printings)
     .where(and(inArray(printings.oracleId, named.map((c) => c.oracleId)), inArray(printings.setCode, [...new Set(named.map((c) => c.printedSetCode!.toLowerCase()))])));
   const key = (o: string, s: string, n: string) => `${o}|${s.toLowerCase()}|${n}`;
-  const byKey = new Map(rows.map((r) => [key(r.oracleId, r.setCode, r.collectorNumber), r]));
+  // A set and number can name more than one printing (siblings that share a number): such a key names none here, so a
+  // card's details fall back to their own default rather than pair the owner's art with a sibling's id and back.
+  const byKey = new Map<string, (typeof rows)[number] | null>();
+  for (const r of rows) {
+    const k = key(r.oracleId, r.setCode, r.collectorNumber);
+    byKey.set(k, byKey.has(k) ? null : r);
+  }
   return (c: Printed) => {
     const r = c.printedSetCode && c.printedCollectorNumber ? byKey.get(key(c.oracleId, c.printedSetCode, c.printedCollectorNumber)) : undefined;
     return r ? { printedScryfallId: r.scryfallId, printedBackImageUri: r.backImageUri } : {};
