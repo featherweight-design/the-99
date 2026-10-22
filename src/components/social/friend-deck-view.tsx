@@ -176,7 +176,7 @@ export function FriendDeckView({
           {empty && head && (
             <div data-testid="friend-deck-empty" className="flex flex-col gap-[6px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] p-[22px_20px] md:p-[30px_32px]">
               <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]">{copy.emptyTitle(name)}</p>
-              <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{copy.emptyBody(head.name.split(",")[0], name)}</p>
+              <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{copy.emptyBody(name)}</p>
             </div>
           )}
           {groups.map(([label, group]) => {

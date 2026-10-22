@@ -99,7 +99,7 @@ describe("FriendDeckView", () => {
   it("an empty deck keeps the Commander and says so, with no own band, list note or key", () => {
     draw({ ...DECK, cards: [], built: 0, shares: [] });
     expect(screen.getByTestId("friend-deck-empty").textContent).toBe(
-      "Colin hasn’t added cards yetSai is the commander so far. The list shows here as Colin builds it.",
+      "Colin hasn’t added cards yetThe list shows here as Colin builds it.",
     );
     expect(screen.getByText(/^0 cards/)).toBeTruthy();
     expect(screen.queryByTestId("friend-deck-own")).toBeNull();

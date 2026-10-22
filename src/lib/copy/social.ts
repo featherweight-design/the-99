@@ -128,7 +128,8 @@ export const socialCopy = {
     keyNotOwned: "you don’t",
     keyAria: "What the dots mean",
     emptyTitle: (name: string) => `${name} hasn’t added cards yet`,
-    emptyBody: (commander: string, name: string) => `${commander} is the commander so far. The list shows here as ${name} builds it.`,
+    // The Commander group sits directly above, so the body does not name the commander again (copy-review).
+    emptyBody: (name: string) => `The list shows here as ${name} builds it.`,
   },
 
   // `/friends`' Waiting on you (menu and Home PR 7, board `Friends` 2a to 2c). Placeholder words, for /copy-review.
