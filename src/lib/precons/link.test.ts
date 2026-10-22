@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SUGGESTIONS, pickerOrder, pickSuggestions, suggestionDismissKey, type PreconMatch } from "./link";
+import { MAX_SUGGESTIONS, pickerOrder, pickSuggestions, type PreconMatch } from "./link";
 
 const match = (name: string, shared: number, of: number, sameCommanders: boolean, over: Partial<PreconMatch> = {}): PreconMatch => ({
   fileName: name, name, setCode: "SET", releaseDate: "2024-01-01", commanders: [`${name} Commander`], leadImage: null,
@@ -44,9 +44,3 @@ describe("pickerOrder", () => {
   });
 });
 
-describe("suggestionDismissKey", () => {
-  it("is per deck AND per precon (G-R3-2)", () => {
-    expect(suggestionDismissKey("d1", "A")).not.toBe(suggestionDismissKey("d1", "B"));
-    expect(suggestionDismissKey("d1", "A")).not.toBe(suggestionDismissKey("d2", "A"));
-  });
-});

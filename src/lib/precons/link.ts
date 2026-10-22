@@ -53,9 +53,3 @@ export function pickerOrder(matches: readonly PreconMatch[]): PreconMatch[] {
     .filter((m) => m.shared > 0)
     .sort((a, b) => b.shared - a.shared || byCodePoint(b.releaseDate, a.releaseDate) || byCodePoint(a.name, b.name));
 }
-
-/** The strip's dismissal, kept in the browser per deck AND precon (G-R3-2): a different precon
- *  crossing the rule later can still suggest. */
-export function suggestionDismissKey(deckId: string, fileName: string): string {
-  return `the99:precon-suggestion-dismissed:${deckId}:${fileName}`;
-}
