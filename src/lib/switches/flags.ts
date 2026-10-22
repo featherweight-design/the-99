@@ -19,6 +19,7 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
 import { homeFeedEnabled } from "../feed/flag";
+import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
 import { momentsEnabled } from "../moments/flag";
@@ -96,6 +97,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   NEAR_COMBOS_ENABLED: nearCombosEnabled,
+  PUSH_ENABLED: pushEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
