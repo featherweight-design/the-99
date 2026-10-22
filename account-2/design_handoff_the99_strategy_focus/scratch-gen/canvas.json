@@ -1,0 +1,74 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T17:46:54Z"
+ },
+ "title": "The 99 \u00b7 Strategy focus",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1900,
+   "h": 6543,
+   "title": "Main \u00b7 R1 \u00b7 the calls, state 3 on the whole Analysis tab"
+  },
+  "Read-States.dc.html": {
+   "x": 1980,
+   "y": 0,
+   "w": 1900,
+   "h": 9673,
+   "title": "Read States \u00b7 States 1, 2, 4, 5, 6"
+  },
+  "Placement.dc.html": {
+   "x": 3960,
+   "y": 0,
+   "w": 1900,
+   "h": 10035,
+   "title": "Placement \u00b7 Calls A and B: list inside or above, the phone"
+  },
+  "Apply.dc.html": {
+   "x": 5940,
+   "y": 0,
+   "w": 1900,
+   "h": 8075,
+   "title": "Apply \u00b7 Call C: one, several, all"
+  },
+  "Strategies.dc.html": {
+   "x": 7920,
+   "y": 0,
+   "w": 1900,
+   "h": 6178,
+   "title": "Strategies \u00b7 The list\u2019s own states, typal, landfall"
+  },
+  "Form.dc.html": {
+   "x": 9900,
+   "y": 0,
+   "w": 1900,
+   "h": 1124,
+   "title": "Form \u00b7 Bars vs spider, names"
+  },
+  "History-And-About.dc.html": {
+   "x": 11880,
+   "y": 0,
+   "w": 1900,
+   "h": 2451,
+   "title": "History And About \u00b7 History row and the About entry"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Read-States.dc.html",
+  "Placement.dc.html",
+  "Apply.dc.html",
+  "Strategies.dc.html",
+  "Form.dc.html",
+  "History-And-About.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
