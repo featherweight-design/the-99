@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addPanelCopy } from "./decks-builder";
-import { INLINE_CHANGE_MAX, deckVersioningCopy as copy } from "./deck-versioning";
+import { deckVersioningCopy as copy } from "./deck-versioning";
 
 describe("deckVersioningCopy", () => {
   // The first-commit lede says what committing does to copies, in the app's words: it uses
@@ -68,10 +68,6 @@ describe("deckVersioningCopy", () => {
   it("agrees with a figure of one across the module", () => {
     expect(copy.pending.since(1, 2)).toBe("1 change since v2");
     expect(copy.pending.reviewCta(1)).toBe("Review 1 change");
-    expect(copy.pending.money(1, 4, 1, "$2.00")).toContain("1 of the 4 is short of spare copies");
-    expect(copy.pending.moneyPulls(1)).toBe(
-      "1 of those is sleeved in another deck and can be pulled instead.",
-    );
     expect(copy.pending.toolbarNote(1, 3)).toBe("1 of these differs from v3");
     expect(copy.review.heading(1, 2)).toBe("1 change since v2");
     expect(copy.review.outNote(1)).toMatch(/^it goes back in the pool/);
@@ -118,18 +114,6 @@ describe("deckVersioningCopy", () => {
         "until you actually buy them.",
     );
     expect(copy.commit.lede(1, 0, 0)).toBe("v1 becomes the deck’s list immediately.");
-  });
-
-  it("caps the inline density at six", () => {
-    // The banner's two densities hinge on this and nothing else reads it.
-    expect(INLINE_CHANGE_MAX).toBe(6);
-  });
-
-  it("counts rows and copies separately in the money line", () => {
-    // One card wanted three times is one unfree row and three copies to buy.
-    expect(copy.pending.money(1, 4, 3, "$6.00")).toBe(
-      "1 of the 4 is short of spare copies, so this commit will ask for 3 to buy · $6.00.",
-    );
   });
 
   // The reader returns `total: null` when no requested copy carried a price, and
@@ -196,14 +180,3 @@ describe("the breakdown’s fourth term", () => {
   });
 });
 
-describe("a proxy-only commit is not 'enough spare copies'", () => {
-  it("says the cards are proxies instead", () => {
-    // `moneyNone` asserts a spare copy in the collection. A printed card has no
-    // copy anywhere, so that sentence is the one claim about where cardboard is
-    // that this vocabulary forbids.
-    expect(copy.pending.moneyProxiedOnly(1))
-      .toBe("1 card coming in is a proxy, so this commit asks for nothing.");
-    expect(copy.pending.moneyProxiedOnly(3))
-      .toBe("3 cards coming in are proxies, so this commit asks for nothing.");
-  });
-});

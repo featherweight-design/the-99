@@ -8,13 +8,16 @@
 // baseline from md; the press is 96px at 390 and 132px from md, and on the phone its hit area is
 // stretched over the whole row by a pseudo-element, so there is still one control per row.
 
-import { Fragment, type ReactNode, type Ref, useTransition } from "react";
+import Link from "next/link";
+import { Fragment, type ReactNode, type Ref, useEffect, useRef, useTransition } from "react";
 import { fillDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { guidedBannerCopy } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { Todo, TodoRow as TodoRowFact } from "../../lib/decks/todo";
+import { changeCount, type DraftState } from "../../lib/decks/draft-shape";
+import { useChangeCommander } from "./change-commander-context";
 
 const copy = deckVersioningCopy.todoCard;
 
@@ -66,7 +69,9 @@ export interface TodoRowProps {
     label: string;
     /** The full shipped string, as the press's accessible name. */
     name: string;
-    onPress: () => void;
+    /** A button's action, or `href` for a press that navigates (pending's Review). */
+    onPress?: () => void;
+    href?: string;
     disabled?: boolean;
     /** A press that opens something in the card (the last N's list) is a disclosure. */
     expanded?: boolean;
@@ -76,9 +81,31 @@ export interface TodoRowProps {
   /** The press's element, for a caller that moves focus to it or anchors a moment on it. A prop of its
    *  own rather than a field of `press`, so reading `press` during render never reads a ref. */
   pressRef?: Ref<HTMLButtonElement>;
+  /** The title, for a caller that lands focus on the row as a statement (`tabIndex={-1}`). */
+  titleRef?: Ref<HTMLParagraphElement>;
 }
 
-export function TodoRow({ tone, mark, title, body, next, press, pressRef }: TodoRowProps) {
+export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
+  const pressClass = [
+    "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
+    "font-sans font-semibold text-[12.5px] whitespace-nowrap no-underline cursor-pointer disabled:cursor-default disabled:opacity-50",
+    // The phone's hit area is the whole row: the row is `relative`, and this covers it.
+    "after:absolute after:inset-0 md:after:hidden",
+    next
+      ? "bg-[color:var(--fg)] text-[color:var(--bg)] [border:1px_solid_var(--fg)]"
+      : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]",
+  ].join(" ");
+  const face = (
+    <>
+      {press.label}
+      <span
+        aria-hidden
+        className={`font-normal ${next ? "text-[color:var(--bg)]" : "text-[color:var(--fg-faint)]"}`}
+      >
+        {copy.chevron}
+      </span>
+    </>
+  );
   const warning = tone === "warning";
   return (
     <div
@@ -109,7 +136,9 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef }: Todo
           </p>
         )}
         <p
-          className={`m-0 text-[13.5px] font-semibold leading-[1.4] ${
+          ref={titleRef}
+          tabIndex={titleRef ? -1 : undefined}
+          className={`m-0 outline-none text-[13.5px] font-semibold leading-[1.4] ${
             warning ? "text-[color:var(--avail-over-fg)]" : "text-[color:var(--fg)]"
           }`}
         >
@@ -119,33 +148,25 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef }: Todo
           {body}
         </p>
       </div>
-      <button
-        type="button"
-        onClick={press.onPress}
-        ref={pressRef}
-        disabled={press.disabled}
-        aria-label={press.name}
-        aria-expanded={press.expanded}
-        aria-controls={press.controls}
-        aria-describedby={press.describedBy}
-        className={[
-          "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
-          "font-sans font-semibold text-[12.5px] whitespace-nowrap cursor-pointer disabled:cursor-default disabled:opacity-50",
-          // The phone's hit area is the whole row: the row is `relative`, and this covers it.
-          "after:absolute after:inset-0 md:after:hidden",
-          next
-            ? "bg-[color:var(--fg)] text-[color:var(--bg)] [border:1px_solid_var(--fg)]"
-            : "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]",
-        ].join(" ")}
-      >
-        {press.label}
-        <span
-          aria-hidden
-          className={`font-normal ${next ? "text-[color:var(--bg)]" : "text-[color:var(--fg-faint)]"}`}
+      {press.href ? (
+        <Link href={press.href} aria-label={press.name} className={pressClass}>
+          {face}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={press.onPress}
+          ref={pressRef}
+          disabled={press.disabled}
+          aria-label={press.name}
+          aria-expanded={press.expanded}
+          aria-controls={press.controls}
+          aria-describedby={press.describedBy}
+          className={pressClass}
         >
-          {copy.chevron}
-        </span>
-      </button>
+          {face}
+        </button>
+      )}
     </div>
   );
 }
@@ -187,6 +208,53 @@ export function UnresolvedRow({ count, next, onLook }: { count: number; next: bo
       body={u.rowBody(count)}
       next={next}
       press={{ label: u.bannerActionShort, name: u.bannerActionAria, onPress: onLook }}
+    />
+  );
+}
+
+/**
+ * A14: the list differs from the newest version. Commit and Discard live in Review (Hugh's ruling),
+ * so the row's one press goes where the banner's review link went. The count is `changeCount`, which
+ * counts basics and a commander move as changes, so a draft that passes `hasChanges` never reads 0.
+ *
+ * After a commander change lands, focus comes here: the change-commander sheet raises the flag and
+ * whatever draws the draft takes it. Re-run when the row appears as well as when the flag is raised,
+ * because the announcement can arrive before the refreshed draft draws the row.
+ */
+export function PendingRow({ state, deckId, next }: { state: DraftState; deckId: string; next: boolean }) {
+  const p = deckVersioningCopy.pending;
+  const door = useChangeCommander();
+  const titleRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (door?.focusPending && titleRef.current) {
+      titleRef.current.focus();
+      door.focusTaken();
+    }
+  }, [door]);
+  const version = state.version?.number ?? 0;
+  const n = changeCount(state);
+  const adds = state.addChanges.length;
+  const removes = state.removes.length;
+  return (
+    <TodoRow
+      tone="action"
+      mark={copy.pendingMark}
+      title={
+        <>
+          {p.since(n, version)}{" "}
+          {/* Per side, so each reads as its own direction; `counts` owns the sign, the U+2212 and
+              the rule that a zero side is not drawn. */}
+          <span className="font-normal text-[12px]">
+            {adds > 0 && <span className="text-[color:var(--success)]">{p.counts(adds, 0)}</span>}
+            {adds > 0 && removes > 0 && " / "}
+            {removes > 0 && <span className="text-[color:var(--warning)]">{p.counts(0, removes)}</span>}
+          </span>
+        </>
+      }
+      body={next ? p.rowBodyNext(version + 1) : p.rowBody}
+      next={next}
+      titleRef={titleRef}
+      press={{ label: p.reviewShort, name: p.reviewCta(n), href: `/decks/${deckId}/changes` }}
     />
   );
 }

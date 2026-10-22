@@ -50,11 +50,10 @@ const BODY = "the draft's own account";
  * A host, because the question replaces its host's body and the flag between
  * them therefore lives in the host.
  *
- * This is the shape both real hosts take — `pending-banner.tsx` with its card,
- * `review-changes.tsx` with its apply bar — assembled here so this suite can
- * exercise the three exports together without either page's figures. That the
- * banner's own body goes is asserted in `pending-banner.test.tsx`, against the
- * banner.
+ * This is the shape the real host takes — `review-changes.tsx` with its apply
+ * bar, the one place Discard lives since the deck page's pending card became a
+ * to-do row — assembled here so this suite can exercise the three exports
+ * together without the page's figures.
  */
 function Host({
   state = STATE_36,
@@ -316,7 +315,7 @@ describe("the discard confirm", () => {
   });
 
   // The latch is held through an unknown outcome, and the answer has to say so.
-  // `PendingBanner` — this suite's own host shape — passes no `disabled` and no
+  // This suite's own host shape passes no `disabled` and no
   // `onWriteState`, so a button left enabled over that latch is a control that
   // eats every press with nothing on screen to explain it. The re-read is what
   // gives the answer back.

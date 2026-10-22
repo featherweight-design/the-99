@@ -1,16 +1,9 @@
-import { act, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { deckImportCopy } from "../../lib/copy/deck-import";
+import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { priceCopy } from "../../lib/copy/price";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PendingBanner } from "./pending-banner";
-
-vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn() }));
-// The banner gives its body to `DiscardConfirm`, which asks the router for the
-// re-read it does when a discard's outcome cannot be known.
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 afterEach(() => {
   // Lives outside React's tree, so `cleanup` does not take it: an announcement
@@ -83,17 +76,20 @@ const withChanges = (adds: number, removes: number): DraftState => ({
   unfreeCount: adds,
   pullableCount: 0,
   total: adds > 0 ? "$12.00" : null,
-  // Fully covered, so the money line prints the figure alone. Left at 0 beside a
-  // real total this would describe partial coverage and draw the `pricedClause`
-  // no assertion below carries.
   pricedCopies: adds,
 });
 
 describe("PendingBanner", () => {
-  it("is absent on a clean committed deck — the version line is all that remains", () => {
-    render(<PendingBanner state={empty} deckId="d" />);
-    expect(screen.queryByText(copy.label)).toBeNull();
+  it("draws the version line on a clean committed deck", () => {
+    render(<PendingBanner state={empty} />);
     expect(screen.getByText(copy.versionLine(2, "1 Sep 2026"))).toBeTruthy();
+  });
+
+  // A draft with changes is the to-do card's pending row now (`PendingRow`), and a
+  // version line over it would say the deck matches a version it does not.
+  it.each([[3, 0], [0, 1]])("gives way to the to-do card's row over a draft (+%i / −%i)", (a, r) => {
+    const { container } = render(<PendingBanner state={withChanges(a, r)} />);
+    expect(container.firstChild).toBeNull();
   });
 
   // A commit navigates, and a navigation leaves focus on the body. The version
@@ -101,7 +97,7 @@ describe("PendingBanner", () => {
   // page a hash and the line takes focus off it.
   it("takes focus on the version line when a commit lands it here", () => {
     history.replaceState(null, "", `/decks/d${COMMIT_RECEIPT_HASH}`);
-    render(<PendingBanner state={empty} deckId="d" />);
+    render(<PendingBanner state={empty} />);
     expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     // And the hash goes, so a reload or a back-forward return does not re-fire a
     // receipt for a commit minutes old.
@@ -112,311 +108,21 @@ describe("PendingBanner", () => {
   // the more destructive of the two acts, so it lands on the same line.
   it("takes focus on the version line when a discard lands it here", () => {
     history.replaceState(null, "", `/decks/d${DISCARD_RECEIPT_HASH}`);
-    render(<PendingBanner state={empty} deckId="d" />);
+    render(<PendingBanner state={empty} />);
     expect(document.activeElement).toBe(screen.getByText(copy.versionLine(2, "1 Sep 2026")));
     expect(window.location.hash).toBe("");
   });
 
   it("leaves focus alone on a version line nobody just committed", () => {
     history.replaceState(null, "", "/decks/d");
-    render(<PendingBanner state={empty} deckId="d" />);
+    render(<PendingBanner state={empty} />);
     expect(document.activeElement).toBe(document.body);
   });
 
-  it("names the changes at or below INLINE_CHANGE_MAX and links to the review page", () => {
-    render(<PendingBanner state={withChanges(2, 1)} deckId="d" />);
-    expect(screen.getByText("Add 0")).toBeTruthy();
-    expect(screen.getByText("Cut 0")).toBeTruthy();
-    // A link, not a button: the sheet is on the review page and the banner
-    // navigates to it with `?commit=1`. One commit surface, two entry points.
-    expect(screen.getByRole("link", { name: copy.commitCta(3) })).toHaveProperty(
-      "href",
-      expect.stringContaining("/decks/d/changes?commit=1"),
-    );
-    expect(screen.getByRole("link", { name: copy.reviewLink })).toBeTruthy();
-  });
-
-  // Same box, same label, same counts at both densities — the names replace the
-  // money sentence, not the account of how many changes there are.
-  it("states the counts at or below INLINE_CHANGE_MAX as well", () => {
-    render(<PendingBanner state={withChanges(2, 1)} deckId="d" />);
-    // Two runs, not one: each side carries its own colour, so each is its own
-    // element and the joined string never appears in the document.
-    expect(screen.getByText(copy.counts(2, 0))).toBeTruthy();
-    expect(screen.getByText(copy.counts(0, 1))).toBeTruthy();
-  });
-
-  it("draws the holding deck and the price on an add, and neither on a remove", () => {
-    const state = withChanges(1, 1);
-    state.adds[0] = {
-      ...state.adds[0],
-      bucket: "claimed",
-      heldBy: [{ id: "d2", name: "Kess Storm" }],
-    };
-    // The hint reads `pullFrom`, not `heldBy` — a holder a pull is refused from
-    // is in the latter and never the former.
-    state.pullFrom = new Map([["a0", "Kess Storm"]]);
-    render(<PendingBanner state={state} deckId="d" />);
-    expect(screen.getByText(copy.addPullHint("Kess Storm"))).toBeTruthy();
-    // One tile, on the add: a remove is a copy going back in the pool and has
-    // nothing to buy.
-    expect(screen.getAllByText("$4.00")).toHaveLength(1);
-    expect(screen.getByText(copy.removeHint)).toBeTruthy();
-  });
-
-  // A deck with pending changes of its own, or holding the card as its commander,
-  // is a mature claimant the server refuses a pull from. Naming it in the hint
-  // offers an act that fails, so an empty `pullFrom` draws no hint at all.
-  it("offers no pull when the holder is not releasable", () => {
-    const state = withChanges(1, 0);
-    state.adds[0] = {
-      ...state.adds[0],
-      bucket: "claimed",
-      heldBy: [{ id: "d2", name: "Kess Storm" }],
-    };
-    render(<PendingBanner state={state} deckId="d" />);
-    expect(screen.queryByText(copy.addPullHint("Kess Storm"))).toBeNull();
-  });
-
-  it("states counts and one money sentence above INLINE_CHANGE_MAX", () => {
-    const { container } = render(
-      <PendingBanner state={withChanges(19, 17)} deckId="d" />,
-    );
-    expect(screen.queryByText("Add 0")).toBeNull();
-    expect(screen.getByText(copy.counts(19, 0))).toBeTruthy();
-    expect(screen.getByText(copy.counts(0, 17))).toBeTruthy();
-    expect(screen.getByText(copy.since(36, 2))).toBeTruthy();
-    // The figure is a mono run inside the sentence, so the assertion is on the
-    // whole rendered sentence rather than one element's own text.
-    expect(container.textContent).toContain(copy.money(19, 19, 19, "$12.00"));
-    expect(screen.getByRole("link", { name: copy.reviewCta(36) })).toBeTruthy();
-  });
-
-  // A long draft is the one most expensive to leave uncommitted, so the commit
-  // is offered at both densities — demoted to a secondary, never withdrawn.
-  it("still offers the commit above INLINE_CHANGE_MAX", () => {
-    render(<PendingBanner state={withChanges(19, 17)} deckId="d" />);
-    expect(screen.getByRole("link", { name: copy.commitCta(3) })).toHaveProperty(
-      "href",
-      expect.stringContaining("/decks/d/changes?commit=1"),
-    );
-  });
-
-  // The free-copy sentence is a claim about the claim model. A read that failed
-  // knows nothing about free copies, and saying "this commit asks for nothing"
-  // over a purchase the player will actually be charged for is the one lie this
-  // banner must not tell.
-  it("draws no money sentence when the claims could not be read", () => {
-    render(
-      <PendingBanner
-        state={{
-          ...withChanges(19, 17),
-          claimsKnown: false, unfreeCount: 0, buyCount: 0, total: null,
-        }}
-        deckId="d"
-      />,
-    );
-    expect(screen.queryByText(copy.moneyNone)).toBeNull();
-    // The change account itself is not in doubt, so it is still stated.
-    expect(screen.getByText(copy.counts(19, 0))).toBeTruthy();
-  });
-
-  // Unfree rows with no price is a purchase with no figure. The review page one
-  // click away names the rows; the banner says neither sentence.
-  it("draws no money sentence when rows are unfree and nothing could be priced", () => {
-    render(
-      <PendingBanner
-        state={{ ...withChanges(19, 17), total: null }}
-        deckId="d"
-      />,
-    );
-    expect(screen.queryByText(copy.moneyNone)).toBeNull();
-  });
-
-  // $12.00 over four of nineteen copies is a real figure and not the purchase.
-  // Stated bare it reads as the whole bill, so the coverage travels with it.
-  it("names the coverage when only some copies could be priced", () => {
-    render(
-      <PendingBanner
-        state={{ ...withChanges(19, 17), pricedCopies: 4 }}
-        deckId="d"
-      />,
-    );
-    expect(
-      screen.getByText(priceCopy.strip.pricedClause(4, 19), { exact: false }),
-    ).toBeTruthy();
-  });
-
-  // $0.00 is a price the feed gave, not the absence of one, so it prints as a
-  // figure rather than falling through to the no-figure branch. The reader is the
-  // reason: a card stocked at nothing is still a card to obtain.
-  it("prints a real $0.00 total rather than withholding the figure", () => {
-    const { container } = render(
-      <PendingBanner
-        state={{ ...withChanges(19, 17), total: "$0.00" }}
-        deckId="d"
-      />,
-    );
-    expect(container.textContent).toContain(copy.money(19, 19, 19, "$0.00"));
-    expect(screen.queryByText(copy.moneyNone)).toBeNull();
-  });
-
-  it("says the commit asks for nothing only on a real zero", () => {
-    render(
-      <PendingBanner
-        state={{ ...withChanges(19, 17), unfreeCount: 0, buyCount: 0, total: null }}
-        deckId="d"
-      />,
-    );
-    expect(screen.getByText(copy.moneyNone, { exact: false })).toBeTruthy();
-  });
-
-  // Both money sentences are about the cards coming in, so a cut with none says
-  // neither — `moneyNone` over an empty add list is vacuously true and reads as
-  // an account of a purchase that was never on the table.
-  it("says no money sentence on a removals-only draft, however long", () => {
-    render(<PendingBanner state={withChanges(0, 17)} deckId="d" />);
-    expect(screen.queryByText(copy.moneyNone, { exact: false })).toBeNull();
-    expect(screen.getByText(copy.counts(0, 17))).toBeTruthy();
-  });
-
-  // A basics-only draft is a removals-only draft like any other now — the cut
-  // Swamps are rows, they buy nothing, and nothing is coming in to say a
-  // sentence about.
-  it("says no money sentence on a basics-only draft either", () => {
-    render(<PendingBanner state={withChanges(0, 1)} deckId="d" />);
-    expect(screen.queryByText(copy.moneyNone, { exact: false })).toBeNull();
-  });
-
-  // `Commit as v1` is drawn in the spine beside `Export`, so a deck with no
-  // version leaves this banner with nothing to say.
+  // `Commit as v1` is drawn in the header beside `Export`, so a deck with no
+  // version leaves this strip with nothing to say.
   it("says nothing at all on a versionless deck", () => {
-    const { container } = render(
-      <PendingBanner state={{ ...empty, version: null }} deckId="d" />,
-    );
+    const { container } = render(<PendingBanner state={{ ...empty, version: null }} />);
     expect(container.firstChild).toBeNull();
-  });
-
-  // The body count is the hero's figure (states A6/A7): the banner reads no card
-  // count of its own, and blocks nothing when the draft is over size.
-  it("states no body count of its own, and blocks nothing when the draft is over", () => {
-    render(<PendingBanner state={withChanges(3, 0)} deckId="d" />);
-    expect(screen.getByRole("link", { name: copy.commitCta(3) })).toBeTruthy();
-  });
-
-  it("prints the from → to pair on a quantity move, not a bare name", () => {
-    const state = withChanges(1, 0);
-    state.addChanges[0] = { oracleId: "a0", from: 1, to: 2 };
-    render(<PendingBanner state={state} deckId="d" />);
-    expect(
-      screen.getByText(deckImportCopy.update.diff.recountedItem("Add 0", "1", "2")),
-    ).toBeTruthy();
-  });
-
-  // A whole cut of more than one copy. Five Swamps out of the sleeve printed a
-  // bare `Swamp` here for the same reason they did on the review page: the rule
-  // was `from > 0 && to > 0`, which never met a row that could lose more than
-  // one.
-  it("prints the pair on a whole cut of more than one copy", () => {
-    const state = withChanges(0, 1);
-    state.removes[0] = { oracleId: "r0", from: 5, to: 0 };
-    render(<PendingBanner state={state} deckId="d" />);
-    expect(
-      screen.getByText(deckImportCopy.update.diff.recountedItem("Cut 0", "5", "0")),
-    ).toBeTruthy();
-  });
-
-  // The review link has no gate on it any more. It used to be withheld from a
-  // basics-only draft, which named no card and so drew two empty columns; that
-  // draft has rows now, so every draft the banner is up for has something to
-  // read.
-  it("offers both the commit and the review on a basics-only draft", () => {
-    render(<PendingBanner state={withChanges(0, 1)} deckId="d" />);
-    expect(screen.getByText(copy.label)).toBeTruthy();
-    expect(screen.getByRole("link", { name: copy.commitCta(3) })).toBeTruthy();
-    expect(screen.getByRole("link", { name: copy.reviewLink })).toBeTruthy();
-  });
-
-  // The confirm replaces the card's body rather than standing beside it: a
-  // question about throwing the changes away, asked over a list of them, leaves
-  // the figures it is about to destroy drawn underneath it.
-  it("gives its whole body to the discard confirm", () => {
-    render(
-      <PendingBanner state={withChanges(19, 17)} deckId="d" versionCards={99} />,
-    );
-    act(() => {
-      screen.getByRole("button", { name: copy.discardCta }).click();
-    });
-    expect(screen.getByText(deckVersioningCopy.discard.question(36))).toBeTruthy();
-    expect(screen.queryByText(copy.label)).toBeNull();
-    expect(screen.queryByText(copy.counts(19, 0))).toBeNull();
-    expect(screen.queryByRole("link", { name: copy.commitCta(3) })).toBeNull();
-    expect(screen.queryByRole("link", { name: copy.reviewCta(36) })).toBeNull();
-  });
-
-  // The confirm names how many cards the version it lands on holds, and that
-  // figure is the page's to supply. Without it the offer is withheld rather than
-  // the question asked with a gap in it.
-  it("offers no discard where the version's own size is unknown", () => {
-    render(<PendingBanner state={withChanges(19, 17)} deckId="d" />);
-    expect(screen.queryByRole("button", { name: copy.discardCta })).toBeNull();
-  });
-});
-
-describe("a commit whose adds are all printed", () => {
-  // 19 adds, not 2: below `INLINE_CHANGE_MAX` the banner lists the changes by
-  // name and draws no money sentence at all, so a small fixture asserts nothing
-  // about either sentence.
-  const allProxied = (n: number): DraftState => ({
-    ...withChanges(n, 0),
-    adds: Array.from({ length: n }, (_, i) => ({
-      oracleId: `a${i}`, needed: 1, shortfall: 0, bucket: "proxied" as const, heldBy: [],
-    })),
-    unfreeCount: 0,
-    buyCount: 0,
-    total: null,
-  });
-
-  it("does not claim every card has a spare copy", () => {
-    // The state this PR can now produce: every add printed, so `unfreeCount` is
-    // 0 — which used to route straight to `moneyNone` and tell the player their
-    // collection covers nineteen cards it has never held.
-    const { container } = render(<PendingBanner deckId="d1" state={allProxied(19)} />);
-    expect(container.textContent).not.toContain(copy.moneyNone);
-    expect(container.textContent).toContain(copy.moneyProxiedOnly(19));
-  });
-
-  it("does not claim a spare copy for a mixed list", () => {
-    // Reachable because `unfreeAdds` excludes free AND proxied: 10 covered, 9
-    // printed, `unfreeCount` 0. `moneyNone` here would assert a spare copy for
-    // nineteen cards when nine of them have no copy anywhere.
-    const mixed: DraftState = {
-      ...allProxied(19),
-      adds: Array.from({ length: 19 }, (_, i) => ({
-        oracleId: `a${i}`,
-        needed: 1,
-        shortfall: 0,
-        bucket: (i < 9 ? "proxied" : "free") as "proxied" | "free",
-        heldBy: [],
-      })),
-    };
-    const { container } = render(<PendingBanner deckId="d1" state={mixed} />);
-    expect(container.textContent).not.toContain(copy.moneyNone);
-    expect(container.textContent).toContain(copy.moneyProxiedMixed(9, 19));
-    // "covered", not "spare copies": an added basic buckets free because basics
-    // are unlimited, and calling that a spare copy describes a Swamp as one the
-    // player owns.
-    expect(container.textContent).not.toContain("spare copies");
-  });
-
-  it("still says moneyNone when the adds are genuinely covered", () => {
-    const covered: DraftState = {
-      ...allProxied(19),
-      adds: Array.from({ length: 19 }, (_, i) => ({
-        oracleId: `a${i}`, needed: 1, shortfall: 0, bucket: "free" as const, heldBy: [],
-      })),
-    };
-    const { container } = render(<PendingBanner deckId="d1" state={covered} />);
-    expect(container.textContent).toContain(copy.moneyNone);
   });
 });
