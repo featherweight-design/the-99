@@ -3,7 +3,10 @@
 // friend; the holder is told through the feed (when their kind is on); the holder alone answers, once, while the ask
 // is open and the friendship stands; a No holds that friend back fourteen days and frees the next one at once; an ask
 // past fourteen days reads as expired, cannot be answered, and frees the card; two asks at once let one through; an
-// unfriend drops the ask from both sides; the purge deletes both sides.
+// unfriend drops the ask from both sides; the purge deletes both sides. PR 3a adds: the asker's ✕ (a withdraw that tells
+// nobody and holds nothing, and a clear that keeps a No's cooldown), Ask instead as one transaction, copies capped at
+// the spare count and a deck stored only when it is the asker's, "no longer spare" on both sides, the spare-request
+// kind on by default (a holder with no prefs row is told), and the Shopping read's payload.
 //
 // It WRITES, so it fails closed on its target, as `probe:feed-writers` does: the URL comes from `SPARE_PROBE_URL`
 // (never `DATABASE_URL`, which `scripts/lib/env.mjs` would override from `.env`), and `SPARE_PROBE_BRANCH` must equal
@@ -26,6 +29,7 @@ const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const A = `probe-sr-a-${run}`; // the asker
 const H1 = `probe-sr-h1-${run}`; // a holder
 const H2 = `probe-sr-h2-${run}`; // another holder
+const H3 = `probe-sr-h3-${run}`; // a holder who never touches Settings (G4)
 const ENV = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
 
 let failed = 0;
@@ -45,6 +49,7 @@ async function main() {
   const friends = await import("../src/lib/social/friends");
   const pods = await import("../src/lib/social/pods");
   const { shareSparesWith } = await import("../src/lib/social/spares");
+  const { keepCardBack, releaseCard } = await import("../src/lib/social/spare-settings");
   const prefs = await import("../src/lib/feed/prefs");
   const read = await import("../src/lib/feed/read");
   const { applyCollectionChange } = await import("../src/lib/collection/write");
@@ -57,31 +62,34 @@ async function main() {
   const feedOf = async (u: string) =>
     (await db.execute<{ dedupe_key: string; friend_user_id: string; oracle_id: string }>(sql`select dedupe_key, friend_user_id, oracle_id
       from feed_items where user_id = ${u} and kind = 'spare-request' order by created_at`)).rows;
-  const printingOf = async (card: string) => {
+  const printingOf = async (card: string, quantity = 1) => {
     const { rows } = await db.execute<{ set_code: string; collector_number: string; scryfall_id: string }>(sql`
       select p.set_code, p.collector_number, p.scryfall_id from printings p where p.oracle_id = ${card}
       order by p.scryfall_id limit 1`);
     if (!rows[0]) throw new Error(`no printing of ${card}`);
     return { oracleId: card, setCode: rows[0].set_code, collectorNumber: rows[0].collector_number, scryfallId: rows[0].scryfall_id,
-      finish: "nonfoil" as const, condition: null, quantity: 1 };
+      finish: "nonfoil" as const, condition: null, quantity };
   };
-  const add = async (u: string, cards: string[]) => {
-    const result = await applyCollectionChange(u, { kind: "add", items: await Promise.all(cards.map(printingOf)) }, { id: randomUUID(), env: ENV });
+  const add = async (u: string, cards: string[], quantity = 1) => {
+    const items = await Promise.all(cards.map((c) => printingOf(c, quantity)));
+    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID(), env: ENV });
     if (result.status !== "applied") throw new Error(`add refused: ${result.status}`);
   };
 
   try {
-    // Five ordinary cards with a printing: X, Z and W are held by both holders, V by Hope alone, Y by nobody.
+    // Ten ordinary cards with a printing: X, Z, W, U and T are held by Hal and Hope, V, S (two copies) and R by Hope
+    // alone, T and Q by Ida, Y by nobody.
     const { rows: picked } = await db.execute<{ oracle_id: string }>(sql`
       select c.oracle_id from cards c where exists (select 1 from printings p where p.oracle_id = c.oracle_id)
-      order by c.oracle_id limit 5 offset 1000`);
-    if (picked.length < 5) throw new Error("fewer than five cards with a printing on this branch");
-    const [X, Y, Z, W, V] = picked.map((r) => r.oracle_id);
+      order by c.oracle_id limit 10 offset 1000`);
+    if (picked.length < 10) throw new Error("fewer than ten cards with a printing on this branch");
+    const [X, Y, Z, W, V, U, T, S, R, Q] = picked.map((r) => r.oracle_id);
 
     const a = await friends.ensureProfile(A, "Ann");
     const h1 = await friends.ensureProfile(H1, "Hal");
     const h2 = await friends.ensureProfile(H2, "Hope");
-    for (const h of [H1, H2]) {
+    const h3 = await friends.ensureProfile(H3, "Ida");
+    for (const h of [H1, H2, H3]) {
       const inv = await friends.createInvite(A);
       if (!inv.ok) throw new Error("createInvite refused");
       await friends.redeemInvite(h, inv.token);
@@ -89,11 +97,15 @@ async function main() {
     // Ann's pod, the holders in it: Ann is the one friend both holders have.
     const pod = await pods.createPod(A, "Spare probe");
     if (!pod) throw new Error("createPod refused");
-    for (const p of [h1.publicId, h2.publicId]) if (!(await pods.addMember(A, pod.id, p))) throw new Error("addMember refused");
-    for (const h of [H1, H2]) if (!(await shareSparesWith(h, pod.id, true))) throw new Error("shareSparesWith refused");
-    await add(H1, [X, Z, W]);
-    await add(H2, [X, Z, W, V]);
+    for (const p of [h1.publicId, h2.publicId, h3.publicId]) if (!(await pods.addMember(A, pod.id, p))) throw new Error("addMember refused");
+    for (const h of [H1, H2, H3]) if (!(await shareSparesWith(h, pod.id, true))) throw new Error("shareSparesWith refused");
+    await add(H1, [X, Z, W, U, T]);
+    await add(H2, [X, Z, W, V, U, T, R]);
+    await add(H2, [S], 2);
+    await add(H3, [T, Q]);
+    // Hal keeps the default (spare-request on, G4); Hope turns it OFF, so her early asks write her nothing.
     await prefs.setFeedKinds(H1, ["spare-request"]);
+    check("Hope turning the default-on kind off writes", await prefs.setFeedKinds(H2, []));
 
     console.log("\n1. who may ask");
     check("switch off: off", (await sr.askForSpare(A, h1.publicId, X, { ...ENV, SPARE_REQUESTS_ENABLED: "" })).ok === false);
@@ -131,7 +143,7 @@ async function main() {
     check("after the No, Hal for X: declined", ((r) => !r.ok && r.reason === "declined")(await sr.askForSpare(A, h1.publicId, X, ENV)));
     const second = await sr.askForSpare(A, h2.publicId, X, ENV);
     check("... and Hope may be asked at once", second.ok);
-    check("Hope (kind off) is not told", (await feedOf(H2)).length === 0);
+    check("Hope (kind turned off) is not told", (await feedOf(H2)).length === 0);
     check("Hope answers Yes", second.ok && (await sr.answerSpareRequest(H2, second.id, "yes", ENV)).ok);
     mine = await sr.loadMyAsks(A, ENV);
     check("Ann's list: Hope yes, Hal no", JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])) === JSON.stringify([["Hope", "yes"], ["Hal", "no"]]), JSON.stringify(mine.map((m) => [m.holder.displayName, m.state])));
@@ -199,6 +211,138 @@ async function main() {
     check("... the count is zero", (await sr.unseenAnswersCount(A, FEED)) === 0);
     check("... and a second visit writes nothing", !(await prefs.markFriendsSeen(A, FEED)));
 
+    console.log("\n6a. withdraw and clear (G1)");
+    const FEEDU = { ...ENV, HOME_FEED_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const hasAsk = async (u: string, card: string) =>
+      (await read.loadFeed(u, FEEDU)).some((i) => i.kind === "spare-request" && "oracleId" in i && i.oracleId === card);
+    const halWaiting = await sr.waitingAsksCount(H1, FEEDU);
+    const u1 = await sr.askForSpare(A, h1.publicId, U, FEEDU);
+    check("Ann asks Hal for U", u1.ok);
+    const u1Id = u1.ok ? u1.id : "";
+    check("... Hal's list, badge and feed carry it", (await sr.loadIncomingAsks(H1, FEEDU)).some((i) => i.id === u1Id)
+      && (await sr.waitingAsksCount(H1, FEEDU)) === halWaiting + 1 && (await hasAsk(H1, U)));
+    check("Ann's ✕ on the open ask withdraws it", JSON.stringify(await sr.closeSpareRequest(A, u1Id, FEEDU)) === JSON.stringify({ ok: true, closed: "withdrawn" }));
+    check("... stored withdrawn", (await rowsOf(A)).find((r) => r.id === u1Id)?.status === "withdrawn");
+    check("... it leaves Hal's list, his badge and his feed, with nothing written to him",
+      !(await sr.loadIncomingAsks(H1, FEEDU)).some((i) => i.id === u1Id) && (await sr.waitingAsksCount(H1, FEEDU)) === halWaiting && !(await hasAsk(H1, U)));
+    check("... and Ann's own list", !(await sr.loadMyAsks(A, FEEDU)).some((m) => m.id === u1Id));
+    check("... Hal cannot answer it", ((r) => !r.ok && r.reason === "gone")(await sr.answerSpareRequest(H1, u1Id, "yes", FEEDU)));
+    const u2 = await sr.askForSpare(A, h1.publicId, U, FEEDU);
+    check("a withdrawn ask holds nothing: Ann may ask Hal again at once", u2.ok);
+    const u2Id = u2.ok ? u2.id : "";
+    check("Hal answers No", (await sr.answerSpareRequest(H1, u2Id, "no", FEEDU)).ok);
+    check("Ann's ✕ on the answered ask clears it", JSON.stringify(await sr.closeSpareRequest(A, u2Id, FEEDU)) === JSON.stringify({ ok: true, closed: "cleared" }));
+    check("... it leaves her list", !(await sr.loadMyAsks(A, FEEDU)).some((m) => m.id === u2Id));
+    check("... the row stays, a No, cleared", await (async () => {
+      const r = (await db.execute<{ status: string; c: string | null }>(sql`select status, asker_cleared_at::text as c from spare_requests where id = ${u2Id}`)).rows[0];
+      return r?.status === "no" && r.c !== null;
+    })());
+    check("... and still holds Hal back: declined", ((r) => !r.ok && r.reason === "declined")(await sr.askForSpare(A, h1.publicId, U, FEEDU)));
+    check("a second ✕ on it is gone", ((r) => !r.ok && r.reason === "gone")(await sr.closeSpareRequest(A, u2Id, FEEDU)));
+    check("someone else's ✕ on Ann's ask is gone", ((r) => !r.ok && r.reason === "gone")(await sr.closeSpareRequest(H1, u2Id, FEEDU)));
+
+    console.log("\n6b. Ask instead (G1, one transaction)");
+    const tNo = await sr.askForSpare(A, h2.publicId, T, FEEDU);
+    check("Ann asks Hope for T and Hope says No", tNo.ok && (await sr.answerSpareRequest(H2, tNo.id, "no", FEEDU)).ok);
+    const t1 = await sr.askForSpare(A, h1.publicId, T, FEEDU);
+    check("Ann asks Hal for T", t1.ok);
+    const t1Id = t1.ok ? t1.id : "";
+    const stillOpen = async () => (await rowsOf(A)).find((r) => r.id === t1Id)?.status === "open";
+    await keepCardBack(H3, T);
+    check("Ask instead to a friend offering no spare of T (Ida keeps hers back): not-spare", ((r) => !r.ok && r.reason === "not-spare")(await sr.askInsteadForSpare(A, t1Id, h3.publicId, T, FEEDU)));
+    await releaseCard(H3, T);
+    check("... the first ask is still open", await stillOpen());
+    check("Ask instead to a stranger: not-friend", ((r) => !r.ok && r.reason === "not-friend")(await sr.askInsteadForSpare(A, t1Id, randomUUID(), T, FEEDU)));
+    check("Ask instead to Hope inside her No's cooldown: declined, refused INSIDE the transaction after the withdraw",
+      ((r) => !r.ok && r.reason === "declined")(await sr.askInsteadForSpare(A, t1Id, h2.publicId, T, FEEDU)));
+    check("... the withdraw rolled back: the first ask is still open, and still Hal's to answer", (await stillOpen())
+      && (await sr.loadIncomingAsks(H1, FEEDU)).some((i) => i.id === t1Id));
+    check("Ask instead to Hal himself: gone (it is not another friend)", ((r) => !r.ok && r.reason === "gone")(await sr.askInsteadForSpare(A, t1Id, h1.publicId, T, FEEDU)));
+    check("... still open", await stillOpen());
+    const idaFeedBefore = (await feedOf(H3)).length;
+    const t2 = await sr.askInsteadForSpare(A, t1Id, h3.publicId, T, FEEDU);
+    check("Ask instead to Ida lands", t2.ok);
+    rows = await rowsOf(A);
+    check("... the first is withdrawn and one open ask for T names Ida",
+      rows.find((r) => r.id === t1Id)?.status === "withdrawn" && rows.filter((r) => r.status === "open" && t2.ok && r.id === t2.id && r.holder_user_id === H3).length === 1);
+    check("... Hal's list drops the first", !(await sr.loadIncomingAsks(H1, FEEDU)).some((i) => i.id === t1Id));
+    check("Ask instead from an ask no longer open: gone", ((r) => !r.ok && r.reason === "gone")(await sr.askInsteadForSpare(A, t1Id, h3.publicId, T, FEEDU)));
+
+    console.log("\n6c. G4: a holder who never chose is told");
+    const idaPrefs = async () => (await db.execute<{ d: string[] | null }>(sql`select feed_kinds_declined as d from user_prefs where user_id = ${H3}`)).rows[0];
+    check("Ida has no prefs row", (await idaPrefs()) === undefined);
+    check("... yet the ask wrote her feed item (spare-request on by default)", (await feedOf(H3)).length === idaFeedBefore + 1);
+    check("... her feed reads it, and Home's badge counts it", (await hasAsk(H3, T)) && (await read.unseenCount(H3, FEEDU)) >= 1);
+    check("... Settings reads the kind on", (await prefs.loadNewsSettings(H3, FEEDU)).some((n) => n.kind === "spare-request" && n.on));
+    check("a Home visit marks it seen with no prefs row (the upsert)", await prefs.markFeedSeen(H3, FEEDU));
+    check("... the count is zero, and a second visit writes nothing", (await read.unseenCount(H3, FEEDU)) === 0 && !(await prefs.markFeedSeen(H3, FEEDU)));
+    check("Ida turning it off writes", await prefs.setFeedKinds(H3, [], new Date(), ["spare-request"]));
+    check("... into feed_kinds_declined", JSON.stringify((await idaPrefs())?.d) === JSON.stringify(["spare-request"]));
+    check("... Settings reads it off, and her feed drops the item", !(await prefs.loadNewsSettings(H3, FEEDU)).some((n) => n.kind === "spare-request" && n.on) && !(await hasAsk(H3, T)));
+    const q1 = await sr.askForSpare(A, h3.publicId, Q, FEEDU);
+    check("Ann asks Ida for Q while it is off: no item is written", q1.ok && (await feedOf(H3)).length === idaFeedBefore + 1);
+    check("... yet Waiting on you still holds it", (await sr.loadIncomingAsks(H3, FEEDU)).some((i) => q1.ok && i.id === q1.id));
+    check("Ida turning it on again writes", await prefs.setFeedKinds(H3, ["spare-request"], new Date(), ["spare-request"]));
+    check("... no backfill: neither T's item from before nor Q's from while it was off", !(await hasAsk(H3, T)) && !(await hasAsk(H3, Q)));
+    check("Ann withdraws Q and asks again", q1.ok && (await sr.closeSpareRequest(A, q1.id, FEEDU)).ok && (await sr.askForSpare(A, h3.publicId, Q, FEEDU)).ok);
+    check("... the new ask reaches Ida's feed", await hasAsk(H3, Q));
+
+    console.log("\n6d. copies and deck (G2)");
+    const deckOf = async (u: string, name: string) => (await db.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id) values (${u}, ${name}, ${Y}) returning id`)).rows[0].id;
+    const annDeck = await deckOf(A, "Probe dragons");
+    const hopeDeck = await deckOf(H2, "Hope's deck");
+    const copiesOf = async (id: string) => (await db.execute<{ copies: number; deck_id: string | null }>(sql`
+      select copies, deck_id from spare_requests where id = ${id}`)).rows[0];
+    const s1 = await sr.askForSpare(A, h2.publicId, S, FEEDU, new Date(), { copies: 5, deckId: annDeck });
+    check("Ann asks Hope for 5 of S for her deck", s1.ok);
+    const s1Row = s1.ok ? await copiesOf(s1.id) : undefined;
+    check("... copies capped at Hope's spare count (2), the deck stored", s1Row?.copies === 2 && s1Row.deck_id === annDeck, JSON.stringify(s1Row));
+    const hopeSees = (await sr.loadIncomingAsks(H2, FEEDU)).find((i) => s1.ok && i.id === s1.id);
+    check("... Hope's row draws the card, 2 copies, Ann's deck name, her own spare count, Ann's face",
+      hopeSees?.copies === 2 && hopeSees.deckName === "Probe dragons" && hopeSees.spare === 2 && hopeSees.card.name.length > 0
+      && hopeSees.asker.publicId === a.publicId && "commander" in hopeSees.asker && hopeSees.daysLeft === 14, JSON.stringify(hopeSees));
+    check("Ann withdraws it", s1.ok && (await sr.closeSpareRequest(A, s1.id, FEEDU)).ok);
+    const s2 = await sr.askForSpare(A, h2.publicId, S, FEEDU, new Date(), { copies: "lots", deckId: hopeDeck });
+    const s2Row = s2.ok ? await copiesOf(s2.id) : undefined;
+    check("an ask naming SOMEONE ELSE's deck lands with no deck, and junk copies read 1", s2.ok && s2Row?.deck_id === null && s2Row.copies === 1, JSON.stringify(s2Row));
+    check("Ann withdraws it", s2.ok && (await sr.closeSpareRequest(A, s2.id, FEEDU)).ok);
+    const s3 = await sr.askForSpare(A, h2.publicId, S, FEEDU, new Date(), { copies: 0, deckId: "not-a-deck" });
+    const s3Row = s3.ok ? await copiesOf(s3.id) : undefined;
+    check("an ask naming a non-id deck lands with no deck, and 0 copies read 1", s3.ok && s3Row?.deck_id === null && s3Row.copies === 1, JSON.stringify(s3Row));
+
+    console.log("\n6e. no longer spare (G3)");
+    const rr = await sr.askForSpare(A, h2.publicId, R, FEEDU);
+    check("Ann asks Hope for R", rr.ok);
+    const rrId = rr.ok ? rr.id : "";
+    const hopeWaiting = await sr.waitingAsksCount(H2, FEEDU);
+    check("... it waits on Hope", (await sr.loadIncomingAsks(H2, FEEDU)).some((i) => i.id === rrId) && hopeWaiting >= 1);
+    check("... Ann reads it open", (await sr.loadMyAsks(A, FEEDU)).find((m) => m.id === rrId)?.state === "open");
+    await keepCardBack(H2, R);
+    check("Hope keeps R back: it leaves her Waiting on you", !(await sr.loadIncomingAsks(H2, FEEDU)).some((i) => i.id === rrId));
+    check("... and her badge, the two agreeing", (await sr.waitingAsksCount(H2, FEEDU)) === hopeWaiting - 1
+      && (await sr.waitingAsksCount(H2, FEEDU)) === (await sr.loadIncomingAsks(H2, FEEDU)).length);
+    check("... Ann reads it No longer spare", (await sr.loadMyAsks(A, FEEDU)).find((m) => m.id === rrId)?.state === "unavailable");
+    await releaseCard(H2, R);
+    check("Hope releases R: it is back on both sides", (await sr.loadIncomingAsks(H2, FEEDU)).some((i) => i.id === rrId)
+      && (await sr.loadMyAsks(A, FEEDU)).find((m) => m.id === rrId)?.state === "open");
+    check("an ask for a card Ann's lists no longer want reads No longer needed",
+      (await sr.loadMyAsks(A, FEEDU, new Date(), { stillNeeded: new Set([X]) })).find((m) => m.id === rrId)?.state === "unneeded");
+    check("... and open while they still do", (await sr.loadMyAsks(A, FEEDU, new Date(), { stillNeeded: new Set([R]) })).find((m) => m.id === rrId)?.state === "open");
+
+    console.log("\n6f. the Shopping read (GET /api/spare-requests, its loader)");
+    const lines = await sr.loadAskStates(A, [U, T, S, R, Q, Y], FEEDU);
+    const keys = ["answeredAt", "createdAt", "daysLeft", "holder", "id", "oracleId", "state"];
+    check("every line carries exactly the payload's fields, the holder as public id and name",
+      !!lines && lines.length > 0 && lines.every((l) => JSON.stringify(Object.keys(l).sort()) === JSON.stringify(keys)
+        && JSON.stringify(Object.keys(l.holder).sort()) === JSON.stringify(["displayName", "publicId"])), JSON.stringify(lines?.[0]));
+    check("... never a Clerk id", !!lines && ![A, H1, H2, H3].some((u) => JSON.stringify(lines).includes(u)));
+    check("... no withdrawn or cleared ask, and open asks with their days left", !!lines
+      && !lines.some((l) => l.id === u1Id || l.id === u2Id || l.id === t1Id)
+      && lines.filter((l) => l.state === "open").every((l) => typeof l.daysLeft === "number")
+      && lines.some((l) => l.oracleId === R && l.state === "open"), JSON.stringify(lines?.map((l) => [l.oracleId.slice(0, 4), l.state])));
+    check("... refuses a batch past the cap before reading", (await sr.loadAskStates(A, Array(201).fill(U), FEEDU)) === null);
+
     console.log("\n7. unfriend");
     const open = (await sr.loadIncomingAsks(H1, ENV)).map((i) => i.id);
     check("Hal holds open asks before the unfriend", open.length >= 1);
@@ -220,22 +364,22 @@ async function main() {
     check("the asker's purge deletes every ask on either side", left === 0, `${left} left`);
     check("... and the feed items that named them", (await db.execute<{ n: number }>(sql`select count(*)::int as n from feed_items where friend_user_id = ${A}`)).rows[0].n === 0);
   } finally {
-    for (const u of [A, H1, H2]) {
+    for (const u of [A, H1, H2, H3]) {
       try {
         await purgeAccount(u, { stripe: () => null });
       } catch (e) {
         console.error(`cleanup: purge of ${u} failed`, e);
       }
     }
-    await db.execute(sql`delete from user_prefs where user_id in (${A}, ${H1}, ${H2})`);
-    await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${H1}, ${H2})`);
+    await db.execute(sql`delete from user_prefs where user_id in (${A}, ${H1}, ${H2}, ${H3})`);
+    await db.execute(sql`delete from user_data_stamps where user_id in (${A}, ${H1}, ${H2}, ${H3})`);
     const { rows: left } = await db.execute<{ n: number }>(sql`
-      select (select count(*) from spare_requests where asker_user_id in (${A}, ${H1}, ${H2}) or holder_user_id in (${A}, ${H1}, ${H2}))
-        + (select count(*) from feed_items where user_id in (${A}, ${H1}, ${H2}) or friend_user_id in (${A}, ${H1}, ${H2}))
-        + (select count(*) from collection_items where user_id in (${A}, ${H1}, ${H2}))
-        + (select count(*) from social_profiles where user_id in (${A}, ${H1}, ${H2}))
-        + (select count(*) from friend_links where user_id in (${A}, ${H1}, ${H2}) or friend_user_id in (${A}, ${H1}, ${H2}))
-        + (select count(*) from pods where owner_user_id in (${A}, ${H1}, ${H2}))
+      select (select count(*) from spare_requests where asker_user_id in (${A}, ${H1}, ${H2}, ${H3}) or holder_user_id in (${A}, ${H1}, ${H2}, ${H3}))
+        + (select count(*) from feed_items where user_id in (${A}, ${H1}, ${H2}, ${H3}) or friend_user_id in (${A}, ${H1}, ${H2}, ${H3}))
+        + (select count(*) from collection_items where user_id in (${A}, ${H1}, ${H2}, ${H3}))
+        + (select count(*) from social_profiles where user_id in (${A}, ${H1}, ${H2}, ${H3}))
+        + (select count(*) from friend_links where user_id in (${A}, ${H1}, ${H2}, ${H3}) or friend_user_id in (${A}, ${H1}, ${H2}, ${H3}))
+        + (select count(*) from pods where owner_user_id in (${A}, ${H1}, ${H2}, ${H3}))
         as n`);
     check("cleanup: every row this run wrote is gone", Number(left[0]?.n ?? -1) === 0, `${left[0]?.n} rows remain`);
   }
