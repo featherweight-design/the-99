@@ -120,7 +120,7 @@ export type FriendDeckPage = {
 /**
  * One friend's deck, read-only (G1), or null: a public id that is not the viewer's current friend, a deck that is not
  * theirs, one their rules keep from friends (hidden, unfinished, or decks off), or the switch off for the owner. Every
- * null is the same 404, so a hidden deck and a deleted one cannot be told apart.
+ * null is the same 404, so on this page (and the tab) a hidden deck and a deleted one cannot be told apart.
  *
  * The visibility is decided by the SAME list the tab draws (`visibleDecks`), so a deck the tab shows opens and one it
  * does not, does not. The deck itself is the owner's own `getDeckDetail`, read as its owner, with no availability

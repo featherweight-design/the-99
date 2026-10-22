@@ -77,6 +77,10 @@ async function main() {
     check("defaults: a friend sees no Draft", JSON.stringify(await tab()) === "[]", JSON.stringify(await tab()));
     check("defaults: a Draft's page is nothing", (await read.loadFriendDeck(V, f.publicId, shown)) === null);
 
+    const s00 = await stamp(F);
+    await vis.writeFriendDeckPrefs(F, vis.DEFAULT_FRIEND_DECK_PREFS);
+    const { rows: prefRows } = await db.execute<{ n: number }>(sql`select count(*)::int as n from user_prefs where user_id = ${F}`);
+    check("writing the defaults with no prefs row inserts none and moves no stamp", Number(prefRows[0].n) === 0 && (await stamp(F)) === s00);
     const before = await stamp(F);
     await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
     const afterWrite = await stamp(F);

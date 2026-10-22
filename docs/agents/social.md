@@ -122,8 +122,9 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
   partner), with `owned` read from the VIEWER's collection. The grant is read again after the reads.
-- **Absence.** Every null is the same 404: a stranger, a deck not theirs, hidden, unfinished, decks off. A hidden deck
-  and a deleted one cannot be told apart.
+- **Absence.** Every null of `loadFriendDeck` is the same 404: a stranger, a deck not theirs, hidden, unfinished, decks
+  off. On the tab and the page a hidden deck and a deleted one cannot be told apart. The game log's seat picker
+  (`friendDecksQuery`) and Rule 0's seating (`friendDecksIn`) do not read the rule yet: an open scope question.
 - **Writes.** `writeFriendDeckPrefs` and `setDeckHiddenFromFriends` write only on a change, because the stamp trigger
   fires on any UPDATE and the stamp is what moves a friend's `friendGeneration`. Hiding never writes `last_edited_at`
   and never touches Tonight's table or a logged game, which keep a hidden deck's name (G4, Hugh 2026-10-22).

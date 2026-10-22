@@ -44,13 +44,21 @@ export async function loadFriendDeckPrefs(userId: string, q: Reader = db): Promi
  * the stamp is what moves a friend's `friendGeneration`, so a no-op write would stale every friend's cached page.
  */
 export async function writeFriendDeckPrefs(userId: string, prefs: FriendDeckPrefs): Promise<void> {
+  const changed = sql`(${userPrefs.friendsSeeDecks}, ${userPrefs.friendsSeeUnfinished}) is distinct from (${prefs.seeDecks}, ${prefs.seeUnfinished})`;
+  // The defaults are what a reader with no row already has: an update of an existing row, never an insert, so writing
+  // them back for a reader who has no row inserts nothing and fires no trigger.
+  if (prefs.seeDecks === DEFAULT_FRIEND_DECK_PREFS.seeDecks && prefs.seeUnfinished === DEFAULT_FRIEND_DECK_PREFS.seeUnfinished) {
+    await db.update(userPrefs).set({ friendsSeeDecks: prefs.seeDecks, friendsSeeUnfinished: prefs.seeUnfinished })
+      .where(and(eq(userPrefs.userId, userId), changed));
+    return;
+  }
   await db
     .insert(userPrefs)
     .values({ userId, friendsSeeDecks: prefs.seeDecks, friendsSeeUnfinished: prefs.seeUnfinished })
     .onConflictDoUpdate({
       target: userPrefs.userId,
       set: { friendsSeeDecks: prefs.seeDecks, friendsSeeUnfinished: prefs.seeUnfinished },
-      setWhere: sql`(${userPrefs.friendsSeeDecks}, ${userPrefs.friendsSeeUnfinished}) is distinct from (${prefs.seeDecks}, ${prefs.seeUnfinished})`,
+      setWhere: changed,
     });
 }
 
