@@ -6,7 +6,7 @@
 
 import type { DeckDetail } from "../../lib/decks/read";
 import type { TileBracket } from "../../lib/decks/read";
-import { SpineDesktop } from "./spine-desktop";
+import { SpineDesktop, type SpineBandProps } from "./spine-desktop";
 import { SpineMobile } from "./spine-mobile";
 import { useDeckShelfMove, type DeckShelf } from "./deck-shelf-move";
 import type { DeckMove } from "./deck-card-overflow";
@@ -42,6 +42,8 @@ interface BuilderSpineProps {
   onOpenNotices?: () => void;
   /** The deck's shelf and the shelves it can move to, for the ⋯ menu's Move. Absent, no Move row. */
   shelf?: DeckShelf;
+  /** Hidden from friends' row and mark, passed to both widths. See `SpineBandProps`. */
+  friendHide?: SpineBandProps["friendHide"];
 }
 
 export function BuilderSpine({
@@ -55,6 +57,7 @@ export function BuilderSpine({
   notice = null,
   onOpenNotices,
   shelf,
+  friendHide,
 }: BuilderSpineProps) {
   // One drawing of both spines, with the deck menu's Move when the page read the shelves.
   const spines = (move?: DeckMove) => (
@@ -70,6 +73,7 @@ export function BuilderSpine({
         notice={notice}
         onOpenNotices={onOpenNotices}
         move={move}
+        friendHide={friendHide}
       />
       <SpineMobile
         deck={deck}
@@ -82,6 +86,7 @@ export function BuilderSpine({
         notice={notice}
         onOpenNotices={onOpenNotices}
         move={move}
+        friendHide={friendHide}
       />
     </>
   );

@@ -1,5 +1,6 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
-// account menu. What's new on Home comes first (`HOME_FEED_ENABLED`), then Spares (`SOCIAL_FRIENDS_ENABLED`). Each
+// account menu. What's new on Home comes first (`HOME_FEED_ENABLED`), then Spares (`SOCIAL_FRIENDS_ENABLED`), then Your
+// decks (`FRIEND_DECKS_ENABLED`, friend decks README 4b). Each
 // section follows its own switch; with both off for this reader the page has nothing to show, so the route does not
 // exist.
 //
@@ -9,7 +10,8 @@
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled } from "../../lib/social/flag";
+import { friendDecksEnabled, socialFriendsEnabled } from "../../lib/social/flag";
+import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { homeFeedEnabled } from "../../lib/feed/flag";
 import { loadNewsSettings } from "../../lib/feed/prefs";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -20,6 +22,7 @@ import { keptRows } from "../../lib/settings/kept-rows";
 import { SettingsView } from "../../components/settings/settings-view";
 import { SparesSection } from "../../components/settings/spares-section";
 import { NewsSection } from "../../components/settings/news-section";
+import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
@@ -27,11 +30,17 @@ export default async function SettingsPage() {
   const friends = socialFriendsEnabled(env);
   if (!friends && !homeFeedEnabled(env)) notFound();
   // `loadNewsSettings` reads nothing and returns [] while the feed is off, and the section then draws nothing.
-  const [news, spares] = await Promise.all([loadNewsSettings(userId, env), friends ? loadSpares(userId) : null]);
+  // Your decks (`FRIEND_DECKS_ENABLED`, which needs the friends switch): the reader's own two rules.
+  const [news, spares, deckPrefs] = await Promise.all([
+    loadNewsSettings(userId, env),
+    friends ? loadSpares(userId) : null,
+    friendDecksEnabled(env) ? loadFriendDeckPrefs(userId) : null,
+  ]);
   return (
     <SettingsView>
       <NewsSection kinds={news} />
       {spares && <SparesSection {...spares} />}
+      {deckPrefs && <FriendDecksSection prefs={deckPrefs} />}
     </SettingsView>
   );
 }

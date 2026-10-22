@@ -10,25 +10,11 @@
 import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { decks, userPrefs } from "../../db/schema";
-import type { StatusPill } from "../decks/status";
 import type { Reader } from "./access";
+import { DEFAULT_FRIEND_DECK_PREFS, type FriendDeckPrefs } from "./deck-visibility-rule";
 
-export type FriendDeckPrefs = { seeDecks: boolean; seeUnfinished: boolean };
-
-/** The defaults a reader with no `user_prefs` row has, and the columns' own defaults. */
-export const DEFAULT_FRIEND_DECK_PREFS: FriendDeckPrefs = { seeDecks: true, seeUnfinished: false };
-
-const UNFINISHED: ReadonlySet<StatusPill> = new Set<StatusPill>(["New", "Draft", "Building"]);
-
-export function unfinishedPill(pill: StatusPill): boolean {
-  return UNFINISHED.has(pill);
-}
-
-/** Whether a friend sees this deck, by its owner's rules. Pure. */
-export function friendCanSeeDeck(deck: { hiddenFromFriends?: boolean; statusPill: StatusPill }, prefs: FriendDeckPrefs): boolean {
-  if (!prefs.seeDecks || deck.hiddenFromFriends) return false;
-  return prefs.seeUnfinished || !unfinishedPill(deck.statusPill);
-}
+// The rule itself is pure and lives apart, so a client component can draw from it (`deck-visibility-rule.ts`).
+export { DEFAULT_FRIEND_DECK_PREFS, friendCanSeeDeck, settingsHideDeck, unfinishedPill, type FriendDeckPrefs } from "./deck-visibility-rule";
 
 /** A player's two Settings rules, or the defaults when they have no prefs row. */
 export async function loadFriendDeckPrefs(userId: string, q: Reader = db): Promise<FriendDeckPrefs> {

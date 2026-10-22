@@ -4,9 +4,14 @@ import { DeckCard } from "./deck-card";
 import type { DeckListItem } from "../../lib/decks/read";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { formatWhen } from "../../lib/format/when";
+import { socialCopy } from "../../lib/copy/social";
 
+const overflowProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock("./deck-card-overflow", () => ({
-  DeckCardOverflow: () => <button type="button">Actions</button>,
+  DeckCardOverflow: (p: Record<string, unknown>) => {
+    overflowProps.push(p);
+    return <button type="button">Actions</button>;
+  },
 }));
 
 const now = new Date("2026-09-07T12:00:00Z");
@@ -806,3 +811,52 @@ describe("DeckCard — the notice mark (tile marker addendum)", () => {
     expect(faces(quiet.container)).toBe(1);
   });
 });
+
+// Friend decks (README 4 and 4b): the glyph marks a deck hidden ON ITS OWN, with the switch on, after the bracket chip;
+// its name rides the cover link's; the menu gets the deck's flag, status and the reader's rules.
+describe("DeckCard — Hidden from friends", () => {
+  const prefs = { seeDecks: true, seeUnfinished: false };
+  const tile = (over: Partial<DeckListItem>, friendPrefs: typeof prefs | null) =>
+    render(
+      <DeckCard
+        folders={[]}
+        onCreateFolder={() => {}}
+        onMove={() => {}}
+        keepsFocus
+        closeAfterCreate={null}
+        deck={deck(over)}
+        shopping={undefined}
+        now={now}
+        friendPrefs={friendPrefs}
+      />,
+    );
+
+  it("draws the 16px glyph in the chips row, and says it in the tile's name", () => {
+    const { container } = tile({ hiddenFromFriends: true }, prefs);
+    const chips = container.querySelector("[data-deck-chips]")!;
+    const mark = chips.querySelector("[data-hidden-from-friends]")!;
+    expect(mark.querySelector("svg")!.getAttribute("width")).toBe("16");
+    expect(mark.className).toContain("text-[color:var(--fg-muted)]");
+    expect(container.querySelector("a.absolute")!.getAttribute("aria-label")).toContain(`To buy, ${socialCopy.hideDeck.key}`);
+  });
+
+  it("draws nothing for a deck that is not hidden on its own, even one Settings hides", () => {
+    const { container } = tile({ hiddenFromFriends: false, statusPill: "Draft" }, { seeDecks: false, seeUnfinished: false });
+    expect(container.querySelector("[data-hidden-from-friends]")).toBeNull();
+    expect(container.querySelector("a.absolute")!.getAttribute("aria-label")).not.toContain(socialCopy.hideDeck.key);
+  });
+
+  it("draws nothing, and hands the menu nothing, with the switch off", () => {
+    overflowProps.length = 0;
+    const { container } = tile({ hiddenFromFriends: true }, null);
+    expect(container.querySelector("[data-hidden-from-friends]")).toBeNull();
+    expect(overflowProps.at(-1)!.friends).toBeUndefined();
+  });
+
+  it("hands the menu the deck's flag, its status and the reader's rules", () => {
+    overflowProps.length = 0;
+    tile({ hiddenFromFriends: true, statusPill: "Complete" }, prefs);
+    expect(overflowProps.at(-1)!.friends).toEqual({ hidden: true, statusPill: "Complete", prefs });
+  });
+});
+

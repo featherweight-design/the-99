@@ -92,6 +92,7 @@ import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "../ui/search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { mirrorUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
 import { type DecksView as DecksViewName } from "../ui/view-cookie";
@@ -119,6 +120,8 @@ export type DecksViewProps = {
   precons?: { summary: PreconSummary | null } | null;
   /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the zero state's door (discovery R3 E1). */
   helpMeChoose?: boolean;
+  /** The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on for them, else null: the tiles' Hidden from friends. */
+  friendPrefs?: FriendDeckPrefs | null;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
   /** Copies owned, not distinct names — the second half of `buildableFrom`. */
@@ -207,6 +210,7 @@ export function DecksView({
   cartEnabled = false,
   precons = null,
   helpMeChoose = false,
+  friendPrefs = null,
   buildable,
   cards,
   now: nowIso,
@@ -1293,7 +1297,7 @@ export function DecksView({
           ) : (
             <ArrivalOrder>
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
-              <DecksMarkKey decks={shown} />
+              <DecksMarkKey decks={shown} friends={friendPrefs !== null} />
               {shown.map((deck, i) => (
                 // `sm:h-full` so the tile fills the GRID row rather than
                 // sitting at its own content height: a tile with no detail line
@@ -1331,6 +1335,7 @@ export function DecksView({
                       if (state.shelf !== ALL_DECKS) focusShelfControl();
                     }}
                     keepsFocus={state.shelf === ALL_DECKS}
+                    friendPrefs={friendPrefs}
                     onAmong={lineup ? () => { setAmongDeck(deck.id); onView("stats"); } : undefined}
                     closeAfterCreate={
                       createFiled?.deckId === deck.id

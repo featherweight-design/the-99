@@ -27,6 +27,7 @@ import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
+import { HiddenFromFriendsMark } from "./hidden-from-friends-mark";
 import { HeaderNoticeTag } from "./notice-tag";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
@@ -64,6 +65,7 @@ export function SpineMobile({
   notice = null,
   onOpenNotices,
   move,
+  friendHide,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -136,6 +138,7 @@ export function SpineMobile({
       ) : (
         <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
       )}
+      {friendHide?.hidden ? <HiddenFromFriendsMark /> : null}
       {notice && onOpenNotices ? <HeaderNoticeTag notice={notice} onOpen={onOpenNotices} /> : null}
     </div>
   );
@@ -640,7 +643,14 @@ export function SpineMobile({
           {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
           {/* The Decks tile's own ⋯, always the row's last control: Move and Delete from inside
               the deck. A delete lands on /decks, which `deleteDeck`'s redirect does. */}
-          <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
+          <DeckCardOverflow
+            deckId={deck.id}
+            deckName={deck.name}
+            built={built}
+            placement="header"
+            move={move}
+            friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs } : undefined}
+          />
         </div>
       )}
       {/* Mounted regardless of `renaming` — a successful save closes the editor via `onDone`,

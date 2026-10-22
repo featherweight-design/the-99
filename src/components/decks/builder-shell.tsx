@@ -19,6 +19,7 @@ import { commanderShoppingRows, isShoppingCard } from "../../lib/decks/shopping"
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import type { DeckShelf } from "./deck-shelf-move";
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
@@ -171,6 +172,8 @@ interface BuilderShellProps {
   /** The deck's shelf and the reader's shelves, for the header menu's Move. The route always reads
    *  it; the shell's tests, which draw no menu, leave it out. */
   shelf?: DeckShelf;
+  /** Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader): the header menu's row and mark. Absent while off. */
+  friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
   /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
   printedInSets?: readonly PrintedInSet[];
   suggestions: DeckSuggestionWithFacts[];
@@ -332,6 +335,7 @@ export function BuilderShell({
   mix,
   deck,
   shelf,
+  friendHide,
   printedInSets = [],
   suggestions,
   degraded,
@@ -1606,6 +1610,7 @@ export function BuilderShell({
             <BuilderSpine
               deck={deck}
               shelf={shelf}
+              friendHide={friendHide}
               counts={counts}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed

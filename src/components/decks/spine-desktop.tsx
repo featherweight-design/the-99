@@ -25,6 +25,8 @@ import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
+import { HiddenFromFriendsMark } from "./hidden-from-friends-mark";
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
@@ -104,6 +106,11 @@ export interface SpineBandProps {
   onOpenNotices?: () => void;
   /** The deck menu's Move, with the page's read of the shelves. Absent, the menu carries Delete alone. */
   move?: DeckMove;
+  /**
+   * Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader; friend decks README 4): the deck's own flag and the
+   * owner's two Settings rules. Absent while the switch is off: no menu row, no mark.
+   */
+  friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
 }
 
 // §B16's single-field box is retired: editing now draws name and description at one width,
@@ -135,6 +142,7 @@ export function SpineDesktop({
   notice = null,
   onOpenNotices,
   move,
+  friendHide,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -531,6 +539,7 @@ export function SpineDesktop({
               className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
             />
             <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+            {friendHide?.hidden ? <HiddenFromFriendsMark /> : null}
             {notice && onOpenNotices ? <HeaderNoticeTag notice={notice} onOpen={onOpenNotices} /> : null}
           </div>
 
@@ -721,7 +730,14 @@ export function SpineDesktop({
               {offerFirstCommit && <FirstCommitOffer deckId={deck.id} />}
               {/* The Decks tile's own ⋯, always the row's last control: Move and Delete from inside
                   the deck. A delete lands on /decks, which `deleteDeck`'s redirect does. */}
-              <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={built} placement="header" move={move} />
+              <DeckCardOverflow
+                deckId={deck.id}
+                deckName={deck.name}
+                built={built}
+                placement="header"
+                move={move}
+                friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs } : undefined}
+              />
             </div>
           )}
         </div>
