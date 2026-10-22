@@ -203,6 +203,15 @@ export type PlanFillArgs = {
    * placed card; a land is never one (the reach offers none).
    */
   boughtRaisers?: readonly FillCandidate[];
+  /**
+   * HELP ME CHOOSE UNDER "ANY CARDS": an owned card is no longer preferred for being owned alone.
+   * Only an owned card EDHREC lists at `ANY_CARDS_LOW_PLAY_PCT` or more keeps its absolute first
+   * place; an owned card listed under it, or not listed at all, ranks with the unowned by inclusion
+   * (owned winning a tie), so a well-played card to buy takes the role slot and the low-play one is
+   * the fallback when the gate refuses the buy. The residual puts the player's on-list owned cards
+   * before any card to buy. Absent, `byPreference` rules as it always has (own-only, plain create).
+   */
+  anyCards?: boolean;
 };
 
 /** The most nonland staples one fill seeds (Hugh, 2026-10-03), so a two-color condition's ~59
@@ -443,6 +452,29 @@ export function reachCandidates(candidates: readonly FillCandidate[]): FillCandi
   return candidates.filter((c) => !isLandFace(c.typeLine)).sort(byPreference);
 }
 
+/** Under "Any cards" an owned card EDHREC lists below this share of decks, or not at all, no longer
+ *  wins a role slot for being owned (Hugh, 2026-10-22). */
+export const ANY_CARDS_LOW_PLAY_PCT = 10;
+
+/** Whether ownership alone puts this card ahead under "Any cards": owned and played enough. */
+export function ownedAndPlayed(c: FillCandidate): boolean {
+  return c.owned && c.inclusionPct != null && c.inclusionPct >= ANY_CARDS_LOW_PLAY_PCT;
+}
+
+/** `byPreference` for "Any cards": the owned-first tier is the played owned cards alone; below it
+ *  inclusion descending, absent last, owned before unowned on a tie, then name. */
+export function byAnyCardsPreference(a: FillCandidate, b: FillCandidate): number {
+  const ta = ownedAndPlayed(a), tb = ownedAndPlayed(b);
+  if (ta !== tb) return ta ? -1 : 1;
+  if (a.inclusionPct !== b.inclusionPct) {
+    if (a.inclusionPct == null) return 1;
+    if (b.inclusionPct == null) return -1;
+    return b.inclusionPct - a.inclusionPct;
+  }
+  if (a.owned !== b.owned) return a.owned ? -1 : 1;
+  return a.name.localeCompare(b.name);
+}
+
 export function byPreference(a: FillCandidate, b: FillCandidate): number {
   if (a.owned !== b.owned) return a.owned ? -1 : 1;
   if (a.inclusionPct !== b.inclusionPct) {
@@ -499,8 +531,11 @@ export function capToBody<T extends { quantity: number }>(rows: readonly T[], bo
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
   const {
     hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity, commanderCosts,
-    basics, staples,
+    basics, staples, anyCards,
   } = args;
+  const preference = anyCards ? byAnyCardsPreference : byPreference;
+  /** The tier the tie-break may not cross: owned, or under "Any cards" owned and played. */
+  const tierOf = (c: FillCandidate) => (anyCards ? ownedAndPlayed(c) : c.owned);
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
   const rolesOfCandidate = makeRolesOf(args.labelRoles);
@@ -508,7 +543,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const bodySize = deckBodySize(hasPartner);
   const limit = slots ?? bodySize;
   const usable = pool === "sleeveable" ? candidates.filter((c) => c.owned) : candidates;
-  const ordered = [...usable].sort(byPreference);
+  const ordered = [...usable].sort(preference);
   // One entry per oracle id, the most-preferred one, because `ordered` is
   // already sorted and the first write wins. Both a row's cost lookup and the
   // land sweeps read through this, so a duplicated id resolves to the same
@@ -662,7 +697,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
         // preference, so crossing it here lets the tie-break BUY a staple over a card the
         // player already has — a type gap is a reason to prefer one card to another, never a
         // reason to spend money. The owned card would have been left unused.
-        if (other.owned !== candidate.owned) continue;
+        if (tierOf(other) !== tierOf(candidate)) continue;
         // AND WITHIN THE INCLUSION BAND, for the same reason one tier further down: closing a
         // second floor is a reason to prefer one well-played card to another, never a reason to
         // take a card nobody plays over one most decks do.
@@ -803,10 +838,16 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // Ranked on synergy where the caller supplied a ranking, and otherwise left in the pool's own
   // preference order, which is inclusion. Role `"other"`: these slots close no floor, and
   // labelling them as one would claim a measurement nobody made.
-  const residualOrder = synergyRank
-    ? [...ordered].sort(
-        (a, b) => (synergyRank.get(b.oracleId) ?? 0) - (synergyRank.get(a.oracleId) ?? 0),
-      )
+  const bySynergy = (a: FillCandidate, b: FillCandidate) =>
+    (synergyRank!.get(b.oracleId) ?? 0) - (synergyRank!.get(a.oracleId) ?? 0);
+  // Under "Any cards" the player's on-list owned cards come before any card to buy, synergy within
+  // each group; `sort` is stable, so without a ranking the pool's own order holds inside a group.
+  const onListOwned = (c: FillCandidate) => c.owned && c.inclusionPct != null;
+  const residualOrder = synergyRank || anyCards
+    ? [...ordered].sort((a, b) => {
+        if (anyCards && onListOwned(a) !== onListOwned(b)) return onListOwned(a) ? -1 : 1;
+        return synergyRank ? bySynergy(a, b) : 0;
+      })
     : ordered;
   // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
   // already been built without. Tracked here for the same reason the role pass's are charged
