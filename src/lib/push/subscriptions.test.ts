@@ -1,7 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it, vi } from "vitest";
 
-import { MAX_DEVICES, trimDevices } from "./subscriptions";
+import { MAX_DEVICES, saveDevice, trimDevices } from "./subscriptions";
 import { pushKindsUpdate } from "./prefs";
 import type { SQL } from "drizzle-orm";
 
@@ -28,5 +28,18 @@ describe("the guarded prefs write", () => {
     expect(q.sql).toContain('"push_kinds_declined"');
     expect(q.sql).not.toContain('"feed_kinds"');
     expect(q.sql).toContain('"user_prefs"."push_kinds" =');
+  });
+});
+
+describe("saveDevice", () => {
+  it("restamps created_at on a refresh or takeover, so the trim keeps the row just saved", async () => {
+    let conflict: { set: Record<string, unknown> } | null = null;
+    const q = {
+      insert: () => ({ values: () => ({ onConflictDoUpdate: async (c: { set: Record<string, unknown> }) => { conflict = c; } }) }),
+      execute: vi.fn(async () => undefined),
+    };
+    await saveDevice("u1", { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a", userAgent: "ua", timeZone: "UTC" }, q as never);
+    expect(conflict!.set).toHaveProperty("createdAt");
+    expect(q.execute).toHaveBeenCalledOnce(); // the trim runs after the save
   });
 });

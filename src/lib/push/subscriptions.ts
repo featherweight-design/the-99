@@ -21,7 +21,8 @@ export async function saveDevice(userId: string, device: DeviceInput, q: Q = db)
     .values({ userId, ...device })
     .onConflictDoUpdate({
       target: pushSubscriptions.endpoint,
-      set: { userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone },
+      // `created_at` is when the device last subscribed: a refresh or a takeover is the newest, so the trim never deletes the row just saved.
+      set: { userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone, createdAt: sql`now()` },
     });
   await trimDevices(userId, q);
 }
