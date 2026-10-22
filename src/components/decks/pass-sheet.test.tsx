@@ -53,6 +53,12 @@ describe("PassSheet (one pass)", () => {
     expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();
   });
 
+  it("keeps the lead's placed figure when a ✕ has taken a card the server has not counted", () => {
+    // 3 drawn, 4 live on the server: one removal in flight, so the pass still placed 4.
+    const view = draw({ ...pass("top_off", 4), kept: 0 });
+    expect(view.container.textContent).toContain("4 cards");
+  });
+
   it("offers Done only on the seed, whose reversal is Clear all auto", () => {
     draw(pass("seed", 3));
     expect(screen.getByRole("button", { name: ledger.sheetDone })).toBeTruthy();

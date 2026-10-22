@@ -83,7 +83,9 @@ function OnePassSheet({
   // One figure for the title, the lead and the Undo: the cards the sheet draws, so a ✕ in flight
   // moves all three together rather than splitting them.
   const count = live.reduce((n, l) => n + l.copies, 0);
-  const shown = { ...pass, live: count };
+  // A card the ✕ took is a removal the server has not yet counted, so `placed` (live + kept + removed)
+  // holds still and the lead keeps saying what the pass placed.
+  const shown = { ...pass, live: count, removed: pass.removed + Math.max(0, pass.live - count) };
   const n = String(count);
   const rows = live.map((l) => l.card);
 
