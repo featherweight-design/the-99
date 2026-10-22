@@ -222,3 +222,15 @@ Tokens (board-local values, dark theme `.board`): `--fg #EDE6D8`, `--fg-muted #A
 1. Mobile frame: the phone tab bar also draws Home as `.t.on`, contradicting the caption "No tab slot is lit". Both frames light Home; the caption says none. Flag to resolve (code, not Design: no slot should be lit per caption).
 2. The section has no intro `p.ex` and no head-right link; the head is a `div.sech`, not a heading element (semantics for engineering to choose).
 3. Desktop does NOT use the two-column checkbox grid Home's inline opt-in uses at 1300.
+
+## Deliberate deviations in the build (engineering, 2026-10-22)
+
+The table above records the board. Two rows are built differently on purpose:
+
+1. **The box.** The build uses the app's one shared `Checkbox` (`src/components/ui/checkbox.tsx`: 18×18, 1.5px
+   `--fg-faint`, 4px radius, `✓`), not the board's 20×20 dashed box with a sunken fill. `checkbox-usage.test.ts` fails
+   on any other way of drawing a checkbox, and Home's inline opt-in (PR 6) uses the same component, so the two
+   surfaces that toggle the same kinds look alike.
+2. **The spare-request row.** It is drawn on the board, but the spare request is a later round (G5): nothing writes it
+   yet, so `feedKindAvailable` keeps it unavailable and Settings draws five rows. Its copy is in `feedCopy.news.kinds`
+   for the round that ships it.
