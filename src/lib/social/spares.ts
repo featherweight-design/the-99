@@ -144,9 +144,10 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
  * rows, and their wishlist once it exists). One grant read, then the friend's own claim model per
  * granting friend, narrowed to the asked cards, each in one snapshot with its own grant check. Ordered by card, then by friend name.
  *
- * THE ONE PLACE a friend's card is decided offered (Settings' Spares, G3): at least that friend's own `spare_min`
- * spare copies (default 1, every spare, as before the setting) and not kept back by that friend (`isOffered`).
- * The stand-ins modal, a friend's page and the feed all read through here, so they agree.
+ * A friend's card is offered by ONE rule (Settings' Spares, G3), `spareCount` then `isOffered` in `spare-rules`: at
+ * least that friend's own `spare_min` spare copies (default 1, every spare, as before the setting) and not kept back
+ * by that friend. The stand-ins modal and the feed read through here; a friend's Spares tab reads every card through
+ * `loadFriendSpareList`, which applies the same two calls, so they agree.
  */
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
@@ -258,6 +259,11 @@ export type FriendSpareLine = {
   onWishlist: boolean;
 };
 
+/** The Spares tab's order: cards on the viewer's wishlist first, then by name, then by id so a tie is stable. */
+export function spareLineOrder(a: FriendSpareLine, b: FriendSpareLine): number {
+  return Number(b.onWishlist) - Number(a.onWishlist) || a.name.localeCompare(b.name, "en-US", { sensitivity: "base" }) || (a.oracleId < b.oracleId ? -1 : 1);
+}
+
 /** What one friend offers the viewer, for the friend page's Spares tab. */
 export type FriendSpareList = {
   /** The pods the share reaches the viewer through, in name order: `shared with {pod}`. */
@@ -309,6 +315,6 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown): 
     const c = byId.get(o.oracleId);
     return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId) }] : [];
   });
-  lines.sort((a, b) => Number(b.onWishlist) - Number(a.onWishlist) || a.name.localeCompare(b.name, "en-US", { sensitivity: "base" }) || (a.oracleId < b.oracleId ? -1 : 1));
+  lines.sort(spareLineOrder);
   return { pods: read.grant.pods, lines };
 }

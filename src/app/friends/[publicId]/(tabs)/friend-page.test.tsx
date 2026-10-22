@@ -1,5 +1,6 @@
-// A friend's page (Social R2 P2, P3; G9, decision 10): not found unless BOTH the friends and the wishlist switches are
-// on for the reader and the id is a current friend; Round 1's head with the row's … menu; the wishlist as tiles
+// A friend's page (Social R2 P2, P3; G9, decision 10; menu and Home PR 7): not found unless the friends switch is on for
+// the reader and the id is a current friend (the Wishlist tab alone follows the wishlist switch); the head with the
+// row's … menu; the wishlist as tiles
 // reading `wants N`, never an owned count; the empty state; and a removal from here leaves for `/friends`.
 import { renderToString } from "react-dom/server";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";

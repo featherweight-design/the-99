@@ -2,7 +2,7 @@
 // grant to a pod, the friend's own membership of it, and the viewer's. Only the emitted SQL can show all
 // four are there; `probe:social` proves the answers.
 import { describe, expect, it } from "vitest";
-import { listSharedPods, sharedPodsQuery, spareCount, spareGrantDetailsQuery, spareGrantorsQuery } from "./spares";
+import { listSharedPods, sharedPodsQuery, spareCount, spareGrantDetailsQuery, spareGrantorsQuery, spareLineOrder } from "./spares";
 
 const VIEWER = "user_viewer";
 
@@ -83,5 +83,18 @@ describe("spareCount (Q12)", () => {
 
   it("never goes below zero when decks ask for more than exist", () => {
     expect(spareCount({ owned: 1, hard: 2, soft: 1 })).toBe(0);
+  });
+});
+
+describe("spareLineOrder", () => {
+  const line = (name: string, onWishlist: boolean, oracleId = name) => ({ oracleId, name, imageUri: null, spare: 1, onWishlist });
+
+  it("puts the viewer's wishlist cards first, then orders by name", () => {
+    const lines = [line("Arcane Signet", false), line("Sol Ring", true), line("Birds of Paradise", false), line("Ghalta", true)];
+    expect([...lines].sort(spareLineOrder).map((l) => l.name)).toEqual(["Ghalta", "Sol Ring", "Arcane Signet", "Birds of Paradise"]);
+  });
+
+  it("breaks a name tie by id", () => {
+    expect([line("Forest", false, "b"), line("Forest", false, "a")].sort(spareLineOrder).map((l) => l.oracleId)).toEqual(["a", "b"]);
   });
 });

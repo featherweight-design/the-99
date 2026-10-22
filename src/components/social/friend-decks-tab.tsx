@@ -33,7 +33,7 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={d.artCropUri} alt="" loading={i < 4 ? "eager" : "lazy"} className="block h-full w-full object-cover" />
                 )}
-                <span aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 40%, rgba(20,17,14,.9))" }} />
+                <span aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 40%, color-mix(in oklab, var(--bg) 90%, transparent))" }} />
                 <b className="absolute bottom-[8px] left-[12px] right-[12px] z-[2] truncate font-display text-[14px] font-bold text-[color:var(--fg)]">{d.name}</b>
               </div>
               <div className="flex flex-col gap-[8px] px-[12px] pb-[12px] pt-[10px]">

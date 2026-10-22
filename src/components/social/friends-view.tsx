@@ -100,7 +100,7 @@ export function FriendsView({
   origin: string | null;
   /** The server's clock, so the first client render draws the same times. */
   nowMs: number;
-  /** Each friend row links to the friend's page (R2 P1): the wishlist is on for this reader. */
+  /** Each friend row links to the friend's page (R2 P1), which needs the friends switch alone (menu and Home PR 7). */
   friendPages?: boolean;
   maxLinks: number;
   /** The reader's invite count, with `SOCIAL_INVITES_ENABLED` on for them; null when it is off. */

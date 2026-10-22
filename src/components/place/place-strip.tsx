@@ -88,7 +88,7 @@ export function PlaceStrip({
             {tab.count !== undefined && (
               <em
                 data-testid={`${testIdPrefix}-${tab.place}-count`}
-                className={`ml-[6px] font-mono text-[11px] font-normal not-italic ${on ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}
+                className={`ml-[6px] font-mono text-[11px] font-normal not-italic ${on ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
               >
                 {tab.count}
               </em>
