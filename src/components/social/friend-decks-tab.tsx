@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import type { FriendDeck } from "../../lib/social/decks";
+import type { FriendDeck, OpenFriendDeck, ShippedFriendDeck } from "../../lib/social/decks";
 import { socialCopy } from "../../lib/copy/social";
 import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import { colorLabel } from "../../lib/decks/format";
@@ -23,7 +23,11 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
   decks: FriendDeck[];
   /** The friend's public id, for each tile's press. */
   publicId?: string;
-  /** `FRIEND_DECKS_ENABLED` for the reader: the read-only /decks tile and the press. */
+  /**
+   * `FRIEND_DECKS_ENABLED` for the reader. With decks drawn the READ decides: its tiles are the open kind only while the
+   * owner's switch is on too, so a mixed pair draws the tab as it shipped rather than tiles that promise a press. With
+   * none, this alone picks the empty body.
+   */
   open?: boolean;
 }) {
   if (decks.length === 0) {
@@ -34,14 +38,15 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
       </div>
     );
   }
-  if (open) {
+  const opened = decks.filter((d): d is OpenFriendDeck => d.id !== null);
+  if (opened.length === decks.length) {
     return (
       <>
-        <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.lineOpen(name)}</p>
+        <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.lineOpen}</p>
         <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-3 md:gap-[14px]">
-          {decks.map((d, i) => (
-            <li key={d.id ?? i} data-testid="friend-deck" className="sm:h-full">
-              <FriendDeckTile deck={d} href={d.id && publicId ? `/friends/${publicId}/decks/${d.id}` : null} deferArt={i >= 4} />
+          {opened.map((d, i) => (
+            <li key={d.id} data-testid="friend-deck" className="sm:h-full">
+              <FriendDeckTile deck={d} href={publicId ? `/friends/${publicId}/decks/${d.id}` : null} deferArt={i >= 4} />
             </li>
           ))}
         </ul>
@@ -52,7 +57,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
     <>
       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.line(name)}</p>
       <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-4 md:gap-[16px]">
-        {decks.map((d, i) => {
+        {decks.filter((d): d is ShippedFriendDeck => d.id === null).map((d, i) => {
           const fill = Math.min(100, Math.round((d.built / d.bodySize) * 100));
           const pill = friendPillStyle(d.status);
           const color = pill.color as string;
@@ -92,7 +97,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
  * draws the commander gradient there, never the full card image: G5), the card count alone below, and the whole tile a
  * press to the deck's page. The identity block is presentation; the press names the same things in order.
  */
-function FriendDeckTile({ deck, href, deferArt }: { deck: FriendDeck; href: string | null; deferArt: boolean }) {
+function FriendDeckTile({ deck, href, deferArt }: { deck: OpenFriendDeck; href: string | null; deferArt: boolean }) {
   const colour = colorLabel(deck.colorIdentity);
   const hidden = commanderRepeats(deck.name, deck.commanderName, deck.partnerName);
   const commanderLine = deck.partnerName ? `${deck.commanderName} + ${deck.partnerName}` : deck.commanderName;

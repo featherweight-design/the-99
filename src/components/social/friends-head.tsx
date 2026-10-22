@@ -170,7 +170,7 @@ export function FriendsHead({
               </p>
             )}
             {editing ? null : (
-              <p data-decks-seen className="m-0 mt-[4px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">
+              <p data-decks-seen className="m-0 mt-[6px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">
                 {decksSeen ? <DecksSeenLine prefs={decksSeen} /> : p.decksSeen}
               </p>
             )}
@@ -264,7 +264,8 @@ function DecksSeenLine({ prefs }: { prefs: FriendDeckPrefs }) {
   return (
     <>
       {said} {w.change}{" "}
-      <Link href="/settings" className="font-medium text-[color:var(--accent-text)] no-underline">
+      {/* The board's bare `<u>` in the line's own faint ink (Privacy.dc.html), not the name line's accent `Change`. */}
+      <Link href="/settings" className="underline">
         <PendingReporter href="/settings" />
         {w.settings}
       </Link>

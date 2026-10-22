@@ -104,10 +104,21 @@ describe("loadFriendDecks with FRIEND_DECKS_ENABLED on for the owner", () => {
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: false });
   });
 
-  it("carries each deck's id, for the press to its page", async () => {
-    const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
+  it("carries each deck's id with the viewer's switch on too, and reads nothing of the owner's money for it", async () => {
+    m.loadDeckBuyRows.mockClear();
+    const [deck] = (await loadFriendDecks("user_viewer", "x", true))!;
     expect(deck.id).toBe("deck-secret-id");
+    expect(deck.status).toBeNull();
+    expect(deck.toBuy).toBeNull();
+    expect(m.loadDeckBuyRows).not.toHaveBeenCalled();
     expect(m.loadFriendDeckPrefs).toHaveBeenCalledWith("user_friend");
+  });
+
+  // Close-out: an id is a press, and the viewer's own switch decides whether one is drawn.
+  it("carries no id with the viewer's switch off, but still filters by the owner's rules", async () => {
+    m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: "shown", statusPill: "Complete" }, { ...ROW, id: "draft", statusPill: "Draft" }]);
+    const decks = (await loadFriendDecks("user_viewer", "x"))!;
+    expect(decks.map((d) => [d.id, d.status])).toEqual([[null, "Complete"]]);
   });
 
   it("keeps only the decks the owner's rules let friends see", async () => {
@@ -119,11 +130,11 @@ describe("loadFriendDecks with FRIEND_DECKS_ENABLED on for the owner", () => {
       { ...ROW, id: "building", statusPill: "Building" },
       { ...ROW, id: "unresolved", statusPill: "Unresolved" },
     ]);
-    expect((await loadFriendDecks("user_viewer", "x"))!.map((d) => d.id)).toEqual(["shown", "unresolved"]);
+    expect((await loadFriendDecks("user_viewer", "x", true))!.map((d) => d.id)).toEqual(["shown", "unresolved"]);
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: true });
-    expect((await loadFriendDecks("user_viewer", "x"))!.map((d) => d.id)).toEqual(["shown", "draft", "new", "building", "unresolved"]);
+    expect((await loadFriendDecks("user_viewer", "x", true))!.map((d) => d.id)).toEqual(["shown", "draft", "new", "building", "unresolved"]);
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: false, seeUnfinished: true });
-    expect(await loadFriendDecks("user_viewer", "x")).toEqual([]);
+    expect(await loadFriendDecks("user_viewer", "x", true)).toEqual([]);
   });
 
   it("with the switch off for the owner keeps every deck and reads no rules, as the tab shipped", async () => {

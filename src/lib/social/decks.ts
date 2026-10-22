@@ -36,9 +36,8 @@ import { readReaderDecks } from "../precons/list-read";
 import { isBasicType } from "../decks/basic-type";
 import { sharedWith } from "../precons/shared";
 
-export type FriendDeck = {
-  /** The deck's id, for the press to its page; null with `FRIEND_DECKS_ENABLED` off for the owner, as it shipped. */
-  id: string | null;
+/** What both kinds of friend tile draw. */
+type FriendDeckBase = {
   name: string;
   commanderName: string;
   /** The second commander of a pair, or null. */
@@ -46,41 +45,63 @@ export type FriendDeck = {
   colorIdentity: string[];
   /** The commander's art for the tile's wash, or null. */
   artCropUri: string | null;
-  status: StatusPill;
   /** Cards matched to the catalog. */
   built: number;
   /** 99, or 98 for a pair: the count the figure reads against. */
   bodySize: number;
+};
+
+/**
+ * The read-only /decks tile, with `FRIEND_DECKS_ENABLED` on for BOTH the viewer and the owner: the deck's id for the press
+ * to its page, and nothing of the owner's status or money (README call 3), which is never read for it.
+ */
+export type OpenFriendDeck = FriendDeckBase & { id: string; status: null; toBuy: null };
+
+/** The tile as it shipped, with the switch off for either: no press, the status and the to-buy figure. */
+export type ShippedFriendDeck = FriendDeckBase & {
+  id: null;
+  status: StatusPill;
   /** Copies the friend's Shopping would buy for this deck; the tile names it beside `To buy` only. */
   toBuy: number;
 };
 
-/** The friend's decks, newest first, or null when `publicId` is not the viewer's current friend. */
-export async function loadFriendDecks(viewerId: string, publicId: unknown): Promise<FriendDeck[] | null> {
+/** Every tile of one read is the same kind: the two switches decide it once, for the whole tab. */
+export type FriendDeck = OpenFriendDeck | ShippedFriendDeck;
+
+/**
+ * The friend's decks, newest first, or null when `publicId` is not the viewer's current friend. The OWNER's switch decides
+ * which decks pass (their rules); the tiles are the open kind only while `viewerOpen` (the viewer's switch) is on as
+ * well, since an id would be a press the viewer's own switch says not to draw, and a tile with no press under the
+ * open tab's "Open one" would promise one that is not there (close-out).
+ */
+export async function loadFriendDecks(viewerId: string, publicId: unknown, viewerOpen = false): Promise<FriendDeck[] | null> {
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
   const env = await resolveSwitchEnv(friendId);
-  const open = friendDecksEnabled(env);
+  const open = viewerOpen && friendDecksEnabled(env);
   const [rows, buys] = await Promise.all([
     visibleDecks(friendId, env),
-    loadDeckBuyRows(friendId, undefined, undefined, env),
+    // The open tile draws no money, so the owner's Shopping is never read for it.
+    open ? Promise.resolve([]) : loadDeckBuyRows(friendId, undefined, undefined, env),
   ]);
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   const toBuy = new Map<string, number>();
   for (const b of buys) toBuy.set(b.deckId, (toBuy.get(b.deckId) ?? 0) + b.quantity);
-  return rows.map((d) => ({
-    id: open ? d.id : null,
-    name: d.name,
-    commanderName: d.commanderName,
-    partnerName: d.partnerName,
-    // The pair's whole identity, as the owner's tile and the deck page draw it.
-    colorIdentity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
-    artCropUri: d.commanderArtCropUri,
-    status: d.statusPill,
-    built: d.built,
-    bodySize: deckBodySize(d.partnerName !== null),
-    toBuy: toBuy.get(d.id) ?? 0,
-  }));
+  return rows.map((d): FriendDeck => {
+    const base: FriendDeckBase = {
+      name: d.name,
+      commanderName: d.commanderName,
+      partnerName: d.partnerName,
+      // The pair's whole identity, as the owner's tile and the deck page draw it.
+      colorIdentity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
+      artCropUri: d.commanderArtCropUri,
+      built: d.built,
+      bodySize: deckBodySize(d.partnerName !== null),
+    };
+    return open
+      ? { ...base, id: d.id, status: null, toBuy: null }
+      : { ...base, id: null, status: d.statusPill, toBuy: toBuy.get(d.id) ?? 0 };
+  });
 }
 
 /**

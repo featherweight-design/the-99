@@ -15,7 +15,7 @@ import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnable
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
+import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
@@ -96,6 +96,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // The menu and Home line: the feed, and Commanders as one place.
   HOME_FEED_ENABLED: homeFeedEnabled,
   COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
+  // Friend decks (close-out): a KEY line only, swapping the friends key's privacy sentence. Already needs SOCIAL_FRIENDS_ENABLED.
+  FRIEND_DECKS_ENABLED: friendDecksEnabled,
 };
 
 /**

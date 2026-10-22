@@ -81,6 +81,15 @@ describe("DeckCardOverflow — Hidden from friends", () => {
     expect(screen.getByRole("link", { name: w.lockedAria })).toBeTruthy();
   });
 
+  // Close-out: a deck hidden on its own stays a ticked checkbox whatever Settings says, so its flag can be cleared.
+  it("never locked on a deck hidden on its own, even one Settings also hides: a press clears its flag", () => {
+    open({ hidden: true, statusPill: "Draft", prefs: { seeDecks: false, seeUnfinished: false } });
+    expect(screen.queryByRole("link", { name: w.lockedAria })).toBeNull();
+    expect(row().getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(row());
+    expect(setDeckHiddenFromFriendsAction).toHaveBeenCalledWith("d1", false);
+  });
+
   it("not locked on a finished deck", () => {
     open({ hidden: false, statusPill: "Complete", prefs: DEFAULTS });
     expect(screen.queryByRole("link", { name: w.lockedAria })).toBeNull();

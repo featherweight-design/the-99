@@ -30,7 +30,7 @@ export const settingsCopy = {
     releaseAria: (name: string) => `Let ${name} go back to your spares`,
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
-  // Your decks (friend decks handoff, README 4b): what friends see on the reader's Decks tab. Placeholder words, for
+  // Your decks (friend decks handoff, README 4b): what friends see on the reader's Decks tab. Passed
   // /copy-review.
   decks: {
     head: "Your decks",
