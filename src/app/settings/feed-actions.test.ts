@@ -2,7 +2,8 @@
 // that came available while the page was open keeps what it had, and nothing outside the offer can be checked.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn() }));
+const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
 vi.mock("../../lib/feed/flag", () => ({ homeFeedEnabled: () => true, availableFeedKinds: () => m.available }));
@@ -23,10 +24,21 @@ describe("saveFeedKinds", () => {
     expect(m.set).toHaveBeenCalledWith("u1", ["combo"], expect.any(Date), ["new-set", "combo"]);
   });
 
+  it("revalidates Settings after a write that changed something, and not after one that did not", async () => {
+    m.available = ["combo"];
+    await saveFeedKinds(["combo"], ["combo"]);
+    expect(m.revalidatePath).toHaveBeenCalledWith("/settings");
+    m.revalidatePath.mockClear();
+    m.set.mockResolvedValue(false);
+    await saveFeedKinds(["combo"], ["combo"]);
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
   it("refuses a checked kind that was not offered, and an offer that is not available", async () => {
     m.available = ["new-set", "combo"];
     expect(await saveFeedKinds(["price-drop"], ["new-set", "combo"])).toEqual({ ok: false, reason: "invalid" });
     expect(await saveFeedKinds(["combo"], ["combo", "price-drop"])).toEqual({ ok: false, reason: "invalid" });
     expect(m.set).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });
