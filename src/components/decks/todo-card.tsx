@@ -47,6 +47,7 @@ export function TodoCard({ todo, deckName, renderRow, foot = NO_FOOT }: TodoCard
   return (
     <section
       aria-label={quiet ? undefined : eyebrow}
+      data-todo-card={quiet ? undefined : ""}
       className={
         quiet
           ? "bg-[color:var(--surface-rail)] [border-bottom:1px_solid_var(--border)]"

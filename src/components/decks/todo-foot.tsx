@@ -12,6 +12,7 @@
 
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -47,21 +48,26 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   if (!footHasSegments(facts)) return null;
 
   const toggle = (d: Disclosure) => setOpen((o) => (o === d ? null : d));
+  const hit = quiet ? "py-[10px] -my-[10px] md:py-[12px] md:-my-[12px]" : "py-[9px] -my-[9px]";
   const disclosure = (d: Disclosure, label: string) => (
     <button
       type="button"
       aria-expanded={open === d}
       aria-controls={`${ids}-${d}`}
       onClick={() => toggle(d)}
-      // `.ds`: body ink and a dotted rule; the vertical padding is the board's `.tap`, a taller hit
-      // area that does not move the line.
-      className={`inline-block py-[12px] -my-[12px] bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] ${
+      // `.ds`: body ink and a dotted rule. The hit area grows by the foot's own vertical padding and
+      // takes it back in margin, so the press spans the foot's full height without moving the line
+      // and stays inside the foot: the board's `.tap` (12px) would overflow the card foot's 9px,
+      // clipped at the card's bottom edge and over the row above.
+      className={`inline-block ${hit} bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] ${
         open === d ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
       }`}
     >
       <span className="[border-bottom:1px_dotted_var(--fg-faint)]">
         <span>{label}</span>
-        <span aria-hidden className="ml-[0.5ch]">
+        {/* The card's foot sets the glyph in the label's ink (`.ft`); the quiet strip in R1's smaller,
+            fainter caret (`.sl .ds .car`). */}
+        <span aria-hidden className={quiet ? "ml-[4px] text-[9px] text-[color:var(--fg-faint)]" : "ml-[0.5ch]"}>
           {open === d ? copy.disclosureOpen : copy.disclosureClosed}
         </span>
       </span>
@@ -113,10 +119,20 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
       )}
       {open === "drafts" && facts.otherDrafts && (
         <div id={`${ids}-drafts`} className={panel}>
-          {/* The soft band's shipped sentence, until the pass sheet groups these by draft (PR 3). */}
-          <p className="m-0 mt-[8px] font-sans text-[12px] leading-[1.5] text-[color:var(--fg-body)]">
-            {availabilityCopy.deckRollup.softBody}
-          </p>
+          {/* `.sldp`: the soft glyph, then the count as a bold lead and the soft band's shipped
+              sentence, until the pass sheet groups these by draft (PR 3). 12px under the rule, as
+              the ledger sits: the panel's 4px (`.fo`) and this 8px. */}
+          <div className="mt-[8px] flex items-start gap-[9px] font-sans text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            <span className="mt-[6px] flex-none">
+              <AvailabilityGlyph state="soft" seam="var(--surface-rail)" />
+            </span>
+            <p className="m-0">
+              <b className="font-semibold text-[color:var(--fg-body)]">
+                {availabilityCopy.deckRollup.softLead(facts.otherDrafts.count)}
+              </b>{" "}
+              {availabilityCopy.deckRollup.softBody}
+            </p>
+          </div>
         </div>
       )}
     </>

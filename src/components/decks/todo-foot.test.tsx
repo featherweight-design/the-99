@@ -65,6 +65,8 @@ describe("the to-do card's foot", () => {
     expect(provenance()).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("the ledger lines")).toBeNull();
     expect(screen.getByText(availabilityCopy.deckRollup.softBody)).toBeInTheDocument();
+    // `.sldp`: the count leads in bold, before the shipped sentence.
+    expect(screen.getByText(availabilityCopy.deckRollup.softLead(4)).tagName).toBe("B");
 
     fireEvent.click(drafts());
     expect(screen.queryByText(availabilityCopy.deckRollup.softBody)).toBeNull();
@@ -86,6 +88,17 @@ describe("the quiet strip", () => {
     expect(screen.queryByText(/^Before /)).toBeNull();
     expect(screen.queryByText(copy.count(0))).toBeNull();
     expect(screen.queryByRole("region")).toBeNull();
+    // Not the card: no card shell, the strip's full-bleed ground instead.
+    expect(document.querySelector("[data-todo-card]")).toBeNull();
+    const strip = foot().parentElement!;
+    expect(strip.className).not.toContain("rounded-[12px]");
+    expect(strip.className).toContain("[border-bottom:1px_solid_var(--border)]");
+  });
+
+  it("is the card, shell and all, once there is a row", () => {
+    draw({ ...NONE, version: FULL.version }, { ...QUIET, unresolved: 2 });
+    expect(document.querySelector("[data-todo-card]")).toContainElement(foot());
+    expect(foot().parentElement!.className).toContain("rounded-[12px]");
   });
 
   it("keeps an open disclosure when the last row leaves", () => {

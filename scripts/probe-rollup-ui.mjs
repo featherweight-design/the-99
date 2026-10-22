@@ -3,10 +3,14 @@
 // over-committed half is the to-do card's spoken-for-twice row and the soft half
 // is its foot's `N in other drafts too ▾`. Opens a seeded deck at both widths and
 // reports what the card drew for each — title, body and inks — and FAILS (exit 1)
-// when a forced state draws neither, so it cannot pass on bands that are gone.
+// whenever the decklist marks a copy `short` (an over-committed card) and the card
+// draws no spoken-for-twice row, so it cannot pass on bands that are gone. That
+// judgment is read off the page alone: the probe needs no forcing variable of its
+// own.
 //
 // States are forced at the seam, the same way `probe-availability-ui.mjs`
-// documents: run the dev server with `AVAIL_FORCE="<over>:<soft>[:anon]"`,
+// documents: AVAIL_FORCE is the DEV SERVER's variable, not this script's. Start
+// that server with `AVAIL_FORCE="<over>:<soft>[:anon]"`,
 // which rewrites `loadAvailability`'s output so the first N cards read `over`
 // and the next M read `soft`. A dev account cannot reach `over` with real
 // figures — it needs a second *finished* deck competing for a single copy —
@@ -86,7 +90,13 @@ async function commitments(page) {
     const soft = [...document.querySelectorAll("[data-todo-foot] button")].find(
       (b) => visible(b) && /in (other drafts|another draft) too/.test(b.textContent ?? ""),
     );
+    // The decklist's over-committed marker (`availabilityCopy.marker.over`): "short", "short N",
+    // or either followed by ", also in …". Folded marks are `sr-only`, still in the DOM.
+    const shortMarks = [...document.querySelectorAll("main span, main p")].filter(
+      (n) => n.children.length === 0 && !n.closest("[data-todo-card]") && /^short( \d+)?(,|$)/.test((n.textContent ?? "").trim()),
+    ).length;
     return {
+      shortMarks,
       row: row ? { title: row.textContent.trim(), colour: ink(row), body: body?.textContent?.trim() ?? null } : null,
       soft: soft ? { text: soft.textContent.trim(), colour: ink(soft), expanded: soft.getAttribute("aria-expanded") } : null,
     };
@@ -97,10 +107,12 @@ function report(label, seen) {
   console.log(`\n--- ${label}`);
   if (seen.row) console.log(`  row  ${seen.row.colour}  ${JSON.stringify(seen.row.title)} / ${JSON.stringify(seen.row.body)}`);
   if (seen.soft) console.log(`  foot ${seen.soft.colour}  ${JSON.stringify(seen.soft.text)} (expanded ${seen.soft.expanded})`);
-  if (!seen.row && !seen.soft) {
-    console.log("  NOTHING DRAWN: no spoken-for-twice row and no other-drafts segment");
-    if (process.env.AVAIL_FORCE) process.exitCode = 1;
+  console.log(`  decklist rows marked short: ${seen.shortMarks}`);
+  if (seen.shortMarks > 0 && !seen.row) {
+    console.log("  FAIL: the list marks over-committed copies and the card draws no spoken-for-twice row");
+    process.exitCode = 1;
   }
+  if (!seen.row && !seen.soft) console.log("  nothing drawn: no spoken-for-twice row and no other-drafts segment");
 }
 
 await clerkSetup();

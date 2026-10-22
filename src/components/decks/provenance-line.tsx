@@ -70,7 +70,8 @@ export function ProvenanceLedger({
   const totalBuy = passes.reduce((n, p) => n + buyCount(p), 0);
 
   return (
-    // `.fo .sld`: 8px under the foot's rule, the header and each line 6px apart.
+    // `.fo .sld`: 12px under the foot's rule, the panel's 4px top padding (`.fo`) and this 8px; the
+    // header and each line 6px apart.
     <div className="mt-[8px]">
       <div className="flex items-center gap-[9px] mb-[6px]">
         {/* ⓘ outlined disc, as the shipped strip drew it. */}
