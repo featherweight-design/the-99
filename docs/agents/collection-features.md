@@ -60,7 +60,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   absent, the scanner offers Choose photos (PR 5): each photo is read ONCE, in order, through the camera's own
   detector and embedder and one lookup (`usePhotoReader`), and nothing is added until the player presses. A photo
   row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Auto
-  takes the first, Normal asks), drawn on the list line.
+  takes the best-scored printing it matched, Normal asks), drawn on the list line.
   In the camera (Hugh, 2026-10-16), Auto adds a sure card with no press, at the printing the scan matched (#2146), and Normal opens that
   card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked; a card added and never out of
   the frame is not taken again (R1), and a second copy needs the frame to empty first (R2). Below the gate the panel
