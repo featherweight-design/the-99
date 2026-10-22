@@ -56,6 +56,15 @@ describe("loadHomeFeed", () => {
     expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
+  it("keeps the offer for a reader who chose nothing until the default-on kind has an item", async () => {
+    const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const empty = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}));
+    expect(empty).toMatchObject({ chosen: false });
+    const ask = row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", friend_public_id: "p1", friend_name: "Peter" });
+    const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask] }));
+    expect(feed?.chosen && feed.lead?.key).toBe("item:s");
+  });
+
   it("draws each item with its card, the lead out of the list", async () => {
     const q = fake(
       { "new-set": "2026-10-01T00:00:00Z", "price-drop": "2026-10-01T00:00:00Z", "trade-match": "2026-10-01T00:00:00Z" },

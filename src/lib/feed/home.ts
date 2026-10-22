@@ -221,10 +221,14 @@ async function lookups(userId: string, items: readonly FeedItem[], q: Executor, 
 export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: Date, q: Executor & Pick<typeof db, "select"> = db): Promise<HomeFeed | null> {
   if (!homeFeedEnabled(env)) return null;
   const available = availableFeedKinds(env);
-  const effective = effectiveKinds(await readFeedPrefs(userId, q));
+  const prefs = await readFeedPrefs(userId, q);
+  const effective = effectiveKinds(prefs);
   const on = available.filter((k) => effective.includes(k));
   if (on.length === 0) return { chosen: false, offer: available };
   const items = await loadFeed(userId, env, now, q);
+  // A reader who never chose keeps the offer until a default-on kind has something to show (an incoming ask).
+  const choseNothing = Object.keys(prefs.map).length === 0 && prefs.declined.length === 0;
+  if (choseNothing && items.length === 0) return { chosen: false, offer: available };
   const views = toViews(items, await lookups(userId, items, q, env));
   return splitLead(views, on);
 }

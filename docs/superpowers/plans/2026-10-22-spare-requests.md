@@ -47,17 +47,15 @@ visit marks answers seen, and before PR 3 no surface answers an ask or shows an 
 
 ## PR 3 rulings (handoff R2; orchestrator, 2026-10-22)
 
-The handoff's READINESS "For engineering" items, as built:
+The readiness audit's errata (approved):
 
-- **E1 · The modal.** The stand-ins modal and spares sheet keep their titles and order; each friend row has ONE right
-  element (Ask, Ask instead, Ask again, or a one-word status); the old foot copy moves to the section head's ⓘ.
-- **E2 · The Shopping row.** The spare glyph takes the requested dot and the accepted tick; no new press or column; the
-  key gains `requested` and `accepted` only while a row draws them. All is untouched.
-- **E3 · The cart.** `view-switch.tsx` gains By friend: one panel per friend, the shipped cart line with Ask or a status.
-- **E4 · /friends.** Your requests under Waiting on you (`loadMyAsks`); the incoming row takes Yes and No with the days
-  left (`loadIncomingAsks`), and is Home's lead story when it is the newest thing waiting.
-- **E5 · Gaps** G1 to G5, ruled below (G5, the shared toast for a failed write, is UI).
-- **E6 · After a No** that friend's row reads Declined and offers no Ask for 14 days; other holders can be asked at once.
+- **E1 · Key order.** The shipped key order stays (⇄, spare, buy, over); `requested` and `accepted` are appended after
+  spare, each only while a row draws it.
+- **E2 · Stale gaps list.** `Main.dc.html`'s gaps list is stale; the README governs.
+- **E3 · The badge** counts incoming asks whatever the reader's feed choice.
+- **E4 · No asker Home item.** The asker gets no "Your request" Home item (no new feed kind).
+- **E5 · R1 labels** on the boards are cosmetic.
+- **E6 · Deck-list Ask** is retired; Ask lives in the spares modal and the cart's By friend view.
 
 The gaps:
 
@@ -80,8 +78,9 @@ The split:
 
 - **3a · Backend for the UI.** The migration, the rules above, the actions (`src/app/friends/spare-actions.ts`), the
   asker's per-card read (`GET /api/spare-requests`), the default-on kind, `probe:spare-requests` extended. No UI.
-- **3b · /friends.** Waiting on you's request rows (Yes and No) and Your requests (states, ✕), phone and desktop.
-- **3c · Shopping.** The row's requested and accepted marks, the key, and the modal's friend rows (Ask, Ask instead,
-  Ask again, status), with the shared toast.
-- **3d · The cart.** By friend.
+- **3b · Shopping.** The modal's friend rows (Ask, Ask instead, Ask again, status), the row's requested and accepted
+  marks, the key, with the shared toast.
+- **3c · The cart.** By friend.
+- **3d · /friends, Home and Settings.** Waiting on you's request rows (Yes and No), Your requests (states, ✕), the
+  lead story's Yes and No, the Settings caption.
 - **4 · Close-out**, as above. `SPARE_REQUESTS_ENABLED` stays in `ALL_FEATURES_EXCLUDED` until it.
