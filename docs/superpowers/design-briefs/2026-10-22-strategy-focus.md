@@ -41,8 +41,8 @@ Every figure below is computed from the catalog and the deck list. Nothing is ge
 
 ## What it reads right, and what it reads wrong
 
-Measured on staging, read-only, 53 lists (21 of the busiest account's decks, 22 precons, 10 EDHREC averages), each
-labeled with its expected plan before the run.
+Measured on staging, read-only, 53 lists (21 of the busiest account's decks, 22 precons, 10 EDHREC averages). Before the run, 41 of them were labeled
+with an expected plan (38 focused, 3 spread); the other 12 had no clear expected plan and are not counted below.
 
 **Right: 34 of the 38 lists expected to have a plan read that plan as their top axis.** Examples: Keen Engineering,
 artifacts (43 copies); HD - Gishath, Dinosaur (26); HD - Elves, Elf (44); HD - Brago, blink (17); Prismari Artistry,
@@ -53,14 +53,15 @@ spellslinger (17); Scrappy Survivors, voltron (30).
   Limit Break reads artifacts, not voltron. The plan is in the top 5 but not first.
 - **Miss: landfall.** World Shaper reads Insect, not landfall. Landfall's payoffs are counted, but the lands that
   trigger it are excluded with every land, so a landfall deck under-reads.
-- **Broad themes can top a list with no sharp plan** (Kaalia's average reads "evasion, 30 copies"). True, but not a
-  strategy a player would name. See open call 4.
+- **Broad themes can top a list with no sharp plan.** In the earlier label-only run, before the type-line axes,
+  Kaalia's average read "evasion, 30 copies". True, but not a strategy a player would name. Evasion, protection and
+  pump can still lead a list whose plan the axes have no word for. See open call 4.
 
 ## Why there is no verdict
 
 The score was tested as a verdict twice and failed both times:
-- It does **not** separate precons from tuned decks, against either baseline. Hugh's `HD Tune` decks sit *below* the
-  precons (median 46.3 against 56.9). A tune changes power more than plan, and a strategy score cannot see power.
+- It does **not** separate precons from tuned decks, against either baseline. Hugh's `HD Tune` decks (median 46.3) sit
+  *below* the newest precons (56.9) and only just above precons a year or two older (42.3). A tune changes power more than plan, and a strategy score cannot see power.
 - "Focused vs spread" has no tested threshold: only 3 lists were expected to be spread, and two of those turned out to
   have plans.
 
@@ -128,7 +129,7 @@ Every screen at 390 and desktop. Mobile and desktop ship in the same PR.
 1. **The radar's form.** A literal radar (spider chart) with 3 to 5 spokes reads badly with 1 or 2 axes and invites
    reading its area as a score. Ranked bars or a labeled list say the same thing. Design picks, and the pick must
    survive states 2 and 3 without implying a grade.
-2. **Lean-in's door.** A fifth Tuning tile (the landing's grid is 2 × 2 today), or each radar axis pressable straight
+2. **Lean-in's door.** A fifth Tuning tile (the landing is 2 × 2 from `md` up and one stacked column at 390 today), or each radar axis pressable straight
    into lean-in, or both.
 3. **Its name.** "Lean" is already taken on this tab: `LeanLine` is "How we determined this bracket". "Lean in" next to
    it would collide. Design proposes a name; `/copy-review` settles wording.
