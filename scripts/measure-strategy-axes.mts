@@ -99,10 +99,11 @@ async function main() {
           from (select csc.commander_oracle_id, csc.oracle_id,
                        row_number() over (partition by csc.commander_oracle_id order by csc.inclusion desc nulls last, csc.oracle_id) rn
                   from commander_support_cards csc join cards k on k.oracle_id = csc.oracle_id
-                 where csc.commander_oracle_id in (select commander_oracle_id from top) and k.type_line !~* '\\mland\\M') s
+                 where csc.commander_oracle_id in (select commander_oracle_id from top) and split_part(k.type_line, ' // ', 1) !~* '\\mland\\M') s
           join cards c on c.oracle_id = s.commander_oracle_id
          where s.rn <= ${AVERAGE_SIZE})
-      select * from deck_lists union all select * from precon_lists union all select * from average_lists`);
+      select * from deck_lists union all select * from precon_lists union all select * from average_lists
+      order by grp, name, oracle_id`);
 
     const lists = new Map<string, { grp: string; name: string; commander: string | null; partner: boolean; cards: Card[] }>();
     for (const r of listRows) {
@@ -119,8 +120,9 @@ async function main() {
         select csc.commander_oracle_id::text commander, csc.oracle_id::text oracle_id,
                row_number() over (partition by csc.commander_oracle_id order by csc.inclusion desc nulls last, csc.oracle_id) rn
           from commander_support_cards csc join cards k on k.oracle_id = csc.oracle_id
-         where csc.commander_oracle_id = any($1::uuid[]) and k.type_line !~* '\\mland\\M') s
-       where rn <= ${AVERAGE_SIZE}`, [commanders]);
+         where csc.commander_oracle_id = any($1::uuid[]) and split_part(k.type_line, ' // ', 1) !~* '\\mland\\M') s
+       where rn <= ${AVERAGE_SIZE}
+       order by commander, oracle_id`, [commanders]);
     await client.query("commit");
 
     const averages = new Map<string, Card[]>();

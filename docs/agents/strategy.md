@@ -27,12 +27,16 @@ lands. Behind `STRATEGY_FOCUS_ENABLED` (needs `ANALYSIS_TAB_ENABLED`), unset in 
   counts, memoised the way `precons/link-read.ts` memoises the precon catalog.
 - `loadDeckStrategy(userId, deckId, env)` returns null with the switch off or for a deck that is not the reader's, and reads
   nothing in either switch-off case. `toStrategyCard` is the one land and game-card filter, shared by the deck read, the
-  baseline and the measure.
+  catalog baseline and the measure's lists (the commander-average SQL applies the same front-face land test).
 
 ## The floor, measured
 
 `pnpm measure:strategy` (read-only, staging) cuts each list of 60+ nonland copies to a random 20, 30 or 40, 40 times per
-size, and compares the cut's top axis and top 5 with the whole list's. 2026-10-22, 39 lists: at 20, the median list kept
-its top axis 80% of the time (p25 list 53%), top-5 overlap 38%, and 66 of 1,560 cuts read none; at 30, 98% (65%), 60%,
-4 cuts none; at 40, 100% (73%), 74%, none. `MIN_NONLAND` is 30: the smallest size at which the median list reads its
-own plan.
+size, and compares the cut's top axis and top 5 with the whole list's. The rows are read in a fixed order and each
+list's cuts are seeded, so a re-run on unchanged data prints the same figures. 2026-10-22, 39 lists: at 20, the median
+list kept its top axis 80% of the time (p25 list 55%), top-5 overlap 39%, and 62 of 1,560 cuts read none; at 30, 98%
+(73%), 60%, 1 cut none; at 40, 100% (90%), 73%, none. `MIN_NONLAND` is 30: the smallest size at which the median list
+reads its own plan.
+
+The commander-average baseline drops lands by the FRONT face, as `isLandFace` does, so a spell-front MDFC counts the
+same in the average as in the deck it is compared with.
