@@ -15,7 +15,7 @@
 import { sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cards, collectionItems, preconCards, printings, sets } from "../../db/schema";
+import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
@@ -87,15 +87,17 @@ export function preconCommandersQuery(files: readonly string[]) {
 /**
  * How many of each new precon's cards the reader owns, of its total. A card is capped ONCE at its copies the precon
  * needs in all: `precon_cards` keeps a row per printing and commander status, so two rows of five Plains need ten
- * between them, and the reader's three count three, not six.
+ * between them, and the reader's three count three, not six. The total also counts the copies the ingest could not map
+ * to a card (`precons.unmapped_count`): the deck is that big, though the reader can own none of those.
  */
 export function preconOwnedQuery(userId: string, files: readonly string[]) {
-  return sql`select pn.file_name as file_name, sum(pn.need)::int as total,
+  return sql`select pn.file_name as file_name, (sum(pn.need) + max(pr.unmapped_count))::int as total,
       sum(least(pn.need, coalesce(oc.n, 0)))::int as owned
     from (select po.file_name as file_name, po.oracle_id as oracle_id, sum(po.quantity) as need
           from ${preconCards} po
           where po.file_name = any(${sql.param([...files])}::text[])
           group by po.file_name, po.oracle_id) pn
+    join ${precons} pr on pr.file_name = pn.file_name
     left join (select oci.oracle_id as oracle_id, sum(oci.quantity) as n from ${collectionItems} oci
                where oci.user_id = ${userId} group by oci.oracle_id) oc on oc.oracle_id = pn.oracle_id
     group by pn.file_name`;

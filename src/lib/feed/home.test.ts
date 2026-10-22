@@ -177,6 +177,8 @@ describe("preconOwnedQuery", () => {
     // Two rows of five Plains need ten between them: capped per (file, card) after the sum, never per row.
     expect(q).toContain("group by po.file_name, po.oracle_id) pn");
     expect(q).toContain("sum(least(pn.need, coalesce(oc.n, 0)))::int as owned");
-    expect(q).toContain("sum(pn.need)::int as total");
+    // The copies the ingest could not map are part of the deck, though never owned.
+    expect(q).toContain("(sum(pn.need) + max(pr.unmapped_count))::int as total");
+    expect(q).toContain('join "precons" pr on pr.file_name = pn.file_name');
   });
 });

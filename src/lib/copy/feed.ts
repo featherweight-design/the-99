@@ -72,7 +72,8 @@ export const feedCopy = {
       priceDrop: "at the cheapest printing.",
       tradeMatch: "It’s on your wishlist.",
       spareRequest: "A friend wants a card you have spare.",
-      combo: (added: string) => `Your last upload added ${added}.`,
+      /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
+      combo: (added: string) => `You added ${added}.`,
     },
     /** The press, ending `›` where drawn as a link. */
     press: {
