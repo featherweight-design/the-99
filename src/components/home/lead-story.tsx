@@ -56,7 +56,7 @@ export function LeadStory({
           {feedCopy.home.kicker[item.kind]}
           <small className="ml-auto text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">{feedAge(item.at, now)}</small>
         </p>
-        <h3 id="home-lead-title" className="m-0 font-display text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
+        <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
           {text.title}
         </h3>
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}

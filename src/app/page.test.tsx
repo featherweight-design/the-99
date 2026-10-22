@@ -14,6 +14,7 @@ const stub = vi.hoisted(() => ({
   inviteCount: vi.fn(),
   tourSeen: null as Date | null,
   loadFeed: vi.fn(),
+  pool: vi.fn(async () => ({ collection: new Map() })),
   feedAfter: vi.fn(() => async () => {}),
   after: vi.fn(),
 }));
@@ -37,7 +38,7 @@ vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: async () =>
 vi.mock("../lib/recs/home-novelty", () => ({ loadUnplayedCounts: async () => null }));
 vi.mock("../lib/recs/ready-to-build", () => ({ readySlice: () => ({ shown: [] }) }));
 vi.mock("../lib/collection/owned-printings", () => ({ withOwnedCardArt: async () => [] }));
-vi.mock("../lib/recs/recommend", () => ({ loadCollectionPool: async () => ({ collection: new Map() }) }));
+vi.mock("../lib/recs/recommend", () => ({ loadCollectionPool: stub.pool }));
 vi.mock("../lib/decks/availability-query", () => ({ loadAvailability: async () => new Map() }));
 vi.mock("../lib/commanders/in-use", () => ({ receiptCountsByCommander: () => new Map() }));
 vi.mock("../lib/home/commitments", () => ({ commitmentFigures: () => null }));
@@ -69,6 +70,7 @@ beforeEach(() => {
   stub.homeFriends.mockReset();
   stub.inviteCount.mockReset();
   stub.loadFeed.mockReset();
+  stub.pool.mockClear();
   stub.feedAfter.mockClear();
   stub.after.mockReset();
 });
@@ -310,5 +312,15 @@ describe("Home's feed visit writes (menu and Home PR 6)", () => {
   it("schedules none with the feed off", async () => {
     await HomePage();
     expect(stub.after).not.toHaveBeenCalled();
+  });
+
+  it("loads the collection's scoring pool only when Ready to build is drawn, which the feed replaces", async () => {
+    await HomePage();
+    expect(stub.pool).toHaveBeenCalledTimes(1);
+    stub.pool.mockClear();
+    stub.env = { ...ON, HOME_FEED_ENABLED: "true" };
+    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, total: 0 });
+    await HomePage();
+    expect(stub.pool).not.toHaveBeenCalled();
   });
 });

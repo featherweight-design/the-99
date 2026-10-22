@@ -252,16 +252,15 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     let inUse = new Map<string, ReceiptCounts>();
     let commitments: Commitments | null = null;
     try {
-      const [{ collection }, availability] = await Promise.all([
-        // React-cached, so on the branch where getRankedList recomputed this is a
-        // cache hit rather than a second query.
-        perf.timed("collectionPool", () => loadCollectionPool(userId)),
+      // The pool is read only for the in-use clause, which only a shown Ready-to-build pair prints: with the feed on
+      // there is none, so the whole collection's scoring pool is not loaded for nothing.
+      const [collection, availability] = await Promise.all([
+        ready ? perf.timed("collectionPool", () => loadCollectionPool(userId)).then((p) => p.collection) : null,
         // No narrowing: the whole-user vantage, as /collection already takes, under the load's env.
         perf.timed("availability", () => loadAvailability(userId, { env })),
       ]);
-      // The shown pair, not the whole ranked list — only a rendered hero prints
-      // the clause.
-      inUse = receiptCountsByCommander(ready?.shown ?? [], collection, availability);
+      // The shown pair, not the whole ranked list: only a rendered hero prints the clause.
+      if (ready && collection) inUse = receiptCountsByCommander(ready.shown, collection, availability);
       commitments = commitmentFigures(availability.values());
     } catch {
       // Both consumers render nothing rather than a zero, which would be a claim.
