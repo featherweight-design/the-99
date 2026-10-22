@@ -564,16 +564,18 @@ async function shoot(page, theme, f) {
 /**
  * Each About entry's control on the frame just shot (R2·6a, readiness gap 9), as fractions of the 390x844 frame, clipped
  * to it. Measured after `shot` so the boxes describe the photographed page. A frame that is a dialog (a card's details,
- * the account menu) names its dialog in each locator; any other is searched inside the page's own `main`, never the shell.
+ * the account menu) names its dialog in each locator, a locator beginning `header` names the shell's header, and any other
+ * is searched inside the page's own `main`.
  */
 async function measureEntries(page, frameId, inDialog) {
-  // A dialog frame's locators name the dialog themselves (`about-locators.mjs`); any other is scoped to the page.
-  const scope = inDialog ? page : page.locator(PAGE);
+  // A dialog frame's locators name the dialog themselves, and so does a locator that begins with the shell's `header`
+  // (`about-locators.mjs`, SCOPE); any other is scoped to the page.
+  const scopeOf = (locator) => (inDialog || /^header\b/.test(locator) ? page : page.locator(PAGE));
   const boxes = {};
   const unplaced = [];
   for (const [entry, l] of Object.entries(ABOUT_LOCATORS)) {
     if (l.screen !== frameId) continue;
-    const el = scope.locator(l.locator).first();
+    const el = scopeOf(l.locator).locator(l.locator).first();
     const r = (await el.count()) > 0 ? await el.boundingBox().catch(() => null) : null;
     const x0 = r ? Math.max(0, r.x) : 0, y0 = r ? Math.max(0, r.y) : 0;
     const x1 = r ? Math.min(VIEW.width, r.x + r.width) : 0, y1 = r ? Math.min(VIEW.height, r.y + r.height) : 0;

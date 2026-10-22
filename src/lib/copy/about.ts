@@ -137,7 +137,14 @@ export type AboutSwitch =
   // The Social line (Social R3 PR 5, and R2's last PR for the wishlist): friends and pods, opponents in the game log, the wishlist.
   | 'SOCIAL_FRIENDS_ENABLED'
   | 'SOCIAL_GAMES_ENABLED'
-  | 'SOCIAL_WISHLIST_ENABLED';
+  | 'SOCIAL_WISHLIST_ENABLED'
+  // The launch-end batch (About batch brief 2026-10-18, Draft vs code 8): the ?, the tour, Rule 0, invites, card search, scanning.
+  | 'HELP_PANEL_ENABLED'
+  | 'FIRST_RUN_TOUR_ENABLED'
+  | 'RULE_ZERO_ENABLED'
+  | 'SOCIAL_INVITES_ENABLED'
+  | 'CARD_SEARCH_ENABLED'
+  | 'CARD_SCAN_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -159,7 +166,11 @@ export interface AboutEntry {
   route: string;
   /** Appended after the route when the link does not land on the page itself. */
   opens?: string;
-  width: AboutWidth;
+  /**
+   * Read by no renderer since About's reshape (#2013): an opened entry draws its screen's capture. Optional so a new entry
+   * leaves it off (launch-end batch, call 8); the entries that carry it keep it until a cleanup drops the field.
+   */
+  width?: AboutWidth;
   caption: string;
   /**
    * A caption LINE (as it appears literally, including its leading `- `) gated by an ADDITIONAL

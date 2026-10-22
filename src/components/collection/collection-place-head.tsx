@@ -325,9 +325,18 @@ export function CollectionPlaceHead({
             aria-haspopup="dialog"
             aria-label={compact ? collectionEditCopy.head.add : undefined}
             data-testid="collection-add-phone"
+            data-about-press={compact ? undefined : ""}
             className={`md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center text-[13px] text-[color:var(--accent-text)] ${compact ? "h-[44px] w-[44px] self-center justify-center" : "px-[10px]"}`}
           >
-            <span aria-hidden className={compact ? "text-[18px]" : "mr-[6px] text-[15px]"}>+</span>
+            {/* `data-about-press`, About's halo on the visible press (R1b, G7): beside five tabs a 36 square centred on the +,
+                since the 44 button runs to the frame's edge; with "Add" drawn, the button itself. */}
+            <span
+              aria-hidden
+              data-about-press={compact ? "" : undefined}
+              className={compact ? "flex h-[36px] w-[36px] items-center justify-center text-[18px]" : "mr-[6px] text-[15px]"}
+            >
+              +
+            </span>
             {compact ? null : collectionEditCopy.head.addShort}
           </button>
         ) : hasCollection ? (
