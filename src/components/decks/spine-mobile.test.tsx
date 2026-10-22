@@ -4,7 +4,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SpineMobile } from "./spine-mobile";
-import { deckHeaderCopy, overCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { deckHeaderCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -191,23 +191,6 @@ describe("SpineMobile", () => {
     expect(container.innerHTML).not.toContain("var(--warning)");
     expect(screen.getByText("104")).toHaveStyle({ color: "var(--danger)" });
     expect(screen.getByText("+5")).toHaveStyle({ color: "var(--danger)" });
-  });
-
-  // R7 ruling 3a. The trim line is the remedy rather than the readout, so its
-  // bold lead is emphasis only and inherits the paragraph's var(--fg-body).
-  it("leaves the trim line's bold lead at body colour", () => {
-    const { container } = renderSpine(
-      <SpineMobile
-        {...props}
-        counts={{ built: 104, ownedCount: 100, toBuyCount: 4 }}
-        status="Over"
-      />,
-    );
-    const lead = container.querySelector<HTMLElement>("p b");
-    expect(lead?.textContent).toBe(overCopy.trim.lead("Five"));
-    // An inherited colour is an absent inline style, not a computed one: jsdom
-    // applies no stylesheet, so the assertion is that nothing overrides it.
-    expect(lead?.style.color).toBe("");
   });
 
   // The phone has no hover, so the trigger is always visible — which is why it

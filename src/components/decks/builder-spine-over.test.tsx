@@ -1,14 +1,11 @@
-// A deck past 99 (#280). The spine is where the count is stated at full size,
-// so it carries the sentence that says what being over means; the deck card and
-// the export preview only carry the figure.
+// A deck past 99 (#280). The spine states the count at full size, with its `+N`; the sentence that
+// says what being over means is the to-do card's over row now (deck messages A4, todo-card.test).
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetail } from "../../lib/decks/read";
-import { overCopy, overWord } from "../../lib/copy/decks-builder";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
-import { tuningHubCopy } from "../../lib/copy/tuning-hub";
+import { overCopy } from "../../lib/copy/decks-builder";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
@@ -38,7 +35,7 @@ const deck = {
   toBuyCount: 8,
 } as unknown as DeckDetail;
 
-function mount(built: number, onProposedCuts?: () => void) {
+function mount(built: number) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
   render(
     <CardDetailProvider fetchCard={fetchCard}>
@@ -47,9 +44,7 @@ function mount(built: number, onProposedCuts?: () => void) {
         counts={{ built, ownedCount: built, toBuyCount: 0 }}
         onExport={vi.fn()}
         status="Building"
-        overCommitted={0}
         softClaimed={0}
-        onProposedCuts={onProposedCuts}
       />
     </CardDetailProvider>,
   );
@@ -59,12 +54,6 @@ function mount(built: number, onProposedCuts?: () => void) {
 // separate trees since the art wash, so each sentence is in the DOM twice, one
 // copy CSS-hidden. Two is the assertion, not an artefact of it.
 describe("BuilderSpine over 99", () => {
-  it("names the overage and what to do about it", () => {
-    mount(104);
-    expect(screen.getAllByText(overCopy.trim.lead(overWord(5)))).toHaveLength(2);
-    expect(screen.getAllByText(overCopy.trim.body(overWord(5)))).toHaveLength(2);
-  });
-
   // Reading the optimistic count, not the server's 62 — the assertion the spec
   // asks review to make first.
   it("reads the optimistic count, not the deck row", () => {
@@ -73,18 +62,17 @@ describe("BuilderSpine over 99", () => {
     expect(screen.queryByText(/62/)).not.toBeInTheDocument();
   });
 
-  it("says one, not 1, at a single card over", () => {
-    mount(100);
-    expect(screen.getAllByText(overCopy.trim.lead("One"))).toHaveLength(2);
-    expect(screen.getAllByText(overCopy.trim.body(overWord(1)))[0]).toHaveTextContent(
-      "Cut one and it is legal.",
-    );
+  // The trim line left the header for the to-do card's over row. Its Proposed cuts press went with
+  // it: the spine takes no `onProposedCuts` any more, so the type system holds that half.
+  it("draws no trim line of its own", () => {
+    mount(104);
+    expect(screen.queryByText(/over the ninety-nine/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/and it is legal/)).not.toBeInTheDocument();
   });
 
-  it("says nothing at 99", () => {
+  it("draws no delta at 99", () => {
     mount(99);
-    expect(screen.queryByText(/over the ninety-nine/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/to cut/)).not.toBeInTheDocument();
+    expect(screen.queryByText(overCopy.figure.delta("0"))).not.toBeInTheDocument();
   });
 
   // Export is not blocked by being over: no control on this surface is. Both
@@ -94,82 +82,5 @@ describe("BuilderSpine over 99", () => {
     const buttons = screen.getAllByRole("button", { name: /export/i });
     expect(buttons.length).toBeGreaterThan(0);
     for (const button of buttons) expect(button).toBeEnabled();
-  });
-});
-
-// The Tuning hub's shortcut (hub handoff A5): the trim line offers Proposed cuts at both widths.
-describe("The trim line's Proposed cuts shortcut", () => {
-  it("is offered at both widths on a deck over, and opens the tool", () => {
-    const open = vi.fn();
-    mount(104, open);
-    const links = screen.getAllByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts });
-    expect(links).toHaveLength(2);
-    fireEvent.click(links[1]);
-    expect(open).toHaveBeenCalledTimes(1);
-  });
-
-  it("is absent at 99", () => {
-    mount(99, vi.fn());
-    expect(screen.queryByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts })).not.toBeInTheDocument();
-  });
-
-  it("is absent with no handler (the hub off), the trim line unchanged", () => {
-    mount(104);
-    expect(screen.queryByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts })).not.toBeInTheDocument();
-    expect(screen.getAllByText(overCopy.trim.lead(overWord(5)))).toHaveLength(2);
-  });
-});
-
-// ── Amendment 5 (#281) — the over-committed band's link to Shopping ──────────
-// The band already names the contested cards; the link is the one control that
-// takes the player to them. It is keyed on the callback rather than on a route,
-// because /decks renders the same figure on a card with no Shopping list to
-// open — there the callback is simply absent and no link renders.
-
-function mountOver(opts: { onShowShopping?: () => void } = {}) {
-  const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
-  render(
-    <CardDetailProvider fetchCard={fetchCard}>
-      <BuilderSpine
-        deck={deck}
-        counts={{ built: 62, ownedCount: 54, toBuyCount: 8 }}
-        onExport={vi.fn()}
-        status="Building"
-        overCommitted={2}
-        softClaimed={0}
-        onShowShopping={opts.onShowShopping}
-      />
-    </CardDetailProvider>,
-  );
-}
-
-describe("The over-committed band's link to the Shopping list", () => {
-  it("draws no link when the surface has no Shopping list to open", () => {
-    mountOver();
-    expect(
-      screen.queryByText(recommendationsCopy.shopping.summaryLink),
-    ).not.toBeInTheDocument();
-  });
-
-  it("draws the link on both breakpoints when the callback is given", () => {
-    mountOver({ onShowShopping: vi.fn() });
-    // Phone and desktop each render one — both are in the DOM, one CSS-hidden.
-    expect(
-      screen.getAllByRole("button", {
-        name: recommendationsCopy.shopping.summaryLinkAria("2"),
-      }),
-    ).toHaveLength(2);
-  });
-
-  it("calls back rather than navigating", () => {
-    const onShowShopping = vi.fn();
-    mountOver({ onShowShopping });
-
-    fireEvent.click(
-      screen.getAllByRole("button", {
-        name: recommendationsCopy.shopping.summaryLinkAria("2"),
-      })[0],
-    );
-    expect(onShowShopping).toHaveBeenCalledTimes(1);
   });
 });

@@ -112,9 +112,7 @@ describe("availabilityCopy", () => {
     expect(availabilityCopy.marker.overAria(5, 1)).toBe(
       "1 of your decks includes this card and you own 5 too few",
     );
-    expect(availabilityCopy.deckSummary.ariaLabel(1)).toBe(
-      "1 card in this deck is over-committed",
-    );
+    expect(availabilityCopy.deckSummary.pressAria(1)).toBe("See it in Shopping");
   });
 
   it("agrees its verbs with the count on the receipt and the disclosure", () => {
@@ -140,8 +138,8 @@ describe("availabilityCopy", () => {
       availabilityCopy.detail.expandedFor(1),
       availabilityCopy.detail.announceExpanded(1),
       availabilityCopy.detail.announceCollapsed(1),
-      availabilityCopy.deckSummary.ariaLabel(1),
-      availabilityCopy.deckSummary.body("Nazgûl", 1, 1),
+      availabilityCopy.deckSummary.heading(1),
+      availabilityCopy.deckSummary.bodyOne(1, 1),
       availabilityCopy.ranking.announce("all", 1),
       availabilityCopy.deckRollup.softHeading(1),
     ];
@@ -150,12 +148,8 @@ describe("availabilityCopy", () => {
     }
   });
 
-  // The over-committed line renders in two places. If they ever stop being the
-  // same function, one surface will quietly say something the other does not.
-  it("uses one over-committed heading in both of its homes", () => {
-    expect(availabilityCopy.deckRollup.overHeading).toBe(
-      availabilityCopy.deckSummary.heading,
-    );
+  it("titles the spoken-for-twice row by count, or by the one card's name", () => {
+    expect(availabilityCopy.deckSummary.headingOne("Sol Ring")).toBe("Sol Ring is spoken for twice");
     expect(availabilityCopy.deckSummary.heading(1)).toBe(
       "1 card here is spoken for twice",
     );
@@ -196,11 +190,11 @@ describe("the short marker's count", () => {
   // H21: the summary states the facts and stops. Pinned as LITERALS, because the builder
   // tests build their expectations from these same functions and would follow a restored tail.
   it("ends the deck summary on the facts, with no reassurance (H21)", () => {
-    expect(availabilityCopy.deckSummary.body("Arcane Signet", 2, 1)).toBe(
-      "Arcane Signet is on 2 committed decks and you own one.",
+    expect(availabilityCopy.deckSummary.bodyOne(2, 1)).toBe(
+      "It’s on 2 committed decks and you own one.",
     );
-    expect(availabilityCopy.deckSummary.bodyMany(3)).toBe(
-      "3 of these are on more committed decks than you have copies.",
+    expect(availabilityCopy.deckSummary.bodyManyShort).toBe(
+      "Each is on more committed decks than you have copies.",
     );
   });
 });

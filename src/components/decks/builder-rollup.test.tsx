@@ -1,7 +1,7 @@
 // The commitments roll-up's derivation (#43, design table §12), exercised
-// through BuilderShell rather than the spine. The spine's own test covers what
-// the region draws; this one covers the three decisions the shell makes before
-// the spine ever sees a number, none of which can be forced from the UI:
+// through BuilderShell: the over-committed half draws as the to-do card's
+// spoken-for-twice row, the soft half as the band under the spine. This covers
+// the three decisions the shell makes before either sees a number:
 // the self-excluded vantage, the pre-99 window, and reading off the server list.
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -110,6 +110,7 @@ describe("BuilderShell — commitments roll-up derivation", () => {
   it("speaks for a mid-build deck whose cards are wanted elsewhere", async () => {
     await mount(makeDeck(3, [SOFT, SOFT, undefined]));
     expect(screen.getAllByText(availabilityCopy.deckRollup.softHeading(2))).toHaveLength(2);
+    expect(screen.queryByText(/spoken for twice/)).toBeNull();
   });
 
   // Row 12.15, and the reason it is not just arithmetic: `soft` counts claims by
@@ -126,24 +127,24 @@ describe("BuilderShell — commitments roll-up derivation", () => {
   it("keeps the shortfall line after 99", async () => {
     const availabilities: Avail[] = Array.from({ length: 99 }, (_, i) => (i === 0 ? OVER : SOFT));
     await mount(makeDeck(99, availabilities));
-    expect(screen.getAllByText(availabilityCopy.deckRollup.overHeading(1))).toHaveLength(2);
-    // 98 of the 99 are soft-claimed, so a window that failed to close would say
-    // so in the "N more" form that sits under a red line.
-    expect(screen.queryByText(availabilityCopy.deckRollup.softHeadingAfterOver(98))).toBeNull();
+    expect(screen.getByText(availabilityCopy.deckSummary.headingOne("Card 0"))).toBeTruthy();
+    // 98 of the 99 are soft-claimed, so a window that failed to close would say so.
+    expect(region()).toBeNull();
   });
 
-  // The named body counts finished lists out loud, so an empty name array would
-  // have it say "on 0 finished lists". The heading carries the line alone.
+  // The named body counts committed decks out loud, so an empty name array would
+  // have it say "on 0 committed decks". The counted title carries the row alone.
   it("drops the body rather than naming nobody", async () => {
     await mount(makeDeck(2, [{ ...OVER, claims: [] }, undefined]));
-    expect(screen.getAllByText(availabilityCopy.deckRollup.overHeading(1))).toHaveLength(2);
-    // Ungated, the name array's length would be interpolated straight in, and
-    // the sentence would count zero finished lists out loud.
-    expect(screen.queryByText(availabilityCopy.deckSummary.body("Card 0", 0, 1))).toBeNull();
+    expect(screen.getByText(availabilityCopy.deckSummary.heading(1))).toBeTruthy();
+    expect(screen.queryByText(availabilityCopy.deckSummary.bodyOne(0, 1))).toBeNull();
+    expect(screen.queryByText(availabilityCopy.deckSummary.bodyManyShort)).toBeNull();
   });
 
-  it("names the card when exactly one is over-committed", async () => {
+  it("names the card when exactly one is over-committed, and offers Shopping", async () => {
     await mount(makeDeck(2, [OVER, undefined]));
-    expect(screen.getAllByText(availabilityCopy.deckSummary.body("Card 0", 2, 1))).toHaveLength(2);
+    expect(screen.getByText(availabilityCopy.deckSummary.headingOne("Card 0"))).toBeTruthy();
+    expect(screen.getByText(availabilityCopy.deckSummary.bodyOne(2, 1))).toBeTruthy();
+    expect(screen.getByRole("button", { name: availabilityCopy.deckSummary.pressAria(1) })).toBeTruthy();
   });
 });

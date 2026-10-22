@@ -221,18 +221,7 @@ const READ_HEADER = `() => {
           denominator: s.hasAttribute('data-spine-denominator'),
         }));
     })(),
-    // R7 ruling 3a — the trim line is the remedy, not the readout, so its bold
-    // lead is emphasis at the paragraph's own colour rather than the status
-    // token. Both are read so the walk compares them to each other.
-    trimInk: (() => {
-      const lead = [...header.querySelectorAll('p b')].find(visible);
-      if (!lead || !lead.parentElement) return null;
-      return {
-        text: lead.textContent.trim(),
-        lead: getComputedStyle(lead).color,
-        body: getComputedStyle(lead.parentElement).color,
-      };
-    })(),
+    trimLine: [...header.querySelectorAll('p')].find((p) => visible(p) && / over the (ninety|\d)/.test(p.textContent))?.textContent.trim() ?? null,
     hasCardDetails: Boolean(detail),
     // The meta row's ground is the claim §C8 makes: in the band at rest, below
     // the divider while editing. Its offset against the band's bottom edge says
@@ -375,18 +364,9 @@ try {
       } else {
         note(`  every ink in the over-99 readout reads the bar's ${over.barBackground}`);
       }
-      // R7 ruling 3a. The lead is checked against its own paragraph rather than
-      // against a token name, so it holds whatever var(--fg-body) resolves to.
-      const trim = over.trimInk;
-      if (!trim) {
-        fail(`the over-99 trim line has no bold lead to check`);
-      } else if (trim.lead === over.barBackground) {
-        fail(`the trim lead "${trim.text}" took the bar's ${trim.lead}`);
-      } else if (trim.lead !== trim.body) {
-        fail(`the trim lead "${trim.text}" is ${trim.lead}, not its paragraph's ${trim.body}`);
-      } else {
-        note(`  the trim lead stays at the paragraph's ${trim.body}`);
-      }
+      // The trim line (R7 ruling 3a's subject) left the header for the to-do card's over row
+      // (deck messages A4), so the header must not draw it.
+      if (over.trimLine) fail(`the header still draws a trim line: "${over.trimLine}"`);
     }
 
     // Items 2/3/4 — the rename flow on the first deck, screenshotted per state.

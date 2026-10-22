@@ -11,13 +11,18 @@
 import Link from "next/link";
 import { Fragment, type ReactNode, type Ref, useEffect, useRef, useTransition } from "react";
 import { fillDeck } from "../../app/decks/actions";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { guidedBannerCopy } from "../../lib/copy/decks-builder";
+import { guidedBannerCopy, overCopy, overWord } from "../../lib/copy/decks-builder";
+import { momentsCopy } from "../../lib/copy/moments";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import type { Todo, TodoRow as TodoRowFact } from "../../lib/decks/todo";
 import { changeCount, type DraftState } from "../../lib/decks/draft-shape";
 import { useChangeCommander } from "./change-commander-context";
+import { AvailabilityGlyph } from "../ui/availability-marker";
+import { useMomentAnchor } from "../moments/moments-provider";
 
 const copy = deckVersioningCopy.todoCard;
 
@@ -64,7 +69,8 @@ export interface TodoRowProps {
   body: ReactNode;
   /** The next step: the label, the tint, the inset edge and the only filled press. */
   next: boolean;
-  press: {
+  /** Absent: the row states its fact and offers nothing (the over row with Proposed cuts' switch off). */
+  press?: {
     /** The short verb drawn on the press. */
     label: string;
     /** The full shipped string, as the press's accessible name. */
@@ -85,6 +91,9 @@ export interface TodoRowProps {
   titleRef?: Ref<HTMLParagraphElement>;
 }
 
+/** The danger tint a warning's mark sits on. Named, because the spoken-for-twice glyph's seam is drawn in it. */
+export const WARNING_TINT = "color-mix(in srgb, var(--danger) 16%, var(--bg))";
+
 export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleRef }: TodoRowProps) {
   const pressClass = [
     "flex-none flex items-center justify-center gap-[5px] w-[96px] md:w-[132px] h-[36px] rounded-[8px]",
@@ -97,7 +106,7 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
   ].join(" ");
   const face = (
     <>
-      {press.label}
+      {press?.label}
       <span
         aria-hidden
         className={`font-normal ${next ? "text-[color:var(--bg)]" : "text-[color:var(--fg-faint)]"}`}
@@ -123,7 +132,7 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
         className={[
           "flex-none flex items-center justify-center w-[30px] h-[30px] rounded-[8px] font-mono font-semibold text-[12px]",
           warning
-            ? "bg-[color:color-mix(in_srgb,var(--danger)_16%,var(--bg))] text-[color:var(--danger)]"
+            ? "bg-[color:color-mix(in_srgb,var(--danger)_16%,var(--bg))] text-[color:var(--danger)]" // WARNING_TINT
             : "bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]",
         ].join(" ")}
       >
@@ -140,16 +149,21 @@ export function TodoRow({ tone, mark, title, body, next, press, pressRef, titleR
           tabIndex={titleRef ? -1 : undefined}
           data-focus-title={titleRef ? "" : undefined}
           className={`m-0 outline-none text-[13.5px] font-semibold leading-[1.4] ${
-            warning ? "text-[color:var(--avail-over-fg)]" : "text-[color:var(--fg)]"
+            // A warning that IS the next step (only the over row can be) takes `--fg`: on the next
+            // step's 7% accent tint `--avail-over-fg` measures 4.24 to 4.49 across the six themes,
+            // under 4.5 (todo-warning-contrast.test.ts). On the rail it clears 4.5 and stays.
+            warning && !next ? "text-[color:var(--avail-over-fg)]" : "text-[color:var(--fg)]"
           }`}
         >
           {title}
         </p>
-        <p className="m-0 mt-[2px] md:mt-0 text-[12px] md:text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-          {body}
-        </p>
+        {body != null && (
+          <p className="m-0 mt-[2px] md:mt-0 text-[12px] md:text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+            {body}
+          </p>
+        )}
       </div>
-      {press.href ? (
+      {!press ? null : press.href ? (
         <Link href={press.href} aria-label={press.name} className={pressClass}>
           {face}
         </Link>
@@ -259,6 +273,71 @@ export function PendingRow({ state, deckId, next }: { state: DraftState; deckId:
       next={next}
       titleRef={titleRef}
       press={{ label: p.reviewShort, name: p.reviewCta(n), href: `/decks/${deckId}/changes` }}
+    />
+  );
+}
+
+/**
+ * A4: the deck holds more than its body. The spine's trim line, moved here: `+N` on the mark, the
+ * body in words (a pair reads "ninety-eight"), and `Cuts`, which is Proposed cuts' own switch:
+ * absent with it off, exactly as the spine's link was. M3 anchors to the press, ONE registration at
+ * both widths where each spine used to make its own.
+ */
+export function OverRow({ over, bodySize, next, onProposedCuts }: {
+  over: number;
+  bodySize: number;
+  next: boolean;
+  onProposedCuts?: () => void;
+}) {
+  const word = overWord(over);
+  // A shortcut, not the tool's target: the Analysis tab's fallback anchor stays the shell's.
+  const moment = useMomentAnchor("proposed-cuts", {
+    eligible: onProposedCuts !== undefined,
+    copy: momentsCopy.proposedCuts(over),
+    target: false,
+  });
+  return (
+    <TodoRow
+      tone="warning"
+      mark={overCopy.figure.delta(String(over))}
+      title={overCopy.trim.title(word, bodySize)}
+      body={overCopy.trim.body(word)}
+      next={next}
+      pressRef={moment.ref}
+      press={
+        onProposedCuts && {
+          label: tuningHubShortcutsCopy.proposedCutsShort,
+          name: tuningHubShortcutsCopy.proposedCutsAria,
+          onPress: onProposedCuts,
+          describedBy: moment["aria-describedby"],
+        }
+      }
+    />
+  );
+}
+
+/**
+ * A6: cards here on more committed decks than the player has copies (the commitments band's red
+ * half). One card is named when a claiming deck is; a lone card whose claimants came back unnamed
+ * has no body it can truthfully use, so its counted title stands alone. Never the next step (`deckTodo`):
+ * it is fixed by buying, or by changing another deck. `Shopping` is absent while the Shopping list
+ * is what the player is looking at.
+ */
+export function SpokenForTwiceRow({ count, card, onShowShopping }: {
+  count: number;
+  card: { name: string; deckCount: number; ownedQty: number } | null;
+  onShowShopping?: () => void;
+}) {
+  const s = availabilityCopy.deckSummary;
+  const named = count === 1 && card !== null;
+  return (
+    <TodoRow
+      tone="warning"
+      mark={<AvailabilityGlyph state="over" seam={WARNING_TINT} />}
+      title={named ? s.headingOne(card.name) : s.heading(count)}
+      body={named ? s.bodyOne(card.deckCount, card.ownedQty) : count === 1 ? null : s.bodyManyShort}
+      next={false}
+      press={onShowShopping && { label: s.press, name: s.pressAria(count), onPress: onShowShopping }}
     />
   );
 }

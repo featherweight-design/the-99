@@ -15,8 +15,7 @@ import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
 import { DeckCardOverflow, type DeckMove } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
-import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
+import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
@@ -39,8 +38,6 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { momentsCopy } from "../../lib/copy/moments";
-import { useMomentAnchor } from "../moments/moments-provider";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -108,9 +105,6 @@ export interface SpineBandProps {
    */
   notice?: HeaderNotice | null;
   onOpenNotices?: () => void;
-  /** The trim line's `Proposed cuts →` (Tuning hub A5): opens the tool on the Analysis tab.
-   *  Absent with the hub off, and then the line is exactly as before. */
-  onProposedCuts?: () => void;
   /** The deck menu's Move, with the page's read of the shelves. Absent, the menu carries Delete alone. */
   move?: DeckMove;
 }
@@ -143,7 +137,6 @@ export function SpineDesktop({
   onOpenBracket,
   notice = null,
   onOpenNotices,
-  onProposedCuts,
   move,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
@@ -157,8 +150,6 @@ export function SpineDesktop({
   const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
   const over = built > bodySize;
   const toCut = built - bodySize;
-  // M3 (discovery R1): `Proposed cuts →` is the moment's control on a deck over its size, while the shortcut is drawn.
-  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut), target: false }); // a shortcut, not the tool's target
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -212,9 +203,9 @@ export function SpineDesktop({
       // the wide portrait for a row that cannot hold it. The container is
       // declared here because this element IS the row.
       className="group @container relative hidden md:block"
-      // minHeight, not the table's height + overflow:hidden: an over-99 deck
-      // draws a trim paragraph inside this band, and clipping it would hide
-      // copy rather than art. Each wash still declares 288px itself.
+      // minHeight, not the table's height + overflow:hidden: a wrapped title or a
+      // proxy line can grow this band, and clipping it would hide copy rather
+      // than art. Each wash still declares 288px itself.
       style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}
     >
       {/* TWO geometries, both mounted, one shown by a media query — the same
@@ -272,8 +263,7 @@ export function SpineDesktop({
         // 356. Ink that starts before the flat stop stands on a crop rather than
         // on the row's ground, which is what makes `flat` safe.
         // `min-h-[288px]`, not `h-full`: the header states `minHeight` rather
-        // than a definite height — an over-99 deck grows a trim paragraph inside
-        // it — and `h-full` against an indefinite parent resolves to `auto`, so
+        // than a definite height — a wrapped title or a proxy line grows it — and `h-full` against an indefinite parent resolves to `auto`, so
         // `items-center` would centre this row in its own content height and
         // leave it sitting near the band's top edge.
         // `items-end`: the drawings put both columns at the band's foot — the
@@ -620,35 +610,6 @@ export function SpineDesktop({
               style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
             >
               {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
-            </p>
-          )}
-
-          {over && (
-            <p
-              style={{
-                fontSize: 11.5,
-                lineHeight: 1.5,
-                marginTop: 6,
-                maxWidth: 520,
-                color: "var(--fg-body)",
-              }}
-            >
-              {/* Bold, but not the status token: the figure and the delta are the
-                  readout, this line is the remedy, and alarm colour marks the
-                  problem rather than the fix. */}
-              <b className="font-semibold">{overCopy.trim.lead(overWord(toCut))}</b>{" "}
-              {overCopy.trim.body(overWord(toCut))}
-              {onProposedCuts ? (
-                <button
-                  type="button"
-                  data-shortcut="proposed-cuts"
-                  onClick={onProposedCuts}
-                  {...cutsMoment}
-                  className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent-text)]"
-                >
-                  {tuningHubShortcutsCopy.proposedCuts}
-                </button>
-              ) : null}
             </p>
           )}
         </div>

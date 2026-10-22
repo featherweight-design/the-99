@@ -17,8 +17,7 @@ import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
-import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
+import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { IdentityPips } from "../commanders/commander-art";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
@@ -47,8 +46,6 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
-import { momentsCopy } from "../../lib/copy/moments";
-import { useMomentAnchor } from "../moments/moments-provider";
 
 /** The label block's inset from the band's sides; its ramp reaches back out across it. */
 const BLOCK_INSET_X = 18;
@@ -67,7 +64,6 @@ export function SpineMobile({
   onOpenBracket,
   notice = null,
   onOpenNotices,
-  onProposedCuts,
   move,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
@@ -94,8 +90,6 @@ export function SpineMobile({
   const bodySize = deckBodySize(partner !== null);
   const over = built > bodySize;
   const toCut = built - bodySize;
-  // M3 (discovery R1): `Proposed cuts →` is the moment's control on a deck over its size, while the shortcut is drawn.
-  const cutsMoment = useMomentAnchor("proposed-cuts", { eligible: over, copy: momentsCopy.proposedCuts(toCut), target: false }); // a shortcut, not the tool's target
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -610,29 +604,6 @@ export function SpineMobile({
             {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
           </p>
         )}
-        {over && (
-          <p
-            className="text-center"
-            style={{ fontSize: 12, lineHeight: 1.5, color: "var(--fg-body)" }}
-          >
-            {/* Bold, but not the status token: the figure and the delta are the
-                readout, this line is the remedy, and alarm colour marks the
-                problem rather than the fix. */}
-            <b className="font-semibold">{overCopy.trim.lead(overWord(toCut))}</b>{" "}
-            {overCopy.trim.body(overWord(toCut))}
-          </p>
-        )}
-        {over && onProposedCuts ? (
-          <button
-            type="button"
-            data-shortcut="proposed-cuts"
-            onClick={onProposedCuts}
-            {...cutsMoment}
-            className="mx-auto flex h-[44px] items-center font-mono text-[11.5px] text-[var(--accent-text)]"
-          >
-            {tuningHubShortcutsCopy.proposedCuts}
-          </button>
-        ) : null}
       </div>
 
       {/* STATES §2, state 3: Save/Cancel replace Update and Export while editing, at both
