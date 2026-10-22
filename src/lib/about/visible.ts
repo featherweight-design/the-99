@@ -31,7 +31,9 @@ import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-f
 import { cardSearchEnabled } from "../card-search/flag";
 import { cardScanEnabled } from "../card-scan/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
-import { type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
+import { homeFeedEnabled } from "../feed/flag";
+import { commandersPlaceEnabled } from "../commanders/place-flag";
+import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 
 /**
@@ -91,6 +93,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PAYMENTS_ENABLED: paymentsEnabled,
   // Already reads PAYMENTS_ENABLED inside its own function.
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
+  // The menu and Home line: the feed, and Commanders as one place.
+  HOME_FEED_ENABLED: homeFeedEnabled,
+  COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
 };
 
 /**
@@ -104,9 +109,11 @@ export function drawnEntry(id: string, visible: readonly AboutEntry[]): AboutEnt
 /** The credits entry this reader is drawn: `buying-credits` with payments on, else the shipped `credits`. */
 export const creditsEntryOf = (visible: readonly AboutEntry[]) => drawnEntry("credits", visible);
 
-/** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
+/** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off; a list keeps it only while every one holds. */
 function lineKept(sw: AboutLineSwitch, env: NodeJS.ProcessEnv): boolean {
-  return sw.startsWith("!") ? !SWITCHES[sw.slice(1) as AboutSwitch](env) : SWITCHES[sw as AboutSwitch](env);
+  if (Array.isArray(sw)) return (sw as readonly AboutLineSwitchOne[]).every((one) => lineKept(one, env));
+  const one = sw as AboutLineSwitchOne;
+  return one.startsWith("!") ? !SWITCHES[one.slice(1) as AboutSwitch](env) : SWITCHES[one as AboutSwitch](env);
 }
 
 /**

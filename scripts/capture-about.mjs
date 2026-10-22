@@ -219,7 +219,11 @@ function screens(f) {
     },
   });
   return {
+    // Home as a reader without the feed sees it (Ready to build): photographed in the `CAPTURE_FEED=off` pass, never here.
     home: { path: "/" },
+    // Home with the feed on (`AboutEntry.frame`). It marks its feed seen after each visit, and the lead story is the first
+    // UNSEEN item: arm it again before the frame.
+    "home-feed": { path: "/", before: rearmFeed },
     collection: { path: "/collection" },
     "card-details": { path: `/collection?card=${f.freeCard}`, dialog: true },
     sets: { path: "/collection/sets" },
@@ -455,7 +459,12 @@ async function save(theme, id, png, box, halo, entries = null) {
   console.log(`  ${id}  ${width}x${height}  ${(data.length / 1024).toFixed(1)}KB  q${quality}${halo ? `  halo ${halo.join(",")}` : ""}`);
 }
 
-const want = (id) => ONLY === null || ONLY.has(id);
+// `CAPTURE_FEED=off` photographs Home as a reader without the feed sees it (the `home` frame, Ready to build), through an
+// account-level Off override on the fixture account for the length of the run, and nothing else; every other run
+// photographs everything BUT `home`, with the server's switches as they are (the feed on). The override is deleted in the
+// `finally`, and the server resolves switches from a 30s snapshot, so the run waits it out (`SNAPSHOT_TTL_MS`).
+const FEED_OFF = process.env.CAPTURE_FEED === "off";
+const want = (id) => (FEED_OFF ? id === "home" : id !== "home") && (ONLY === null || ONLY.has(id));
 
 /**
  * One image, tried twice: a page that timed out (a cold route's first compile, a busy server) is left on a blank page
@@ -493,6 +502,8 @@ const REQUIRED_ON_FRAME = {
     // The invites entry's box takes in the count line (launch-end batch G2), drawn only with invites on.
     ["[data-invite-count]", "the invite count line under Add a friend (SOCIAL_INVITES_ENABLED on)"],
   ],
+  // The feed Home (HOME_FEED_ENABLED on, the fixture's one unseen price drop): the lead story is what `whats-new` boxes.
+  "home-feed": [["[data-feed-lead]", "the lead story (HOME_FEED_ENABLED on; the fixture account's feed kinds on and one unseen item)"]],
   credits: [["[data-testid='credits-total']", "the balance on /credits (PAYMENTS_ENABLED on)"]],
 };
 
@@ -515,10 +526,17 @@ async function requireOnFrame(page, id) {
   }
 }
 
+/** A Home visit moves `feed_seen_at`, and a lead story needs an unseen item (menu and Home PR 8): null is never seen. */
+async function rearmFeed() {
+  if (!USER_ID) return;
+  await sql`update user_prefs set feed_seen_at = null where user_id = ${USER_ID} and feed_kinds <> '{}'::jsonb`;
+}
+
 async function shoot(page, theme, f) {
   for (const [id, s] of Object.entries(screens(f))) {
     if (!want(id)) continue;
     await attempt(page, theme, id, async () => {
+      if (s.before) await s.before();
       await open(page, s.path);
       if (s.steps) await s.steps(page);
       if (s.dialog) await page.locator("[role='dialog']").first().waitFor({ state: "visible", timeout: 10_000 });
@@ -614,6 +632,8 @@ await clerkSetup();
 const browser = await chromium.launch();
 let about = null;
 let USER_ID = null;
+let feedOffSet = false;
+let priorFeedOverride = [];
 try {
   const signInPage = await browser.newPage();
   const userId = await signIn(signInPage, EMAIL, PASSWORD);
@@ -627,6 +647,19 @@ try {
   const storage = await signInPage.context().storageState();
   await signInPage.close();
   about = await captureAboutSeen(userId, sql);
+  if (FEED_OFF) {
+    // The account's own override, kept to put back: the temporary Off replaces it for the run, in ONE transaction, so a
+    // failed insert cannot leave the original deleted.
+    priorFeedOverride = await sql`select value, note, updated_by from flag_overrides
+      where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${userId}`;
+    await sql.transaction([
+      sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${userId}`,
+      sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
+        values ('HOME_FEED_ENABLED', 'user', ${userId}, 'off', 'capture:about, the feed-off Home frame', 'capture:about')`,
+    ]);
+    feedOffSet = true;
+    await new Promise((resolve) => setTimeout(resolve, 35_000));
+  }
   const f = await fixture(userId);
   for (const theme of THEMES) {
     console.log(`\n── ${theme}`);
@@ -654,6 +687,17 @@ try {
 } finally {
   try {
     if (about) await restoreAboutSeen(about, sql);
+    // The feed-off pass's account override, so no later run reads Home without the feed.
+    if (USER_ID && feedOffSet) {
+      const back = priorFeedOverride.map(
+        (r) => sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by)
+          values ('HOME_FEED_ENABLED', 'user', ${USER_ID}, ${r.value}, ${r.note}, ${r.updated_by})`,
+      );
+      await sql.transaction([
+        sql`delete from flag_overrides where switch = 'HOME_FEED_ENABLED' and scope = 'user' and user_id = ${USER_ID}`,
+        ...back,
+      ]);
+    }
     // The Sync preview's pending upload: never confirmed, so nothing else holds it.
     if (USER_ID) {
       await sql`delete from csv_uploads where user_id = ${USER_ID} and filename = ${UPLOAD_FILENAME} and confirmed_at is null`;

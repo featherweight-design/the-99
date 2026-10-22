@@ -148,14 +148,22 @@ export type AboutSwitch =
   | 'CARD_SCAN_ENABLED'
   // Buying credits (#2144): the redrawn credits entry follows the payments line, and its welcome lines their own.
   | 'PAYMENTS_ENABLED'
-  | 'WELCOME_CREDITS_ENABLED';
+  | 'WELCOME_CREDITS_ENABLED'
+  // The menu and Home line (plan 2026-10-22-menu-home.md): Home's news feed, and Commanders as one place with its tabs.
+  | 'HOME_FEED_ENABLED'
+  | 'COMMANDERS_PLACE_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
  * on, and a leading `!` keeps it while the switch is off (collection edit: `import`'s old
  * warning is false with the switch on, and its replacement is false with it off).
  */
-export type AboutLineSwitch = AboutSwitch | `!${AboutSwitch}`;
+export type AboutLineSwitchOne = AboutSwitch | `!${AboutSwitch}`;
+/**
+ * One switch, or a list of them that must ALL hold (the menu and Home line: a Help me choose tab line needs the Commanders
+ * place AND Help me choose; a friend's spares line needs Friends AND the wishlist).
+ */
+export type AboutLineSwitch = AboutLineSwitchOne | readonly AboutLineSwitchOne[];
 
 export interface AboutEntry {
   id: string;
@@ -173,6 +181,12 @@ export interface AboutEntry {
   screen: AboutScreen;
   /** Set exactly when `screen` is `deck`: which of its views. */
   view?: DeckView;
+  /**
+   * A variant frame of the screen, `<screen>-<frame>`, photographed with the switches that make this entry's surface
+   * exist (`whats-new`'s `home-feed`: Home with the feed on). The screen's own frame stays what a reader WITHOUT those
+   * switches sees, which is what the entries still drawn there describe (`ready-to-build`).
+   */
+  frame?: string;
   route: string;
   /** Appended after the route when the link does not land on the page itself. */
   opens?: string;

@@ -306,6 +306,16 @@ await sql`insert into deck_notes (deck_id, user_id, body) values
 // A want the collection does not reach (the dear card), so Wishlist draws a row.
 await setWishlistQuantity(viewer, dear, 1);
 
+// Home's feed (menu and Home PR 8): the kinds on and one price drop on the wanted card, unseen, so the feed Home has a lead
+// story to photograph. The capture re-arms `feed_seen_at` before each Home frame (a Home visit moves it).
+const enabledAt = new Date(Date.now() - 30 * DAY).toISOString();
+await sql`insert into user_prefs (user_id) values (${viewer}) on conflict (user_id) do nothing`;
+await sql`update user_prefs set feed_kinds = ${JSON.stringify({ "new-set": enabledAt, "price-drop": enabledAt, combo: enabledAt })}::jsonb,
+  feed_seen_at = null where user_id = ${viewer}`;
+await sql`delete from feed_items where user_id = ${viewer}`;
+await sql`insert into feed_items (user_id, kind, dedupe_key, oracle_id, data, created_at)
+  values (${viewer}, 'price-drop', ${`${dear}:fixture`}, ${dear}, ${JSON.stringify({ fromCents: 1200, toCents: 700 })}::jsonb, now() - interval '2 hours')`;
+
 console.log(`ABOUT_DECK_UNDER=${under}`);
 console.log(`ABOUT_DECK_OVER=${over}`);
 console.log(`ABOUT_DECK_PLAYED=${played}`);

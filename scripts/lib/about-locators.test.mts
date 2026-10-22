@@ -3,7 +3,10 @@ import { aboutEntries } from "../../src/lib/copy/about-entries";
 import { REQUIRED_SHOTS } from "../../src/lib/about/shots";
 import { ABOUT_LOCATORS } from "./about-locators.mjs";
 
-const frameOf = (e: (typeof aboutEntries)[number]) => (e.screen === "deck" ? `deck-${e.view}` : e.screen);
+const frameOf = (e: (typeof aboutEntries)[number]) => {
+  const base = e.screen === "deck" ? `deck-${e.view}` : e.screen;
+  return e.frame ? `${base}-${e.frame}` : base;
+};
 
 describe("the About locator map", () => {
   it("names every About entry, and nothing else", () => {

@@ -23,6 +23,9 @@ export const ABOUT_LOCATORS = {
   // ---- home ----------------------------------------------------------------
   "getting-help": { screen: "home", locator: "header [data-help-button='header']:visible" },
   "ready-to-build": { screen: "home", locator: "[data-testid='hero-art-link'] >> nth=0" },
+  // The menu and Home line's one entry, drawn in place of Ready to build while the feed is on: the lead story (Home PR 6b), on
+  // its own frame, Home photographed with the feed on (`AboutEntry.frame`); `home` is Home without it.
+  "whats-new": { screen: "home-feed", locator: "[data-feed-lead]" },
   resume: {
     screen: "home",
     locator: "#home-heading",

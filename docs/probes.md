@@ -678,6 +678,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   choice draws; never confirmed), deleted in the same `finally`. `CAPTURE_THEMES` and `CAPTURE_IDS` (comma lists) take a partial run, merged into the set; any image
   not captured is listed and exits 1.
 
+  **Home is two frames** (menu and Home close-out): `home-feed` is Home with the feed on (the lead story `whats-new`
+  boxes; the fixture account has the feed's kinds on and one unseen price drop, and the run arms `feed_seen_at` again
+  before the frame, since a Home visit moves it), and `home` is Home as a reader WITHOUT the feed sees it (Ready to
+  build), photographed by `CAPTURE_FEED=off pnpm capture:about`, which sets an account-level Off override on
+  `HOME_FEED_ENABLED` for the fixture account, waits out the switch snapshot's 30s, shoots `home` alone, and deletes the
+  override in its `finally`. Any other run skips `home`. Entry to frame is `AboutEntry.frame` (`<screen>-<frame>`).
+
 - `pnpm measure:sync` prints what a Sync would do for one account (`MEASURE_USER_ID`), against a stored upload
   (`MEASURE_UPLOAD_ID`) or the anchor's own file, under a pick (`MEASURE_PICK`, default `everything`): the
   buckets, the rows a confirm would write, staleness and the token rows it would change. READ-ONLY by

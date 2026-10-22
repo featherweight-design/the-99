@@ -448,6 +448,46 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 14,
   },
   {
+    // The menu and Home line's one entry (plan 2026-10-22-menu-home.md, product call 4), in `ready-to-build`'s slot so it is
+    // first under Home. Drawn IN PLACE OF it while the feed is on: Ready to build leaves Home with the feed.
+    id: 'whats-new',
+    replaces: 'ready-to-build',
+    chapter: '04',
+    screen: 'home',
+    frame: 'feed',
+    switch: 'HOME_FEED_ENABLED',
+    title: 'Home’s news, and the new bar',
+    route: '/',
+    caption:
+      'Home opens on what’s new for you. One story leads at the top, then the decks you touched last, then the rest of What’s new:\n\n- A set that just came out\n- A precon that just came out\n- A price drop on a card on your wishlist\n- A combo you can now make with cards you own\n- A friend with a spare of a card on your wishlist\n\nNothing shows until you choose what you’d like to hear about: right on Home the first time, then in Settings, in the account menu.\n\nCommanders is one place now, with a tab for each way in:\n\n- For you: the commanders you own, ranked by fit\n- Discover: the ones worth buying\n- Help me choose: a few questions, and we pick\n\nFriends has its own spot in the bar, and a friend’s page shows their spares and decks.\n\nIn Settings, you choose how many spare copies a card needs before friends see it, and keep any card back.',
+    captionLineSwitches: {
+      '- A precon that just came out': 'PRECONS_ENABLED',
+      // Settings' account-menu row shows with the Commanders place on; without it Settings is reached from Home's Choose what shows.
+      ', in the account menu': 'COMMANDERS_PLACE_ENABLED',
+      '- A price drop on a card on your wishlist': 'SOCIAL_WISHLIST_ENABLED',
+      '- A friend with a spare of a card on your wishlist': ['SOCIAL_FRIENDS_ENABLED', 'SOCIAL_WISHLIST_ENABLED'],
+      'Commanders is one place now, with a tab for each way in:': 'COMMANDERS_PLACE_ENABLED',
+      '- For you: the commanders you own, ranked by fit': 'COMMANDERS_PLACE_ENABLED',
+      '- Discover: the ones worth buying': 'COMMANDERS_PLACE_ENABLED',
+      '- Help me choose: a few questions, and we pick': ['COMMANDERS_PLACE_ENABLED', 'HELP_ME_CHOOSE_ENABLED'],
+      'Friends has its own spot in the bar, and a friend’s page shows their spares and decks.': ['COMMANDERS_PLACE_ENABLED', 'SOCIAL_FRIENDS_ENABLED'],
+      'In Settings, you choose how many spare copies a card needs before friends see it, and keep any card back.': 'SOCIAL_FRIENDS_ENABLED',
+    },
+    keys: [
+      'News stays in the app: a count on Home in the bar, and the list. No email, ever.',
+      'A story stays 14 days. Opening Home marks it seen.',
+      'Old links to Discover and Help me choose land on their tabs.',
+      'Friends see your deck names, commanders and statuses, never the lists.',
+    ],
+    keySwitches: {
+      'Old links to Discover and Help me choose land on their tabs.': 'COMMANDERS_PLACE_ENABLED',
+      'Friends see your deck names, commanders and statuses, never the lists.': 'SOCIAL_FRIENDS_ENABLED',
+    },
+    // A switched entry is announced by its id, with no version bump (`about.ts`, above `ABOUT_VERSION`): its `since` is the
+    // version current when it ships.
+    since: 16,
+  },
+  {
     id: 'ready-to-build',
     screen: 'home',
     chapter: '02',
@@ -1296,9 +1336,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/friends',
     width: 'plate',
     // Launch-end batch (E4): with invites on, Add a friend opens a chooser, so the link path names its choice.
-    captionLineSwitches: { ' pick “They’re on The 99”,': 'SOCIAL_INVITES_ENABLED' },
+    // With the Commanders place on, Friends has its own slot in the bar (menu and Home PR 2): the sentence names the bar, not the account menu.
+    captionLineSwitches: {
+      ' pick “They’re on The 99”,': 'SOCIAL_INVITES_ENABLED',
+      'Open “Friends” from your account menu, ': '!COMMANDERS_PLACE_ENABLED',
+      'Press “Friends” in the bar, ': 'COMMANDERS_PLACE_ENABLED',
+    },
     caption:
-      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, press “Add a friend”, pick “They’re on The 99”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
+      'Playing with the same people every week? Make them friends in The 99. Open “Friends” from your account menu, Press “Friends” in the bar, press “Add a friend”, pick “They’re on The 99”, and send them the link, or let them scan the QR code off your screen. Once they accept, you’re friends.\n\nPick a commander and its art becomes your face, beside your name everywhere a friend sees you. Then gather the friends you play with into a pod, and choose, pod by pod, who gets to see your spare cards.',
     keys: [
       'Nobody can find you by searching. A friend link works once and lasts 7 days, and you can revoke one that’s still open.',
       'Friends see your name and your commander, never what you own. Your spares show only to the pods you share them with.',
