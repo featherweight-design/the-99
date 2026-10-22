@@ -31,6 +31,8 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async ()
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, { liveCents: 100 }]))) }));
 vi.mock("../cache/page-cache", () => ({ cachePageForUser: vi.fn() }));
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn() }));
+// Every result can offer only the universal staples: "rift" is one, "mdfc" is not.
+vi.mock("../staples/universal", () => ({ loadUniversalStaples: vi.fn(async () => new Set(["rift"])) }));
 
 import { loadBracketGateFacts } from "./fill-facts";
 import { loadBuyableGameChangers, loadOwnedMovers } from "./form-reach-load";
@@ -44,13 +46,13 @@ describe("the form's payload keeps to the builder's bounds", () => {
     expect(cards.map((c) => c.id)).toEqual(["rift", "mdfc"]);
   });
 
-  it("offers only Commander-legal Game Changers to buy, and never a land", async () => {
+  it("offers only Commander-legal, nonland Game Changers that every result can offer (universal staples)", async () => {
     queries.length = 0;
-    const buyable = await loadBuyableGameChangers();
+    await loadBuyableGameChangers();
     expect(queries[0]).toContain("commander_legal");
-    // The names are read for the kept ids alone: the land is never asked for.
+    // The names are read for the kept ids alone: never the land, never a card some rows lack.
     expect(queries[1]).toContain("rift");
     expect(queries[1]).not.toContain("tomb");
-    expect(buyable.map((c) => c.id)).toEqual(["rift", "mdfc"]);
+    expect(queries[1]).not.toContain("mdfc");
   });
 });

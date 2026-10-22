@@ -115,10 +115,8 @@ export const helpMeChooseCopy = {
         `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}. You choose which on the new deck, after you pick a commander.`,
       shortOver: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string, total: string, budget: string) =>
         `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying about ${total} of cards, over your ${budget} budget. You choose which on the new deck, after you pick a commander.`,
-      shortOwn: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string, cards: readonly string[], price: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. Hitting ${n} means buying ${cards.length === 1 ? cards[0] : `${numberWord(cards.length)} more Game Changers`}, about ${price}, from outside your collection. You choose which on the new deck, after you pick a commander.`,
       none: (n: 1 | 2 | 3 | 4 | 5, where: string, lands: string) =>
-        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}, and no Game Changer to buy gets one to ${n} here. The new deck checks again once you pick a commander.`,
+        `${n} · ${BRACKET_NAMES[n]}. From your cards${where}, a deck would be bracket ${lands}. What reaching ${n} takes depends on the commander: the new deck shows it once you pick one.`,
     },
     submit: "Find commanders", // canvas
   },

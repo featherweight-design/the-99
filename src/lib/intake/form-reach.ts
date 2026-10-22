@@ -102,8 +102,11 @@ export function formNames(ids: readonly string[], data: FormReachData): string[]
 /**
  * The Bracket field's caption, from 3 up (board A). Null below 3, where today's caption stands. A
  * deck that reaches the target says so; a short one says what a collection-only deck would be and,
- * when a stocked Game Changer gets there, what hitting the target costs, against the budget when it
- * is over it. Whole dollars, as the rows draw them.
+ * when a buy every result can offer gets there (a universal staple Game Changer, `loadFormReach`),
+ * what hitting the target costs, against the budget when it is over it. Otherwise it states the
+ * reach and leaves the buy to the commander's own options, after the pick (Hugh's ruling (a)).
+ * Under own-only no buy is shared: a sleeveable fill takes no unowned staple, and the hand-off's
+ * buying half there is the commander's own top cards. Whole dollars, as the rows draw them.
  */
 export function formReachCaption(args: {
   bracket: Bracket;
@@ -120,7 +123,7 @@ export function formReachCaption(args: {
   const reach = formReach({ target: n, colors: args.colors, match: args.match, data: args.data, budgetCents: args.budgetDollars === null ? null : args.budgetDollars * 100 });
   if (reach.kind !== "short") return reach.kind === "above" ? null : { text: copy.reached(n, where), short: false };
   const lands = helpMeChooseCopy.results.rowBracketValue(reach.collectionPermits);
-  if (!reach.buy) return { text: copy.none(n, where, lands), short: true };
+  if (!reach.buy || args.ownedOnly) return { text: copy.none(n, where, lands), short: true };
   const price = dollars(reach.buy.buyCents);
   if (reach.buy.overBudget && args.budgetDollars !== null) {
     return { text: copy.shortOver(n, where, lands, price, `$${args.budgetDollars.toLocaleString("en-US")}`), short: true };
@@ -128,7 +131,7 @@ export function formReachCaption(args: {
   // Only the cards to BUY are named or counted: a free Game Changer in the set is the player's already.
   const free = new Set(args.data.cards.filter((c) => c.free).map((c) => c.id));
   const names = formNames(reach.buy.raisers.filter((id) => !free.has(id)), args.data);
-  return { text: args.ownedOnly ? copy.shortOwn(n, where, lands, names, price) : copy.shortBuy(n, where, lands, names, price), short: true };
+  return { text: copy.shortBuy(n, where, lands, names, price), short: true };
 }
 
 const dollars = (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`;

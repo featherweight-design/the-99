@@ -73,9 +73,12 @@ describe("formReachCaption: board A's caption, from 3 up", () => {
     );
   });
 
-  it("says it is over the budget when it is, and from outside the collection under own-only", () => {
+  it("says it is over the budget when it is, and names no buy under own-only", () => {
     expect(caption(data([], [study]), { budgetDollars: 20 })?.text).toContain("buying about $32 of cards, over your $20 budget");
-    expect(caption(data([], [study]), { ownedOnly: true })?.text).toContain("Rhystic Study, about $32, from outside your collection");
+    // Own-only shares no buy: a sleeveable fill takes no unowned staple, so the commander decides.
+    expect(caption(data([], [study]), { ownedOnly: true })?.text).toBe(
+      "3 · Upgraded. From your cards in these colors, a deck would be bracket 1-2. What reaching 3 takes depends on the commander: the new deck shows it once you pick one.",
+    );
   });
 
   it("counts the Game Changers to buy at 5, leaving out the free one the player owns", () => {
@@ -86,7 +89,7 @@ describe("formReachCaption: board A's caption, from 3 up", () => {
 
   it("says when nothing stocked reaches it", () => {
     expect(caption(data([]))).toEqual({
-      text: "3 · Upgraded. From your cards in these colors, a deck would be bracket 1-2, and no Game Changer to buy gets one to 3 here. The new deck checks again once you pick a commander.",
+      text: "3 · Upgraded. From your cards in these colors, a deck would be bracket 1-2. What reaching 3 takes depends on the commander: the new deck shows it once you pick one.",
       short: true,
     });
   });

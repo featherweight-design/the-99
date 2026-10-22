@@ -19,6 +19,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../discovery/price";
 import { buysCopy } from "./buys-card";
 import { isLandFace } from "../cards/facet";
+import { loadUniversalStaples } from "../staples/universal";
 import { loadBracketGateFacts } from "./fill-facts";
 import type { BuyCard, FormCard, FormReachData } from "./form-reach";
 
@@ -66,10 +67,18 @@ export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): P
   });
 }
 
+/**
+ * ONLY A BUY EVERY RESULT CAN OFFER (Hugh's ruling (a), 2026-10-22): the universal staples
+ * (`loadUniversalStaples`) that are Game Changers. A row's buying half draws from its commander's own
+ * candidates (EDHREC top cards and staples), and the universal staples are the one part every
+ * commander gets, so a buy the form names is one the rows and the hand-off can actually offer.
+ */
 export async function loadBuyableGameChangers(): Promise<BuyCard[]> {
-  const ids = new Set(await movable(sql`
-    select c.oracle_id, c.type_line from cards c where c.game_changer and c.commander_legal
-  `));
+  const [legal, universal] = await Promise.all([
+    movable(sql`select c.oracle_id, c.type_line from cards c where c.game_changer and c.commander_legal`),
+    loadUniversalStaples(),
+  ]);
+  const ids = new Set(legal.filter((id) => universal.has(id)));
   const rows = ids.size === 0 ? [] : (await db.execute(sql`
     select c.oracle_id, c.name, c.color_identity from cards c where c.oracle_id = any(${sql.param([...ids])}::uuid[])
   `)).rows as CardRow[];
