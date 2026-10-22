@@ -18,12 +18,9 @@
 // Whether a background actually changes under the mouse is a question for a
 // browser.
 //
-// THE NAME OPENS THE CARD, and does not tick the row. Those are the same press
-// on a control nested in the tick's label, which is the trap the decline control
-// is already placed against.
-//
-// A PRESS ON THE ROW OPENS THE CARD at both widths and ticks nothing; only the
-// box ticks (Hugh's ruling of 2026-10-21).
+// THE NAME OPENS THE CARD, and does not tick the row. A PRESS ON THE ROW opens
+// it too, at both widths, and ticks nothing: only the box ticks (Hugh's ruling of
+// 2026-10-21).
 //
 // THE TYPE IS DESKTOP ONLY. The phone row is two lines by design and has no
 // room for the word.
@@ -382,7 +379,7 @@ async function run() {
             opened > 0,
             `${opened} dialog(s) after the press`,
           );
-          // The whole reason it sits outside the label: one press, one meaning.
+          // Only the box ticks: one press, one meaning.
           report(
             `${width}px · and does not tick the row`,
             after === before,

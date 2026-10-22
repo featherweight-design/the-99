@@ -1312,10 +1312,11 @@ function CandidateRow({
    *
    * MOUNTED ONCE PER WIDTH, guarded by `isDesktop`, which is the pattern the NAME beside them
    * already uses rather than a second one. The two widths put the name in different places —
-   * the phone's is a text span inside the tick's label, the desktop's a `CardDetailTrigger`
-   * outside it — so "after the name" is two different positions in the tree. Rendered once
-   * outside the label, the marks landed on the phone's SECOND line: measured at 73px from the
-   * row's left against a name ending at 251px, which is a different line rather than a gap.
+   * the phone's sits on line 1 beside the dot, the desktop's is a direct child of the row's
+   * flex context ordered by `md:order-2` — so "after the name" is two different positions in
+   * the tree. Rendered once outside line 1, the marks landed on the phone's SECOND line:
+   * measured at 73px from the row's left against a name ending at 251px, which is a different
+   * line rather than a gap.
    *
    * Not a CSS `hidden`/`md:hidden` pair: `isDesktop` mounts one of the two, so there is no
    * duplicated subtree to keep in step.
