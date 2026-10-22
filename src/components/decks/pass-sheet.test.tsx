@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -119,7 +119,7 @@ describe("PassSheet undo state", () => {
     const cards = ["a", "b", "c"].map(card);
     render(<ProvenanceLedger deckId="e" bodySize={99} cards={cards} total={3} passes={[p]} onShow={vi.fn()} onAnnounce={vi.fn()} />);
     const sheet = render(<PassSheet target={{ kind: "pass", passId: "p1" }} deckId="e" cards={cards} passes={[p]} bodySize={99} newestAsOf={null} onAnnounce={vi.fn()} onClose={vi.fn()} />);
-    fireEvent.click(sheet.getAllByRole("button", { name: /^Undo/ })[0]);
+    fireEvent.click(within(sheet.container).getByRole("button", { name: /^Undo/ }));
     sheet.unmount();
     fail(new Error("no"));
     await waitFor(() => expect(screen.getByText(ledger.undoFailed)).toBeTruthy());
