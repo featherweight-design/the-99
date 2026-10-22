@@ -9,6 +9,7 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
+import { forgetThisDevice } from "../../lib/push/forget-device";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -560,7 +561,8 @@ export function AccountMenu({
     opening.current++;
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
-    void clerk.signOut().catch(() => setBusy(false));
+    // This browser's push subscription goes first (G7): the action needs the session, and it never blocks past its limit.
+    void forgetThisDevice().then(() => clerk.signOut()).catch(() => setBusy(false));
   }
 
   const label = triggerLabel(identity.name);
