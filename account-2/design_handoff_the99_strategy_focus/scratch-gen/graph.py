@@ -52,8 +52,18 @@ CSS = r"""
 .rcn em{font:600 15px 'IBM Plex Mono';color:#F0C08E;font-style:normal;margin-left:2px;vertical-align:top}
 .rcl{font:10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-muted)}
 .rck{font:10px/1.5 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.med{position:relative;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in oklab,var(--accent) 22%,transparent) 0%,color-mix(in oklab,var(--accent) 6%,transparent) 62%,transparent 72%);
+  border:1.5px solid color-mix(in oklab,var(--accent) 55%,transparent);box-shadow:inset 0 0 0 5px var(--surface),inset 0 0 0 6px color-mix(in oklab,var(--accent) 30%,transparent)}
+.med i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;background:var(--accent)}
+.med .sic{filter:drop-shadow(0 0 6px color-mix(in oklab,var(--accent) 45%,transparent))}
 .rce{width:56%;height:56%;border-radius:50%;border:1.5px dashed var(--border-strong);box-sizing:border-box}
-.ph .rce{width:52%;height:52%}
+.ph .med{position:relative;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in oklab,var(--accent) 22%,transparent) 0%,color-mix(in oklab,var(--accent) 6%,transparent) 62%,transparent 72%);
+  border:1.5px solid color-mix(in oklab,var(--accent) 55%,transparent);box-shadow:inset 0 0 0 5px var(--surface),inset 0 0 0 6px color-mix(in oklab,var(--accent) 30%,transparent)}
+.med i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;background:var(--accent)}
+.med .sic{filter:drop-shadow(0 0 6px color-mix(in oklab,var(--accent) 45%,transparent))}
+.rce{width:52%;height:52%}
 .leg .sic{flex:none;color:var(--fg-muted)}
 .leg div.on .sic{color:var(--accent)}
 .rcc{position:absolute;border-radius:5px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
@@ -216,10 +226,17 @@ def centre(rows, focus, size, art, added):
         return f'<img class="art" src="{img("hero")}" alt="" style="{box}">'
     if kind == "none":
         return ""
-    if kind == "icon":
+    if kind.startswith("icon"):
         if not focus:
             return f'<div class="rcx" style="{box}"><span class="rce"></span></div>'
-        return f'<div class="rcx" style="{box}">{icon(focus, int(art * .42), "var(--accent)")}</div>'
+        if kind == "icon-sm":
+            return f'<div class="rcx" style="{box}">{icon(focus, int(art * .42), "var(--accent)")}</div>'
+        if kind == "icon-lg":
+            return f'<div class="rcx" style="{box}">{icon(focus, int(art * .62), "var(--accent)")}</div>'
+        d = int(art * .86)
+        gems = "".join(f'<i style="transform:rotate({a}deg) translateY(-{d/2:.0f}px) rotate(45deg)"></i>' for a in (0, 90, 180, 270))
+        return (f'<div class="rcx" style="{box}"><span class="med" style="width:{d}px;height:{d}px">{gems}'
+                f'{icon(focus, int(art * .56), "var(--accent)")}</span></div>')
     if not focus:
         return f'<div class="rcx" style="{box}"><span class="rck">Pick a<br>focus</span></div>'
     if kind == "count":
@@ -271,7 +288,7 @@ def ring(rows, focus, ph, added=0):
     for i, (name, n, _) in enumerate(rows):
         on = name == focus
         cnt = f'{n} <em style="font-style:normal;color:var(--accent)">+{added}</em> cards' if (on and added) else f'{n} cards'
-        sw = (icon(name, 16) if RING_CENTRE[0] == "icon" else f'<i style="background:{"#CF8745" if on else TONES[i]}"></i>')
+        sw = (icon(name, 16) if RING_CENTRE[0].startswith("icon") else f'<i style="background:{"#CF8745" if on else TONES[i]}"></i>')
         leg += f'<div class="{"on" if on else ""}">{sw}{name}<span>{cnt}</span><b class="rd"></b></div>'
     return (f'<div class="ring"><div class="rg" style="width:{size}px;height:{size}px">{svg}</div>'
             f'<div class="legw"><span class="lgk">Pick a focus</span><div class="leg">{leg}</div></div></div>')

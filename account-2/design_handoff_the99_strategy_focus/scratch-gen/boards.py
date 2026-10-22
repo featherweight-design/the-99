@@ -119,7 +119,7 @@ def centre_states(kind):
 def ring_centre():
     opt = lambda kind, title, sp: both(title, sp, with_centre(kind, lambda: G.block("ring", True)),
                                        with_centre(kind, lambda: G.block("ring")), hub=False)
-    body = (board_head("Strategy focus · R2f", "What goes in the middle of the ring",
+    body = (board_head("Strategy focus · R2g", "What goes in the middle of the ring",
                        "Hugh’s question: the commander already heads the page, so its art in the ring repeats it. Five answers, each with Tokens as the "
                        "focus at both widths; B, C and D, the three that change with the pick, are drawn through no focus, picked and after two applied. "
                        "<b>Recommendation: D</b>, if the 35 icons are worth drawing; otherwise B.")
@@ -135,6 +135,13 @@ def ring_centre():
             + opt("icon", "D · An icon per strategy (R2f, Hugh’s ask for a graphic)", "The focus’s icon in the middle, in accent; the same icons "
                   "replace the legend’s colour squares, so ring and legend read as one. After changes the icon stays and <i>+2</i> lives on the "
                   "arc and in the legend. With no focus, an empty dashed circle waits to be filled. Five of the set drawn here, for Aang’s deck.")
+            + sec("D · the icon, emphasised (Hugh’s note)", "Three weights side by side; the flow above and below uses the third.",
+                  '<div class="frames">' + "".join(frame(l, with_centre(k, lambda: bph(G.block("ring", True), hub=False)), c) for l, k, c in [
+                      ("R2f as drawn", "icon-sm", "The icon at 42% of the centre."),
+                      ("Larger", "icon-lg", "62% of the centre, nothing else."),
+                      ("<b>Larger, on a medallion (recommended)</b>", "icon", "A soft accent disc with an inner keyline and four small "
+                       "diamonds, the 99 mark’s own shape; the icon glows faintly."),
+                  ]) + '</div>')
             + sec("D through the flow", "", centre_states("icon"))
             + sec("D · how many icons", "Any strategy can be the focus, so the whole set is owed: <b>35</b>. 29 label themes (all 30 less "
                   "<i>tribal</i>, which a typal axis replaces), 5 type-line axes (Artifacts, Enchantments, Equipment and Auras, Vehicles, Creatures "
