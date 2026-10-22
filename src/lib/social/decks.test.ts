@@ -185,6 +185,14 @@ describe("loadFriendDeck", () => {
     expect(page.cards[1]).not.toHaveProperty("printedScryfallId");
   });
 
+  it("reads the printings before the final checks: a friendship ended during that read returns nothing", async () => {
+    m.printingRows.mockImplementation(async () => {
+      m.resolveFriend.mockResolvedValue(null);
+      return [];
+    });
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+  });
+
   it("carries no printing identity when the set and number name two printings", async () => {
     m.printingRows.mockResolvedValue([
       { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-one", backImageUri: null },

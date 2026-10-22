@@ -152,12 +152,14 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);
   if (!detail) return null;
   const ids = [...new Set([detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : []), ...detail.cards.map((c) => c.oracleId)])];
-  const [ownedRows, viewerDecks] = await Promise.all([
+  const [ownedRows, viewerDecks, printed] = await Promise.all([
     db
       .selectDistinct({ oracleId: collectionItems.oracleId })
       .from(collectionItems)
       .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids))),
     readReaderDecks(viewerId),
+    // Before the checks below, as every read is: the owner's rules and the grant are read again after all of them.
+    printingFaces([detail.commander, ...(detail.partner ? [detail.partner] : []), ...detail.cards]),
   ]);
   // The owner's rules are read AGAIN after the list was, as the grant is: a deck hidden, or decks turned off, while the
   // reads ran returns nothing rather than what was read past that. The flag and the prefs are fresh, and the phase is
@@ -178,7 +180,6 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     })
     .sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
-  const printed = await printingFaces([detail.commander, ...(detail.partner ? [detail.partner] : []), ...detail.cards]);
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
     oracleId: c.oracleId,
     name: c.name,
