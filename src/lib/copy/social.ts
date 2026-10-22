@@ -112,6 +112,13 @@ export const socialCopy = {
         toBuy > 0 ? `${built} / ${bodySize} · ${toBuy} ${toBuy === 1 ? "card" : "cards"}` : `${built} / ${bodySize}`,
       emptyTitle: (name: string) => `${name} has no decks yet`,
       emptyBody: (name: string) => `A deck ${name} builds shows here, as a name, a commander and a status.`,
+      // Friend decks (handoff call 6, States): every tile opens the deck, and the tile shows a count, never a status.
+      // Placeholder words, for /copy-review.
+      lineOpen: (name: string) => `${name}’s decks, newest first. Open one to see its list.`,
+      emptyBodyOpen: (name: string) => `A deck ${name} shares shows here, with its whole list.`,
+      /** The tile's press, named with what the tile shows, in its order. */
+      tileAria: (deck: string, commander: string | null, colour: string, cards: string) =>
+        [deck, commander, colour, cards].filter(Boolean).join(", "),
     },
   },
 
