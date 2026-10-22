@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { commitVersion } from "./versions";
-import type { Tx } from "../../db";
+
+type Tx = Parameters<typeof commitVersion>[2];
 
 const STOP = new Error("stop after the version insert");
 
