@@ -52,7 +52,8 @@ type NavItem = {
 //
 // Discover sits after Commanders and before Decks: owned before unowned, so the
 // two commander lanes read as one shelf, and Decks stays last because it is the
-// destination the app is for. It locks with the rest — a lane of 3,301
+// destination the app is for. With the Commanders place on, Discover leaves the bar and
+// Friends, the social door, sits after Decks (menu and Home handoff, R1 Menu 1). It locks with the rest — a lane of 3,301
 // commanders you cannot yet score against is a catalogue, not a tool.
 const HOME: NavItem = { href: "/", label: "Home", lockable: false };
 const COLLECTION: NavItem = { href: "/collection", label: "Collection", lockable: true };

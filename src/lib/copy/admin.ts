@@ -727,7 +727,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
   COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy, Mark bought, Collection sync, No-collection entry and Card scanning need it." },
   COLLECTION_SYNC_ENABLED: { label: "Collection sync", description: "Sync an upload: take what the file changed and keep your own edits." },
-  COMMANDERS_PLACE_ENABLED: { label: "Commanders place", description: "Commanders gets For you, Discover and Help me choose as tabs, and Discover leaves the menu bar." },
+  COMMANDERS_PLACE_ENABLED: { label: "Commanders place", description: "Discover leaves the menu bar for Commanders, and Friends takes the fifth slot." },
   DECK_BENCHMARKS_ENABLED: { label: "Deck benchmarks", description: "A deck measured against similar decks." },
   DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },

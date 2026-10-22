@@ -99,7 +99,7 @@ type MenuItemsProps = {
 function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, settings, onSettings, tour, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
-  // About first, Friends under it (Social R1 placement), Admin after them; each drawn only where it applies.
+  // About first, Friends under it (Social R1 placement), or Settings in that row once Friends is in the bar, Admin after them; each drawn only where it applies.
   const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
     // The tour taken again sits directly under About, drawn as that row is (plan decision 6).
