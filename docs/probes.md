@@ -3139,6 +3139,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   every page, because the strip's height is measured after each remount. `PROBE_MIN=1`, `PROBE_HEIGHT` (664 for a
   phone browser with its bars showing), `PROBE_ENGINE=webkit` with `PROBE_MOUSE=1`, and `PROBE_DECK_ID` vary it.
   Local servers only; it refuses the production and staging branches and writes only the About row, restored.
+- `pnpm probe:near-combos` proves the near-combos reads (plan `2026-10-22-near-combos-backend.md`) against a real
+  database, READ-ONLY. For every deck of one account (`PROBE_USER_ID`, default the account with the most decks) it
+  prints how many combos `loadNearCombos` finds the deck one piece away from and where the top three's missing pieces
+  are, and checks that each listed combo misses exactly its named piece, that piece is inside the deck's identity, the
+  list runs bucket by bucket (spare, in another deck, priced buy, unpriced buy), the cap holds with `total` covering
+  it, and the switch off reads nothing. `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports; production is
+  refused. On local-dev's headless account, 19 of 20 decks are one piece from a combo.
 - `pnpm probe:arrivals-banner` presses the upcoming-precons banner on Home (plan `2026-10-14-upcoming-precons.md`, PR 3)
   at 390x844 and 1300x900: several arrivals draw the count heading, one line each (soonest first), one link and one ✕
   (44 at 390, 32 at 1300), the link on the heading line at 1300 and last at 390; one arrival draws a sentence and its
