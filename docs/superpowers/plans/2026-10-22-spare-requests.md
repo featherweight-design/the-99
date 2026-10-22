@@ -20,7 +20,9 @@ the orchestrator on 2026-10-22. Starting point: `2026-10-22-menu-home.md` (G5 ou
 
 ## Switch
 
-`SPARE_REQUESTS_ENABLED`, feature, needs `SOCIAL_FRIENDS_ENABLED`. Unset in production until the line closes.
+`SPARE_REQUESTS_ENABLED`, feature, needs `SOCIAL_FRIENDS_ENABLED`. Unset in production until the line closes. It stays unset on STAGING as well, and
+takes no override, until PR 3 ships: after PR 2 the Friends badge counts asks waiting on the reader and a `/friends`
+visit marks answers seen, and before PR 3 no surface answers an ask or shows an answer.
 
 ## PRs
 

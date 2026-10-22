@@ -187,8 +187,10 @@ export async function loadMyAsks(askerId: string, env: NodeJS.ProcessEnv, now = 
 
 /**
  * The Friends badge's spare-request half (plan PR 2). Two counts with two clearings, so the shell keeps them apart:
- * - WAITING: the holder's open, unexpired asks from current friends, whatever their feed opt-in (Waiting on you is the
- *   only place to answer one). Cleared by answering, never by a visit.
+ * - WAITING: the holder's open, unexpired asks from current friends, whatever their feed opt-in (Waiting on you will
+ *   be the only place to answer one). Cleared by answering, never by a visit.
+ * Until PR 3 draws the asks and answers on `/friends`, nothing can answer an ask or show an answer, so the switch stays
+ * OFF everywhere, staging included (plan `2026-10-22-spare-requests.md`, "Switch").
  * - UNSEEN ANSWERS: the asker's asks answered after `friends_seen_at` and still shown (`askShown`), to current friends.
  *   Cleared by a `/friends` visit, like a trade match (`markAnswersSeenQuery`).
  */
