@@ -55,7 +55,7 @@ export function CartLine({
   const fact = lineFact(line, newestAsOf);
   // What the spares-only modal draws of the line: its card, art and the line's figure.
   // A cart line carries the oracle name and no printing, so no printed name stands in for it.
-  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact };
+  const spareCard = { oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: line.copies };
   // I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted).
   const gotIt = useCartGotIt();
   const id = line.oracleId;

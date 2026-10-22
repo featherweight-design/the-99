@@ -10,12 +10,16 @@ import { TOUCH_HIT } from "../ui/touch-hit";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
+import type { AskStateLine } from "../../lib/social/spare-requests";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
-/** What the press and the spares-only modal draw of a card: a deck row's card, or a cart line mapped to it. */
-export type SpareCard = Pick<DeckDetailCard, "oracleId" | "name" | "printedName" | "layout" | "imageUri" | "price">;
+/**
+ * What the press and the spares-only modal draw of a card: a deck row's card, or a cart line mapped to it. `quantity`
+ * is the copies the row is short (a Shopping row buys its whole line; a cart line its line count): what an Ask names.
+ */
+export type SpareCard = Pick<DeckDetailCard, "oracleId" | "name" | "printedName" | "layout" | "imageUri" | "price"> & { quantity?: number };
 import { printedFaceName } from "../../lib/collection/browse";
 import { spareCopy } from "../../lib/copy/social";
 import { MAX_SPARES_BATCH } from "../../lib/social/client-rules";
@@ -25,7 +29,11 @@ import { BuyTag } from "../decks/buy-tag";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { ReplacingLine, Thumb } from "../decks/stand-ins-sheet";
-import { FriendSpareSection, SpareGlyph } from "./friend-spares";
+import { askInsteadAction, askSpareAction } from "../../app/friends/spare-actions";
+import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
+import {
+  FriendSpareSection, MarkedSpareGlyph, SpareRequestsContext, cardMark, type AskPress, type RequestsCtx, type SpareMark,
+} from "./friend-spares";
 
 /** The route's own batch cap: a longer list is read in pieces, never cut. One constant, so the two cannot part. */
 export const SPARES_PAGE_BATCH = MAX_SPARES_BATCH;
@@ -50,6 +58,26 @@ export async function fetchSpares(oracleIds: readonly string[]): Promise<FriendS
   return out;
 }
 
+/**
+ * The reader's shown asks for the cards (`GET /api/spare-requests`), read in the same batches. A batch that fails reads
+ * as none: the row draws the plain glyph and the modal its Ask, and the action re-checks every ask on the server.
+ */
+export async function fetchAsks(oracleIds: readonly string[]): Promise<AskStateLine[]> {
+  const out: AskStateLine[] = [];
+  for (let i = 0; i < oracleIds.length; i += SPARES_PAGE_BATCH) {
+    const ids = oracleIds.slice(i, i + SPARES_PAGE_BATCH);
+    try {
+      const res = await fetch(`/api/spare-requests?ids=${ids.map(encodeURIComponent).join(",")}`, { cache: "no-store" });
+      if (!res.ok) continue;
+      const body = (await res.json()) as { asks?: AskStateLine[] } | null;
+      if (Array.isArray(body?.asks)) out.push(...body.asks);
+    } catch {
+      // Absent on failure: the next batch still reads.
+    }
+  }
+  return out;
+}
+
 type Ctx = {
   /** The cards with a spare, and their friends. */
   byCard: ReadonlyMap<string, FriendSpare[]>;
@@ -58,7 +86,20 @@ type Ctx = {
   open: (card: SpareCard) => void;
   close: () => void;
   newestAsOf: Date | null;
+  requests: RequestsCtx | null;
 };
+
+/** The asks after an ask landed: Ask instead's withdrawn ask leaves (a withdrawn ask is never shown), the new one leads. */
+export function afterAsk(asks: readonly AskStateLine[], press: AskPress, id: string, now: Date): AskStateLine[] {
+  const kept = press.fromRequestId ? asks.filter((a) => a.id !== press.fromRequestId) : [...asks];
+  return [
+    {
+      id, oracleId: press.oracleId, holder: { publicId: press.friend.publicId, displayName: press.friend.displayName },
+      state: "open", daysLeft: SPARE_REQUEST_DAYS, createdAt: now.toISOString(), answeredAt: null,
+    },
+    ...kept,
+  ];
+}
 
 const SparesContext = createContext<Ctx | null>(null);
 
@@ -71,11 +112,18 @@ export function FriendSparesProvider({
   oracleIds,
   newestAsOf,
   hostSheet = true,
+  requests = false,
+  deckId = null,
   children,
 }: {
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
   oracleIds: readonly string[];
   newestAsOf: Date | null;
+  /** `SPARE_REQUESTS_ENABLED` for the reader, decided by the page: the asks are read beside the spares, and the modal
+   *  offers Ask. Off, nothing reads them and the modal is as shipped. */
+  requests?: boolean;
+  /** The deck an Ask is for: the deck page's Shopping names it, the cart sends null (G2). */
+  deckId?: string | null;
   /** Draw the spares-only modal here. False where it must sit inside a card-detail provider mounted lower (the cart),
    *  which then renders `SparesSheetHost` itself. */
   hostSheet?: boolean;
@@ -84,6 +132,7 @@ export function FriendSparesProvider({
   const key = useMemo(() => [...new Set(oracleIds)].sort().join(","), [oracleIds]);
   const [spares, setSpares] = useState<FriendSpare[]>([]);
   const [opened, setOpened] = useState<SpareCard | null>(null);
+  const [asks, setAsks] = useState<AskStateLine[]>([]);
   useEffect(() => {
     if (!key) return;
     let live = true;
@@ -94,18 +143,56 @@ export function FriendSparesProvider({
       live = false;
     };
   }, [key]);
+  // The asks land after the page, as the spares do. A press that answers before a read lands wins: the read keeps
+  // only the cards no press has moved since it was sent.
+  const pressed = useRef(new Set<string>());
+  useEffect(() => {
+    if (!requests || !key) return;
+    let live = true;
+    const sent = new Set<string>();
+    pressed.current = sent;
+    void fetchAsks(key.split(",")).then((rows) => {
+      if (!live) return;
+      setAsks((now) => [...now.filter((a) => sent.has(a.oracleId)), ...rows.filter((a) => !sent.has(a.oracleId))]);
+    });
+    return () => {
+      live = false;
+    };
+  }, [key, requests]);
+  const ask = useCallback(
+    async (press: AskPress): Promise<boolean> => {
+      const input = { friendPublicId: press.friend.publicId, oracleId: press.oracleId, copies: press.copies, deckId };
+      let out: Awaited<ReturnType<typeof askSpareAction>>;
+      try {
+        out = press.fromRequestId ? await askInsteadAction({ ...input, fromRequestId: press.fromRequestId }) : await askSpareAction(input);
+      } catch {
+        return false;
+      }
+      if (!out.ok) return false;
+      pressed.current.add(press.oracleId);
+      const now = new Date();
+      setAsks((prev) => [...afterAsk(prev.filter((a) => a.oracleId === press.oracleId), press, out.id, now), ...prev.filter((a) => a.oracleId !== press.oracleId)]);
+      return true;
+    },
+    [deckId],
+  );
   const value = useMemo<Ctx>(() => {
     // Only the cards asked for NOW: a card that left the list (bought, cut, proxied) drops its spare at once, the
     // empty list included, rather than when a later read lands.
     const asked = new Set(key ? key.split(",") : []);
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) if (asked.has(s.oracleId)) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, opened, open: setOpened, close: () => setOpened(null), newestAsOf };
-  }, [spares, opened, key, newestAsOf]);
+    const asksByCard = new Map<string, AskStateLine[]>();
+    for (const a of asks) if (asked.has(a.oracleId)) asksByCard.set(a.oracleId, [...(asksByCard.get(a.oracleId) ?? []), a]);
+    const req: RequestsCtx | null = requests ? { asksFor: (id) => asksByCard.get(id) ?? [], ask } : null;
+    return { byCard, opened, open: setOpened, close: () => setOpened(null), newestAsOf, requests: req };
+  }, [spares, asks, opened, key, newestAsOf, requests, ask]);
   return (
     <SparesContext.Provider value={value}>
-      {children}
-      {hostSheet ? <SparesSheetHost /> : null}
+      <SpareRequestsContext.Provider value={value.requests}>
+        {children}
+        {hostSheet ? <SparesSheetHost /> : null}
+      </SpareRequestsContext.Provider>
     </SparesContext.Provider>
   );
 }
@@ -135,7 +222,7 @@ export function StaticSparesProvider({
   const value = useMemo<Ctx>(() => {
     const byCard = new Map<string, FriendSpare[]>();
     for (const s of spares) byCard.set(s.oracleId, [...(byCard.get(s.oracleId) ?? []), s]);
-    return { byCard, opened: null, open: () => {}, close: () => {}, newestAsOf };
+    return { byCard, opened: null, open: () => {}, close: () => {}, newestAsOf, requests: null };
   }, [spares, newestAsOf]);
   return <SparesContext.Provider value={value}>{children}</SparesContext.Provider>;
 }
@@ -185,7 +272,10 @@ export function OtherWaysPress({
   const describedBy = standInMoment["aria-describedby"] ?? spareMoment["aria-describedby"];
   if (!swap && !spare) return null;
   const name = printedFaceName(card);
-  const label = swap && spare ? spareCopy.pressBothAria(name, limitFigure) : swap ? standInAria : spareCopy.markerAria(name);
+  // The spare glyph's mark (call 4): requested or accepted while the reader's ask says so, plain otherwise.
+  const mark: SpareMark = spare && ctx?.requests ? cardMark(ctx.requests.asksFor(card.oracleId)) : null;
+  const base = swap && spare ? spareCopy.pressBothAria(name, limitFigure) : swap ? standInAria : spareCopy.markerAria(name);
+  const label = mark ? spareCopy.request.markAria(base, mark) : base;
   const on = tools && openStandIns ? tools.standIns?.oracleId === card.oracleId : ctx?.opened?.oracleId === card.oracleId;
   return (
     <button
@@ -208,27 +298,48 @@ export function OtherWaysPress({
       >
         {swap ? <span data-testid="standin-glyph" className={`font-mono leading-none text-[color:var(--warning)] ${oneLine ? "text-[14px]" : "text-[16px] md:text-[14px]"}`}>⇄</span> : null}
         {spare ? (
-          <span className="flex text-[color:var(--fact)]" data-testid="spare-glyph">
-            <SpareGlyph size={16} />
-          </span>
+          <MarkedSpareGlyph mark={mark} size={16} testId="spare-glyph" />
         ) : null}
       </span>
     </button>
   );
 }
 
-/** The key's item, drawn only while a spare is (S2: none in S1): among `among` when given, the cards a view draws. */
+/**
+ * The key's item, drawn only while a spare is (S2: none in S1): among `among` when given, the cards a view draws. Then
+ * `requested` and `accepted`, each only while a row draws that mark (E1: after the spare item, in the shipped order).
+ */
 export function SpareKeyItem({ className, among }: { className: string; among?: ReadonlySet<string> }) {
   const ctx = usePageSpares();
   if (!ctx || ctx.byCard.size === 0) return null;
-  if (among && ![...among].some((id) => ctx.byCard.has(id))) return null;
+  const drawn = [...ctx.byCard.keys()].filter((id) => !among || among.has(id));
+  if (drawn.length === 0) return null;
+  const marks = new Set(ctx.requests ? drawn.map((id) => cardMark(ctx.requests!.asksFor(id))) : []);
   return (
-    <span className={className} data-testid="spare-key">
-      <span className="flex w-[18px] justify-center text-[color:var(--fact)]">
-        <SpareGlyph size={16} />
+    <>
+      <span className={className} data-testid="spare-key">
+        <span className="flex w-[18px] justify-center">
+          <MarkedSpareGlyph mark={null} size={16} />
+        </span>
+        {spareCopy.key}
       </span>
-      {spareCopy.key}
-    </span>
+      {marks.has("requested") ? (
+        <span className={className} data-testid="spare-key-requested">
+          <span className="flex w-[18px] justify-center">
+            <MarkedSpareGlyph mark="requested" size={16} />
+          </span>
+          {spareCopy.request.keyRequested}
+        </span>
+      ) : null}
+      {marks.has("accepted") ? (
+        <span className={className} data-testid="spare-key-accepted">
+          <span className="flex w-[18px] justify-center">
+            <MarkedSpareGlyph mark="accepted" size={16} />
+          </span>
+          {spareCopy.request.keyAccepted}
+        </span>
+      ) : null}
+    </>
   );
 }
 
@@ -294,7 +405,7 @@ export function SparesSheetBody({
           <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
         </ReplacingLine>
       </section>
-      <FriendSpareSection spares={spares} />
+      <FriendSpareSection spares={spares} card={card} />
     </div>
   );
 }

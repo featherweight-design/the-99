@@ -120,7 +120,7 @@ export function CartDeckGroup({
                 {/* S5: the spare glyph before the tag, as the By card line draws it. */}
                 <span className="mt-[3px] flex flex-none items-center gap-[8px]">
                   <OtherWaysPress
-                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact }}
+                    card={{ oracleId: line.oracleId, name: line.name, printedName: null, layout: line.layout ?? null, imageUri: line.imageUri ?? null, price: fact, quantity: own.quantity }}
                     standIn={false}
                     standInAria=""
                     limitFigure=""

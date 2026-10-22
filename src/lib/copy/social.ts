@@ -328,4 +328,39 @@ export const spareCopy = {
   pressBothAria: (card: string, limit: string) => `Cheaper stand-ins and friends with a spare of ${card}, over your ${limit} limit`,
   /** The spares-only modal's Replacing box: no deck line, since it can open where no one deck is meant (the cart). */
   replacing: "replacing",
+  /**
+   * Spare requests in the same modal and on the same row (plan `2026-10-22-spare-requests.md` PR 3b; handoff
+   * `design_handoff_the99_spare_requests`, `Shopping` and `Asker-States`, calls 4 and 6). Placeholders for
+   * `/copy-review`. Marks and statuses say Requested, Accepted, Declined; never Rejected.
+   */
+  request: {
+    ask: "Ask",
+    askInstead: "Ask instead",
+    askAgain: "Ask again",
+    requested: "Requested",
+    accepted: "Accepted",
+    declined: "Declined",
+    /** The friend row's one sub line: the spare count, then the pods (or the ask's days, or its expiry). */
+    count: (n: number) => spares(n),
+    pods: (pods: readonly string[]) => pods.join(", "),
+    daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
+    noAnswer: (days: number) => `no answer in ${days} days`,
+    askAria: (friend: string, card: string) => `Ask ${friend} for ${card}`,
+    askInsteadAria: (friend: string, card: string) => `Ask ${friend} for ${card} instead`,
+    askAgainAria: (friend: string, card: string) => `Ask ${friend} for ${card} again`,
+    /** The ⓘ beside the section head: the old foot line, cut to one tooltip (call 6). */
+    tipLabel: "What a spare is",
+    tip: "Copies none of their decks use. Ask, and they answer yes or no. The trade (or the goat) is between you.",
+    /** The one state sentence under the rows, for the state the rows are in. */
+    oneAtATime: (from: string, to: string) => `One request at a time. Ask instead moves it from ${from} to ${to}.`,
+    whenYours: "When it’s yours, press buy on the row.",
+    nobodyElse: "Nobody else you know has a spare.",
+    /** The shared toast on a failed Ask or Ask instead (G5); the row is left as it was. */
+    failed: "We couldn’t send that. Try again.",
+    /** The Shopping key's items, after `friend has a spare`, each only while a row draws it (call 4). */
+    keyRequested: "requested",
+    keyAccepted: "accepted",
+    /** The row press's name, with the glyph's mark. */
+    markAria: (base: string, mark: "requested" | "accepted") => `${base}, ${mark}`,
+  },
 } as const;
