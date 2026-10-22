@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { pushAvailable, pushEnabled } from "./flag";
+import { pushAvailable } from "./available";
+import { pushEnabled } from "./flag";
 import { generateKeyPairSync } from "node:crypto";
 
 const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
