@@ -10,7 +10,7 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { deckGameOpponents, feedItems, friendInvites, friendLinks, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
+import { deckGameOpponents, feedItems, friendInvites, friendLinks, podMembers, podSpareShares, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, spareRequests } from "../../db/schema";
 import { leavePodIn } from "./pods";
 import { purgeRuleZeroIn } from "./rule-zero";
 
@@ -30,6 +30,8 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   // The news feed's stored items (menu and Home, G1): the account's own, and every other reader's item that names it
   // as the friend (a trade match). Here rather than in `PURGE_ORDER` because the second half reaches other accounts.
   feed_items: ["user_id", "friend_user_id"],
+  // Spare requests (G5), both sides: the account's asks and the asks made of it. Here for the same reason.
+  spare_requests: ["asker_user_id", "holder_user_id"],
 };
 
 /**
@@ -123,5 +125,8 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // The feed's items, both sides: no reader keeps a trade match naming a deleted account (the read would drop it, the
   // friendship being gone, but the row would still hold the id). No stamp moves: `feed_items` carries no trigger.
   await tx.delete(feedItems).where(or(eq(feedItems.userId, userId), eq(feedItems.friendUserId, userId)));
+  // Spare requests, both sides. An ask racing this held both friendship rows for share, so it either committed before
+  // the friendship rows were locked above (and is deleted here) or waited and found the friendship gone.
+  await tx.delete(spareRequests).where(or(eq(spareRequests.askerUserId, userId), eq(spareRequests.holderUserId, userId)));
   return { counts: out, friendIds };
 }

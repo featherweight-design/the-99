@@ -79,3 +79,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   Crypto so the edge can mint it), and `claimInvite` binds that PRESENTED secret when it is 43 base64url characters
   (else it mints one, the cookies-blocked fallback). A first Send code whose response is lost therefore leaves the
   cookie behind: the retry is a `wait`, not an ended claim holding its invite for 7 days.
+- **Spare requests** (G5; plan `2026-10-22-spare-requests.md`; workshop `boards/me-page-workshop-2026-10-21.md` rounds
+  4, 5 and 8), behind `SPARE_REQUESTS_ENABLED` (needs `SOCIAL_FRIENDS_ENABLED`; unset in production, dark until the UI
+  PRs). A player asks a friend for one spare card with a deliberate press; the friend answers Yes or No and the asker is
+  told; a Yes changes nothing else in the app. `spare_requests` is read and written only by
+  `src/lib/social/spare-requests.ts` (`check:social-reads`); the rules are pure in `spare-request-rules.ts`.
+  EXPIRY IS DERIVED: an open ask older than `SPARE_REQUEST_DAYS` (14) reads as expired everywhere and cannot be
+  answered; no job sweeps. ONE open ask per asker and card across every friend, held by a partial unique index; the
+  asker's next ask for the card first writes `expired` over a stale open row so the index frees, and a concurrent second
+  ask is answered `asked`. After a No, that friend is not asked for that card again for `DECLINE_COOLDOWN_DAYS` (14) and
+  the next friend may be asked at once (Hugh, 2026-10-22). An ask needs the card to be a spare the friend OFFERS the
+  asker (`loadFriendSpares`: the pod grant, `spare_min`, `spare_keep`), read before the write. The write locks both
+  friendship rows FOR SHARE in (user_id, friend_user_id) order, the purge's order, and writes the holder's
+  `spare-request` feed item (`recordFeedItem`, keyed on the request id; nothing for a holder with that kind off) in
+  the same transaction. An answer is one conditional UPDATE on the holder's own open, unexpired ask while the
+  friendship row stands. Every read joins the live friendship and names the other side by `public_id`. The purge
+  deletes both sides (`SOCIAL_PURGED`). Proof: `pnpm probe:spare-requests`.

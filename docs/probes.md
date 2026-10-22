@@ -2611,6 +2611,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   repeat or a cold instance's full read, and the feed names the friend by public id. Same target rules as
   `probe:feed-store` (`FEED_PROBE_URL`, `FEED_PROBE_BRANCH`, protected branches refused by id); two per-run accounts purged
   in a finally. The price job it runs reads every reader on the branch whose price-drop kind is on.
+- `pnpm probe:spare-requests` proves spare requests (G5, `src/lib/social/spare-requests.ts`) against a real schema and
+  the real catalog: an ask is refused with the switch or friends off, for a stranger and for a card the friend holds no
+  spare of, writing nothing; a landed ask is one open row and tells a holder whose kind is on (keyed on the request, naming
+  the asker), and not one whose kind is off; a second ask for the card, to the same friend or another, is `asked`; only
+  the holder answers, once; after a No that friend is `declined` and the next is asked at once; an ask fifteen days old
+  leaves the holder's list, cannot be answered, reads expired on the asker's list and frees the card (the stale row
+  written `expired`); two asks at once let one through; an unfriend empties both lists and refuses every answer; the
+  asker's purge deletes every ask on either side and the feed items naming them. It WRITES: `SPARE_PROBE_URL` and
+  `SPARE_PROBE_BRANCH` are never defaulted, the branch must match `neon.branch_id`, and staging, production and
+  local-dev are refused by id. Run it on a scratch branch off local-dev. Three per-run accounts, purged in a finally.
 - `pnpm probe:invites` proves the sender's invite writes (plan `2026-10-16-invites.md` PR 2) against a real database,
   with Clerk STUBBED (no real invitation): every count, the invariant after every write, a press made while another
   write holds the sender's lock waiting and then finding none left (mutation-checked: drop the lock and it over-holds),

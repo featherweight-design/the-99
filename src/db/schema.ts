@@ -3657,6 +3657,34 @@ export const feedItems = pgTable("feed_items", {
 ]);
 
 /**
+ * A spare request (G5, `boards/me-page-workshop-2026-10-21.md` rounds 4 and 8): the asker pressed Ask on a friend's
+ * spare of one card, and the holder answers Yes or No. A Yes changes nothing else in the app: the handover happens
+ * outside it. Written and read only from `src/lib/social/spare-requests.ts`, which re-joins the live friendship on
+ * every read and write (`check:social-reads`).
+ *
+ * EXPIRY IS DERIVED: an `open` row older than `SPARE_REQUEST_DAYS` reads as expired everywhere (`requestState`), so no
+ * job sweeps. The asker's next ask for the card first writes `expired` over such a row (a real state change), which
+ * frees the partial unique index: at most ONE open ask per asker and card, across every friend (round 8, Q6). No
+ * stamp trigger: nothing here is in a cached payload. Purged on both sides with the account (`purgeSocialIn`).
+ */
+export const spareRequests = pgTable("spare_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  askerUserId: text("asker_user_id").notNull(),
+  holderUserId: text("holder_user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  answeredAt: timestamp("answered_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("spare_requests_one_open").on(t.askerUserId, t.oracleId).where(sql`${t.status} = 'open'`),
+  index("spare_requests_holder_idx").on(t.holderUserId, t.status),
+  index("spare_requests_asker_idx").on(t.askerUserId, t.createdAt),
+  check("spare_requests_status_check", sql`${t.status} in ('open', 'yes', 'no', 'expired')`),
+  check("spare_requests_answered_check", sql`(${t.status} in ('yes', 'no')) = (${t.answeredAt} is not null)`),
+  check("spare_requests_not_self_check", sql`${t.askerUserId} <> ${t.holderUserId}`),
+]);
+
+/**
  * Request counts for the rate rules (`src/lib/rate/`, payments scope PR S): one row per player,
  * bucket and window. Written by `recordHit` alone, which also deletes the player's earlier windows
  * for the bucket, so a player holds at most a few rows. Observe-only for now: nothing reads the

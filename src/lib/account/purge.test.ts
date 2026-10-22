@@ -13,7 +13,7 @@ const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = { ...SOCIAL
 const schema = readFileSync("src/db/schema.ts", "utf8");
 
 /** Columns that name an account. */
-const ACCOUNT_COLUMNS = ["clerk_id", "user_id", "owner_user_id", "inviter_user_id", "invitee_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by", "set_by"];
+const ACCOUNT_COLUMNS = ["clerk_id", "user_id", "owner_user_id", "inviter_user_id", "invitee_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by", "set_by", "asker_user_id", "holder_user_id"];
 
 /**
  * Account columns the purge deliberately leaves, by `table.column`, and why. Each but the tombstone names an

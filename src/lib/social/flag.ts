@@ -35,3 +35,12 @@ export function ruleZeroEnabled(env: NodeJS.ProcessEnv): boolean {
 export function socialInvitesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SOCIAL_INVITES_ENABLED === "true" && socialFriendsEnabled(env);
 }
+
+/**
+ * `SPARE_REQUESTS_ENABLED`: asking a friend for a spare, and their Yes or No (G5, plan
+ * `2026-10-22-spare-requests.md`). Unset on production until the line closes. It requires `SOCIAL_FRIENDS_ENABLED`,
+ * checked here so an override of this one never raises its parent. Dark until its UI PRs: the writers refuse while off.
+ */
+export function spareRequestsEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.SPARE_REQUESTS_ENABLED === "true" && socialFriendsEnabled(env);
+}
