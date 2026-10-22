@@ -91,7 +91,7 @@ Evidence for every row is in the appendix's **Who/when** and **Duplicates** line
 4. Partner decks: "0/99" (the guided banner), "N of 99" (the ran-out line) and "over the ninety-nine" all say 99 where the body is 98.
 5. The unresolved banner says "either tab below", but there are up to five tabs now (deck-import.ts:387-393).
 6. Copy outside `src/lib/copy`: the guided banner's text (hardcoded) and the mix source line (`src/lib/decks/mix.ts`).
-7. Em dashes open all four Why these numbers? lines.
+7. Em dashes open all four Why these numbers? lines. This is deliberate: the rationale is quoted copy and must not be "fixed" (decks-builder.ts:110-114). It is listed only because it is a sixth treatment Design should know about.
 8. Dead copy: `topOffCopy.ledger.passRecountedAllKept` (top-off.ts:436).
 9. Placement: A1 sits above the header, away from the row that failed. A17 sits below the mix strip, unlike every other status message.
 10. On first run, three "start here" messages stack: the top-off strip, the guided banner and the empty state.
@@ -176,7 +176,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Actions:** Proposed cuts → switches to Analysis and opens the hub's cuts tool (or the panel with the hub off).
 - **Treatment:** 11.5px, `--fg-body`, lead bold; delta in the status token (`STATUS_TOKEN[status]`); button mono `--accent-text`, `--accent-dim` underline.
 - **Dismissible:** no.
-- **Co-occurrence:** status pill reads `Over`; moment M3 anchors to the button (A16).
+- **Co-occurrence:** status pill reads `Over`; moment M3 anchors to the button (A18).
 - **Duplicates:** the status pill and the `+N` delta; the Analysis hub's Proposed cuts tile.
 - **Origin:** `design/design_handoff_the99_amendments` and `design/design_handoff_the99_tuning_hub` (both quote "over the ninety-nine").
 - **Count:** decks where `sum(deck_cards.quantity) > (99, or 98 when decks.partner_oracle_id is not null)`.
@@ -217,7 +217,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Actions:** Show these N toggles a mark on that pass's rows in the list (`onMarkChange`); Undo these N runs `undoFillPass` (top-offs only; the seed names Clear all auto instead) and announces.
 - **Treatment:** card 9px radius, `--surface-sunken`, 1px `--border`, 3px `--accent` left rule, `ProvenanceDisc` ⓘ, header `--fg-body`, meta `--fg-locked` (desktop only). Newest line `--elevated-hover` with `--accent-shadow` border and `--accent-text` label; others `--surface`/`--border`/`--fg-faint`. Legacy line dashed `--border-strong`. Phone stacks each line in three rows; desktop flattens with `md:contents`.
 - **Dismissible:** no; leaves when the last auto card does (kept or removed).
-- **Co-occurrence / order:** after the bands, before the top-off strip. Exclusive with A9 (needs zero cards) and A14 (firstRun means zero cards).
+- **Co-occurrence / order:** after the bands, before the top-off strip. Exclusive with A9 (needs zero cards) and A17 (its gate is `!firstRun`, and first run means zero cards).
 - **Who/when:** every deck the fill or a top-off built. Next: mark, undo, or keep in the toolbar.
 - **Duplicates:** the toolbar's Clear all auto / Keep all and "N cards are yours now" (`ClearAutoButton`, clear-auto.tsx:66); Shopping's intro "N cards we reached past your collection for" (recommendations.ts:235); the per-row mark "from the seed" (`ledger.markedRow`).
 - **Origin:** `design/design_handoff_the99_top_off` (ledger strings in `top-off · copy strings.ts` and `The 99 - Top Off Addendum.dc.html`); plan `docs/superpowers/plans/2026-09-08-top-off-the-last-31.md`.
@@ -231,7 +231,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Actions:** Choose the last N opens the inline `TopOffList` (pre-ticks via `chooseBulkTicks`) with its own commit bar, which hides the quick-add dock on phone.
 - **Treatment:** 10px card, `--surface-rail`, 1px `--border-strong`, no left rule; eyebrow mono uppercase `--accent-text`; caption `--fg-faint`; button outlined `--accent`; note `--fg-locked`. Exhausted plate: `--surface-sunken`, 3px `--accent` left rule, a hand-drawn "i" disc.
 - **Dismissible:** no.
-- **Co-occurrence / order:** after the ledger. Moment M1 anchors to the door (A16).
+- **Co-occurrence / order:** after the ledger. Moment M1 anchors to the door (A18).
 - **Who/when:** any deck short of its body size. Next: open the list, tick, commit.
 - **Duplicates:** the mix strip's `consider →` cells and the Consider tab both offer cards for short roles; A9's retry fills the same slots.
 - **Origin:** `design/design_handoff_the99_top_off`, `design/design_handoff_the99_synergy_discovery`.
@@ -309,7 +309,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Dismissible:** no (commit or discard).
 - **Co-occurrence / order:** after the arrival bands, before A15.
 - **Who/when:** any committed deck. The card when the list differs from the newest version; the quiet strip otherwise.
-- **Duplicates:** the review page `/decks/[id]/changes`; the Versions tab; inside Your deck the toolbar note (B1), the list caption and group notes (B4); the mix strip's `was N` and "· reading pending changes" (A15).
+- **Duplicates:** the review page `/decks/[id]/changes`; the Versions tab; inside Your deck the toolbar note (B1), the list caption and group notes (B4); the mix strip's `was N` and "· reading pending changes" (A16).
 - **Origin:** `design/design_handoff_the99_deck_versioning` (Surface 1, #389), `design/design_handoff_the99_deck_statuses_pending`, `design/design_handoff_the99_change_commander` (§4); plan `2026-09-09-deck-versioning.md`.
 - **Count:** quiet strip or card: decks with ≥ 1 `deck_versions` row. Card: those whose `deck_cards` (oracle_id, quantity) differ from the newest version's `deck_version_cards`, or whose `decks.commander_oracle_id`/`partner_oracle_id` differ from the version's (`readDraft`, draft-state.ts). There is no "draft" status column.
 
@@ -455,7 +455,7 @@ Realistic maximal stacks: a committed deck mid-edit with spoken-for cards, a top
 3. **The mix strip's draft note and source line are desktop-only** too (role-counter-strip.tsx:73-92); the phone never learns whether the targets are EDHREC averages or a default, except behind Why these numbers?.
 4. **Partner decks read "99" in three strings**: `GuidedBanner`'s hardcoded "0/99" (guided-banner.tsx:94), the exhausted plate "N of 99" (synergy-discovery.ts:192), and the over line "over the ninety-nine" (decks-builder.ts:454). The body size for a pair is 98.
 5. **`GuidedBanner`'s copy is hardcoded in the component** rather than in `src/lib/copy` ("Step 3 of 3", "Build your first deck", "Search cards or pick from your suggestions below."), as is `mixSourceLine` in `src/lib/decks/mix.ts:169-171`.
-6. **Em dashes in shipped copy**: `addPanelCopy.strip.rationaleBodies` all begin "— " (decks-builder.ts:116-120); the em-dash sweep memory says rule 4 applies to this repo.
+6. **Em dashes in shipped copy**: `addPanelCopy.strip.rationaleBodies` all begin "— " (decks-builder.ts:116-120). Deliberate, not a defect: the code exempts them as quoted rationale copy (decks-builder.ts:110-114).
 7. **Stale count in the unresolved banner**: "not counted in the mix or in either tab below" (deck-import.ts:387-393) predates Games, Versions and Analysis; there are up to five tabs.
 8. **Shared dismissal key**: the import arrival (A12) and the precon arrival (A10) share `arrivalDismissKey(deckId)` in localStorage, so dismissing one silences the other on that deck permanently. The update strip (A13) uses component state instead.
 9. **Dead copy**: `topOffCopy.ledger.passRecountedAllKept` (top-off.ts:436) has no caller under `src/`.
