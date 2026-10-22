@@ -68,7 +68,7 @@ type Candidate = { user_id: string; oracle_id: string; at_add_cents: number; not
  * One run of the writer. `base` is the environment the job runs under (the script passes `process.env`); each
  * reader's switches are resolved on top of it.
  */
-export async function noticePriceDrops(base: NodeJS.ProcessEnv, now: Date = new Date()): Promise<PriceDropRun> {
+export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Date = () => new Date()): Promise<PriceDropRun> {
   const run: PriceDropRun = { backfilled: 0, candidates: 0, switchedOff: 0, noticed: 0, failed: 0 };
 
   const missing = (await db.execute<{ oracle_id: string }>(baselineMissingQuery())).rows.map((r) => r.oracle_id);
@@ -98,6 +98,9 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, now: Date = new 
   const read = await loadPrices([...new Set(live.map((r) => r.oracle_id))]);
   for (const r of live) {
     const nowCents = cheapestNow(read, r.oracle_id);
+    // The moment of THIS item, read when it is recorded and used for its cooldown, week, timestamp and stamp: a job
+    // that runs for a while must not date a late reader's item before a Home visit or a re-enable that came since.
+    const now = clock();
     // Cheap first, off the candidate read; the transaction decides again on what is true at the write.
     if (!priceDropped({ atAddCents: r.at_add_cents, nowCents, noticedAt: r.noticed_at === null ? null : new Date(r.noticed_at), now })) continue;
     try {

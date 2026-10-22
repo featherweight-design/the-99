@@ -109,7 +109,7 @@ async function main() {
     // A line older than the column: no baseline.
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${U}, ${P2}, 1)`);
     const now = new Date();
-    let r = await noticePriceDrops(ENV, now);
+    let r = await noticePriceDrops(ENV, () => now);
     console.log(`  run 1: ${JSON.stringify(r)}`);
     let drops = await items(U, "price-drop");
     check("a fallen price is told once", drops.length === 1 && drops[0].oracle_id === P1, JSON.stringify(drops));
@@ -120,12 +120,12 @@ async function main() {
     check("a line with no baseline is backfilled with today's cheapest", (await line(U, P2))?.at_add === today(P2), String((await line(U, P2))?.at_add));
     check("... and is not told on the run that filled it", !drops.some((d) => d.oracle_id === P2));
 
-    r = await noticePriceDrops(ENV, new Date(now.getTime() + 60_000));
+    r = await noticePriceDrops(ENV, () => new Date(now.getTime() + 60_000));
     check("a second run the same week tells nothing", (await items(U, "price-drop")).length === 1, JSON.stringify(r));
     // Eight days on, still fallen: the once-a-week rule lets it through again, under next week's key.
     await db.execute(sql`update wishlist_items set price_noticed_at = price_noticed_at - interval '8 days' where user_id = ${U} and oracle_id = ${P1}`);
     const nextWeek = new Date(now.getTime() + 8 * 86_400_000);
-    await noticePriceDrops(ENV, nextWeek);
+    await noticePriceDrops(ENV, () => nextWeek);
     drops = await items(U, "price-drop");
     check("a week later, still fallen: told again under that week's key", drops.length === 2 && drops[1].dedupe_key === priceDropKey(P1, nextWeek));
 
@@ -135,24 +135,28 @@ async function main() {
     // Inside seven days of the notice but in the NEXT ISO week, so only the cooldown (not the week's key) can stop it.
     let soon = new Date(nextWeek.getTime() + 86_400_000);
     while (priceDropKey(P1, soon) === priceDropKey(P1, nextWeek)) soon = new Date(soon.getTime() + 86_400_000);
-    await noticePriceDrops(ENV, soon);
+    await noticePriceDrops(ENV, () => soon);
     check("a line removed and wanted again inside the week is not told twice", (await items(U, "price-drop")).filter((d) => d.oracle_id === P1).length === 2);
 
     // The kind off: a fallen line is not told and not marked.
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity, price_at_add_cents) values (${U}, ${P3}, 1, ${today(P3) + 500})`);
     await prefs.setFeedKinds(U, ["trade-match", "combo"]);
-    await noticePriceDrops(ENV, now);
+    await noticePriceDrops(ENV, () => now);
     check("price-drop off: a fallen line is not told", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));
     check("... nor marked noticed", (await line(U, P3))?.noticed === null);
     await prefs.setFeedKinds(U, ["price-drop", "trade-match", "combo"]);
-    await noticePriceDrops({ ...ENV, SOCIAL_WISHLIST_ENABLED: "off" }, now);
+    await noticePriceDrops({ ...ENV, SOCIAL_WISHLIST_ENABLED: "off" });
     check("the wishlist switched off for the reader: not told", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));
-    await noticePriceDrops(ENV, now);
+    // An item dated before the kind was last turned on is one the reader would never see: not written, not stamped.
+    await noticePriceDrops(ENV, () => new Date(Date.now() - 3_600_000));
+    check("an item dated before the kind came back on is not written", !(await items(U, "price-drop")).some((d) => d.oracle_id === P3));
+    check("... and does not start the week for the line", (await line(U, P3))?.noticed === null);
+    await noticePriceDrops(ENV);
     check("both on again: told ($5 under)", (await items(U, "price-drop")).some((d) => d.oracle_id === P3));
     // A line the collection now reaches is collected: never told.
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity, price_at_add_cents) values (${U}, ${P4}, 1, ${today(P4) * 3})`);
     await add(U, [P4]);
-    await noticePriceDrops(ENV, now);
+    await noticePriceDrops(ENV);
     check("a line the collection reached is not told", !(await items(U, "price-drop")).some((d) => d.oracle_id === P4));
 
     const loaded = await read.loadFeed(U, ENV, nextWeek);

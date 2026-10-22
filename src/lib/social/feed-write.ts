@@ -64,21 +64,26 @@ function friendHeld(input: FeedItemInput): SQL {
         where wfl.user_id = ${input.userId} and wfl.friend_user_id = ${input.friendUserId} for share)`;
 }
 
-/** The insert, apart so a test can render it: one row, only while the kind is on for the reader, nothing on a repeat. */
+/**
+ * The insert, apart so a test can render it: one row, only while the kind is on for the reader AND the item is newer
+ * than the kind's `enabledAt` (the reader shows only those, so a hidden item must not be written), nothing on a repeat.
+ */
 export function recordFeedItemQuery(input: FeedItemInput): SQL {
   const now = (input.now ?? new Date()).toISOString();
   return sql`insert into ${feedItems} (user_id, kind, dedupe_key, oracle_id, variant_id, friend_user_id, data, created_at)
     select ${input.userId}, ${input.kind}, ${input.dedupeKey}, ${input.oracleId ?? null}::uuid, ${input.variantId ?? null}::text,
       ${input.friendUserId ?? null}::text, ${JSON.stringify(input.data ?? {})}::jsonb, ${now}::timestamptz
     from ${userPrefs} wup
-    where wup.user_id = ${input.userId} and (wup.feed_kinds ->> ${input.kind}) is not null${friendHeld(input)}
+    where wup.user_id = ${input.userId} and (wup.feed_kinds ->> ${input.kind}) is not null
+      and ${now}::timestamptz > (wup.feed_kinds ->> ${input.kind})::timestamptz${friendHeld(input)}
     on conflict (user_id, kind, dedupe_key) do nothing
     returning id`;
 }
 
 /**
  * Records one event for one reader through `tx` (a transaction, or `db`). Returns whether a row was written: false
- * for a kind that is off, a reader with no prefs row (every kind off) and a repeat. Throws on a malformed input.
+ * for a kind that is off, an item not newer than the kind's `enabledAt`, a reader with no prefs row (every kind off)
+ * and a repeat. Throws on a malformed input.
  */
 export async function recordFeedItem(tx: Executor, input: FeedItemInput): Promise<boolean> {
   const problem = feedItemProblem(input);
