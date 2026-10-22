@@ -67,8 +67,8 @@ def main():
          "<code>loadFriendDecks</code> and G1, so both agree in one place. A failed write is a toast: “We couldn’t change that. Your deck is unchanged.”"),
         ("G3 · The tile needs an id", "<code>FriendDeck</code> gains the deck’s id (the tab’s comment says nothing carries one today), to build the link. "
          "The tile’s art keeps <code>commanderArtCropUri</code>."),
-        ("G4 · Other places a deck name reaches a friend", "Tonight’s table and R3’s logged games name the deck a friend played against. Recommended: they keep "
-         "it, since it was shown at the table. <b>Hugh to confirm</b>: the ruling says “entirely”."),
+        ("G4 · Other places a deck name reaches a friend", "Tonight’s table and R3’s logged games name the deck a friend played against. <b>Ruled by Hugh (2026-10-22): they keep it</b>, "
+         "since the player chose to use that deck. Hiding never rewrites a table or a logged game."),
         ("G5 · The Jaws image", "Engineering checks its source. Whatever it finds, a tile with no art crop draws the commander gradient (as the /decks tile "
          "does), never the full card image, which is what puts “LEGENDARY CREAT…” in the band."),
         ("G6 · Not drawn", "Card view (<code>ReadOnlyCardTile</code>, as the precon). The About entry for this line comes with its own round."),
