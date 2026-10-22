@@ -74,12 +74,12 @@ function OnePassSheet({
   const [error, setError] = useState<string | null>(null);
   const { pending, undo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onError: setError, onDone: onClose });
   const byId = new Map(cards.map((c) => [c.oracleId, c]));
-  // The pass's LIVE cards: those still in the deck, the copies it placed and no more.
+  // The pass's LIVE cards: those still in the deck, the copies it placed and no more. The title, the
+  // lead and the Undo all draw `pass.live`, the server's figure, so a ✕ in flight cannot split them.
   const live = pass.liveCards.flatMap((lc) => {
     const card = byId.get(lc.oracleId);
     return card ? [{ card, copies: Math.min(lc.quantity, card.quantity) }] : [];
   });
-  const count = live.reduce((n, l) => n + l.copies, 0);
   const label = ledger.sheetLabel(pass);
   const n = String(pass.live);
   const rows = live.map((l) => l.card);
@@ -87,11 +87,12 @@ function OnePassSheet({
   return (
     <SheetFrame
       eyebrow={label}
-      count={count}
+      count={pass.live}
       lead={lineSentence(pass, passBuyCount(pass, cards))}
       closeLabel={ledger.sheetCloseAria(label)}
       onClose={onClose}
-      undo={
+      // The seed has no Undo in the ledger either ("Clear all auto" reverses it), so its sheet offers Done only.
+      undo={pass.kind === "seed" ? undefined : (
         <>
           {error && <div className="w-full"><MutationError message={error} /></div>}
           <GhostButton
@@ -103,7 +104,7 @@ function OnePassSheet({
             {pending ? ledger.undoInFlight(n) : pass.live === 1 ? ledger.undoOne : ledger.undo(n)}
           </GhostButton>
         </>
-      }
+      )}
     >
       <Rows deckId={deckId} cards={rows} siblings={rows} newestAsOf={newestAsOf} />
     </SheetFrame>

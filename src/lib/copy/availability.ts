@@ -360,7 +360,7 @@ export const availabilityCopy = {
     // ×17. Nothing here may imply a count the block has not printed.
     detailHardNote:
       "You can still build with it. You’d be taking it out of something.",
-    // Count-aware for the same reason `deckRollup.softLead` is: the number of
+    // Count-aware because the number of
     // brewing claimants is the one figure this sentence turns on, and a single
     // form has to lie about one of the two cases.
     //

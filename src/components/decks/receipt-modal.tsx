@@ -308,7 +308,7 @@ export function ModalPanel({
           className="flex flex-none items-start gap-[10px] py-[10px] pl-[18px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
           style={{ opacity: behind ? 0.55 : undefined }}
         >
-          <div className="flex min-w-0 flex-1 flex-col gap-[3px] py-[10px]">
+          <div className="flex min-w-0 flex-1 flex-col">
             <p className="m-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent-text)]">{eyebrow}</p>
             <h2
               id={titleId}

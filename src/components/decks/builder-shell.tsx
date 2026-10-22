@@ -1000,6 +1000,9 @@ export function BuilderShell({
       overCommittedCard: overCommitted === 1 ? lone : null,
     };
   }, [deck.cards, deck.built, deck.ownedCount, bodySize]);
+  // The other-drafts sheet leaves with its claims: a later refresh that claims again must not
+  // reopen a sheet nobody pressed. Adjusted during render, like the `pass` case above.
+  if (passSheet?.kind === "drafts" && commitments.softClaimed === 0) setPassSheet(null);
 
   // The spent slots the undo rows are drawn from, one receipt per removed card
   // (H29). Decklist state rather than row state, because a removal unmounts

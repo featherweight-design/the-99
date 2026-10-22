@@ -125,7 +125,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
           toggle that unmounted it would re-enable an Undo whose request is still running and drop
           that request's error. `aria-controls` always points at a mounted panel. */}
       {facts.provenance && (
-        <div id={`${ids}-provenance`} hidden={open !== "provenance"} className={panel}>
+        <div id={`${ids}-provenance`} hidden={!open} className={panel}>
           {facts.provenance.panel}
         </div>
       )}
