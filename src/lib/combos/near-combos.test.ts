@@ -169,6 +169,8 @@ describe("rankNearCombos", () => {
     const out = rankNearCombos(list, 20);
     expect(out.combos).toHaveLength(20);
     expect(out.total).toBe(30);
+    // The deck page asks for every row: an infinite cap lists all, so its count and its rows agree.
+    expect(rankNearCombos(list, Number.POSITIVE_INFINITY).combos).toHaveLength(30);
   });
 });
 

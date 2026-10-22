@@ -229,9 +229,9 @@ export default async function DeckBuilderPage({
   // cached: where each missing piece is moves with availability and prices. Empty while
   // `NEAR_COMBOS_ENABLED` is off; a read that fails answers null, and the page draws no segment.
   const nearCombosRead = early(
-    // The sheet lists every combo its count names: the cap is set far past staging's most (54 two-card
-    // near combos on one deck), so the segment's count and the sheet's rows agree.
-    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, env, maxPieces: 2, cap: 200 })).catch(() => null),
+    // Uncapped: the sheet lists every combo its count names, so the segment's count and the sheet's
+    // rows always agree. Two-card near combos run to 54 on staging's busiest deck, a small payload.
+    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, env, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
     // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and

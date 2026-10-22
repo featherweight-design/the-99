@@ -148,7 +148,7 @@ function ComboRow({ combo, commanderOracleIds }: { combo: NearCombo; commanderOr
           ))}
         </span>
         <span className="mt-[2px] flex flex-wrap items-center gap-[8px] font-mono text-[10.5px] text-[color:var(--fg-body)] lg:mt-0 lg:flex-none lg:flex-nowrap">
-          <span className="inline-flex items-center gap-[7px] lg:w-[190px]" data-where-line>
+          <span className="inline-flex min-w-0 max-w-full items-center gap-[7px] lg:w-[190px]" data-where-line>
             <Where combo={combo} />
           </span>
           {combo.produces[0] ? (
@@ -191,13 +191,15 @@ function Where({ combo }: { combo: NearCombo }) {
       <>
         <Dot owned />
         {deck ? (
-          <span>
+          // Shrinkable, and a long deck name (up to 120 characters) wraps inside the column rather
+          // than painting over the next one; the +N stays after the name.
+          <span className="min-w-0 [overflow-wrap:anywhere]">
             {copy.where.inDeck}{" "}
             {/* `.dlk`: card details' In your decks link, its hit reaching 44px tall past the 14px line. */}
             <Link
               href={`/decks/${deck.id}`}
               aria-label={copy.where.deckLinkAria(deck.name)}
-              className="inline-block -my-[15px] py-[15px] leading-[14px] text-[color:var(--fg-body)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
+              className="inline -my-[15px] py-[15px] leading-[14px] [overflow-wrap:anywhere] [box-decoration-break:clone] text-[color:var(--fg-body)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
             >
               {deck.name}
             </Link>

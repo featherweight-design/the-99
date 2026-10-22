@@ -86,6 +86,15 @@ describe("CombosCloseSheet", () => {
     expect(groupNearCombos(read).buy.map((c) => c.variantId)).toEqual(["a1", "a2", "b10"]);
   });
 
+  it("lets a long deck name wrap inside its column, keeping the +N after it", () => {
+    const long = "HD - " + "Averyveryverylongunbrokendeckname".repeat(3);
+    draw([combo("l", "Long Deck Piece", "Piece", { kind: "elsewhere", decks: [{ id: "x", name: long, committed: true }, { id: "y", name: "Other", committed: false }] })]);
+    const link = screen.getByRole("link", { name: copy.where.deckLinkAria(long) });
+    expect(link.className).toContain("[overflow-wrap:anywhere]");
+    expect(link.parentElement!.className).toContain("min-w-0");
+    expect(whereLine("Long Deck Piece").textContent).toBe(`${copy.where.inDeck} ${long} ${copy.where.more(1)}`);
+  });
+
   it("names a foil-only or etched-only price's finish beside the figure, as the buy tag does", () => {
     draw([
       combo("f", "Foil Card", "Piece", { kind: "buy", cents: 940, soldOut: false, qualifier: "foil" }),
