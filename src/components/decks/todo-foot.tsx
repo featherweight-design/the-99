@@ -48,18 +48,20 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   if (!footHasSegments(facts)) return null;
 
   const toggle = (d: Disclosure) => setOpen((o) => (o === d ? null : d));
-  const hit = quiet ? "py-[10px] -my-[10px] md:py-[12px] md:-my-[12px]" : "py-[9px] -my-[9px]";
+  // Every item of the line carries the foot's vertical padding itself (the line has none), so a press
+  // is as tall as the foot, and a wrapped row is a whole item tall: no two items' boxes overlap,
+  // wrapped or not, and no negative margin hands one item's padding to its neighbour's line. One
+  // row reads exactly as the board's `.ft` / `.sl` line: the same padding around one 1.7 line.
+  const cell = quiet ? "py-[10px] md:py-[12px]" : "py-[9px]";
   const disclosure = (d: Disclosure, label: string) => (
     <button
       type="button"
       aria-expanded={open === d}
       aria-controls={`${ids}-${d}`}
       onClick={() => toggle(d)}
-      // `.ds`: body ink and a dotted rule. The hit area grows by the foot's own vertical padding and
-      // takes it back in margin, so the press spans the foot's full height without moving the line
-      // and stays inside the foot: the board's `.tap` (12px) would overflow the card foot's 9px,
-      // clipped at the card's bottom edge and over the row above.
-      className={`inline-block ${hit} bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] ${
+      // `.ds`: body ink and a dotted rule. Its hit area is its row's full height (`cell`), inside the
+      // foot: the board's `.tap` (12px either way) would overflow the card foot's 9px.
+      className={`${cell} bg-transparent border-0 px-0 cursor-pointer whitespace-nowrap font-mono text-[11px] leading-[1.7] ${
         open === d ? "text-[color:var(--fg)]" : "text-[color:var(--fg-body)]"
       }`}
     >
@@ -78,10 +80,10 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   if (facts.version) {
     segments.push({
       key: "version",
-      node: <VersionSegment text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt))} />,
+      node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt))} />,
     });
   }
-  if (facts.proxies > 0) segments.push({ key: "proxies", node: <span>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
+  if (facts.proxies > 0) segments.push({ key: "proxies", node: <span className={cell}>{proxyCopy.deckHeader.line(facts.proxies)}</span> });
   if (facts.provenance) {
     segments.push({ key: "provenance", node: disclosure("provenance", topOffCopy.ledger.header(String(facts.provenance.count))) });
   }
@@ -97,14 +99,14 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
     <>
       <div
         data-todo-foot
-        className={`${ground} ${pad} ${
-          quiet ? "py-[10px] md:py-[12px]" : "py-[9px] [border-top:1px_solid_var(--border)]"
+        className={`flex flex-wrap items-start ${ground} ${pad} ${
+          quiet ? "" : "[border-top:1px_solid_var(--border)]"
         } font-mono text-[11px] leading-[1.7] text-[color:var(--fg-faint)]`}
       >
         {segments.map((s, i) => (
           <Fragment key={s.key}>
             {i > 0 && (
-              <span aria-hidden className="mx-[5px] text-[color:var(--fg-locked)]">
+              <span aria-hidden data-foot-separator className={`${cell} mx-[5px] text-[color:var(--fg-locked)]`}>
                 {copy.footSeparator}
               </span>
             )}
@@ -142,7 +144,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
 /** The committed version line, and where a commit lands. Focusable but not a tab stop
  *  (`tabIndex={-1}`): a statement, not a control, reachable programmatically once, the paint after
  *  the commit sheet or a discard navigated here. See `COMMIT_RECEIPT_HASH` for why that matters. */
-function VersionSegment({ text }: { text: string }) {
+function VersionSegment({ text, className }: { text: string; className: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const hash = window.location.hash;
@@ -152,7 +154,7 @@ function VersionSegment({ text }: { text: string }) {
     mirrorUrl(`${window.location.pathname}${window.location.search}`);
   }, []);
   return (
-    <span ref={ref} tabIndex={-1} className="outline-none">
+    <span ref={ref} tabIndex={-1} className={`${className} outline-none`}>
       {text}
     </span>
   );

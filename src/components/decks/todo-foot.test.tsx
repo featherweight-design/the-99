@@ -51,6 +51,25 @@ describe("the to-do card's foot", () => {
     expect(screen.queryByRole("button", { name: proxyCopy.deckHeader.line(2) })).toBeNull();
   });
 
+  // jsdom has no layout, so the structure is what is asserted: the line is a wrapping flex row whose
+  // items (segments and separators alike) are its direct children, each carrying the row's vertical
+  // padding itself, and nothing takes a negative margin. That is what keeps two presses' hit areas
+  // from overlapping when provenance and other drafts land on separate rows.
+  it.each([false, true])("lays the line out as padded items with no negative margins (quiet %s)", (quiet) => {
+    draw(FULL, quiet ? QUIET : { ...QUIET, unresolved: 2 });
+    const line = foot();
+    expect(line.className).toContain("flex-wrap");
+    expect(line.className).not.toMatch(/(^|\s)(md:)?py-/);
+    const pad = quiet ? "py-[10px]" : "py-[9px]";
+    const items = [...line.children] as HTMLElement[];
+    // version, proxies, provenance, other drafts, and a separator between each.
+    expect(items).toHaveLength(7);
+    for (const item of items) expect(item.className.split(/\s+/)).toContain(pad);
+    for (const el of [line, ...line.querySelectorAll("*")]) expect(el.className.toString()).not.toMatch(/(^|\s)(md:)?-m[ty]?-/);
+    expect(provenance().parentElement).toBe(line);
+    expect(drafts().parentElement).toBe(line);
+  });
+
   it("opens one disclosure at a time, inside the card under the line", () => {
     draw(FULL, { ...QUIET, unresolved: 2 });
     expect(screen.queryByText("the ledger lines")).toBeNull();
