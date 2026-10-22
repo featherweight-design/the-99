@@ -116,4 +116,6 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   catalog, and the commander's 64 highest-inclusion nonland cards. A list built around its commander's plan reads near
   0 against that average by construction, and an EDHREC average against itself always does. Its first run
   (2026-10-18): the catalog peak names the axis a reader would for nearly every list, but it does not separate precons
-  from tuned decks (medians: decks 62.6, precons 56.9, older precons 42.3, `HD Tune` decks 46.3).
+  from tuned decks (medians: decks 62.6, precons 56.9, older precons 42.3, `HD Tune` decks 46.3). It now scores through the shipped
+  rule (`scoredAxes` in `src/lib/strategy/score.ts`, which drops `tribal` when a creature type scores) and also prints the
+  radar and the stability run that set `MIN_NONLAND`; see `docs/agents/strategy.md`.

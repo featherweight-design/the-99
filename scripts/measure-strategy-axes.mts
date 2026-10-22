@@ -13,45 +13,45 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
-import { isGameCard } from "../src/lib/cards/game-card";
-import { isLandFace } from "../src/lib/cards/facet";
-import {
-  AXIS_FLOOR, BASELINE_FLOOR, BIG_CREATURE_MIN_MV, TYPAL_AXES, axisCounts, axisScore, baselineShare, deckAxes, type AxisCard,
-} from "../src/lib/strategy/axes";
+import type { LabelTheme } from "../src/lib/labels/types";
+import { AXIS_FLOOR, BASELINE_FLOOR, BIG_CREATURE_MIN_MV, TYPAL_AXES, baselineShare } from "../src/lib/strategy/axes";
+import { toStrategyCard } from "../src/lib/strategy/load";
+import { MIN_NONLAND, TOP_AXES, catalogBaseline, scoredAxes, type StrategyBaseline, type StrategyCard } from "../src/lib/strategy/score";
 
 neonConfig.webSocketConstructor = ws;
 const { THE_99_NEON_STAGING_DIRECT } = requireEnv(["THE_99_NEON_STAGING_DIRECT"]);
 const pool = new Pool({ connectionString: THE_99_NEON_STAGING_DIRECT });
 const AVERAGE_SIZE = 64;
 
-type CardRow = { oracle_id: string; type_line: string; cmc: number; keywords: string[] | null; layout: string; themes: string[] | null };
+type CardRow = { oracle_id: string; type_line: string; cmc: number; keywords: string[] | null; layout: string; themes: LabelTheme[] | null };
 type ListRow = { grp: string; name: string; commander: string | null; partner: boolean; oracle_id: string; quantity: number };
 
-/** The theme jobs of one card, and its type-line input. */
-type Card = { axis: AxisCard; themes: string[] };
+type Card = StrategyCard;
 
-function labelCounts(cards: readonly Card[]): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const c of cards) for (const t of new Set(c.themes)) out.set(t, (out.get(t) ?? 0) + c.axis.quantity);
-  return out;
+/** The list's best axis against one baseline, by the shipped rule: `[score, axis, copies]`. */
+function peak(cards: readonly Card[], base: StrategyBaseline): [number, string, number] {
+  const [best] = scoredAxes(cards, base);
+  return best ? [best.score, best.key, best.copies] : [0, "-", 0];
 }
 
-type Baseline = { axes: ReturnType<typeof axisCounts>; labels: Map<string, number> };
-const baselineOf = (cards: readonly Card[]): Baseline => ({ axes: axisCounts(cards.map((c) => c.axis)), labels: labelCounts(cards) });
-const labelShare = (b: Baseline, theme: string) =>
-  Math.max((b.labels.get(theme) ?? 0) / Math.max(b.axes.total, 1), BASELINE_FLOOR);
-
-/** The list's best axis against one baseline: `[score, axis, copies, baseline share]`. */
-function peak(cards: readonly Card[], base: Baseline): [number, string, number, number] {
-  const counts = axisCounts(cards.map((c) => c.axis));
-  let best: [number, string, number, number] = [0, "-", 0, 0];
-  const consider = (axis: string, copies: number, share: number) => {
-    const s = axisScore(copies, counts.total, share);
-    if (s > best[0]) best = [s, axis, copies, share];
+/** A deterministic generator, so a re-run prints the same stability figures. */
+function rng(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  for (const [axis, copies] of deckAxes(counts)) consider(axis, copies, baselineShare(base.axes, axis));
-  for (const [theme, copies] of labelCounts(cards)) consider(theme, copies, labelShare(base, theme));
-  return best;
+}
+
+/** `n` copies drawn without replacement from a list, as one-copy cards. */
+function sample(cards: readonly Card[], n: number, next: () => number): Card[] {
+  const copies = cards.flatMap((c) => Array.from({ length: c.quantity }, () => ({ ...c, quantity: 1 })));
+  for (let i = copies.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [copies[i], copies[j]] = [copies[j], copies[i]];
+  }
+  return copies.slice(0, n);
 }
 
 const median = (xs: number[]) => {
@@ -68,10 +68,10 @@ async function main() {
              (select array_agg(j->>'kind') from jsonb_array_elements(l.labels) j where j->>'space' = 'theme') themes
         from cards c left join card_labels l on l.oracle_id = c.oracle_id
        where c.commander_legal`);
-    const byId = new Map(catalog.filter((c) => isGameCard({ layout: c.layout, typeLine: c.type_line }) && !isLandFace(c.type_line)).map((c) => [c.oracle_id, c]));
+    const byId = new Map(catalog.map((c) => [c.oracle_id, c]));
     const card = (id: string, quantity: number): Card | null => {
       const c = byId.get(id);
-      return c ? { axis: { typeLine: c.type_line, manaValue: c.cmc, keywords: c.keywords ?? [], quantity }, themes: c.themes ?? [] } : null;
+      return c ? toStrategyCard({ layout: c.layout, typeLine: c.type_line, manaValue: c.cmc, keywords: c.keywords ?? [], themes: c.themes, quantity }) : null;
     };
 
     const { rows: listRows } = await client.query<ListRow>(`
@@ -128,7 +128,7 @@ async function main() {
       const c = card(r.oracle_id, 1);
       if (c) averages.set(r.commander, [...(averages.get(r.commander) ?? []), c]);
     }
-    const catalogBase = baselineOf([...byId.keys()].map((id) => card(id, 1)!));
+    const catalogBase = catalogBaseline([...byId.keys()].map((id) => card(id, 1)).filter((c): c is Card => c !== null));
 
     console.log(`rules: floor ${AXIS_FLOOR} copies · big creature = creature of MV ≥ ${BIG_CREATURE_MIN_MV} (no power column) · up to ${TYPAL_AXES} typal axes · baseline floor ${BASELINE_FLOOR}`);
     console.log(`catalog baseline: ${catalogBase.axes.total} commander-legal nonland game cards, one copy each`);
@@ -140,12 +140,12 @@ async function main() {
     for (const l of [...lists.values()].sort((a, b) => a.grp.localeCompare(b.grp) || a.name.localeCompare(b.name))) {
       const cat = peak(l.cards, catalogBase);
       const avg = l.commander ? averages.get(l.commander) : undefined;
-      const cmd = avg ? peak(l.cards, baselineOf(avg)) : null;
-      const total = l.cards.reduce((n, c) => n + c.axis.quantity, 0);
+      const cmd = avg ? peak(l.cards, catalogBaseline(avg)) : null;
+      const total = l.cards.reduce((n, c) => n + c.quantity, 0);
       results.push({ grp: l.grp, name: l.name, cat: cat[0], cmd: cmd?.[0] ?? null });
       console.log([l.grp, `${l.name}${l.partner ? " [partner]" : ""}`, total,
         `${cat[0].toFixed(1)} (${cat[1]} ${cat[2]})`,
-        cmd ? `${cmd[0].toFixed(1)} (${cmd[1]} ${cmd[2]}, ${(cmd[3] * 100).toFixed(1)}%)` : "no average"].join(" | "));
+        cmd ? `${cmd[0].toFixed(1)} (${cmd[1]} ${cmd[2]})` : "no average"].join(" | "));
     }
 
     console.log("\ngroup | n | median catalog peak | median commander peak");
@@ -156,6 +156,44 @@ async function main() {
     }
     const tune = results.filter((r) => r.grp === "deck" && r.name.startsWith("HD Tune"));
     console.log(`HD Tune decks | ${tune.length} | ${median(tune.map((r) => r.cat)).toFixed(1)} | ${median(tune.map((r) => r.cmd).filter((x): x is number => x !== null)).toFixed(1)}`);
+
+    // The radar as the app will draw it: the top axes against the catalog, a broad theme marked.
+    console.log(`\ntop ${TOP_AXES} against the catalog (the radar; * = broad theme, not offered for lean-in)`);
+    for (const l of [...lists.values()].filter((x) => x.grp === "deck").sort((a, b) => a.name.localeCompare(b.name))) {
+      const top = scoredAxes(l.cards, catalogBase).slice(0, TOP_AXES);
+      console.log(`${l.name} | ${top.map((a) => `${a.key}${a.leanable ? "" : "*"} ${a.copies}×${a.score.toFixed(0)}`).join(" · ") || "none"}`);
+    }
+
+    // How small a list can be and still read like itself. Each list of 60+ nonland copies is cut, 40 times per size, to
+    // a random N copies; the cut's top axis is compared with the whole list's, and its top five with the whole list's
+    // top five. The floor (\`MIN_NONLAND\`, now ${MIN_NONLAND}) is the smallest size that reads the same plan.
+    const TRIALS = 40;
+    const sizes = [20, 30, 40];
+    const pool = [...lists.values()].filter((l) => l.grp !== "average" && l.cards.reduce((n, c) => n + c.quantity, 0) >= 60);
+    console.log(`\nstability: ${pool.length} lists of 60+ nonland copies (decks and precons), ${TRIALS} random cuts per size`);
+    console.log("size | top axis matches the whole list (median list, p25 list) | top-5 overlap (mean) | cuts reading none");
+    for (const n of sizes) {
+      const agree: number[] = [];
+      const overlap: number[] = [];
+      let none = 0;
+      pool.forEach((l, li) => {
+        const whole = scoredAxes(l.cards, catalogBase).slice(0, TOP_AXES).map((a) => a.key);
+        if (whole.length === 0) return;
+        const next = rng(li * 1009 + n);
+        let hits = 0;
+        for (let t = 0; t < TRIALS; t++) {
+          const cut = scoredAxes(sample(l.cards, n, next), catalogBase).slice(0, TOP_AXES).map((a) => a.key);
+          if (cut.length === 0) none++;
+          if (cut[0] === whole[0]) hits++;
+          overlap.push(cut.filter((k) => whole.includes(k)).length / whole.length);
+        }
+        agree.push(hits / TRIALS);
+      });
+      const sorted = [...agree].sort((a, b) => a - b);
+      const p25 = sorted[Math.floor(sorted.length / 4)] ?? NaN;
+      const mean = overlap.reduce((a, b) => a + b, 0) / Math.max(overlap.length, 1);
+      console.log(`${n} | ${(median(agree) * 100).toFixed(0)}%, ${(p25 * 100).toFixed(0)}% | ${(mean * 100).toFixed(0)}% | ${none} of ${pool.length * TRIALS}`);
+    }
   } finally {
     client.release();
     await pool.end();

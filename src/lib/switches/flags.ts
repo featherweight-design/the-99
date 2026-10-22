@@ -33,6 +33,7 @@ import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
 import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
+import { strategyFocusEnabled } from "../strategy/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "../tuning/flag";
@@ -96,6 +97,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   NEAR_COMBOS_ENABLED: nearCombosEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
+  STRATEGY_FOCUS_ENABLED: strategyFocusEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,
   UPCOMING_PRECONS_ENABLED: upcomingPreconsEnabled,
