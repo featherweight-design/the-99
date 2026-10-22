@@ -35,9 +35,11 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   // deck with none sends today's prompt byte for byte (`prompt.test.ts` pins it). No PROMPT_VERSION
   // bump: the lock ids join the gate's fingerprint, which reopens a locked deck's gate alone.
   const base = pack.cards.some((c) => c.locked) ? SYSTEM.replace(COMMANDER_RULE, LOCKED_RULE) : SYSTEM;
-  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
-  const block = pack.strategy ? strategyBlock(pack.strategy) : null;
-  return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
+  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...focusRules(pack.focus), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
+  // Strategy focus: absent for a deck with none, so its prompt stays byte for byte today's (no PROMPT_VERSION bump; a
+  // focus change reopens the gate through the fingerprint, as locks and limits do).
+  const blocks = [renderPack(pack), pack.strategy ? strategyBlock(pack.strategy) : null, pack.focus ? focusBlock(pack.focus) : null];
+  return { system, user: blocks.filter((b): b is string => b !== null).join("\n\n") };
 }
 
 /**
@@ -89,6 +91,26 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
 }
 
 const OWNED_HEADING = "Cards the player owns that fit this deck";
+
+/** Strategy focus: lean the additions toward it, prefer cuts off every top strategy, and never state the app's count. */
+function focusRules(focus: EvidencePack["focus"]): string[] {
+  if (!focus) return [];
+  return [
+    `The player picked a focus for this deck, named under "${FOCUS_HEADING}". Lean the additions toward it: when two cards meet the same need, add the one that counts toward the focus. Still fill the gaps the games and targets show.`,
+    ...(focus.offTop.length > 0 ? ["Prefer cuts from the cards listed as on none of the top strategies. Never cut a card listed as counting toward the focus unless a game or a note gives a reason."] : []),
+    "The app shows how far each addition moves the focus: never state that count in a rationale.",
+  ];
+}
+
+const FOCUS_HEADING = "The player's focus";
+
+function focusBlock(focus: NonNullable<EvidencePack["focus"]>): string {
+  return [
+    `${FOCUS_HEADING}: ${focus.name}. ${focus.copies} of the ${focus.nonland} nonland cards count toward it${focus.on.length > 0 ? `: ${focus.on.join(", ")}` : ""}.`,
+    ...(focus.top.length > 0 ? [`This deck's top strategies: ${focus.top.join(", ")}.`] : []),
+    ...(focus.offTop.length > 0 ? [`Cards on none of them nor the focus: ${focus.offTop.join(", ")}.`] : []),
+  ].join("\n");
+}
 
 /** Each rationale is drawn above its citation chips, so it never restates their figures. */
 const RATIONALE_RULES = [

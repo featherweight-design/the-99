@@ -359,3 +359,27 @@ describe("the two lists in the prompt (PROMPT_VERSION 8)", () => {
     expect(system).not.toMatch(/exactly one cut and one add|Each swap/);
   });
 });
+
+describe("the strategy focus in the prompt", () => {
+  const focus = { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession", "Secure the Wastes"], top: ["Tokens", "Life gain"], offTop: ["Ponder"] };
+
+  it("sends a deck with no focus today's prompt, byte for byte", () => {
+    expect(buildPrompt({ ...pack, focus: null })).toEqual(buildPrompt(pack));
+  });
+
+  it("names the focus, its count with its denominator, the top strategies and the off-plan cards", () => {
+    const { system, user } = buildPrompt({ ...pack, focus });
+    expect(user).toContain("The player's focus: Tokens. 11 of the 62 nonland cards count toward it: Anointed Procession, Secure the Wastes.");
+    expect(user).toContain("This deck's top strategies: Tokens, Life gain.");
+    expect(user).toContain("Cards on none of them nor the focus: Ponder.");
+    expect(system).toContain("Lean the additions toward it");
+    expect(system).toContain("Prefer cuts from the cards listed as on none of the top strategies.");
+    expect(system).toContain("never state that count");
+  });
+
+  it("drops the cut rule when no card is off every strategy", () => {
+    const { system, user } = buildPrompt({ ...pack, focus: { ...focus, offTop: [] } });
+    expect(system).not.toContain("Prefer cuts from");
+    expect(user).not.toContain("Cards on none of them");
+  });
+});

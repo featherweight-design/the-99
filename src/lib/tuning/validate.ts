@@ -106,6 +106,8 @@ export type ValidationReport = {
    *  Absent for a run persisted before this column's meaning existed, same as every other
    *  optional field here. */
   hadNotes?: boolean;
+  /** The strategy focus THIS run aimed at (`StrategyKey`), for `ReadFrom` and a History receipt. Absent with no focus. */
+  focus?: string;
   /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
    *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that
    *  choice is made. No cost to persist (already computed, pure data); lets an "every candidate
@@ -205,7 +207,7 @@ export function validateSuggestions(args: {
       const other = c.kind === "intent" ? "notes" : c.kind === "notes" ? "intent" : null;
       if (other === null || citationHolds(c, line) || !citationHolds({ ...c, kind: other }, line)) return c;
       changed = true;
-      return { ...c, kind: other } as TuningCitation;
+      return { ...c, kind: other as typeof c.kind };
     });
     return changed ? { ...line, evidence } : line;
   };
@@ -374,6 +376,9 @@ export function validateSuggestions(args: {
       // run's own notes text rather than the deck's standing description.
       case "notes":
         return citationQuotesPlayerText(pack.notes, c.value);
+      // The app writes a focus chip after validation; the model is never offered the kind, so one from it is dropped.
+      case "focus":
+        return false;
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the
         // citation names must carry exactly that have and target.
