@@ -24,6 +24,17 @@ export type CheckoutInput = {
   origin: string;
 };
 
+/**
+ * What a card statement says after the account's shortened descriptor (`FEATHERWT`, set in the Dashboard): the
+ * suffix Stripe joins as `FEATHERWT* THE 99`. The Stripe account is shared with Concert Crawl, so without it a
+ * The 99 charge reads as the account's default and is the kind a cardholder fails to recognise and disputes (a
+ * dispute revokes the credits). Stripe's limits: the whole descriptor is at most 22 characters, with no
+ * `< > \ ' " *`, and at least one letter in the suffix. A pack's PaymentIntent takes it directly. A plan's
+ * charges are raised by Billing, where Checkout has no descriptor field and a subscription's PaymentIntent cannot
+ * be set; its descriptor is the plan Product's own `statement_descriptor` (a Stripe setting, not code).
+ */
+export const STATEMENT_DESCRIPTOR_SUFFIX = "THE 99";
+
 /** Where Checkout sends the player back to: the billing page, which reads our database and grants nothing. */
 export const CHECKOUT_RETURN_PATH = "/credits";
 
@@ -36,7 +47,7 @@ export function packCheckoutParams(input: CheckoutInput): Stripe.Checkout.Sessio
     customer: input.customerId,
     client_reference_id: input.userId,
     metadata,
-    payment_intent_data: { metadata },
+    payment_intent_data: { metadata, statement_descriptor_suffix: STATEMENT_DESCRIPTOR_SUFFIX },
     payment_method_types: ["card"],
     automatic_tax: { enabled: true },
     customer_update: { address: "auto" },

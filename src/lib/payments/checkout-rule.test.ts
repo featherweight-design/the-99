@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appOrigin, packCheckoutParams, planCheckoutParams, planPriceIdFor, priceIdFor } from "./checkout-rule";
+import { STATEMENT_DESCRIPTOR_SUFFIX, appOrigin, packCheckoutParams, planCheckoutParams, planPriceIdFor, priceIdFor } from "./checkout-rule";
 import { decideFulfilment } from "./fulfil-rule";
 import { PAYMENTS_APP } from "./packs";
 
@@ -12,6 +12,15 @@ describe("packCheckoutParams", () => {
   it("tags the Session and its PaymentIntent as this app's", () => {
     expect(p.metadata).toEqual({ app: PAYMENTS_APP, pack: "pack40", user_id: "user_a" });
     expect(p.payment_intent_data?.metadata).toEqual(p.metadata);
+  });
+
+  // The account's prefix is FEATHERWT; Stripe caps the joined descriptor at 22 and refuses < > \\ ' " *.
+  it("gives the pack's charge the suffix that makes the statement read FEATHERWT* THE 99", () => {
+    expect(p.payment_intent_data?.statement_descriptor_suffix).toBe(STATEMENT_DESCRIPTOR_SUFFIX);
+    const joined = `FEATHERWT* ${STATEMENT_DESCRIPTOR_SUFFIX}`;
+    expect(joined).toBe("FEATHERWT* THE 99");
+    expect(joined.length).toBeLessThanOrEqual(22);
+    expect(STATEMENT_DESCRIPTOR_SUFFIX).toMatch(/^[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*$/);
   });
 
   it("sets everything server-side: one item of the registry's Price, the customer and the reference", () => {

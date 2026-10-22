@@ -57,6 +57,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   Stripe table, and runs against the shipped tree inside `pnpm test`. `pnpm probe:payments-webhook` proves the
   grant transaction on a scratch branch.
 
+- **Card statements** read `FEATHERWT* THE 99`. The account's shortened descriptor (prefix) `FEATHERWT` is Hugh's Dashboard
+  setting, in the sandbox and live (not settable by API). A pack's Checkout carries `payment_intent_data.statement_descriptor_suffix`
+  (`STATEMENT_DESCRIPTOR_SUFFIX`, `checkout-rule.ts`). A plan has no code lever: Checkout's `subscription_data` has no descriptor
+  and a subscription's PaymentIntent cannot be set, so its descriptor is the plan Product's own `statement_descriptor`
+  (`FEATHERWEIGHT THE 99`, set by Hugh on the product in both modes). A finalized subscription invoice cannot be edited.
 - **Creating a Checkout Session** (K1b) is `buyPackAction` (`src/app/credits/actions.ts`), behind `PAYMENTS_ENABLED`
   (unset on production and on staging until Hugh's Stripe test keys exist; Hugh's group first, Q13; the `off` literal
   stops every sale while the webhook keeps settling). It takes a pack id from the closed registry and a uuid press id,
