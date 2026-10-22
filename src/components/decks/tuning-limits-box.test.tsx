@@ -111,9 +111,10 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     expect(screen.getByLabelText("Most per card")).toHaveValue("50");
   });
 
-  it("the Set trigger reads Set 0 with nothing chosen, matching the sizer's widest form", () => {
+  it("the Set trigger reads Any set with nothing chosen, never Set 0", () => {
     renderBox();
-    expect(screen.getByText("Set 0")).toBeTruthy();
+    expect(screen.getByText("Any set")).toBeTruthy();
+    expect(screen.queryByText("Set 0")).toBeNull();
   });
 
   // jsdom's default matchMedia reports phone (vitest.setup.ts) — the Set control must follow
@@ -121,7 +122,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   // 1): a forced-desktop panel skips the sheet's focus trap, scroll lock and Back dismissal.
   it("opens the Set control as a phone sheet under the default (narrow) breakpoint", () => {
     renderBox();
-    fireEvent.click(screen.getByText("Set 0"));
+    fireEvent.click(screen.getByText("Any set"));
     expect(screen.getByRole("dialog", { name: "Filter by printed-in set" })).toHaveAttribute("aria-modal", "true");
   });
 
