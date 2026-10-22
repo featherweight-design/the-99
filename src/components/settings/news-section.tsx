@@ -52,8 +52,12 @@ export function NewsSection({ kinds }: { kinds: NewsSetting[] }) {
       setToast({ id: ++toastSeq.current, text: c.failed });
     };
     try {
-      const r = await saveFeedKinds(next);
-      if (r.ok) saved.current = next;
+      const r = await saveFeedKinds(next, kinds.map((k) => k.kind));
+      if (r.ok) {
+        saved.current = next;
+        // A redraw that landed while this save was pending (another section's save) carried the old choices.
+        setOn(next);
+      }
       else if (r.reason === "off") router.refresh();
       else fail();
     } catch {

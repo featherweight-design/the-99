@@ -20,6 +20,7 @@ const ALL_BUT_SPARES: NewsSetting[] = [
   { kind: "trade-match", on: true },
   { kind: "combo", on: false },
 ];
+const OFFERED = ["new-set", "new-precon", "price-drop", "trade-match", "combo"];
 const box = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: new RegExp(C.kinds[kind].name) }) as HTMLInputElement;
 
 beforeEach(() => vi.clearAllMocks());
@@ -53,7 +54,7 @@ describe("the news section", () => {
     m.save.mockResolvedValue({ ok: true, changed: true });
     render(<NewsSection kinds={ALL_BUT_SPARES} />);
     await act(async () => fireEvent.click(box("combo")));
-    expect(m.save).toHaveBeenCalledWith(["price-drop", "trade-match", "combo"]);
+    expect(m.save).toHaveBeenCalledWith(["price-drop", "trade-match", "combo"], OFFERED);
     expect(box("combo").checked).toBe(true);
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -75,7 +76,7 @@ describe("the news section", () => {
     render(<NewsSection kinds={ALL_BUT_SPARES} />);
     await act(async () => fireEvent.click(box("new-set")));
     await act(async () => fireEvent.click(box("price-drop")));
-    expect(m.save).toHaveBeenLastCalledWith(["new-set", "trade-match"]);
+    expect(m.save).toHaveBeenLastCalledWith(["new-set", "trade-match"], OFFERED);
     expect(box("price-drop").checked).toBe(true);
     expect(box("new-set").checked).toBe(true);
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
@@ -95,5 +96,17 @@ describe("the news section", () => {
     await act(async () => fireEvent.click(box("combo")));
     expect(m.refresh).toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("keeps a saved choice shown when another section's save redraws the page with the old choices", async () => {
+    let finish!: (v: unknown) => void;
+    m.save.mockReturnValueOnce(new Promise((r) => (finish = r))).mockResolvedValue({ ok: true, changed: true });
+    const { rerender } = render(<NewsSection kinds={ALL_BUT_SPARES} />);
+    await act(async () => fireEvent.click(box("combo")));
+    rerender(<NewsSection kinds={ALL_BUT_SPARES.map((k) => ({ ...k }))} />);
+    await act(async () => finish({ ok: true, changed: true }));
+    expect(box("combo").checked).toBe(true);
+    await act(async () => fireEvent.click(box("new-set")));
+    expect(m.save).toHaveBeenLastCalledWith(["new-set", "price-drop", "trade-match", "combo"], OFFERED);
   });
 });
