@@ -46,12 +46,16 @@ CSS = r"""
 .leg div.on+div{border-top-color:transparent}
 .ph .ring{grid-template-columns:1fr;gap:14px;justify-items:center;justify-content:stretch}
 .rg{position:relative}
-.rc{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
+.rcx{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
 .rcn{font:600 46px/1 'Cinzel',serif;color:var(--accent)}
 .ph .rcn{font-size:40px}
 .rcn em{font:600 15px 'IBM Plex Mono';color:#F0C08E;font-style:normal;margin-left:2px;vertical-align:top}
 .rcl{font:10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-muted)}
 .rck{font:10px/1.5 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.rce{width:56%;height:56%;border-radius:50%;border:1.5px dashed var(--border-strong);box-sizing:border-box}
+.ph .rce{width:52%;height:52%}
+.leg .sic{flex:none;color:var(--fg-muted)}
+.leg div.on .sic{color:var(--accent)}
 .rcc{position:absolute;border-radius:5px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .rcc.nwi{outline:1.5px dashed var(--accent);outline-offset:2px}
 .rg .art{position:absolute;border-radius:50%;object-fit:cover;object-position:30% 30%;border:2px solid var(--border-strong);box-sizing:border-box}
@@ -188,6 +192,21 @@ def piles(rows, focus, ph, added=0):
 RING_CENTRE = ["hero"]
 
 
+# icon per strategy (R2f): line glyphs on a 24 grid, drawn in the mana symbols' weight
+ICONS = {
+    "Allies": '<path d="M7 4l-2.5 15M12 3v17M17 4l2.5 15"/>',
+    "Spells matter": '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>',
+    "Tokens": '<circle cx="12" cy="12" r="9"/><path d="M12 6.5l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>',
+    "Evasion": '<path d="M3 15c3-7 9-11 18-11-2 3-4 4.5-7 5 2 .5 3.5.3 5-.5-2 4-5 6-9 6 1 .7 2.3 1 4 1-3 2.5-7 2.5-11-.5z"/>',
+    "+1/+1 counters": '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M7 12h4M9 10v4M15 9v6"/>',
+}
+
+
+def icon(name, px, col="currentColor"):
+    return (f'<svg class="sic" width="{px}" height="{px}" viewBox="0 0 24 24" fill="none" stroke="{col}" stroke-width="1.6" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS.get(name, "")}</svg>')
+
+
 def centre(rows, focus, size, art, added):
     kind = RING_CENTRE[0]
     top = dict((n, k) for n, _, k in rows)
@@ -197,11 +216,15 @@ def centre(rows, focus, size, art, added):
         return f'<img class="art" src="{img("hero")}" alt="" style="{box}">'
     if kind == "none":
         return ""
+    if kind == "icon":
+        if not focus:
+            return f'<div class="rcx" style="{box}"><span class="rce"></span></div>'
+        return f'<div class="rcx" style="{box}">{icon(focus, int(art * .42), "var(--accent)")}</div>'
     if not focus:
-        return f'<div class="rc" style="{box}"><span class="rck">Pick a<br>focus</span></div>'
+        return f'<div class="rcx" style="{box}"><span class="rck">Pick a<br>focus</span></div>'
     if kind == "count":
         plus = f'<em>+{added}</em>' if added else ""
-        return f'<div class="rc" style="{box}"><span class="rcn">{cnt[focus]}{plus}</span><span class="rcl">{focus}</span></div>'
+        return f'<div class="rcx" style="{box}"><span class="rcn">{cnt[focus]}{plus}</span><span class="rcl">{focus}</span></div>'
     # card: the focus's top card, at card shape, inside the ring
     h = art * .78
     w = h * 63 / 88
@@ -248,7 +271,8 @@ def ring(rows, focus, ph, added=0):
     for i, (name, n, _) in enumerate(rows):
         on = name == focus
         cnt = f'{n} <em style="font-style:normal;color:var(--accent)">+{added}</em> cards' if (on and added) else f'{n} cards'
-        leg += f'<div class="{"on" if on else ""}"><i style="background:{"#CF8745" if on else TONES[i]}"></i>{name}<span>{cnt}</span><b class="rd"></b></div>'
+        sw = (icon(name, 16) if RING_CENTRE[0] == "icon" else f'<i style="background:{"#CF8745" if on else TONES[i]}"></i>')
+        leg += f'<div class="{"on" if on else ""}">{sw}{name}<span>{cnt}</span><b class="rd"></b></div>'
     return (f'<div class="ring"><div class="rg" style="width:{size}px;height:{size}px">{svg}</div>'
             f'<div class="legw"><span class="lgk">Pick a focus</span><div class="leg">{leg}</div></div></div>')
 

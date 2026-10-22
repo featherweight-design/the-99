@@ -119,10 +119,10 @@ def centre_states(kind):
 def ring_centre():
     opt = lambda kind, title, sp: both(title, sp, with_centre(kind, lambda: G.block("ring", True)),
                                        with_centre(kind, lambda: G.block("ring")), hub=False)
-    body = (board_head("Strategy focus · R2e", "What goes in the middle of the ring",
-                       "Hugh’s question: the commander already heads the page, so its art in the ring repeats it. Four answers, each with Tokens as the "
-                       "focus at both widths; B and C, the two that change with the pick, are drawn through no focus, picked and after two applied. "
-                       "<b>Recommendation: B.</b>")
+    body = (board_head("Strategy focus · R2f", "What goes in the middle of the ring",
+                       "Hugh’s question: the commander already heads the page, so its art in the ring repeats it. Five answers, each with Tokens as the "
+                       "focus at both widths; B, C and D, the three that change with the pick, are drawn through no focus, picked and after two applied. "
+                       "<b>Recommendation: D</b>, if the 35 icons are worth drawing; otherwise B.")
             + opt("hero", "A · The commander (R2d, as drawn)", "Decorative, and the page head already shows it.")
             + opt("count", "B · The focus, as a number (recommended)", "The focus’s count large, its name under it. It answers “how much "
                   "of the deck is Tokens” where the eye already is, makes the pick obvious from the ring itself, and after changes reads "
@@ -132,7 +132,15 @@ def ring_centre():
                   "new one when the pick changes. After changes, the newest card on the focus, outlined. More personality than B, says less: "
                   "the count lives only in the legend.")
             + sec("C through the flow", "", centre_states("card"))
-            + opt("none", "D · Nothing", "An open ring. Quiet, and the legend does all the work. Reads as a plain donut chart."))
+            + opt("icon", "D · An icon per strategy (R2f, Hugh’s ask for a graphic)", "The focus’s icon in the middle, in accent; the same icons "
+                  "replace the legend’s colour squares, so ring and legend read as one. After changes the icon stays and <i>+2</i> lives on the "
+                  "arc and in the legend. With no focus, an empty dashed circle waits to be filled. Five of the set drawn here, for Aang’s deck.")
+            + sec("D through the flow", "", centre_states("icon"))
+            + sec("D · how many icons", "Any strategy can be the focus, so the whole set is owed: <b>35</b>. 29 label themes (all 30 less "
+                  "<i>tribal</i>, which a typal axis replaces), 5 type-line axes (Artifacts, Enchantments, Equipment and Auras, Vehicles, Creatures "
+                  "costing 6+) and 1 glyph shared by every creature type (Allies, Elves, Dinosaurs). Artifacts, Enchantments and the typal glyph can "
+                  "borrow Magic’s own type marks; the rest are drawn new, in the weight of the shipped mana symbols. A theme added later owes an icon.", "")
+            + opt("none", "E · Nothing", "An open ring. Quiet, and the legend does all the work. Reads as a plain donut chart."))
     return doc("Ring-Centre", body, 1900)
 
 
