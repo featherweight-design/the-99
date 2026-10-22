@@ -133,6 +133,9 @@ describe("the section head", () => {
     expect(box.hidden).toBe(true);
     await act(async () => { fireEvent.click(tip); });
     expect(box.hidden).toBe(false);
+    // Open, the ⓘ takes the accent (`.ii.on`).
+    expect(tip.getAttribute("aria-expanded")).toBe("true");
+    expect(tip.className).toContain("aria-expanded:border-[color:var(--accent)]");
   });
 
   it("is as shipped with the switch off: `view only`, the foot line, no Ask, and no asks read", async () => {

@@ -255,7 +255,7 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
             label={spareCopy.request.tipLabel}
             lines={[spareCopy.request.tip]}
             className="inline-flex"
-            buttonClassName="ml-[6px] border-[color:var(--border-strong)] font-serif text-[11px] font-semibold italic normal-case tracking-normal"
+            buttonClassName="ml-[6px] border-[color:var(--border-strong)] font-serif text-[11px] font-semibold italic normal-case tracking-normal aria-expanded:border-[color:var(--accent)] aria-expanded:text-[color:var(--accent-text)]"
             tipClassName="left-0 right-auto top-[26px] w-[min(300px,100%)] gap-0 rounded-[9px] px-[12px] py-[10px] font-sans normal-case tracking-normal shadow-[0_8px_24px_rgba(0,0,0,0.35)] md:bottom-[calc(100%+2px)] md:top-auto md:w-[min(300px,100%)]"
           />
         </span>
