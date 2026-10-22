@@ -109,4 +109,19 @@ describe("PassSheet undo state", () => {
     finish({ removed: 3, built: 90 });
     await waitFor(() => expect(screen.getByRole("button", { name: /^Undo/ })).not.toBeDisabled());
   });
+
+  it("reports a refusal in the ledger when the sheet ran the undo", async () => {
+    const { undoFillPass } = await import("../../app/decks/actions");
+    const { ProvenanceLedger } = await import("./provenance-line");
+    let fail!: (e: Error) => void;
+    vi.mocked(undoFillPass).mockImplementation(() => new Promise((_, r) => { fail = r; }));
+    const p = pass("top_off", 3);
+    const cards = ["a", "b", "c"].map(card);
+    render(<ProvenanceLedger deckId="e" bodySize={99} cards={cards} total={3} passes={[p]} onShow={vi.fn()} onAnnounce={vi.fn()} />);
+    const sheet = render(<PassSheet target={{ kind: "pass", passId: "p1" }} deckId="e" cards={cards} passes={[p]} bodySize={99} newestAsOf={null} onAnnounce={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(sheet.getAllByRole("button", { name: /^Undo/ })[0]);
+    sheet.unmount();
+    fail(new Error("no"));
+    await waitFor(() => expect(screen.getByText(ledger.undoFailed)).toBeTruthy());
+  });
 });

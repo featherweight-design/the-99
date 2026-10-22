@@ -10,7 +10,7 @@
 // line and its desktop meta stay as the board draws them; the card shell and
 // its accent rule went, because the to-do card is the shell now.
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
@@ -54,6 +54,16 @@ const subscribeUndo = (l: () => void) => {
   return () => void undoListeners.delete(l);
 };
 
+/** The first refusal any of these passes' undos holds, whichever control ran it, so the ledger reports
+ *  a failure from the sheet and drops it when a retry from either control starts. */
+function usePassUndoError(deckId: string, passes: readonly FillPassSummary[]): string | null {
+  return useSyncExternalStore(
+    subscribeUndo,
+    () => passes.map((p) => undoStates.get(`${deckId}:${p.id}`)?.error).find((e) => e) ?? null,
+    () => null,
+  );
+}
+
 /**
  * A pass's undo, shared by its ledger line and the pass sheet's foot, so both run one write, say one
  * thing and disable together. The state is per pass (see above), not per ledger, so one undo in flight
@@ -64,22 +74,18 @@ export function usePassUndo({
   pass,
   bodySize,
   onAnnounce,
-  onError,
   onDone,
 }: {
   deckId: string;
   pass: FillPassSummary;
   bodySize: number;
   onAnnounce: (message: string) => void;
-  /** Also told of a refusal, for a caller that reports it somewhere of its own. */
-  onError?: (message: string | null) => void;
   onDone?: () => void;
 }) {
   const key = `${deckId}:${pass.id}`;
   const state = useSyncExternalStore(subscribeUndo, () => undoStates.get(key) ?? IDLE, () => IDLE);
   const undo = async () => {
     if (undoStates.get(key)?.pending) return;
-    onError?.(null);
     setUndoState(key, { pending: true, error: null });
     try {
       // Both figures come back from the write's own transaction. Rule (g)
@@ -91,7 +97,6 @@ export function usePassUndo({
       onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
     } catch {
       setUndoState(key, { pending: false, error: ledger.undoFailed });
-      onError?.(ledger.undoFailed);
     }
   };
   return { pending: state.pending, error: state.error, undo };
@@ -128,7 +133,7 @@ export function ProvenanceLedger({
   // A refused undo is reported beneath the ledger rather than inside the line:
   // the line keeps its control enabled so the player can try again, and a
   // message wedged into a 34px row would shunt every line below it.
-  const [undoError, setUndoError] = useState<string | null>(null);
+  const undoError = usePassUndoError(deckId, passes);
 
   // The sweep's own test, unchanged, and it is read FIRST. Reading the empty
   // pass list first would take a swept deck down the legacy branch and print a
@@ -182,7 +187,6 @@ export function ProvenanceLedger({
               newest={i === passes.length - 1}
               onShow={onShow}
               onAnnounce={onAnnounce}
-              onUndoError={setUndoError}
             />
           ))
         )}
@@ -222,7 +226,6 @@ interface LedgerLineProps {
   newest: boolean;
   onShow: (passId: string) => void;
   onAnnounce: (message: string) => void;
-  onUndoError: (message: string | null) => void;
 }
 
 /** One pass. Its own component rather than a loop body because the undo's
@@ -235,9 +238,8 @@ function LedgerLine({
   newest,
   onShow,
   onAnnounce,
-  onUndoError,
 }: LedgerLineProps) {
-  const { pending, undo: handleUndo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onError: onUndoError });
+  const { pending, undo: handleUndo } = usePassUndo({ deckId, pass, bodySize, onAnnounce });
   const label = fillPassLabel(pass);
   const isSeed = pass.kind === "seed";
   const n = String(pass.live);
