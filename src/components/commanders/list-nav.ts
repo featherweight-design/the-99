@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { discoverPath } from "../../lib/commanders/place-paths";
 
 /**
  * The other lane, as a URL.
@@ -11,8 +12,8 @@ import { useEffect, useRef } from "react";
  * travels with the reader: they typed a name to find one commander, and the
  * lane they are being sent to is where that commander is.
  */
-export function laneHref(lane: "owned" | "discover", query: string): string {
-  const path = lane === "owned" ? "/commanders" : "/discover";
+export function laneHref(lane: "owned" | "discover", query: string, place: boolean): string {
+  const path = lane === "owned" ? "/commanders" : discoverPath(place);
   const trimmed = query.trim();
   // A bare `?` is a URL the reader would see in their address bar and could
   // paste back in. With no search there is nothing to carry, so the path goes

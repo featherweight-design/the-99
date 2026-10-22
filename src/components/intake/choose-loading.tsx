@@ -14,17 +14,18 @@ import { LoadingScreen } from "../shell/loading-screen";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { shellCopy } from "../../lib/copy/shell";
 import { parseChooseParams, serializeChooseParams } from "../../lib/intake/params";
-import { CHOOSE_PATH } from "../../lib/intake/submit";
+import { useChoosePath } from "../commanders/place-paths";
 import { ChooseHeader, RESULTS_COLUMN } from "./choose-header";
 import { ResultsSkeleton } from "./choose-results";
 
 // Its loading screens move like every other loader's (Hugh, 2026-10-12, superseding the STATES
 // invariant that held Help me choose still): the crown pulses, the skeleton breathes.
 export function ChooseLoading() {
+  const choose = useChoosePath();
   const p = parseChooseParams(new URLSearchParams(useSearchParams().toString()));
   if (!p.results) return <LoadingScreen copy={shellCopy.loading.deckNew} />;
   // The page's own way back: a change of answers carries neither the read nor its marks.
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
+  const changeHref = `${choose}${serializeChooseParams({ ...p, notUsed: [], readId: null, results: false })}`;
   return (
     <div data-testid="choose-loading" className="flex flex-col">
       <ChooseHeader back={{ href: changeHref, label: copy.results.back }} title={copy.results.title} sub={copy.results.sub} subPhone={copy.results.subPhone} />

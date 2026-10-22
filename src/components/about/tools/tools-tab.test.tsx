@@ -19,6 +19,7 @@ const input = (over: Partial<ShowcaseInput> = {}): ShowcaseInput => ({
   },
   deckCount: 3,
   hasSyncBase: true,
+  place: false,
   ...over,
 });
 

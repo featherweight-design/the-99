@@ -2,6 +2,7 @@
 // `2026-10-16-discovery-r2-r3.md` "About's shape"): Tools by default, the Reference at `?tab=reference`. Auth-gated
 // like every other route: the app is invite-only, so there is no public version of this page.
 
+import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { count, eq } from "drizzle-orm";
 import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
@@ -88,6 +89,7 @@ export default async function AboutRoute({
     fits,
     deckCount: decksHeld,
     hasSyncBase: syncAnchored,
+    place: commandersPlaceEnabled(env),
   });
   const filled = visible.map((e) => ({ ...e, caption: fillAllowance(e.caption, creditLimit) }));
   const screens = referenceScreens(filled, groups, theme);

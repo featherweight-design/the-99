@@ -33,7 +33,7 @@ export default async function CommandersPage({
   // the wrong list.
   // It cannot loop: a target is only returned while `scope` is present, and the
   // target never carries it — one 308 and the parameter is gone for good.
-  const target = scopeRedirectTarget(searchParamsToQuery(sp));
+  const target = scopeRedirectTarget(searchParamsToQuery(sp), commandersPlaceEnabled(await requestSwitchEnv(userId)));
   if (target) permanentRedirect(target);
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
