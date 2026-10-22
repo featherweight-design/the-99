@@ -29,7 +29,8 @@ export function FriendSparesTab({ name, spares }: { name: string; spares: Friend
               imageUri: line.imageUri,
               want: line.spare,
               have: null,
-              caption: [{ text: p.spares.count(line.spare), strong: true }, ...(line.onWishlist ? [{ text: ` · ${p.spares.onWishlist}` }] : [])],
+              caption: [{ text: p.spares.count(line.spare), strong: true }],
+              note: line.onWishlist ? p.spares.onWishlist : undefined,
             };
             return (
               <li key={line.oracleId} className="relative flex flex-col">

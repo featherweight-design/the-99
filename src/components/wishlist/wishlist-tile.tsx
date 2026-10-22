@@ -17,6 +17,8 @@ export type WishlistTileCard = {
   have: number | null;
   /** Words of the caller's own in the caption's place (a friend's spares, `1 spare · on your wishlist`). */
   caption?: readonly CopyPart[];
+  /** A second line under the caption, in the accent (a friend's spare the reader wants: `on your wishlist`). */
+  note?: string;
 };
 
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
@@ -31,7 +33,7 @@ function captionParts(tile: WishlistTileCard): readonly CopyPart[] {
 /** The caption as words, for the press's accessible name: the press's own label replaces its content's, so a name
  * without this would never speak the count. */
 export function wishlistCaptionText(tile: WishlistTileCard): string {
-  return captionParts(tile).map((p) => p.text).join("");
+  return captionParts(tile).map((p) => p.text).join("") + (tile.note ? `, ${tile.note}` : "");
 }
 
 /** Copy parts as the boards draw them: a strong part in the caller's strong class. */
@@ -81,6 +83,9 @@ export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eage
             strong="font-semibold text-[color:var(--fg-body)]"
           />
         </span>
+        {tile.note && (
+          <span data-testid="wishlist-tile-note" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--accent-text)] md:text-[9.5px]">{tile.note}</span>
+        )}
       </span>
     </>
   );

@@ -1,0 +1,19 @@
+{
+  "feature": "/friends head: the privacy line under the name line (menu and Home plan 2026-10-22, PR 7)",
+  "clearAbout": true,
+  "note": "Needs SOCIAL_FRIENDS_ENABLED on. An undrawn addition: the handoff names the line (G4) and draws no place for it.",
+  "rows": [
+    {
+      "id": "friends-privacy",
+      "label": "/friends: the head's privacy line under the name line",
+      "view": "src/components/social/friends-head.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "#friends-title",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}
