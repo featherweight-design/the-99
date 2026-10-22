@@ -84,6 +84,13 @@ describe("a caption's lead", () => {
     expect(restOfFirstParagraph("Only this.\n\nMore.")).toBe("");
   });
 
+  it("reads the ? button standing alone as a word, not a sentence's end (launch-end batch, getting-help)", () => {
+    const cap = "Every screen has a ? with the About entries. Open one.";
+    expect(firstSentence(cap)).toBe("Every screen has a ? with the About entries.");
+    expect(firstSentence("Not sure where it lands? Press Analyze.")).toBe("Not sure where it lands?");
+    expect(firstSentence("- A ? on every screen. More.")).toBe("A ? on every screen.");
+  });
+
   it("reads a list's later items after its first", () => {
     const cap = "- First item. Still first.\n- Second item.";
     expect(firstSentence(cap)).toBe("First item.");
