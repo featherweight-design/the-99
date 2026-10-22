@@ -342,7 +342,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // Decided per request, outside the cached payload; the client reads and strips the parameter itself.
   const tourAgain = firstRunTourEnabled(env);
 
-  // The Home feed (menu and Home PR 6), read per request after the cached load and never stored: `feed_items` moves no
+  // The Home feed (menu and Home PR 6), read per request after the cached load and never stored: a new feed item moves no
   // data stamp. Null with HOME_FEED_ENABLED off, and Home draws as shipped. A failed read draws no feed. The visit's
   // writes (the seen cursor, the trade-match notice) run after the response, on first run too, since a first-run
   // Home is still a Home visit and its badge clears there.
