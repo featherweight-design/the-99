@@ -46,7 +46,7 @@
     {
       "id": "commanders-empty",
       "label": "/commanders at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
-      "view": "src/app/commanders/page.tsx",
+      "view": "src/app/commanders/(list)/page.tsx",
       "account": "A: zero cards, no decks",
       "steps": [
         {
@@ -59,7 +59,7 @@
     {
       "id": "discover-empty",
       "label": "/discover at zero cards: `Nothing to rank yet` and `Add your cards` (EmptyState)",
-      "view": "src/app/discover/page.tsx",
+      "view": "src/app/commanders/(list)/discover/page.tsx",
       "account": "A: zero cards, no decks",
       "steps": [
         {

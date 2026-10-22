@@ -11,7 +11,7 @@
     {
       "id": "form-phone",
       "label": "/decks/new/choose at 390: the form with History's way in on its back line",
-      "view": "src/app/decks/new/choose/page.tsx",
+      "view": "src/app/commanders/(list)/choose/page.tsx",
       "widths": [
         "phone"
       ],
@@ -26,7 +26,7 @@
     {
       "id": "form-desktop",
       "label": "/decks/new/choose at 1300: the form with the column beside it",
-      "view": "src/app/decks/new/choose/page.tsx",
+      "view": "src/app/commanders/(list)/choose/page.tsx",
       "widths": [
         "desktop"
       ],
@@ -41,7 +41,7 @@
     {
       "id": "view",
       "label": "/decks/new/choose?v=history: the phone's History view (desktop keeps the form and the column)",
-      "view": "src/app/decks/new/choose/page.tsx",
+      "view": "src/app/commanders/(list)/choose/page.tsx",
       "steps": [
         {
           "goto": "/decks/new/choose?v=history",
