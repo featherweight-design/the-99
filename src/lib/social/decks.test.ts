@@ -185,11 +185,33 @@ describe("loadFriendDeck", () => {
     expect(page.commanders).toEqual([expect.objectContaining({ oracleId: "c0", name: "Sai, Master Thopterist", commander: true, owned: true })]);
     expect(page.cards[0]).toEqual(expect.objectContaining({ printedSetCode: "cmm", printedCollectorNumber: "1" }));
     expect(JSON.stringify(page)).not.toMatch(/"(price|availability|proxied|locked|auto|comboPartner|facts|oracleText)"|secret oracle/);
-    expect([page.built, page.bodySize, page.artCropUri]).toEqual([99, 99, "https://cards.example/sai.jpg"]);
+    expect([page.built, page.bodySize, page.artCropUri]).toEqual([99, 99, "https://crop/sai.jpg"]);
   });
 
   it("returns nothing when the friendship ends while the deck is read", async () => {
     m.resolveFriend.mockResolvedValueOnce("user_friend").mockResolvedValueOnce(null);
     expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+  });
+
+  it("keeps the owner's commander printing: its set, number and crop, not the catalog's", async () => {
+    m.getDeckDetail.mockResolvedValue({
+      ...DETAIL,
+      commander: { ...COMMANDER, printedSetCode: "sld", printedCollectorNumber: "2175", artCropUri: "https://crop/sai-sld.jpg" },
+    });
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.commanders[0]).toEqual(expect.objectContaining({ printedSetCode: "sld", printedCollectorNumber: "2175" }));
+    expect(page.artCropUri).toBe("https://crop/sai-sld.jpg");
+  });
+
+  it("reads a pair's identity from both commanders, in WUBRG order", async () => {
+    m.getDeckDetail.mockResolvedValue({
+      ...DETAIL,
+      commander: { ...COMMANDER, oracleId: "t", name: "Tymna the Weaver", colorIdentity: ["W", "B"] },
+      partner: { ...COMMANDER, oracleId: "th", name: "Thrasios, Triton Hero", colorIdentity: ["G", "U"] },
+    });
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.colorIdentity).toEqual(["W", "U", "B", "G"]);
+    expect(page.commanders.map((c) => c.name)).toEqual(["Tymna the Weaver", "Thrasios, Triton Hero"]);
+    expect(page.bodySize).toBe(98);
   });
 });

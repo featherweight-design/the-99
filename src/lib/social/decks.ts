@@ -20,6 +20,7 @@
  */
 import { loadDeckBuyRows } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
+import { deckIdentity } from "../decks/format";
 import type { StatusPill } from "../decks/status";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { and, eq, inArray } from "drizzle-orm";
@@ -155,8 +156,8 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     manaCost: c.manaCost,
     imageUri: c.imageUri,
     printedName: c.printedName ?? null,
-    printedSetCode: null,
-    printedCollectorNumber: null,
+    printedSetCode: c.printedSetCode ?? null,
+    printedCollectorNumber: c.printedCollectorNumber ?? null,
     layout: c.layout ?? null,
     commander: true as const,
     owned: owned.has(c.oracleId),
@@ -166,8 +167,9 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     name: detail.name,
     commanders,
     cards: detail.cards.map((c) => friendCard(c, owned)),
-    colorIdentity: row.commanderColorIdentity,
-    artCropUri: row.commanderArtCropUri,
+    colorIdentity: deckIdentity(detail.commander.colorIdentity, detail.partner?.colorIdentity ?? null),
+    // The resolved printing's crop, as the commander's own image is: the tab's list reads the catalog's.
+    artCropUri: detail.commander.artCropUri,
     built: detail.built,
     bodySize: deckBodySize(detail.partner !== null),
   };
