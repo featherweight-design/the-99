@@ -34,7 +34,7 @@ menu and Home. Checked against main at `6560671`. Canvas (account 2): https://cl
    248 band, 100px in the 168 band, 46px in on the owner's tile so the ⋯ stays clear. Other `ArtWash` bands take steps 1
    and 2 and the plain gradient. Drawn with Ghalta standing in for Jaws (canvases can't load Scryfall).
 3. **Spare requests: ratified.** The accepted tick in `var(--bg)` is dark on green in all six themes (every `--bg` is
-   dark; 6.3 to 7.0:1). The ⓘ tooltip opening upward in the 640 modal. #2230's 11 shared-component differences: the
+   dark; 6.3 to 6.7:1). The ⓘ tooltip opening upward in the 640 modal. #2230's 11 shared-component differences: the
    shipped view switch, key items and buy tag win (the boards' were kit drift); the 2 spacing ones too; the phone's 25px
    head gap is the shipped sticky band. Declined inside the cooldown over Ask instead.
 4. **Push landings (D4): ratified.** Seen is a cursor; only Home and /friends move theirs. Set, precon and friend-page
