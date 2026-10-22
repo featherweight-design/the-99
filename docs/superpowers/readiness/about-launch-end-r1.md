@@ -74,7 +74,7 @@ These are Design errata with no Design round (orchestrator, 2026-10-21). The cod
   shipped `credits` entry stays for those readers (`buying-credits` declares `replaces: 'credits'`). The redraw ships as a new entry,
   `buying-credits`, behind `PAYMENTS_ENABLED`, and is announced by it (option b).
 - **Fact corrections through prose-pass.**
-  - `card-scan`: Auto instead of Fast; Normal now picks the printing in the camera; scanning needs a connection (the
+  - `card-scan`: Auto instead of Fast, and Auto keeps the printing the scan matched (`matchedPrinting`), not the first; Normal now picks the printing in the camera; scanning needs a connection (the
     words had claimed a 27 MB offline index); a second copy needs the card taken out of frame in Auto.
   - `card-search`: the rail holds an icon, not a field; the wishlist sentence follows `SOCIAL_WISHLIST_ENABLED`; the deck
     field is "Add a card by name"; the route is `/collection`, since "any page" is not a route.

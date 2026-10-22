@@ -62,7 +62,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Typing in a stack of new cards gets old fast. Press “Add cards”, then “Scan”, and hold each card up to your camera. We work out which card it is and put it on the list.\n\nWhen we’re not sure, you get the three closest to pick from. Then check the list, fix anything we got wrong, and one Save adds the lot.',
     keys: [
-      'In Auto, a card goes on at its first printing as soon as it reads. In Normal, you pick the printing as you scan.',
+      'In Auto, a card goes on at the printing we matched as soon as it reads. In Normal, you pick the printing as you scan.',
       'Scanning needs a connection: we check each card as you scan it.',
       'A card that stays in view is never added twice. In Auto, take it out of frame to add a second copy.',
       'Press a scanned card’s name on the list to swap it for one of the closest matches.',
