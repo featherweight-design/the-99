@@ -36,7 +36,7 @@ export const settingsCopy = {
     head: "Your decks",
     explain: "What friends see on your Decks tab.",
     see: { name: "Friends can see my decks", line: "Each deck’s name, commander and whole list, read-only." },
-    unfinished: { name: "Include drafts and decks I’m building", line: "Off: a deck shows once its list is full." },
+    unfinished: { name: "Include drafts and decks I’m building", line: "Off: a deck shows once its list is full and committed." },
     foot: "To keep one deck to yourself, tick Hidden from friends in its ⋯ menu.",
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
