@@ -2,8 +2,9 @@
  * The combo writer (menu and Home G1, "Combos you can make: a collection write completes a pair"). The two collection
  * writes every change converges on (`replaceCollection`, `applyCollectionChange`) call it in three steps:
  *
- * 1. `comboWatchIn(tx, user)`, under the per-user lock and BEFORE the rows move: null unless the reader's combo kind
- *    is on (one indexed read of `user_prefs`, nothing else), else the cards held before the write.
+ * 1. `comboWatchIn(tx, user)`, under the per-user lock and BEFORE the rows move: null unless the combo kind is
+ *    AVAILABLE to the reader (their resolved switches: the feed on, no kill switch or override against it) and on in
+ *    their choices (one indexed read of `user_prefs`), else the cards held before the write.
  * 2. `comboDeltaIn(tx, user, watch)`, after the rows moved, in the same transaction: the cards the write ADDED (held
  *    now, not held before) and everything held now. Null when nothing was added, or when the collection was empty
  *    before: a first import completes every pair it holds at once, and that is the collection, not news.
@@ -18,6 +19,8 @@ import type { db } from "../../db";
 import { cards, collectionItems, spellbookVariantCards, spellbookVariants, userPrefs } from "../../db/schema";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { recordFeedItem } from "../social/feed-write";
+import { resolveSwitchEnv } from "../switches/snapshot";
+import { availableFeedKinds } from "./flag";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -98,8 +101,9 @@ export function pairsTouchingQuery(added: readonly string[]) {
 
 const idSet = (rows: { oracle_id: string }[]) => new Set(rows.map((r) => r.oracle_id));
 
-/** Step 1, under the lock and before the rows move. Null (and nothing more read) while the reader's combo kind is off. */
+/** Step 1, under the lock and before the rows move. Null (and nothing more read) while the reader's combo kind is unavailable or off. */
 export async function comboWatchIn(tx: Executor, userId: string): Promise<ReadonlySet<string> | null> {
+  if (!availableFeedKinds(await resolveSwitchEnv(userId)).includes("combo")) return null;
   const on = await tx.execute(comboOnQuery(userId));
   if (on.rows.length === 0) return null;
   return idSet((await tx.execute<{ oracle_id: string }>(heldCardsQuery(userId))).rows);
@@ -126,7 +130,10 @@ export async function noticeCombos(q: Executor, userId: string, delta: ComboDelt
   }));
   const added = new Set(delta.added);
   let written = 0;
-  for (const p of newlyCompleted({ added, held: delta.held, pairs })) {
+  // Every candidate, most popular first, until THREE are written: a variant already told (the dedupe key) is not
+  // news and must not use up one of the three places.
+  for (const p of newlyCompleted({ added, held: delta.held, pairs, limit: pairs.length })) {
+    if (written >= COMBOS_PER_WRITE) break;
     const arrived = p.cards.filter((c) => added.has(c.oracleId)).map((c) => c.oracleId);
     const ok = await recordFeedItem(q, {
       userId,

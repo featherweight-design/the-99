@@ -218,6 +218,11 @@ jobs:
         # The ~51MB feed is parsed whole (`fetchManapoolSingles`), as `price-refresh.yml` does.
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          # The feed's price-drop notices resolve each reader's switches on top of THIS environment (menu and Home
+          # G2), so the two switches the writer needs carry the target's own Vercel values: a repository variable on
+          # each `catalog-<target>` environment, unset meaning off. A kill switch is the literal `off`.
+          HOME_FEED_ENABLED: ${{ vars.HOME_FEED_ENABLED }}
+          SOCIAL_WISHLIST_ENABLED: ${{ vars.SOCIAL_WISHLIST_ENABLED }}
         run: |
           echo "### Prices" >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"

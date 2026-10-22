@@ -76,6 +76,11 @@ jobs:
       # The feed buffers whole (see fetchManapoolSingles) — ~51MB of JSON text
       # expands well past Node's default headroom once parsed into objects.
       NODE_OPTIONS: --max-old-space-size=4096
+      # The feed's price-drop notices (menu and Home G2) resolve each reader's switches on top of this environment: the
+      # target's own Vercel values, held as variables on each `catalog-<target>` environment (unset means off; a kill
+      # switch is the literal `off`). See `catalog-refresh.yml`.
+      HOME_FEED_ENABLED: ${{ vars.HOME_FEED_ENABLED }}
+      SOCIAL_WISHLIST_ENABLED: ${{ vars.SOCIAL_WISHLIST_ENABLED }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
