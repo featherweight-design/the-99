@@ -103,6 +103,17 @@ export const shellCopy = {
     triggerLabel: (name: string) => `Account: ${name}`,
     // Stands in for the name when Clerk has neither a name nor an email.
     fallbackName: "your account",
+    // Takes the Friends row's place once Friends is in the bar (menu and Home handoff, R1 Menu).
+    settings: "Settings",
+  },
+  // The bar's slots that are not drawn from another module's copy (menu and Home handoff, R1 Menu).
+  nav: {
+    friends: "Friends",
+    // The badge's count for a screen reader: the pill itself is drawn, not read.
+    badge: {
+      home: (n: number) => `${n} new`,
+      friends: (n: number) => `${n} waiting on you`,
+    },
   },
 } as const;
 

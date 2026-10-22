@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
-import { NavRail, TabBar, MobileHeader } from "./nav";
+import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
 import { noCollectionEntryEnabled } from "../../lib/collection/edit-flag";
 import { perfRead } from "../../lib/perf/timing";
@@ -16,6 +16,7 @@ import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { socialFriendsEnabled } from "../../lib/social/flag";
+import { commandersPlaceEnabled } from "../../lib/commanders/place-flag";
 import { firstRunTourEnabled } from "../../lib/discovery/onboarding-flag";
 import { liveMoments } from "../../lib/moments/live";
 import { readSpentMoments } from "../../lib/moments/spent";
@@ -33,7 +34,7 @@ import { HelpRoot } from "../help/help-root";
  * mobile header + bottom tabs (< md), and a scrollable main column.
  *
  * `locked` = no cards uploaded yet (uniqueCards === 0). NavRail and TabBar use
- * this to draw Collection, Commanders, Discover and Decks as locked slots, each
+ * this to draw Collection, Commanders, Discover and Decks (Discover leaves with the Commanders place) as locked slots, each
  * opening a note that says why, until the collection is read
  * (docs/superpowers/design-tables/first-run-locked-nav.md).
  *
@@ -91,6 +92,8 @@ export default async function Shell({
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
     // `Take the tour` under About in the account menu (discovery R3·2), with the tour's own switch.
     tour: firstRunTourEnabled(env),
+    // The Commanders place: Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
+    commandersPlace: commandersPlaceEnabled(env),
   };
   // Card search (plan `2026-10-16-card-search.md`, PR C): the header icon and the sheet, or neither.
   const cardSearch = cardSearchEnabled(env);
@@ -112,6 +115,9 @@ export default async function Shell({
     moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
       ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
       : false;
+  // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
+  // reader. None is read yet; the feed and Friends PRs fill them here, and an absent count draws no badge.
+  const badges: NavBadges = {};
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
@@ -132,7 +138,7 @@ export default async function Shell({
       <CardSearchShell userId={cardSearch ? userId : null}>
       <HelpRoot on={help}>
       <div className="flex min-h-dvh flex-1">
-        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0">
@@ -152,7 +158,15 @@ export default async function Shell({
           </ShellMain>
           <FanContentNotice />
         </div>
-        <TabBar locked={locked} openLock={openLock} helpMoment={helpMoment} />
+        <TabBar
+          locked={locked}
+          openLock={openLock}
+          helpMoment={helpMoment}
+          friendsMoment={friendsMoment}
+          friends={door.friends}
+          commandersPlace={door.commandersPlace}
+          badges={badges}
+        />
         {/* Last in the tree, so it is reached after the page in tab order (§N10). */}
         {sheet && <AboutSheet state={sheet} />}
       </div>

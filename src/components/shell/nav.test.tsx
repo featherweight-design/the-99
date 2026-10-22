@@ -530,7 +530,8 @@ describe("The lock, phone tab bar", () => {
     const bar = screen.getByRole("navigation", { name: "Primary" });
     const bracket = container.querySelector("[data-lock-bracket]")!;
     expect(bracket).toHaveTextContent("Open once your cards are in");
-    expect(bracket.className).toContain("ml-[20%]");
+    expect((bracket as HTMLElement).style.marginLeft).toBe("20%");
+    expect((bracket as HTMLElement).style.width).toBe("80%");
     expect(bar.className).toContain("flex-col");
     expect(bar.className).toContain("pt-[7px]");
     expect(bar.className).toContain("h-[var(--tabbar-h)]");

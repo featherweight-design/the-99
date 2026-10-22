@@ -1,4 +1,4 @@
-// The five rail/tab glyphs — 19px, currentColor, 1.5px, round caps
+// The rail/tab glyphs — 19px, currentColor, 1.5px, round caps
 // (design/design_handoff_the99_refresh/CHROME-rail-and-tabs.md §The rail).
 //
 // ONE component for both chromes. The handoff calls out that the slots must not
@@ -16,8 +16,11 @@
 // package's CHROME-five-item-nav.md describes the diamond as 3.2r, which would
 // be square; the frame draws it 2.8 wide and 3.6 tall, and the frame is the
 // drawing.
+//
+// Friends, the bar's fifth slot once Discover leaves it (menu and Home handoff, "Menu.dc.html"): two seats, the
+// near one whole and the far one behind, on the same 20-unit box at 1.5px, transcribed from that board.
 
-export type NavHref = "/" | "/collection" | "/commanders" | "/discover" | "/decks";
+export type NavHref = "/" | "/collection" | "/commanders" | "/discover" | "/decks" | "/friends";
 
 function Svg({ children }: { children: React.ReactNode }) {
   return (
@@ -74,6 +77,15 @@ export function NavIcon({ href }: { href: NavHref }) {
         <Svg>
           <rect x="6.6" y="3.2" width="10" height="13" rx="1.6" />
           <path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2" />
+        </Svg>
+      );
+    case "/friends":
+      return (
+        <Svg>
+          <circle cx="7.6" cy="7.4" r="2.7" />
+          <path d="M2.8 16.4c.5-2.9 2.4-4.5 4.8-4.5s4.3 1.6 4.8 4.5" />
+          <path d="M12.4 4.9a2.4 2.4 0 1 1 1.3 4.5" />
+          <path d="M14.6 11.6c1.5.5 2.4 1.9 2.7 4" />
         </Svg>
       );
     // A fifth nav slot must arrive with its glyph. Without this the switch

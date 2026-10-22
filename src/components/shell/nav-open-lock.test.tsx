@@ -114,8 +114,8 @@ describe("the open lock, phone tab bar", () => {
   it("spans the bracket over tabs 3 to 5, with Home and Collection live before it", () => {
     const { container } = render(<TabBar locked openLock={FIRST_RUN} />);
     const bracket = container.querySelector("[data-lock-bracket]")!;
-    expect(bracket.className).toContain("ml-[40%]");
-    expect(bracket.className).not.toContain("ml-[20%]");
+    expect((bracket as HTMLElement).style.marginLeft).toBe("40%");
+    expect((bracket as HTMLElement).style.width).toBe("60%");
     const bar = screen.getByRole("navigation", { name: "Primary" });
     const order = Array.from(bar.querySelectorAll("a, button[data-locked-slot]")).map(
       (el) => el.getAttribute("data-locked-slot") ?? el.textContent,
@@ -126,7 +126,9 @@ describe("the open lock, phone tab bar", () => {
 
   it("keeps the shipped bracket over tabs 2 to 5 with the switch off", () => {
     const { container } = render(<TabBar locked openLock={null} />);
-    expect(container.querySelector("[data-lock-bracket]")!.className).toContain("ml-[20%]");
+    const bracket = container.querySelector<HTMLElement>("[data-lock-bracket]")!;
+    expect(bracket.style.marginLeft).toBe("20%");
+    expect(bracket.style.width).toBe("80%");
     expect(slot("Collection")).toBeInTheDocument();
   });
 
