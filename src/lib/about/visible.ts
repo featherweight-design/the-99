@@ -15,7 +15,7 @@ import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnable
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled, noCollectionEntryEnabled } from "../collection/edit-flag";
-import { socialFriendsEnabled, socialGamesEnabled } from "../social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
@@ -27,6 +27,9 @@ import { preconsEnabled } from "../precons/flag";
 import { upcomingPreconsEnabled } from "../precons/upcoming-flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
+import { firstRunTourEnabled, helpPanelEnabled } from "../discovery/onboarding-flag";
+import { cardSearchEnabled } from "../card-search/flag";
+import { cardScanEnabled } from "../card-scan/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 
@@ -76,6 +79,14 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
+  // The launch-end batch. Rule 0 and invites already need SOCIAL_FRIENDS_ENABLED, and scanning COLLECTION_EDIT_ENABLED,
+  // inside their own functions.
+  HELP_PANEL_ENABLED: helpPanelEnabled,
+  FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
+  RULE_ZERO_ENABLED: ruleZeroEnabled,
+  SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
+  CARD_SEARCH_ENABLED: cardSearchEnabled,
+  CARD_SCAN_ENABLED: cardScanEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

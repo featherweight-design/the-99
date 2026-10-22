@@ -215,7 +215,11 @@ export function FriendsHead({
         {commander || editing ? null : <div className="mt-[4px] md:hidden">{choose}</div>}
       </div>
 
-      <div className={`flex flex-col items-stretch md:items-end ${inviteCount !== undefined && heldLine ? "gap-[6px]" : "gap-[8px]"}`}>
+      {/* `data-about-invite`: Add a friend with the lines under it, as one box, the halo of About's `invites` entry. */}
+      <div
+        data-about-invite=""
+        className={`flex flex-col items-stretch md:items-end ${inviteCount !== undefined && heldLine ? "gap-[6px]" : "gap-[8px]"}`}
+      >
         <button
           type="button"
           onClick={() => {

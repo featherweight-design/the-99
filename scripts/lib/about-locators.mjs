@@ -13,8 +13,10 @@
 //
 // SCOPE: a locator is resolved inside the page's `<main>` (`onPage`, `scripts/lib/surface.mjs`), never the shell
 // around it, EXCEPT on `card-details` and `account`, whose frame is a dialog drawn outside `<main>`: those begin at
-// `[role='dialog']` and are resolved from the page. Selectors are Playwright selector strings; prefer data-* and
-// aria attributes, with text only through `:has-text()`/`:text-is()` where nothing better exists.
+// `[role='dialog']` and are resolved from the page; and a locator that BEGINS with `header`, the shell's phone header,
+// which holds the ? and the search icon (launch-end batch G1), resolved from the page the same way. Selectors are
+// Playwright selector strings; prefer data-* and aria attributes, with text only through `:has-text()`/`:text-is()`
+// where nothing better exists.
 
 /** @type {Record<string, { screen: string, locator: string, reaches?: true, note?: string }>} */
 export const ABOUT_LOCATORS = {
