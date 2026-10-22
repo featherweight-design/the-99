@@ -46,6 +46,7 @@ export const SWITCHES = [
   { name: "FIRST_RUN_TOUR_ENABLED", kind: "feature" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "HELP_PANEL_ENABLED", kind: "feature" },
+  { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
   { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
@@ -121,6 +122,8 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
+  FRIEND_DECKS_ENABLED:
+    "its read filters a friend's Decks tab by the owner's new Settings defaults, which hide drafts, before any surface lets the owner see or change them (friend decks handoff, PR 4)",
   SPARE_REQUESTS_ENABLED:
     "the Friends badge counts spare requests waiting on the reader, and no surface answers one until the UI PR (plan 2026-10-22-spare-requests.md)",
 };

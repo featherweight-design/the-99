@@ -2804,6 +2804,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   a stale row) shows nothing, leaving, removal and unfriending each delete the grant ROW (counted in the table, since
   the read alone would hide a missed cleanup), rejoining does not restore it, and `friendGeneration` moves when a
   friend starts sharing, when their collection moves and when they rename.
+- `pnpm probe:friend-decks` proves friend decks' data half (G1, G2) through `loadFriendDecks` and `loadFriendDeck`: on
+  the defaults a friend sees no Draft and its page reads as nothing; drafts included, both decks show; a deck hidden on
+  its own leaves the tab and its page reads as nothing; Friends can see my decks off empties both; the page marks the
+  VIEWER's ownership, not the owner's; a stranger reads nothing and cannot hide the owner's deck; and both writes move
+  the owner's data stamp only when they change something, hiding leaving `last_edited_at` alone. It writes per-run
+  accounts only, on a NAMED scratch branch (`FRIEND_DECKS_PROBE_URL`, `PROBE_DB_BRANCH`), refusing staging, production
+  and local-dev, and removes every row it wrote.
 - `pnpm probe:spare-settings` proves Settings' Spares (menu and Home plan PR 3, G3) through `loadFriendSpares`: a
   friend's `spare_min` (absent row and a row holding 1 offer every spare; 3 drops a 1-spare card; 4 drops a 3-spare
   one) and `spare_keep` (a kept card is not offered at any count) are the GRANTOR's alone, so a second friend on

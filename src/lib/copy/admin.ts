@@ -736,6 +736,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
   FIRST_RUN_TOUR_ENABLED: { label: "First-run tour", description: "The tour on a new account’s Home, and Take the tour." },
   HELP_PANEL_ENABLED: { label: "About this screen", description: "The ? in the rail and the header, with this screen’s About entries." },
+  FRIEND_DECKS_ENABLED: { label: "Friend decks", description: "Open a friend’s deck, and hide a deck from friends. Needs Friends." },
   HOME_FEED_ENABLED: { label: "Home feed", description: "What’s new on Home, its badge, and the news switches in Settings." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },

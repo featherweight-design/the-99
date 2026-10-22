@@ -10,7 +10,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled } from "../../lib/social/flag";
+import { friendDecksEnabled, socialFriendsEnabled } from "../../lib/social/flag";
+import { writeFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
   keepCardBack, releaseCard, searchSpareCards, setSpareMin, type SpareSearchHit,
@@ -64,4 +65,18 @@ export async function searchSpareCardsAction(query: unknown): Promise<SpareSearc
   const reader = await spareReader();
   if (!reader) return OFF;
   return { ok: true, hits: await searchSpareCards(reader.userId, query, reader.env) };
+}
+
+/**
+ * Your decks (friend decks G2): the two rules, both booleans, anything else `invalid`. Refused as `off` unless
+ * `FRIEND_DECKS_ENABLED` is on for this reader. A friend's tab and the deck page read the rules per request, and the
+ * stamp trigger on `user_prefs` moves `friendGeneration` for a cached page: `/settings` is all that redraws here.
+ */
+export async function setFriendDeckPrefsAction(seeDecks: unknown, seeUnfinished: unknown): Promise<SpareWriteOutcome> {
+  const userId = await requireUserId();
+  if (!friendDecksEnabled(await requestSwitchEnv(userId))) return OFF;
+  if (typeof seeDecks !== "boolean" || typeof seeUnfinished !== "boolean") return { ok: false, reason: "invalid" };
+  await writeFriendDeckPrefs(userId, { seeDecks, seeUnfinished });
+  refreshSettings();
+  return { ok: true };
 }
