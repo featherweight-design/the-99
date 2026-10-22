@@ -6,7 +6,7 @@ import { settingsCopy } from "../../lib/copy/settings";
 export function SettingsView({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto box-border flex w-full max-w-[720px] flex-col px-[16px] pb-[40px] pt-[22px] md:px-0 md:pb-[50px] md:pt-[36px]">
-      <h1 className="m-0 font-display text-[22px] font-bold leading-[1.15] text-[color:var(--fg)] md:text-[28px]">{settingsCopy.title}</h1>
+      <h1 className="m-0 font-display text-[22px] font-bold leading-normal text-[color:var(--fg)] md:text-[28px]">{settingsCopy.title}</h1>
       <p className="m-0 mt-[4px] font-mono text-[11px] text-[color:var(--fg-faint)]">{settingsCopy.sub}</p>
       {children}
     </div>

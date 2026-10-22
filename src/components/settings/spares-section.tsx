@@ -95,7 +95,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
   const shown = kept.filter((k) => !released.has(k.oracleId));
 
   return (
-    <section aria-labelledby="settings-spares" className="mt-[26px]">
+    <section aria-labelledby="settings-spares" className="mt-[26px] md:mt-[34px]">
       <h2 id="settings-spares" className={SECTION_HEAD}>{c.head}</h2>
       <p className="m-0 mt-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.explain}</p>
       <div className="mt-[12px] flex flex-wrap items-center gap-[10px] text-[14px] leading-[1.5] text-[color:var(--fg)]">

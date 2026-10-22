@@ -1,5 +1,5 @@
-// Settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3). Every string is the
-// board's placeholder, owed to /copy-review. The What's new on Home section's strings arrive with PR 4.
+// Settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3). Strings passed
+// /copy-review. The What's new on Home section's strings arrive with PR 4.
 
 export const settingsCopy = {
   title: "Settings",
