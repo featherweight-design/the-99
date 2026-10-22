@@ -57,7 +57,7 @@ export const momentsCopy = {
   // M11 once Friends is in the bar (COMMANDERS_PLACE_ENABLED): the bubble sits on the slot itself, so it names no menu.
   friendsAfterGameBar: {
     tool: "Playing with friends?",
-    line: "Add them under Friends, then seat them when you log a game.",
+    line: "Add them here, then seat them when you log a game.",
   },
   helpMeChoose: {
     tool: "Not sure where to start?",
