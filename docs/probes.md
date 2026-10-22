@@ -3103,6 +3103,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   band. `PROBE_BASE` (a local server; it refuses any other host) and `PROBE_DECK_ID`, a deck of two or
   more cards. It writes only the probe account's About row, restores it, and refuses a `DATABASE_URL`
   reporting the production or staging branch.
+- `pnpm probe:card-swipe-steady` proves paging the phone's card details holds the shelf still. At 390, with a
+  touch pointer (CDP touch events), it swipes to the next card, back, and four times quickly, sampling the
+  sheet's top and the card's laid-out width every frame; both must hold the teaser's values on every frame. A
+  press on the grip must still ease the sheet to full, with frames between. At 1300 ArrowRight pages with the
+  dialog's box unmoved. `PROBE_SHOPPING=1` opens from the Shopping tab, where the stand-ins door draws (a server
+  with `SWAP_TOOLS_ENABLED` on): that is the case that failed, a 45px dip and the card growing and shrinking on
+  every page, because the strip's height is measured after each remount. `PROBE_MIN=1`, `PROBE_HEIGHT` (664 for a
+  phone browser with its bars showing), `PROBE_ENGINE=webkit` with `PROBE_MOUSE=1`, and `PROBE_DECK_ID` vary it.
+  Local servers only; it refuses the production and staging branches and writes only the About row, restored.
 - `pnpm probe:arrivals-banner` presses the upcoming-precons banner on Home (plan `2026-10-14-upcoming-precons.md`, PR 3)
   at 390x844 and 1300x900: several arrivals draw the count heading, one line each (soonest first), one link and one ✕
   (44 at 390, 32 at 1300), the link on the heading line at 1300 and last at 390; one arrival draws a sentence and its

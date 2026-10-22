@@ -570,24 +570,66 @@ const NeighborPlate = React.forwardRef<
 const MIN_TEASER_CARD_WIDTH = 120;
 
 /**
+ * The holds on an element's transitions that `useOwnHeight` has taken and not yet let go. Counted,
+ * because two measurements share one element (the door strip's and the dialog's own both hold the
+ * dialog), and one letting go must not release the other before its height is committed.
+ */
+const settling = new WeakMap<HTMLElement, number>();
+
+/**
  * An element's own height, kept current as it changes. Zero while `active` is false or the element
  * has no layout, which is every element below a `display: none` ancestor.
+ *
+ * A height this settles moves the phone's geometry (the sheet's top, the band, the card sized from
+ * it), and a settle is not a move, so it is applied with `still`'s transitions held off. The case
+ * that needs it is every page: the modal remounts per card, its first measurement reads layout with
+ * the height still 0, and without the hold the sheet eased up from there on every swipe, the card
+ * shrinking with it (`[data-settling]`, `globals.css`).
  */
-function useOwnHeight(ref: React.RefObject<HTMLElement | null>, active: boolean): number {
+function useOwnHeight(ref: React.RefObject<HTMLElement | null>, active: boolean, still: React.RefObject<HTMLElement | null>): number {
   const [height, setHeight] = useState(0);
+  const last = useRef(0);
+  // The element this instance holds, until its height is committed.
+  const holding = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
+    const settle = (next: number) => {
+      if (next === last.current) return;
+      last.current = next;
+      const el = still.current;
+      if (el && holding.current === null) {
+        holding.current = el;
+        settling.set(el, (settling.get(el) ?? 0) + 1);
+        el.setAttribute("data-settling", "");
+      }
+      setHeight(next);
+    };
     const el = ref.current;
     if (!active || !el) {
-      setHeight(0);
+      settle(0);
       return;
     }
-    const measure = () => setHeight(el.offsetHeight);
+    const measure = () => settle(el.offsetHeight);
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref, active]);
+  }, [ref, active, still]);
+  // The new height is committed: lay it out while the hold is on, so the browser takes it as where
+  // things already were, and only then let go. Not before it is committed: on mount this runs
+  // straight after the measurement, with the height still the 0 it rendered with.
+  useLayoutEffect(() => {
+    const el = holding.current;
+    if (el === null || height !== last.current) return;
+    holding.current = null;
+    void el.offsetHeight;
+    const left = (settling.get(el) ?? 1) - 1;
+    if (left > 0) settling.set(el, left);
+    else {
+      settling.delete(el);
+      el.removeAttribute("data-settling");
+    }
+  }, [height]);
   return height;
 }
 
@@ -1013,7 +1055,7 @@ export function CardModal({
   // adds nothing: it shares the teaser's own foot row (stacked sheets R1, call 9).
   const doorStrip = door ? door("strip") : null;
   const doorRef = useRef<HTMLDivElement | null>(null);
-  const doorHeight = useOwnHeight(doorRef, doorStrip !== null);
+  const doorHeight = useOwnHeight(doorRef, doorStrip !== null, dialogRef);
   const teaserHeight = SHEET.teaserHeight + doorHeight;
 
   // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen (or a teaser grown by a
@@ -1021,7 +1063,7 @@ export function CardModal({
   // draw tens of pixels wide; there the sheet opens full and stays full, the way the stacked
   // sheet drew its details before R2, and Escape closes it. 120 keeps the card at least the
   // size of a readable thumbnail. Stacked sheets' own spec check is the carousel's PR 4.
-  const dialogHeight = useOwnHeight(dialogRef, narrow);
+  const dialogHeight = useOwnHeight(dialogRef, narrow, dialogRef);
   const cramped = dialogHeight > 0 && (dialogHeight - teaserHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
   // What the sheet DRAWS: full when the reader raised it, or when the teaser is not offered.
   const full = sheetFull || cramped;

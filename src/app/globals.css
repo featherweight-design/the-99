@@ -1342,6 +1342,12 @@ img[data-arrival="failed"] ~ [data-foil] { opacity: 0; }
    teaser to full keeps the quick snap above. The card's growth rides the same tokens. */
 .sheet-snap.sheet-gentle { transition: top var(--motion-duration) var(--motion-ease) var(--motion-delay); }
 .sheet-snap.sheet-gentle[data-dragging] { transition: none; }
+/* A measured height settling (the door strip, the dialog) is not a move: `useOwnHeight` holds these
+   off while the browser lays it out, so a paged card does not ease its sheet up from the height it
+   mounted with. */
+[data-settling] .sheet-snap,
+[data-settling] .card-grow,
+[data-settling] .band-dim { transition: none; }
 /* While a drag sizes the card it tracks the finger; the ease is for the settle after release. */
 [data-card-dragging] .card-grow { transition: none; }
 .card-grow {
