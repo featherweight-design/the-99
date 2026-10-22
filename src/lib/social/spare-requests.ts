@@ -43,11 +43,17 @@ export function lockFriendshipQuery(a: string, b: string): SQL {
     for share`;
 }
 
-/** The asker's open asks for the card that have passed their days, written `expired` so the one-open index frees. */
+/**
+ * The asker's open asks for the card that can no longer be answered, written `expired` so the one-open index frees:
+ * those past their days, and those to someone no longer a friend (an unfriend drops the ask from both lists, so it
+ * must not hold the card either).
+ */
 export function expireStaleQuery(askerId: string, oracleId: string, now: Date): SQL {
   return sql`update ${spareRequests} xsr set status = 'expired'
     where xsr.asker_user_id = ${askerId} and xsr.oracle_id = ${oracleId} and xsr.status = 'open'
-      and xsr.created_at <= ${openFloor(now).toISOString()}::timestamptz`;
+      and (xsr.created_at <= ${openFloor(now).toISOString()}::timestamptz
+        or not exists (select 1 from ${friendLinks} xfl
+          where xfl.user_id = xsr.asker_user_id and xfl.friend_user_id = xsr.holder_user_id))`;
 }
 
 /**

@@ -50,7 +50,10 @@ describe("lockFriendshipQuery", () => {
 describe("expireStaleQuery", () => {
   const { q, params } = render(expireStaleQuery("a", CARD, NOW));
   it("writes expired over the asker's open asks for the card at or before the floor, nothing else", () => {
-    expect(q).toMatch(/update "spare_requests" xsr set status = 'expired' where xsr\.asker_user_id = \$1 and xsr\.oracle_id = \$2 and xsr\.status = 'open' and xsr\.created_at <= \$3::timestamptz/);
+    expect(q).toMatch(/update "spare_requests" xsr set status = 'expired' where xsr\.asker_user_id = \$1 and xsr\.oracle_id = \$2 and xsr\.status = 'open' and \(xsr\.created_at <= \$3::timestamptz/);
+  });
+  it("... and over one to someone no longer a friend, read on the row's own two ids", () => {
+    expect(q).toMatch(/or not exists \(select 1 from "friend_links" xfl where xfl\.user_id = xsr\.asker_user_id and xfl\.friend_user_id = xsr\.holder_user_id\)\)$/);
     expect(params).toEqual(["a", CARD, openFloor(NOW).toISOString()]);
   });
 });

@@ -160,8 +160,14 @@ async function main() {
     check("... and none of them can be answered", (await Promise.all(open.map((id) => sr.answerSpareRequest(H1, id, "yes", ENV)))).every((r) => !r.ok));
     check("... and Ann's list no longer names Hal", !(await sr.loadMyAsks(A, ENV)).some((m) => m.holder.publicId === h1.publicId));
     check("... and Ann cannot ask Hal", ((r) => !r.ok && r.reason === "not-friend")(await sr.askForSpare(A, h1.publicId, Y, ENV)));
+    check("an open ask to Hal no longer holds Z: Ann may ask Hope for it", (await sr.askForSpare(A, h2.publicId, Z, ENV)).ok);
 
     console.log("\n7. purge");
+    const onHal = (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where holder_user_id = ${H1}`)).rows[0].n;
+    check("Hal holds asks before his purge", onHal > 0, `${onHal}`);
+    await purgeAccount(H1, { stripe: () => null });
+    check("a holder's purge deletes every ask made of them", (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where holder_user_id = ${H1}`)).rows[0].n === 0);
+    check("... and leaves the asks made of others", (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where holder_user_id = ${H2}`)).rows[0].n > 0);
     await purgeAccount(A, { stripe: () => null });
     const left = (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where asker_user_id = ${A} or holder_user_id = ${A}`)).rows[0].n;
     check("the asker's purge deletes every ask on either side", left === 0, `${left} left`);
