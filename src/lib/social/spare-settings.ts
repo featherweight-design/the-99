@@ -68,8 +68,8 @@ export async function setSpareMin(userId: string, value: unknown, q: Writer = db
 }
 
 /**
- * Keeps a card back. The card must be in the catalog: the insert selects it from `cards`, so an unknown id writes
- * nothing and answers false. Already kept answers true and writes nothing.
+ * Keeps a card back. The card must be in the catalog: an id `cards` does not hold answers false and writes
+ * nothing (the foreign key would refuse one that vanished between the two statements). Already kept answers true and writes nothing.
  */
 export async function keepCardBack(userId: string, oracleId: unknown): Promise<boolean> {
   if (!isUuid(oracleId)) return false;

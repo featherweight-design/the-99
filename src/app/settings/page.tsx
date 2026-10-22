@@ -2,8 +2,9 @@
 // account menu. This PR draws its Spares section only; What's new on Home joins it in PR 4. With
 // `SOCIAL_FRIENDS_ENABLED` off for this reader the page has nothing to show, so the route does not exist.
 //
-// Signed in only (not in `src/proxy.ts`'s public list). Read fresh per request: nothing here is cached, and every
-// write revalidates the page. Loading is the shell's `LoadingScreen`; a read that throws is the app's error boundary.
+// Signed in only (not in `src/proxy.ts`'s public list). The settings themselves are read per request; Kept back's
+// rows come from the reader's cached collection list (`loadCollectionList`, keyed on their own data stamp, which a
+// keep or release moves). Every write revalidates the page. Loading is the shell's `LoadingScreen`; a read that throws is the app's error boundary.
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
