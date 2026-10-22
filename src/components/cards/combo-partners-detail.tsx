@@ -51,15 +51,19 @@ export function ComboPartnersDetail({
 }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [boundOpen, setBoundOpen] = useState(false);
-  // Opened FOR the combo (a feed item): bring the block on screen once, at mount, in a modal whose column may scroll.
+  const partners = card.comboPartners ?? [];
+  const hasPartners = partners.length > 0;
+  // Opened FOR the combo (a feed item): bring the block on screen once, in a modal whose column may scroll. Run when
+  // the block is DRAWN, not at mount: a cached card can arrive without its partners and get them on revalidation.
   const rootRef = useRef<HTMLDivElement>(null);
+  const revealed = useRef(false);
   useEffect(() => {
-    if (!initiallyExpanded) return;
+    if (!initiallyExpanded || !hasPartners || revealed.current) return;
+    revealed.current = true;
     // The app's scroll, not the reader's (quick return).
     noteAppScroll();
     rootRef.current?.scrollIntoView?.({ block: "nearest" });
-  }, [initiallyExpanded]);
-  const partners = card.comboPartners ?? [];
+  }, [initiallyExpanded, hasPartners]);
   if (partners.length === 0) return null;
 
   const summary = summariseByState(partners);
