@@ -26,8 +26,16 @@ export const isVapidPublicKey = (v: string): boolean => {
 /** A P-256 scalar: 32 bytes. */
 export const isVapidPrivateKey = (v: string): boolean => bytes(v)?.length === 32;
 
-/** The push services need a way to reach the sender: a `mailto:` address or an `https:` URL. */
-export const isVapidSubject = (v: string): boolean => /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^https:\/\/[^\s/]+\S*$/.test(v);
+/** The push services need a way to reach the sender: a `mailto:` address or an `https:` URL that parses and names a host. */
+export const isVapidSubject = (v: string): boolean => {
+  if (/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return true;
+  try {
+    const url = new URL(v);
+    return url.protocol === "https:" && url.hostname.length > 0;
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Whether the two halves are ONE usable P-256 keypair: the private scalar must be valid and must derive exactly the

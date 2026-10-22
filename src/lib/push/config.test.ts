@@ -53,5 +53,6 @@ describe("push config fails closed", () => {
     expect(isVapidSubject("a@b.co")).toBe(false);
     expect(isVapidSubject("http://the-99.dev")).toBe(false);
     expect(isVapidSubject("mailto:")).toBe(false);
+    for (const bad of ["https://?", "https://", "https://[not-an-ip]", "https://example.com:bad", "https:// spaced.com"]) expect(isVapidSubject(bad), bad).toBe(false);
   });
 });
