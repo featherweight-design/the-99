@@ -110,11 +110,11 @@ the start dialog's custom checkbox).
   DRAWN (not merely arrived, and not after its ✕ closed it; `receiptDrawn`).
 - **Not photographed** (no fixture reaches them; code and tests agree with the board): A1 toast (press-only failure),
   A8 ran out, A11 suggestion, A17 first run (needs a single-deck account), A18 moments.
-- **Open, for Design or Hugh (not built):** (1) the board's `No version yet` foot under fill failed and first run has no
-  code, no string and no recorded departure; (2) A10 draws `History` on every precon receipt, the code only when the start
-  added cards (there is no entry to link otherwise); (3) the board draws a `?` mark on A11 where STATES says "no ✓";
-  (4) wording for copy-review: the spoken-for-twice many-body reads `Each is…` (board: `Both are…`), and the fill-failed
-  press name is `Try again to fill this deck` (README: `Try filling again`).
+- **Rulings on what the walk found (d9 for Hugh, 2026-10-22):** (1) the board's `No version yet` foot is built: a brew's
+  card foot says it where a committed deck says `v2 · committed …` (A9, A17 and every brew's card; the quiet strip of a
+  brew with nothing to do stays silent); (2) A10 draws `History` only when the start has a ledger entry to link: a
+  departure, kept; (3) A11 draws no mark, following STATES: the board's `?` is an erratum for Design; (4) copy-review's
+  wording stands (`Each is…` is true at three or more; the fill-failed press is `Try again to fill this deck`).
 - **About:** the `deck-page` entry's caption gained one sentence about the card; `ABOUT_VERSION` stays 16 and the content
   hash is re-pinned (Hugh's ruling). The deck screens (`deck-*`), the deck tools' crops and `tour-shopping` were recaptured
   in all six themes (the whole set was not: a full run re-encodes frames whose fixture data drifted). The Proposed cuts and

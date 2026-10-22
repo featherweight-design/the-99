@@ -40,7 +40,7 @@ const NO_FOOT: TodoFootFacts = { version: null, proxies: 0, provenance: null, ot
 
 export function TodoCard({ todo, deckName, renderRow, foot = NO_FOOT }: TodoCardProps) {
   const quiet = todo.rows.length === 0;
-  if (quiet && !footHasSegments(foot)) return null;
+  if (quiet && !footHasSegments(foot, true)) return null;
   const eyebrow = todo.firstRun ? guidedBannerCopy.head : copy.head(deckName, todo.word);
   // ONE section in both forms, so the foot keeps an open disclosure when the last row leaves: a
   // different element would remount it. Quiet, it is R1's full-bleed strip (`.sl`), not a card.

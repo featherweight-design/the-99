@@ -1736,6 +1736,7 @@ export function BuilderShell({
                 version: draft?.version && !draftHasChanges
                   ? { number: draft.version.number, committedAt: draft.version.committedAt }
                   : null,
+                noVersion: draft !== null && draft.version === null,
                 proxies: proxiedCount,
                 provenance: autoCount > 0 && !firstRun
                   ? {
