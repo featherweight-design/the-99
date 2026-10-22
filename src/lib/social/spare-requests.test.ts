@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: { execute: vi.fn(), transaction: vi.fn(), select: vi.fn() } }));
 
 import {
-  answerQuery, answerSpareRequest, askForSpare, expireStaleQuery, incomingAsksQuery, loadIncomingAsks, loadMyAsks,
+  answerQuery, answerSpareRequest, askForSpare, askLockQuery, expireStaleQuery, incomingAsksQuery, loadIncomingAsks, loadMyAsks,
   lockFriendshipQuery, myAsksQuery,
 } from "./spare-requests";
 import { openFloor, shownFloor } from "./spare-request-rules";
@@ -36,6 +36,14 @@ describe("the switch", () => {
     expect(await answerSpareRequest("h", "nope", "yes", ON, NOW)).toEqual({ ok: false, reason: "gone" });
     expect(await answerSpareRequest("h", REQ, "maybe", ON, NOW)).toEqual({ ok: false, reason: "gone" });
     expect(db.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe("askLockQuery", () => {
+  it("serializes one asker's asks for one card, in the transaction, keyed on both", () => {
+    const { q, params } = render(askLockQuery("a", CARD));
+    expect(q).toBe("select pg_advisory_xact_lock(hashtextextended($1, 0))");
+    expect(params).toEqual([`spare-ask:a:${CARD}`]);
   });
 });
 

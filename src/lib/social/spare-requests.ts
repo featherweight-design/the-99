@@ -7,7 +7,8 @@
  *   spares OFFERED to the asker by the one rule every surface reads (`loadFriendSpares`: the pod grant, the friend's
  *   `spare_min` and `spare_keep`). That read runs before the write, in its own snapshots, as the stand-ins modal's
  *   does: a spare that stops being offered a moment later still leaves an ask the friend can answer No to.
- * - The write locks BOTH friendship rows FOR SHARE, in (user_id, friend_user_id) order, which is the order the purge
+ * - The write first takes a lock on the asker and card (`askLockQuery`), so one asker's asks for a card are decided one
+ *   at a time. It then locks BOTH friendship rows FOR SHARE, in (user_id, friend_user_id) order, which is the order the purge
  *   and an unfriend lock them for update: an ask racing either waits and then finds the friendship gone, or commits
  *   first and is deleted by the purge. It writes the holder's feed item ("a friend wants your spare") in the same
  *   transaction through `recordFeedItem`, which writes nothing for a holder with that kind off.
@@ -34,6 +35,16 @@ type Executor = Pick<typeof db, "execute">;
 
 export type AskOutcome = { ok: true; id: string } | { ok: false; reason: "off" | "not-friend" | "not-spare" | AskRefusal };
 export type AnswerOutcome = { ok: true } | { ok: false; reason: "off" | "gone" };
+
+/**
+ * One asker's asks for one card are decided one at a time: the expire, the read, the rules and the insert all run under
+ * this transaction-scoped lock, taken before the friendship rows. Without it two asks could both read no prior ask, and
+ * a No landing between their inserts would let the second through inside the cooldown. Nothing else takes it, so it
+ * adds no lock-order edge with the purge or an unfriend.
+ */
+export function askLockQuery(askerId: string, oracleId: string): SQL {
+  return sql`select pg_advisory_xact_lock(hashtextextended(${`spare-ask:${askerId}:${oracleId}`}, 0))`;
+}
 
 /** Both directed friendship rows, locked for share in the purge's order. Two rows back means the friendship stands. */
 export function lockFriendshipQuery(a: string, b: string): SQL {
@@ -71,6 +82,7 @@ export async function askForSpare(
   if (!offered.some((s) => s.oracleId === oracleId && s.friend.publicId === friendPublicId)) return { ok: false, reason: "not-spare" };
   try {
     return await db.transaction(async (tx): Promise<AskOutcome> => {
+      await tx.execute(askLockQuery(askerId, oracleId));
       const links = await tx.execute(lockFriendshipQuery(askerId, holderId));
       if (links.rows.length !== 2) return { ok: false, reason: "not-friend" };
       await tx.execute(expireStaleQuery(askerId, oracleId, now));
@@ -91,7 +103,7 @@ export async function askForSpare(
       return { ok: true, id: row.id };
     });
   } catch (e) {
-    // Two asks for one card at once: the partial unique index lets one open row through, and the other is `asked`.
+    // Belt and braces under `askLockQuery`: the partial unique index lets one open row through, and the other is `asked`.
     if (isUniqueViolation(e)) return { ok: false, reason: "asked" };
     throw e;
   }

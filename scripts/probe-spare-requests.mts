@@ -152,6 +152,25 @@ async function main() {
     check("one lands, the other is asked", both.filter((r) => r.ok).length === 1 && both.some((r) => !r.ok && r.reason === "asked"), JSON.stringify(both));
     check("... one open row for W", (await db.execute<{ n: number }>(sql`select count(*)::int as n from spare_requests where asker_user_id = ${A} and oracle_id = ${W} and status = 'open'`)).rows[0].n === 1);
 
+    // An ask waits for another decision on the same asker and card: hold the lock, the ask must not finish until it goes.
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    let locked!: () => void;
+    const isLocked = new Promise<void>((r) => { locked = r; });
+    const holder = db.transaction(async (tx) => {
+      await tx.execute(sr.askLockQuery(A, W));
+      locked();
+      await held;
+    });
+    await isLocked;
+    let settled = false;
+    const waiting = sr.askForSpare(A, h2.publicId, W, ENV).then((r) => { settled = true; return r; });
+    await new Promise((r) => setTimeout(r, 1500));
+    check("an ask waits while another decision on the same asker and card holds the lock", !settled);
+    release();
+    await holder;
+    check("... and is decided once it goes (W already has its open ask)", ((r) => !r.ok && r.reason === "asked")(await waiting));
+
     console.log("\n6. unfriend");
     const open = (await sr.loadIncomingAsks(H1, ENV)).map((i) => i.id);
     check("Hal holds open asks before the unfriend", open.length >= 1);
