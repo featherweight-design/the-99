@@ -736,6 +736,23 @@ export type AdminDoorProps = {
 /** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
 export type NavBadges = { home?: number; friends?: number };
 
+/**
+ * The Friends badge as the reader should see it. The shell sits in the root layout, which a client navigation does not
+ * render again, so the count it drew would outlive the /friends visit that cleared it (`markFriendsSeen`, after that
+ * page's response). The board draws the badge ON /friends, so it stays there and clears once the reader leaves; a new
+ * count from the server (any later render of the layout, a new `badges` object) starts over, so a match noticed after
+ * the visit still shows.
+ */
+export function useSeenBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
+  const [seen, setSeen] = useState<{ from: NavBadges | undefined; friends: boolean }>({ from: badges, friends: false });
+  let state = seen;
+  if (state.from !== badges) state = { from: badges, friends: false };
+  if (pathname === "/friends" && !state.friends && (badges?.friends ?? 0) > 0) state = { ...state, friends: true };
+  // Adjusted during render (react.dev's pattern for state that follows a prop), never in an effect.
+  if (state !== seen) setSeen(state);
+  return state.friends && pathname !== "/friends" ? { ...badges, friends: 0 } : badges;
+}
+
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
   return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) : 0;
 }
@@ -767,6 +784,7 @@ export function NavRail({
   badges,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
   const pathname = usePathname();
+  const shown = useSeenBadges(badges, pathname);
   const shape: BarShape = { commandersPlace, friends: friends ?? false };
   const items = barItems(shape);
   const inBar = friendsInBar(shape);
@@ -839,7 +857,7 @@ export function NavRail({
               pip="rail"
               handlers={bind(href, label)}
               moment={momentOnSlot(helpMoment, inBar && !!friendsMoment, pathname, href)}
-              badge={slotBadge(badges, href)}
+              badge={slotBadge(shown, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
@@ -903,6 +921,7 @@ export function TabBar({
   badges?: NavBadges;
 }) {
   const pathname = usePathname();
+  const shown = useSeenBadges(badges, pathname);
   const shape: BarShape = { commandersPlace, friends };
   const items = barItems(shape);
   const inBar = friendsInBar(shape);
@@ -920,7 +939,7 @@ export function TabBar({
         // the icon (currentColor) and the label.
         pip="tab"
         moment={momentOnSlot(helpMoment, inBar && friendsMoment, pathname, href)}
-        badge={slotBadge(badges, href)}
+        badge={slotBadge(shown, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
             ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"

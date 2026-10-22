@@ -2,7 +2,8 @@
 // feed's friend items as rows. Today a trade match ("Colin has a spare Ghalta") with a link to that friend's Spares
 // tab; a spare request's Yes and No arrive with G5. Empty, the section is absent (the board's caption). The head counts
 // every row the section shows; the bar's Friends badge counts only the unseen ones (product call 2), so the two differ
-// once a /friends visit has seen a row.
+// once a /friends visit has seen a row. The time and a seen row's kind are in `--fg-faint` where the board draws
+// `--fg-locked`, which reads about 3.1:1 on `--surface-inset` (PR 7b review): the diamond alone marks what is new.
 import Link from "next/link";
 import type { WaitingRow } from "../../lib/social/waiting";
 import { elapsed } from "../../lib/decks/touched";
@@ -62,10 +63,10 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
                     <span className="sr-only">{w.unseen}</span>
                   </>
                 )}
-                <span className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${r.unseen ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-locked)]"}`}>
+                <span className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] text-[color:var(--fg-faint)]`}>
                   {w.kind[r.kind]}
                 </span>
-                <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-locked)]">{ago(r.createdAt, now)}</small>
+                <small className="ml-auto flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{ago(r.createdAt, now)}</small>
               </p>
               <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]">
                 {w.tradeTitle(r.friend.displayName, r.card.name)}
