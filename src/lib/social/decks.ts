@@ -53,7 +53,9 @@ type FriendDeckBase = {
 
 /**
  * The read-only /decks tile, with `FRIEND_DECKS_ENABLED` on for BOTH the viewer and the owner: the deck's id for the press
- * to its page, and nothing of the owner's status or money (README call 3), which is never read for it.
+ * to its page, and nothing of the owner's status or money (README call 3): neither is sent. `listDecksWithStats` still
+ * reads the owner's Shopping inside its status work (`canFlip`), which the filter needs; only the tab's own per-deck
+ * to-buy read is skipped.
  */
 export type OpenFriendDeck = FriendDeckBase & { id: string; status: null; toBuy: null };
 
@@ -81,7 +83,7 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
   const open = viewerOpen && friendDecksEnabled(env);
   const [rows, buys] = await Promise.all([
     visibleDecks(friendId, env),
-    // The open tile draws no money, so the owner's Shopping is never read for it.
+    // The open tile draws no money, so the tab's own to-buy read is skipped (the shared stats read still runs its own).
     open ? Promise.resolve([]) : loadDeckBuyRows(friendId, undefined, undefined, env),
   ]);
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;

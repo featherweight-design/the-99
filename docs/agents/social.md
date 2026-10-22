@@ -132,9 +132,9 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
   `Complete`.
 - **Whose switch.** The filter is decided under the owner's resolved switches (their privacy); the page route and the
   tile's link under the viewer's. Off for the owner, `loadFriendDecks` returns every deck as it shipped and carries no
-  id, and `loadFriendDeck` is null. The open tile (`OpenFriendDeck`: an id, no status, no to-buy figure, and the
-  owner's Shopping never read) needs BOTH switches: `loadFriendDecks(viewer, publicId, viewerOpen)` returns it only
-  then, and the tab draws open tiles only when the read carried ids, so a mixed pair draws the tab as it shipped rather
+  id, and `loadFriendDeck` is null. The open tile (`OpenFriendDeck`: an id, and no status or to-buy figure, so
+  nothing of the owner's money is sent; the stats read still reads Shopping for the status) needs BOTH switches:
+  `loadFriendDecks(viewer, publicId, viewerOpen)` returns it only then, and the tab draws open tiles only when the read carried ids, so a mixed pair draws the tab as it shipped rather
   than tiles under "Open one" with nothing to open. With the viewer's off and the owner's on, that shipped tab is
   already filtered by the owner's rules (the owner's privacy wins) while its line still names drafts: a state only
   per-account overrides can reach.

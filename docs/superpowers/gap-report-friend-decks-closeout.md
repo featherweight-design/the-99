@@ -25,7 +25,7 @@ gaps, plus 1 structural item.
 | S2 | Viewer's off, owner's on: the tab as it shipped, filtered by the owner's rules, under a line that still names drafts. | **Kept, documented** (`docs/agents/social.md`, Whose switch). The owner's privacy wins over the viewer's copy. Only per-account overrides can reach this state; the switch rolls out as one variable. |
 | S3 | The friends About key still read "…never the lists" with friend decks on (READINESS 7). | **Fixed.** `keySwitches`: the old sentence needs `!FRIEND_DECKS_ENABLED`, and the privacy line's default sentence needs `FRIEND_DECKS_ENABLED`. Tests pin the swap and that the two sentences match word for word. |
 | S4 | A deck hidden on its own that Settings also hides drew the LOCKED row, so its own flag could not be cleared. | **Fixed.** The lock applies only to a deck not hidden on its own (`deck-card-overflow.tsx`), with a test. |
-| 5 | The open tile's read still carried the owner's status and to-buy figure (READINESS 3). | **Fixed** with S1. The open tile is `status: null, toBuy: null`, and the owner's Shopping is never read for it. |
+| 5 | The open tile's read still carried the owner's status and to-buy figure (READINESS 3). | **Fixed** with S1. The open tile is `status: null, toBuy: null`, so neither reaches the viewer, and the tab's own to-buy read is skipped. `listDecksWithStats` still reads the owner's Shopping inside its status work, which the filter needs (#2228 round 1, settled). |
 
 ## Copy review
 
