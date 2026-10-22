@@ -102,7 +102,7 @@ the deck page's About entry (picture and wording, no version bump). Fixtures are
 
 Walked on a scratch branch of local-dev migrated to 0165, at 390 and 1300, from main as merged (PRs 1a to 4b).
 Inventory: `docs/superpowers/inventories/deck-messages-closeout.json` (the six PR inventories plus the pass sheet's, 19 rows,
-38 cells, all reached; `pnpm check:shared` on its `DecklistRow` block). The precon receipt was photographed from a real
+38 cells, all reached; the `DecklistRow` sameness check, `pnpm check:shared docs/superpowers/inventories/pass-sheet.json`, passes for the deck list and the pass sheet). The precon receipt was photographed from a real
 start (`PROBE_SHOTS=… pnpm probe:precon-own`, which passes at both widths after fixing its checkbox press, rotted since
 the start dialog's custom checkbox).
 

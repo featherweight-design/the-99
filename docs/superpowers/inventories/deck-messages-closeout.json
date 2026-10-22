@@ -1,6 +1,6 @@
 {
   "feature": "Deck page messages, close-out: every surface of the brief (A1 to A18) at 390 and 1300, from the merged main (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
-  "note": "Fixture decks of the headless account on a scratch branch of local-dev migrated to 0165, ANALYSIS_TAB_ENABLED, PROPOSED_CUTS_ENABLED and PRECONS_ENABLED on. Rows are the six PR inventories' rows, so one sheet shows the whole line; the precon receipt is added by the close-out's own start. PR 2b's other-drafts-open row is dropped: PR 3 turned that press into the pass sheet, which `3-sheet-other-drafts` shows.",
+  "note": "Fixture decks of the headless account on a scratch branch of local-dev migrated to 0165, ANALYSIS_TAB_ENABLED, PROPOSED_CUTS_ENABLED and PRECONS_ENABLED on. Rows are the six PR inventories' rows, so one sheet shows the whole line; the precon receipt is added by the close-out's own start. PR 2b's other-drafts-open row is dropped: PR 3 turned that press into the pass sheet, which `3-sheet-other-drafts` shows. The `DecklistRow` sameness check is run on `pass-sheet.json`, which names only the two views that render card rows.",
   "rows": [
     {
       "id": "1a-unresolved",
@@ -298,10 +298,5 @@
         }
       ]
     }
-  ],
-  "shares": {
-    "module": "src/components/decks/decklist-row.tsx",
-    "binding": "DecklistRow",
-    "note": "The deck list renders its All rows through `DecklistGroup`; the pass sheet renders the same row itself (Hugh, 2026-10-22: never a copy, never a trimmed row)."
-  }
+  ]
 }
