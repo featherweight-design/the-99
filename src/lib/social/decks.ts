@@ -33,6 +33,7 @@ import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-vi
 import { friendDecksEnabled } from "./flag";
 import { isUuid } from "./rules";
 import { readReaderDecks } from "../precons/list-read";
+import { isBasicType } from "../decks/basic-type";
 import { sharedWith } from "../precons/shared";
 
 export type FriendDeck = {
@@ -124,9 +125,6 @@ export type FriendDeckPage = {
    */
   shares: { deckName: string; shared: number; sameCommanders: boolean }[];
 };
-
-/** A basic land, by its type line: listed at the foot of Lands and never counted in what the viewer owns, as on a precon. */
-export const isBasicType = (typeLine: string) => /^Basic\b/.test(typeLine);
 
 /**
  * One friend's deck, read-only (G1), or null: a public id that is not the viewer's current friend, a deck that is not
