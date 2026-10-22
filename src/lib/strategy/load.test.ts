@@ -6,10 +6,24 @@ vi.mock("../labels/generation", () => ({ labelGeneration: vi.fn(async (): Promis
 import { db } from "../../db";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
-import { baselineFromRows, catalogQuery, deckCardsQuery, loadDeckStrategy, loadStrategyBaseline, toStrategyCard } from "./load";
+import { LABEL_PROMPT_VERSION, labelInputHash } from "../labels/prompt";
+import type { Job } from "../labels/types";
+import { baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadDeckStrategy, loadStrategyBaseline, toStrategyCard, type CardRow } from "./load";
 
-const row = (typeLine: string, extra: Partial<Parameters<typeof toStrategyCard>[0]> = {}) =>
-  ({ layout: "normal", typeLine, manaValue: 3, keywords: [], themes: null, quantity: 1, ...extra });
+let n = 0;
+/** A card with no label row; `labelled` gives it a FRESH one carrying the themes. */
+const row = (typeLine: string, extra: Partial<CardRow> = {}): CardRow => ({
+  oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`, name: `Card ${n}`, manaCost: "{2}", oracleText: "Text.",
+  layout: "normal", typeLine, manaValue: 3, keywords: [], quantity: 1,
+  labels: null, labelModel: null, promptVersion: null, inputHash: null, ...extra,
+});
+const themeJob = (kind: string): Job => ({
+  space: "theme", kind, restrictedTo: null, affects: "self", to: null, method: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+}) as Job;
+const labelled = (r: CardRow, themes: string[], model = "m", version = LABEL_PROMPT_VERSION): CardRow => ({
+  ...r, labels: themes.map(themeJob), labelModel: model, promptVersion: version,
+  inputHash: labelInputHash({ oracleId: r.oracleId, name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout }, model, version),
+});
 
 describe("deckCardsQuery", () => {
   const { sql, params } = deckCardsQuery(db, "user_1", "deck-1").toSQL();
@@ -19,8 +33,9 @@ describe("deckCardsQuery", () => {
     expect(params).toContain("user_1");
   });
 
-  it("reads the themes off the card's own label row", () => {
-    expect(sql).toContain('jsonb_array_elements("card_labels"."labels")');
+  it("reads the card's own label row, whole, with the inputs its freshness is judged against", () => {
+    expect(sql).toContain('"card_labels"."input_hash"');
+    expect(sql).toContain('"cards"."oracle_text"');
   });
 });
 
@@ -78,7 +93,7 @@ describe("loadStrategyBaseline", () => {
   });
 
   it("builds the counts from the same rule the deck read uses", () => {
-    const b = baselineFromRows([row("Artifact", { themes: ["mill"] }), row("Land — Island", { themes: ["mill"] })]);
+    const b = baselineFromRows([labelled(row("Artifact"), ["mill"]), labelled(row("Land — Island"), ["mill"])]);
     expect(b.themes.get("mill")).toBe(1);
   });
 });
@@ -100,5 +115,21 @@ describe("strategyFocusEnabled", () => {
     expect(strategyFocusEnabled(env("true", "true"))).toBe(true);
     expect(strategyFocusEnabled(env("TRUE", "true"))).toBe(false);
     expect(strategyFocusEnabled(env("true", undefined))).toBe(false);
+  });
+});
+
+describe("freshThemes", () => {
+  it("reads a fresh label's themes, and nothing from a stale or unregistered one", () => {
+    const card = labelled(row("Instant"), ["mill", "tokens"]);
+    expect(freshThemes(card)).toEqual(["mill", "tokens"]);
+    // The card's text moved since it was labelled: the label describes text it no longer has.
+    expect(freshThemes({ ...card, oracleText: "New text." })).toEqual([]);
+    expect(freshThemes({ ...card, promptVersion: "not-a-version" })).toEqual([]);
+    expect(freshThemes(row("Instant"))).toEqual([]);
+  });
+
+  it("keeps a stale card's type-line axes", () => {
+    const stale = { ...labelled(row("Artifact"), ["mill"]), oracleText: "Changed." };
+    expect(toStrategyCard(stale)).toMatchObject({ typeLine: "Artifact", themes: [] });
   });
 });

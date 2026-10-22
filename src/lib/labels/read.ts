@@ -32,6 +32,8 @@ export function labelSurfacesEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.LABEL_SURFACES_ENABLED === "true";
 }
 
+/** A `card_labels` row with the card inputs its freshness is judged against. */
+export type LabelRow = Row;
 type Row = {
   oracle_id: string; labels: unknown; model: string; prompt_version: string; input_hash: string;
   name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string;
@@ -106,17 +108,22 @@ export async function readLabelRoleSets(
 export function freshLabels(rows: readonly Row[], registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256): Map<string, Job[]> {
   const out = new Map<string, Job[]>();
   for (const r of rows) {
-    const card = { oracleId: r.oracle_id, name: r.name, mana_cost: r.mana_cost, type_line: r.type_line, oracle_text: r.oracle_text, layout: r.layout };
-    if (!labelIsFresh({ model: r.model, promptVersion: r.prompt_version, inputHash: r.input_hash }, card, registry)) continue;
-    if (!Array.isArray(r.labels) || !r.labels.every(isJob)) continue;
-    // A land search the model called a tutor (Hugh, 2026-10-03): the job is dropped here, free,
-    // rather than paid for again under a new prompt. Land-only by the 2026-09-22 ruling.
-    // A row left with no job by that drop is left OUT, so the text path compares the card and
-    // reads it as the ramp it is; an empty row would match nothing and refuse every pair.
-    const jobs = searchesOnlyLands(r.oracle_text) ? r.labels.filter((j) => j.kind !== "tutor") : r.labels;
-    // Absent, whatever emptied it (the drop above, or a stored `[]`): see the doc comment.
-    if (jobs.length === 0) continue;
-    out.set(r.oracle_id, jobs);
+    const jobs = freshJobsOf(r, registry);
+    if (jobs) out.set(r.oracle_id, jobs);
   }
   return out;
+}
+
+/** One row's fresh jobs by `freshLabels`' rule, or null when the row is stale, malformed or holds no job. */
+export function freshJobsOf(r: Row, registry: Readonly<Record<string, string>> = PROMPT_SYSTEM_SHA256): Job[] | null {
+  const card = { oracleId: r.oracle_id, name: r.name, mana_cost: r.mana_cost, type_line: r.type_line, oracle_text: r.oracle_text, layout: r.layout };
+  if (!labelIsFresh({ model: r.model, promptVersion: r.prompt_version, inputHash: r.input_hash }, card, registry)) return null;
+  if (!Array.isArray(r.labels) || !r.labels.every(isJob)) return null;
+  // A land search the model called a tutor (Hugh, 2026-10-03): the job is dropped here, free,
+  // rather than paid for again under a new prompt. Land-only by the 2026-09-22 ruling.
+  // A row left with no job by that drop is left OUT, so the text path compares the card and
+  // reads it as the ramp it is; an empty row would match nothing and refuse every pair.
+  const jobs = searchesOnlyLands(r.oracle_text) ? r.labels.filter((j) => j.kind !== "tutor") : r.labels;
+  // Absent, whatever emptied it (the drop above, or a stored `[]`): see the doc comment.
+  return jobs.length === 0 ? null : jobs;
 }

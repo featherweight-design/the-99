@@ -13,7 +13,6 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
-import type { LabelTheme } from "../src/lib/labels/types";
 import { AXIS_FLOOR, BASELINE_FLOOR, BIG_CREATURE_MIN_MV, TYPAL_AXES, baselineShare } from "../src/lib/strategy/axes";
 import { toStrategyCard } from "../src/lib/strategy/load";
 import { MIN_NONLAND, TOP_AXES, catalogBaseline, scoredAxes, type StrategyBaseline, type StrategyCard } from "../src/lib/strategy/score";
@@ -23,7 +22,10 @@ const { THE_99_NEON_STAGING_DIRECT } = requireEnv(["THE_99_NEON_STAGING_DIRECT"]
 const pool = new Pool({ connectionString: THE_99_NEON_STAGING_DIRECT });
 const AVERAGE_SIZE = 64;
 
-type CardRow = { oracle_id: string; type_line: string; cmc: number; keywords: string[] | null; layout: string; themes: LabelTheme[] | null };
+type CardRow = {
+  oracle_id: string; name: string; mana_cost: string | null; oracle_text: string | null; type_line: string; cmc: number; keywords: string[] | null; layout: string;
+  labels: unknown; model: string | null; prompt_version: string | null; input_hash: string | null;
+};
 type ListRow = { grp: string; key: string; name: string; commander: string | null; partner: boolean; oracle_id: string; quantity: number };
 
 type Card = StrategyCard;
@@ -64,14 +66,19 @@ async function main() {
   try {
     await client.query("begin transaction isolation level repeatable read read only");
     const { rows: catalog } = await client.query<CardRow>(`
-      select c.oracle_id, c.type_line, c.cmc, c.keywords, c.layout,
-             (select array_agg(j->>'kind') from jsonb_array_elements(l.labels) j where j->>'space' = 'theme') themes
+      select c.oracle_id, c.name, c.mana_cost, c.oracle_text, c.type_line, c.cmc, c.keywords, c.layout,
+             l.labels, l.model, l.prompt_version, l.input_hash
         from cards c left join card_labels l on l.oracle_id = c.oracle_id
        where c.commander_legal`);
     const byId = new Map(catalog.map((c) => [c.oracle_id, c]));
     const card = (id: string, quantity: number): Card | null => {
       const c = byId.get(id);
-      return c ? toStrategyCard({ layout: c.layout, typeLine: c.type_line, manaValue: c.cmc, keywords: c.keywords ?? [], themes: c.themes, quantity }) : null;
+      // Through the app's own conversion, so a stale label counts as none here exactly as it does on the page.
+      return c ? toStrategyCard({
+        oracleId: c.oracle_id, name: c.name, manaCost: c.mana_cost, oracleText: c.oracle_text, layout: c.layout, typeLine: c.type_line,
+        manaValue: c.cmc, keywords: c.keywords ?? [], quantity,
+        labels: c.labels, labelModel: c.model, promptVersion: c.prompt_version, inputHash: c.input_hash,
+      }) : null;
     };
 
     const { rows: listRows } = await client.query<ListRow>(`

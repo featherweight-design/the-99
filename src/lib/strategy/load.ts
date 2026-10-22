@@ -10,29 +10,54 @@ import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
 import { isLandFace } from "../cards/facet";
 import { isGameCard } from "../cards/game-card";
+import { freshJobsOf } from "../labels/read";
 import type { LabelTheme } from "../labels/types";
 import { strategyFocusEnabled } from "./flag";
 import { catalogBaseline, deckStrategy, type DeckStrategy, type StrategyBaseline, type StrategyCard } from "./score";
 
 type Reader = Pick<typeof db, "select">;
 
-/** The theme kinds of a card's labels, null when the card carries no label row. */
-const themesOf = sql<LabelTheme[] | null>`(select array_agg(j->>'kind') from jsonb_array_elements(${cardLabels.labels}) j where j->>'space' = 'theme')`;
-
+/**
+ * Everything a card's strategy axes and FRESH label themes need. The label row comes whole, with the card inputs its
+ * freshness is judged against, so a stale or malformed label counts as no label (`freshJobsOf`, the rule every label
+ * reader applies) while the card keeps its type-line axes.
+ */
 const cardColumns = {
+  oracleId: cards.oracleId,
+  name: cards.name,
+  manaCost: cards.manaCost,
+  oracleText: cards.oracleText,
   layout: cards.layout,
   typeLine: cards.typeLine,
   manaValue: cards.cmc,
   keywords: cards.keywords,
-  themes: themesOf,
+  labels: cardLabels.labels,
+  labelModel: cardLabels.model,
+  promptVersion: cardLabels.promptVersion,
+  inputHash: cardLabels.inputHash,
 };
 
-type CardRow = { layout: string; typeLine: string; manaValue: number; keywords: string[]; themes: LabelTheme[] | null; quantity: number };
+/** One card with its label row, or no label row. */
+export type CardRow = {
+  oracleId: string; name: string; manaCost: string | null; oracleText: string | null; layout: string; typeLine: string;
+  manaValue: number; keywords: string[]; quantity: number;
+  labels: unknown; labelModel: string | null; promptVersion: string | null; inputHash: string | null;
+};
+
+/** The theme kinds of a card's FRESH labels; none for a card with no label row or a stale one. */
+export function freshThemes(r: CardRow): LabelTheme[] {
+  if (r.labelModel === null || r.promptVersion === null || r.inputHash === null) return [];
+  const jobs = freshJobsOf({
+    oracle_id: r.oracleId, labels: r.labels, model: r.labelModel, prompt_version: r.promptVersion, input_hash: r.inputHash,
+    name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout,
+  });
+  return (jobs ?? []).filter((j) => j.space === "theme").map((j) => j.kind as LabelTheme);
+}
 
 /** A commander-legal game card that is not a land, as the strategy reads count it. */
 export function toStrategyCard(r: CardRow): StrategyCard | null {
   if (!isGameCard({ layout: r.layout, typeLine: r.typeLine }) || isLandFace(r.typeLine)) return null;
-  return { typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, themes: r.themes ?? [], quantity: r.quantity };
+  return { typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, themes: freshThemes(r), quantity: r.quantity };
 }
 
 /** Every commander-legal card with its themes; apart so a test can render its SQL. */
