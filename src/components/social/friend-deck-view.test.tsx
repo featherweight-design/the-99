@@ -39,7 +39,7 @@ const DECK: FriendDeckPage = {
     card("isl", "Island", "Basic Land — Island", false, { quantity: 27 }),
   ],
   colorIdentity: ["U"], artCropUri: null, built: 29, bodySize: 99,
-  shares: [{ deckName: "Thopter Works", shared: 38, sameCommanders: true }],
+  shares: [{ deckId: "v1", deckName: "Thopter Works", shared: 38, sameCommanders: true }],
 };
 const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", commander: null };
 const draw = (deck: FriendDeckPage = DECK) => render(<FriendDeckView deck={deck} friend={FRIEND} />);

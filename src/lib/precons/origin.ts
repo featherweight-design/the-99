@@ -9,6 +9,7 @@
  *
  * Client-safe: no database import, so the rail can take the type.
  */
+import { isBasicType } from "../decks/basic-type";
 import { averageManaValue } from "../decks/mana-value";
 import type { CardQty } from "../decks/draft-diff";
 
@@ -62,7 +63,6 @@ export type OriginRow = {
   imageUri: string | null;
 };
 
-const isBasic = (typeLine: string) => typeLine.startsWith("Basic");
 
 /**
  * The rows into v0: the summary, and the 99 as a version's card list holds them (commanders apart,
@@ -110,7 +110,7 @@ export function assembleOrigin(rows: readonly OriginRow[]): OriginRead | null {
       manaValue: averageManaValue(cards),
     },
     cards,
-    nonBasic: [...new Set(rows.filter((r) => !isBasic(r.typeLine)).map((r) => r.oracleId))],
+    nonBasic: [...new Set(rows.filter((r) => !isBasicType(r.typeLine)).map((r) => r.oracleId))],
   };
 }
 

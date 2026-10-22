@@ -130,7 +130,7 @@ export function FriendDeckView({
                 <div className="anim-grow-x origin-left h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
               </div>
               {deck.shares.map((s) => (
-                <p key={s.deckName} className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+                <p key={s.deckId} className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
                   {s.sameCommanders ? open.builtSame(s.deckName, s.shared, deck.commanders.length === 2) : open.builtAny(s.deckName, s.shared)}
                 </p>
               ))}

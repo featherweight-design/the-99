@@ -123,7 +123,7 @@ export type FriendDeckPage = {
    * The VIEWER's own decks that share this one, most shared first, by the precon page's rule (`sharedWith`: the same
    * commanders and 40% of its cards, or 60% with any): what the own band names under the figure, as a precon's does.
    */
-  shares: { deckName: string; shared: number; sameCommanders: boolean }[];
+  shares: { deckId: string; deckName: string; shared: number; sameCommanders: boolean }[];
 };
 
 /**
@@ -169,7 +169,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const shares = viewerDecks
     .flatMap((d) => {
       const match = sharedWith(list, d);
-      return match ? [{ deckName: d.name, shared: match.shared, sameCommanders: match.sameCommanders }] : [];
+      return match ? [{ deckId: d.id, deckName: d.name, shared: match.shared, sameCommanders: match.sameCommanders }] : [];
     })
     .sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
   const owned = new Set(ownedRows.map((r) => r.oracleId));

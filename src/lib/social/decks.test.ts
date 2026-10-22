@@ -181,14 +181,15 @@ describe("loadFriendDeck", () => {
     m.readReaderDecks.mockResolvedValue([
       { id: "v1", name: "Thopter Works", commanders: ["c0"], cards: new Set(["c0", "a"]) },
       { id: "v2", name: "Unrelated", commanders: ["zz"], cards: new Set(["zz"]) },
-      { id: "v3", name: "Artifacts Galore", commanders: ["zz"], cards: new Set(["zz", "a", "c0"]) },
+      { id: "v3", name: "Zoo Artifacts", commanders: ["zz"], cards: new Set(["zz", "a", "b", "c0"]) },
     ]);
     const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
-    // The list is c0, a and b (the commander and two non-basics): v1 shares 2 with the same commander (>= 40%), v3
-    // shares 2 with another (>= 60% of 3), v2 none.
+    // The list is c0, a and b (the commander and two non-basics): v3 shares all 3 with another commander (>= 60%), v1
+    // shares 2 with the same one (>= 40%), v2 none. Most shared first, so v3 leads although its name sorts last:
+    // the name only breaks a tie, which this case does not have.
     expect(page.shares).toEqual([
-      { deckName: "Artifacts Galore", shared: 2, sameCommanders: false },
-      { deckName: "Thopter Works", shared: 2, sameCommanders: true },
+      { deckId: "v3", deckName: "Zoo Artifacts", shared: 3, sameCommanders: false },
+      { deckId: "v1", deckName: "Thopter Works", shared: 2, sameCommanders: true },
     ]);
     expect(m.readReaderDecks).toHaveBeenCalledWith("user_viewer");
   });
