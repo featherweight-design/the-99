@@ -9,7 +9,7 @@ vi.mock("../social/trade-match", () => ({ noticeTradeMatches: marks.notice }));
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, homeFeedAfter, loadHomeFeed, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
+import { comboPieces, homeFeedAfter, loadHomeFeed, preconOwnedQuery, setCardsQuery, splitLead, toViews, type FeedView } from "./home";
 import type { FeedItem } from "./read";
 
 const ON = { HOME_FEED_ENABLED: "true", PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -168,5 +168,15 @@ describe("homeFeedAfter", () => {
     expect(marks.seen).toHaveBeenCalledWith("u1", ON, NOW);
     expect(marks.notice).toHaveBeenCalledWith("u1", ON);
     err.mockRestore();
+  });
+});
+
+describe("preconOwnedQuery", () => {
+  it("sums what a precon needs of each card across its printings BEFORE capping at what the reader holds", () => {
+    const q = text(preconOwnedQuery("u1", ["f"])).replace(/\s+/g, " ");
+    // Two rows of five Plains need ten between them: capped per (file, card) after the sum, never per row.
+    expect(q).toContain("group by po.file_name, po.oracle_id) pn");
+    expect(q).toContain("sum(least(pn.need, coalesce(oc.n, 0)))::int as owned");
+    expect(q).toContain("sum(pn.need)::int as total");
   });
 });

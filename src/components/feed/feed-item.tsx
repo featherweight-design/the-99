@@ -103,7 +103,7 @@ export function FeedPress({
     <button
       type="button"
       data-feed-press
-      onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.image ?? null, opener: e.currentTarget })}
+      onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget })}
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
       aria-describedby={describedBy}
     >
@@ -117,7 +117,7 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   // Every card row previews its card on hover (Hugh, 2026-10-12), on the picture, since the row carries prose; from
   // What's new's provider. A combo's picture is the mark, and previews nothing. The press is stretched over the whole
   // row (an `::after` later in the DOM), so the picture sits ABOVE it (`z-[1]`) to be hovered at all, and a press on
-  // it is passed on to the row's press.
+  // it is the row's press (a link when the row links, else passed to its button).
   const hover = usePreviewRow(item.kind === "combo" ? null : item.card?.image ?? null);
   if (item.kind === "combo") {
     return (
@@ -130,14 +130,8 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
       </span>
     );
   }
-  return (
-    <span
-      aria-hidden
-      data-feed-picture
-      {...hover}
-      onClick={(e) => e.currentTarget.closest("li")?.querySelector<HTMLElement>("[data-feed-press]")?.click()}
-      className="relative z-[1] row-span-2 h-[64px] w-[46px] cursor-pointer self-start md:row-span-1 md:self-center"
-    >
+  const art = (
+    <>
       <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
         <CommanderThumb imageUri={item.card?.image ?? null} colorIdentity={null} size="feed" />
       </span>
@@ -146,6 +140,29 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
           <Face name={item.friend.displayName} commander={face ?? null} size={24} className="h-full! w-full! rounded-none!" />
         </span>
       )}
+    </>
+  );
+  const box = "relative z-[1] row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center";
+  // A linked row's picture is a real link to the same place (out of the tab order, hidden from readers: the press is
+  // the named link), so a modified or middle press behaves natively. A row that opens the card's detail passes the
+  // press on to its button.
+  if (item.href) {
+    return (
+      <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture {...hover} className={box}>
+        {art}
+        <PendingReporter href={item.href} />
+      </Link>
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      data-feed-picture
+      {...hover}
+      onClick={(e) => e.currentTarget.closest("li")?.querySelector<HTMLElement>("[data-feed-press]")?.click()}
+      className={`${box} cursor-pointer`}
+    >
+      {art}
     </span>
   );
 }

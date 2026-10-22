@@ -84,15 +84,21 @@ export function preconCommandersQuery(files: readonly string[]) {
     order by pc.file_name, pc.position`;
 }
 
-/** How many of each new precon's cards the reader owns (each line capped at its count), of its total. */
+/**
+ * How many of each new precon's cards the reader owns, of its total. A card is capped ONCE at its copies the precon
+ * needs in all: `precon_cards` keeps a row per printing and commander status, so two rows of five Plains need ten
+ * between them, and the reader's three count three, not six.
+ */
 export function preconOwnedQuery(userId: string, files: readonly string[]) {
-  return sql`select po.file_name as file_name, sum(po.quantity)::int as total,
-      sum(least(po.quantity, coalesce(oc.n, 0)))::int as owned
-    from ${preconCards} po
+  return sql`select pn.file_name as file_name, sum(pn.need)::int as total,
+      sum(least(pn.need, coalesce(oc.n, 0)))::int as owned
+    from (select po.file_name as file_name, po.oracle_id as oracle_id, sum(po.quantity) as need
+          from ${preconCards} po
+          where po.file_name = any(${sql.param([...files])}::text[])
+          group by po.file_name, po.oracle_id) pn
     left join (select oci.oracle_id as oracle_id, sum(oci.quantity) as n from ${collectionItems} oci
-               where oci.user_id = ${userId} group by oci.oracle_id) oc on oc.oracle_id = po.oracle_id
-    where po.file_name = any(${sql.param([...files])}::text[])
-    group by po.file_name`;
+               where oci.user_id = ${userId} group by oci.oracle_id) oc on oc.oracle_id = pn.oracle_id
+    group by pn.file_name`;
 }
 
 /** The stored kinds' cards, by oracle id. */

@@ -41,7 +41,8 @@ describe("FeedItemRow", () => {
     expect(container.querySelector("[data-commander-thumb]")).toBeNull();
     expect(screen.getByText("Thassa’s Oracle + Demonic Consultation")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "See the combo ›" }));
-    expect(open).toHaveBeenCalledWith("a", undefined, undefined, expect.objectContaining({ art: "sai.jpg" }));
+    expect(open).toHaveBeenCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));
+    // The shown card is not the one opened (the write added the second piece): no art hint for a card never opened.
   });
 
   it("puts the friend's face on a trade match's card and links to their spares", () => {
@@ -77,5 +78,21 @@ describe("FeedItemRow", () => {
     expect(picture.className).toContain("z-[1]");
     fireEvent.click(picture);
     expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it("hints the art only for the card that opens", () => {
+    open.mockClear();
+    list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /Open the card/ }));
+    expect(open).toHaveBeenCalledWith("c", undefined, undefined, expect.objectContaining({ art: "sai.jpg" }));
+  });
+
+  it("makes a linked row's picture a real link to the same place, out of the tab order", () => {
+    const { container } = list(<FeedItemRow item={view({ href: "/collection/sets/sos", name: "Secrets of Strixhaven", setSize: 288 })} now={NOW} />);
+    const picture = container.querySelector("[data-feed-picture]")!;
+    expect(picture.tagName).toBe("A");
+    expect(picture.getAttribute("href")).toBe("/collection/sets/sos");
+    expect(picture.getAttribute("tabindex")).toBe("-1");
+    expect(picture.getAttribute("aria-hidden")).toBe("true");
   });
 });
