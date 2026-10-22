@@ -36,6 +36,8 @@ kit.CSS += r"""
 .dtl .dots{position:absolute;top:10px;right:10px;z-index:3;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);display:flex;align-items:center;justify-content:center;font:11px 'IBM Plex Mono';color:var(--fg-body);letter-spacing:1px}
 .dtl .dots.on{background:var(--elevated);color:var(--fg)}
 .dtl .ft{display:flex;flex-direction:column;gap:9px;padding:11px 13px 13px;border-top:1px solid var(--border)}
+.dtl .ft.fo{padding:10px 13px 12px;gap:0}
+.dtl .fc2{font:11px 'IBM Plex Mono';color:var(--fg-muted)}
 .dtl .chips{display:flex;align-items:center;gap:8px;height:24px}
 .dtl .pill{height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;font:10.5px 'IBM Plex Mono';letter-spacing:.06em}
 .dtl .bchip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px 0 4px;border-radius:6px;font:10.5px 'IBM Plex Mono';color:var(--bracket-3,#C9AC62);background:color-mix(in srgb,#C9AC62 14%,var(--surface-inset));border:1px solid color-mix(in srgb,#C9AC62 40%,transparent)}
@@ -217,6 +219,13 @@ kit.CSS += r"""
 .mnu .bx{margin-left:auto;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border-dashed);flex:none;display:flex;align-items:center;justify-content:center}
 .dk .mnu .bx{width:16px;height:16px}
 .mnu .bx.on{background:var(--accent);border-color:var(--accent)}
+.mnu span.bys{padding:8px 13px}
+.mnu .bys .t2{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;white-space:nowrap}
+.mnu .bys .t2 span,.mnu .bys .t2 small{display:block;min-height:0;padding:0;border:0}
+.mnu .bys .t2 small{font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+.mnu .bx.lk{background:var(--fg-locked);border-color:var(--fg-locked)}
+.stp .ck.sub2{padding-left:30px}
+.stp .ck.off{opacity:.45}
 .mnu .bx.on::after{content:'';width:8px;height:4px;border-left:2px solid #14110E;border-bottom:2px solid #14110E;transform:translateY(-1px) rotate(-45deg)}
 
 /* toast (ToastFrame) */
@@ -279,11 +288,11 @@ def names_match(deck, commander):
 # (name, commander, art, status, built, to buy, identity, partner)
 COLIN = [("Thopter Factory", "Sai, Master Thopterist", "crop-sai.jpg", "To buy", 99, 8, "U"),
          ("Ghalta, Primal Hunger", "Ghalta, Primal Hunger", "crop-ghalta.jpg", "Complete", 99, 0, "G"),
-         ("Giada", "Giada, Font of Hope", "crop-giada.jpg", "Building", 71, 0, "W"),
+         ("Giada", "Giada, Font of Hope", "crop-giada.jpg", "Complete", 99, 0, "W"),
          ("Lathliss, Dragon Queen", "Lathliss, Dragon Queen", "crop-lathliss.jpg", "Complete", 99, 0, "R")]
 COLIN_MORE = [("Rootha, Mastering the Moment", "Rootha, Mastering the Moment", "crop-rootha.jpg", "Complete", 99, 0, "UR"),
               ("Killian", "Killian, Decisive Mentor", "crop-killian.jpg", "To buy", 99, 3, "WB"),
-              ("Ghoulcaller Gisa", "Ghoulcaller Gisa", "crop-gisa.jpg", "Building", 48, 0, "B"),
+              ("Ghoulcaller Gisa", "Ghoulcaller Gisa", "crop-gisa.jpg", "To buy", 99, 5, "B"),
               ("Dina’s Garden", "Dina, Essence Brewer", "crop-dina.jpg", "Complete", 99, 0, "BG"),
               ("Zimone, Infinite Analyst", "Zimone, Infinite Analyst", "crop-zimone.jpg", "Draft", 0, 0, "UG")]
 
@@ -305,6 +314,10 @@ def deck_tile(d, narrow=False, owner=False, hidden=False, menu_on=False, mark=Fa
         chips += f'<span class="hid{" mk-o" if mark else ""}" title="Hidden from friends">{hide_glyph(16)}</span>'
     dots = f'<span class="dots{" on" if menu_on else ""}">…</span>' if owner else ""
     tp = f'<span class="tap" style="{tap}"></span>' if tap else ""
+    if not owner:
+        ft = f'<div class="ft fo"><span class="fc2">{built} cards</span></div>'
+        return (f'<div class="dtl{" n" if narrow else ""}">{tp}<div class="band"><img class="art" src="{img(art)}" alt="">'
+                f'<div class="lb"><h3>{name}</h3><div class="cml">{cm}</div></div></div>{ft}</div>')
     return (f'<div class="dtl{" n" if narrow else ""}">{tp}<div class="band"><img class="art" src="{img(art)}" alt="">'
             f'{dots}<div class="lb"><h3>{name}</h3><div class="cml">{cm}</div></div></div>'
             f'<div class="ft"><div class="chips">{chips}</div><div class="pr"><span class="tr">{bar}</span><b>{count}</b></div>'
@@ -329,7 +342,7 @@ def friend_head(tab="decks", desk=False, counts=None):
             + P.place_strip(tab, [("spares", "Spares"), ("wish", "Wishlist"), ("decks", "Decks")], counts))
 
 
-DECKS_LINE = "Colin’s committed decks and drafts, newest first. Open one to see its list."
+DECKS_LINE = "Colin’s decks, newest first. Open one to see its list."
 
 
 def decks_tab(decks, desk=False, line=DECKS_LINE, tap=None, counts=None):
@@ -432,7 +445,7 @@ def fdeck_head(desk=False, name="Thopter Factory", cmd="Sai, Master Thopterist",
     vt = f'<span class="vt"><span class="{"on" if view == "list" else ""}">List</span><span class="{"on" if view == "card" else ""}">Cards</span></span>'
     return (f'<div class="hd"><span class="bk">‹ Colin’s decks</span><div class="top"><span class="th"><img src="{img(art)}" alt=""></span>'
             f'<div class="tx"><span class="ey new"><span class="fc"><img src="{img("face-sai.jpg")}" alt=""></span>Colin’s deck · read-only</span>'
-            f'<h1>{name}</h1>{cl}<span class="mt"><span class="pl" style="{pill_style(st)}">{st}</span>{built} / 99<span class="ids">{ids}</span>{COLOUR.get(ident, ident)}</span></div></div>'
+            f'<h1>{name}</h1>{cl}<span class="mt">{built} cards<span class="ids">{ids}</span>{COLOUR.get(ident, ident)}</span></div></div>'
             f'{ownb}<div class="nt"><p>{note}</p>{vt}</div></div>')
 
 
@@ -466,7 +479,6 @@ def detail_phone(card="jace.jpg", name="Jace, Multiverse Architect", tl="Legenda
             f'<div class="stg"><img class="sl" src="{img("sai.jpg")}" alt=""><img src="{img(card)}" alt="{name}"><img class="sr" src="{img("killian.jpg")}" alt=""></div>'
             f'<div class="sh2"><span class="gr"></span><h3>{name}<span class="pipm">{pips}</span></h3><span class="tl">{tl}</span>'
             f'<span class="mm"><span class="prc">{price}</span>{setn}</span>'
-            f'<div class="wbx new"><span class="wl">Wishlist</span><span class="wb">{BOOK}Add to wishlist</span><span class="hv">you have {have}</span></div>'
             '<span class="ad">All details <small>▴</small></span></div></div>')
 
 
@@ -479,7 +491,7 @@ def detail_desk(card="jace.jpg", name="Jace, Multiverse Architect", tl="Legendar
             f'<div class="rc"><span class="x">✕</span><h3>{name} <span class="pipm">{pips}</span></h3><span class="tl">{tl}</span>'
             f'<span class="mm"><span class="prc">{price}</span>{setn}</span>'
             f'<div class="s2"><b>Rules text</b>{rules}</div>'
-            f'<div class="wbx new"><span class="wl">Wishlist</span><span class="wb">{BOOK}Add to wishlist</span><span class="hv">you have 0</span></div>'
+            f'<div class="wbx"><span class="wl">Wishlist</span><span class="wb">{BOOK}Add to wishlist</span><span class="hv">you have 0</span></div>'
             '</div></div>')
 
 
@@ -487,12 +499,15 @@ def detail_desk(card="jace.jpg", name="Jace, Multiverse Architect", tl="Legendar
 OWN = dict(name="Thopter Works", cmd="Sai, Master Thopterist", art="crop-sai.jpg", ident="U", st="To buy")
 
 
-def menu_rows(where="header", on=False, hv=None):
+def menu_rows(where="header", on=False, hv=None, by_settings=None):
     rows = [] if where == "header" else ["Update from a list", "Rename", "Export"]
     rows += ["Move to Thursday decks", "HIDE", "Delete"]
     out = []
     for r in rows:
-        if r == "HIDE":
+        if r == "HIDE" and by_settings:
+            out.append(f'<span class="new bys" style="border-radius:0;outline-offset:-2px"><span class="t2"><span>Hidden from friends</span>'
+                       f'<small>{by_settings} ›</small></span><i class="bx on lk"></i></span>')
+        elif r == "HIDE":
             out.append(f'<span class="new{" hv" if hv == "HIDE" else ""}" style="border-radius:0;outline-offset:-2px">Hidden from friends<i class="bx{" on" if on else ""}"></i></span>')
         else:
             out.append(f'<span class="{"dg" if r == "Delete" else ""}">{r}</span>')
@@ -539,12 +554,12 @@ MINE = [("Thopter Works", "Sai, Master Thopterist", "crop-sai.jpg", "To buy", 99
         ("Rootha Spells", "Rootha, Mastering the Moment", "crop-rootha.jpg", "Building", 64, 0, "UR")]
 
 
-def decks_page(desk=False, hidden=(0,), key=True, menu=None):
+def decks_page(desk=False, hidden=(0,), key=True, menu=None, menu_i=0, bys=None):
     tiles = []
     for i, d in enumerate(MINE if desk else MINE[:2]):
-        t = deck_tile(d, owner=True, hidden=i in hidden, menu_on=(menu is not None and i == 0), mark=True)
-        if menu is not None and i == 0:
-            t = t.replace('<div class="ft">', f'<div class="mnu" style="right:10px;top:42px">{menu_rows("tile", menu == "on", "HIDE")}</div><div class="ft">', 1)
+        t = deck_tile(d, owner=True, hidden=i in hidden, menu_on=(menu is not None and i == menu_i), mark=True)
+        if menu is not None and i == menu_i:
+            t = t.replace('<div class="ft">', f'<div class="mnu" style="right:10px;top:42px">{menu_rows("tile", menu == "on", None if bys else "HIDE", bys)}</div><div class="ft">', 1)
         tiles.append(t)
     k = (f'<div class="mkey new" style="grid-column:1/-1"><span class="hid">{hide_glyph(16)}</span>hidden from friends</div>' if key and hidden else "")
     head = ('<div style="padding:14px 16px 0;display:flex;align-items:baseline;justify-content:space-between"><h1 style="margin:0;font:700 22px Cinzel,serif">Decks</h1>'
@@ -553,3 +568,21 @@ def decks_page(desk=False, hidden=(0,), key=True, menu=None):
             '<span style="font:11px IBM Plex Mono;color:var(--fg-faint)">3 decks · newest first</span><span class="bp" style="margin-left:auto;height:32px;font-size:12.5px;border-radius:8px">New deck</span></div>')
     pad = "padding:16px 22px 22px" if desk else "padding:14px 16px 16px"
     return head + f'<div class="dts" style="{pad}">{k}{"".join(tiles)}</div>'
+
+
+# --------------------------------------------------------------------------- Settings: what friends see of your decks (R2)
+def decks_section(master=True, drafts=False):
+    sub = "sub2" + ("" if master else " off")
+    return ('<section class="sec new"><div class="sech">Your decks</div>'
+            '<p class="ex">What friends see on your Decks tab.</p><div class="cks">'
+            f'<div class="ck"><span class="box{" on" if master else ""}"></span><span class="ct"><b>Friends can see my decks</b>'
+            '<span>Each deck’s name, commander and whole list, read-only.</span></span></div>'
+            f'<div class="ck {sub}"><span class="box{" on" if drafts and master else ""}"></span><span class="ct"><b>Include drafts and decks I’m building</b>'
+            '<span>Off: a deck shows once its list is full.</span></span></div></div>'
+            '<p class="foot">To keep one deck to yourself, tick Hidden from friends in its ⋯ menu.</p></section>')
+
+
+def settings_with_decks(desk=False, master=True, drafts=False):
+    h = P.settings_page(desk).replace('class="stp new"', 'class="stp"', 1)
+    i = h.rindex("</div>")
+    return h[:i] + decks_section(master, drafts) + h[i:]

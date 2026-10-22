@@ -25,9 +25,11 @@ def main():
          "<b>Open card details</b> (a row is the press; Prev and Next page through Colin’s list in order). <b>Wishlist a card</b> from the details’ "
          "shipped Wishlist box. <b>See what they own</b>: the row’s dot, “You own N of M of its cards”, and each group’s “you own N of M”. "
          "Switch <b>List / Cards</b> and get the hover preview, as on a precon. Nothing else: no ✕, stepper, buy tag, auto tag, proxy, lock, "
-         "to-do card, tabs, notes, Update, Export or ⋯."),
+         "to-do card, tabs, notes, Update, Export or ⋯. <b>R2:</b> card details are the shipped ones, untouched: Add to wishlist stays in the full sheet "
+         "(swipe up on a phone) and in the desktop details column, where it already is."),
         ("3 · Design’s calls",
-         "<b>Price and buy tags: not shown.</b> They are Colin’s figures, and the read-only row draws none. Card details keep the card’s "
+         "<b>R2: no status.</b> A friend’s tile and deck page drop the status pill, the bar and the to-buy figure: “To buy” is Colin’s errand, not yours. "
+         "They show the card count alone. <b>Price and buy tags: not shown.</b> They are Colin’s figures, and the read-only row draws none. Card details keep the card’s "
          "catalog price, which is nobody’s. <b>The viewer’s own marks: shown</b>; “do I have this?” is why you open a friend’s deck. "
          "The dot means <i>your</i> collection here, so a one-line key says so. <b>URL</b>: under the friend’s page (call 1)."),
         ("4 · Hidden from friends",
@@ -35,8 +37,13 @@ def main():
          "/decks tile both get it. A press ticks it, saves, and closes the menu. No confirm, since it undoes the same way. On: a quiet "
          "<b>Hidden from friends</b> mark in the header’s chips row, and on /decks the glyph in the tile’s chips row, explained in the /decks key. "
          "Off by default; drawn only with <code>SOCIAL_FRIENDS_ENABLED</code>. Hiding changes nothing about spares: the deck’s cards still count as in use."),
+        ("4b · R2: defaults and the global switch, in Settings",
+         "/settings gains <b>Your decks</b>, after Spares: <b>Friends can see my decks</b> (on) and under it <b>Include drafts and decks I’m building</b> "
+         "(<b>off by default</b>). So out of the box friends see Complete, To buy and Over decks, never Draft or Building. The per-deck row still hides any one deck. "
+         "A deck Settings already hides shows its ⋯ row ticked and locked, with “Set in Settings ›” under it (the press opens Settings). The /decks glyph marks only a "
+         "deck hidden on its own: the Settings rule is stated once, not on every draft."),
         ("5 · The privacy line, and absence",
-         "/friends now reads <b>“Friends can open your decks and see their lists. Hide one from its ⋯ menu.”</b> A hidden deck is simply "
+         "/friends now reads <b>“" + NEW_PRIV + "”</b>, changing with Settings (Privacy board). A hidden deck is simply "
          "absent for friends: no tile, the Decks count drops, nothing says one is hidden. Its link is the app’s 404, the same page a deleted "
          "deck gives, so the two can’t be told apart. <b>Confirmed.</b>"),
         ("6 · The friend’s tile: the /decks tile, read-only",
@@ -55,7 +62,8 @@ def main():
         ("G1 · The friend deck read", "<code>loadFriendDeck(viewer, publicId, deckId)</code> behind <code>resolveFriend</code>, the grant read again after the reads (as "
          "<code>loadFriendDecks</code> does). Returns null for a hidden deck, a deck that isn’t theirs, or a lapsed friendship. Cards come with the viewer’s "
          "ownership joined from the viewer’s collection and the owner’s printing for card details. No prices, no notes, no folder."),
-        ("G2 · The switch", "<code>decks.hidden_from_friends</code>, boolean, default false, written by one deck action from the menu. Filtered in "
+        ("G2 · The switches", "<code>decks.hidden_from_friends</code>, boolean, default false, written by one deck action from the menu; and two account prefs, "
+         "<code>friends_see_decks</code> (default true) and <code>friends_see_unfinished</code> (default false; unfinished = Draft or Building, from <code>lib/decks/status.ts</code>). Filtered in "
          "<code>loadFriendDecks</code> and G1, so both agree in one place. A failed write is a toast: “We couldn’t change that. Your deck is unchanged.”"),
         ("G3 · The tile needs an id", "<code>FriendDeck</code> gains the deck’s id (the tab’s comment says nothing carries one today), to build the link. "
          "The tile’s art keeps <code>commanderArtCropUri</code>."),
@@ -69,7 +77,7 @@ def main():
     legend = ('<div class="note" style="max-width:1500px"><h4>Reading the boards</h4>Drawn over main’s pages in Low Sun. <b>Orange dashed outlines</b> mark what is new '
               'against what shipped. Fixtures: you are Sam; Colin’s decks are Thopter Factory (Sai), Ghalta, Primal Hunger, Giada and Lathliss, Dragon Queen. '
               'Canvases can’t load Scryfall, so the art is cut from the design folder’s card images. Words are placeholders for <code>/copy-review</code>.</div>')
-    body = (board_head("Friend decks and the hide switch · R1", "A friend’s deck opens, and a deck can hide",
+    body = (board_head("Friend decks and the hide switch · R2", "A friend’s deck opens, and a deck can hide",
                        "Builds on <code>design_handoff_the99_menu_home</code> and the friend page that shipped in #2186 and #2193. Hugh’s rulings: friends see every "
                        "deck’s full list, read-only, on by default; a per-deck <b>Hidden from friends</b> switch removes the deck from friends entirely. "
                        "Six boards: the friend’s deck, its states, the tiles, the switch, the privacy line, and the two carried-over calls.")
@@ -91,10 +99,10 @@ def friend_deck():
     dk = desk(F.fdeck_page(True), "Friends", badges=B, h=980)
     dkd = desk(F.fdeck_page(True), "Friends", badges=B, h=700, over=F.detail_desk())
     body = (board_head("Deliverable 1 · a friend’s deck, opened from their Decks tab", "Colin’s Thopter Factory, read-only",
-                       "The open precon page’s anatomy with the deck page’s grouping. The head names whose deck it is and keeps Colin’s status and count; "
+                       "The open precon page’s anatomy with the deck page’s grouping. The head names whose deck it is and its card count (R2: no status); "
                        "the band under it is <b>yours</b>: how many of its cards you own, and the deck of yours it overlaps. Rows are <code>DecklistRow</code> in its "
                        "read-only form: your ownership dot, the name, the cost, and on desktop Colin’s printing. A row opens the shipped card details, "
-                       "where the Wishlist box is the one write on the page. No prices: they are Colin’s figures.")
+                       "unchanged: Add to wishlist stays where it ships. No prices: they are Colin’s figures.")
             + frames(frame("<b>Decks tab</b> · 390 · the press", tab, "The whole tile is the press (the tiles are redrawn on the Tiles board)."),
                      frame("<b>The deck</b> · 390 · first screen", top, "Back to Colin’s decks. Colin’s face in the eyebrow says whose list this is; the commander line "
                            "shows because the name doesn’t repeat it. The key line is new: on this page the dot is <i>your</i> collection."),
@@ -102,11 +110,11 @@ def friend_deck():
                            "dashed line (basics are not counted in what you own)."),
                      frame("<b>A row pressed</b> · 390", pressed, "The row is the press, with the shipped focus ring."),
                      frame("<b>Card details</b> · 390", det, "The shipped sheet, unchanged: 27 of 73 pages through Colin’s list. "
-                           "The Wishlist box is the shipped one (Add to wishlist becomes the stepper in place). The price is the catalog’s."), gap=40)
+                           "R2: nothing is raised into the teaser. Add to wishlist stays in the full sheet, one swipe up, as everywhere else. The price is the catalog’s."), gap=40)
             + frames(frame("<b>The deck</b> · 1300", dk, "The precon head at 1300: the 56×78 thumb, the band, the list note with List / Cards at its right end. "
                            "Each group says what you own of it, right-aligned, as the precon’s groups do. Rows carry Colin’s printing, as a precon’s carry the box’s. "
                            "No ✕ column, no buy column."),
-                     frame("<b>Card details</b> · 1300", dkd, "The shipped modal over the page, with the same Wishlist box.")))
+                     frame("<b>Card details</b> · 1300", dkd, "The shipped modal over the page, unchanged: the Wishlist box sits in the details column where it ships.")))
     return doc("Friend deck", body, 2760)
 
 
@@ -122,8 +130,11 @@ def states():
           '<div class="emp2 new"><b>Colin hasn’t added cards yet</b><p>Zimone is the commander so far. The list shows here as Colin builds it.</p></div></div>')
     emp = phone(f'<div class="fx">{empty_cards}{zl}</div>', "Friends", badges=B, h=700)
     empd = desk(f'<div class="fx">{empty_cards.replace("hd", "hd", 1)}{zl}</div>', "Friends", badges=B, h=560)
-    many = F.COLIN + F.COLIN_MORE
-    longtab = desk(F.decks_tab(many, True, counts={"spares": 6, "wish": 12, "decks": 9}), "Friends", badges=B)
+    many = F.COLIN + F.COLIN_MORE[:4]
+    longtab = desk(F.decks_tab(many, True, counts={"spares": 6, "wish": 12, "decks": 8}), "Friends", badges=B)
+    none_ = (F.friend_head("decks", False, {"spares": 6, "wish": 12, "decks": 0}) + '<div class="emp2 new" style="margin-top:14px"><b>Colin has no decks yet</b>'
+             '<p>A deck Colin shares shows here, with its whole list.</p></div></div>')
+    nonep = phone(none_, "Friends", badges=B, h=700)
     nf = phone('<div class="nf"><span class="num">404</span><h2>There’s no page here.</h2><p>I checked. Twice. Probably a typo in the URL.</p>'
                '<div class="b"><span class="bp">Back home</span><span class="bg">View decks</span></div></div>', "Friends", badges=B, h=700)
     body = (board_head("Deliverable 4 · states", "Long lists, an empty deck, a link that no longer opens",
@@ -132,9 +143,10 @@ def states():
                        "since there is nothing to count. <b>Gone:</b> hidden, deleted, or no longer friends, the link is the app’s 404.")
             + frames(frame("<b>The deck</b> · 1300 · all 99", long_, "Commander, then Creatures 23, Planeswalkers 2, Instants 9, Sorceries 6, Enchantments 4, "
                            "Artifacts 19, Lands 36 (27 basics on the dashed line)."),
-                     frame("<b>Decks tab</b> · 1300 · nine decks", longtab, "Three across, newest first, one press each. A draft keeps its dashed pill and an empty track."))
-            + frames(frame("<b>Empty</b> · 390 · a draft", emp, "Zimone is drafted with no cards yet. The status and count stay (Draft, 0 / 99)."),
+                     frame("<b>Decks tab</b> · 1300 · eight decks", longtab, "Three across, newest first, one press each. Name, line, card count."))
+            + frames(frame("<b>Empty</b> · 390 · a draft", emp, "Only when Colin includes drafts in Settings (off by default). Zimone is drafted with no cards yet; the count reads 0 cards."),
                      frame("<b>Empty</b> · 1300", empd, "Same box at 1300."),
+                     frame("<b>No decks to see</b> · 390", nonep, "The shipped empty state, body reworded (it promised a status). Colin with no decks and Colin with “Friends can see my decks” off look the same."),
                      frame("<b>No longer opens</b> · 390", nf, "The shipped not-found page, unchanged. Nothing tells a hidden deck from a deleted one.")))
     return doc("Friend deck · states", body, 2840)
 
@@ -172,9 +184,9 @@ def tiles():
                        "Faces and commanders sit in a crop’s middle two-thirds, which this keeps.")
             + frames(frame("<b>Shipped</b> · 390 · the problem", bp, "Drawn with the design folder’s art: Giada’s head leaves the band as Sliver Overlord’s does, and a band "
                            "fed the full card image shows its type line, as Jaws does."),
-                     frame("<b>R1</b> · 390", after, "The /decks tile without its ⋯: 248 band, the name and the line on the art, then status, bar and count, and "
-                           "the to-buy figure in the detail row. Giada’s whole figure is in frame."),
-                     frame("<b>R1</b> · 1300", ad, "Three across, as /decks. The 4-up 120px row retires."), gap=40)
+                     frame("<b>R2</b> · 390", after, "The /decks tile without its ⋯ and, in R2, without status, bar or to-buy figure: 248 band, the name and the line on the art, then the card count. "
+                           "Giada’s whole figure is in frame."),
+                     frame("<b>R2</b> · 1300", ad, "Three across, as /decks. The 4-up 120px row retires."), gap=40)
             + sec("Does the tile repeat the commander under the name?", "Only when it adds something. When the deck’s name repeats the commander, whole or up to its comma, the "
                   "line shows the colour alone, so the tile still names the deck’s colours and keeps its height. Compared after folding case and punctuation. The deck page’s "
                   "head follows the same rule.", rule + tbl))
@@ -191,10 +203,15 @@ def hide():
     dp = phone(F.decks_page(), "Decks", badges=B, h=844)
     dpm = phone(F.decks_page(menu="off").replace("Dino Stampede", "Dino Stampede", 1), "Decks", badges=B, h=844)
     dd = desk(F.decks_page(True), "Decks", badges=B)
+    sp = phone(F.settings_with_decks(), "Home", badges=B, h=1500)
+    spo = phone(F.settings_with_decks(master=False), "Home", badges=B, h=1500)
+    sd = desk(F.settings_with_decks(True), "Home", badges=B, h=1420)
+    bys = desk(F.decks_page(True, menu="on", menu_i=2, bys="Set in Settings"), "Decks", badges=B)
     body = (board_head("Deliverable 2 · Hidden from friends", "One row in the deck’s ⋯ menu",
                        "The deck menu is one component on two surfaces: the deck page header (Move, Delete) and the /decks tile (Update, Rename, Export, Move, "
                        "Delete). <b>Hidden from friends</b> joins both as a checkbox row above Delete, which stays last in <code>--danger</code>. A press ticks it, saves "
-                       "and closes the menu; the header’s mark is the receipt. Off by default. Not in Settings: it is one deck’s choice, and Settings holds account-wide ones.")
+                       "and closes the menu; the header’s mark is the receipt. Off by default. R2: Settings holds the account-wide defaults (drafts and building decks hidden) "
+                       "and the global switch; the row is the per-deck exception.")
             + sec("The deck page", "",
                   frames(frame("<b>Menu open</b> · 390", p_menu, "The header’s ⋯: Move, Hidden from friends, Delete. The row is the 44px phone row with the app’s checkbox at "
                                "its right end, like the pod card’s Share my spares."),
@@ -208,39 +225,57 @@ def hide():
                   "Friends bar glyph struck through, on its 20-unit box.",
                   frames(frame("<b>/decks</b> · 390", dp, "Thopter Works is hidden: the glyph in its chips row, the key line above the tiles."),
                          frame("<b>The tile’s ⋯</b> · 390", dpm, "The tile’s own menu, with the same row."),
-                         frame("<b>/decks</b> · 1300", dd, "Three across."), gap=40)))
+                         frame("<b>/decks</b> · 1300", dd, "Three across."), gap=40))
+            + sec("R2 · Settings: the defaults and the global switch", "A <b>Your decks</b> section at the end of /settings, after Spares, in the page’s checkbox rows. "
+                  "Saved as you change them, like the rest of the page. Drafts and building decks are hidden until you tick the second box.",
+                  frames(frame("<b>/settings</b> · 390 · the default", sp, "Friends can see my decks: on. Include drafts and decks I’m building: off."),
+                         frame("<b>/settings</b> · 390 · all off", spo, "With the first box off, the second dims and reads as off; friends see no decks."),
+                         frame("<b>/settings</b> · 1300", sd, "The same section in the 720 column."), gap=40)
+                  + frames(frame("<b>A deck Settings already hides</b> · 1300", bys, "Rootha Spells is Building, so the default hides it. Its ⋯ row is ticked and locked "
+                                 "with “Set in Settings ›” under it; the press opens /settings. No glyph on the tile: the glyph marks a deck hidden on its own."))))
     return doc("Hidden from friends", body, 2760)
 
 
 # ============================================================================ Privacy line, absence
-NEW_PRIV = "Friends can open your decks and see their lists. Hide one from its ⋯ menu."
+PRIV = {"default": "Friends can open your full decks and see their lists. Change this in Settings.",
+        "all": "Friends can open all your decks and see their lists. Change this in Settings.",
+        "none": "Friends can’t see your decks. Change this in Settings."}
+NEW_PRIV = PRIV["default"]
 
 
-def friends_head(desk=False):
+def friends_head(desk=False, line=None):
+    line = (line or NEW_PRIV).replace("Settings.", "<u>Settings</u>.")
     h = P.friends_page(desk, waiting=False)
-    return h.replace("<u>Change</u></p>", f'<u>Change</u></p><p class="pv new" style="margin-top:6px;font:11px/1.5 IBM Plex Mono;color:var(--fg-faint)">{NEW_PRIV}</p>', 1)
+    return h.replace("<u>Change</u></p>", f'<u>Change</u></p><p class="pv new" style="margin-top:6px;font:11px/1.5 IBM Plex Mono;color:var(--fg-faint)">{line}</p>', 1)
 
 
 def privacy():
     fp = phone(friends_head(), "Friends", badges=B, h=760)
     fd = desk(friends_head(True), "Friends", badges=B, h=560)
+    fpa = phone(friends_head(line=PRIV["all"]), "Friends", badges=B, h=760)
+    fpn = phone(friends_head(line=PRIV["none"]), "Friends", badges=B, h=760)
     before = phone(F.decks_tab(F.COLIN, counts={"spares": 6, "wish": 12, "decks": 4}), "Friends", badges=B)
     after = phone(F.decks_tab([F.COLIN[0], F.COLIN[1], F.COLIN[3]], counts={"spares": 6, "wish": 12, "decks": 3}), "Friends", badges=B)
-    tbl = ('<table class="tbl" style="max-width:1100px"><tr><th>Where</th><th>Today</th><th>R1</th></tr>'
-           '<tr><td>/friends, under the name line</td><td>Friends see your deck names, commanders and statuses, never the lists.</td><td><b>' + NEW_PRIV + '</b></td></tr>'
+    tbl = ('<table class="tbl" style="max-width:1100px"><tr><th>Where</th><th>Today</th><th>R2</th></tr>'
+           '<tr><td>/friends, under the name line · the default</td><td>Friends see your deck names, commanders and statuses, never the lists.</td><td><b>' + PRIV["default"] + '</b></td></tr>'
+           '<tr><td>… with drafts and building decks included</td><td>(none)</td><td><b>' + PRIV["all"] + '</b></td></tr>'
+           '<tr><td>… with Friends can see my decks off</td><td>(none)</td><td><b>' + PRIV["none"] + '</b></td></tr>'
+           '<tr><td>A friend’s Decks tab, empty, the body</td><td>A deck Colin builds shows here, as a name, a commander and a status.</td><td><b>A deck Colin shares shows here, with its whole list.</b></td></tr>'
            '<tr><td>A friend’s Decks tab, the line</td><td>View only. Colin’s committed decks and drafts, newest first.</td><td><b>' + F.DECKS_LINE + '</b></td></tr>'
            '<tr><td>About, the line’s key (#2196)</td><td>Friends see your deck names, commanders and statuses, never the lists.</td><td><b>' + NEW_PRIV + '</b></td></tr></table>')
     body = (board_head("Deliverable 3 · the privacy line, and what a friend sees", "The line tells the truth again",
-                       "The /friends line was true while friends saw names only. It now says what they see and where the one control lives. The same sentence replaces "
+                       "The /friends line was true while friends saw names only. It now says what they see, follows the two Settings boxes, and points at Settings (the word is the link). The same sentence replaces "
                        "the About key that #2196 carries. A hidden deck is <b>simply absent</b> for friends, confirmed: the tile goes, the Decks count drops, and nothing "
                        "on Colin’s side says a deck is hidden.")
             + frames(frame("<b>/friends</b> · 390", fp, "In the place #2186 built: mono 11 <code>--fg-faint</code> under the name line, leaving while the name is edited."),
+                     frame("<b>/friends</b> · 390 · drafts included", fpa, "When the second Settings box is ticked."),
+                     frame("<b>/friends</b> · 390 · decks off", fpn, "When Friends can see my decks is off."),
                      frame("<b>/friends</b> · 1300", fd, "Same place at 1300."), gap=40)
             + sec("Strings", "", tbl)
             + sec("When Colin hides a deck", "Seen from your side. Colin hides Giada.",
                   frames(frame("<b>Before</b> · 390", before, "Four decks."),
                          frame("<b>After</b> · 390", after, "Three decks, the count reads 3, and the grid closes up. No gap, no “1 hidden”, no toast."), gap=40)))
-    return doc("Privacy line", body, 1850)
+    return doc("Privacy line", body, 2700)
 
 
 # ============================================================================ Carry-overs
