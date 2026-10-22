@@ -734,6 +734,19 @@ export type AdminDoorProps = {
 /** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
 export type NavBadges = { home?: number; friends?: number };
 
+/**
+ * The bar's counts as drawn. Home's clears on a Home visit (menu and Home handoff, call 8), but the visit's seen write
+ * runs after the response and the shell outlives a navigation, so the count it was rendered with would stay up after
+ * the visit. It is dropped while the reader is on Home, and from then on until the shell renders a new count.
+ */
+export function useShownBadges(badges: NavBadges | undefined, pathname: string): NavBadges | undefined {
+  const [seenFor, setSeenFor] = useState<NavBadges | undefined>(undefined);
+  const counted = (badges?.home ?? 0) > 0;
+  if (counted && pathname === "/" && seenFor !== badges) setSeenFor(badges);
+  if (!counted) return badges;
+  return pathname === "/" || seenFor === badges ? { ...badges, home: 0 } : badges;
+}
+
 function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
   return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) : 0;
 }
@@ -764,6 +777,7 @@ export function NavRail({
   badges,
 }: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
   const pathname = usePathname();
+  const shownBadges = useShownBadges(badges, pathname);
   const shape: BarShape = { commandersPlace, friends: friends ?? false };
   const items = barItems(shape);
   const inBar = friendsInBar(shape);
@@ -836,7 +850,7 @@ export function NavRail({
               pip="rail"
               handlers={bind(href, label)}
               moment={momentOnSlot(helpMoment, inBar && !!friendsMoment, pathname, href)}
-              badge={slotBadge(badges, href)}
+              badge={slotBadge(shownBadges, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
@@ -900,6 +914,7 @@ export function TabBar({
   badges?: NavBadges;
 }) {
   const pathname = usePathname();
+  const shownBadges = useShownBadges(badges, pathname);
   const shape: BarShape = { commandersPlace, friends };
   const items = barItems(shape);
   const inBar = friendsInBar(shape);
@@ -917,7 +932,7 @@ export function TabBar({
         // the icon (currentColor) and the label.
         pip="tab"
         moment={momentOnSlot(helpMoment, inBar && friendsMoment, pathname, href)}
-        badge={slotBadge(badges, href)}
+        badge={slotBadge(shownBadges, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
             ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"

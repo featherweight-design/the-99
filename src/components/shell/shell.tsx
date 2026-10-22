@@ -27,6 +27,8 @@ import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
 import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
+import { homeFeedEnabled } from "../../lib/feed/flag";
+import { unseenCount } from "../../lib/feed/read";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -116,8 +118,15 @@ export default async function Shell({
       ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
       : false;
   // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
-  // reader. None is read yet; the feed and Friends PRs fill them here, and an absent count draws no badge.
-  const badges: NavBadges = {};
+  // reader (the Friends PR fills it). An absent count draws no badge. Home's is one statement over the feed's union,
+  // read only with HOME_FEED_ENABLED on; a failed read draws no badge rather than breaking every page.
+  const homeUnseen = homeFeedEnabled(env)
+    ? await perfRead("shell.feedUnseen", () => unseenCount(userId, env)).catch((error: unknown) => {
+        console.error("shell: the feed's unseen count could not be read", error instanceof Error ? error.message : "");
+        return 0;
+      })
+    : 0;
+  const badges: NavBadges = homeUnseen > 0 ? { home: homeUnseen } : {};
   const stall = navStallLogEnabled(env)
     ? { deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null }
     : null;
