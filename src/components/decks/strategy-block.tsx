@@ -14,11 +14,11 @@ import { RING, arcPath, legendCount, ringArcs, type RingRow, type RingSize } fro
 
 /**
  * The neutral arcs by rank: the muted ink thinned toward the box, so every theme derives its own ramp. The shares are fitted
- * in oklab to the boards' Low Sun hex (#6E6352 to #332E28; each within 6 of 255 per channel).
+ * in oklab to the boards' Low Sun rank colours, each within 6 of 255 per channel (gap report).
  */
 const RANK_MIX = [61, 48, 37, 28, 21];
 const rankInk = (rank: number) => `color-mix(in oklab, var(--fg-muted) ${RANK_MIX[Math.min(rank, RANK_MIX.length - 1)]}%, var(--surface-rail))`;
-/** The pending growth: the boards' #F0C08E in Low Sun, fitted from the hover accent lifted toward white (#EBBB92). */
+/** The pending growth: the boards' Low Sun colour, fitted from the hover accent lifted toward white (gap report). */
 const GROWTH_INK = "color-mix(in oklab, var(--accent-hover) 66%, white)";
 
 type Row = { key: StrategyKey; copies: number; outside: boolean };
