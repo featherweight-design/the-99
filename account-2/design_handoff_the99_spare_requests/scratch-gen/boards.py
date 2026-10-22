@@ -25,7 +25,7 @@ CALLS = [
     ("1", "Ask lives where the spares already show",
      "No new surface. The shipped row press (⇄ and the spare glyph) opens the shipped modal, <b>Before you buy</b> or <b>Friends with a spare</b>, and each friend row in its <b>Friends with a spare</b> section gains one <b>Ask</b> press where “view only” sat. Same in Shopping, in the deck list and in the all-decks cart."),
     ("2", "Several friends, one row, one ask",
-     "The row keeps <b>one</b> marker however many friends hold the card. The modal lists them most spares first (shipped order), each with its own Ask. <b>One open ask per card</b>: once you ask Colin, Max’s Ask steps aside until Colin says no or 14 days pass, so nobody hands over a card you no longer need."),
+     "The row keeps <b>one</b> marker however many friends hold the card. The modal lists them most spares first (shipped order), each with its own Ask. <b>One open request per card</b>, so nobody hands over a card you no longer need. Once you ask Colin, Max’s row reads <b>Ask instead</b>: one press withdraws Colin’s request and sends Max one, so nobody waits out 14 days. The withdrawn friend isn’t told; the row leaves their Waiting on you and the badge drops. ✕ in Your requests withdraws without asking anyone else."),
     ("3", "One press, no note (agreed)",
      "Ask is one deliberate press. The request already says the card, how many (what the deck needs, up to their spare count) and which deck it is for, so the friend reads <i>“Peter wants 1 for Dragons of Tarkir.”</i>"),
     ("4", "The row says where the ask is",
@@ -95,7 +95,7 @@ def shopping_board():
                      frame("<b>Dina’s press</b> · 390 · Friends with a spare", p2,
                            "The shipped spares-only sheet (no ⇄ on this row). Chris’s row: the spare count as shipped, then <b>Ask</b> where “view only” sat. The old foot copy now sits behind the ⓘ beside the section head."),
                      frame("<b>Jace’s press</b> · 390 · Before you buy", p3,
-                           "Both apply, so the shipped title and order: friends first, then stand-ins. Colin: requested, 12 days left. Max holds one too; his Ask waits (call 2), reading “after Colin”."))
+                           "Both apply, so the shipped title and order: friends first, then stand-ins. Colin: requested, 12 days left. Max holds one too; his row reads Ask instead (call 2): it moves the request to him."))
             + frames(frame("<b>Shopping</b> · 1300", d1, "The two-up grid of one-line rows, the key on one line."),
                      frame("<b>Jace’s press</b> · 1300 · the 640 modal", d2, "The same section in ModalChrome at 640.")))
     return doc("Shopping · spare requests", body, 2780)
@@ -121,7 +121,7 @@ def cart_board():
     d1 = dk(S.cart_page(True), "Decks")
     body = (board_head("Shopping for all decks · By friend", "The view of all of them: a third way to read the cart",
                        "The cart’s view switch (By card · By deck) gains <b>By friend</b>, shown while any line has a friend’s spare. The same lines, grouped under each friend who holds a spare, most spares first; "
-                       "a card two friends hold sits under both. In this view the spare glyph would say nothing, so the line’s press is <b>Ask</b> itself. One open ask per card holds here too: Jace under Max reads “after Colin”.")
+                       "a card two friends hold sits under both. In this view the spare glyph would say nothing, so the line’s press is <b>Ask</b> itself. One open ask per card holds here too: Jace under Max reads <b>Ask instead</b>, which moves the request from Colin to Max.")
             + frames(frame("<b>By friend</b> · 390", p1, "Checkout heads the phone page as shipped; the switch and the list head stay pinned while the lines scroll."),
                      frame("<b>By friend</b> · 1300", d1, "Decks and checkout on the left as shipped; the friends list in the scrolling box. The line is the shipped cart line (name opens the card, decks line, buy tag).")))
     return doc("Cart · by friend", body, 1960)
@@ -130,8 +130,8 @@ def cart_board():
 # ================================================================ Asker states
 def asker_board():
     st = [("A · Ask", [("Chris", 1, "ask")], "", "The rest state, with the ⓘ pressed: the old foot copy, cut to one tooltip."),
-          ("B · Requested", [("Colin", 2, "asked"), ("Max", 1, "held")], "One request at a time. If Colin declines or 14 days pass, Max’s Ask comes back.",
-           "In place, no toast. Days left on the sub line, one word on the right. Other friends’ Ask steps aside and reads “after Colin”."),
+          ("B · Requested", [("Colin", 2, "asked"), ("Max", 1, "held")], "One request at a time. Ask instead moves it from Colin to Max.",
+           "In place, no toast. Days left on the sub line, one word on the right. Other friends read <b>Ask instead</b>: one press withdraws Colin’s request and sends Max one. Colin isn’t told; his Waiting on you row and badge simply drop."),
           ("C · Accepted", [("Peter", 2, "yes")], "When it’s yours, press buy on the row.", "Green, as the row’s tick. Nothing else in the app moves."),
           ("D · Declined", [("Chris", 1, "no")], "Nobody else you know has a spare.", "No Ask to Chris for this card again. If others hold one, their Ask comes back."),
           ("E · No answer", [("Max", 1, "expired")], "", "After 14 days. Ask again starts a new 14 days.")]

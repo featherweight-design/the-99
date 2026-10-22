@@ -64,3 +64,4 @@ Settings' spares (#2180) and Social R2's spare marker and modal (#1858, #1875).
 - **Vocabulary.** Marks and statuses: Requested / Accepted / Declined. The feed speaks in people: “Colin can spare Jace”, “Chris is keeping Dina”; the friend’s receipt: “You’re sparing Lathliss for Peter” / “You’re keeping Lathliss”. “Rejected” is not used anywhere.
 - **By friend.** Each friend is its own panel with a header band (face, name, pods, spare count); line statuses are one word.
 - **No note:** agreed; the Note board is gone.
+- **Ask instead** (Hugh asked how to cancel and move on): while one request is open, other friends’ rows read **Ask instead**, which withdraws the open request and sends a new one in one press. The withdrawn friend is not told: their Waiting on you row and badge simply drop. ✕ in Your requests still withdraws without asking anyone else. Same press on the By friend cart line.

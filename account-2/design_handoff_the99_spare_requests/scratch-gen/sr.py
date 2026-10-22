@@ -110,6 +110,7 @@ kit.CSS += r"""
 .fsr .nm span em{font-style:normal;color:var(--fact)}
 .ask{flex:none;height:32px;min-width:64px;padding:0 14px;border-radius:8px;border:1px solid var(--accent);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font:600 13px 'IBM Plex Sans';white-space:nowrap}
 .ph .ask{height:36px;border-radius:9px}
+.ask.alt{border-color:var(--border-strong);color:var(--fg-body);font-weight:500}
 .fst{flex:none;display:inline-flex;align-items:center;gap:6px;font:500 13px 'IBM Plex Sans';color:var(--accent-text);white-space:nowrap}
 .fst i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .fst.ok{color:var(--success)} .fst.ok i{width:auto;height:auto;background:none;border-radius:0;font-style:normal;font-size:12px}
@@ -408,7 +409,7 @@ def frow(name, n, state="ask", when="", new=True):
         right = f'<span class="ask{nw}">Ask again</span>'
         sub = f"{sp} · no answer in 14 days"
     elif state == "held":
-        right = f'<span class="fst wt{nw}">after Colin</span>'
+        right = f'<span class="ask alt{nw}">Ask instead</span>'
     return f'<div class="fsr">{face(name)}<span class="nm"><b>{name}</b><span>{sub}</span></span>{right}</div>'
 
 
@@ -445,7 +446,7 @@ def modal_body(kind, desk=False):
     if kind.startswith("jace"):
         rep = replacing("Jace, Multiverse Architect", "jace.jpg", "$8.40", True, DECK, "planeswalker · mana value 4 · draw")
         sec = fsection([("Colin", 2, "asked"), ("Max", 1, "held")],
-                       "One request at a time. If Colin declines or 14 days pass, Max’s Ask comes back.")
+                       "One request at a time. Ask instead moves it from Colin to Max.")
         return "Before you buy", rep + sec + standins_tail()
     if kind.startswith("gisa"):
         rep = replacing("Ghoulcaller Gisa", "gisa.jpg", "$4.75")
@@ -488,7 +489,7 @@ def cline(card, decks, price, state, over):
     elif state == "yes":
         r = '<span class="fst ok new"><i>✓</i>Accepted</span>'
     else:
-        r = '<span class="fst wt new">after Colin</span>'
+        r = '<span class="ask alt new">Ask instead</span>'
     return (f'<div class="cl"><span class="t"><b>{card}</b><span>{decks}</span></span>'
             f'<span class="rt">{r}{buytag(price, False)}</span></div>')
 
