@@ -36,11 +36,11 @@ export function TodoCard({ todo, deckName, renderRow }: TodoCardProps) {
         "bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)]"
       }
     >
-      <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px] md:px-[16px]">
-        <span className="min-w-0 truncate font-mono uppercase text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">
+      <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px]">
+        <span className="min-w-0 truncate font-mono uppercase leading-normal text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">
           {eyebrow}
         </span>
-        <span className="ml-auto flex-none font-mono text-[11px] text-[color:var(--fg-muted)]">
+        <span className="ml-auto flex-none font-mono leading-normal text-[11px] text-[color:var(--fg-muted)]">
           {copy.count(todo.rows.length)}
         </span>
       </div>
@@ -95,7 +95,7 @@ export function TodoRow({ tone, mark, title, body, next, press }: TodoRowProps) 
       </span>
       <div className="flex-1 min-w-0 md:flex md:flex-wrap md:items-baseline md:gap-[12px]">
         {next && (
-          <p className="m-0 mb-[2px] md:mb-0 font-mono uppercase text-[9px] tracking-[0.14em] text-[color:var(--accent-text)]">
+          <p className="m-0 mb-[2px] md:mb-0 font-mono uppercase leading-normal text-[9px] tracking-[0.14em] text-[color:var(--accent-text)]">
             {copy.nextStep}
           </p>
         )}

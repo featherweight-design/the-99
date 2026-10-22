@@ -29,7 +29,7 @@ interface ArrivalStripProps {
    */
   added?: { entryId: string; copies: number } | null;
   /** The import left unresolved lines. Only an import that added cards draws a strip then: its head says what was
-   *  added, never "came over clean", which the unresolved banner below it would contradict. */
+   *  added, never "came over clean", which the to-do card's unresolved row below it would contradict. */
   unresolved?: boolean;
 }
 

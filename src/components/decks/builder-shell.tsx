@@ -1754,7 +1754,7 @@ export function BuilderShell({
 
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
-                banner instead, whose warning would be contradicted by a line
+                to-do card's unresolved row instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
             {preconArrival && (
               <PreconArrivalBand deckId={deck.id} arrival={preconArrival} added={preconAddReceipt ? { entryId: preconAddReceipt.entryId } : null} />
@@ -1764,7 +1764,7 @@ export function BuilderShell({
               <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
             )}
             {/* A ticked import (no-collection entry) also draws its strip over unresolved lines: what it
-                added is a fact the banner does not state, and its head then says only that. */}
+                added is a fact the unresolved row does not state, and its head then says only that. */}
             {arrivedFromImport && (unresolvedRows.length === 0 || addReceipt) && (
               /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line
@@ -1785,7 +1785,7 @@ export function BuilderShell({
               />
             )}
 
-            {/* An update's own strip. Not gated on the unresolved banner the way
+            {/* An update's own strip. Not gated on the unresolved row the way
                 the import's is: an update's sentence is about what moved, which
                 unresolved lines do not contradict. */}
             {updateArrival && <UpdateStrip arrival={updateArrival} />}
@@ -1803,12 +1803,17 @@ export function BuilderShell({
                 the lines stay unresolved across visits, and so does the explanation of why the
                 counts do not add up. */}
             <TodoCard
-              todo={deckTodo({
-                firstRun,
-                filled: deck.filled,
-                cards: cards.length,
-                unresolved: unresolvedRows.length,
-              })}
+              // The rule takes the real `firstRun` (fill failed's gate needs it), but the card's head stays
+              // the eyebrow while the guided banner below still draws its own step: one "Step 3 of 3" a page.
+              todo={{
+                ...deckTodo({
+                  firstRun,
+                  filled: deck.filled,
+                  cards: cards.length,
+                  unresolved: unresolvedRows.length,
+                }),
+                firstRun: false,
+              }}
               deckName={deck.name}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (
