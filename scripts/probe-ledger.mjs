@@ -91,6 +91,14 @@ const ledgerSel = "text=/came from/";
 async function openDeck(page) {
   await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "networkidle" });
   await page.locator(ledgerSel).first().waitFor({ timeout: 20_000 });
+  await openLedger(page);
+}
+
+/** The ledger opens inside the to-do card from its foot's `Where these N cards came from ▾`
+ *  (deck messages PR 2b), closed on every visit, so every walk opens it first. */
+async function openLedger(page) {
+  const toggle = page.getByRole("button", { name: /came from$/ }).first();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
 }
 
 async function walk(page, width) {

@@ -360,7 +360,7 @@ export const availabilityCopy = {
     // ×17. Nothing here may imply a count the block has not printed.
     detailHardNote:
       "You can still build with it. You’d be taking it out of something.",
-    // Count-aware for the same reason `deckRollup.softHeading` is: the number of
+    // Count-aware for the same reason `deckRollup.softLead` is: the number of
     // brewing claimants is the one figure this sentence turns on, and a single
     // form has to lie about one of the two cases.
     //
@@ -397,16 +397,16 @@ export const availabilityCopy = {
   // The over-committed half is the to-do card's spoken-for-twice row (`deckSummary`). The counts
   // are disjoint: a card is either over-committed or softly claimed, never both. The soft count is
   // pre-99 only; at 99 and above the deck's own claims go hard and any real conflict has already
-  // promoted itself. Renders only when the count is above zero.
+  // promoted itself. The soft half is a segment of the to-do card's foot, absent at zero.
   deckRollup: {
-    // The soft band, alone under the header since its red neighbour became a row (deck messages
-    // PR 2a). It moves to the to-do card's foot next.
-    softHeading: (n: number) =>
-      n === 1
-        ? "1 card here is in another draft too"
-        : `${n} cards here are in other drafts too`,
+    // The to-do card's foot segment (deck messages A6 soft, copy-review row 26). Out of the red
+    // row's company, so it needs no "more".
+    softFoot: (n: number) => (n === 1 ? "1 in another draft too" : `${n} in other drafts too`),
+    // What the segment opens, inside the card, until the pass sheet (deck messages PR 3): this bold
+    // lead, then the body. Count-aware: a single form has to lie about one of the two cases.
+    softLead: (n: number) =>
+      n === 1 ? "1 card here is in another draft too." : `${n} cards here are in other drafts too.`,
     softBody:
       "Nothing to sort out yet. None of those is past a draft either. Whichever you sleeve first gets them.",
-    regionAria: "Card commitments",
   },
 } as const;

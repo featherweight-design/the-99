@@ -44,7 +44,6 @@ import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { ProxyTag } from "./proxy-tag";
-import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 
 /** The label block's inset from the band's sides; its ramp reaches back out across it. */
@@ -592,18 +591,6 @@ export function SpineMobile({
             )}
           </div>
         </div>
-{/* The same line the desktop head draws, on the surface where the pill
-            is just as capable of reading `Complete` over printed cards. A
-            feature that appears at one width only is the defect the acceptance
-            walk exists to catch. */}
-        {(counts.proxiedCount ?? 0) > 0 && (
-          <p
-            className="font-mono text-center m-0"
-            style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
-          >
-            {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
-          </p>
-        )}
       </div>
 
       {/* STATES §2, state 3: Save/Cancel replace Update and Export while editing, at both

@@ -206,8 +206,8 @@ export function DiscardConfirm({
   // An unknown outcome, held in state because the ANSWER is what enforces it: a
   // second destructive write must not start against a draft that may already be
   // gone, and a latch the button does not reflect is a control that eats presses.
-  // `PendingBanner` passes no `disabled` and no `onWriteState`, so on that surface
-  // this is the whole guard. The handler needs no clause of its own — a disabled
+  // A caller that passes no `disabled` and no `onWriteState` gets this as its
+  // whole guard. The handler needs no clause of its own — a disabled
   // button fires nothing.
   const [unresolved, setUnresolved] = useState(false);
 
@@ -334,8 +334,8 @@ export function DiscardConfirm({
                 // the moment the refreshed state has no changes left.
                 //
                 // `unresolved` is what holds the answer shut afterwards, and it
-                // matters most for `PendingBanner`: that caller passes no
-                // `onWriteState`, so nothing else there stands between the reader
+                // matters most for a caller that passes no `onWriteState`:
+                // nothing else there stands between the reader
                 // and a second destructive write against a draft that may already
                 // be gone.
                 onWriteState?.("unknown");

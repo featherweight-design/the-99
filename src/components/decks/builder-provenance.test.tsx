@@ -94,10 +94,20 @@ async function mount(deck: DeckDetail, fillPasses: FillPassSummary[] = []) {
   return view;
 }
 
+/** The ledger opens from the to-do card foot's `Where these N cards came from ▾`. */
+async function openLedger(total: string) {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: ledger.header(total) }));
+  });
+}
+
 describe("BuilderShell — the ledger's header", () => {
-  it("states the deck's auto count, not the deck's size", async () => {
+  it("states the deck's auto count, not the deck's size, on the foot and over the opened lines", async () => {
     await mount(makeDeck(3, 20), [makePass("p1", 1, ["card-0", "card-1", "card-2"])]);
-    expect(screen.getByText(ledger.header("3"))).toBeInTheDocument();
+    // Closed for the visit until pressed: the lines are not drawn.
+    expect(screen.queryByRole("heading", { name: ledger.header("3") })).not.toBeInTheDocument();
+    await openLedger("3");
+    expect(screen.getByRole("heading", { name: ledger.header("3") })).toBeInTheDocument();
   });
 
   it("is absent once the player has kept or swept every auto card", async () => {
@@ -109,6 +119,7 @@ describe("BuilderShell — the ledger's header", () => {
 describe("BuilderShell — the mark", () => {
   it("names only the marked pass's rows in the decklist below", async () => {
     await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    await openLedger("2");
     expect(screen.queryByText(ledger.markedRow(ledger.passLabel("1")))).not.toBeInTheDocument();
 
     await act(async () => {
@@ -127,6 +138,7 @@ describe("BuilderShell — the mark", () => {
   // button has to point at it for the mark to be spoken to the reader it is for.
   it("reads the mark after the card's own name when the name is focused", async () => {
     await mount(makeDeck(2, 0), [makePass("p1", 1, ["card-0"])]);
+    await openLedger("2");
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),
@@ -153,6 +165,7 @@ describe("BuilderShell — the mark", () => {
   it("drops a mark whose pass is gone from the incoming summaries", async () => {
     const deck = makeDeck(2, 0);
     const view = await mount(deck, [makePass("p1", 1, ["card-0"])]);
+    await openLedger("2");
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: ledger.markAria("1", ledger.passLabel("1")) }),

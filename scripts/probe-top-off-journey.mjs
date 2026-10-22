@@ -124,6 +124,16 @@ async function passRows() {
      where fp.deck_id = ${DECK} group by fp.id order by fp.ordinal`;
 }
 
+/** The ledger opens inside the to-do card from its foot's `Where these N cards came from ▾` (deck
+ *  messages PR 2b), closed on every visit: every ledger read or press after a navigation or a
+ *  reload opens it first. Returns false when the deck has no ledger to open (no auto cards). */
+async function openLedger(page) {
+  const toggle = page.getByRole("button", { name: /came from$/ }).first();
+  if ((await toggle.count()) === 0) return false;
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  return true;
+}
+
 const doorSel = /^Choose the cards for the last/;
 const commitSel = /^Add .* to the deck,/;
 
@@ -296,6 +306,7 @@ async function forward(page, w) {
 async function reverse(page, w) {
   const scope = `${w}·reverse`;
   await openDeck(page);
+  check(scope, "step 6: the ledger opens from the foot", await openLedger(page));
   const mark = page.getByRole("button", { name: /^Mark the .* from 1st top-off in the deck below$/ });
   const scrollBefore = await page.evaluate(() => window.scrollY);
   const rowsBefore = await decklistRows(page).count();
@@ -366,6 +377,7 @@ async function repeat(page, w) {
      where fp.deck_id = ${DECK} and fp.kind = 'top_off' order by fp.ordinal desc, fpc.oracle_id limit 1`;
   await sql`update deck_cards set auto = false where deck_id = ${DECK} and oracle_id = ${kept.oracle_id}`;
   await openDeck(page);
+  check(scope, "step 10: the ledger opens from the foot", await openLedger(page));
   check(scope, "step 10: the line re-reads with what became of the card", (await page.locator("text=/1 now yours/").count()) > 0);
   await shot(page, `${w}-10-recounted`);
 
@@ -421,9 +433,11 @@ async function resume(page, browser, w) {
   await openList(page);
   await page.getByRole("button", { name: commitSel }).click();
   await page.waitForTimeout(5000);
+  await openLedger(page);
   const ledgerBefore = await page.locator("text=/you chose from the last/").first().innerText();
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
+  await openLedger(page);
   const ledgerAfter = await page.locator("text=/you chose from the last/").first().innerText();
   check(scope, "step 15: the ledger is server state and survives a reload", ledgerBefore === ledgerAfter, `${ledgerBefore} / ${ledgerAfter}`);
   await shot(page, `${w}-15-reload-ledger`);
@@ -440,11 +454,14 @@ async function resume(page, browser, w) {
   await openList(second);
   await second.getByRole("button", { name: commitSel }).click();
   await second.waitForTimeout(5000);
+  await openLedger(second);
   const secondLines = await second.locator("text=/you chose from the last/").count();
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
+  await openLedger(page);
   const firstLines = await page.locator("text=/you chose from the last/").count();
-  check(scope, "step 16: a second session's commit is there on reload", firstLines === secondLines, `${firstLines} vs ${secondLines}`);
+  // Nonzero, or two closed ledgers would agree on nothing: 0 === 0 is not a commit seen twice.
+  check(scope, "step 16: a second session's commit is there on reload", firstLines > 0 && firstLines === secondLines, `${firstLines} vs ${secondLines}`);
   await shot(page, `${w}-16-two-tabs`);
   await second.close();
 }

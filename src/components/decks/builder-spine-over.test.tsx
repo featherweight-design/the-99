@@ -44,7 +44,6 @@ function mount(built: number) {
         counts={{ built, ownedCount: built, toBuyCount: 0 }}
         onExport={vi.fn()}
         status="Building"
-        softClaimed={0}
       />
     </CardDetailProvider>,
   );

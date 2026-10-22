@@ -190,7 +190,6 @@ describe("deck card-detail triggers", () => {
         counts={{ built: 0, ownedCount: 0, toBuyCount: 0 }}
         onExport={vi.fn()}
         status="Building"
-        softClaimed={0}
       />,
     );
 

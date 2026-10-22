@@ -1,10 +1,16 @@
 // Gate 2 for #43 Task 8: the commitments roll-up (design table §12), driven
-// rather than read. Opens a seeded deck at both widths and reports what the
-// region actually rendered — which of the two lines fired, in which order, the
-// heading and body each carried, and the colours they resolved to.
+// rather than read. The roll-up's bands are retired (deck messages PR 2): the
+// over-committed half is the to-do card's spoken-for-twice row and the soft half
+// is its foot's `N in other drafts too ▾`. Opens a seeded deck at both widths and
+// reports what the card drew for each — title, body and inks — and FAILS (exit 1)
+// whenever the decklist marks a copy `short` (an over-committed card) and the card
+// draws no spoken-for-twice row, so it cannot pass on bands that are gone. That
+// judgment is read off the page alone: the probe needs no forcing variable of its
+// own.
 //
 // States are forced at the seam, the same way `probe-availability-ui.mjs`
-// documents: run the dev server with `AVAIL_FORCE="<over>:<soft>[:anon]"`,
+// documents: AVAIL_FORCE is the DEV SERVER's variable, not this script's. Start
+// that server with `AVAIL_FORCE="<over>:<soft>[:anon]"`,
 // which rewrites `loadAvailability`'s output so the first N cards read `over`
 // and the next M read `soft`. A dev account cannot reach `over` with real
 // figures — it needs a second *finished* deck competing for a single copy —
@@ -71,55 +77,42 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
-// Only the visible half. Both widths render into the DOM, so reading text
-// content alone would report the desktop copy while looking at a phone.
-async function rollup(page) {
+// Only the visible copy: the card is one mount, but read through `getClientRects`
+// so a hidden node never reports.
+async function commitments(page) {
   return page.evaluate(() => {
-    const region = document.querySelector('[aria-label="Card commitments"]');
-    if (!region) return null;
     const visible = (n) => n.getClientRects().length > 0;
-    const lines = [];
-    for (const node of region.querySelectorAll("div, p, span")) {
-      if (!visible(node)) continue;
-      if (node.children.length > 0) continue;
-      if ((node.textContent ?? "").trim() === "") continue;
-      const s = getComputedStyle(node);
-      lines.push({
-        text: (node.textContent ?? "").trim(),
-        colour: s.color,
-        size: s.fontSize,
-        weight: s.fontWeight,
-      });
-    }
-    const shells = [...region.querySelectorAll("div")].filter(
-      (n) => visible(n) && getComputedStyle(n).borderLeftWidth === "3px",
+    const ink = (n) => getComputedStyle(n).color;
+    const row = [...document.querySelectorAll("main p")].find(
+      (p) => visible(p) && /spoken for twice$/.test((p.textContent ?? "").trim()),
     );
+    const body = row?.nextElementSibling;
+    const soft = [...document.querySelectorAll("[data-todo-foot] button")].find(
+      (b) => visible(b) && /in (other drafts|another draft) too/.test(b.textContent ?? ""),
+    );
+    // The decklist's over-committed marker (`availabilityCopy.marker.over`): "short", "short N",
+    // or either followed by ", also in …". Folded marks are `sr-only`, still in the DOM.
+    const shortMarks = [...document.querySelectorAll("main span, main p")].filter(
+      (n) => n.children.length === 0 && !n.closest("[data-todo-card]") && /^short( \d+)?(,|$)/.test((n.textContent ?? "").trim()),
+    ).length;
     return {
-      lines,
-      shells: shells.map((n) => {
-        const s = getComputedStyle(n);
-        return {
-          accent: s.borderLeftColor,
-          background: s.backgroundColor,
-          radius: s.borderTopLeftRadius,
-          padding: `${s.paddingTop} ${s.paddingRight} ${s.paddingBottom} ${s.paddingLeft}`,
-        };
-      }),
+      shortMarks,
+      row: row ? { title: row.textContent.trim(), colour: ink(row), body: body?.textContent?.trim() ?? null } : null,
+      soft: soft ? { text: soft.textContent.trim(), colour: ink(soft), expanded: soft.getAttribute("aria-expanded") } : null,
     };
   });
 }
 
 function report(label, seen) {
   console.log(`\n--- ${label}`);
-  if (!seen) return console.log("  NO REGION");
-  seen.shells.forEach((s, i) =>
-    console.log(
-      `  shell ${i}: accent ${s.accent} bg ${s.background} radius ${s.radius} pad ${s.padding}`,
-    ),
-  );
-  for (const l of seen.lines) {
-    console.log(`  ${l.colour} ${l.size}/${l.weight}  ${JSON.stringify(l.text)}`);
+  if (seen.row) console.log(`  row  ${seen.row.colour}  ${JSON.stringify(seen.row.title)} / ${JSON.stringify(seen.row.body)}`);
+  if (seen.soft) console.log(`  foot ${seen.soft.colour}  ${JSON.stringify(seen.soft.text)} (expanded ${seen.soft.expanded})`);
+  console.log(`  decklist rows marked short: ${seen.shortMarks}`);
+  if (seen.shortMarks > 0 && !seen.row) {
+    console.log("  FAIL: the list marks over-committed copies and the card draws no spoken-for-twice row");
+    process.exitCode = 1;
   }
+  if (!seen.row && !seen.soft) console.log("  nothing drawn: no spoken-for-twice row and no other-drafts segment");
 }
 
 await clerkSetup();
@@ -132,7 +125,7 @@ for (const { label, width, height } of VIEWPORTS) {
   console.log(`\n########## ${label}`);
   await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(900);
-  report(`forced ${process.env.AVAIL_FORCE ?? "(none)"}`, await rollup(page));
+  report(`forced ${process.env.AVAIL_FORCE ?? "(none)"}`, await commitments(page));
   await context.close();
 }
 

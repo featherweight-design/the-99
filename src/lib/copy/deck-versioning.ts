@@ -111,7 +111,8 @@ export const deckVersioningCopy = {
     // a button's name come from `aria-label` — so the move is appended to it.
     mixCellWasA11y: (base: string, n: number) => `${base}, was ${n}`,
 
-    // Committed and clean: the whole of versioning's permanent footprint.
+    // Committed and clean: the whole of versioning's permanent footprint, the to-do card foot's
+    // first segment (omitted while the pending row shows).
     versionLine: (version: number, date: string) => `v${version} · committed ${date}`,
 
     // A versionless deck at a full body. Design's call, not the spec's — see READINESS.
@@ -526,6 +527,11 @@ export const deckVersioningCopy = {
     fillFailedMark: "!",
     /** Pending changes' mark tile. */
     pendingMark: "±",
+    /** Between the foot's segments (version · proxies · provenance · other drafts). */
+    footSeparator: "·",
+    /** A foot disclosure's glyph, closed and open. */
+    disclosureClosed: "▾",
+    disclosureOpen: "▴",
   },
 } as const;
 

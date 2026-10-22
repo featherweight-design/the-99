@@ -23,6 +23,7 @@ import { changeCount, type DraftState } from "../../lib/decks/draft-shape";
 import { useChangeCommander } from "./change-commander-context";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { useMomentAnchor } from "../moments/moments-provider";
+import { footHasSegments, TodoFoot, type TodoFootFacts } from "./todo-foot";
 
 const copy = deckVersioningCopy.todoCard;
 
@@ -31,32 +32,45 @@ export interface TodoCardProps {
   deckName: string;
   /** Draws one row, by kind. Every kind the caller feeds `deckTodo` must be drawn here: the head counts the rule's rows. */
   renderRow: (row: TodoRowFact) => ReactNode;
+  /** The status line under the rows. With no rows it stands alone as the quiet strip. */
+  foot?: TodoFootFacts;
 }
 
-export function TodoCard({ todo, deckName, renderRow }: TodoCardProps) {
-  if (todo.rows.length === 0) return null;
+const NO_FOOT: TodoFootFacts = { version: null, proxies: 0, provenance: null, otherDrafts: null };
+
+export function TodoCard({ todo, deckName, renderRow, foot = NO_FOOT }: TodoCardProps) {
+  const quiet = todo.rows.length === 0;
+  if (quiet && !footHasSegments(foot)) return null;
   const eyebrow = todo.firstRun ? guidedBannerCopy.head : copy.head(deckName, todo.word);
+  // ONE section in both forms, so the foot keeps an open disclosure when the last row leaves: a
+  // different element would remount it. Quiet, it is R1's full-bleed strip (`.sl`), not a card.
   return (
     <section
-      aria-label={eyebrow}
+      aria-label={quiet ? undefined : eyebrow}
+      data-todo-card={quiet ? undefined : ""}
       className={
-        "mx-[14px] my-[14px] md:mx-[26px] md:my-[18px] overflow-hidden rounded-[12px] " +
-        "bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)]"
+        quiet
+          ? "bg-[color:var(--surface-rail)] [border-bottom:1px_solid_var(--border)]"
+          : "mx-[14px] my-[14px] md:mx-[26px] md:my-[18px] overflow-hidden rounded-[12px] " +
+            "bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)]"
       }
     >
-      <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px]">
-        <span className="min-w-0 truncate font-mono uppercase leading-normal text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">
-          {eyebrow}
-        </span>
-        <span className="ml-auto flex-none font-mono leading-normal text-[11px] text-[color:var(--fg-muted)]">
-          {copy.count(todo.rows.length)}
-        </span>
-      </div>
+      {!quiet && (
+        <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px]">
+          <span className="min-w-0 truncate font-mono uppercase leading-normal text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">
+            {eyebrow}
+          </span>
+          <span className="ml-auto flex-none font-mono leading-normal text-[11px] text-[color:var(--fg-muted)]">
+            {copy.count(todo.rows.length)}
+          </span>
+        </div>
+      )}
       {todo.rows.map((row) => (
         // The last N and ran out are ONE slot, keyed as one, so a pool emptying under an open
         // list re-draws the row rather than remounting it and tearing the selection down.
         <Fragment key={row.kind === "ranOut" ? "lastN" : row.kind}>{renderRow(row)}</Fragment>
       ))}
+      <TodoFoot facts={foot} quiet={quiet} />
     </section>
   );
 }

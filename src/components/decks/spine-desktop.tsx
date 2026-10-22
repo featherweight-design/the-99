@@ -34,7 +34,6 @@ import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyTag } from "./proxy-tag";
-import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -83,8 +82,6 @@ export interface SpineBandProps {
     built: number;
     ownedCount: number;
     toBuyCount: number;
-    /** Printed cards in this deck. The line under the bar, absent at zero. */
-    proxiedCount?: number;
   };
   status: StatusPill;
   onExport: () => void;
@@ -203,8 +200,8 @@ export function SpineDesktop({
       // the wide portrait for a row that cannot hold it. The container is
       // declared here because this element IS the row.
       className="group @container relative hidden md:block"
-      // minHeight, not the table's height + overflow:hidden: a wrapped title or a
-      // proxy line can grow this band, and clipping it would hide copy rather
+      // minHeight, not the table's height + overflow:hidden: a wrapped title can
+      // grow this band, and clipping it would hide copy rather
       // than art. Each wash still declares 288px itself.
       style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}
     >
@@ -263,7 +260,7 @@ export function SpineDesktop({
         // 356. Ink that starts before the flat stop stands on a crop rather than
         // on the row's ground, which is what makes `flat` safe.
         // `min-h-[288px]`, not `h-full`: the header states `minHeight` rather
-        // than a definite height — a wrapped title or a proxy line grows it — and `h-full` against an indefinite parent resolves to `auto`, so
+        // than a definite height — a wrapped title grows it — and `h-full` against an indefinite parent resolves to `auto`, so
         // `items-center` would centre this row in its own content height and
         // leave it sitting near the band's top edge.
         // `items-end`: the drawings put both columns at the band's foot — the
@@ -597,21 +594,6 @@ export function SpineDesktop({
               )}
             </div>
           </div>
-
-{/* One mono line under the bar, absent at zero. A 99-card deck reading
-              `Complete` with seven printed cards is correct AND is the moment a
-              player could be misled, so the count says so plainly — no colour,
-              no control, and it qualifies the pill rather than replacing it.
-              NOT a roll-up band: those are alarm chrome for over-commitment, and
-              a proxy is not a problem to be solved. */}
-          {(counts.proxiedCount ?? 0) > 0 && (
-            <p
-              className="font-mono m-0"
-              style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 6, color: "var(--fg-muted)" }}
-            >
-              {proxyCopy.deckHeader.line(counts.proxiedCount ?? 0)}
-            </p>
-          )}
         </div>
 
         {/* Shrinkable, where this was `flex-none`: the offer's row is wider than
