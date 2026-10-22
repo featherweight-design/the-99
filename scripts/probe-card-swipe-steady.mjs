@@ -159,7 +159,11 @@ try {
   await onPage(page, "[data-decklist-row]").filter({ visible: true }).nth(1).click();
   await page.locator("#card-modal-title").waitFor({ timeout: 30_000 });
   await page.waitForTimeout(1200);
-  console.log(`  phone: door strip ${await page.locator("[data-testid=card-sheet] [data-testid=stand-in-door]").count() ? "drawn" : "absent"}`);
+  const strip = await page.locator("[data-testid=card-sheet] [data-testid=stand-in-door]").count();
+  // The Shopping run exists for the strip: without one it measures the case that was already steady.
+  if (process.env.PROBE_SHOPPING === "1" && strip === 0)
+    throw new Error("PROBE_SHOPPING=1 opened a card with no stand-ins strip: run a server with SWAP_TOOLS_ENABLED on, and a deck whose second Shopping row is an unlocked card.");
+  console.log(`  phone: door strip ${strip ? "drawn" : "absent"}`);
   if (process.env.PROBE_MIN === "1") {
     await drag(page, [195, 200], [195, 520], 12);
     await page.waitForTimeout(1200);
