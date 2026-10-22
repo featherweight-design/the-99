@@ -87,7 +87,8 @@ export function stateLine(rows: readonly { name: string; ask: RowAsk }[]): strin
 
 /**
  * The two-people glyph with its mark (`.sg`, `.sg.asked`, `.sg.yes`): fact ink plain, an accent dot at its top right
- * once requested, success ink with a ticked dot at its foot once accepted. The dot's ring is the row's own ground.
+ * once requested, success ink with a ticked dot at its foot once accepted. The dot's ring is the row's own ground, and
+ * the tick is drawn in the ground's ink (`--bg`, the board's fixed dark ink in the dark theme) rather than a hex.
  */
 export function MarkedSpareGlyph({ mark, size, testId }: { mark: SpareMark; size: number; testId?: string }) {
   return (
@@ -111,7 +112,7 @@ export function MarkedSpareGlyph({ mark, size, testId }: { mark: SpareMark; size
           />
           <span
             aria-hidden="true"
-            className="absolute bottom-[2px] right-[-1.5px] z-[1] h-[2px] w-[3.5px] -rotate-45 [border-bottom:1.3px_solid_#14110E] [border-left:1.3px_solid_#14110E]"
+            className="absolute bottom-[2px] right-[-1.5px] z-[1] h-[2px] w-[3.5px] -rotate-45 [border-bottom:1.3px_solid_var(--bg)] [border-left:1.3px_solid_var(--bg)]"
           />
         </>
       ) : null}

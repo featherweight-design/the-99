@@ -667,11 +667,11 @@ export function Decklist({
   // Friends' spares (Social R2 PR 8b), read once for every card the deck is buying. The list rows alone: a commander's
   // row carries no marker, as it carries no ⇄ (H28). Both views share one provider, so a switch between them reads
   // nothing again.
-  const { socialFriends, spareRequests } = useDeckPageSwitches();
+  const { socialFriends, spareAsks } = useDeckPageSwitches();
   const spareIds = useMemo(() => listShoppingCards.map((c) => c.oracleId), [listShoppingCards]);
   const withSpares = (node: React.ReactNode) =>
     socialFriends ? (
-      <FriendSparesProvider oracleIds={spareIds} newestAsOf={newestAsOf} requests={spareRequests} deckId={deckId}>{node}</FriendSparesProvider>
+      <FriendSparesProvider oracleIds={spareIds} newestAsOf={newestAsOf} requests={spareAsks} deckId={deckId}>{node}</FriendSparesProvider>
     ) : node;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.

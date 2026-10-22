@@ -768,12 +768,12 @@ export default async function DeckBuilderPage({
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
-  // `spareRequests`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
+  // `spareAsks`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
   const switched = (
     <DeckPageSwitches
       howItWorks={howItWorksEnabled(env)}
       socialFriends={socialFriendsEnabled(env)}
-      spareRequests={spareRequestsEnabled(env)}
+      spareAsks={spareRequestsEnabled(env)}
     >
       {shell}
     </DeckPageSwitches>

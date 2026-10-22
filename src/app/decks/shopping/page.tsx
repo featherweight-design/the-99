@@ -57,7 +57,7 @@ export default async function AllDecksShoppingPage({
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={socialFriendsEnabled(env)}
       // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.
-      spareRequests={spareRequestsEnabled(env)}
+      spareAsks={spareRequestsEnabled(env)}
     />
   );
 }
