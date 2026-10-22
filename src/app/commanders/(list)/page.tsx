@@ -4,7 +4,7 @@ import { cacheForUser } from "../../../lib/cache/user-lists";
 import { commanderRankingsKey, loadCommanderRankings } from "../../../lib/commanders/rankings";
 import { readCommandersAvail } from "../../../lib/commanders/avail-pref";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { permanentRedirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { NoCardsEmpty } from "../../../components/commanders/no-cards-empty";
 import { noCollectionEntryEnabled } from "../../../lib/collection/edit-flag";
 import { commandersPlaceEnabled } from "../../../lib/commanders/place-flag";
@@ -32,9 +32,9 @@ export default async function CommandersPage({
   // still names the other lane must land there rather than be answered here with
   // the wrong list.
   // It cannot loop: a target is only returned while `scope` is present, and the
-  // target never carries it — one 308 and the parameter is gone for good.
+  // target never carries it — one redirect and the parameter is gone for good. Temporary, never a 308: the target follows the reader's Commanders place switch, and a browser that cached a permanent one would keep the destination after the switch went off.
   const target = scopeRedirectTarget(searchParamsToQuery(sp), commandersPlaceEnabled(await requestSwitchEnv(userId)));
-  if (target) permanentRedirect(target);
+  if (target) redirect(target);
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
   if (stats.uniqueCards === 0) {
