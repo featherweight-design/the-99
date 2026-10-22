@@ -47,6 +47,8 @@ export const socialCopy = {
     title: "Friends",
     // The head's name line. `name` is the viewer's own display name.
     nameLine: (name: string) => ({ before: "Friends see you as ", name, action: "Change" }),
+    // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Undrawn; words through /copy-review.
+    decksSeen: "Friends see your deck names, commanders and statuses, never the lists.",
     nameField: {
       label: "Your name, as friends see it",
       hint: "Up to 30 characters. Friends see this and your commander.",
@@ -89,6 +91,28 @@ export const socialCopy = {
     viewOnly: "view only",
     emptyTitle: (name: string) => `${name}’s wishlist is empty`,
     emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want until they have them.`,
+    // The strip under a friend's head (menu and Home, PR 7). Placeholder words, for /copy-review.
+    tabsAria: "Friend sections",
+    tabs: { spares: "Spares", wishlist: "Wishlist", decks: "Decks" },
+    spares: {
+      /** The line under the strip: where the share reaches the viewer, and the order. */
+      /** `wishlist`: the reader's wishlist is on, so their cards come first and are marked. */
+      line: (pods: readonly string[], wishlist: boolean) =>
+        `Shared with ${pods.join(", ")}.${wishlist ? " Cards on your wishlist first." : ""}`,
+      count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
+      onWishlist: "on your wishlist",
+      emptyTitle: (name: string) => `${name} has no spares to show`,
+      emptyBody: (name: string) => `When ${name} has a copy no deck of theirs is asking for, it shows here.`,
+      noneTitle: (name: string) => `${name} isn’t sharing spares with you`,
+      noneBody: (name: string) => `Spares show here when ${name} shares them with a pod you’re both in.`,
+    },
+    decks: {
+      line: (name: string) => `View only. ${name}’s committed decks and drafts, newest first.`,
+      figure: (built: number, bodySize: number, toBuy: number) =>
+        toBuy > 0 ? `${built} / ${bodySize} · ${toBuy} ${toBuy === 1 ? "card" : "cards"}` : `${built} / ${bodySize}`,
+      emptyTitle: (name: string) => `${name} has no decks yet`,
+      emptyBody: (name: string) => `A deck ${name} builds shows here, as a name, a commander and a status.`,
+    },
   },
 
   invites: {

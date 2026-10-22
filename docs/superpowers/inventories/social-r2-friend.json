@@ -14,34 +14,34 @@
     {
       "id": "friend-page-lines",
       "label": "Colin's page: head with face, since and commander, the … menu, and five tiles reading wants N (P2, PP2)",
-      "view": "src/components/social/friend-page.tsx",
+      "view": "src/components/social/friend-wishlist.tsx",
       "steps": [
-        {"goto": "/friends/${COLIN_PUBLIC_ID}", "wait": "h1:visible", "settle": 2000}
+        {"goto": "/friends/${COLIN_PUBLIC_ID}/wishlist", "wait": "h1:visible", "settle": 2000}
       ]
     },
     {
       "id": "friend-page-menu",
       "label": "Colin's page with the head's … menu open: Remove friend, the row's own",
-      "view": "src/components/social/friend-page.tsx",
+      "view": "src/components/social/friend-head.tsx",
       "steps": [
-        {"goto": "/friends/${COLIN_PUBLIC_ID}", "wait": "h1:visible", "settle": 1500},
+        {"goto": "/friends/${COLIN_PUBLIC_ID}/wishlist", "wait": "h1:visible", "settle": 1500},
         {"clickRole": "button", "name": "Colin actions", "wait": "[role=dialog]", "settle": 400}
       ]
     },
     {
       "id": "friend-page-no-face",
       "label": "Max's page: initials for a friend with no commander, two tiles",
-      "view": "src/components/social/friend-page.tsx",
+      "view": "src/components/social/friend-wishlist.tsx",
       "steps": [
-        {"goto": "/friends/${MAX_PUBLIC_ID}", "wait": "h1:visible", "settle": 2000}
+        {"goto": "/friends/${MAX_PUBLIC_ID}/wishlist", "wait": "h1:visible", "settle": 2000}
       ]
     },
     {
       "id": "friend-page-empty",
       "label": "Peter's page: the empty wishlist (P3, PP3)",
-      "view": "src/components/social/friend-page.tsx",
+      "view": "src/components/social/friend-wishlist.tsx",
       "steps": [
-        {"goto": "/friends/${PETER_PUBLIC_ID}", "wait": "h1:visible", "settle": 1500}
+        {"goto": "/friends/${PETER_PUBLIC_ID}/wishlist", "wait": "h1:visible", "settle": 1500}
       ]
     }
   ]

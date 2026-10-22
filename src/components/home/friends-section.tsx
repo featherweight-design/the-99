@@ -33,7 +33,7 @@ export type FriendsSectionProps = {
   now: string;
   /** SOCIAL_GAMES_ENABLED: the no-friends line names seating friends in a game only while it is on (G5). */
   games: boolean;
-  /** SOCIAL_WISHLIST_ENABLED: a friend's own page exists. Without it a face opens /friends. */
+  /** A face opens the friend's own page, which needs the friends switch alone (menu and Home PR 7); false opens /friends. */
   friendPages: boolean;
   /** SOCIAL_INVITES_ENABLED, with the reader's invite count: Add a friend opens /friends' chooser (addendum G4).
    *  Null with invites off, or with a count that could not be read: Add a friend makes a link, as shipped. */

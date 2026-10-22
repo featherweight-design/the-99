@@ -269,8 +269,9 @@ const TILE_VIEWS = [
   "components/decks/token-tile.tsx",
   // The wishlist's grid (Social R2): the collection's own tile, whose art opens card details.
   "components/wishlist/wishlist-view.tsx",
-  // A friend's wishlist on their page: the same tile face, view only, whose art opens card details.
-  "components/social/friend-page.tsx",
+  // A friend's wishlist and spares on their page: view only, each card's art opens card details.
+  "components/social/friend-wishlist.tsx",
+  "components/social/friend-spares-tab.tsx",
   "components/collection/grid-view.tsx",
   "components/sets/set-cell.tsx",
   // The grid that owns the cells: it opens card details for them and mounts no provider.

@@ -160,6 +160,9 @@ export function FriendsHead({
                 )}
               </p>
             )}
+            {editing ? null : (
+              <p className="m-0 mt-[4px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{p.decksSeen}</p>
+            )}
           </div>
           {editing ? (
             <form
