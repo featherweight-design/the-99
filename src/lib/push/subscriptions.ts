@@ -20,6 +20,21 @@ type Q = Pick<typeof db, "transaction">;
  * wait for that update, and then delete the row it just renewed. Returns nothing: a save has no failure the caller can act on.
  */
 export async function saveDevice(userId: string, device: DeviceInput, q: Q = db): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await saveOnce(userId, device, q);
+      return;
+    } catch (e) {
+      // Two accounts taking over each other's oldest endpoint at once can each wait on the other's row: Postgres aborts
+      // one with a deadlock, and the whole transaction is safe to run again.
+      if (attempt >= DEADLOCK_ATTEMPTS || (e as { code?: string })?.code !== "40P01") throw e;
+    }
+  }
+}
+
+const DEADLOCK_ATTEMPTS = 3;
+
+async function saveOnce(userId: string, device: DeviceInput, q: Q): Promise<void> {
   await q.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`push_devices:${userId}`}, 0))`);
     await tx

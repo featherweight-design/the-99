@@ -59,6 +59,30 @@ describe("forgetThisDevice", () => {
     expect(done).toBe(true);
   });
 
+  it("starts nothing when a lookup answers after the deadline", async () => {
+    // A late registration, then a late subscription: neither may start a removal once the cleanup has expired.
+    for (const stage of ["registration", "subscription"] as const) {
+      vi.useFakeTimers();
+      vi.clearAllMocks();
+      let release!: () => void;
+      const gate = new Promise<void>((r) => { release = r; });
+      const getSubscription = async () => { if (stage === "subscription") await gate; return subscription; };
+      Object.defineProperty(navigator, "serviceWorker", {
+        configurable: true,
+        value: { getRegistration: async () => { if (stage === "registration") await gate; return { pushManager: { getSubscription } }; } },
+      });
+      Object.defineProperty(window, "PushManager", { configurable: true, value: class {} });
+      const done = forgetThisDevice();
+      await vi.advanceTimersByTimeAsync(3000);
+      await done;
+      release();
+      await vi.advanceTimersByTimeAsync(10);
+      expect(m.unsubscribeDevice, stage).not.toHaveBeenCalled();
+      expect(browserUnsubscribe, stage).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    }
+  });
+
   it("does nothing in a browser without push", async () => {
     Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: { getRegistration: vi.fn() } });
     await forgetThisDevice();

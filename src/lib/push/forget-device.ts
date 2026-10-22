@@ -9,16 +9,20 @@ import { unsubscribeDevice } from "../../app/settings/push-actions";
  */
 const LIMIT_MS = 3000;
 
-async function forget(): Promise<void> {
+/** One sign-out's cleanup. `expired` flips at the deadline; a lookup that resolves after it starts nothing, so a late answer can never remove a LATER account's subscription from this browser. */
+async function forget(state: { expired: boolean }): Promise<void> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator) || typeof window === "undefined" || !("PushManager" in window)) return;
   const registration = await navigator.serviceWorker.getRegistration();
+  if (state.expired) return;
   const subscription = await registration?.pushManager.getSubscription();
-  if (!subscription) return;
+  if (state.expired || !subscription) return;
   // Both start at once and neither waits on the other: a stalled or failed server removal must not keep the browser
   // subscribed (the push service then answers 404 or 410 and the sender deletes the row), and the reverse.
   await Promise.allSettled([unsubscribeDevice(subscription.endpoint), subscription.unsubscribe()]);
 }
 
 export async function forgetThisDevice(): Promise<void> {
-  await Promise.race([forget().catch(() => undefined), new Promise<void>((done) => setTimeout(done, LIMIT_MS))]);
+  const state = { expired: false };
+  const deadline = new Promise<void>((done) => setTimeout(() => { state.expired = true; done(); }, LIMIT_MS));
+  await Promise.race([forget(state).catch(() => undefined), deadline]);
 }

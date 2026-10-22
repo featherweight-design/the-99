@@ -51,6 +51,27 @@ describe("saveDevice", () => {
     expect(f.calls).toEqual(["begin", "lock", "upsert", "trim", "commit"]);
   });
 
+  it("runs the whole transaction again after a deadlock, and gives up after three", async () => {
+    const f = fake();
+    let n = 0;
+    const flaky = { transaction: async (fn: never) => { if (++n === 1) throw Object.assign(new Error("deadlock detected"), { code: "40P01" }); return f.q.transaction(fn); } };
+    await saveDevice("u1", device, flaky as never);
+    expect(n).toBe(2);
+    expect(f.calls).toEqual(["begin", "lock", "upsert", "trim", "commit"]);
+
+    let m = 0;
+    const always = { transaction: async () => { m++; throw Object.assign(new Error("deadlock detected"), { code: "40P01" }); } };
+    await expect(saveDevice("u1", device, always as never)).rejects.toThrow("deadlock");
+    expect(m).toBe(3);
+  });
+
+  it("does not retry an error that is not a deadlock", async () => {
+    let n = 0;
+    const broken = { transaction: async () => { n++; throw new Error("boom"); } };
+    await expect(saveDevice("u1", device, broken as never)).rejects.toThrow("boom");
+    expect(n).toBe(1);
+  });
+
   it("restamps created_at on a refresh or takeover, so the trim keeps the row just saved", async () => {
     const f = fake();
     await saveDevice("u1", device, f.q as never);
