@@ -63,8 +63,8 @@ def main():
     dk_body = ('<div class="at"><div class="grid"><div style="grid-column:1;grid-row:1">' + P.overview() + '</div>'
                '<div style="grid-column:2;grid-row:1/3">' + P.vbox() + '</div><div style="grid-column:1;grid-row:2">' + P.climb() + '</div></div>'
                + P.findings() + P.howplays() + G.block("ring") + P.hub_landing() + '</div>')
-    body = (board_head("Strategy focus · R2c · 2026-10-22 · account 2", "Pick a focus, and Suggested changes aims at it",
-                       "Hugh’s ruling after R1: one swap engine. The free graph on Analysis shows what the deck is built around and lets the player pick a "
+    body = (board_head("Strategy focus · R2d · 2026-10-22 · account 2", "Pick a focus, and Suggested changes aims at it",
+                       "Hugh’s ruling after R1: one swap engine. The free graph on Analysis, The deck’s strategy, lets the player pick a "
                        "focus; Suggested changes (shipped, 1 credit) reads the focus and its swaps show how far they move it. Less information on screen "
                        "than R1. Drawn over the shipped Analysis tab on Hugh’s <b>HD - Avatar Aang</b>, in Low Sun; every card is cut from Hugh’s captures. "
                        "Orange dashed outline = new. Counts are fixtures until eng’s read runs on staging.")
@@ -125,9 +125,9 @@ def states():
     elves = [("Elves", 44, "avabruck-caretaker"), ("Tokens", 13, "jasmine-tea-shop"), ("Pump", 8, "moonmist")]
     world = [("Insects", 9, "gleaming-splendor"), ("Landfall", 11, "avenger-of-zendikar"), ("Tokens", 8, "jasmine-tea-shop"),
              ("Creatures costing 6+", 6, "beorn")]
-    s3 = ('<div class="bstate">Nothing in this list runs past what Commander cards run at large, so there is nothing to pick. '
-          'Suggested changes keeps the deck balanced.</div>')
-    s4 = '<div class="bstate">This list has <b>18 cards besides lands</b>. What it’s built around shows from 30.</div>'
+    s3 = ('<div class="bstate"><b>No strategy stands out yet.</b> One shows here once five or more cards share a theme, a type or a '
+          'creature type more often than most Commander decks do. Until then Suggested changes keeps the deck balanced.</div>')
+    s4 = '<div class="bstate"><b>Too early to read.</b> The deck’s strategy shows once it has 30 cards besides lands. This one has 18.</div>'
     body = (board_head("Strategy focus · R2", "The graph’s own states",
                        "Drawn in the ring. The graph describes and never judges: no state says focused or spread thin. "
                        "(Top cards for the Elves and World Shaper fixtures are stand-ins from Hugh’s captures.)")
@@ -142,8 +142,8 @@ def states():
 
 
 def about():
-    cap = ("What is this deck built around? Under Analysis, <i>What it’s built around</i> circles the commander with the five things the deck runs most, counted from "
-           "the list against every Commander card: a creature type, a theme like Tokens, or a card type. Press one to make it the deck’s focus.</p>"
+    cap = ("What is this deck about? Under Analysis, <i>The deck’s strategy</i> circles the commander with the five things the deck runs most, counted from "
+           "the list against every Commander card: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus.</p>"
            "<p>With a focus picked, Suggested changes aims at it: its additions lean toward the focus, and each says how far it moves it. "
            "Apply one and its arc grows.")
     keys = ["The graph and the focus are free. Suggested changes uses a credit, as it always has.",

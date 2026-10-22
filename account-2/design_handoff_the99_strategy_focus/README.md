@@ -1,9 +1,9 @@
-# The 99 · Strategy focus · R2c (account 2, 2026-10-22)
+# The 99 · Strategy focus · R2d (account 2, 2026-10-22)
 
 Canvas: https://claude.ai/artifact/5DXdxuVHyRhgFAEV83mirP
 
 Brief: `docs/superpowers/design-briefs/2026-10-22-strategy-focus.md` (#2207), reshaped by Hugh on 2026-10-22 after R1:
-**one swap engine.** The free graph on Analysis shows what a deck is built around and lets the player pick a **focus**;
+**one swap engine.** The free graph on Analysis, *The deck’s strategy*, lets the player pick a **focus**;
 Suggested changes (shipped, 1 credit) reads the focus, its additions lean toward it, and each says how far it moves it.
 Less on screen than R1: R1's separate paid read (how it wins, coherence, weak links, its own swaps) is dropped.
 
@@ -31,6 +31,14 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
    focus arc pulled out in accent; the legend carries names and counts and is the press. An applied addition grows the focus arc
    in a lighter accent, legend `11 +2`. Piles (with the phone's on-their-side form), strip and bars stay on Graph-Options.
 5. **Tuning keeps its four tools.** Analysis gets one block, last in the reading, above Tuning.
+6. **R2d (Hugh's notes, 20:45).** Heading *The deck’s strategy*; sub *What this deck runs the most of, by card count.*
+   The legend is the pick: a *Pick a focus* kicker and a radio per row, the picked row tinted. The ring and legend centre
+   on desktop. Focus line: *Focus Tokens: Suggested changes builds toward it. Keep it balanced* / *No focus yet. Pick one
+   and Suggested changes will build toward it.* Ownership dot sits between the thumb and the name, as shipped. Empty states
+   are one box: *No strategy stands out yet.* (five or more cards sharing a theme, type or creature type more often than
+   most Commander decks) and *Too early to read.* (30 cards besides lands).
+7. **The ring after changes counts every pending change** since the last commit, from any source (Suggested changes, a hand
+   edit, another tool), because it counts the list. Lighter arc and `+N` for growth; a cut shows `−N` with the arc shrinking.
 
 ## Gaps and owed
 

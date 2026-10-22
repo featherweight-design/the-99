@@ -35,8 +35,16 @@ CSS = r"""
 .pile .pn{font-size:11.5px}
 .ph .pile .pc{font-size:10px}
 /* ring */
-.ring{display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:center}
-.ph .ring{grid-template-columns:1fr;gap:14px;justify-items:center}
+.ring{display:grid;grid-template-columns:auto minmax(0,380px);gap:40px;align-items:center;justify-content:center}
+.dkm .fb .fbs{text-align:center}
+.legw{display:flex;flex-direction:column;gap:6px;width:100%}
+.lgk{font:9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);padding:0 6px}
+.leg .rd{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border-strong);flex:none;margin-left:12px;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.leg div.on .rd{border-color:var(--accent)}
+.leg div.on .rd:after{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.leg div.on{background:color-mix(in oklab,var(--accent) 9%,transparent);border-radius:7px;border-top-color:transparent}
+.leg div.on+div{border-top-color:transparent}
+.ph .ring{grid-template-columns:1fr;gap:14px;justify-items:center;justify-content:stretch}
 .rg{position:relative}
 .rg .art{position:absolute;border-radius:50%;object-fit:cover;object-position:30% 30%;border:2px solid var(--border-strong);box-sizing:border-box}
 .leg{display:flex;flex-direction:column;width:100%;max-width:440px}
@@ -117,23 +125,24 @@ kit.CSS += CSS
 # name, count, top card in the deck (a real card of that strategy)
 AANG = [("Allies", 22, "aang-swift-savior"), ("Spells matter", 17, "counterspell"), ("Tokens", 11, "jasmine-tea-shop"),
         ("Evasion", 9, "appa-loyal"), ("+1/+1 counters", 6, "all-will-be-one")]
+OWN = '<span class="od"></span>'
 NEW_KEYS = ["avenger-of-zendikar", "bloodline-keeper"]
 TONES = ["#6E6352", "#5A5144", "#4A4238", "#3D372F", "#332E28"]
-SUB = "What this list runs more of than Commander cards at large, by card count. Press one to make it the deck’s focus."
+SUB = "What this deck runs the most of, by card count."
 
 
 def focus_line(focus):
     if not focus:
-        return '<span class="fbs">No focus yet: Suggested changes keeps the deck balanced.</span>'
-    return (f'<span class="fbs">Focus <b>{focus}</b>: Suggested changes aims at it. '
+        return '<span class="fbs">No focus yet. Pick one and Suggested changes will build toward it.</span>'
+    return (f'<span class="fbs">Focus <b>{focus}</b>: Suggested changes builds toward it. '
             '<span class="lk">Keep it balanced</span></span>')
 
 
 def block(form="piles", ph=False, focus="Tokens", rows=AANG, added=0, state=None, sub=True):
-    head = '<div class="fbh"><span class="lbl">What it’s built around</span></div>'
+    head = '<div class="fbh"><span class="lbl">The deck’s strategy</span></div>'
     s = f'<div class="bas">{SUB}</div>' if sub else ""
     if state:
-        return f'<div class="fb new">{head}{s}<div class="fbx">{state}</div></div>'
+        return f'<div class="fb new">{head}{state}</div>'
     if form == "piles" and ph:
         form = "side"
     g = {"piles": piles, "ring": ring, "strip": strip, "bars": bars, "side": side, "piles5": piles, "scroll": scroll}[form](rows, focus, ph, added)
@@ -206,8 +215,9 @@ def ring(rows, focus, ph, added=0):
     for i, (name, n, _) in enumerate(rows):
         on = name == focus
         cnt = f'{n} <em style="font-style:normal;color:var(--accent)">+{added}</em> cards' if (on and added) else f'{n} cards'
-        leg += f'<div class="{"on" if on else ""}"><i style="background:{"#CF8745" if on else TONES[i]}"></i>{name}<span>{cnt}</span></div>'
-    return f'<div class="ring"><div class="rg" style="width:{size}px;height:{size}px">{svg}</div><div class="leg">{leg}</div></div>'
+        leg += f'<div class="{"on" if on else ""}"><i style="background:{"#CF8745" if on else TONES[i]}"></i>{name}<span>{cnt}</span><b class="rd"></b></div>'
+    return (f'<div class="ring"><div class="rg" style="width:{size}px;height:{size}px">{svg}</div>'
+            f'<div class="legw"><span class="lgk">Pick a focus</span><div class="leg">{leg}</div></div></div>')
 
 
 # ---------------------------------------------------------------- strip: one ribbon, each strategy its share
@@ -252,6 +262,8 @@ def line(side, key, name, why, cites, ph, mark=None):
     sg = '<span class="sg1" style="color:var(--accent)">+</span>' if side == "add" else '<span class="sg1" style="color:var(--fg-faint)">−</span>'
     th = P.thumb(key, "add" if side == "add" else "cut")
     nm = f'<span class="nm {"a" if side == "add" else "c"}">{name}</span>'
+    if mark == OWN:
+        th, mark = th + OWN, None
     mk = mark or ""
     ya = "Add" if side == "add" else "Cut"
     btn = f'<span class="bt"><span class="ya">{ya}</span><span class="no">Reject</span></span>'
@@ -262,7 +274,7 @@ def line(side, key, name, why, cites, ph, mark=None):
     return f'<div class="ln"><div class="l1">{sg}{th}{nm}{mk}{btn}</div><p>{why}</p><div class="cts">{ct}</div></div>'
 
 
-OWN = '<span class="od"></span>'
+
 ADDS = [("avenger-of-zendikar", "Avenger of Zendikar", "Seven mana for a board of tokens the Ally triggers count, and you own a free copy.",
          [("focus", "Tokens 11 → 12"), ("list", "11 make tokens")]),
         ("bloodline-keeper", "Bloodline Keeper", "A token every turn from turn four, on the plan the deck already runs.",
