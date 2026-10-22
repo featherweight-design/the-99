@@ -166,6 +166,8 @@ export const collectionFilterCopy = {
     // Trigger
     triggerLabel: "Set",
     triggerCount: (n: number) => (n <= 1 ? `Set ${n}` : `Sets ${n}`),
+    /** Nothing chosen, on a trigger that counts (Help me choose's Sets field); the same words as the rack's `setAny`. */
+    triggerNone: "Any set",
     triggerAriaCollapsed: "Filter by set, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by set, ${count(n)} selected, collapsed`,
 

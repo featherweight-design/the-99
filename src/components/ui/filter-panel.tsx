@@ -1069,10 +1069,12 @@ export function FilterPanel({
       >
         {copy.triggerCount ? (
           // The label and a hidden sizer share one grid cell, so the trigger is as wide as its
-          // widest one-digit form (`Sets 9`) from nothing chosen up to nine: a pick moves nothing
-          // beside it. Tabular figures make every digit the sizer's width.
+          // widest one-digit form (`Sets 9`) or its nothing-chosen form (a word, where a caller gives one)
+          // from nothing chosen up to nine: a pick moves nothing beside it. Tabular figures make every
+          // digit the sizer's width.
           <span className="grid tabular-nums">
             <span aria-hidden="true" className="invisible col-start-1 row-start-1">{copy.triggerCount(9)}</span>
+            <span aria-hidden="true" data-sizer={copy.triggerCount(0)} className="invisible col-start-1 row-start-1 after:content-[attr(data-sizer)]" />
             <span data-trigger-label className="col-start-1 row-start-1">{copy.triggerCount(selected.length)}</span>
           </span>
         ) : oneName !== null && copy.triggerOne ? (
