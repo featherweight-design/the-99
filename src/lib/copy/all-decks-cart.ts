@@ -33,6 +33,8 @@ export const allDecksCartCopy = {
     label: "View",
     byCard: "By card",
     byDeck: "By deck",
+    /** The third view (spare requests PR 3c), drawn only while a line has a friend's spare. */
+    byFriend: "By friend",
   },
 
   page: {
@@ -62,6 +64,9 @@ export const allDecksCartCopy = {
     /** A card in a deck's group that other selected decks need too. */
     also: (names: string[]) => `also ${names.join(", ")}`,
     headByCard: (lines: number) => `${n(lines)} ${lines === 1 ? "card" : "cards"} · commanders first, then most decks`,
+    /** By friend's list head: the friends drawn and the spares they hold of the selected lines, most first. */
+    headByFriend: (friendsN: number, sparesN: number) =>
+      `${n(friendsN)} ${friendsN === 1 ? "friend" : "friends"} · ${n(sparesN)} ${sparesN === 1 ? "spare" : "spares"} · most first`,
     /** The list scroller's name on a phone, where it is a focusable box of its own. */
     regionAria: "Cards in this cart",
     decks: (qty: number, names: string[]) => `${n(qty)} · ${names.join(", ")}`,
@@ -74,6 +79,16 @@ export const allDecksCartCopy = {
     addedThisVisit: (q: number) => `${n(q)} added this visit`,
     /** Beside the held slot (`gotItCopy.slot.held`) of a line that left (S3). */
     added: (q: number) => `${n(q)} added`,
+  },
+
+  /** By friend (spare requests PR 3c; handoff `Cart-By-Friend`): one panel per friend holding a spare of a line. */
+  byFriend: {
+    /** The panel head's pods line, comma-joined as the board draws it. */
+    via: (pods: readonly string[]) => `shares with ${pods.join(", ")}`,
+    /** The panel head's figure: the spares this friend holds of the selected lines. */
+    spares: (x: number) => (x === 1 ? "1 spare" : `${n(x)} spares`),
+    /** The panel's name, for a screen reader moving by region. */
+    panelAria: (friend: string) => `Spares from ${friend}`,
   },
 
   none: {

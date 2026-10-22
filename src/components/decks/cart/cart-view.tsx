@@ -19,6 +19,7 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares } from "../../soci
 import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
 import { ViewSwitch, type CartViewMode } from "./view-switch";
+import { ByFriendList, byFriendHead, useByFriend, type HeldLines } from "./cart-by-friend";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
@@ -34,9 +35,25 @@ function byCardOrder(a: SelectedLine, b: SelectedLine): number {
 }
 
 /**
- * The by-card list, with a line bought this visit that the read no longer lists kept as a held
- * slot where it was (S3), sorted among the rest by the line as it was drawn before the press.
+ * The lines to draw: the selected ones, and each line bought this visit that the read no longer lists, kept as a held
+ * slot where it was (S3), sorted among the rest by the line as it was drawn before the press. A line gone from the
+ * read and bought for a deck still selected: the slot belongs to the selection it was bought in, and unselecting
+ * those decks takes it out with every other line of theirs. By card and By friend both draw from this.
  */
+function useWithHeld(lines: SelectedLine[], read: ReadonlySet<string>, selected: ReadonlySet<string>): { lines: SelectedLine[]; held: HeldLines } {
+  const gotIt = useCartGotIt();
+  return useMemo(() => {
+    const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
+      !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)));
+    if (gone.length === 0) return { lines, held: new Map() };
+    return {
+      lines: [...lines, ...gone.map((h) => h.line)].sort(byCardOrder),
+      held: new Map(gone.map((h) => [h.line.oracleId, h.added])),
+    };
+  }, [gotIt, lines, read, selected]);
+}
+
+/** The by-card list (`useWithHeld`'s lines, a held one as its slot). */
 function ByCardList({
   lines, read, selected, deckNames, newestAsOf,
 }: {
@@ -47,20 +64,15 @@ function ByCardList({
   deckNames: Map<string, string>;
   newestAsOf: Date | null;
 }) {
-  const gotIt = useCartGotIt();
-  // Gone from the read, and bought for a deck still selected: the slot belongs to the selection
-  // it was bought in, and unselecting those decks takes it out with every other line of theirs.
-  const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
-    !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)));
-  const rows = [
-    ...lines.map((line) => ({ line, added: 0, held: false })),
-    ...gone.map((h) => ({ line: h.line, added: h.added, held: true })),
-  ].sort((a, b) => byCardOrder(a.line, b.line));
+  const drawn = useWithHeld(lines, read, selected);
   return (
     <ul className="m-0 list-none p-0">
-      {rows.map((r) => (r.held
-        ? <CartHeldSlot key={r.line.oracleId} name={r.line.name} added={r.added} />
-        : <CartLine key={r.line.oracleId} line={r.line} deckNames={deckNames} newestAsOf={newestAsOf} />))}
+      {drawn.lines.map((line) => {
+        const added = drawn.held.get(line.oracleId);
+        return added !== undefined
+          ? <CartHeldSlot key={line.oracleId} name={line.name} added={added} />
+          : <CartLine key={line.oracleId} line={line} deckNames={deckNames} newestAsOf={newestAsOf} />;
+      })}
     </ul>
   );
 }
@@ -82,7 +94,8 @@ export function CartView({
   socialFriends?: boolean;
   /** `SPARE_REQUESTS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
   spareAsks?: boolean;
-  /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. */
+  /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. `?view=friend` lands By friend
+   *  (the page sends it only with spare requests on), drawn as By card until a line has a friend's spare. */
   initialView?: CartViewMode;
   /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
   focusDeckId?: string | null;
@@ -97,7 +110,7 @@ export function CartView({
     // the live URL and kept; the default view is an absence.
     const live = new URLSearchParams(window.location.search);
     live.delete("deck");
-    if (next === "deck") live.set("view", "deck"); else live.delete("view");
+    if (next === "card") live.delete("view"); else live.set("view", next);
     const query = live.toString();
     mirrorUrl(query ? `${window.location.pathname}?${query}` : window.location.pathname);
   };
@@ -276,13 +289,22 @@ export function CartView({
                 {/* The switch has nothing to switch between with one deck (E1); the buy key sits
                     beside it, alone, while there is a line to press. */}
                 <CartKeyRow
-                  viewSwitch={cart.decks.length >= 2 ? <ViewSwitch view={view} onView={chooseView} /> : null}
+                  view={view}
+                  onView={chooseView}
+                  byDeckView={cart.decks.length >= 2}
+                  lines={lines}
+                  read={readIds}
+                  selected={selected}
                   showBuy={showKey}
                   drawn={drawnIds}
                 />
-                <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
-                  {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
-                </h2>
+                <ListHead
+                  view={view}
+                  lines={lines}
+                  read={readIds}
+                  selected={selected}
+                  byDeck={copy.list.headByDeck(deckCount, total.copies)}
+                />
               </div>
               {/* Desktop: the list is its own scroll box, filling what the page leaves, so the controls above
                   it stay put; focusable and named, so a keyboard reader can scroll it. Phone: the page scrolls. */}
@@ -316,7 +338,8 @@ export function CartView({
                     />
                   ))
                 ) : (
-                  <ByCardList
+                  <CardOrFriendList
+                    view={view}
                     lines={lines}
                     read={readIds}
                     selected={selected}
@@ -347,21 +370,78 @@ export function CartView({
   ) : withSpares;
 }
 
+/** The view drawn: By friend falls back to By card while it has nothing to draw (`useByFriend` null). */
+function shown(view: CartViewMode, byFriend: boolean): CartViewMode {
+  return view === "friend" && !byFriend ? "card" : view;
+}
+
+/** The list head for the view drawn. */
+function ListHead({ view, lines, read, selected, byDeck }: {
+  view: CartViewMode; lines: SelectedLine[]; read: ReadonlySet<string>; selected: ReadonlySet<string>; byDeck: string;
+}) {
+  const drawn = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(drawn.lines, drawn.held);
+  const v = shown(view, byFriend !== null);
+  return (
+    <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
+      {v === "deck" ? byDeck : v === "friend" && byFriend ? byFriendHead(byFriend.groups) : copy.list.headByCard(lines.length)}
+    </h2>
+  );
+}
+
+/** By card, or By friend while it has something to draw. */
+function CardOrFriendList({
+  view, lines, read, selected, deckNames, newestAsOf,
+}: {
+  view: CartViewMode;
+  lines: SelectedLine[];
+  read: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
+  deckNames: Map<string, string>;
+  newestAsOf: Date | null;
+}) {
+  const drawn = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(drawn.lines, drawn.held);
+  if (view === "friend" && byFriend) {
+    return <ByFriendList groups={byFriend.groups} requests={byFriend.requests} held={drawn.held} deckNames={deckNames} newestAsOf={newestAsOf} />;
+  }
+  return <ByCardList lines={lines} read={read} selected={selected} deckNames={deckNames} newestAsOf={newestAsOf} />;
+}
+
 /**
- * The row above the list: the view switch (two decks or more, E1) and the key. The key names the buy press while a line
- * has one (card view, I got it on) and the spare glyph while a line draws it (S5, either view). Nothing at all with
- * none of the three.
+ * The row above the list: the view switch and the key. The switch draws By deck with two decks or more (E1) and By friend
+ * while a selected line has a friend's spare with spare requests on, and nothing with only By card. The key names the buy
+ * press while a line has one (I got it on, by card or by friend) and the spare glyph while a line draws it (S5), which By
+ * friend never does: its line's press is the Ask. Nothing at all with none of the three.
  */
-function CartKeyRow({ viewSwitch, showBuy, drawn }: { viewSwitch: React.ReactNode; showBuy: boolean; drawn: ReadonlySet<string> }) {
+function CartKeyRow({
+  view, onView, byDeckView, lines, read, selected, showBuy, drawn,
+}: {
+  view: CartViewMode;
+  onView: (v: CartViewMode) => void;
+  byDeckView: boolean;
+  lines: SelectedLine[];
+  read: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
+  showBuy: boolean;
+  drawn: ReadonlySet<string>;
+}) {
   const spares = usePageSpares();
-  const showSpare = spares !== null && [...drawn].some((id) => spares.byCard.has(id));
+  const withHeld = useWithHeld(lines, read, selected);
+  const byFriend = useByFriend(withHeld.lines, withHeld.held);
+  const v = shown(view, byFriend !== null);
+  const viewSwitch = byDeckView || byFriend
+    // An explicit `?view=deck` with one deck keeps its own segment, so the switch always shows the view it is on.
+    ? <ViewSwitch view={v} onView={onView} deck={byDeckView || v === "deck"} friend={byFriend !== null} />
+    : null;
+  const showSpare = v !== "friend" && spares !== null && [...drawn].some((id) => spares.byCard.has(id));
   if (!viewSwitch && !showBuy && !showSpare) return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
       {viewSwitch ?? <span />}
       {showBuy || showSpare ? (
         <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[6px]">
-          <ShoppingKeySpare among={drawn} />
+          {showSpare ? <ShoppingKeySpare among={drawn} /> : null}
           {showBuy ? <ShoppingKeyBuy /> : null}
         </span>
       ) : null}

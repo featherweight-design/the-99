@@ -36,7 +36,10 @@ export default async function AllDecksShoppingPage({
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
   // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
   const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
-  const initialView = params.view === "deck" || deck ? "deck" : "card";
+  // `?view=friend` is By friend (spare requests PR 3c), a view only with spare requests on for the reader (which needs
+  // friends on): off, it is By card. Any other value is By card too.
+  const friendView = params.view === "friend" && socialFriendsEnabled(env) && spareRequestsEnabled(env);
+  const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
   const cart = await cachePageForUser(userId, "cart", [], async (keyed) => {

@@ -1,15 +1,38 @@
-// ViewSwitch — the cart by card or by deck (handoff A5). The app's segmented switch in its compact size, a
-// radiogroup since both views hold the same list grouped two ways; the page mirrors the choice into `?view=` so a
-// reload keeps it. 30px from `md:` like every compact switch (it drew 32px before the switches converged).
+// ViewSwitch — the cart by card, by deck or by friend (handoff A5; spare requests `Cart-By-Friend`). The app's
+// segmented switch in its compact size, a radiogroup since every view holds the same list grouped another way; the
+// page mirrors the choice into `?view=` so a reload keeps it. 30px from `md:` like every compact switch (it drew 32px
+// before the switches converged). By deck needs two decks (E1); By friend is drawn only while a line has a friend's
+// spare and spare requests are on, so it arrives with the client's spares read.
 
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
-import { SegmentedSwitch } from "../../ui/segmented-switch";
+import { SegmentedSwitch, type Segment } from "../../ui/segmented-switch";
 
-export type CartViewMode = "card" | "deck";
+export type CartViewMode = "card" | "deck" | "friend";
 
 const IDS = { tab: (v: CartViewMode) => `cart-view-${v}` };
 
-export function ViewSwitch({ view, onView }: { view: CartViewMode; onView: (v: CartViewMode) => void }) {
+/** The segments the switch draws: By card always, By deck with two decks or more, By friend while a spare is drawn. */
+export function viewSegments({ deck, friend }: { deck: boolean; friend: boolean }): Segment<CartViewMode>[] {
+  return [
+    { value: "card", label: copy.view.byCard },
+    ...(deck ? [{ value: "deck" as const, label: copy.view.byDeck }] : []),
+    ...(friend ? [{ value: "friend" as const, label: copy.view.byFriend }] : []),
+  ];
+}
+
+export function ViewSwitch({
+  view,
+  onView,
+  deck = true,
+  friend = false,
+}: {
+  view: CartViewMode;
+  onView: (v: CartViewMode) => void;
+  /** By deck is a view (two decks or more, E1). */
+  deck?: boolean;
+  /** By friend is a view (a line has a friend's spare, spare requests on). */
+  friend?: boolean;
+}) {
   return (
     <SegmentedSwitch
       kind="radio"
@@ -18,10 +41,7 @@ export function ViewSwitch({ view, onView }: { view: CartViewMode; onView: (v: C
       value={view}
       onChange={onView}
       ids={IDS}
-      segments={[
-        { value: "card", label: copy.view.byCard },
-        { value: "deck", label: copy.view.byDeck },
-      ]}
+      segments={viewSegments({ deck, friend })}
     />
   );
 }

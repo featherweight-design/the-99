@@ -216,10 +216,15 @@ export function FriendSpareSection({ spares, card }: { spares: readonly FriendSp
   );
 }
 
-const ASK_BASE =
-  "flex h-[36px] min-w-[64px] flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-[9px] bg-transparent px-[14px] font-sans text-[13px] disabled:cursor-default md:h-[32px] md:rounded-[8px]";
-const ASK = `${ASK_BASE} font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]`;
-const ASK_ALT = `${ASK_BASE} font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]`;
+const ASK_PRESS = "flex flex-none cursor-pointer items-center justify-center whitespace-nowrap bg-transparent font-sans disabled:cursor-default";
+/** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), or the cart's By friend line
+ *  (`.cl .ask`, 32px at phone, 28px from md, a 56px floor and 12.5px type). */
+const ASK_SIZE = {
+  sheet: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:h-[32px] md:rounded-[8px]",
+  line: "h-[32px] min-w-[56px] rounded-[7px] px-[12px] text-[12.5px] md:h-[28px]",
+} as const;
+const ASK_INK = "font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]";
+const ASK_ALT_INK = "font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]";
 const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap font-sans text-[13px] font-medium";
 
 /** The rows with Ask (`.fsx2`, `.fsr`): one sub line and one thing on the right per friend, the ⓘ, the state line. */
@@ -304,9 +309,14 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
   );
 }
 
-/** The row's one right element: a press for Ask, Ask instead and Ask again, one word for the rest. */
-function RowEnd({ ask, friend, card, busy, locked, onAsk }: {
+/**
+ * The row's one right element: a press for Ask, Ask instead and Ask again, one word for the rest. The modal's friend
+ * rows and the cart's By friend lines both draw it over `rowAsk`, so the two always agree.
+ */
+export function RowEnd({ ask, friend, card, busy, locked, onAsk, size = "sheet" }: {
   ask: RowAsk; friend: string; card: string; busy: boolean; locked: boolean; onAsk: () => void;
+  /** `line` on the cart's By friend line, whose press is a size down (`.cl .ask`). */
+  size?: keyof typeof ASK_SIZE;
 }) {
   const r = spareCopy.request;
   if (ask.kind === "ask" || ask.kind === "askAgain" || ask.kind === "askInstead") {
@@ -315,7 +325,7 @@ function RowEnd({ ask, friend, card, busy, locked, onAsk }: {
         : [r.askInstead, r.askInsteadAria(friend, card)];
     return (
       <button type="button" data-testid="friend-spare-ask" aria-label={aria} aria-busy={busy || undefined} disabled={locked}
-        onClick={onAsk} className={ask.kind === "askInstead" ? ASK_ALT : ASK}>
+        onClick={onAsk} className={`${ASK_PRESS} ${ASK_SIZE[size]} ${ask.kind === "askInstead" ? ASK_ALT_INK : ASK_INK}`}>
         {label}
       </button>
     );
