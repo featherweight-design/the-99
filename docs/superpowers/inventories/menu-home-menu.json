@@ -1,0 +1,28 @@
+{
+  "feature": "Menu and Home, PR 2: Friends in the bar, Discover out of it, Settings in the account menu (handoff design_handoff_the99_menu_home, R1 Menu; plan 2026-10-22-menu-home.md)",
+  "note": "The server needs COMMANDERS_PLACE_ENABLED and SOCIAL_FRIENDS_ENABLED on for the signed-in account. The bar is shell, outside `<main>`, so the rows settle rather than wait; read the bar in each cell. The first-run lock and the badge counts are not photographed here: the account holds cards, and nothing fills a count until PR 6 and 7; both are pinned by component tests.",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "bar-home",
+      "label": "/ : the bar is Home, Collection, Commanders, Decks, Friends (no Discover); Friends last with its new glyph",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [{ "goto": "/", "settle": 1500 }]
+    },
+    {
+      "id": "bar-friends-active",
+      "label": "/friends: the Friends slot lit",
+      "view": "src/components/shell/nav.tsx",
+      "steps": [{ "goto": "/friends", "settle": 1500 }]
+    },
+    {
+      "id": "account-menu",
+      "label": "Account menu (sheet at 390, popover at 1300): Settings in the Friends row's place, theme and avatar unchanged",
+      "view": "src/components/shell/account-menu.tsx",
+      "steps": [
+        { "goto": "/", "settle": 1500 },
+        { "openAccount": true, "chip": false }
+      ]
+    }
+  ]
+}

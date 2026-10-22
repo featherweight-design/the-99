@@ -665,12 +665,12 @@ function badgeWords(href: NavHref, count: number): string {
  * handoff, `.bdg`). Its ink is `--bg`, as every shipped accent pill's, not the board's literal (audit erratum 7). Drawn,
  * not read: the slot's name carries the count in words.
  */
-function NavBadge({ count }: { count: number }) {
+function NavBadge({ count, rail }: { count: number; rail: boolean }) {
   return (
     <span
       aria-hidden="true"
       data-nav-badge=""
-      className="pointer-events-none absolute top-[3px] left-[calc(50%+4px)] h-[16px] min-w-[16px] rounded-full bg-[color:var(--accent)] px-[4px] text-center font-mono text-[9.5px] leading-[16px] font-semibold tracking-normal text-[color:var(--bg)] shadow-[0_0_0_2px_var(--surface-rail)]"
+      className={`pointer-events-none absolute ${rail ? "top-[2px] left-[calc(50%+3px)] touch:top-[4px] touch:left-[calc(50%+5px)]" : "top-[3px] left-[calc(50%+4px)]"} h-[16px] min-w-[16px] rounded-full bg-[color:var(--accent)] px-[4px] text-center font-mono text-[9.5px] leading-[16px] font-semibold tracking-normal text-[color:var(--bg)] shadow-[0_0_0_2px_var(--surface-rail)]`}
     >
       {count > 9 ? "9+" : count}
     </span>
@@ -707,7 +707,7 @@ function NavSlot({ href, name, active, pip, className, handlers, moment = false,
     >
       <TargetBox id={tourSlot(href)} />
       {children}
-      {counted && <NavBadge count={badge} />}
+      {counted && <NavBadge count={badge} rail={pip === "rail"} />}
       {counted && name === undefined && <span className="sr-only">{`, ${badgeWords(href, badge)}`}</span>}
       <PendingPip href={href} placement={pip} />
     </Link>
