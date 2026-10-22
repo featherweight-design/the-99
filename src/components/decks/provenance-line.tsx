@@ -4,22 +4,17 @@
 // pass, oldest first. Replaces the single provenance sentence: the strip used
 // to state one deck-wide total, and #359 needs each pass named and reversible
 // on its own. Not dismissible; leaves when the last auto card does.
-//
-// FillFailedBanner — shown when deck.filled === false and the deck has no
-// cards at all. Offers a retry via the fillDeck server action.
 
 import { useState, useTransition } from "react";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
-import { fillDeck, undoFillPass } from "../../app/decks/actions";
+import { undoFillPass } from "../../app/decks/actions";
 import { GhostButton } from "../ui/button";
 import { ProvenanceDisc } from "../ui/provenance-disc";
 import { MutationError } from "./mutation-error";
 import { fillPassLabel } from "./pass-mark";
 
-const copy = recommendationsCopy.fill;
 const ledger = topOffCopy.ledger;
 
 /** The container's own background. `--surface-sunken` rather than the design
@@ -375,114 +370,4 @@ function Weighted({ text, count }: { text: string; count: string }) {
 function splitOnce(text: string, sep: string): [string, string | null] {
   const at = text.indexOf(sep);
   return at === -1 ? [text, null] : [text.slice(0, at), text.slice(at + sep.length)];
-}
-
-// ── FillFailedBanner ─────────────────────────────────────────────────────────
-
-interface FillFailedBannerProps {
-  /** deck.filled — true if the fill ran, even if the deck was later swept. */
-  filled: boolean;
-  /** Whether the deck holds any card at all. Emptiness is the whole question
-      here, so the banner takes the answer rather than a total it would have to
-      interpret — a row count and a copy count disagree on stacked basics but
-      agree on empty. */
-  hasCards: boolean;
-  onRetry: () => void;
-  pending: boolean;
-}
-
-export function FillFailedBanner({
-  filled,
-  hasCards,
-  onRetry,
-  pending,
-}: FillFailedBannerProps) {
-  // Only shown when the fill failed (filled=false) and the deck is still empty.
-  // A swept deck is filled=true, so it will never match here — that's the point.
-  if (filled || hasCards) return null;
-
-  return (
-    <div
-      className="flex items-start gap-[11px] mx-[16px] mt-[10px] mb-[10px] md:mx-[30px] md:mt-[12px] rounded-[8px] md:rounded-[9px] px-[12px] py-[9px] md:px-[15px] md:py-[11px]"
-      style={{
-        background: "var(--surface-sunken)",
-        border: "1px solid var(--border)",
-        borderLeft: "3px solid var(--warning)",
-      }}
-    >
-      {/* ⚠ bare glyph — no disc, no background. 13px in --warning. */}
-      <span
-        aria-hidden
-        className="flex-none leading-none text-[13px]"
-        style={{ color: "var(--warning)" }}
-      >
-        ⚠
-      </span>
-      <div className="flex-1 min-w-0">
-        <p
-          className="m-0 font-semibold text-[12.5px] leading-[1.4]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          {copy.failedHeading}
-        </p>
-        <p
-          className="m-0 text-[12.5px] leading-[1.55] mt-[4px]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          {copy.failedBody}
-        </p>
-        {/* Retry link — matches decklist-row.tsx Undo treatment: sans 12.5px
-            semibold, accent coloured, border-bottom underline in accent-shadow. */}
-        <button
-          type="button"
-          onClick={onRetry}
-          disabled={pending}
-          aria-label={copy.failedRetryAria}
-          className="flex-none flex items-center mt-[10px] bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow p-0
-            text-[12.5px] font-semibold leading-[1.4]
-            text-accent-text cursor-pointer disabled:opacity-50 disabled:cursor-default"
-        >
-          {copy.failedRetry}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── FillFailedBannerConnected ─────────────────────────────────────────────────
-// Wires the fillDeck server action to FillFailedBanner. Used by BuilderShell.
-
-interface FillFailedBannerConnectedProps {
-  deckId: string;
-  filled: boolean;
-  hasCards: boolean;
-}
-
-export function FillFailedBannerConnected({
-  deckId,
-  filled,
-  hasCards,
-}: FillFailedBannerConnectedProps) {
-  const [pending, startTransition] = useTransition();
-
-  const handleRetry = () => {
-    startTransition(async () => {
-      try {
-        await fillDeck(deckId);
-      } catch {
-        // The banner already says the fill failed, so a rejected retry changes
-        // nothing the player can see — except that an escaped rejection would
-        // reach an error boundary and remove the retry affordance entirely.
-      }
-    });
-  };
-
-  return (
-    <FillFailedBanner
-      filled={filled}
-      hasCards={hasCards}
-      onRetry={handleRetry}
-      pending={pending}
-    />
-  );
 }

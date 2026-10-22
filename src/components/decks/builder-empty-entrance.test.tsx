@@ -180,7 +180,7 @@ describe("swept-empty branch", () => {
 // An import whose every line went unresolved lands as filled=false with zero
 // cards — the same shape a failed fill leaves behind. It is not one: the player
 // asked for a decklist, and the unresolved group already explains what happened.
-describe("fill-failed banner on an empty deck", () => {
+describe("fill-failed row on an empty deck", () => {
   const renderWith = (deck: DeckDetail) =>
     render(
       <BuilderShell mix={TEST_MIX}

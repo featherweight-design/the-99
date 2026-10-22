@@ -1,6 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { topOffCopy } from "../../lib/copy/top-off";
 // `total` is copies rather than rows on the production call site, so the helper
 // below counts it the same way — a row-count helper would pass a stacked deck's
@@ -8,15 +7,12 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { cardCopies, type DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 
-// ── Module mock — the two server actions the ledger and the banner call ──
+// ── Module mock — the server action the ledger calls ──
 vi.mock("../../app/decks/actions", () => ({
-  fillDeck: vi.fn(),
   undoFillPass: vi.fn(),
 }));
 
-const { ProvenanceLedger, FillFailedBanner, FillFailedBannerConnected } = await import(
-  "./provenance-line"
-);
+const { ProvenanceLedger } = await import("./provenance-line");
 
 const ledger = topOffCopy.ledger;
 
@@ -273,87 +269,5 @@ describe("ProvenanceLedger", () => {
       />,
     );
     expect(screen.queryByText(ledger.header("1"))).not.toBeInTheDocument();
-  });
-});
-
-// ── FillFailedBanner ────────────────────────────────────────────────────────
-
-describe("FillFailedBanner", () => {
-  it("renders for an empty unfilled deck (filled=false, no cards)", () => {
-    render(
-      <FillFailedBanner
-        filled={false}
-        hasCards={false}
-        onRetry={vi.fn()}
-        pending={false}
-      />,
-    );
-    expect(
-      screen.getByText(recommendationsCopy.fill.failedHeading),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(recommendationsCopy.fill.failedBody),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: recommendationsCopy.fill.failedRetryAria,
-      }),
-    ).toBeInTheDocument();
-  });
-
-  it("does not render for an empty swept deck (filled=true, no cards)", () => {
-    render(
-      <FillFailedBanner
-        filled={true}
-        hasCards={false}
-        onRetry={vi.fn()}
-        pending={false}
-      />,
-    );
-    // A swept deck (filled=true) must not offer to fill again
-    expect(
-      screen.queryByText(recommendationsCopy.fill.failedHeading),
-    ).not.toBeInTheDocument();
-  });
-
-  it("does not render when the deck has cards", () => {
-    render(
-      <FillFailedBanner
-        filled={false}
-        hasCards
-        onRetry={vi.fn()}
-        pending={false}
-      />,
-    );
-    expect(
-      screen.queryByText(recommendationsCopy.fill.failedHeading),
-    ).not.toBeInTheDocument();
-  });
-});
-
-// ── FillFailedBannerConnected ────────────────────────────────────────────────
-
-describe("FillFailedBannerConnected", () => {
-  it("keeps the banner and re-enables Retry when the fill action rejects", async () => {
-    // An escaped rejection reaches an error boundary and takes the retry
-    // affordance away with it — the one control the banner exists to offer.
-    const { fillDeck } = await import("../../app/decks/actions");
-    vi.mocked(fillDeck).mockRejectedValue(new Error("network"));
-
-    render(<FillFailedBannerConnected deckId="deck-1" filled={false} hasCards={false} />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: recommendationsCopy.fill.failedRetryAria }),
-    );
-
-    await waitFor(() => {
-      expect(fillDeck).toHaveBeenCalledWith("deck-1");
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: recommendationsCopy.fill.failedRetryAria }),
-      ).not.toBeDisabled();
-    });
-    expect(screen.getByText(recommendationsCopy.fill.failedHeading)).toBeInTheDocument();
   });
 });

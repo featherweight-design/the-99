@@ -167,7 +167,7 @@ export function UnresolvedGroup({
   }
 
   return (
-    // The id is the unresolved banner's scroll target.
+    // The id is the scroll target of the to-do card's unresolved row.
     <section
       id="unresolved-group"
       className="mb-[16px] md:mb-[20px]"
@@ -182,7 +182,7 @@ export function UnresolvedGroup({
         <>
           <DecklistGroupHeader
             label={copy.groupLabel}
-            // Lines, not copies. The banner above counts lines, and this group's own
+            // Lines, not copies. The to-do card's unresolved row counts lines, and this group's own
             // footnote below says "All N lines" — a copy count here made one screen
             // show two different numbers for the same thing. The card nuance is what
             // `groupNote` and the footnote are for.
