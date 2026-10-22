@@ -111,6 +111,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // A Rule 0 table (plan PR 3) reads each seated deck's list and reading, never this reader's collection; its
   // loader imports the schema through `db`, so it is listed as /about is.
   { path: "/friends/table/[id]", dynamic: true },
+  // Settings (menu and Home PR 3): Kept back draws the reader's own collection rows, counts included, so a replace
+  // moves what it shows.
+  { path: "/settings", dynamic: false },
   // The card-scan lab (staging only) never reads the collection: its "What card was it?" step searches
   // `cards` and labels a `scan_lab_results` row, through `db` and so the whole schema. Listed as /about is.
   { path: "/lab/scan", dynamic: false },

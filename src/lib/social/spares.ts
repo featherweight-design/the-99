@@ -27,6 +27,8 @@ import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { commanderCard, commanderColumns, toCommander, type ProfileCommander } from "./commander";
 import { isUuid } from "./rules";
+import { isOffered, spareCount } from "./spare-rules";
+import { spareSettingsIn, type SpareSettings } from "./spare-settings";
 
 const viewerIn = alias(podMembers, "viewer_in");
 const friendIn = alias(podMembers, "friend_in");
@@ -82,10 +84,7 @@ export function spareGrantDetailsQuery(viewerId: string, q: Reader = db) {
 
 type GrantDetails = Awaited<ReturnType<typeof spareGrantDetailsQuery>>[number];
 
-/** `max(0, owned − hard − soft)`: copies none of the owner's decks, committed or draft, is asking for. */
-export function spareCount(a: { owned: number; hard: number; soft: number }): number {
-  return Math.max(0, a.owned - a.hard - a.soft);
-}
+export { spareCount };
 
 /** How many friends' claim models one read runs at once. */
 export const CLAIM_MODELS_AT_ONCE = 4;
@@ -118,7 +117,7 @@ export { MAX_SPARES_BATCH } from "./client-rules";
  * than changing a figure.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
-  type Read = { grant: GrantDetails; model: Awaited<ReturnType<typeof loadAvailability>> };
+  type Read = { grant: GrantDetails; model: Awaited<ReturnType<typeof loadAvailability>>; settings: SpareSettings };
   const models: (Read | null)[] = new Array(friends.length);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, friends.length) }, async () => {
@@ -130,7 +129,10 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
         // pod the share stopped reaching the viewer through before the friend's rows were read.
         const grant = (await spareGrantDetailsQuery(viewerId, tx)).find((g) => g.userId === friend);
         if (!grant) return null;
-        return { grant, model: await loadAvailability(friend, { oracleIds: [...asked], env }, tx) };
+        // The friend's own threshold and keeps (Settings' Spares, G3), in the same snapshot and only past its grant
+        // check: they are the GRANTOR's settings, so a friend's choice never reaches another friend's rows.
+        const model = await loadAvailability(friend, { oracleIds: [...asked], env }, tx);
+        return { grant, model, settings: await spareSettingsIn(tx, friend, asked) };
       }, { isolationLevel: "repeatable read" });
     }
   }));
@@ -141,6 +143,10 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
  * The spare copies the viewer's friends hold of the named cards (the viewer's demand: their decks' buy
  * rows, and their wishlist once it exists). One grant read, then the friend's own claim model per
  * granting friend, narrowed to the asked cards, each in one snapshot with its own grant check. Ordered by card, then by friend name.
+ *
+ * THE ONE PLACE a friend's card is decided offered (Settings' Spares, G3): at least that friend's own `spare_min`
+ * spare copies (default 1, every spare, as before the setting) and not kept back by that friend (`isOffered`).
+ * The stand-ins modal, a friend's page and the feed all read through here, so they agree.
  */
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
@@ -155,9 +161,10 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
     if (read === null) continue;
     const g = read.grant;
     const friend: SpareFriend = { publicId: g.publicId, displayName: g.displayName, commander: toCommander(g), pods: g.pods };
+    const { min, kept } = read.settings;
     for (const [oracleId, a] of read.model) {
       const spare = spareCount(a);
-      if (spare > 0) out.push({ oracleId, friend, spare });
+      if (isOffered(spare, min, kept.has(oracleId))) out.push({ oracleId, friend, spare });
     }
   }
   return out.sort((x, y) =>

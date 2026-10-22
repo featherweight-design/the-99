@@ -129,125 +129,11 @@ export function RowsView({
           // outrank the hover: variants and neither hover state ever lands.
           className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
         >
-          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent-text, font-weight 500 */}
-          <span className={`flex items-center gap-[4px] whitespace-nowrap font-mono text-[13px] md:text-[14px] font-medium${c.imageUri && c.foil && c.quantity >= 1000 ? " max-md:flex-wrap" : ""}`} style={{ color: "var(--accent-text)" }}>
-            ×{c.quantity}
-            {/* The foil glint in the count column, after `×N` (foil mark addendum): no new column, so every name
-                keeps its full width. The phone column is 38px and the cell does not wrap, so `×10` to `×99` with a glint
-                run up to ~9px past it, into the 10px gap before the name, and so do three digits; from `×1000` (the cap is far higher) the
-                glint wraps under the count on the phone, so the name column is never reached. */}
-            {c.imageUri && c.foil && <FoilGlint finish={c.foil} />}
+          <CollectionRowCells card={c} showPrice={showPrice} showAdded={showAdded} />
+          {/* The desktop chevron, the row's last column. */}
+          <span className="hidden md:block text-[14px]" style={{ color: "var(--fg-faint)" }}>
+            ›
           </span>
-
-          {/* Name column — §Row: Name Column Container: min-width 0 */}
-          <span className="min-w-0">
-            {/* Name + availability marker share the line; Addendum 2 §1 puts the
-                marker inline after the name, inside the existing 1fr cell, so
-                neither grid template changes. */}
-            <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
-              {/* §Row: Card Name — 14/15px 600, --fg, ellipsis. The name printed
-                  on the copy the player owns, front face only, single line.
-                  The `title` that used to carry the full string is gone: it is
-                  pointer-only recovery on a phone-first surface, and it would
-                  hover a stale oracle name over a printed one. The whole string
-                  rides the row button's own `aria-label` above — a real control
-                  — and the modal is the recovery path for the clip. */}
-              <span
-                className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold"
-                style={{ color: "var(--fg)" }}
-              >
-                {printedFaceName(c)}
-              </span>
-              {/* The standing bracket facts, AFTER the name and BEFORE the availability
-                  marker. Both already live inline in this same `min-w-0` cell, so the
-                  order is the reading order: what the card is, then what this player's
-                  copies are doing. `shrink-0` on the mark and `truncate` on the name
-                  above means the name gives way and the glyph never does.
-
-                  aria-hidden here, unlike the decklist row, because THIS row composes
-                  its own accessible name on the button above — the fact clause is
-                  placed there explicitly, after the card's name, rather than being
-                  spoken twice out of order. */}
-              {(c.facts ?? []).map((fact) => (
-                <FactTooltip key={fact} fact={fact}>
-                  <CardFactMark fact={fact} silent />
-                </FactTooltip>
-              ))}
-              {/* THE COMBO MARK JOINS THE CLUSTER, last, after Round 1's fixed order. One more
-                  16px glyph in a row built for them — the row's height, grid and every column
-                  are unchanged, and nothing yields for it. */}
-              {c.comboPartner && (
-                <ComboMark
-                  partnerName={c.comboPartner.name}
-                  otherPartners={c.comboOtherPartners ?? 0}
-                />
-              )}
-              {c.availability && (
-                // `nameless` — /collection is the count-only vantage. No
-                // `selfExcluded`: there is no deck to stand in here.
-                //
-                // Row density deliberately sets no family or size, because on a
-                // decklist it rides a mono meta line (row 3.4). This cell is not
-                // that: it is the sans name cell, so row 13.3's own typography
-                // has to be supplied here or the label paints as body-size sans.
-                //
-                // Seam per row 13.4 — the over glyph's hairline has to be the
-                // colour actually behind it, and that is the row surface, not
-                // the page canvas the marker defaults to. --row-bg rather than a
-                // fixed colour so it tracks the hover swap, as the decklist row
-                // already does; pinned, it paints a hairline on hover.
-                <AvailabilityMarker
-                  availability={c.availability}
-                  density="row"
-                  nameless
-                  seam="var(--row-bg)"
-                  className="shrink-0 font-mono text-[8.5px] font-semibold tracking-[0.02em]"
-                />
-              )}
-            </span>
-            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
-                UNTOUCHED by combo awareness: `/collection` draws a 16px marker in the cluster
-                rather than a sentence, so nothing yields and this line stays as it was. */}
-            {showPrice || showAdded ? (
-              // Sorted by price or date added, the figure leads the line and never truncates; the type gives way.
-              <span className="flex md:hidden min-w-0 items-baseline gap-[6px]">
-                {showPrice ? (
-                  <PriceFigure code={c.price} className="font-mono text-[11px] font-medium" />
-                ) : (
-                  <DateFigure card={c} className="font-mono text-[11px] font-medium" />
-                )}
-                <span className="min-w-0 truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-                  {c.typeLine}
-                </span>
-              </span>
-            ) : (
-              <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-                {c.typeLine}
-              </span>
-            )}
-          </span>
-
-          {/* §1b's cost track, now drawn by the app's ONE cost component.
-              §1b said "every other card row in the app states mana cost" and then
-              stated a mana value beside COLOUR IDENTITY instead — and identity
-              folds in every hybrid symbol a card's abilities cost, so `Abzan
-              Monument`, whose cost is `{2}` and whose ability costs `{1}{W}{B}{G}`,
-              drew a 2 followed by three coloured pips and read as a four-colour
-              two-drop. `CostPips` draws the card's own cost and nothing else.
-
-              ONE element with a responsive width, never a desktop copy beside a
-              phone copy: a duplicated subtree doubles the pips in the accessibility
-              tree and reads as correct to a verifier looking at either width alone.
-              A land carries no cost, so the cell is empty — the grid template fixes
-              its width, so nothing ragged-edges and there is no disc to keep. */}
-          <span className="flex w-[76px] md:w-[90px] items-center justify-end">
-            {hasFrontFaceCost(c.manaCost) ? (
-              <CostPips cost={c.manaCost} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
-            ) : null}
-          </span>
-
-          {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
-          <SetRarityColumn card={c} showPrice={showPrice} showAdded={showAdded} />
         </PreviewButton>
         );
       })}
@@ -263,6 +149,135 @@ export function RowsView({
         </GhostButton>
       )}
     </div>
+  );
+}
+
+/**
+ * The collection row's cells (quantity, name and marks, cost, set and type), without its button or its trailing column:
+ * the ONE drawing of a collection row's content, used by `/collection` (with the chevron) and by Settings' Kept back
+ * (with a ✕ to let the card go), so the two rows are the same component, not a copy.
+ */
+export function CollectionRowCells({ card: c, showPrice = false, showAdded = false }: { card: BrowseListCard; showPrice?: boolean; showAdded?: boolean }) {
+  return (
+    <>
+      {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent-text, font-weight 500 */}
+      <span className={`flex items-center gap-[4px] whitespace-nowrap font-mono text-[13px] md:text-[14px] font-medium${c.imageUri && c.foil && c.quantity >= 1000 ? " max-md:flex-wrap" : ""}`} style={{ color: "var(--accent-text)" }}>
+        ×{c.quantity}
+        {/* The foil glint in the count column, after `×N` (foil mark addendum): no new column, so every name
+            keeps its full width. The phone column is 38px and the cell does not wrap, so `×10` to `×99` with a glint
+            run up to ~9px past it, into the 10px gap before the name, and so do three digits; from `×1000` (the cap is far higher) the
+            glint wraps under the count on the phone, so the name column is never reached. */}
+        {c.imageUri && c.foil && <FoilGlint finish={c.foil} />}
+      </span>
+
+      {/* Name column — §Row: Name Column Container: min-width 0 */}
+      <span className="min-w-0">
+        {/* Name + availability marker share the line; Addendum 2 §1 puts the
+            marker inline after the name, inside the existing 1fr cell, so
+            neither grid template changes. */}
+        <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
+          {/* §Row: Card Name — 14/15px 600, --fg, ellipsis. The name printed
+              on the copy the player owns, front face only, single line.
+              The `title` that used to carry the full string is gone: it is
+              pointer-only recovery on a phone-first surface, and it would
+              hover a stale oracle name over a printed one. The whole string
+              rides the row button's own `aria-label` above — a real control
+              — and the modal is the recovery path for the clip. */}
+          <span
+            className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold"
+            style={{ color: "var(--fg)" }}
+          >
+            {printedFaceName(c)}
+          </span>
+          {/* The standing bracket facts, AFTER the name and BEFORE the availability
+              marker. Both already live inline in this same `min-w-0` cell, so the
+              order is the reading order: what the card is, then what this player's
+              copies are doing. `shrink-0` on the mark and `truncate` on the name
+              above means the name gives way and the glyph never does.
+
+              aria-hidden here, unlike the decklist row, because THIS row composes
+              its own accessible name on the button above — the fact clause is
+              placed there explicitly, after the card's name, rather than being
+              spoken twice out of order. */}
+          {(c.facts ?? []).map((fact) => (
+            <FactTooltip key={fact} fact={fact}>
+              <CardFactMark fact={fact} silent />
+            </FactTooltip>
+          ))}
+          {/* THE COMBO MARK JOINS THE CLUSTER, last, after Round 1's fixed order. One more
+              16px glyph in a row built for them — the row's height, grid and every column
+              are unchanged, and nothing yields for it. */}
+          {c.comboPartner && (
+            <ComboMark
+              partnerName={c.comboPartner.name}
+              otherPartners={c.comboOtherPartners ?? 0}
+            />
+          )}
+          {c.availability && (
+            // `nameless` — /collection is the count-only vantage. No
+            // `selfExcluded`: there is no deck to stand in here.
+            //
+            // Row density deliberately sets no family or size, because on a
+            // decklist it rides a mono meta line (row 3.4). This cell is not
+            // that: it is the sans name cell, so row 13.3's own typography
+            // has to be supplied here or the label paints as body-size sans.
+            //
+            // Seam per row 13.4 — the over glyph's hairline has to be the
+            // colour actually behind it, and that is the row surface, not
+            // the page canvas the marker defaults to. --row-bg rather than a
+            // fixed colour so it tracks the hover swap, as the decklist row
+            // already does; pinned, it paints a hairline on hover.
+            <AvailabilityMarker
+              availability={c.availability}
+              density="row"
+              nameless
+              seam="var(--row-bg)"
+              className="shrink-0 font-mono text-[8.5px] font-semibold tracking-[0.02em]"
+            />
+          )}
+        </span>
+        {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
+            UNTOUCHED by combo awareness: `/collection` draws a 16px marker in the cluster
+            rather than a sentence, so nothing yields and this line stays as it was. */}
+        {showPrice || showAdded ? (
+          // Sorted by price or date added, the figure leads the line and never truncates; the type gives way.
+          <span className="flex md:hidden min-w-0 items-baseline gap-[6px]">
+            {showPrice ? (
+              <PriceFigure code={c.price} className="font-mono text-[11px] font-medium" />
+            ) : (
+              <DateFigure card={c} className="font-mono text-[11px] font-medium" />
+            )}
+            <span className="min-w-0 truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+              {c.typeLine}
+            </span>
+          </span>
+        ) : (
+          <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+            {c.typeLine}
+          </span>
+        )}
+      </span>
+
+      {/* §1b's cost track, now drawn by the app's ONE cost component.
+          §1b said "every other card row in the app states mana cost" and then
+          stated a mana value beside COLOUR IDENTITY instead — and identity
+          folds in every hybrid symbol a card's abilities cost, so `Abzan
+          Monument`, whose cost is `{2}` and whose ability costs `{1}{W}{B}{G}`,
+          drew a 2 followed by three coloured pips and read as a four-colour
+          two-drop. `CostPips` draws the card's own cost and nothing else.
+
+          ONE element with a responsive width, never a desktop copy beside a
+          phone copy: a duplicated subtree doubles the pips in the accessibility
+          tree and reads as correct to a verifier looking at either width alone.
+          A land carries no cost, so the cell is empty — the grid template fixes
+          its width, so nothing ragged-edges and there is no disc to keep. */}
+      <span className="flex w-[76px] md:w-[90px] items-center justify-end">
+        {hasFrontFaceCost(c.manaCost) ? (
+          <CostPips cost={c.manaCost} size={COST_PIP_SIZE} cap={COST_PIP_CAP} />
+        ) : null}
+      </span>
+      <SetRarityColumn card={c} showPrice={showPrice} showAdded={showAdded} />
+    </>
   );
 }
 
@@ -306,9 +321,6 @@ function SetRarityColumn({ card, showPrice, showAdded }: { card: BrowseListCard;
         <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
           {card.primarySetCode}
         </span>
-      </span>
-      <span className="hidden md:block text-[14px]" style={{ color: "var(--fg-faint)" }}>
-        ›
       </span>
     </>
   );

@@ -2110,9 +2110,17 @@ export const userPrefs = pgTable(
      * never closed. Per account, so it holds on every device; a purchase never clears it.
      */
     welcomeStripDismissedAt: timestamp("welcome_strip_dismissed_at", { withTimezone: true }),
+    /**
+     * The fewest spare copies of a card this reader offers to friends (menu and Home G3, Settings' Spares
+     * stepper, 1 to 9). 1 is every spare, the behavior before the setting existed. Read for a FRIEND only
+     * through `src/lib/social/` (`loadFriendSpares`), and written only when it changes, because of the
+     * stamp trigger above: the stamp is what moves a friend's `friendGeneration`.
+     */
+    spareMin: integer("spare_min").notNull().default(1),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
+    check("user_prefs_spare_min_check", sql`${t.spareMin} between 1 and 9`),
   ],
 );
 
@@ -3485,6 +3493,20 @@ export const podSpareShares = pgTable("pod_spare_shares", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.podId] }),
   index("pod_spare_shares_pod_idx").on(t.podId),
+]);
+
+/**
+ * Cards an account keeps back from its spares (menu and Home G3, Settings' Kept back): never offered to a
+ * friend, however many spare copies it holds. One row per card. Read for a friend only through
+ * `src/lib/social/` (`loadFriendSpares`); carries the `user_data_touch` trigger, so keeping a card back
+ * moves the owner's stamp and with it every friend's `friendGeneration`. Purged with the account.
+ */
+export const spareKeep = pgTable("spare_keep", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
 ]);
 
 /**
