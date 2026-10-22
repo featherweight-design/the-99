@@ -733,6 +733,7 @@ export function CardModal({
   enterFrom = null,
   enterOffset = 0,
   startMinimized = false,
+  openCombo = false,
   onMinimizedChange,
   onArtChange,
   openAtPrinting = null,
@@ -909,6 +910,9 @@ export function CardModal({
   /** The phone's sheet opens at its min snap: the reader minimized it on the card before this one
    *  and paged here. Captured once at construction, like `enterOffset`. */
   startMinimized?: boolean;
+  /** Opened FOR the combo (a feed item's See the combo): the combo block starts open, and on the phone the sheet opens full so
+   *  the block is on screen. Read once at construction; the provider names it for this card alone. */
+  openCombo?: boolean;
   /** Told whenever the phone's sheet reaches or leaves its min snap, so paging can carry it. */
   onMinimizedChange?: (minimized: boolean) => void;
   /**
@@ -1027,7 +1031,9 @@ export function CardModal({
   useEffect(() => {
     if (landsFull) targets?.takeFull("find-a-deck");
   }, [landsFull, targets]);
-  const [snap, setSnapState] = useState<SheetSnap>(landsFull ? "full" : startMinimized ? "min" : "teaser");
+  // A combo open has the phone's sheet at the full details column, where the combo block draws.
+  const [startsFull] = useState(() => narrow && openCombo);
+  const [snap, setSnapState] = useState<SheetSnap>(landsFull || startsFull ? "full" : startMinimized ? "min" : "teaser");
   // A card mounts at the snap it was handed, and says so: a remount that is not a page (a step back
   // from a partner, say) starts at the teaser, and the provider must not go on carrying a min the
   // reader can no longer see into the next page.
@@ -1036,8 +1042,8 @@ export function CardModal({
     if (reportedMount.current) return;
     reportedMount.current = true;
     // A pending landing opens the card full even when the reader carried a minimized sheet here: report what is drawn.
-    onMinimizedChange?.(startMinimized && !landsFull);
-  }, [onMinimizedChange, startMinimized, landsFull]);
+    onMinimizedChange?.(startMinimized && !landsFull && !startsFull);
+  }, [onMinimizedChange, startMinimized, landsFull, startsFull]);
   // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
   // rule's beat and ease-in-out), and teaser to full keeps the quick snap (`--motion-quick`).
   const [gentle, setGentle] = useState(false);
@@ -2769,6 +2775,7 @@ export function CardModal({
                 card={card}
                 deckName={deckName}
                 onSelectPartner={onSelectCard}
+                initiallyExpanded={openCombo}
               />
               <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} receiptLink={receiptLink} />
               <ProxyDetail card={card} />

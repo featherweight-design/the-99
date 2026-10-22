@@ -47,6 +47,16 @@ function mount(props: Props = {}) {
 const sheet = () => screen.getByTestId("card-sheet");
 const grip = () => screen.getByRole("button", { name: /Show all details|Show less/ });
 
+describe("a combo open on the phone", () => {
+  it("opens the sheet full, where the combo block draws, and a plain open stays at the teaser", () => {
+    const { unmount } = mount({ openCombo: true });
+    expect(sheet()).toHaveAttribute("data-sheet", "full");
+    unmount();
+    mount();
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+});
+
 describe("the sheet's two states", () => {
   it("opens on the teaser: three lines of oracle text and All details", () => {
     mount();

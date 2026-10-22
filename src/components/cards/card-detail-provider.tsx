@@ -190,8 +190,12 @@ type CardDetailContextValue = {
      * card was drawn when it was cached. That is also what keeps a stale opener safe: after a
      * printing pick the provider re-reads and re-caches the card, so the next press is a hit and the
      * opener's old URL is never fetched.
+     *
+     * `combo`: the card is opened FOR its combo (a feed item's See the combo): its combo block starts open, and
+     * the phone's sheet opens full so the block is on screen. Spent on that card alone: paging, a partner and a
+     * close drop it.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -695,6 +699,9 @@ export function CardDetailProvider({
   const setSiblings = useCallback((list: readonly Sibling[]) => setSiblingList(siblingCards(list)), []);
   // Opened from a Shopping row: the swap tools' door draws (audit F17).
   const [door, setDoor] = useState(false);
+  // The card a combo open (`opts.combo`) was for, so only that card starts with its combo block open: another card
+  // (a page, a partner) never matches, and a close clears it.
+  const [comboFor, setComboFor] = useState<string | null>(null);
   const [held, setHeld] = useState<Held | null>(null);
   // THE WAY BACK FROM A COMBO PARTNER: each card a partner was opened from, oldest first. The
   // partner draws as stacked, `← {that card}` at both widths, and every way out of it (the pill,
@@ -952,7 +959,7 @@ export function CardDetailProvider({
       // Where the card was reached from, when that moves the door: a combo partner is reached from
       // the combo block and never draws the Shopping door, while paging keeps it. Applied when the
       // card ARRIVES, so a read that fails leaves the card on screen, door and all, as it was.
-      arrival?: { door: boolean },
+      arrival?: { door: boolean; combo?: boolean },
       // Which carousel control asked for this read (H23 PR 2), or undefined for every other way a
       // card is reached — a combo partner, a re-open, a plain open. Set HERE, inside the one place
       // every read funnels through, rather than by the caller setting `enterFrom` and then calling
@@ -1005,7 +1012,7 @@ export function CardDetailProvider({
       setFailed(false);
       if (hit) {
         setPendingOracleId(null);
-        if (arrival) setDoor(arrival.door);
+        if (arrival) { setDoor(arrival.door); setComboFor(arrival.combo ? oracleId : null); }
         show(hit);
       } else if (!standing) {
         setPendingOracleId(oracleId);
@@ -1053,7 +1060,7 @@ export function CardDetailProvider({
         answers.current.set(oracleId, (answers.current.get(oracleId) ?? 0) + 1);
         if (next) {
           file(oracleId, next);
-          if (arrival) setDoor(arrival.door);
+          if (arrival) { setDoor(arrival.door); setComboFor(arrival.combo ? oracleId : null); }
           show(next);
         } else {
           // A card the server could not find is the one result not worth keeping: it is
@@ -1131,7 +1138,7 @@ export function CardDetailProvider({
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
     ) => {
       warmCardModal();
       // The control this open came from, for the modal to hand focus back to. Set on every open, so
@@ -1159,7 +1166,7 @@ export function CardDetailProvider({
       // deliberately leaves that card standing. The printing commits in `show`, when the
       // card it describes actually arrives — and only if the read that asked for it is
       // still the current one.
-      void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false });
+      void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false, combo: opts?.combo ?? false });
     },
     [load, setMinimized],
   );
@@ -1224,6 +1231,7 @@ export function CardDetailProvider({
     setPendingOracleId(null);
     setFailed(false);
     setDoor(false);
+    setComboFor(null);
     setMinimized(false);
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
@@ -1336,6 +1344,7 @@ export function CardDetailProvider({
       setPendingOracleId(null);
       setFailed(false);
       setDoor(false);
+      setComboFor(null);
     }
     return () => {
       setSheets((list) => list.filter((entry) => entry.token !== token));
@@ -1740,6 +1749,7 @@ export function CardDetailProvider({
           // those alone. A step back to a partner or any other remount opens at the teaser.
           startMinimized={minimized && enterFrom !== null}
           onMinimizedChange={setMinimized}
+          openCombo={comboFor === card.oracleId}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
@@ -1811,6 +1821,7 @@ export function CardDetailProvider({
           // those alone. A step back to a partner or any other remount opens at the teaser.
           startMinimized={minimized && enterFrom !== null}
           onMinimizedChange={setMinimized}
+          openCombo={comboFor === card.oracleId}
         />
       ) : null}
       {editing ? (

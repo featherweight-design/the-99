@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
@@ -50,6 +50,11 @@ export function ComboPartnersDetail({
 }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [boundOpen, setBoundOpen] = useState(false);
+  // Opened FOR the combo (a feed item): bring the block on screen once, at mount, in a modal whose column may scroll.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (initiallyExpanded) rootRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [initiallyExpanded]);
   const partners = card.comboPartners ?? [];
   if (partners.length === 0) return null;
 
@@ -64,6 +69,7 @@ export function ComboPartnersDetail({
 
   return (
     <div
+      ref={rootRef}
       data-testid="combo-partners-block"
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
