@@ -98,6 +98,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
 import { PassSheet, type PassSheetTarget } from "./pass-sheet";
 import { CombosCloseSheet } from "./combos-close-sheet";
+import { useDeckTitleFocusOnClose } from "./deck-title-focus";
 import type { NearCombos } from "../../lib/combos/near-combos";
 // Type only, for the same reason `games.ts` is imported as one: the module
 // reaches for the database.
@@ -474,6 +475,7 @@ export function BuilderShell({
   // Combos one piece away, the list (combos close), open for the visit.
   const nearComboCount = nearCombos?.total ?? 0;
   const [combosSheet, setCombosSheet] = useState(false);
+  useDeckTitleFocusOnClose(combosSheet);
   // With none left the sheet closes itself, once the reader is back on its list: never from under a
   // combo the reader is reading (or a card stacked on it).
 

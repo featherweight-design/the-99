@@ -1,6 +1,7 @@
 import { priceCopy } from "../../lib/copy/price";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
@@ -25,6 +26,7 @@ vi.mock("../../app/decks/actions", () => ({ addCardToDeck: (d: string, o: string
 const { CombosCloseSheet, groupNearCombos } = await import("./combos-close-sheet");
 const { AddOptimisticCardProvider } = await import("./optimistic-deck");
 const { ComboBody } = await import("./receipt-modal");
+const { useDeckTitleFocusOnClose } = await import("./deck-title-focus");
 const copy = combosCloseCopy.sheet;
 const detail = combosCloseCopy.detail;
 
@@ -503,5 +505,57 @@ describe("a row opens its combo inside the sheet", () => {
     expect(shownDetail()).not.toBeNull();
     fireEvent.click(document.querySelector<HTMLButtonElement>("[data-sheet-back]")!);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("puts focus on the deck's name when the last Add closes the sheet and takes its opener with it", async () => {
+    addCardToDeck.mockResolvedValue({ ok: true });
+    // The deck page as far as this needs: its name, the status-line segment (drawn only while a combo
+    // is one piece away) and the sheet it opens, closed by the sheet's own onClose.
+    function Page({ list }: { list: NearCombo[] }) {
+      const [open, setOpen] = useState(false);
+      useDeckTitleFocusOnClose(open);
+      return (
+        <>
+          <h1><span data-deck-title>HD - Avatar Aang</span></h1>
+          {list.length > 0 && <button type="button" data-opener onClick={() => setOpen(true)}>combos</button>}
+          {open && sheetWith(list, list.length, () => setOpen(false))}
+        </>
+      );
+    }
+    const view = render(<Page list={[SEARING]} />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    // jsdom lays nothing out: give the drawn heading a box, as the visible one has.
+    heading.getClientRects = () => [new DOMRect(0, 0, 100, 20)] as unknown as DOMRectList;
+    const opener = document.querySelector<HTMLButtonElement>("[data-opener]")!;
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(press("Searing Touch"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    });
+    view.rerender(<Page list={[]} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(heading).toHaveFocus();
+    expect(heading.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("leaves focus with the opener when it is still there to return to", () => {
+    function Page() {
+      const [open, setOpen] = useState(false);
+      useDeckTitleFocusOnClose(open);
+      return (
+        <>
+          <h1><span data-deck-title>HD - Avatar Aang</span></h1>
+          <button type="button" data-opener onClick={() => setOpen(true)}>combos</button>
+          {open && sheetWith([SEARING], 1, () => setOpen(false))}
+        </>
+      );
+    }
+    render(<Page />);
+    const opener = document.querySelector<HTMLButtonElement>("[data-opener]")!;
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole("button", { name: copy.done }));
+    expect(opener).toHaveFocus();
   });
 });
