@@ -32,14 +32,28 @@ describe("the guarded prefs write", () => {
 });
 
 describe("saveDevice", () => {
-  it("restamps created_at on a refresh or takeover, so the trim keeps the row just saved", async () => {
+  const device = { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a", userAgent: "ua", timeZone: "UTC" };
+
+  function fake() {
+    const calls: string[] = [];
     let conflict: { set: Record<string, unknown> } | null = null;
-    const q = {
-      insert: () => ({ values: () => ({ onConflictDoUpdate: async (c: { set: Record<string, unknown> }) => { conflict = c; } }) }),
-      execute: vi.fn(async () => undefined),
+    const tx = {
+      execute: vi.fn(async (q: SQL) => { calls.push(dialect.sqlToQuery(q).sql.includes("pg_advisory_xact_lock") ? "lock" : "trim"); }),
+      insert: () => ({ values: () => ({ onConflictDoUpdate: async (c: { set: Record<string, unknown> }) => { calls.push("upsert"); conflict = c; } }) }),
     };
-    await saveDevice("u1", { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a", userAgent: "ua", timeZone: "UTC" }, q as never);
-    expect(conflict!.set).toHaveProperty("createdAt");
-    expect(q.execute).toHaveBeenCalledOnce(); // the trim runs after the save
+    const q = { transaction: async (fn: (t: typeof tx) => Promise<void>) => { calls.push("begin"); await fn(tx); calls.push("commit"); } };
+    return { q, calls, conflict: () => conflict };
+  }
+
+  it("takes the reader's lock first and holds it through the upsert and the trim, in one transaction", async () => {
+    const f = fake();
+    await saveDevice("u1", device, f.q as never);
+    expect(f.calls).toEqual(["begin", "lock", "upsert", "trim", "commit"]);
+  });
+
+  it("restamps created_at on a refresh or takeover, so the trim keeps the row just saved", async () => {
+    const f = fake();
+    await saveDevice("u1", device, f.q as never);
+    expect(f.conflict()!.set).toHaveProperty("createdAt");
   });
 });

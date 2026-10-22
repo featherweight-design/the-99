@@ -12,19 +12,26 @@ import type { DeviceInput } from "./endpoint";
 
 export const MAX_DEVICES = 10;
 
-type Q = Pick<typeof db, "insert" | "delete" | "execute">;
+type Q = Pick<typeof db, "transaction">;
 
-/** Stores or refreshes a device and trims the reader to `MAX_DEVICES`. Returns nothing: a save has no failure the caller can act on. */
+/**
+ * Stores or refreshes a device and trims the reader to `MAX_DEVICES`, as ONE transaction under a per-reader lock. The
+ * lock is what serializes two saves: without it a trim's snapshot can select a row a racing refresh is about to restamp,
+ * wait for that update, and then delete the row it just renewed. Returns nothing: a save has no failure the caller can act on.
+ */
 export async function saveDevice(userId: string, device: DeviceInput, q: Q = db): Promise<void> {
-  await q
-    .insert(pushSubscriptions)
-    .values({ userId, ...device })
-    .onConflictDoUpdate({
-      target: pushSubscriptions.endpoint,
-      // `created_at` is when the device last subscribed: a refresh or a takeover is the newest, so the trim never deletes the row just saved.
-      set: { userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone, createdAt: sql`now()` },
-    });
-  await trimDevices(userId, q);
+  await q.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`push_devices:${userId}`}, 0))`);
+    await tx
+      .insert(pushSubscriptions)
+      .values({ userId, ...device })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        // `created_at` is when the device last subscribed: a refresh or a takeover is the newest, so the trim never deletes the row just saved.
+        set: { userId, p256dh: device.p256dh, auth: device.auth, userAgent: device.userAgent, timeZone: device.timeZone, createdAt: sql`now()` },
+      });
+    await trimDevices(userId, tx);
+  });
 }
 
 /** The oldest devices beyond `MAX_DEVICES` leave. Aliased and qualified: the subquery shares column names with the outer table. */
