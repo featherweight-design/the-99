@@ -471,11 +471,11 @@ export function BuilderShell({
   // it. Adjusted during render, so the stale sheet never paints.
   if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId)) setPassSheet(null);
 
-  // Combos one piece away, the list (combos close), open for the visit. It leaves with its segment:
-  // a refresh that leaves none (the last piece added) closes it, and there is no empty sheet (R1b).
+  // Combos one piece away, the list (combos close), open for the visit.
   const nearComboCount = nearCombos?.total ?? 0;
   const [combosSheet, setCombosSheet] = useState(false);
-  if (combosSheet && nearComboCount === 0) setCombosSheet(false);
+  // With none left the sheet closes itself, once the reader is back on its list: never from under a
+  // combo the reader is reading (or a card stacked on it).
 
   // The top-off list is open. At phone widths its commit bar takes the bottom
   // slot, so the quick-add dock hides — one bottom slot, one occupant (state
@@ -2392,7 +2392,7 @@ export function BuilderShell({
               </LockCardsProvider>
             </PendingChangeProvider>
           )}
-          {combosSheet && nearCombos && nearComboCount > 0 && (
+          {combosSheet && nearCombos && (
             <CombosCloseSheet
               nearCombos={nearCombos}
               deckId={deck.id}

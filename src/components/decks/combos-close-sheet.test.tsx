@@ -9,9 +9,11 @@ import type { MissingPieceWhere, NearCombo, NearComboCard, NearCombos } from "..
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
 // What a card stacked on the sheet calls it: `registerSheet`'s first argument.
+// The card details over the sheet, if any: shown (`open`) or still loading (`pending`).
+const cardState: { open: string | null; pending: string | null } = { open: null, pending: null };
 const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>(() => () => {});
 vi.mock("../cards/card-detail-provider", () => ({
-  useCardDetail: () => ({ registerSheet, openOracleId: null, revealing: false }),
+  useCardDetail: () => ({ registerSheet, openOracleId: cardState.open, pendingOracleId: cardState.pending, revealing: false }),
   // A plate is a press that opens the card: drawn as a button, as the real trigger is.
   CardDetailTrigger: ({ children, testId, describedBy }: { children?: React.ReactNode; testId?: string; describedBy?: string }) => (
     <button type="button" data-testid={testId} aria-describedby={describedBy}>{children}</button>
@@ -62,7 +64,11 @@ const ART = new Map([[COMMANDER, { name: "Avatar Aang", imageUri: "https://img/a
 const optimisticAdd = vi.fn();
 const EDITS = { add: optimisticAdd } as unknown as Parameters<typeof AddOptimisticCardProvider>[0]["value"];
 
+const noClose = vi.fn();
 function sheet(list: NearCombo[], total: number) {
+  return sheetWith(list, total, noClose);
+}
+function sheetWith(list: NearCombo[], total: number, onClose: () => void) {
   const nearCombos: NearCombos = { combos: list, total };
   return (
     <AddOptimisticCardProvider value={EDITS}>
@@ -72,7 +78,7 @@ function sheet(list: NearCombo[], total: number) {
         deckName="HD - Avatar Aang"
         commanderOracleIds={[COMMANDER]}
         art={ART}
-        onClose={vi.fn()}
+        onClose={onClose}
       />
     </AddOptimisticCardProvider>
   );
@@ -215,6 +221,8 @@ const SEARING: NearCombo = {
 
 describe("a row opens its combo inside the sheet", () => {
   beforeEach(() => {
+    cardState.open = null;
+    cardState.pending = null;
     registerSheet.mockClear();
     addCardToDeck.mockReset();
     optimisticAdd.mockReset();
@@ -443,11 +451,57 @@ describe("a row opens its combo inside the sheet", () => {
     expect(screen.getByRole("alert").textContent).toBe("That deck is full.");
   });
 
-  it("is back on the list when the read stops listing the open combo", () => {
+  it("never leaves a combo on its own when the read stops listing it; Back then shows the rest", () => {
     const view = draw([SEARING, LIST[0]], 2);
     fireEvent.click(press("Searing Touch"));
     view.rerender(sheet([LIST[0]], 1));
+    expect(shownDetail()?.getAttribute("data-combo-detail")).toBe(SEARING.variantId);
+    fireEvent.click(document.querySelector<HTMLButtonElement>("[data-sheet-back]")!);
     expect(shownDetail()).toBeNull();
     expect(screen.getByRole("heading", { name: "1 combo" })).toBeTruthy();
+  });
+
+  it.each([
+    ["shown", { open: "Avatar Aang-id", pending: null }],
+    ["still loading", { open: null, pending: "Avatar Aang-id" }],
+  ])("stays on the combo when an Add lands with a card %s over it, its Add spent", async (_, card) => {
+    let finish: (r: DeckMutationResult) => void = () => {};
+    addCardToDeck.mockReturnValue(new Promise<DeckMutationResult>((r) => (finish = r)));
+    const view = draw([SEARING, LIST[0]]);
+    fireEvent.click(press("Searing Touch"));
+    fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    Object.assign(cardState, card);
+    view.rerender(sheet([SEARING, LIST[0]], 2));
+    await act(async () => finish({ ok: true }));
+    // The read drops the combo too: the reader is still on it, under the card, nothing moved.
+    view.rerender(sheet([LIST[0]], 1));
+    expect(shownDetail()?.getAttribute("data-combo-detail")).toBe(SEARING.variantId);
+    // Under a shown card the sheet is out of the accessibility tree, as it should be.
+    expect(screen.getByRole("button", { name: detail.add("Searing Touch"), hidden: true })).toBeDisabled();
+  });
+
+  it("covers a reopened combo whose Add is still in flight: a card opened since keeps the reader there", async () => {
+    let finish: (r: DeckMutationResult) => void = () => {};
+    addCardToDeck.mockReturnValue(new Promise<DeckMutationResult>((r) => (finish = r)));
+    const view = draw([SEARING, LIST[0]]);
+    fireEvent.click(press("Searing Touch"));
+    fireEvent.click(screen.getByRole("button", { name: detail.add("Searing Touch") }));
+    fireEvent.click(document.querySelector<HTMLButtonElement>("[data-sheet-back]")!);
+    fireEvent.click(press("Searing Touch"));
+    cardState.open = "Avatar Aang-id";
+    view.rerender(sheet([SEARING, LIST[0]], 2));
+    await act(async () => finish({ ok: true }));
+    expect(shownDetail()?.getAttribute("data-combo-detail")).toBe(SEARING.variantId);
+  });
+
+  it("closes itself once the reader is back on an empty list, never from under the combo", () => {
+    const onClose = vi.fn();
+    const view = render(sheetWith([SEARING], 1, onClose));
+    fireEvent.click(press("Searing Touch"));
+    view.rerender(sheetWith([], 0, onClose));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(shownDetail()).not.toBeNull();
+    fireEvent.click(document.querySelector<HTMLButtonElement>("[data-sheet-back]")!);
+    expect(onClose).toHaveBeenCalled();
   });
 });

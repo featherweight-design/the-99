@@ -16,6 +16,7 @@
 // sheet as they always did (the dialog owns one history entry, and a second for the combo would have
 // to be unwound by every way out). `← N combos` is the way back to the list, at its scroll position.
 
+import { useCardDetail } from "../cards/card-detail-provider";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 
@@ -83,10 +84,16 @@ export function CombosCloseSheet({
   // The count is the read's `total`, the same figure the segment states (one count, two places).
   const n = nearCombos.total;
   const { own, buy } = groupNearCombos(nearCombos.combos);
-  // The combo pushed over the list, by id: when the read stops listing it (its piece was added), the
-  // sheet is back on the list without anyone popping it.
-  const [openId, setOpenId] = useState<string | null>(null);
-  const open = openId === null ? null : (nearCombos.combos.find((c) => c.variantId === openId) ?? null);
+  // The combo pushed over the list, held as the reader opened it. A refreshed read updates it while it
+  // still lists it and never takes it away: the sheet NEVER navigates on its own while the reader is on
+  // a combo (review rounds 1 to 4 on this file: every automatic step under a stacked card's dialog
+  // stranded focus). The reader leaves a combo by Back, or Add returns them when nothing is over it.
+  const [openCombo, setOpenCombo] = useState<NearCombo | null>(null);
+  const live = openCombo ? (nearCombos.combos.find((c) => c.variantId === openCombo.variantId) ?? null) : null;
+  const open = openCombo ? (live ?? openCombo) : null;
+  const openId = open?.variantId ?? null;
+  // Combos whose piece this visit added: their Add is spent even when the read still lists them.
+  const [addedIds, setAddedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   const listRef = useRef<HTMLDivElement>(null);
   // Where the list stood, and the row that was pressed, so the way back lands on both.
@@ -95,13 +102,29 @@ export function CombosCloseSheet({
 
   const push = (variantId: string) => {
     left.current = { scrollTop: scroller()?.scrollTop ?? 0, variantId };
-    setOpenId(variantId);
+    setOpenCombo(nearCombos.combos.find((c) => c.variantId === variantId) ?? null);
   };
-  const pop = () => setOpenId(null);
-  // An Add answers for ITS combo only: if the reader has gone back and opened another meanwhile, a
-  // late success must not dismiss that one. No card can be stacked on the combo when it lands: the
-  // plates take no press while an Add is in flight (`platesInert`), the scope ruled at review round 3.
-  const added = (variantId: string) => setOpenId((current) => (current === variantId ? null : current));
+  const pop = () => setOpenCombo(null);
+  // An Add answers for ITS combo only (a reader who went back and opened another keeps it), and it
+  // returns to the list only when no card is over the combo or on its way (a plate's card shown or
+  // still loading): otherwise the reader stays on the combo, its Add spent, until they go back.
+  const { openOracleId, pendingOracleId } = useCardDetail();
+  const cardOver = openOracleId !== null || pendingOracleId !== null;
+  const cardOverRef = useRef(cardOver);
+  useLayoutEffect(() => {
+    cardOverRef.current = cardOver;
+  }, [cardOver]);
+  const added = (variantId: string) => {
+    setAddedIds((prev) => new Set(prev).add(variantId));
+    if (cardOverRef.current) return;
+    setOpenCombo((current) => (current?.variantId === variantId ? null : current));
+  };
+
+  // There is no empty sheet (R1b): with none left, it closes once the reader is on the list.
+  const none = nearCombos.total === 0;
+  useEffect(() => {
+    if (none && openId === null) onClose();
+  }, [none, openId, onClose]);
 
   // The list stays mounted (hidden) under the combo, so going back restores its scroll and puts focus
   // on the row's press. Layout, so neither the combo nor the list paints at the other's position first.
@@ -162,7 +185,7 @@ export function CombosCloseSheet({
         <Group label={copy.groups.buy} combos={buy} first={own.length === 0} commanderOracleIds={commanderOracleIds} onOpen={push} />
         <p className="m-0 px-[4px] pt-[4px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.foot}</p>
       </div>
-      {open ? <ComboDetail key={open.variantId} combo={open} deckId={deckId} art={art} onAdded={() => added(open.variantId)} /> : null}
+      {open ? <ComboDetail key={open.variantId} combo={open} deckId={deckId} art={art} spent={addedIds.has(open.variantId)} onAdded={() => added(open.variantId)} /> : null}
     </SheetFrame>
   );
 }
@@ -173,7 +196,20 @@ export function CombosCloseSheet({
  * offered wherever the card is, a spare, another deck's or one to buy, as the handoff draws it: the
  * plate already says which.
  */
-function ComboDetail({ combo, deckId, art, onAdded }: { combo: NearCombo; deckId: string; art: FindingArt; onAdded: () => void }) {
+function ComboDetail({
+  combo,
+  deckId,
+  art,
+  spent,
+  onAdded,
+}: {
+  combo: NearCombo;
+  deckId: string;
+  art: FindingArt;
+  /** This visit already added the piece: Add takes no second press. */
+  spent: boolean;
+  onAdded: () => void;
+}) {
   const { missing } = combo;
   // The held pieces draw the deck's own art and printed names; the missing one, the catalog's.
   const plates: FindingArt = new Map([...art, [missing.oracleId, { name: missing.name, imageUri: missing.card?.imageUri ?? null }]]);
@@ -234,7 +270,7 @@ function ComboDetail({ combo, deckId, art, onAdded }: { combo: NearCombo; deckId
               {/* `.addb`: 44 tall on the phone, 36 from md, the pending treatment the Consider tile's Add has. */}
               <GhostButton
                 onClick={add}
-                disabled={isPending}
+                disabled={isPending || spent}
                 className="h-[44px] md:h-[36px] min-h-0 md:min-h-0 rounded-[9px] px-[18px] text-[13.5px] font-semibold disabled:opacity-50"
               >
                 {detailCopy.add(missing.name)}
