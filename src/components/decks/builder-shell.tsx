@@ -98,7 +98,6 @@ import { topOffCopy } from "../../lib/copy/top-off";
 // reaches for the database.
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { LastSlotsStrip } from "./last-slots-strip";
-import { PendingBanner } from "./pending-banner";
 import { VersionRail } from "./version-history";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
@@ -1613,7 +1612,7 @@ export function BuilderShell({
             <BuilderSpine
               deck={deck}
               shelf={shelf}
-              counts={{ ...counts, proxiedCount }}
+              counts={counts}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed
               // rather than recomputed inside the spine, which holds the
@@ -1665,34 +1664,8 @@ export function BuilderShell({
                 built === bodySize &&
                 unresolvedCount === 0
               }
-              softClaimed={commitments.softClaimed}
             />
 
-            {/* The provenance ledger — one line per pass, oldest first. Leaves
-                when the last auto card does (autoCount drives it off the
-                optimistic list). Not shown during a first run because the deck
-                is still in-flight then.
-
-                Mounted once: `md:contents` inside the ledger flattens each
-                line's phone wrappers on desktop, so one DOM serves both
-                layouts and there is one set of undo controls in the tab order.
-
-                `autoCount` is the header's figure as well as its condition. Not
-                a sum of the lines: a deck predating the ledger has auto cards
-                and no passes, and the design forbids a deck-wide total derived
-                from passes anyway. */}
-            {autoCount > 0 && !firstRun && (
-              <ProvenanceLedger
-                deckId={deck.id}
-                cards={cards}
-                total={autoCount}
-                passes={fillPasses}
-                bodySize={bodySize}
-                markedPassId={markedPassId}
-                onMarkChange={handleMarkChange}
-                onAnnounce={setAnnouncement}
-              />
-            )}
 
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
@@ -1768,6 +1741,36 @@ export function BuilderShell({
                 spokenForTwice: commitments.overCommitted,
               })}
               deckName={deck.name}
+              // The status line under the rows, and the quiet strip with none. The version only while
+              // the list matches it: the pending row says otherwise. The provenance ledger leaves
+              // when the last auto card does (autoCount, off the optimistic list), and not on a first
+              // run, whose deck is still in flight; `autoCount` is the header's figure as well as its
+              // condition, never a sum of the lines (a deck predating the ledger has no passes). The
+              // other drafts count is the server list's, pre-99 only (`commitments`).
+              foot={{
+                version: draft?.version && !draftHasChanges
+                  ? { number: draft.version.number, committedAt: draft.version.committedAt }
+                  : null,
+                proxies: proxiedCount,
+                provenance: autoCount > 0 && !firstRun
+                  ? {
+                      count: autoCount,
+                      panel: (
+                        <ProvenanceLedger
+                          deckId={deck.id}
+                          cards={cards}
+                          total={autoCount}
+                          passes={fillPasses}
+                          bodySize={bodySize}
+                          markedPassId={markedPassId}
+                          onMarkChange={handleMarkChange}
+                          onAnnounce={setAnnouncement}
+                        />
+                      ),
+                    }
+                  : null,
+                otherDrafts: commitments.softClaimed > 0 ? { count: commitments.softClaimed } : null,
+              }}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (
                   <FillFailedRow deckId={deck.id} next={row.next} />
@@ -1824,10 +1827,6 @@ export function BuilderShell({
                 ) : null
               }
             />
-
-            {/* Surface 1 (#389), what is left of it: the committed version line, and where a
-                commit or a discard lands focus. PR 2 makes it the to-do card's foot. */}
-            {draft && <PendingBanner state={draft} />}
 
             {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
                 its "consider →" cells switch this shell to Consider, so the strip has to

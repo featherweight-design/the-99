@@ -4,6 +4,11 @@
 // pass, oldest first. Replaces the single provenance sentence: the strip used
 // to state one deck-wide total, and #359 needs each pass named and reversible
 // on its own. Not dismissible; leaves when the last auto card does.
+//
+// It opens inside the to-do card, under the foot's `Where these N cards came
+// from ▾` (deck messages A7, `Next Steps.dc.html`'s last panel): the ⓘ header
+// line and its desktop meta stay as the board draws them; the card shell and
+// its accent rule went, because the to-do card is the shell now.
 
 import { useState, useTransition } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
@@ -16,15 +21,6 @@ import { MutationError } from "./mutation-error";
 import { fillPassLabel } from "./pass-mark";
 
 const ledger = topOffCopy.ledger;
-
-/** The container's own background. `--surface-sunken` rather than the design
- *  table's raw hex, which is one channel off it in the default theme and has no
- *  answer at all in the other five. */
-const SHELL_STYLE = {
-  background: "var(--surface-sunken)",
-  border: "1px solid var(--border)",
-  borderLeft: "3px solid var(--accent)",
-} as const;
 
 interface ProvenanceLedgerProps {
   deckId: string;
@@ -74,14 +70,13 @@ export function ProvenanceLedger({
   const totalBuy = passes.reduce((n, p) => n + buyCount(p), 0);
 
   return (
-    <div className="mx-[16px] mt-[10px] mb-[12px] md:mx-[30px] md:mt-[12px] rounded-[9px] px-[12px] py-[10px] md:px-[15px] md:py-[12px]"
-      style={SHELL_STYLE}
-    >
-      <div className="flex items-center gap-[9px] md:gap-[11px] mb-[9px] md:mb-[11px]">
+    // `.fo .sld`: 8px under the foot's rule, the header and each line 6px apart.
+    <div className="mt-[8px]">
+      <div className="flex items-center gap-[9px] mb-[6px]">
         {/* ⓘ outlined disc, as the shipped strip drew it. */}
         <ProvenanceDisc />
         <h3
-          className="m-0 font-sans font-normal text-[12px] md:text-[12.5px] leading-[1.4]"
+          className="m-0 font-sans font-normal text-[12px] leading-[1.4]"
           style={{ color: "var(--fg-body)" }}
         >
           {ledger.header(String(total))}

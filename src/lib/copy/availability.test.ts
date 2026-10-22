@@ -141,7 +141,7 @@ describe("availabilityCopy", () => {
       availabilityCopy.deckSummary.heading(1),
       availabilityCopy.deckSummary.bodyOne(1, 1),
       availabilityCopy.ranking.announce("all", 1),
-      availabilityCopy.deckRollup.softHeading(1),
+      availabilityCopy.deckRollup.softFoot(1),
     ];
     for (const s of singulars) {
       expect(s, s).not.toMatch(/\b1 (cards|decks|copies|lists|commanders)\b/);

@@ -421,9 +421,16 @@ async function resume(page, browser, w) {
   await openList(page);
   await page.getByRole("button", { name: commitSel }).click();
   await page.waitForTimeout(5000);
+  // The ledger opens inside the to-do card from its foot (deck messages PR 2b), closed per visit.
+  const openLedger = async () => {
+    const toggle = page.getByRole("button", { name: /came from$/ }).first();
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  };
+  await openLedger();
   const ledgerBefore = await page.locator("text=/you chose from the last/").first().innerText();
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
+  await openLedger();
   const ledgerAfter = await page.locator("text=/you chose from the last/").first().innerText();
   check(scope, "step 15: the ledger is server state and survives a reload", ledgerBefore === ledgerAfter, `${ledgerBefore} / ${ledgerAfter}`);
   await shot(page, `${w}-15-reload-ledger`);

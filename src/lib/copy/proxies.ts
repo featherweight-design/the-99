@@ -141,7 +141,8 @@ export const proxyCopy = {
   },
 
   // ── The deck header (decision 6 — severable) ──────────────────────────
-  // One mono line under the progress bar, absent at zero. It exists because a deck can
+  // A plain segment of the deck page's to-do card foot (deck messages A3), absent at zero; it was
+  // the header's mono line under the progress bar. It exists because a deck can
   // read Complete with printed cards in it, which is correct and is also the exact moment
   // a player could be misled. Says "proxies" and not "N you don't own" — the latter is
   // true of the buy list too and means something else there.

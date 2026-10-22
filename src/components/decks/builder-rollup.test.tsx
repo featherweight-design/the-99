@@ -1,6 +1,6 @@
 // The commitments roll-up's derivation (#43, design table §12), exercised
 // through BuilderShell: the over-committed half draws as the to-do card's
-// spoken-for-twice row, the soft half as the band under the spine. This covers
+// spoken-for-twice row, the soft half as a segment of its foot. This covers
 // the three decisions the shell makes before either sees a number:
 // the self-excluded vantage, the pre-99 window, and reading off the server list.
 import { act, render, screen } from "@testing-library/react";
@@ -96,20 +96,21 @@ async function mount(deck: DeckDetail) {
   });
 }
 
-const region = () => screen.queryByRole("region", { name: availabilityCopy.deckRollup.regionAria });
+/** The foot's other drafts segment, whatever its count. */
+const soft = () => screen.queryByRole("button", { name: /in (other drafts|another draft) too$/ });
 
 describe("BuilderShell — commitments roll-up derivation", () => {
   // Reading the map without `selfExcluded` would turn every one of this deck's
-  // own claims into a conflict with itself, and the region would fire on a deck
+  // own claims into a conflict with itself, and the segment would fire on a deck
   // that has no conflict at all.
   it("does not count a deck's own claims against itself", async () => {
     await mount(makeDeck(3, [SELF, SELF, SELF]));
-    expect(region()).toBeNull();
+    expect(soft()).toBeNull();
   });
 
   it("speaks for a mid-build deck whose cards are wanted elsewhere", async () => {
     await mount(makeDeck(3, [SOFT, SOFT, undefined]));
-    expect(screen.getAllByText(availabilityCopy.deckRollup.softHeading(2))).toHaveLength(2);
+    expect(screen.getByRole("button", { name: availabilityCopy.deckRollup.softFoot(2) })).toBeTruthy();
     expect(screen.queryByText(/spoken for twice/)).toBeNull();
   });
 
@@ -119,7 +120,7 @@ describe("BuilderShell — commitments roll-up derivation", () => {
   it("closes the soft line once the deck is finished", async () => {
     const availabilities = Array.from({ length: 99 }, () => SOFT);
     await mount(makeDeck(99, availabilities));
-    expect(region()).toBeNull();
+    expect(soft()).toBeNull();
   });
 
   // …but a shortfall is a shopping decision, and finishing the deck does not
@@ -129,7 +130,7 @@ describe("BuilderShell — commitments roll-up derivation", () => {
     await mount(makeDeck(99, availabilities));
     expect(screen.getByText(availabilityCopy.deckSummary.headingOne("Card 0"))).toBeTruthy();
     // 98 of the 99 are soft-claimed, so a window that failed to close would say so.
-    expect(region()).toBeNull();
+    expect(soft()).toBeNull();
   });
 
   // The named body counts committed decks out loud, so an empty name array would

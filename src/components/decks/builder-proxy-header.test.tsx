@@ -73,7 +73,9 @@ async function mount(detail: DeckDetail) {
   });
 }
 
-describe("the proxy count in the deck header", () => {
+// The count moved from the header's mono line to a segment of the to-do card's foot (deck
+// messages A3); the call site is the same `proxiedCardCount`.
+describe("the proxy count in the to-do card's foot", () => {
   it("is absent when the deck prints nothing", async () => {
     await mount(deck({ cards: [card({})], built: 1, ownedCount: 1 }));
     expect(screen.queryByText(proxyCopy.deckHeader.line(1))).toBeNull();
@@ -83,7 +85,7 @@ describe("the proxy count in the deck header", () => {
     await mount(deck({
       cards: [card({ owned: false, proxied: true })], built: 1, ownedCount: 0,
     }));
-    expect(screen.getAllByText(proxyCopy.deckHeader.line(1)).length).toBeGreaterThan(0);
+    expect(document.querySelector("[data-todo-foot]")).toHaveTextContent(proxyCopy.deckHeader.line(1));
   });
 
   it("counts a printed commander with the list", async () => {
