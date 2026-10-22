@@ -1,6 +1,6 @@
 # About · the menu and Home line, and calls on what shipped (addendum)
 
-Account 2, 2026-10-22. Status: **R1, awaiting Hugh's review.** Addendum to `design/design_handoff_the99_menu_home/`
+Account 2, 2026-10-22. Status: **approved by Hugh, 2026-10-22** (R1), handoff PR #2196. Addendum to `design/design_handoff_the99_menu_home/`
 (#2174) and `design/design_handoff_the99_deck_messages/` (#2170). Source of truth: the plans on main
 (`2026-10-22-menu-home.md`, `2026-10-21-deck-messages.md`) and the PR bodies of #2186, #2183, #2188, #2190 and #2191.
 Checked against main at `653499e`. Canvas (account 2): https://claude.ai/artifact/X32ArXv2R5NssZfiX9fFp1
@@ -39,7 +39,7 @@ Checked against main at `653499e`. Canvas (account 2): https://claude.ai/artifac
    This addendum supersedes that line in the bracket-reach `aboutCredits` string.
 
 Also seen and left as built (not in Hugh's list): the pass sheet's desktop modal is centred (#2188); a friend's deck
-status uses the shipped `statusPillStyle` (#2186).
+status uses `friendPillStyle` over the shipped `statusPillStyle` (#2193).
 
 ## Gaps
 

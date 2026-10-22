@@ -1,4 +1,4 @@
-// about · menu and home line.ts. Account 2, 2026-10-22, R1. The menu and Home line's one About entry (plan
+// about · menu and home line.ts. Account 2, 2026-10-22, R1, approved by Hugh. The menu and Home line's one About entry (plan
 // docs/superpowers/plans/2026-10-22-menu-home.md, "About" and product call 4), as it goes into `aboutEntries` in
 // src/lib/copy/about-entries.ts, with Design's picture call: `screen`, and the halo as a `locator` for
 // scripts/lib/about-locators.mjs.
@@ -49,7 +49,7 @@ export const menuHomeLine = {
 } as const;
 
 // EDITS to shipped entries, ordinary edits with no bump of their own:
-//   'friends', caption sentence 2, with COMMANDERS_PLACE_ENABLED on:
+//   'friends', caption sentence 3, with COMMANDERS_PLACE_ENABLED on (READINESS E1: two fragments, '!' for the old one):
 //     'Open “Friends” from your account menu, press …'  ->  'Press “Friends” in the bar, press …'
 //   'discover': route '/commanders/discover' with the place on (discoverPath); screenForPath maps it to 'discover'.
 //   'help-me-choose': route '/commanders/choose' with the place on (choosePath).
