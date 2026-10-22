@@ -1,0 +1,74 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T01:14:57Z"
+ },
+ "title": "The 99 · Deck page messages",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 1357,
+   "title": "R1 · the system: levels, order, folding, dismissal"
+  },
+  "Stack-1.dc.html": {
+   "x": 0,
+   "y": 1477,
+   "w": 2280,
+   "h": 2107,
+   "title": "Stack 1 · spoken for twice + provenance + pending + mix"
+  },
+  "Stack-2.dc.html": {
+   "x": 2360,
+   "y": 1477,
+   "w": 2280,
+   "h": 1740,
+   "title": "Stack 2 · over the 99 + moment + pending + mix"
+  },
+  "Stack-3.dc.html": {
+   "x": 0,
+   "y": 3704,
+   "w": 2280,
+   "h": 2342,
+   "title": "Stack 3 · the worst case (seven blocks)"
+  },
+  "Quiet-and-First-Run.dc.html": {
+   "x": 2360,
+   "y": 3704,
+   "w": 2280,
+   "h": 2666,
+   "title": "Quiet deck and first run"
+  },
+  "Elements-1.dc.html": {
+   "x": 0,
+   "y": 6490,
+   "w": 2014,
+   "h": 3508,
+   "title": "Every element · receipt, warning, action"
+  },
+  "Elements-2.dc.html": {
+   "x": 2094,
+   "y": 6490,
+   "w": 2014,
+   "h": 3116,
+   "title": "Every element · status, mix, header, moments, remove failure"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Stack-1.dc.html",
+  "Stack-2.dc.html",
+  "Stack-3.dc.html",
+  "Quiet-and-First-Run.dc.html",
+  "Elements-1.dc.html",
+  "Elements-2.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
