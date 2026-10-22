@@ -39,7 +39,7 @@ Checked against main at `653499e`. Canvas (account 2): https://claude.ai/artifac
    This addendum supersedes that line in the bracket-reach `aboutCredits` string.
 
 Also seen and left as built (not in Hugh's list): the pass sheet's desktop modal is centred (#2188); a friend's deck
-status uses the shipped `statusPillStyle` (#2186).
+status uses `friendPillStyle` over the shipped `statusPillStyle` (#2193).
 
 ## Gaps
 
