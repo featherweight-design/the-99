@@ -1315,3 +1315,57 @@ describe("reachCandidates", () => {
     expect(reachCandidates([mdfc, land, back, unowned, top]).map((x) => x.oracleId)).toEqual(["top", "mdfc", "unowned"]);
   });
 });
+
+describe('"Any cards" (Help me choose): ownership alone no longer wins a role slot', () => {
+  const ANY = { ...FLAT, anyCards: true } as const;
+  const ids = (p: ReturnType<typeof planFill>) => p.rows.map((r) => r.oracleId);
+
+  it("gives a ramp slot to a well-played card to buy over an owned card under 10%", () => {
+    const plan = planFill([ramp("ponder", 7), ramp("bought", 40, false)], { ...ANY, slots: 1 });
+    expect(ids(plan)).toEqual(["bought"]);
+    expect(plan.bought).toBe(1);
+  });
+
+  it("does the same over an owned card EDHREC does not list", () => {
+    const plan = planFill([ramp("unlisted", null), ramp("bought", 12, false)], { ...ANY, slots: 1 });
+    expect(ids(plan)).toEqual(["bought"]);
+  });
+
+  it("still puts an owned card at 10% or more first", () => {
+    const plan = planFill([ramp("bought", 99, false), ramp("mine", 10)], { ...ANY, slots: 1 });
+    expect(ids(plan)).toEqual(["mine"]);
+  });
+
+  it("falls back to the low-play owned card when the gate refuses the buy", () => {
+    const plan = planFill([ramp("ponder", 7), ramp("bought", 40, false)], {
+      ...ANY, slots: 1, gate: { admits: (x) => x.owned, place: () => {} },
+    });
+    expect(ids(plan)).toEqual(["ponder"]);
+  });
+
+  it("breaks an inclusion tie toward the owned card", () => {
+    const plan = planFill([ramp("a-bought", 5, false), ramp("z-mine", 5)], { ...ANY, slots: 1 });
+    expect(ids(plan)).toEqual(["z-mine"]);
+  });
+
+  it("leaves the plan exactly as before when the option is absent", () => {
+    const pool = [ramp("ponder", 7), ramp("bought", 40, false)];
+    expect(ids(planFill(pool, { ...FLAT, slots: 1 }))).toEqual(["ponder"]);
+  });
+
+  // The residual ranked on synergy alone and bought a $40 card over owned on-theme ones.
+  it("fills the residual with on-list owned cards before any card to buy", () => {
+    const owned = c({ oracleId: "mine", name: "mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: 4 });
+    const buy = { ...owned, oracleId: "buy", name: "buy", owned: false, ownedQuantity: 0, inclusionPct: 30 };
+    const synergyRank = new Map([["buy", 2], ["mine", 1]]);
+    expect(ids(planFill([buy, owned], { ...ANY, synergyRank, slots: 1 }))).toEqual(["mine"]);
+    expect(ids(planFill([buy, owned], { ...FLAT, synergyRank, slots: 1 }))).toEqual(["buy"]);
+  });
+
+  it("does not put an owned card EDHREC does not list ahead of a card to buy in the residual", () => {
+    const owned = c({ oracleId: "mine", name: "mine", typeLine: "Creature", oracleText: "Menace", inclusionPct: null });
+    const buy = { ...owned, oracleId: "buy", name: "buy", owned: false, ownedQuantity: 0, inclusionPct: 30 };
+    const synergyRank = new Map([["buy", 2], ["mine", 1]]);
+    expect(ids(planFill([buy, owned], { ...ANY, synergyRank, slots: 1 }))).toEqual(["buy"]);
+  });
+});

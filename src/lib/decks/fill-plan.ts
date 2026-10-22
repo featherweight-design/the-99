@@ -441,6 +441,8 @@ export async function buildFillPlan(
   const plan = planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
     staples, labelRoles, raisers, boughtRaisers,
+    // Help me choose under "Any cards": ownership alone no longer wins a role slot.
+    ...(answers && !sleeveableOnly ? { anyCards: true } : {}),
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
     //
