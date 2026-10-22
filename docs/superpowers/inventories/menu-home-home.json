@@ -1,0 +1,22 @@
+{
+  "feature": "Home, direction B: the lead story and What's new (menu and Home handoff design_handoff_the99_menu_home, R1; plan 2026-10-22-menu-home.md, PR 6)",
+  "note": "A Home is one state per account, so the line's Home states are three inventories over three account states: this one (kinds on, at least one unseen item and more than five in the window, e.g. a scratch branch's fixture with new-set and trade-match on and feed_items seeded), `menu-home-home-opt-in.json` (every kind off, the default) and `menu-home-home-first-run.json` (no cards, no decks). Run on a scratch Neon branch, never staging. The server needs HOME_FEED_ENABLED on, and SOCIAL_FRIENDS_ENABLED with SOCIAL_WISHLIST_ENABLED for the trade-match kind and the friend's face.",
+  "rows": [
+    {
+      "id": "home-normal",
+      "label": "/ normal day: the lead story (card tilted, the friend's face), Pick up where you left off, What's new with its count and Choose what shows, Friends and Commitments in the board's order",
+      "view": "src/components/home/dashboard.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-whats-new=items] [data-feed-item]", "settle": 2000 }]
+    },
+    {
+      "id": "home-show-all",
+      "label": "/ What's new after Show all N: every item in the window in place, Today and Earlier labels when the list holds both",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-whats-new=items] [data-feed-footer]", "settle": 2000 },
+        { "clickRole": "button", "name": "^Show all \\d+$" },
+        { "wait": "[data-whats-new=items]", "settle": 600 }
+      ]
+    }
+  ]
+}
