@@ -152,7 +152,7 @@ export default async function AboutRoute({
             : undefined
         }
       />
-      {/* Launch A2: the same quiet line /credits and /sign-up carry, under both tabs. Placement awaits Design's confirmation (boards/design-followups-2026-10-18). */}
+      {/* Launch A2: the same quiet line /credits and /sign-up carry, under both tabs, ahead of the notice (Design confirmed the placement, touch-sizes addendum item 2). */}
       <LegalLinks className="mt-[32px] px-[16px] md:px-0" />
       {offerDismiss && <GateDismiss destination={destination} shown={shown} />}
     </div>

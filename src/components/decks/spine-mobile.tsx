@@ -646,9 +646,11 @@ export function SpineMobile({
           {built > 0 && (
             <GhostButton
               href={`/decks/${deck.id}/import`}
+              aria-label={deckImportCopy.update.entryAria(deck.name)}
               className="flex min-h-[44px] items-center px-[9px] py-[6px] font-mono text-[11px]"
             >
-              {deckImportCopy.update.entryLabel}
+              <span className="max-[389px]:hidden">{deckImportCopy.update.entryLabel}</span>
+              <span className="hidden max-[389px]:inline">{deckImportCopy.update.entryLabelShort}</span>
             </GhostButton>
           )}
           {built > 0 && (

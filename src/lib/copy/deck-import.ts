@@ -522,6 +522,9 @@ export const deckImportCopy = {
     // decklist": the surface it opens takes a paste or a file, and the deck
     // card's menu has no room to say so.
     entryLabel: "Update from a list",
+    // The phone header's first button under 390px, where the full label and the other three presses overflow the row;
+    // its accessible name stays `entryAria`.
+    entryLabelShort: "Update",
     entryAria: (deckName: string) => `Update ${deckName} from a list`,
 
     list: {
