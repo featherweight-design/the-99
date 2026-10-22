@@ -7,3 +7,9 @@ const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "sev
 export function numberWord(n: number): string {
   return NUMBER_WORDS[n] ?? String(n);
 }
+
+/** A deck's body as words: a single commander's deck is ninety-nine, a pair's ninety-eight. Shared by
+ *  Proposed cuts and the to-do card's over row, so the two never name the body two ways. */
+export function bodyWords(bodySize: number): string {
+  return ({ 99: "ninety-nine", 98: "ninety-eight" } as Record<number, string>)[bodySize] ?? String(bodySize);
+}

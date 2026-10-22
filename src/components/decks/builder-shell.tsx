@@ -47,7 +47,7 @@ import { PreconSuggestion } from "./precons/precon-suggestion";
 import { LinkPreconRow } from "./precons/precon-link-dialogs";
 import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
-import { FillFailedRow, PendingRow, TodoCard, UnresolvedRow } from "./todo-card";
+import { FillFailedRow, OverRow, PendingRow, SpokenForTwiceRow, TodoCard, UnresolvedRow } from "./todo-card";
 import { deckTodo } from "../../lib/decks/todo";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
@@ -1624,13 +1624,6 @@ export function BuilderShell({
               onOpenBracket={() => setView("analysis")}
               notice={headerNoticeTag}
               onOpenNotices={openNoticesSheet}
-              // N2b (discovery R3): on Proposed cuts' own switch. With the hub off, the press lands on the panel the tab
-              // mounts directly (R3 gap 7).
-              onProposedCuts={!proposedCutsEnabled
-                ? undefined
-                : tuningHubEnabled
-                  ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
-                  : () => pressTool("proposed-cuts")}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //
@@ -1672,19 +1665,7 @@ export function BuilderShell({
                 built === bodySize &&
                 unresolvedCount === 0
               }
-              {...commitments}
-              // No link while the Shopping list is what the player is looking
-              // at: it would point at the screen they are already on. Called
-              // from Consider, it makes two switches rather than one — like
-              // `seeUnresolved` above — because the list is not on screen there.
-              onShowShopping={
-                view === "deck" && filter === "shopping"
-                  ? undefined
-                  : () => {
-                      setView("deck");
-                      changeFilter("shopping");
-                    }
-              }
+              softClaimed={commitments.softClaimed}
             />
 
             {/* The provenance ledger — one line per pass, oldest first. Leaves
@@ -1753,8 +1734,7 @@ export function BuilderShell({
 
             {/* The to-do card (handoff `deck_messages`): what the deck is waiting on, one row each,
                 under the receipts. `deckTodo` holds every element's shipped gate and the order; fill
-                failed, unresolved and the last N feed it here, and the pending card still draws as
-                its own block below.
+                failed, unresolved, over the body, spoken for twice, the last N and pending feed it here.
 
                 Fill failed's gate is the old banner's, now the rule's: never on a first run (nothing
                 persisted tells a failed fill from one never asked for, so a player who made their
@@ -1782,6 +1762,10 @@ export function BuilderShell({
                 // A committed deck whose list differs from its newest version. A brew has no version
                 // to be pending against: its offer is `Commit as v1`, in the header.
                 pending: draft !== null && draft.version !== null && draftHasChanges,
+                // The optimistic count, as the header's figure is: the row leaves the instant a cut lands.
+                over: built - bodySize,
+                // The server list, as the band read it: a just-added card has no availability yet.
+                spokenForTwice: commitments.overCommitted,
               })}
               deckName={deck.name}
               renderRow={(row) =>
@@ -1806,6 +1790,34 @@ export function BuilderShell({
                     onInflight={setFillInflight}
                     onOpenChange={setTopOffOpen}
                     onBarHeight={setTopOffBarHeight}
+                  />
+                ) : row.kind === "over" ? (
+                  <OverRow
+                    over={built - bodySize}
+                    bodySize={bodySize}
+                    next={row.next}
+                    // N2b (discovery R3): on Proposed cuts' own switch. With the hub off, the press lands on the panel
+                    // the tab mounts directly (R3 gap 7).
+                    onProposedCuts={!proposedCutsEnabled
+                      ? undefined
+                      : tuningHubEnabled
+                        ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
+                        : () => pressTool("proposed-cuts")}
+                  />
+                ) : row.kind === "spokenForTwice" ? (
+                  <SpokenForTwiceRow
+                    count={commitments.overCommitted}
+                    card={commitments.overCommittedCard}
+                    // No press while the Shopping list is what the player is looking at: it would point at the
+                    // screen they are already on. From Consider it makes two switches, like `seeUnresolved`.
+                    onShowShopping={
+                      view === "deck" && filter === "shopping"
+                        ? undefined
+                        : () => {
+                            setView("deck");
+                            changeFilter("shopping");
+                          }
+                    }
                   />
                 ) : row.kind === "pending" && draft ? (
                   <PendingRow state={draft} deckId={deck.id} next={row.next} />

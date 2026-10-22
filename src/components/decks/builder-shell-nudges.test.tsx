@@ -1,10 +1,11 @@
-// Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`) and N2b (`Proposed cuts →`)
+// Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`) and N2b (the over row's `Cuts`)
 // follow their own tool's switch, with the hub on or off (R3 gap 7); N1 (`suggest swaps →`) offers Suggested changes on
 // a deck at its body size. A press with the hub off lands as Try it does, through `?tool=` (R2's landing).
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { recommendedMix } from "../../lib/decks/mix";
+import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -21,13 +22,13 @@ vi.mock("./synopsis-state", () => ({
   useDeckSynopsis: () => ({ view: { kind: "ready", state: {}, busy: false, current: true }, write: vi.fn(), retry: vi.fn() }),
 }));
 
-type Shortcuts = { onBalanceMana?: () => void; onSuggest?: () => void; onProposedCuts?: () => void };
-const seen = vi.hoisted(() => ({ strip: {} as Shortcuts, spine: {} as Shortcuts }));
+type Shortcuts = { onBalanceMana?: () => void; onSuggest?: () => void };
+const seen = vi.hoisted(() => ({ strip: {} as Shortcuts }));
 vi.mock("./role-counter-strip", () => ({
   RoleCounterStrip: (p: Shortcuts) => { seen.strip = p; return null; },
 }));
 vi.mock("./builder-spine", () => ({
-  BuilderSpine: (p: Shortcuts) => { seen.spine = p; return null; },
+  BuilderSpine: () => null,
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -56,7 +57,6 @@ const deck = (built: number) =>
 
 function draw(props: { built?: number; hub?: boolean; mana?: boolean; cuts?: boolean; tuning?: boolean }) {
   seen.strip = {};
-  seen.spine = {};
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled initialView="deck"
@@ -89,17 +89,16 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
     expect(written).toEqual(["mana-balance"]);
   });
 
-  it("N2b: draws Proposed cuts → with the hub off, and lands on Proposed cuts through ?tool=", () => {
+  it("N2b: draws the over row's Cuts with the hub off, and lands on Proposed cuts through ?tool=", () => {
     draw({ cuts: true, built: 101 });
-    expect(seen.spine.onProposedCuts).toBeTypeOf("function");
-    act(() => seen.spine.onProposedCuts!());
+    fireEvent.click(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria }));
     expect(written).toEqual(["proposed-cuts"]);
   });
 
   it("N2 and N2b: absent with their own switch off, whatever the hub", () => {
-    draw({ hub: true });
+    draw({ hub: true, built: 101 });
     expect(seen.strip.onBalanceMana).toBeUndefined();
-    expect(seen.spine.onProposedCuts).toBeUndefined();
+    expect(screen.queryByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeNull();
   });
 
   it("N2 with the hub on keeps the hub's own request, and writes no ?tool=", () => {

@@ -4,12 +4,23 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { guidedBannerCopy } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { overCopy } from "../../lib/copy/decks-builder";
+import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import { deckTodo, type TodoFacts } from "../../lib/decks/todo";
 
 vi.mock("../../app/decks/actions", () => ({ fillDeck: vi.fn() }));
+// Every moment anchor a row asks for, so M3's one registration can be counted.
+const anchors = vi.hoisted(() => [] as { id: string; eligible: boolean }[]);
+vi.mock("../moments/moments-provider", () => ({
+  useMomentAnchor: (id: string, o: { eligible: boolean }) => {
+    anchors.push({ id, eligible: o.eligible });
+    return { ref: () => {} };
+  },
+}));
 
-const { TodoCard, FillFailedRow, UnresolvedRow, PendingRow } = await import("./todo-card");
+const { TodoCard, FillFailedRow, UnresolvedRow, PendingRow, OverRow, SpokenForTwiceRow } = await import("./todo-card");
 
 const copy = deckVersioningCopy.todoCard;
 const fill = recommendationsCopy.fill;
@@ -156,5 +167,78 @@ describe("PendingRow", () => {
   it("says it, not them, for one change", () => {
     expect(pending.rowBody(1)).toBe("Commit or discard it in Review.");
     expect(pending.rowBodyNext(1, 4)).toBe("Commit it as v4 in Review.");
+  });
+});
+
+describe("OverRow", () => {
+  const cuts = tuningHubShortcutsCopy;
+
+  it("leads with +N, says the overage in words, and opens Proposed cuts from Cuts", () => {
+    const open = vi.fn();
+    anchors.length = 0;
+    render(<OverRow over={5} bodySize={99} next onProposedCuts={open} />);
+    expect(screen.getByText(overCopy.figure.delta("5"))).toBeInTheDocument();
+    expect(screen.getByText("Five over the ninety-nine")).toBeInTheDocument();
+    expect(screen.getByText("Cut five and it is legal.")).toBeInTheDocument();
+    const press = screen.getByRole("button", { name: cuts.proposedCutsAria });
+    expect(press).toHaveTextContent(cuts.proposedCutsShort);
+    fireEvent.click(press);
+    expect(open).toHaveBeenCalledTimes(1);
+    // M3 once, on this press: the spines no longer register it.
+    expect(anchors.filter((a) => a.id === "proposed-cuts")).toEqual([{ id: "proposed-cuts", eligible: true }]);
+  });
+
+  it("names a pair's body, never a literal ninety-nine", () => {
+    render(<OverRow over={1} bodySize={98} next={false} />);
+    expect(screen.getByText("One over the ninety-eight")).toBeInTheDocument();
+  });
+
+  it("draws no press with Proposed cuts' switch off, and M3 has nothing to anchor to", () => {
+    anchors.length = 0;
+    render(<OverRow over={2} bodySize={99} next={false} />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText("Two over the ninety-nine")).toBeInTheDocument();
+    expect(anchors).toEqual([{ id: "proposed-cuts", eligible: false }]);
+  });
+
+  it("is a warning: the over ink on its title, and --fg when it is the next step", () => {
+    const { unmount } = render(<OverRow over={2} bodySize={99} next={false} />);
+    const rest = screen.getByText("Two over the ninety-nine").className;
+    expect(rest).toContain("text-[color:var(--avail-over-fg)]");
+    expect(rest).not.toContain("text-[color:var(--fg)]");
+    unmount();
+    render(<OverRow over={2} bodySize={99} next />);
+    const lead = screen.getByText("Two over the ninety-nine").className;
+    expect(lead).toContain("text-[color:var(--fg)]");
+    expect(lead).not.toContain("var(--avail-over-fg)");
+  });
+});
+
+describe("SpokenForTwiceRow", () => {
+  const s = availabilityCopy.deckSummary;
+
+  it("names one card, and says it in Shopping", () => {
+    const shop = vi.fn();
+    render(<SpokenForTwiceRow count={1} card={{ name: "Sol Ring", deckCount: 3, ownedQty: 2 }} onShowShopping={shop} />);
+    expect(screen.getByText(s.headingOne("Sol Ring"))).toBeInTheDocument();
+    expect(screen.getByText("It’s on 3 committed decks and you own 2.")).toBeInTheDocument();
+    const press = screen.getByRole("button", { name: "See it in Shopping" });
+    expect(press).toHaveTextContent(s.press);
+    fireEvent.click(press);
+    expect(shop).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts many, with the body that is true of three", () => {
+    render(<SpokenForTwiceRow count={3} card={null} onShowShopping={vi.fn()} />);
+    expect(screen.getByText(s.heading(3))).toBeInTheDocument();
+    expect(screen.getByText(s.bodyManyShort)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "See them in Shopping" })).toBeInTheDocument();
+  });
+
+  it("is never the next step, and offers nothing while Shopping is showing", () => {
+    render(<SpokenForTwiceRow count={2} card={null} />);
+    expect(screen.queryByText(copy.nextStep)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText(s.heading(2)).className).toContain("var(--avail-over-fg)");
   });
 });

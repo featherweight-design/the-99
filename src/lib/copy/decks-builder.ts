@@ -10,6 +10,7 @@
 // The one number this file does not own: the deck-name limit is the action's
 // rule, and a copy of it here would keep naming the old one after a change.
 import { DECK_NAME_MAX } from "../decks/deck-name";
+import { bodyWords } from "./number-words";
 
 /** The mock names the commander in the short register ("Korvold"), not the full
  *  "Korvold, Fae-Cursed King" shown in the builder header. Everything up to the
@@ -443,15 +444,17 @@ export const overCopy = {
     delta: (n: string) => `+${n}`,
   },
 
-  // The spine's trim line. Words, not digits, because the figure above already
-  // printed the number twice.
+  // The to-do card's over row (deck messages A4), which the spine's trim line became. Words, not
+  // digits, because the row's `+N` mark and the header's figure already print the number.
   //
   // ONE body at both widths. The drawn version carried a third clause
   // ("Building long and trimming back is a normal way to get there") that said
   // nothing about this deck, and the phone dropped it — so the phone's line was
   // already the whole message.
   trim: {
-    lead: (words: string) => `${words} over the ninety-nine.`,
+    // The deck's own body in words, so a pair reads "ninety-eight" (copy-review row 15). A title,
+    // so no period.
+    title: (words: string, bodySize: number) => `${words} over the ${bodyWords(bodySize)}`,
     // Words in both halves, for the same reason the lead spells its number.
     // "Five over the ninety-nine. Cut 5 and it is legal." changed register
     // mid-paragraph, and the singular already spelled itself, so the sentence

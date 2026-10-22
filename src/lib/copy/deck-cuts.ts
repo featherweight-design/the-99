@@ -4,6 +4,7 @@
 // carried as drawn with the engineering additions marked below.
 
 import { numberWord } from "./deck-analysis";
+import { bodyWords } from "./number-words";
 
 /** "sixth": the shortfall slot's ordinal, spelled up to twelfth and a numeral past it. */
 const ORDINAL_WORDS = [
@@ -16,7 +17,6 @@ export function ordinalWord(n: number): string {
   const suffix = rem100 >= 11 && rem100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
   return `${n}${suffix}`;
 }
-const BODY_WORDS: Record<number, string> = { 99: "ninety-nine", 98: "ninety-eight" };
 const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
 
 export const deckCutsCopy = {
@@ -79,7 +79,7 @@ export const deckCutsCopy = {
     /** Over-99 lead's bold half comes from `overCopy`; these are the sentences after it. */
     lead: "Below is what we counted. To have the cards named, look deeper.",
     /** The over lead, against the deck's own body: 99, or 98 with a partner. */
-    overLead: (words: string, bodySize: number) => `${words} over the ${BODY_WORDS[bodySize] ?? bodySize}.`,
+    overLead: (words: string, bodySize: number) => `${words} over the ${bodyWords(bodySize)}.`,
     leadBare: "Below is what we counted.",
     leadNamed: (n: number) => `${cap(numberWord(n))} ${n === 1 ? "card" : "cards"} named. Cut writes to the list straight away.`,
     leadPart: (cut: number, kept: number, named: number, open: number) =>

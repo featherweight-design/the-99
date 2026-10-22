@@ -327,14 +327,6 @@ export const recommendationsCopy = {
     // Nothing unowned. `{n} cards to buy` would be wrong about all of them.
     footerOnlySpokenFor: (n: string) =>
       `${n} ${secondCopies(n)} · already in the deck`,
-
-    // The over-committed band's one new control, in the builder only — the deck
-    // card on /decks has no Shopping list to open, so it takes no link.
-    summaryLink: 'See them in Shopping',
-    summaryLinkAria: (n: string) =>
-      n === '1'
-        ? 'Show the 1 spoken-for card in the Shopping list'
-        : `Show the ${n} spoken-for cards in the Shopping list`,
   },
 
   // ── Surface B · swept back to the commander (expressive moment 3) ─────

@@ -31,9 +31,7 @@
 //   • /collection and the commander surfaces have no current deck, so no
 //     exclusion applies there; they compute against everything, as in #43.
 
-// §3's over-committed line has two homes: the decklist summary and the deck
-// roll-up, where it is the ordering anchor above the soft line. One function so
-// the two cannot drift into different sentences.
+// §3's over-committed line: the to-do card's spoken-for-twice row (deck messages A6).
 const spokenForTwice = (n: number) =>
   n === 1
     ? "1 card here is spoken for twice"
@@ -196,22 +194,23 @@ export const availabilityCopy = {
       n === 1 ? "Showing the 1 matching card" : `Showing all ${n} matching cards`,
   },
 
-  // ── Surface 4 · decklist over-committed summary ───────────────────────
-  // Renders ONLY when count > 0. Not an error: no dismiss, no retry, no icon.
-  // Straight, and the fact alone: it used to close on a shrug ("Nothing’s broken
-  // here…"), which H21 cut, because the facts stand on their own.
+  // ── Surface 4 · the over-committed row ────────────────────────────────
+  // The to-do card's spoken-for-twice row (deck messages A6), the band it was. Renders ONLY when
+  // count > 0. Not an error: no dismiss, no retry. Straight, and the fact alone: it used to close on
+  // a shrug ("Nothing’s broken here…"), which H21 cut, because the facts stand on their own.
   deckSummary: {
     heading: spokenForTwice,
-    // The reassurance tail is gone (H21, Hugh's walk 2026-10-02): the facts stand on their
-    // own, and refresh.ts's voice rule already forbids explaining that a state is fine.
-    body: (cardName: string, deckCount: number, ownedQty: number) =>
-      `${cardName} is on ${deckCount === 1 ? "1 committed deck" : `${deckCount} committed decks`} and you own ${ownedQty === 1 ? "one" : ownedQty}.`,
-    bodyMany: (n: number) =>
-      `${n} of these are on more committed decks than you have copies.`,
-    ariaLabel: (n: number) =>
-      n === 1
-        ? "1 card in this deck is over-committed"
-        : `${n} cards in this deck are over-committed`,
+    /** One card, named when a claiming deck is (copy-review row 16). */
+    headingOne: (cardName: string) => `${cardName} is spoken for twice`,
+    // The title names the card, so the body opens on `It` (row 17). The reassurance tail is gone
+    // (H21, Hugh's walk 2026-10-02): refresh.ts's voice rule forbids explaining that a state is fine.
+    bodyOne: (deckCount: number, ownedQty: number) =>
+      `It’s on ${deckCount === 1 ? "1 committed deck" : `${deckCount} committed decks`} and you own ${ownedQty === 1 ? "one" : ownedQty}.`,
+    // Row 18: the title already says how many, and "Both" would be false at three.
+    bodyManyShort: "Each is on more committed decks than you have copies.",
+    /** The row's press: the visible verb, and its full name (row 8). */
+    press: "Shopping",
+    pressAria: (n: number) => (n === 1 ? "See it in Shopping" : "See them in Shopping"),
   },
 
   // The quick-add row's accessible name lives on the shipped signature in
@@ -395,32 +394,19 @@ export const availabilityCopy = {
   },
 
   // ── Deck detail roll-up (addendum 2) ─────────────────────────────
-  // One region, max two lines, FIXED severity order (over-committed above soft,
-  // never sorted by count). The counts are disjoint — a card is either
-  // over-committed or softly claimed, never both — so when the soft line
-  // follows the red one it says "more", which is the arithmetic done for the
-  // player. Soft line is pre-99 only; at 99 and above the deck's own
-  // claims go hard and any real conflict has already promoted itself.
-  // Renders only when a count is above zero. A deck with neither has NO region.
+  // The over-committed half is the to-do card's spoken-for-twice row (`deckSummary`). The counts
+  // are disjoint: a card is either over-committed or softly claimed, never both. The soft count is
+  // pre-99 only; at 99 and above the deck's own claims go hard and any real conflict has already
+  // promoted itself. Renders only when the count is above zero.
   deckRollup: {
-    // §3's over-committed line, unchanged — the ordering anchor above the soft
-    // line, and the same function deckSummary.heading uses.
-    overHeading: spokenForTwice,
-
+    // The soft band, alone under the header since its red neighbour became a row (deck messages
+    // PR 2a). It moves to the to-do card's foot next.
     softHeading: (n: number) =>
       n === 1
         ? "1 card here is in another draft too"
         : `${n} cards here are in other drafts too`,
-    // Used when the over-committed line is ALSO showing. "more" is load-bearing.
-    softHeadingAfterOver: (n: number) =>
-      n === 1
-        ? "1 more is in another draft too"
-        : `${n} more are in other drafts too`,
     softBody:
       "Nothing to sort out yet. None of those is past a draft either. Whichever you sleeve first gets them.",
-    softBodyShort:
-      "Nothing to sort out yet. None of those is past a draft either.",
-
     regionAria: "Card commitments",
   },
 } as const;
