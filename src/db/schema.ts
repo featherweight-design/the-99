@@ -712,6 +712,12 @@ export const decks = pgTable("decks", {
   // (`startPreconOwned`): what lets Undo of that add release the copies it reserved to this deck, and a
   // retry under the same action id find the deck. Null for every other deck.
   preconAddEntryId: uuid("precon_add_entry_id").references((): AnyPgColumn => collectionHistory.id, { onDelete: "set null" }),
+  /**
+   * The owner hid this one deck from friends (friend decks G2, the ⋯ menu's Hidden from friends): no tile on a friend's
+   * Decks tab and its page is the app's 404. Read for a FRIEND only through `src/lib/social/` (`friendCanSeeDeck`),
+   * beside the owner's two `user_prefs` rules. Not an edit: writing it leaves `last_edited_at` alone.
+   */
+  hiddenFromFriends: boolean("hidden_from_friends").notNull().default(false),
 },
   (t) => [
     // 1-5 or nothing. A 0 or a 6 is not a bracket, and a column that accepts one would put a
@@ -2125,6 +2131,13 @@ export const userPrefs = pgTable(
      * stamp trigger above: the stamp is what moves a friend's `friendGeneration`.
      */
     spareMin: integer("spare_min").notNull().default(1),
+    /**
+     * Settings' Your decks (friend decks G2): whether friends see this reader's decks at all (on by default), and whether
+     * that includes the unfinished ones, New, Draft and Building (off by default). Read for a FRIEND only through
+     * `src/lib/social/` (`friendCanSeeDeck`), and written only when they change, because of the stamp trigger above.
+     */
+    friendsSeeDecks: boolean("friends_see_decks").notNull().default(true),
+    friendsSeeUnfinished: boolean("friends_see_unfinished").notNull().default(false),
     /**
      * The news kinds this reader has turned on (menu and Home, `lib/feed/prefs.ts`): kind -> when it was turned on, as
      * an ISO instant. A kind that is off is ABSENT. A kind shows only what arrived after its own instant, so turning one

@@ -31,7 +31,7 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
+import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "../tuning/flag";
@@ -66,6 +66,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FIRST_RUN_TOUR_ENABLED: firstRunTourEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   HELP_PANEL_ENABLED: helpPanelEnabled,
+  FRIEND_DECKS_ENABLED: friendDecksEnabled,
   HOME_FEED_ENABLED: homeFeedEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,

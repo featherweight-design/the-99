@@ -44,3 +44,13 @@ export function socialInvitesEnabled(env: NodeJS.ProcessEnv): boolean {
 export function spareRequestsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SPARE_REQUESTS_ENABLED === "true" && socialFriendsEnabled(env);
 }
+
+/**
+ * `FRIEND_DECKS_ENABLED`: a friend's deck opens read-only, and a deck can hide from friends (friend decks handoff,
+ * plan in the PR bodies). Unset on production until the line closes and its About entry exists. It requires
+ * `SOCIAL_FRIENDS_ENABLED`, checked here so an override of this one never raises its parent. Read under the OWNER's
+ * switches for what a friend may see (it is their privacy), and under the viewer's for the route and the links.
+ */
+export function friendDecksEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.FRIEND_DECKS_ENABLED === "true" && socialFriendsEnabled(env);
+}

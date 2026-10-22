@@ -888,6 +888,8 @@ export type DeckListItem = {
    * deck starts and where one returns when its folder is deleted.
    */
   folderId: string | null;
+  /** The owner hid this deck from friends (`decks.hidden_from_friends`). Optional so a fixture may omit it: absent is false. */
+  hiddenFromFriends?: boolean;
   folderName: string | null;
   built: number;
   ownedCount: number;
@@ -1266,6 +1268,7 @@ export async function listDecksWithStats(
       // phantom unlabelled folder to draw.
       folderId: deckFolders.id,
       folderName: deckFolders.name,
+      hiddenFromFriends: decks.hiddenFromFriends,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -1452,6 +1455,7 @@ export async function listDecksWithStats(
       partnerName: row.partnerName,
       partnerColorIdentity: row.partnerColorIdentity,
       folderId: row.folderId,
+      hiddenFromFriends: row.hiddenFromFriends,
       folderName: row.folderName,
       built: row.built,
       ownedCount: row.ownedCount,

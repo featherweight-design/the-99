@@ -101,3 +101,29 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   trade matches plus unseen answers to the reader's asks, `unseenAnswersCount` / `markAnswersSeen`, an upsert so a
   reader with no prefs row can still be marked; `NavBadges.friendsWaiting`: the incoming open asks, `waitingAsksCount`,
   cleared only by answering, whatever the reader's feed opt-in). Proof: `pnpm probe:spare-requests`.
+
+## Friend decks (`FRIEND_DECKS_ENABLED`)
+
+Handoff `design/design_handoff_the99_friend_decks/` (R2, Green, Hugh 2026-10-22). A friend's Decks tab, and a friend's
+deck opened read-only, show only what the OWNER lets friends see. The rule is one pure function, `friendCanSeeDeck`, and
+both reads share one list (`visibleDecks` in `decks.ts`), so a tile the tab shows always opens and one it hides never
+does. Its three inputs are the owner's: Settings' Friends can see my decks (`user_prefs.friends_see_decks`, on by
+default), Include drafts and decks I'm building (`friends_see_unfinished`, off by default), and the deck's own Hidden
+from friends (`decks.hidden_from_friends`, from its ⋯ menu).
+
+- **Unfinished is a phase.** `New` and `Draft` (no committed version) and `Building` (committed, short of its body
+  size). `Unresolved` is a committed deck at its size, so friends see it on the defaults, as `Over`, `To buy` and
+  `Complete`.
+- **Whose switch.** The filter is decided under the owner's resolved switches (their privacy); the page route and the
+  tile's link under the viewer's. Off for the owner, `loadFriendDecks` returns every deck as it shipped and carries no
+  id, and `loadFriendDeck` is null. Filtering before the owner can see the Settings defaults would take drafts off a
+  friend's tab unannounced, which is why the switch stays in `ALL_FEATURES_EXCLUDED` until the owner controls land.
+- **The page's read.** The owner's own `getDeckDetail`, run as its owner with `Promise.resolve(null)` in place of the
+  shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
+  `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
+  partner), with `owned` read from the VIEWER's collection. The grant is read again after the reads.
+- **Absence.** Every null is the same 404: a stranger, a deck not theirs, hidden, unfinished, decks off. A hidden deck
+  and a deleted one cannot be told apart.
+- **Writes.** `writeFriendDeckPrefs` and `setDeckHiddenFromFriends` write only on a change, because the stamp trigger
+  fires on any UPDATE and the stamp is what moves a friend's `friendGeneration`. Hiding never writes `last_edited_at`
+  and never touches Tonight's table or a logged game, which keep a hidden deck's name (G4, Hugh 2026-10-22).

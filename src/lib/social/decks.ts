@@ -1,7 +1,9 @@
 /**
- * A friend's decks, for the friend page's Decks tab (menu and Home plan, PR 7; handoff G4). A friend sees the
- * name, the commander, the status and the count of each deck, and never the list: no card, no id (so no press
- * can reach a deck page), no note, no folder, no bracket, no play date.
+ * A friend's decks, for the friend page's Decks tab (menu and Home plan, PR 7; handoff G4), and one friend's deck,
+ * read-only, for its own page (friend decks handoff, G1). On the tab a friend sees the name, the commander, the status
+ * and the count of each deck: no card, no note, no folder, no bracket, no play date. With `FRIEND_DECKS_ENABLED` on
+ * for the OWNER the tab carries each deck's id, for the press to its page, and both reads keep only the decks the
+ * owner lets friends see (`friendCanSeeDeck`, `deck-visibility.ts`); off, the tab is exactly as it shipped.
  *
  * The grant is the viewer's own friendship row, read in `resolveFriend`'s statement: a public id that is not
  * the viewer's current friend resolves to nothing, whoever it names, and nothing is read for it. The decks are
@@ -17,13 +19,22 @@
  * removed while they ran returns nothing rather than what was read past its end.
  */
 import { loadDeckBuyRows } from "../decks/availability-query";
-import { listDecksWithStats } from "../decks/read";
 import { deckBodySize } from "../decks/deck-size";
 import type { StatusPill } from "../decks/status";
 import { resolveSwitchEnv } from "../switches/snapshot";
+import { and, eq, inArray } from "drizzle-orm";
+import { db } from "../../db";
+import { collectionItems } from "../../db/schema";
+import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
+import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
+import { friendCanSeeDeck, loadFriendDeckPrefs } from "./deck-visibility";
+import { friendDecksEnabled } from "./flag";
+import { isUuid } from "./rules";
 
 export type FriendDeck = {
+  /** The deck's id, for the press to its page; null with `FRIEND_DECKS_ENABLED` off for the owner, as it shipped. */
+  id: string | null;
   name: string;
   commanderName: string;
   /** The second commander of a pair, or null. */
@@ -45,14 +56,16 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown): Prom
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
   const env = await resolveSwitchEnv(friendId);
+  const open = friendDecksEnabled(env);
   const [rows, buys] = await Promise.all([
-    listDecksWithStats(friendId, "newest", { env, includeProxyStats: true }),
+    visibleDecks(friendId, env),
     loadDeckBuyRows(friendId, undefined, undefined, env),
   ]);
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   const toBuy = new Map<string, number>();
   for (const b of buys) toBuy.set(b.deckId, (toBuy.get(b.deckId) ?? 0) + b.quantity);
   return rows.map((d) => ({
+    id: open ? d.id : null,
     name: d.name,
     commanderName: d.commanderName,
     partnerName: d.partnerName,
@@ -63,4 +76,124 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown): Prom
     bodySize: deckBodySize(d.partnerName !== null),
     toBuy: toBuy.get(d.id) ?? 0,
   }));
+}
+
+/**
+ * The owner's decks a friend may see, by the owner's own rules, read once for both friend reads. With the switch off for
+ * the owner every deck passes, as the tab shipped: the Settings defaults hide drafts, so filtering before the owner can
+ * see or change them would take decks off a friend's tab unannounced.
+ */
+async function visibleDecks(ownerId: string, env: NodeJS.ProcessEnv): Promise<DeckListItem[]> {
+  if (!friendDecksEnabled(env)) return listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true });
+  const [rows, prefs] = await Promise.all([
+    listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true }),
+    loadFriendDeckPrefs(ownerId),
+  ]);
+  return rows.filter((d) => friendCanSeeDeck(d, prefs));
+}
+
+/**
+ * A card of a friend's deck as the read-only page draws it: the catalog's facts and the OWNER's printing (for card
+ * details), with `owned` the VIEWER's: whether the viewer's own collection holds any printing of it. Nothing of the
+ * owner's money or plans: no price, no availability, no proxy, no lock, no auto tag, no combo partner.
+ */
+export type FriendDeckCard = Pick<
+  DeckDetailCard,
+  | "oracleId" | "name" | "typeLine" | "cardTypeGroup" | "role" | "cmc" | "quantity" | "manaCost" | "imageUri"
+  | "printedName" | "printedSetCode" | "printedCollectorNumber" | "printedFoil" | "foil" | "layout" | "catalogLayout" | "commander"
+> & { owned: boolean };
+
+export type FriendDeckPage = {
+  id: string;
+  name: string;
+  /** The commander first, then the second of a pair, each with the viewer's `owned`. */
+  commanders: FriendDeckCard[];
+  /** The list, commanders excluded, in the owner's order. */
+  cards: FriendDeckCard[];
+  colorIdentity: string[];
+  artCropUri: string | null;
+  /** Cards matched to the catalog, and the body size they read against. */
+  built: number;
+  bodySize: number;
+};
+
+/**
+ * One friend's deck, read-only (G1), or null: a public id that is not the viewer's current friend, a deck that is not
+ * theirs, one their rules keep from friends (hidden, unfinished, or decks off), or the switch off for the owner. Every
+ * null is the same 404, so a hidden deck and a deleted one cannot be told apart.
+ *
+ * The visibility is decided by the SAME list the tab draws (`visibleDecks`), so a deck the tab shows opens and one it
+ * does not, does not. The deck itself is the owner's own `getDeckDetail`, read as its owner, with no availability
+ * (`Promise.resolve(null)` stands in for the shared read, so the owner's claim model is never run for a friend), and
+ * cut down to `FriendDeckCard`. The grant is read again after every read, as the tab's read does.
+ */
+export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId: unknown): Promise<FriendDeckPage | null> {
+  if (!isUuid(deckId)) return null;
+  const friendId = await resolveFriend(viewerId, publicId);
+  if (friendId === null) return null;
+  const env = await resolveSwitchEnv(friendId);
+  if (!friendDecksEnabled(env)) return null;
+  const row = (await visibleDecks(friendId, env)).find((d) => d.id === deckId);
+  if (!row) return null;
+  const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);
+  if (!detail) return null;
+  const ids = [...new Set([detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : []), ...detail.cards.map((c) => c.oracleId)])];
+  const ownedRows = await db
+    .selectDistinct({ oracleId: collectionItems.oracleId })
+    .from(collectionItems)
+    .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids)));
+  if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
+  const owned = new Set(ownedRows.map((r) => r.oracleId));
+  const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
+    oracleId: c.oracleId,
+    name: c.name,
+    typeLine: c.typeLine,
+    cardTypeGroup: cardTypeGroup(c.typeLine),
+    role: "other" as const,
+    cmc: 0,
+    quantity: 1,
+    manaCost: c.manaCost,
+    imageUri: c.imageUri,
+    printedName: c.printedName ?? null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    layout: c.layout ?? null,
+    commander: true as const,
+    owned: owned.has(c.oracleId),
+  }));
+  return {
+    id: detail.id,
+    name: detail.name,
+    commanders,
+    cards: detail.cards.map((c) => friendCard(c, owned)),
+    colorIdentity: row.commanderColorIdentity,
+    artCropUri: row.commanderArtCropUri,
+    built: detail.built,
+    bodySize: deckBodySize(detail.partner !== null),
+  };
+}
+
+/** The friend-safe cut of one card. Spelled out field by field, never spread, so a field added to `DeckDetailCard` later
+ *  (a price, a plan) cannot reach a friend by default. */
+function friendCard(c: DeckDetailCard, owned: ReadonlySet<string>): FriendDeckCard {
+  return {
+    oracleId: c.oracleId,
+    name: c.name,
+    typeLine: c.typeLine,
+    cardTypeGroup: c.cardTypeGroup,
+    role: c.role,
+    cmc: c.cmc,
+    quantity: c.quantity,
+    manaCost: c.manaCost,
+    imageUri: c.imageUri,
+    printedName: c.printedName,
+    printedSetCode: c.printedSetCode,
+    printedCollectorNumber: c.printedCollectorNumber,
+    printedFoil: c.printedFoil,
+    foil: c.foil,
+    layout: c.layout,
+    catalogLayout: c.catalogLayout,
+    commander: c.commander,
+    owned: owned.has(c.oracleId),
+  };
 }
