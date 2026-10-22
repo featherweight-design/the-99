@@ -86,7 +86,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `src/lib/social/spare-requests.ts` (`check:social-reads`); the rules are pure in `spare-request-rules.ts`.
   EXPIRY IS DERIVED: an open ask older than `SPARE_REQUEST_DAYS` (14) reads as expired everywhere and cannot be
   answered; no job sweeps. ONE open ask per asker and card across every friend, held by a partial unique index; the
-  asker's next ask for the card first writes `expired` over a stale open row so the index frees, and a concurrent second
+  asker's next ask for the card first writes `expired` over an open row past its days or to someone no longer a
+  friend, so the index frees, and a concurrent second
   ask is answered `asked`. After a No, that friend is not asked for that card again for `DECLINE_COOLDOWN_DAYS` (14) and
   the next friend may be asked at once (Hugh, 2026-10-22). An ask needs the card to be a spare the friend OFFERS the
   asker (`loadFriendSpares`: the pod grant, `spare_min`, `spare_keep`), read before the write. The write locks both
