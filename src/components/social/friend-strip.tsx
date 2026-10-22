@@ -20,6 +20,9 @@ export function friendTabFromPathname(pathname: string, publicId: string): Frien
   return null;
 }
 
+/** The board's friend strip: 18 under the head and bled to the phone's edges, flush left from desktop. */
+const FRIEND_STRIP_FRAME = "mt-[18px] -mx-[14px] pl-[6px] pr-[4px] md:mx-0 md:mt-[22px] md:px-0";
+
 export function FriendStrip({
   publicId,
   counts,
@@ -36,5 +39,5 @@ export function FriendStrip({
     { place: "decks", href: `${base}/decks`, label: p.tabs.decks, count: counts.decks },
   ];
   const tabs = all.filter((t) => t.count !== undefined || t.place === current);
-  return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" />;
+  return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} />;
 }

@@ -27,11 +27,15 @@ export type PlaceTab = {
   count?: number;
 };
 
+/** Collection's and Commanders' strip: flush under the place head, padded to the page's gutter. */
+export const PLACE_STRIP_FRAME = "pl-[8px] pr-[4px] md:mt-[14px] md:px-[24px]";
+
 export function PlaceStrip({
   tabs,
   current,
   ariaLabel,
   testIdPrefix,
+  frame = PLACE_STRIP_FRAME,
   children,
 }: {
   tabs: readonly PlaceTab[];
@@ -40,6 +44,8 @@ export function PlaceStrip({
   ariaLabel: string;
   /** Each tab carries `data-testid="<prefix>-<place>"`. */
   testIdPrefix: string;
+  /** The strip's margin and side padding. A place under a page's own head (a friend's page) draws its own. */
+  frame?: string;
   /** The trailing control beside the tabs (Collection's `+ Add` / Replace); inside the strip's scroll row. */
   children?: React.ReactNode;
 }) {
@@ -59,7 +65,7 @@ export function PlaceStrip({
     <nav
       aria-label={ariaLabel}
       // Scrolls sideways rather than widening the page when the tabs and a trailing control outgrow a narrow phone (320px).
-      className="flex h-[48px] items-stretch gap-[2px] overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 pl-[8px] pr-[4px] border-b border-b-[color:var(--border)] border-[color:var(--border)] md:mt-[14px] md:h-[40px] md:gap-[4px] md:px-[24px]"
+      className={`flex h-[48px] items-stretch gap-[2px] overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 ${frame} border-b border-b-[color:var(--border)] border-[color:var(--border)] md:h-[40px] md:gap-[4px]`}
     >
       {tabs.map((tab) => {
         const on = tab.place === effective;

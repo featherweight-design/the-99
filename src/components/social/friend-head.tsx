@@ -51,10 +51,7 @@ export function FriendHead({ friend, nowMs }: { friend: Friend; nowMs: number })
         <Face name={friend.displayName} commander={friend.commander} size={64} />
         <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <h1 className="m-0 truncate font-display text-[24px] font-bold text-[color:var(--fg)] md:text-[28px]">{friend.displayName}</h1>
-          <p className="m-0 truncate text-[13px] text-[color:var(--fg-muted)] md:text-[14px]">
-            {p.since(since)}
-            {friend.commander ? ` · ${friend.commander.name}` : ""}
-          </p>
+          <p className="m-0 truncate text-[13px] text-[color:var(--fg-muted)]">{p.since(since)}</p>
         </div>
         <FriendMenu friend={friend} removing={removing} onRemove={() => void remove()} />
       </div>

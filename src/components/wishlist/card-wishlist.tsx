@@ -26,7 +26,7 @@ import { useMergedRef } from "../ui/use-merged-ref";
 
 const copy = wishlistCopy.details;
 
-export function Bookmark({ filled }: { filled: boolean }) {
+function Bookmark({ filled }: { filled: boolean }) {
   return (
     <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
       <path d="M6 3h12v18l-6-4-6 4z" />

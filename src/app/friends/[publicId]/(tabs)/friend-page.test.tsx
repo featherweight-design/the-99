@@ -175,11 +175,12 @@ describe("FriendHead and the wishlist tab", () => {
     </>,
   );
 
-  it("draws Round 1's head: back link, name, since and their commander", () => {
+  it("draws the board's head: back link, name and since, with no commander in the line (the face carries it)", () => {
     draw();
     expect(screen.getByRole("link", { name: p.back }).getAttribute("href")).toBe("/friends");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Colin");
-    expect(screen.getByText("Friend since Oct 2 · Sai, Master Thopterist")).toBeTruthy();
+    expect(screen.getByText("Friend since Oct 2")).toBeTruthy();
+    expect(screen.queryByText(/Sai, Master Thopterist/)).toBeNull();
     expect(screen.getByRole("button", { name: socialCopy.friends.menuAria("Colin") })).toBeTruthy();
   });
 

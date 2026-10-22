@@ -38,7 +38,7 @@ export default async function FriendPageLayout({
   ]);
   if (!friend) notFound();
   return (
-    <div className="mx-auto w-full max-w-[1300px] px-[14px] pt-[18px] pb-[34px] md:px-[34px] md:pt-[28px]">
+    <div className="w-full px-[14px] pt-[18px] pb-[30px] md:px-[34px] md:pt-[28px] md:pb-[34px]">
       <FriendHead friend={friend} nowMs={now.getTime()} />
       <FriendStrip
         publicId={friend.publicId}

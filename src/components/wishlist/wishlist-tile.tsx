@@ -10,30 +10,20 @@ import { HydratedImg } from "../ui/hydrated-art";
 
 /** What a tile draws. The tab's `WishlistViewTile` carries this and more. `have` is null on a friend's tile, which
  * reads `wants N` and never an owned count. */
-export type WishlistTileCard = {
-  name: string;
-  imageUri: string | null;
-  want: number;
-  have: number | null;
-  /** Words of the caller's own in the caption's place (a friend's spares, `1 spare · on your wishlist`). */
-  caption?: readonly CopyPart[];
-  /** A second line under the caption, in the accent (a friend's spare the reader wants: `on your wishlist`). */
-  note?: string;
-};
+export type WishlistTileCard = { name: string; imageUri: string | null; want: number; have: number | null };
 
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
 export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
 
 /** The caption's parts: `have M of N`, or `wants N` on a friend's tile (`have: null`). */
-function captionParts(tile: WishlistTileCard): readonly CopyPart[] {
-  if (tile.caption) return tile.caption;
+function captionParts(tile: WishlistTileCard): CopyPart[] {
   return tile.have === null ? wishlistCopy.tile.wants(tile.want) : wishlistCopy.tile.caption(tile.want, tile.have);
 }
 
 /** The caption as words, for the press's accessible name: the press's own label replaces its content's, so a name
  * without this would never speak the count. */
 export function wishlistCaptionText(tile: WishlistTileCard): string {
-  return captionParts(tile).map((p) => p.text).join("") + (tile.note ? `, ${tile.note}` : "");
+  return captionParts(tile).map((p) => p.text).join("");
 }
 
 /** Copy parts as the boards draw them: a strong part in the caller's strong class. */
@@ -83,9 +73,6 @@ export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eage
             strong="font-semibold text-[color:var(--fg-body)]"
           />
         </span>
-        {tile.note && (
-          <span data-testid="wishlist-tile-note" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--accent-text)] md:text-[9.5px]">{tile.note}</span>
-        )}
       </span>
     </>
   );

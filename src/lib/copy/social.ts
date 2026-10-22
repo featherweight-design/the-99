@@ -47,8 +47,8 @@ export const socialCopy = {
     title: "Friends",
     // The head's name line. `name` is the viewer's own display name.
     nameLine: (name: string) => ({ before: "Friends see you as ", name, action: "Change" }),
-    // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Placeholder words, for /copy-review.
-    decksSeen: "Friends can see your deck names, commanders and statuses. Never the lists.",
+    // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Undrawn; words through /copy-review.
+    decksSeen: "Friends see your deck names, commanders and statuses, never the lists.",
     nameField: {
       label: "Your name, as friends see it",
       hint: "Up to 30 characters. Friends see this and your commander.",
