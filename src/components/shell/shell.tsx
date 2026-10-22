@@ -32,7 +32,6 @@ import { cardSearchEnabled } from "../../lib/card-search/flag";
 import { CardSearchRoot } from "../card-search/card-search";
 import { helpPanelEnabled } from "../../lib/discovery/onboarding-flag";
 import { HelpRoot } from "../help/help-root";
-import { homeFeedEnabled } from "../../lib/feed/flag";
 import { unseenCount } from "../../lib/feed/read";
 
 /**
