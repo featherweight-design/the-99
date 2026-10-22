@@ -3,7 +3,7 @@
 Account 2, 2026-10-22. Brief: `docs/superpowers/design-briefs/2026-10-21-deck-messages.md` (PR #2166, branch
 `deck-messages-brief` until merged). Canvas: https://claude.ai/artifact/CKv1LdWeXgSdqikozFPNe2
 
-**Status: R1, awaiting Hugh's audit.** Every string is shipped copy or a placeholder for `/copy-review`. Nothing new is
+**Status: R1, awaiting Hugh's audit.** Hugh ruled all four calls as drawn (2026-10-22) and asked for two divergent alternatives (Alt A, Alt B below) to compare. Every string is shipped copy or a placeholder for `/copy-review`. Nothing new is
 said. No press is lost.
 
 ## The problem
@@ -97,6 +97,8 @@ block; the gain is one voice); Stack 3 1,611 → 1,196 px; first run 878 → 777
 - `Stack-3.dc.html` — the worst case (seven blocks).
 - `Quiet-and-First-Run.dc.html` — the quiet deck and the first deck.
 - `Elements-1.dc.html`, `Elements-2.dc.html` — every element in its level, 390 and the 1236 main column.
+- `Alt-A.dc.html` — alternative A: one to-do card under the header (warnings are red rows, actions rows with their press, status in the foot, receipts become toasts).
+- `Alt-B.dc.html` — alternative B: no stack; each message where it belongs (count line under the bar, spoken-for chip + red rows, save dock for pending, Versions tab for provenance, row marks, toasts).
 - `STATES-deck-messages.md` — element by element: level, what changes, code.
 - `art/`, `support.js`; `scratch-gen/` (generator: `python3 build.py local|blob`, `render.py` renders and measures with
   Playwright; `blobs.json` maps art to the canvas's asset ids).
