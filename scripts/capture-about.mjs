@@ -219,7 +219,8 @@ function screens(f) {
     },
   });
   return {
-    home: { path: "/" },
+    // Home marks its feed seen after each visit, and the lead story is the first UNSEEN item: arm it again before the frame.
+    home: { path: "/", before: rearmFeed },
     collection: { path: "/collection" },
     "card-details": { path: `/collection?card=${f.freeCard}`, dialog: true },
     sets: { path: "/collection/sets" },
@@ -493,6 +494,8 @@ const REQUIRED_ON_FRAME = {
     // The invites entry's box takes in the count line (launch-end batch G2), drawn only with invites on.
     ["[data-invite-count]", "the invite count line under Add a friend (SOCIAL_INVITES_ENABLED on)"],
   ],
+  // The feed Home (HOME_FEED_ENABLED on, the fixture's one unseen price drop): the lead story is what `whats-new` boxes.
+  home: [["[data-feed-lead]", "the lead story (HOME_FEED_ENABLED on; the fixture account's feed kinds on and one unseen item)"]],
   credits: [["[data-testid='credits-total']", "the balance on /credits (PAYMENTS_ENABLED on)"]],
 };
 
@@ -515,10 +518,17 @@ async function requireOnFrame(page, id) {
   }
 }
 
+/** A Home visit moves `feed_seen_at`, and a lead story needs an unseen item (menu and Home PR 8): null is never seen. */
+async function rearmFeed() {
+  if (!USER_ID) return;
+  await sql`update user_prefs set feed_seen_at = null where user_id = ${USER_ID} and feed_kinds <> '{}'::jsonb`;
+}
+
 async function shoot(page, theme, f) {
   for (const [id, s] of Object.entries(screens(f))) {
     if (!want(id)) continue;
     await attempt(page, theme, id, async () => {
+      if (s.before) await s.before();
       await open(page, s.path);
       if (s.steps) await s.steps(page);
       if (s.dialog) await page.locator("[role='dialog']").first().waitFor({ state: "visible", timeout: 10_000 });

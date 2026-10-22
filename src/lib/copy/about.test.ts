@@ -139,7 +139,7 @@ describe("about content", () => {
     for (const e of aboutEntries) if (e.replaces) expect(ids, `${e.id} replaces`).toContain(e.replaces);
     const counted = aboutEntries.filter((e) => !e.replaces).map((e) => e.title);
     expect(new Set(counted).size, "duplicate title").toBe(counted.length);
-    expect(titles.length - counted.length).toBe(1);
+    expect(titles.length - counted.length).toBe(2);
     for (const e of aboutEntries) {
       expect(e.route, `${e.id} has no route`).toBeTruthy();
       // Rule 3 of the copy file: zero keys is a finished answer, four is the
