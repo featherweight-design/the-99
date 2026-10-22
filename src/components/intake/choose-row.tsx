@@ -132,7 +132,8 @@ export function ChooseRow({
         oracleId={row.oracleId}
         name={row.name}
         imageUri={row.imageUri}
-        preview
+        // A row previews its card on hover; a best fit already draws the commander's art, so it does not.
+        preview={best === undefined}
         testId="row-name"
         className={`relative z-[1] min-w-0 truncate text-left font-display font-semibold ${size} text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer`}
       >
