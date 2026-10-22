@@ -28,7 +28,7 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks, friendLinks, socialProfiles, spareRequests, userPrefs } from "../../db/schema";
-import { isUniqueViolation } from "../db-error";
+import { isForeignKeyViolation, isUniqueViolation } from "../db-error";
 import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import type { ProfileCommander } from "./commander";
@@ -112,10 +112,23 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
   if (refusal) return { ok: false, reason: refusal };
   // Not the asker's deck (or not a deck): stored null, never a refusal.
   const deckId = isUuid(a.deckId) && (await tx.execute(ownDeckQuery(a.askerId, a.deckId))).rows.length > 0 ? a.deckId : null;
-  const [row] = await tx
+  const insert = (t: Tx, deck: string | null) => t
     .insert(spareRequests)
-    .values({ askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId })
+    .values({ askerUserId: a.askerId, holderUserId: a.holderId, oracleId: a.oracleId, createdAt: a.now, copies: a.copies, deckId: deck })
     .returning({ id: spareRequests.id });
+  // The deck is display only: one deleted between the check and the insert (its foreign key refuses) is stored null,
+  // inside a savepoint so the ask and any Ask instead withdraw survive. No lock on the deck: Ask instead already holds
+  // the old request's row, which a deck delete's `set null` would wait on, so locking here could deadlock.
+  let row: { id: string };
+  if (deckId === null) [row] = await insert(tx, null);
+  else {
+    try {
+      [row] = await tx.transaction((sp) => insert(sp as Tx, deckId));
+    } catch (e) {
+      if (!isForeignKeyViolation(e)) throw e;
+      [row] = await insert(tx, null);
+    }
+  }
   await recordFeedItem(tx, { userId: a.holderId, kind: "spare-request", dedupeKey: row.id, oracleId: a.oracleId, friendUserId: a.askerId, now: a.now });
   return { ok: true, id: row.id };
 }

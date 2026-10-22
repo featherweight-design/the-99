@@ -226,9 +226,12 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const on = available.filter((k) => effective.includes(k));
   if (on.length === 0) return { chosen: false, offer: available };
   const items = await loadFeed(userId, env, now, q);
-  // A reader who never chose keeps the offer until a default-on kind has something to show (an incoming ask).
+  // A reader who never chose keeps the offer until a default-on kind has something to show (an incoming ask). The
+  // offer leaves out the default-on kinds already on: its boxes start empty and it saves only what it offers, so an
+  // unticked default would read as turned off.
   const choseNothing = Object.keys(prefs.map).length === 0 && prefs.declined.length === 0;
-  if (choseNothing && items.length === 0) return { chosen: false, offer: available };
+  const offer = available.filter((k) => !on.includes(k));
+  if (choseNothing && items.length === 0 && offer.length > 0) return { chosen: false, offer };
   const views = toViews(items, await lookups(userId, items, q, env));
   return splitLead(views, on);
 }

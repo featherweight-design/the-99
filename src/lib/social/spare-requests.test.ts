@@ -172,7 +172,7 @@ describe("Ask instead (G1: one transaction)", () => {
   });
 
   /** A transaction over a script of results, which rolls back (rejects) whenever its body throws. */
-  async function scripted(results: unknown[], prior: unknown[] = []) {
+  async function scripted(results: unknown[], prior: unknown[] = [], savepoint?: () => never) {
     const { db } = await import("../../db");
     const ran: SQL[] = [];
     const seen = { rolledBack: false, inserted: [] as Record<string, unknown>[], priorWhere: [] as SQL[] };
@@ -180,6 +180,7 @@ describe("Ask instead (G1: one transaction)", () => {
       execute: vi.fn(async (s: SQL) => { ran.push(s); return results.shift(); }),
       select: () => ({ from: () => ({ where: async (w: SQL) => { seen.priorWhere.push(w); return prior; } }) }),
       insert: () => ({ values: (v: Record<string, unknown>) => { seen.inserted.push(v); return { returning: async () => [{ id: "new" }] }; } }),
+      transaction: async (fn: (t: unknown) => Promise<unknown>) => (savepoint ? savepoint() : fn(tx)),
     };
     vi.mocked(db.transaction).mockImplementationOnce((async (fn: (t: unknown) => Promise<unknown>) => {
       try { return await fn(tx); } catch (e) { seen.rolledBack = true; throw e; }
@@ -220,6 +221,21 @@ describe("Ask instead (G1: one transaction)", () => {
     expect(ran.seen.inserted[0]).toMatchObject({ copies: 2, deckId: CARD });
     // The deck is checked as the asker's own before it is stored.
     expect(render(ran[6]).q).toBe(`select odk.id from "decks" odk where odk.id = $1 and odk.user_id = $2`);
+  });
+
+  it("stores the deck null when it is deleted between the check and the insert (its foreign key refuses)", async () => {
+    const fk = () => { throw Object.assign(new Error("fk"), { cause: { code: "23503" } }); };
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }], [], fk);
+    expect(await askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).toEqual({ ok: true, id: "new" });
+    expect(ran.seen.rolledBack).toBe(false);
+    expect(ran.seen.inserted).toEqual([expect.objectContaining({ deckId: null })]);
+  });
+
+  it("rethrows any other failure of the insert, rolling the ask back", async () => {
+    const boom = () => { throw new Error("boom"); };
+    const ran = await scripted([{ rows: [] }, FRIENDS, { rows: [{ id: REQ }], rowCount: 1 }, { rows: [] }, FRIENDS, { rows: [] }, { rows: [{ id: CARD }] }], [], boom);
+    await expect(askInsteadForSpare("a", REQ, REQ, CARD, ON, NOW, { copies: 1, deckId: CARD })).rejects.toThrow("boom");
+    expect(ran.seen.rolledBack).toBe(true);
   });
 
   it("stores no deck the asker does not own", async () => {
