@@ -1,6 +1,6 @@
 {
   "feature": "Deck page messages, PR 4a: receipts last the visit, the shorter precon receipt, the update receipt on the band, the remove-failure toast, the mix's phone parity (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
-  "note": "Fixture decks of the headless account on a scratch branch of local-dev. The toast (A1) is a press-only failure: it is proved by its tests, not photographed.",
+  "note": "Fixture decks of the headless account on a scratch branch of local-dev. The toast (A1) is a press-only failure: it is proved by its tests, not photographed. The precon receipt needs a deck started from a precon, which no fixture deck is: `pnpm probe:precon-own` walks it at both widths.",
   "rows": [
     {
       "id": "import-receipt",
@@ -21,18 +21,6 @@
       "steps": [
         {
           "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?updated=19-6-1",
-          "wait": "button[aria-label='Dismiss']",
-          "settle": 3000
-        }
-      ]
-    },
-    {
-      "id": "precon-receipt",
-      "label": "/decks/[id]?from=precon, the shorter precon receipt (head, what you own)",
-      "view": "src/components/decks/arrival-strip.tsx",
-      "steps": [
-        {
-          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289?from=precon",
           "wait": "button[aria-label='Dismiss']",
           "settle": 3000
         }
