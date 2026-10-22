@@ -83,6 +83,24 @@ pre-ticked · the tick cap as the trade · the two mid-fill sentences · the par
 availability slot, dashed unowned dot and 40px cost track · no inner scroller · every count with its
 denominator · no new token, no new hex.
 
+## Hugh ruling, 2026-10-21: a press on the row opens the card
+
+**This supersedes `LONG-LIST-thirty-one-rows.md:99`** ("The **target is the row**, not the box")
+and the same rule in `The 99 - Top Off.dc.html` ("the whole row is the label, so the target is the
+row"). Hugh's words: "clicking a card row should show card details, not select the card... card
+rows behave the same way everywhere."
+
+- **The box alone ticks**, at both widths. Its drawn size is unchanged (26px at phone, 18px above
+  `md`). A coarse pointer gets a 44px hit past it through `TOUCH_HIT`, so the row keeps its height.
+- **A press anywhere else on the row opens card details**, through `useRowOpen`, the review page's
+  pattern (`update-diff-row.tsx`). A press on the name's trigger, the box or the decline is left to
+  that control.
+- **The name is a `CardDetailTrigger` at both widths**, so the keyboard reaches the card on a phone
+  too. Before this ruling the phone drew it as text inside the tick's label.
+
+The ruling was made by Hugh and went through no Design round. The next design round that touches
+this surface draws it.
+
 ## Open items
 
 1. **The ledger still grows one line per pass, uncapped** (R2 gap 2) — and R3 slightly *improves*

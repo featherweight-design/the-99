@@ -82,6 +82,7 @@ function Harness({
   onCommitted?: () => void;
   onClose?: () => void;
   onBarHeight?: (h: number) => void;
+  fetchCard?: (oracleId: string) => Promise<null>;
 }) {
   const [ticked, setTicked] = useState<Set<string>>(new Set(initialTicked));
   const [declined, setDeclined] = useState<Set<string>>(new Set(initialDeclined));
@@ -91,7 +92,7 @@ function Harness({
   // line 851 inside the provider it opens at 711 — and this harness has to state
   // the same thing, or every desktop case here fails on the mount.
   return (
-    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+    <CardDetailProvider fetchCard={props.fetchCard ?? vi.fn().mockResolvedValue(null)}>
     <TopOffList
       deckId="deck-1"
       listId="list-1"
@@ -1078,17 +1079,53 @@ describe("TopOffList — the desktop row", () => {
     expect(rowOf("owned-1")).not.toHaveTextContent("Spell");
   });
 
-  it("draws neither on a phone", () => {
+  it("draws no type on a phone, but keeps the name's trigger", () => {
     stubViewport(390);
     render(<Harness />);
 
-    // Named by the trigger's OWN spoken name. `/^owned-1$/` can never match it —
-    // the trigger's accessible name is `View details for owned-1` — so that form
-    // passed at every width and let a trigger leak onto the one-tap phone row.
+    // The trigger is on the phone too since Hugh's 2026-10-21 ruling: the row opens the
+    // card at every width, and the name is that press's keyboard path.
     expect(
-      screen.queryByRole("button", { name: cardDetailCopy.triggerAria("owned-1") }),
-    ).toBeNull();
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("owned-1") }),
+    ).not.toBeNull();
     expect(rowOf("owned-1")).not.toHaveTextContent("Instant");
+  });
+
+  // Hugh's ruling of 2026-10-21: a press on a card row shows the card, everywhere. The box
+  // alone ticks, so a reader can read a card before deciding to add it.
+  describe.each([
+    ["phone", 390],
+    ["desktop", 1280],
+  ])("a press on the %s row", (_width, px) => {
+    function mount() {
+      stubViewport(px);
+      const asked: string[] = [];
+      render(
+        <Harness
+          fetchCard={async (oracleId) => {
+            asked.push(oracleId);
+            return null;
+          }}
+        />,
+      );
+      return asked;
+    }
+
+    it("opens the card and ticks nothing", async () => {
+      const asked = mount();
+      await click(rowOf("owned-1") as HTMLElement);
+      expect(asked).toEqual(["owned-1"]);
+      expect(rowBox("owned-1")).not.toBeChecked();
+    });
+
+    it("ticks from the box and opens nothing", async () => {
+      const asked = mount();
+      const box = rowBox("owned-1");
+      const drawn = rowOf("owned-1")!.querySelector<HTMLElement>(`label[for="${box.id}"]`)!;
+      await click(drawn);
+      expect(rowBox("owned-1")).toBeChecked();
+      expect(asked).toEqual([]);
+    });
   });
 
   it("lights under the pointer, and never on a row that cannot be ticked", () => {

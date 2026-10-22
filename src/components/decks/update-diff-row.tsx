@@ -283,7 +283,9 @@ function AvailabilitySlot({
  *
  * A click that started on a control of its own is left to that control: the name's
  * trigger would otherwise open the card a second time over its own fetch, and the
- * pull button would open it while writing.
+ * pull button would open it while writing. A tick box's label and input count as a
+ * control too: top-off's row opens the card from its body and ticks only from its
+ * box, so a press on the box must tick without also opening the card.
  */
 export function useRowOpen(
   card: Pick<DiffRowCard, "oracleId">,
@@ -297,7 +299,7 @@ export function useRowOpen(
   return {
     ...intent,
     onClick: (event) => {
-      if ((event.target as HTMLElement).closest("button, a")) return;
+      if ((event.target as HTMLElement).closest("button, a, label, input")) return;
       open(card.oracleId, siblings);
     },
   };

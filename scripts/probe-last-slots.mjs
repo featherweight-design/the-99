@@ -18,9 +18,9 @@
 // Whether a background actually changes under the mouse is a question for a
 // browser.
 //
-// THE NAME OPENS THE CARD, and does not tick the row. Those are the same press
-// on a control nested in the tick's label, which is the trap the decline control
-// is already placed against.
+// THE NAME OPENS THE CARD, and does not tick the row. A PRESS ON THE ROW opens
+// it too, at both widths, and ticks nothing: only the box ticks (Hugh's ruling of
+// 2026-10-21).
 //
 // THE TYPE IS DESKTOP ONLY. The phone row is two lines by design and has no
 // room for the word.
@@ -379,12 +379,34 @@ async function run() {
             opened > 0,
             `${opened} dialog(s) after the press`,
           );
-          // The whole reason it sits outside the label: one press, one meaning.
+          // Only the box ticks: one press, one meaning.
           report(
             `${width}px · and does not tick the row`,
             after === before,
             `${before} ticked before, ${after} after`,
           );
+        }
+      }
+
+      // A PRESS ON THE ROW OPENS THE CARD, at both widths, and ticks nothing (Hugh's ruling of
+      // 2026-10-21). Pressed by a real pointer in the row's own padding, so the target is the row
+      // and not any control on it.
+      {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(400);
+        const before = await page.evaluate(() =>
+          document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]:checked').length);
+        const row = onPage(page, "[data-top-off-rows] [data-top-off-row]").first();
+        if ((await row.count()) === 0) {
+          report(`${width}px · a press on the row opens the card`, false, "no row — NOT a pass");
+        } else {
+          await row.click({ position: { x: 3, y: 1 } });
+          await page.waitForTimeout(1_500);
+          const opened = await onPage(page, '[role="dialog"]').count();
+          const after = await page.evaluate(() =>
+            document.querySelectorAll('main [data-top-off-rows] input[type="checkbox"]:checked').length);
+          report(`${width}px · a press on the row opens the card`, opened > 0, `${opened} dialog(s) after the press`);
+          report(`${width}px · and does not tick it`, after === before, `${before} ticked before, ${after} after`);
         }
       }
 
