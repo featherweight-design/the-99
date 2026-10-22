@@ -105,13 +105,13 @@ describe("SpineMobile", () => {
   // corner buttons hide.
   it("hides Update, Export and the change-commander door while editing", () => {
     renderSpine(<SpineMobile {...props} />);
-    expect(screen.getByRole("link", { name: deckImportCopy.update.entryLabel })).toBeTruthy();
+    expect(screen.getByRole("link", { name: deckImportCopy.update.entryAria(props.deck.name) })).toBeTruthy();
     expect(screen.getByRole("button", { name: deckHeaderCopy.export })).toBeTruthy();
     // With no `ChangeCommanderDoor` provider mounted (as here), the door falls back to today's
     // plain card-details trigger — the same control the feature replaces.
     expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    expect(screen.queryByRole("link", { name: deckImportCopy.update.entryLabel })).toBeNull();
+    expect(screen.queryByRole("link", { name: deckImportCopy.update.entryAria(props.deck.name) })).toBeNull();
     expect(screen.queryByRole("button", { name: deckHeaderCopy.export })).toBeNull();
     expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
   });
