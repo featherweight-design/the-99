@@ -3,7 +3,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../../db";
-import { cards } from "../../../db/schema";
+import { cards, collectionItems } from "../../../db/schema";
+import { loadAvailability } from "../../../lib/decks/availability-query";
+import { buysCopy } from "../../../lib/intake/buys-card";
 import { requireUserId } from "../../../lib/auth";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
@@ -75,14 +77,26 @@ export async function handOffBracketReach(
     placedIds,
   );
   const permits = trial.permits;
-  if (!permits) return null;
+  const reach = trial.reach;
+  // Nothing to draw: today's ceiling line, and no chip is read.
+  if (!permits || !reach || reach.kind === "fixed" || reach.kind === "above") return null;
 
-  // The picks beside the build-around card: the Hit line names the ones the create buys.
-  const selectedIds = placedIds.filter((id) => id !== cardOracleId);
+  // The picks beside the build-around card, read for the Hit line only when there is a set to buy.
+  // Which of them the create BUYS is decided by one ownership read and one availability read over
+  // them all, so only those are chipped: a long `?select=` costs two queries, not a chip each.
+  const buying = reach.kind === "short" && reach.buy !== null && !permits.includes(reach.target);
+  const picks = buying ? placedIds.filter((id) => id !== cardOracleId) : [];
+  const basics = new Set(rows.filter((c) => isBasicLand(c.typeLine)).map((c) => c.oracleId));
+  const selectedIds = picks.length === 0 ? [] : await Promise.all([
+    db.select({ oracleId: collectionItems.oracleId }).from(collectionItems)
+      .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, picks)))
+      .then((owned) => new Set(owned.map((r) => r.oracleId))),
+    loadAvailability(userId, { oracleIds: picks, env }),
+  ]).then(([owned, availability]) => picks.filter((id) => !basics.has(id) && buysCopy(owned.has(id), availability.get(id))));
   const ids = [...new Set([
     ...selectedIds,
     ...trial.placedRaisers,
-    ...(trial.reach?.kind === "short" && trial.reach.buy ? trial.reach.buy.raisers : []),
+    ...(reach.kind === "short" && reach.buy ? reach.buy.raisers : []),
   ])];
   const [chips, gameChangers] = await Promise.all([
     Promise.all(ids.map(async (id) => [id, await loadCardChip(userId, id, env)] as const)),
@@ -94,7 +108,7 @@ export async function handOffBracketReach(
   return handOffReachOf({
     target: asked.bracket,
     permits,
-    reach: trial.reach,
+    reach,
     placedRaisers: trial.placedRaisers,
     budgetCents,
     budgetLeftCents: trial.budgetLeftCents,
