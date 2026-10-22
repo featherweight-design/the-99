@@ -474,7 +474,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
   } as DeckDetail;
 }
 
-function shell(cards?: DeckDetailCard[], draft?: DraftState | null, versionCards?: number) {
+function shell(cards?: DeckDetailCard[], draft?: DraftState | null) {
   return (
     <BuilderShell mix={TEST_MIX}
       deck={makeDeck(cards)}
@@ -484,13 +484,12 @@ function shell(cards?: DeckDetailCard[], draft?: DraftState | null, versionCards
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
       draft={draft ?? null}
-      versionCards={versionCards}
      newestAsOf={null}/>
   );
 }
 
-function renderBuilder(draft?: DraftState | null, versionCards?: number) {
-  const view = render(shell(undefined, draft, versionCards));
+function renderBuilder(draft?: DraftState | null) {
+  const view = render(shell(undefined, draft));
   return {
     ...view,
     /**
@@ -501,7 +500,7 @@ function renderBuilder(draft?: DraftState | null, versionCards?: number) {
      */
     revalidate: (cards: DeckDetailCard[], nextDraft?: DraftState | null) =>
       act(async () => {
-        view.rerender(shell(cards, nextDraft ?? draft, versionCards));
+        view.rerender(shell(cards, nextDraft ?? draft));
       }),
   };
 }
@@ -737,29 +736,20 @@ describe("undo row lifetime (#185)", () => {
 
   // A discard throws the whole draft away, so every receipt describing a
   // removal from it must go too — the same rule as unmounting, without the
-  // unmount (§3 of the plan: a discard refreshes the banner in place).
+  // unmount. Discard lives in Review now, so what reaches this page is the
+  // refresh: the draft has no more changes, and the server's cards are back to
+  // the version's.
   it("clears every receipt when the draft is discarded", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
-    discardDeckDraft.mockResolvedValue({ ok: true });
 
     const draftWithChanges: DraftState = {
       ...COMMITTED,
       removes: [{ oracleId: "placeholder", from: 1, to: 0 }],
     };
-    const { revalidate } = renderBuilder(draftWithChanges, 99);
+    const { revalidate } = renderBuilder(draftWithChanges);
     await removeFromBuilder("Sol Ring");
     expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: deckVersioningCopy.pending.discardCta }));
-    });
-    await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: deckVersioningCopy.discard.confirm(1) }),
-      );
-    });
-    // The revalidation a successful discard brings: the draft has no more
-    // changes, and the server's cards are back to the version's.
     await revalidate([arcaneSignet], COMMITTED);
 
     expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();

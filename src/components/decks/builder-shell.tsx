@@ -47,7 +47,7 @@ import { PreconSuggestion } from "./precons/precon-suggestion";
 import { LinkPreconRow } from "./precons/precon-link-dialogs";
 import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
-import { FillFailedRow, TodoCard, UnresolvedRow } from "./todo-card";
+import { FillFailedRow, PendingRow, TodoCard, UnresolvedRow } from "./todo-card";
 import { deckTodo } from "../../lib/decks/todo";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
@@ -253,9 +253,6 @@ interface BuilderShellProps {
   /** The ids that read covered. The map is sparse, so this is what tells an unlabeled card from a
    *  search result the page never asked about. */
   labelQueried?: readonly string[] | null;
-  /** Cards in the version a discard would land on, straight through to the
-      banner — see `pending-banner.tsx`. Absent draws no `Discard` at all. */
-  versionCards?: number;
   /** Every version this deck has committed, newest first. Empty on a brew, which
       draws no `Versions` tab at all — a tab explaining that a deck has no
       history is a tab advertising its own emptiness (§Decisions 4) — unless it is
@@ -360,7 +357,6 @@ export function BuilderShell({
   wasCounts,
   labelRows = null,
   labelQueried = null,
-  versionCards,
   versions = [],
   initialView = "deck",
   analysisEnabled = false,
@@ -1783,6 +1779,9 @@ export function BuilderShell({
                 unresolved: unresolvedRows.length,
                 openSlots: bodySize - counts.total,
                 candidates: candidates.length,
+                // A committed deck whose list differs from its newest version. A brew has no version
+                // to be pending against: its offer is `Commit as v1`, in the header.
+                pending: draft !== null && draft.version !== null && draftHasChanges,
               })}
               deckName={deck.name}
               renderRow={(row) =>
@@ -1808,16 +1807,15 @@ export function BuilderShell({
                     onOpenChange={setTopOffOpen}
                     onBarHeight={setTopOffBarHeight}
                   />
+                ) : row.kind === "pending" && draft ? (
+                  <PendingRow state={draft} deckId={deck.id} next={row.next} />
                 ) : null
               }
             />
 
-            {/* Surface 1 (#389), under the to-do card until the card takes it as a
-                row: what it says is that this list is not the deck's committed one
-                yet, which every count below it is then read against. */}
-            {draft && (
-              <PendingBanner state={draft} deckId={deck.id} versionCards={versionCards} />
-            )}
+            {/* Surface 1 (#389), what is left of it: the committed version line, and where a
+                commit or a discard lands focus. PR 2 makes it the to-do card's foot. */}
+            {draft && <PendingBanner state={draft} />}
 
             {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
                 its "consider →" cells switch this shell to Consider, so the strip has to

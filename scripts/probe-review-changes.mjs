@@ -1361,35 +1361,13 @@ try {
       }
     }
 
-    // 2d. The same question from the deck page's banner, which is the other host.
-    // The banner's card is what the confirm replaces there, so the reading proves
-    // the third of the banner's three controls opens it on that surface too.
+    // 2d. The deck page no longer asks it: Commit and Discard live in Review alone (deck messages,
+    // Hugh's ruling), so the deck page must draw no Discard at all.
     await vpPage.goto(`${BASE}/decks/${underReview.deckId}`, { waitUntil: "networkidle" });
     await vpPage.waitForTimeout(900);
-    let onDeck = await readReview(vpPage);
-    console.log(`\n########## ${label} · DISCARD from the deck-page banner`);
-    console.log(
-      `  trigger: ${
-        onDeck.discardTriggers.length === 0
-          ? "ABSENT"
-          : `${onDeck.discardTriggers[0].width}x${onDeck.discardTriggers[0].height}`
-      }`,
-    );
-    if (onDeck.discardTriggers.length > 0) {
-      await vpPage.getByRole("button", { name: "Discard", exact: true }).click();
-      await vpPage.waitForTimeout(350);
-      onDeck = await readReview(vpPage);
-      reportConfirm(onDeck, width);
-      if (onDeck.discardConfirm) {
-        await vpPage.getByRole("button", { name: "Keep editing" }).click();
-        await vpPage.waitForTimeout(350);
-        onDeck = await readReview(vpPage);
-        console.log(`  after Keep editing · confirm: ${onDeck.discardConfirm ? "STILL UP" : "gone"}`);
-        console.log(
-          `  after Keep editing · trigger back: ${onDeck.discardTriggers.length > 0 ? "yes" : "NO"}`,
-        );
-      }
-    }
+    const onDeck = await readReview(vpPage);
+    console.log(`\n########## ${label} · no DISCARD on the deck page`);
+    console.log(`  trigger: ${onDeck.discardTriggers.length === 0 ? "absent (ok)" : "PRESENT (FAIL)"}`);
     await vpPage.goto(`${BASE}/decks/${underReview.deckId}/changes`, {
       waitUntil: "networkidle",
     });

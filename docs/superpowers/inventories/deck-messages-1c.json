@@ -1,0 +1,31 @@
+{
+  "feature": "Deck page messages, PR 1c: pending changes as a to-do card row (handoff design_handoff_the99_deck_messages; plan 2026-10-21-deck-messages.md)",
+  "note": "Committed 99-card decks of the headless account on a scratch branch of local-dev. deck-a has one card removed since v2 (98 of 99), so the card holds the last 1 as the next step and the pending row after it; deck-b matches its version and draws no card, only the version line.",
+  "rows": [
+    {
+      "id": "deck-a",
+      "label": "/decks/[id], one change since v2: the last 1 leads, the pending row follows with an outlined Review",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/363e88ff-d289-462f-9028-ebe22628c326",
+          "wait": "section[aria-label^='Before']",
+          "settle": 3000,
+          "scrollTo": "section[aria-label^='Before']"
+        }
+      ]
+    },
+    {
+      "id": "deck-b",
+      "label": "/decks/[id], matches its version: no card, the version line alone",
+      "view": "src/components/decks/todo-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks/b1c48442-6f7e-4c6a-8bc0-9c4296ae2289",
+          "wait": "h1",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}

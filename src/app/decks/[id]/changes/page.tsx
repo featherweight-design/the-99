@@ -95,8 +95,8 @@ export default async function ChangesPage({
   // under a heading counting changes against a version it does not have, over a
   // bar offering a commit the server then refused.
   //
-  // `?commit=1` is the banner's CTA arriving — §Surfaces 5's second entry point
-  // into the one commit surface — or, on a brew, the spine's `Commit as v1`.
+  // `?commit=1` is the spine's `Commit as v1` arriving on a brew (§Surfaces 5's
+  // second entry point; the pending banner's commit link retired with deck messages 1c).
   const wantsCommit = commit === "1";
 
   // The empty-column case is admitted ONLY as that arrival — see

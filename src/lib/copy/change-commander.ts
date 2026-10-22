@@ -110,11 +110,7 @@ export const changeCommanderCopy = {
   },
 
   banner: {
-    hint: "commander", hintPair: "commanders",
-    // Counts-mode sentence, above moneyLine.
-    replaces: (nu: string, old: string) => `${nu} replaces ${old} as commander.`,
-    replacesPair: (a: string, b: string, c: string, d: string) => `${a} and ${b} replace ${c} and ${d} as commanders.`,
-    // name: deckVersioningCopy.history.commanderChange(from, to); pairs via commanderPair.
+    // A traded card's hint on the review page (`commanderZoneHint`).
     fromZone: "from the command zone", toZone: "to the command zone",
   },
 

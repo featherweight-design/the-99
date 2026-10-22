@@ -4,11 +4,12 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { guidedBannerCopy } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { COMMITTED } from "./__fixtures__/draft-state";
 import { deckTodo, type TodoFacts } from "../../lib/decks/todo";
 
 vi.mock("../../app/decks/actions", () => ({ fillDeck: vi.fn() }));
 
-const { TodoCard, FillFailedRow, UnresolvedRow } = await import("./todo-card");
+const { TodoCard, FillFailedRow, UnresolvedRow, PendingRow } = await import("./todo-card");
 
 const copy = deckVersioningCopy.todoCard;
 const fill = recommendationsCopy.fill;
@@ -113,5 +114,47 @@ describe("FillFailedRow", () => {
       expect(screen.getByRole("button", { name: fill.failedRetryAria })).not.toBeDisabled(),
     );
     expect(screen.getByText(fill.failedHeading)).toBeInTheDocument();
+  });
+});
+
+describe("PendingRow", () => {
+  const pending = deckVersioningCopy.pending;
+  const draft = {
+    ...COMMITTED,
+    addChanges: [{ oracleId: "a", from: 0, to: 1 }, { oracleId: "b", from: 0, to: 1 }],
+    adds: [
+      { oracleId: "a", needed: 1, shortfall: 0, bucket: "free" as const, heldBy: [] },
+      { oracleId: "b", needed: 1, shortfall: 0, bucket: "free" as const, heldBy: [] },
+    ],
+    removes: [{ oracleId: "c", from: 1, to: 0 }],
+  };
+
+  it("titles the row with the changes since the version and their two sides", () => {
+    render(<PendingRow state={draft} deckId="deck-1" next />);
+    expect(screen.getByText(pending.counts(2, 0))).toBeInTheDocument();
+    expect(screen.getByText(pending.counts(0, 1))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`^${pending.since(3, 1)}`))).toBeInTheDocument();
+  });
+
+  // Commit and Discard live in Review, so the one press goes where the banner's review link went.
+  it("links its one press to Review, named in full", () => {
+    render(<PendingRow state={draft} deckId="deck-1" next />);
+    const press = screen.getByRole("link", { name: pending.reviewCta(3) });
+    expect(press).toHaveAttribute("href", "/decks/deck-1/changes");
+    expect(press).toHaveTextContent(pending.reviewShort);
+    expect(screen.queryByRole("link", { name: pending.commitCta(2) })).toBeNull();
+    expect(screen.queryByRole("button", { name: pending.discardCta })).toBeNull();
+  });
+
+  it("names the version a commit makes when it is the next step, and both acts otherwise", () => {
+    const { rerender } = render(<PendingRow state={draft} deckId="deck-1" next />);
+    expect(screen.getByText(pending.rowBodyNext(3, 2))).toBeInTheDocument();
+    rerender(<PendingRow state={draft} deckId="deck-1" next={false} />);
+    expect(screen.getByText(pending.rowBody(3))).toBeInTheDocument();
+  });
+
+  it("says it, not them, for one change", () => {
+    expect(pending.rowBody(1)).toBe("Commit or discard it in Review.");
+    expect(pending.rowBodyNext(1, 4)).toBe("Commit it as v4 in Review.");
   });
 });

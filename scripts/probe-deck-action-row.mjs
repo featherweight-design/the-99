@@ -47,7 +47,7 @@ async function signIn(page) {
 // deck's ⋯): ONE line at 360, 375, 390 and 430. JSDOM applies no CSS, so only a browser can say
 // whether the row wrapped. The row is measured on every deck that draws it; the commit control's
 // label is also stretched to "Commit as v12" in the page, since the header itself only ever
-// carries "Commit as v1" (later versions live in the pending banner).
+// carries "Commit as v1" (later versions are committed in Review, reached from the to-do card's pending row).
 //
 // Run by hand, not part of `pnpm test`:   node scripts/probe-deck-action-row.mjs
 const WIDTHS = [360, 375, 390, 430];

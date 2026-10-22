@@ -25,9 +25,6 @@
  * itself — `history.heading`, `history.gamesHeld` and `changed.delta`.
  */
 
-/** The banner names the changes up to this many, and states counts beyond it. */
-export const INLINE_CHANGE_MAX = 6;
-
 /**
  * `1 card` / `2 cards`. Every figure in this module is a row or a copy count, so
  * one is an ordinary value for all of them and not an edge case: a draft with a
@@ -38,60 +35,21 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 export const deckVersioningCopy = {
   /* ---- §Surfaces 1 · pending state on the deck page ---- */
   pending: {
-    label: "Pending changes: not yet a version",
     counts: (adds: number, removes: number) =>
       [adds > 0 ? `+${adds}` : null, removes > 0 ? `−${removes}` : null]
         .filter(Boolean)
         .join(" / "),
     since: (n: number, version: number) => `${plural(n, "change")} since v${version}`,
 
-    // The one figure that decides whether the review page is worth opening.
-    //
-    // `unfree` counts ROWS and `buy` counts COPIES, and they are not the same
-    // number: one card wanted three times with no free copy is one row and three
-    // copies. The sentence says both, so it takes both.
-    //
-    // "short of spare copies", never "has no free copy": a row wanting five with
-    // one spare in the collection is unfree and is not uncovered, and the
-    // narrower sentence would tell that player their own copy does not exist.
-    money: (unfree: number, adds: number, buy: number, total: string) =>
-      `${unfree} of the ${adds} ${unfree === 1 ? "is" : "are"} short of spare copies, ` +
-      `so this commit will ask for ${buy} to buy · ${total}.`,
-    moneyPulls: (n: number) =>
-      n === 1
-        ? "1 of those is sleeved in another deck and can be pulled instead."
-        : `${n} of those are sleeved in other decks and can be pulled instead.`,
-    // The positive counterpart of `money`, in the same words: covered means
-    // enough spare copies for what the row asks, not one copy owned.
-    moneyNone: "Every card coming in has enough spare copies, so this commit asks for nothing.",
-    // A PRINTED card is not a spare copy, so `moneyNone` would be a lie about
-    // where those cards are — the one thing this vocabulary may never say. The
-    // commit still asks for nothing, which is the half worth keeping.
-    moneyProxiedOnly: (n: number) =>
-      n === 1
-        ? "1 card coming in is a proxy, so this commit asks for nothing."
-        : `${n} cards coming in are proxies, so this commit asks for nothing.`,
-    // The MIXED list: some adds have a spare copy, some are printed. Stated as
-    // one sentence rather than `moneyNone` plus a clause, because `moneyNone`
-    // claims EVERY card coming in has a spare copy — which is exactly false of
-    // the printed ones, and two sentences that disagree are worse than either.
-    // "the rest are covered", never "the rest have spare copies": an added BASIC
-    // is bucketed free because basics are unlimited, not because the collection
-    // holds a spare — so the narrower sentence would describe a Swamp as a copy
-    // the player owns. `covered` is legal in prose beside what did not happen,
-    // which is exactly this sentence's shape.
-    moneyProxiedMixed: (proxied: number, adds: number) =>
-      `${proxied} of the ${adds} coming in ${proxied === 1 ? "is a proxy" : "are proxies"}`
-      + ", the rest are covered, and this commit asks for nothing.",
-
     reviewCta: (n: number) => `Review ${plural(n, "change")}`,
-    reviewLink: "review changes",
+    /** The to-do card row's press (handoff `deck_messages`); `reviewCta(n)` is its spoken name. */
+    reviewShort: "Review",
+    /** The row's body: where Commit and Discard went. The next-step form names the version a commit makes. */
+    rowBody: (n: number) => (n === 1 ? "Commit or discard it in Review." : "Commit or discard them in Review."),
+    rowBodyNext: (n: number, version: number) =>
+      n === 1 ? `Commit it as v${version} in Review.` : `Commit them as v${version} in Review.`,
     commitCta: (version: number) => `Commit as v${version}`,
     discardCta: "Discard",
-
-    // Inline name lines, at or below INLINE_CHANGE_MAX.
-    addPullHint: (deck: string) => `or pull from ${deck}`,
-    removeHint: "back in the pool on commit",
 
     // The decklist mark is a 2px --accent left rule on the row — the Component
     // notes table's width, which overrides §Surfaces' 3px prose — not a chip: the
@@ -566,6 +524,8 @@ export const deckVersioningCopy = {
     chevron: "›",
     /** Fill failed's mark tile. */
     fillFailedMark: "!",
+    /** Pending changes' mark tile. */
+    pendingMark: "±",
   },
 } as const;
 

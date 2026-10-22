@@ -38,8 +38,8 @@ const EXEMPT: Record<string, string> = {
   "components/decks/deck-card.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/lineup/deck-link.tsx :: `/decks/${id}`": KEPT,
   "components/decks/deck-card.tsx :: noticesHref(deck.id)": KEPT,
-  "components/decks/pending-banner.tsx :: commitHref(deckId)": KEPT,
-  "components/decks/pending-banner.tsx :: reviewHref(deckId)": KEPT,
+  // The to-do card's one link press is the pending row's Review, onto `…/changes`.
+  "components/decks/todo-card.tsx :: press.href": KEPT,
   "components/decks/proxy-list-view.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/review-changes.tsx :: `/decks/${deckId}`": KEPT,
   "components/decks/update-diff-row.tsx :: `/decks/${deck.sourceDeckId}`": KEPT,

@@ -256,8 +256,8 @@ export default async function DeckBuilderPage({
   // a lie about deck state.
   const fillPassesRead = early(perf.timed("fillPasses", () => readFillPasses(id, userId)));
   // Not swallowed either, and for the stronger version of the same reason: a failed read would
-  // take the banner away, and a deck with pending changes and no banner offers no route to a
-  // commit at all.
+  // take the to-do card's pending row away, and a deck with pending changes and no row offers no
+  // route to Review, where a commit is made, at all.
   const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId, env)));
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
@@ -414,21 +414,10 @@ export default async function DeckBuilderPage({
   // only when there is a draft to compare against, and through the same
   // `computeRoleCounts` the strip itself uses — two folds would put two
   // different decks in one cell.
-  //
-  // The same read answers what a discard lands on. Two reads of one version's
-  // cards for two figures folded out of them would be a second query for
-  // nothing, and the discard confirm is drawn in exactly the case this read is
-  // taken in: a draft, with a version behind it.
   const versionShape = hasChanges(draft) && draft.version
     ? await perf.timed("versionShape", () => loadVersionShape(draft.version!.id))
     : null;
   // `wasCounts` is folded below, after the label rows it may need are read.
-  // Copies, not rows — the figure the decklist prints, and what the reader is
-  // being told they land on. `undefined` where the shape was not read, which is
-  // the absence `PendingBanner` draws no `Discard` for.
-  const versionCards = versionShape
-    ? versionShape.reduce((n, card) => n + card.quantity, 0)
-    : undefined;
 
   // Summarised here rather than in the panel: the function is pure and this is
   // already a server component, so aggregating on the client would ship the
@@ -699,7 +688,6 @@ export default async function DeckBuilderPage({
       fillPasses={fillPasses}
       draft={draft}
       wasCounts={wasCounts}
-      versionCards={versionCards}
       games={games}
       gameOpponents={deckOpponents ? opponentsWire(deckOpponents) : null}
       gameSummary={gameSummary}
