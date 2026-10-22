@@ -244,8 +244,10 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
     if (!ok) setToast({ id: ++seq.current, text: spareCopy.request.failed });
   }
   return (
-    <section aria-label={spareCopy.modalTitleSpares} data-testid="friend-spares" className="relative flex flex-col">
-      <div className="flex items-center justify-between gap-[12px] pb-[6px] font-mono text-[10.5px] uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
+    <section aria-label={spareCopy.modalTitleSpares} data-testid="friend-spares" className="flex flex-col">
+      {/* The head anchors the ⓘ's tip (`.tip`, 26px down from the head's top). From md the modal is only as tall as its
+          rows, so a tip drawn down would be cut at the modal's foot: there it opens up, over the Replacing box. */}
+      <div className="relative flex items-center justify-between gap-[12px] pb-[6px] font-mono text-[10.5px] uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
         <span className="flex items-center">
           {spareCopy.section(rows.length)}
           <InfoTip
@@ -254,7 +256,7 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
             lines={[spareCopy.request.tip]}
             className="inline-flex"
             buttonClassName="ml-[6px] border-[color:var(--border-strong)] font-serif text-[11px] font-semibold italic normal-case tracking-normal"
-            tipClassName="left-0 right-auto top-[26px] w-[min(300px,100%)] gap-0 rounded-[9px] px-[12px] py-[10px] font-sans normal-case tracking-normal shadow-[0_8px_24px_rgba(0,0,0,0.35)] md:w-[min(300px,100%)]"
+            tipClassName="left-0 right-auto top-[26px] w-[min(300px,100%)] gap-0 rounded-[9px] px-[12px] py-[10px] font-sans normal-case tracking-normal shadow-[0_8px_24px_rgba(0,0,0,0.35)] md:bottom-[calc(100%+2px)] md:top-auto md:w-[min(300px,100%)]"
           />
         </span>
       </div>
@@ -263,7 +265,7 @@ function RequestSection({ spares, card, requests }: { spares: readonly FriendSpa
           <li key={s.friend.publicId} data-testid="friend-spare" data-ask={ask.kind} className="flex min-h-[52px] items-center gap-[12px] py-[9px]">
             <Face name={s.friend.displayName} commander={s.friend.commander} size={30} />
             <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-              <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{s.friend.displayName}</b>
+              <b className="truncate text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]">{s.friend.displayName}</b>
               <span data-testid="friend-spare-sub" className="truncate font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
                 <em className="not-italic text-[color:var(--fact)]">{spareCopy.request.count(s.spare)}</em>
                 {" · "}
