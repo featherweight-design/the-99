@@ -92,8 +92,7 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLedger } from "./provenance-line";
-import { PassMarkProvider, passMarkFor, fillPassLabel } from "./pass-mark";
-import { topOffCopy } from "../../lib/copy/top-off";
+import { PassSheet, type PassSheetTarget } from "./pass-sheet";
 // Type only, for the same reason `games.ts` is imported as one: the module
 // reaches for the database.
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
@@ -449,25 +448,12 @@ export function BuilderShell({
   // duration (design table states 3 and 8).
   const [fillInflight, setFillInflight] = useState(false);
 
-  // The ledger's mark: which pass's cards the decklist below is highlighting.
-  // One id, so "one pass at a time" is the representation rather than a rule
-  // something has to enforce.
-  const [markedPassId, setMarkedPassId] = useState<string | null>(null);
-  // Reconciled against the incoming summaries during render, not in an effect.
-  // An undo, a sweep or a keep-all can take the marked pass away on the server,
-  // and an effect would leave one frame in which the ledger drew `aria-pressed`
-  // on a line that is gone and the decklist marked nothing.
-  const newestPassId = fillPasses.at(-1)?.id ?? null;
-  const [seenNewestPassId, setSeenNewestPassId] = useState(newestPassId);
-  if (seenNewestPassId !== newestPassId) {
-    // A commit appends a pass. The mark was on the list the player was reading
-    // before deciding, and the design clears it the moment a new pass lands.
-    setSeenNewestPassId(newestPassId);
-    if (markedPassId !== null) setMarkedPassId(null);
-  }
-  const markedPass = fillPasses.find((p) => p.id === markedPassId) ?? null;
-  if (markedPassId !== null && markedPass === null) setMarkedPassId(null);
-  const passMark = useMemo(() => passMarkFor(markedPass), [markedPass]);
+  // The pass sheet (deck messages PR 3): one pass's cards, from the ledger's `Show these N`, or the
+  // cards other drafts want too, from the foot. One target at a time, for the visit.
+  const [passSheet, setPassSheet] = useState<PassSheetTarget | null>(null);
+  // A pass the incoming summaries no longer list (an undo, a sweep, a keep-all) takes its sheet with
+  // it. Adjusted during render, so the stale sheet never paints.
+  if (passSheet?.kind === "pass" && !fillPasses.some((p) => p.id === passSheet.passId)) setPassSheet(null);
 
   // The top-off list is open. At phone widths its commit bar takes the bottom
   // slot, so the quick-add dock hides — one bottom slot, one occupant (state
@@ -1067,18 +1053,6 @@ export function BuilderShell({
   // calling addOptimisticCard directly. (`announcement` itself is declared above,
   // beside the lock state that also speaks into it.)
 
-  // The mark hides nothing and moves nothing, so it is the one act on this
-  // surface a screen reader would otherwise get nothing at all from.
-  const handleMarkChange = (passId: string | null) => {
-    setMarkedPassId(passId);
-    const pass = passId === null ? null : fillPasses.find((p) => p.id === passId);
-    setAnnouncement(
-      pass
-        ? topOffCopy.announce.marked(String(pass.live), fillPassLabel(pass))
-        : topOffCopy.announce.markCleared,
-    );
-  };
-
   // Composed from the pre-add list plus this card. `useOptimistic` state is not
   // readable synchronously here, and reading it a render later would announce
   // the previous add.
@@ -1578,7 +1552,6 @@ export function BuilderShell({
       <DeckSiblingsProvider>
       <AddOptimisticCardProvider value={deckEdits}>
         <BasicCountsProvider value={basicCounts}>
-        <PassMarkProvider value={passMark}>
         <LabelRowsProvider value={labelRows} queried={labelQueried}>
         {/* One column at both widths now that the rail is gone. The document is
             the only scrollport at both widths: desktop used to frame the column
@@ -1762,14 +1735,15 @@ export function BuilderShell({
                           total={autoCount}
                           passes={fillPasses}
                           bodySize={bodySize}
-                          markedPassId={markedPassId}
-                          onMarkChange={handleMarkChange}
+                          onShow={(passId) => setPassSheet({ kind: "pass", passId })}
                           onAnnounce={setAnnouncement}
                         />
                       ),
                     }
                   : null,
-                otherDrafts: commitments.softClaimed > 0 ? { count: commitments.softClaimed } : null,
+                otherDrafts: commitments.softClaimed > 0
+                  ? { count: commitments.softClaimed, onOpen: () => setPassSheet({ kind: "drafts" }) }
+                  : null,
               }}
               renderRow={(row) =>
                 row.kind === "fillFailed" ? (
@@ -2354,9 +2328,27 @@ export function BuilderShell({
               onClose={() => setExportOpen(false)}
             />
           )}
+          {/* Inside every provider the list's rows read, plus the two the list takes from out here,
+              so the sheet's rows are the list's own (`PassSheet`). The other-drafts form leaves with
+              the foot segment that opens it. */}
+          {passSheet && (passSheet.kind === "pass" || commitments.softClaimed > 0) && (
+            <PendingChangeProvider value={pendingChange}>
+              <LockCardsProvider value={lockCards}>
+                <PassSheet
+                  target={passSheet}
+                  deckId={deck.id}
+                  cards={cards}
+                  passes={fillPasses}
+                  bodySize={bodySize}
+                  newestAsOf={newestAsOf}
+                  onAnnounce={setAnnouncement}
+                  onClose={() => setPassSheet(null)}
+                />
+              </LockCardsProvider>
+            </PendingChangeProvider>
+          )}
         </div>
         </LabelRowsProvider>
-        </PassMarkProvider>
         </BasicCountsProvider>
       </AddOptimisticCardProvider>
       </DeckSiblingsProvider>

@@ -19,7 +19,7 @@ export type PendingChange = {
 };
 
 /**
- * A context rather than a prop, for the reason `pass-mark.tsx` gives: the row is
+ * A context rather than a prop, because the row is
  * mounted from five call sites behind three intermediate components, and the
  * mark is one boolean per row. Null outside a provider, which is every deck with
  * no draft.

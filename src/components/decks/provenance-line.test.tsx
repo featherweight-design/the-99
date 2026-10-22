@@ -56,7 +56,7 @@ function makePass(
 function mount(
   cards: DeckDetailCard[],
   passes: FillPassSummary[],
-  overrides: { markedPassId?: string | null; onMarkChange?: (id: string | null) => void } = {},
+  overrides: { onShow?: (id: string) => void } = {},
 ) {
   return render(
     <ProvenanceLedger
@@ -65,8 +65,7 @@ function mount(
       cards={cards}
       total={cardCopies(cards.filter((c) => c.auto))}
       passes={passes}
-      markedPassId={overrides.markedPassId ?? null}
-      onMarkChange={overrides.onMarkChange ?? vi.fn()}
+      onShow={overrides.onShow ?? vi.fn()}
       onAnnounce={vi.fn()}
     />,
   );
@@ -168,31 +167,16 @@ describe("ProvenanceLedger", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("marks a pass through the callback, and reports the mark as pressed", () => {
-    const onMarkChange = vi.fn();
-    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })], {
-      onMarkChange,
-    });
-    const mark = screen.getByRole("button", {
+  it("opens the pass sheet on that pass: a dialog press, not a toggle", () => {
+    const onShow = vi.fn();
+    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })], { onShow });
+    const show = screen.getByRole("button", {
       name: ledger.markAria("1", ledger.passLabel("1")),
     });
-    expect(mark).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(mark);
-    expect(onMarkChange).toHaveBeenCalledWith("p1");
-  });
-
-  it("clears the mark when the marked pass's own control is pressed again", () => {
-    const onMarkChange = vi.fn();
-    mount([makeCard("a", { auto: true })], [makePass("p1", { oracleIds: ["a"] })], {
-      markedPassId: "p1",
-      onMarkChange,
-    });
-    const mark = screen.getByRole("button", {
-      name: ledger.unmarkAria(ledger.passLabel("1")),
-    });
-    expect(mark).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(mark);
-    expect(onMarkChange).toHaveBeenCalledWith(null);
+    expect(show).not.toHaveAttribute("aria-pressed");
+    expect(show).toHaveAttribute("aria-haspopup", "dialog");
+    fireEvent.click(show);
+    expect(onShow).toHaveBeenCalledWith("p1");
   });
 
   it("announces the deck size the undo settled on, not the one it started from", async () => {
@@ -213,8 +197,7 @@ describe("ProvenanceLedger", () => {
       deckId: "deck-1",
       bodySize: 99,
       passes,
-      markedPassId: null,
-      onMarkChange: vi.fn(),
+      onShow: vi.fn(),
       onAnnounce,
     };
     render(<ProvenanceLedger {...props} cards={[makeCard("a", { auto: true })]} total={1} />);
@@ -263,8 +246,7 @@ describe("ProvenanceLedger", () => {
         total={0}
         bodySize={99}
         passes={passes}
-        markedPassId={null}
-        onMarkChange={vi.fn()}
+        onShow={vi.fn()}
         onAnnounce={vi.fn()}
       />,
     );

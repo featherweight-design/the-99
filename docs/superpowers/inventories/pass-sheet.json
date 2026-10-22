@@ -1,0 +1,49 @@
+{
+  "feature": "Deck page messages, PR 3: the pass sheet (handoff design_handoff_the99_deck_messages, `Pass Sheet.dc.html`; plan 2026-10-21-deck-messages.md)",
+  "note": "Fixture decks of the headless account on a scratch branch of local-dev. `Fixture over` (0d0e…0003) carries a seed and a 1st top-off; 363e88ff… has copies other drafts want. The sheet's rows are `DecklistRow`, mounted unchanged: the shares block holds the sheet and the deck list to the one component.",
+  "shares": {
+    "module": "src/components/decks/decklist-row.tsx",
+    "binding": "DecklistRow",
+    "note": "The deck list renders its All rows through `DecklistGroup`; the pass sheet renders the same row itself (Hugh, 2026-10-22: never a copy, never a trimmed row)."
+  },
+  "rows": [
+    {
+      "id": "deck-list",
+      "label": "/decks/[id], the deck list's All rows the sheet must match",
+      "view": "src/components/decks/decklist-group.tsx",
+      "steps": [{ "goto": "/decks/0d0e0000-0000-4000-8000-000000000003", "wait": "section[aria-label^='Before']", "scrollTo": "[data-todo-foot]", "settle": 3000 }]
+    },
+    {
+      "id": "sheet-top-off",
+      "label": "/decks/[id], Show these N on the 1st top-off: the pass sheet with Undo these N and Done",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/0d0e0000-0000-4000-8000-000000000003", "wait": "section[aria-label^='Before']", "settle": 3000 },
+        { "clickRole": "button", "name": "^Where these" },
+        { "clickRole": "button", "name": "from 1st top-off$" },
+        { "wait": "[role=dialog][aria-modal=true]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "sheet-seed",
+      "label": "/decks/[id], Show these N on the seed: eyebrow The seed",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/0d0e0000-0000-4000-8000-000000000003", "wait": "section[aria-label^='Before']", "settle": 3000 },
+        { "clickRole": "button", "name": "^Where these" },
+        { "clickRole": "button", "name": "from the seed$" },
+        { "wait": "[role=dialog][aria-modal=true]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "sheet-other-drafts",
+      "label": "/decks/[id], N in other drafts too: the sheet grouped under each draft, Done only",
+      "view": "src/components/decks/pass-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/363e88ff-d289-462f-9028-ebe22628c326", "wait": "section[aria-label^='Before']", "settle": 3000 },
+        { "clickRole": "button", "name": "in (other drafts|another draft) too" },
+        { "wait": "[role=dialog][aria-modal=true]", "settle": 1500 }
+      ]
+    }
+  ]
+}

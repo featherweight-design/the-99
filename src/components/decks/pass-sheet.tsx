@@ -1,0 +1,222 @@
+"use client";
+
+// The pass sheet (deck messages PR 3, `Pass Sheet.dc.html`, Hugh's ruling 10). `Show these N` in the
+// provenance ledger and `N in other drafts too` in the to-do card's foot open it: a sheet at 390 and
+// a modal at 1300, on the shipped `ModalChrome`.
+//
+// ITS ROWS ARE THE LIST'S OWN ROWS. `DecklistRow` in the All view, with the props `DecklistGroup`
+// gives it, mounted inside the deck page's providers (the shell mounts this sheet inside them and
+// adds the two the list takes from out there: the pending change and the locks). Never a copy and
+// never a trimmed row: card rows have drifted before (Hugh, 2026-10-22), and
+// `docs/superpowers/inventories/pass-sheet.json` holds the import for `pnpm check:shared`.
+//
+// The cards are read off the OPTIMISTIC list, so a row's ✕ takes the row out of the sheet and the
+// count in the head drops in the same paint, exactly as the list loses it. A row's press opens the
+// card detail stacked on the sheet (`ModalChrome` registers it), whose close reads `← {eyebrow}`.
+
+import { useState } from "react";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { topOffCopy } from "../../lib/copy/top-off";
+import { printedNameOf } from "../../lib/collection/browse";
+import { availabilityState, holdsCopy } from "../../lib/decks/availability";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { FillPassSummary } from "../../lib/decks/fill-passes";
+import { GhostButton, PrimaryButton } from "../ui/button";
+import { DecklistGroupHeader } from "./decklist-group-header";
+import { DecklistRow } from "./decklist-row";
+import { HoverPreviewProvider } from "./hover-preview";
+import { MutationError } from "./mutation-error";
+import { lineSentence, passBuyCount, usePassUndo } from "./provenance-line";
+import { ModalChrome } from "./receipt-modal";
+
+const ledger = topOffCopy.ledger;
+
+/** Which form is open: one pass's cards, or the cards other drafts want too. */
+export type PassSheetTarget = { kind: "pass"; passId: string } | { kind: "drafts" };
+
+type Common = {
+  deckId: string;
+  /** The optimistic card list. */
+  cards: DeckDetailCard[];
+  newestAsOf: Date | null;
+  onClose: () => void;
+};
+
+export function PassSheet({
+  target,
+  passes,
+  bodySize,
+  onAnnounce,
+  ...common
+}: Common & {
+  target: PassSheetTarget;
+  passes: FillPassSummary[];
+  bodySize: number;
+  onAnnounce: (message: string) => void;
+}) {
+  if (target.kind === "drafts") return <DraftsSheet {...common} />;
+  // A pass the server no longer lists (an undo, a sweep, a keep-all) has nothing left to show; the
+  // shell closes the sheet in the same render.
+  const pass = passes.find((p) => p.id === target.passId);
+  if (!pass) return null;
+  return <OnePassSheet pass={pass} bodySize={bodySize} onAnnounce={onAnnounce} {...common} />;
+}
+
+function OnePassSheet({
+  pass,
+  bodySize,
+  onAnnounce,
+  deckId,
+  cards,
+  newestAsOf,
+  onClose,
+}: Common & { pass: FillPassSummary; bodySize: number; onAnnounce: (message: string) => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const { pending, undo } = usePassUndo({ deckId, pass, bodySize, onAnnounce, onError: setError, onDone: onClose });
+  const byId = new Map(cards.map((c) => [c.oracleId, c]));
+  // The pass's LIVE cards: those still in the deck, the copies it placed and no more.
+  const live = pass.liveCards.flatMap((lc) => {
+    const card = byId.get(lc.oracleId);
+    return card ? [{ card, copies: Math.min(lc.quantity, card.quantity) }] : [];
+  });
+  const count = live.reduce((n, l) => n + l.copies, 0);
+  const label = ledger.sheetLabel(pass);
+  const n = String(pass.live);
+  const rows = live.map((l) => l.card);
+
+  return (
+    <SheetFrame
+      eyebrow={label}
+      count={count}
+      lead={lineSentence(pass, passBuyCount(pass, cards))}
+      closeLabel={ledger.sheetCloseAria(label)}
+      onClose={onClose}
+      undo={
+        <>
+          {error && <div className="w-full"><MutationError message={error} /></div>}
+          <GhostButton
+            onClick={undo}
+            disabled={pending}
+            aria-label={ledger.undoAria(n, label)}
+            className={FOOT_BUTTON}
+          >
+            {pending ? ledger.undoInFlight(n) : pass.live === 1 ? ledger.undoOne : ledger.undo(n)}
+          </GhostButton>
+        </>
+      }
+    >
+      <Rows deckId={deckId} cards={rows} siblings={rows} newestAsOf={newestAsOf} />
+    </SheetFrame>
+  );
+}
+
+function DraftsSheet({ deckId, cards, newestAsOf, onClose }: Common) {
+  // Every card here some other draft also wants (`availabilityState`'s soft, from this deck's own
+  // vantage, as the foot's count reads it), under each draft that wants it: a claim that holds no
+  // copy (`holdsCopy`) is a draft's.
+  const groups = new Map<string, { name: string; cards: DeckDetailCard[] }>();
+  const soft: DeckDetailCard[] = [];
+  for (const card of cards) {
+    const a = card.availability;
+    if (!a || availabilityState(a, { selfExcluded: true }) !== "soft") continue;
+    soft.push(card);
+    for (const claim of a.claims) {
+      if (holdsCopy(claim)) continue;
+      const group = groups.get(claim.id) ?? { name: claim.name, cards: [] };
+      if (!group.cards.includes(card)) group.cards.push(card);
+      groups.set(claim.id, group);
+    }
+  }
+  // The draft wanting most first, then by name, so the order holds still between visits.
+  const ordered = [...groups.values()].sort((x, y) => y.cards.length - x.cards.length || x.name.localeCompare(y.name));
+  const siblings = [...new Set(ordered.flatMap((g) => g.cards))];
+
+  return (
+    <SheetFrame
+      eyebrow={availabilityCopy.deckRollup.sheetEyebrow}
+      count={soft.length}
+      lead={availabilityCopy.deckRollup.softBody}
+      closeLabel={availabilityCopy.deckRollup.sheetCloseAria}
+      onClose={onClose}
+    >
+      {ordered.map((g, i) => (
+        <div key={g.name + i} className={i > 0 ? "mt-[8px]" : undefined}>
+          <DecklistGroupHeader label={g.name} count={g.cards.length} />
+          <Rows deckId={deckId} cards={g.cards} siblings={siblings} newestAsOf={newestAsOf} />
+        </div>
+      ))}
+    </SheetFrame>
+  );
+}
+
+// `.sf`: two even presses on the phone at the 44px floor; at 1300 Undo left, Done right, 38px tall.
+const FOOT_BUTTON =
+  "flex-1 md:flex-none inline-flex items-center justify-center h-[44px] md:h-[38px] rounded-[9px] px-[18px] font-sans text-[13.5px] font-semibold whitespace-nowrap";
+
+function SheetFrame({
+  eyebrow,
+  count,
+  lead,
+  closeLabel,
+  onClose,
+  undo,
+  children,
+}: {
+  eyebrow: string;
+  count: number;
+  lead: React.ReactNode;
+  closeLabel: string;
+  onClose: () => void;
+  undo?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <ModalChrome
+      eyebrow={eyebrow}
+      title={ledger.sheetTitle(count)}
+      lead={lead}
+      // Fixed on the eyebrow: a title that moved with the count would re-register the sheet under
+      // an open card. The card's close reads `← 1st top-off` at both widths.
+      backLabel={eyebrow}
+      closeLabel={closeLabel}
+      onClose={onClose}
+      width={600}
+      ground="var(--surface)"
+      foot={
+        <div className="flex flex-wrap items-center gap-[8px] px-[14px] pt-[12px] pb-[26px] md:px-[16px] md:pb-[14px] [border-top:1px_solid_var(--border)]">
+          {undo}
+          <PrimaryButton onClick={onClose} className={`${FOOT_BUTTON} md:ml-auto`}>
+            {ledger.sheetDone}
+          </PrimaryButton>
+        </div>
+      }
+    >
+      {/* `.sr`. The preview waits for the pointer to move: the sheet opens under a resting one. */}
+      <HoverPreviewProvider waitForMove className="flex flex-col px-[12px] py-[10px]">
+        {children}
+      </HoverPreviewProvider>
+    </ModalChrome>
+  );
+}
+
+/** The list's own rows, All view, with the props `DecklistGroup` gives them. */
+function Rows({
+  deckId,
+  cards,
+  siblings,
+  newestAsOf,
+}: {
+  deckId: string;
+  cards: DeckDetailCard[];
+  siblings: DeckDetailCard[];
+  newestAsOf: Date | null;
+}) {
+  const order = siblings.map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri, foil: c.foil }));
+  return (
+    <div className="flex flex-col gap-[4px]">
+      {cards.map((card) => (
+        <DecklistRow key={card.oracleId} deckId={deckId} card={card} siblings={order} newestAsOf={newestAsOf} />
+      ))}
+    </div>
+  );
+}

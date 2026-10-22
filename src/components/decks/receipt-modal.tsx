@@ -121,6 +121,9 @@ export function ModalChrome({
   stackFooter,
   overCard,
   pendingName,
+  eyebrow,
+  lead,
+  foot,
   children,
 }: {
   mark?: React.ReactNode;
@@ -130,7 +133,13 @@ export function ModalChrome({
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  width: 560 | 640 | 700 | 760;
+  width: 560 | 600 | 640 | 700 | 760;
+  /** A mono kicker over the title, and a sentence under it (the pass sheet's head, `Pass Sheet.dc.html`
+   *  `.hd2`): the header then grows with them rather than holding the 43px line. */
+  eyebrow?: string;
+  lead?: React.ReactNode;
+  /** Pinned under the scrolling body, outside it (the pass sheet's Undo and Done). */
+  foot?: React.ReactNode;
   backLabel?: string;
   /** What a card stacked on this sheet calls it on the phone, where that differs (stacked sheets R1, s2). */
   phoneBackLabel?: string;
@@ -242,6 +251,9 @@ export function ModalChrome({
           overCard={overCard}
           titleClassName={titleClassName}
           behind={behind}
+          eyebrow={eyebrow}
+          lead={lead}
+          foot={foot}
         >
           {children}
         </ModalPanel>
@@ -267,6 +279,9 @@ export function ModalPanel({
   overCard,
   titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   behind = false,
+  eyebrow,
+  lead,
+  foot,
   children,
 }: {
   titleId?: string;
@@ -280,10 +295,41 @@ export function ModalPanel({
   titleClassName?: string;
   /** A card stands in front of the sheet: the header and body step down. */
   behind?: boolean;
+  eyebrow?: string;
+  lead?: React.ReactNode;
+  foot?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <>
+      {eyebrow !== undefined ? (
+        // `.hd2`: the eyebrow, the title and the sentence in one column beside the 44px close.
+        <div
+          className="flex flex-none items-start gap-[10px] py-[10px] pl-[18px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
+          style={{ opacity: behind ? 0.55 : undefined }}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px] py-[10px]">
+            <p className="m-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent-text)]">{eyebrow}</p>
+            <h2
+              id={titleId}
+              tabIndex={-1}
+              className="m-0 mt-[4px] font-display text-[17px] font-bold leading-tight outline-none"
+              style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
+            >
+              {title}
+            </h2>
+            {lead != null ? <p className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{lead}</p> : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel}
+            className="flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
       <div
         className="flex flex-none items-center gap-[9px] md:gap-[10px] h-[43px] px-[16px] md:h-auto md:px-[18px] md:py-[14px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
         style={{ opacity: behind ? 0.55 : undefined }}
@@ -328,6 +374,7 @@ export function ModalPanel({
           </button>
         )}
       </div>
+      )}
       {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
           header is the strip that says where a dismissal lands, and the body is only context.
           `overscroll-contain` (Hugh, 2026-10-03) stops a scroll of this body at either end
@@ -335,6 +382,7 @@ export function ModalPanel({
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ opacity: behind ? 0.35 : undefined }}>
         {children}
       </div>
+      {foot != null ? <div className="flex-none" style={{ opacity: behind ? 0.55 : undefined }}>{foot}</div> : null}
     </>
   );
 }
@@ -342,6 +390,7 @@ export function ModalPanel({
 // Literal class strings, so Tailwind sees each one.
 const WIDTH_CLASS = {
   560: "md:w-[560px] ",
+  600: "md:w-[600px] ",
   640: "md:w-[640px] ",
   700: "md:w-[700px] ",
   760: "md:w-[760px] ",
