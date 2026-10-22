@@ -46,6 +46,7 @@ export const SWITCHES = [
   { name: "FIRST_RUN_TOUR_ENABLED", kind: "feature" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "HELP_PANEL_ENABLED", kind: "feature" },
+  { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
   { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
   { name: "LABEL_SURFACES_ENABLED", kind: "feature" },
