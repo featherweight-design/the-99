@@ -84,13 +84,14 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
   );
 }
 
-/** The board's `.lnk`: in the text column on a phone, the row's third column from desktop. */
+/** The board's `.lnk`: in the text column on a phone, where a long name wraps rather than clip, and the row's third
+ * column from desktop, on one line. */
 function WaitingLink({ row, className }: { row: WaitingRow; className: string }) {
   return (
     <span className={className}>
       <Link
         href={`/friends/${row.friend.publicId}`}
-        className="flex min-h-[32px] items-center gap-[4px] whitespace-nowrap text-[13px] font-medium text-[color:var(--accent-text)] no-underline"
+        className="flex min-h-[32px] items-center gap-[4px] text-[13px] [overflow-wrap:anywhere] md:whitespace-nowrap font-medium text-[color:var(--accent-text)] no-underline"
       >
         {w.seeSpares(row.friend.displayName)}
         <span aria-hidden>›</span>

@@ -40,6 +40,15 @@ describe("WaitingOnYou", () => {
     for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin");
   });
 
+  // A 30-character name must not clip the phone's link: it wraps there, and holds one line only from desktop.
+  it("lets the phone's link wrap, and keeps it on one line only from desktop", () => {
+    render(<WaitingOnYou rows={[ROW]} now={NOW} />);
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.className).not.toMatch(/(^|\s)whitespace-nowrap/);
+      expect(link.className).toContain("[overflow-wrap:anywhere]");
+    }
+  });
+
   it("marks an unseen row, and only that one", () => {
     render(<WaitingOnYou rows={[ROW, { ...ROW, key: "item:2", unseen: false }]} now={NOW} />);
     const [unseen, seen] = screen.getAllByTestId("waiting-row");
