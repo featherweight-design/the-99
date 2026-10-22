@@ -73,6 +73,9 @@ const FEEDERS: Record<string, string> = {
   "components/intake/choose-row.tsx": "lib/intake/rows.ts",
   // The picks a past run lists that have gone: the printing card details open (`chainArt` in `loadGonePicks`).
   "components/intake/past-run.tsx": "lib/intake/past-run.ts",
+  // Home's What's new (menu and Home PR 6): a price drop's, a trade match's and a combo piece's card down the chain
+  // card details uses (`chainArt` in `loadHomeFeed`'s lookups).
+  "components/feed/feed-item.tsx": "lib/feed/home.ts",
   "components/commanders/synergy-row.tsx": "app/commanders/[slug]/page.tsx",
   "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
   // Tokens are not cards: a token row previews the printing it is pictured with (`assembleDeckTokens`), which is the one

@@ -22,7 +22,7 @@ import { ArtLayer } from "./art-layer";
  * two big card faces are exempt for the same reason from the other direction:
  * the player is meant to read the printing.
  */
-export type ThumbSize = "row" | "summary" | "result" | "list" | "open" | "openWide";
+export type ThumbSize = "row" | "summary" | "result" | "list" | "open" | "openWide" | "feed" | "lead" | "leadWide";
 
 /** `[]` is COLORLESS — a real identity, and what `commanderGradient` answers with
     the colorless gradient both card faces draw. `null` is "we do not know", which
@@ -46,6 +46,12 @@ const BOX: Record<ThumbSize, { width: number; height: number; radius: string }> 
   // because the box is inline: the page draws one below md and the other from md.
   open: { width: 46, height: 64, radius: "rounded-[6px]" },
   openWide: { width: 56, height: 78, radius: "rounded-[6px]" },
+  // Home's What's new row (menu and Home handoff, \`.fi .cardimg\`): 46/64 at the board's 3px, 6.5% of the width and so
+  // clear of Scryfall's corner matte (3.1%).
+  feed: { width: 46, height: 64, radius: "rounded-[3px]" },
+  // Home's lead story (\`.ld .lc .cardimg\`), tilted by its wrapper: 96/134 (0.716) on a phone, 120/168 (0.714) from md.
+  lead: { width: 96, height: 134, radius: "rounded-[5px]" },
+  leadWide: { width: 120, height: 168, radius: "rounded-[6px]" },
 };
 
 /** The ring every commander's card art carries, at whatever size — the two thumb
