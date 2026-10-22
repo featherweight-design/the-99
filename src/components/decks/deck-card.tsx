@@ -18,6 +18,9 @@ import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 import { BracketChip } from "./bracket-chip";
 import { NoticeMark, noticeSentence, noticeSpoken } from "./notice-tag";
+import { HiddenFromFriendsGlyph } from "./hidden-from-friends-mark";
+import { socialCopy } from "../../lib/copy/social";
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { noticesHref } from "../../lib/notices/arrival";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { verdictHead } from "../../lib/bracket/verdict-head";
@@ -243,6 +246,11 @@ interface DeckCardProps {
   claimPrefetch?: () => boolean;
   /** Passed through to the menu's `See it among your decks` row; absent while Stats is off. */
   onAmong?: () => void;
+  /**
+   * The reader's own two friend deck rules, with `FRIEND_DECKS_ENABLED` on for them; null (or absent) while it is off,
+   * and then the tile draws neither the glyph nor the menu's Hidden from friends row.
+   */
+  friendPrefs?: FriendDeckPrefs | null;
 }
 
 /**
@@ -278,9 +286,16 @@ interface DeckCardProps {
  * pixels for a platform's glyphs.
  */
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
+/**
+ * The same yield with the Hidden from friends glyph in the row as well (friend decks PR 4). The glyph is a fixed 16px
+ * plus the row's 8px gap, so it adds exactly 24px: 332.1 + 24 = 356.1 beside a notice, closing the window at 360.
+ * Without a notice the range and the glyph come to 330.1 (332.1 less the mark's 18 and its gap, plus 24), just over
+ * the band floor, so a range beside the glyph alone yields in the plain window too.
+ */
+const YIELD_HIDDEN = { faced: "@min-[330px]:@max-[360px]:hidden", marks: "hidden @min-[330px]:@max-[360px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, deferArt = false, claimPrefetch, onAmong,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, deferArt = false, claimPrefetch, onAmong, friendPrefs = null,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -327,10 +342,12 @@ export function DeckCard({
     : deck.statusPill;
   // The notice rides after the chip in the name as it does on the row, since the row is hidden.
   const notice = noticeSpoken(deck.notice ?? null);
-  const spokenStatus = notice ? `${withBracket}, ${notice}` : withBracket;
-  // The yield applies only to a RANGE beside a notice: a single mark's name fits beside any tag.
-  const yieldsFace = Boolean(deck.bracket && deck.notice && verdictHead(deck.bracket.permits, deck.bracket.answered).split);
-  const yieldClasses = YIELD;
+  // The glyph marks a deck hidden ON ITS OWN (README 4b): a Settings rule is stated once, in Settings, not on every tile.
+  const hiddenMark = friendPrefs !== null && deck.hiddenFromFriends === true;
+  const spokenStatus = [withBracket, hiddenMark ? socialCopy.hideDeck.key : null, notice].filter(Boolean).join(", ");
+  // The yield applies only to a RANGE beside a notice or the hidden glyph: a single mark's name fits beside any tag.
+  const yieldsFace = Boolean(deck.bracket && (deck.notice || hiddenMark) && verdictHead(deck.bracket.permits, deck.bracket.answered).split);
+  const yieldClasses = deck.notice && hiddenMark ? YIELD_HIDDEN : YIELD;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
@@ -411,6 +428,7 @@ export function DeckCard({
             closeAfterCreate,
           }}
           onAmong={onAmong}
+          friends={friendPrefs ? { hidden: deck.hiddenFromFriends === true, statusPill: deck.statusPill, prefs: friendPrefs } : undefined}
         />
       </DeckTileArt>
 
@@ -468,6 +486,13 @@ export function DeckCard({
             ) : (
               <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
             )
+          ) : null}
+          {hiddenMark ? (
+            // The glyph alone, after the bracket chip and before any notice. Its name rides the cover link's, since
+            // this row is presentation.
+            <span data-hidden-from-friends className="inline-flex flex-none text-[color:var(--fg-muted)]">
+              <HiddenFromFriendsGlyph size={16} />
+            </span>
           ) : null}
           {deck.notice ? (
             // F19: the mark is lifted OVER the tile's cover link (last in the DOM, `absolute

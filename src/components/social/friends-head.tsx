@@ -18,6 +18,9 @@ import { capName, DISPLAY_NAME_MAX } from "../../lib/social/client-rules";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { TextField } from "../ui/text-field";
 import { Face } from "./face";
+import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 
 const p = socialCopy.page;
 const c = socialCopy.commander;
@@ -37,6 +40,7 @@ export function FriendsHead({
   onInvite,
   inviteRef,
   inviteCount,
+  decksSeen = null,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -58,6 +62,11 @@ export function FriendsHead({
    * never held (R13): at ten links the hold sentence stays under it, and chooser card 1 is what is held.
    */
   inviteCount?: ReactNode;
+  /**
+   * The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on for them: the privacy line then says what their
+   * rules let a friend open, and links to Settings. Null (off): the shipped line.
+   */
+  decksSeen?: FriendDeckPrefs | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
@@ -161,7 +170,9 @@ export function FriendsHead({
               </p>
             )}
             {editing ? null : (
-              <p className="m-0 mt-[4px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">{p.decksSeen}</p>
+              <p data-decks-seen className="m-0 mt-[4px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]">
+                {decksSeen ? <DecksSeenLine prefs={decksSeen} /> : p.decksSeen}
+              </p>
             )}
           </div>
           {editing ? (
@@ -243,5 +254,21 @@ export function FriendsHead({
         )}
       </div>
     </header>
+  );
+}
+
+/** The privacy line under friend decks (friend decks handoff, `Privacy.dc.html`): one of three, by the reader's own rules. */
+function DecksSeenLine({ prefs }: { prefs: FriendDeckPrefs }) {
+  const w = p.decksSeenBy;
+  const said = !prefs.seeDecks ? w.none : prefs.seeUnfinished ? w.all : w.finished;
+  return (
+    <>
+      {said} {w.change}{" "}
+      <Link href="/settings" className="font-medium text-[color:var(--accent-text)] no-underline">
+        <PendingReporter href="/settings" />
+        {w.settings}
+      </Link>
+      .
+    </>
   );
 }

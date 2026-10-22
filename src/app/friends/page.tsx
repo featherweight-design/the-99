@@ -11,7 +11,8 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { ruleZeroEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { friendDecksEnabled, ruleZeroEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { perfRoute } from "../../lib/perf/timing";
@@ -67,13 +68,15 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
   const ruleZero = ruleZeroEnabled(env);
-  const [profile, { friends, links }, pods, shared, tables, waiting] = await Promise.all([
+  const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
     perf.timed("sharedPods", () => listSharedPods(userId)),
     ruleZero ? perf.timed("openTables", () => openTablesFor(userId)) : Promise.resolve(null),
     perf.timed("waitingOnYou", () => loadWaitingOnYou(userId, env, now)),
+    // The head's privacy line under friend decks: the reader's own two rules (README 4b).
+    friendDecksEnabled(env) ? perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)) : Promise.resolve(null),
   ]);
   // After the response, never during the render: record any trade match this reader has not been told about (the next
   // render draws it), then clear the Friends badge up to the instant this page drew. Each writes only when it has
@@ -109,6 +112,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       maxLinks={MAX_OPEN_INVITES}
       friendPages
       invites={invites}
+      decksSeen={deckPrefs}
     />
     </>
   );

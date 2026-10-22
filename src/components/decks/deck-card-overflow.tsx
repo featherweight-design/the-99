@@ -12,6 +12,12 @@ import { MoveMode } from "./deck-move-mode";
 import { DeleteMode } from "./deck-delete-mode";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
+import { setDeckHiddenFromFriendsAction } from "../../app/decks/hide-actions";
+import { socialCopy } from "../../lib/copy/social";
+import type { StatusPill } from "../../lib/decks/status";
+import { settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
+import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { PendingReporter } from "../shell/pending-reporter";
 
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
@@ -48,7 +54,24 @@ interface DeckCardOverflowProps {
   move?: DeckMove;
   /** Stats with this deck chosen (`LINEUP_ENABLED`): absent while the switch is off, and the row with it. */
   onAmong?: () => void;
+  /** Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader): absent while the switch is off, and the row with it. */
+  friends?: DeckFriendsHide;
 }
+
+/** What the Hidden from friends row needs: the deck's own flag, its status and the owner's two Settings rules. */
+export interface DeckFriendsHide {
+  hidden: boolean;
+  statusPill: StatusPill;
+  prefs: FriendDeckPrefs;
+}
+
+/** ITEM for the locked row, which carries a sub-line: its height follows its two lines, padded 8px (README 4b). */
+const LOCKED_ITEM =
+  "flex min-h-[38px] pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full items-center gap-[10px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] py-[8px] text-left font-sans text-[13px] transition-colors hover:bg-[color:var(--elevated)]";
+
+/** The row's box: 16px at desktop, 18px on a coarse pointer, at the row's right end (friend decks README 4). */
+const HIDE_BOX =
+  "ml-auto flex h-[16px] w-[16px] flex-none items-center justify-center rounded-[4px] border-[1.5px] border-solid text-[11px] font-bold leading-none text-[color:var(--bg)] pointer-coarse:h-[18px] pointer-coarse:w-[18px] pointer-coarse:text-[12px]";
 
 /** What the Move row needs from the Decks list, which owns the shelves and the create dialog. */
 export interface DeckMove {
@@ -100,6 +123,7 @@ export function DeckCardOverflow({
   placement,
   move,
   onAmong,
+  friends,
 }: DeckCardOverflowProps) {
   const header = placement === "header";
   const closeAfterCreate = move?.closeAfterCreate ?? null;
@@ -243,6 +267,27 @@ export function DeckCardOverflow({
   // too would be undone by the dialog's cleanup, which runs after and returns focus to whatever had it at mount.
   function closeExport() {
     setExporting(null);
+  }
+
+  // Hidden from friends' refusal. The menu has closed by then, so the toast is the page's, in a portal like the dialog.
+  const [hideToast, setHideToast] = useState<SocialToastState | null>(null);
+  const hideToastSeq = useRef(0);
+  // The owner's Settings rules already hide this deck: the row draws ticked and locked, and its press opens Settings.
+  const hideLocked = friends ? settingsHideDeck(friends.statusPill, friends.prefs) : false;
+
+  async function handleHide(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy || !friends) return;
+    // Ticks, saves and closes, with no confirm: it undoes the same way. The mark and the row follow the redraw.
+    handleClose();
+    const fail = () => setHideToast({ id: ++hideToastSeq.current, text: socialCopy.hideDeck.failed });
+    try {
+      const r = await setDeckHiddenFromFriendsAction(deckId, !friends.hidden);
+      if (!r.ok) fail();
+    } catch {
+      fail();
+    }
   }
 
   function handleClose() {
@@ -402,6 +447,45 @@ export function DeckCardOverflow({
                 </span>
               </button>
               ) : null}
+              {/* Hidden from friends, directly above Delete (friend decks README 4). */}
+              {friends ? (
+                hideLocked ? (
+                  <Link
+                    href="/settings"
+                    data-hide-from-friends="locked"
+                    aria-label={socialCopy.hideDeck.lockedAria}
+                    className={`${LOCKED_ITEM} first:border-t-0 text-[color:var(--fg)] no-underline`}
+                  >
+                    <PendingReporter href="/settings" />
+                    <span className="flex min-w-0 flex-col gap-[2px]">
+                      <span>{socialCopy.hideDeck.row}</span>
+                      <small className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+                        {socialCopy.hideDeck.locked} <span aria-hidden>›</span>
+                      </small>
+                    </span>
+                    <span aria-hidden data-hide-box className={`${HIDE_BOX} border-[color:var(--fg-locked)] bg-[color:var(--fg-locked)]`}>✓</span>
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={friends.hidden}
+                    data-hide-from-friends={friends.hidden ? "on" : "off"}
+                    onClick={handleHide}
+                    disabled={busy}
+                    className={`${ITEM} first:border-t-0 gap-[10px] cursor-pointer bg-transparent text-[color:var(--fg)]`}
+                  >
+                    <span className="min-w-0">{socialCopy.hideDeck.row}</span>
+                    <span
+                      aria-hidden
+                      data-hide-box
+                      className={`${HIDE_BOX} ${friends.hidden ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-dashed)] bg-transparent"}`}
+                    >
+                      {friends.hidden ? "✓" : null}
+                    </span>
+                  </button>
+                )
+              ) : null}
               <button
                 ref={deleteRow}
                 type="button"
@@ -486,6 +570,7 @@ export function DeckCardOverflow({
       {exporting
         ? createPortal(<exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />, document.body)
         : null}
+      {hideToast ? createPortal(<SocialToast toast={hideToast} onDone={() => setHideToast(null)} />, document.body) : null}
     </div>
   );
 }

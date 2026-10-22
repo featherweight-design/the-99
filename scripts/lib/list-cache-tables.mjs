@@ -82,6 +82,10 @@ export const PER_REQUEST_READS = {
   // job, a friend's spare or a collection write adds an item without moving Home's key), and the catalog kinds arrive
   // with a catalog stamp, so the feed is read fresh beside the welcome strip; its visit writes run through \`after()\`.
   "src/lib/feed/home.ts": "Home's What's new and lead story read feed_items and the catalog kinds fresh on every request; a new item moves no key Home has",
+  // Friend decks (README 4): /decks reads the reader's OWN two Settings rules (`loadFriendDeckPrefs`) for the ⋯ menu's
+  // Hidden from friends row, beside the payload. The module also holds the friend deck writes and is where the cross-user
+  // reads draw their rule, so reaching it from the payload would key /decks on every friend's stamp for one prefs row.
+  "src/lib/social/deck-visibility.ts": "/decks reads the reader's own friend deck rules fresh per request, beside the cached payload, for the menu's Hidden from friends row",
 };
 
 /** Every file the pages reach through the loaders, the pages included. A page's import of a per-request module is not followed. */

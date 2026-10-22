@@ -2,6 +2,8 @@ import { deckNoticesCopy } from "../../lib/copy/notices";
 import type { DeckListItem } from "../../lib/decks/read";
 import { MarkKey, type MarkKeyEntry } from "./mark-key";
 import { NoticeMark } from "./notice-tag";
+import { HiddenFromFriendsGlyph } from "./hidden-from-friends-mark";
+import { socialCopy } from "../../lib/copy/social";
 
 /**
  * The /decks key for the tile's notice mark (tile marker addendum §3): how a phone player, with no
@@ -14,7 +16,11 @@ import { NoticeMark } from "./notice-tag";
  * The sample is the real mark, re-grounded: the key sits on the page, so its tint mixes into `--bg`
  * (the canvas) rather than the tile's `--surface-inset`.
  */
-export function DecksMarkKey({ decks }: { decks: readonly Pick<DeckListItem, "notice">[] }) {
+export function DecksMarkKey({ decks, friends = false }: {
+  decks: readonly Pick<DeckListItem, "notice" | "hiddenFromFriends">[];
+  /** `FRIEND_DECKS_ENABLED` for the reader: the tile draws its hidden glyph only then, so the key explains it only then. */
+  friends?: boolean;
+}) {
   const copy = deckNoticesCopy.mark.key;
   const marks: MarkKeyEntry[] = [];
   if (decks.some((d) => d.notice && d.notice.kind !== "unread")) {
@@ -22,6 +28,14 @@ export function DecksMarkKey({ decks }: { decks: readonly Pick<DeckListItem, "no
   }
   if (decks.some((d) => d.notice?.kind === "unread")) {
     marks.push({ id: "unread", sample: <NoticeMark notice={{ kind: "unread", count: 1 }} ground="--bg" />, word: copy.unread });
+  }
+  // Friend decks (README 4): the glyph a tile draws for a deck hidden on its own.
+  if (friends && decks.some((d) => d.hiddenFromFriends === true)) {
+    marks.push({
+      id: "hiddenFromFriends",
+      sample: <span className="inline-flex text-[color:var(--fg-muted)]"><HiddenFromFriendsGlyph size={16} /></span>,
+      word: socialCopy.hideDeck.key,
+    });
   }
   if (marks.length === 0) return null;
   return (

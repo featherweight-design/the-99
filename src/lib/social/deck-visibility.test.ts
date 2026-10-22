@@ -1,7 +1,7 @@
 // Which decks a friend sees (friend decks G2): one pure rule over the owner's three inputs, and the hide write's SQL.
 import { describe, expect, it } from "vitest";
 import type { StatusPill } from "../decks/status";
-import { DEFAULT_FRIEND_DECK_PREFS, friendCanSeeDeck, hideDeckUpdate } from "./deck-visibility";
+import { DEFAULT_FRIEND_DECK_PREFS, friendCanSeeDeck, hideDeckUpdate, settingsHideDeck } from "./deck-visibility";
 
 const PILLS: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
 const seen = (prefs: { seeDecks: boolean; seeUnfinished: boolean }, hiddenFromFriends = false) =>
@@ -26,6 +26,20 @@ describe("friendCanSeeDeck", () => {
 
   it("reads an absent flag as not hidden", () => {
     expect(friendCanSeeDeck({ statusPill: "Complete" }, DEFAULT_FRIEND_DECK_PREFS)).toBe(true);
+  });
+});
+
+// The ⋯ row's lock (README 4b): the Settings rules alone, never the deck's own flag.
+describe("settingsHideDeck", () => {
+  const locked = (prefs: { seeDecks: boolean; seeUnfinished: boolean }) => PILLS.filter((pill) => settingsHideDeck(pill, prefs));
+  it("locks the unfinished phases under the defaults", () => {
+    expect(locked(DEFAULT_FRIEND_DECK_PREFS)).toEqual(["New", "Draft", "Building"]);
+  });
+  it("locks every deck with Friends can see my decks off", () => {
+    expect(locked({ seeDecks: false, seeUnfinished: true })).toEqual(PILLS);
+  });
+  it("locks none once drafts are included", () => {
+    expect(locked({ seeDecks: true, seeUnfinished: true })).toEqual([]);
   });
 });
 

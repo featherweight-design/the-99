@@ -12,6 +12,7 @@
 // the press: card 1 makes the link and shows it as the chooser's path 1, card 2 invites someone new. Off (`invites`
 // null), everything here draws exactly as shipped. The pod sheet's Add a friend still makes a link straight away.
 
+import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -89,6 +90,7 @@ export function FriendsView({
   friendPages = false,
   invites = null,
   openInviteNew = false,
+  decksSeen = null,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -110,6 +112,8 @@ export function FriendsView({
   invites?: InviteCount | null;
   /** Arrived as `?invite=new`: Add a friend opens on Invite someone new (with invites on). */
   openInviteNew?: boolean;
+  /** The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on, for the head's privacy line; null while off. */
+  decksSeen?: FriendDeckPrefs | null;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -412,6 +416,7 @@ export function FriendsView({
           onInvite={invites ? openChooser : makeLink}
           inviteRef={invite}
           inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
+          decksSeen={decksSeen}
         />
         {waiting}
         <FriendsList

@@ -49,6 +49,15 @@ export const socialCopy = {
     nameLine: (name: string) => ({ before: "Friends see you as ", name, action: "Change" }),
     // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Undrawn; words through /copy-review.
     decksSeen: "Friends see your deck names, commanders and statuses, never the lists.",
+    // With friend decks on (`FRIEND_DECKS_ENABLED`), the line follows the reader's own two Settings rules, and
+    // `settings` is drawn as a link to /settings. Placeholder words, for /copy-review.
+    decksSeenBy: {
+      finished: "Friends can open your full decks and see their lists.",
+      all: "Friends can open all your decks and see their lists.",
+      none: "Friends can’t see your decks.",
+      change: "Change this in",
+      settings: "Settings",
+    },
     nameField: {
       label: "Your name, as friends see it",
       hint: "Up to 30 characters. Friends see this and your commander.",
@@ -120,6 +129,19 @@ export const socialCopy = {
       tileAria: (deck: string, commander: string | null, colour: string, cards: string) =>
         [deck, commander, colour, cards].filter(Boolean).join(", "),
     },
+  },
+
+  // Hidden from friends (friend decks handoff, README 4 and 4b): the deck ⋯ menu's row, the header's mark, the /decks
+  // tile's glyph and its key. Placeholder words, for /copy-review.
+  hideDeck: {
+    row: "Hidden from friends",
+    /** Under a row the owner's Settings rules already tick; the `›` is drawn apart, hidden from a screen reader. */
+    locked: "Set in Settings",
+    lockedAria: "Hidden from friends, set in Settings. Open Settings",
+    failed: "We couldn’t change that. Your deck is unchanged.", // toast, role alert
+    mark: "Hidden from friends",
+    /** The /decks key's word, and what the tile's name says after its status. */
+    key: "hidden from friends",
   },
 
   // A friend's deck, opened read-only (friend decks handoff, board 1 and States). The own band, the shared-deck lines,

@@ -5,6 +5,7 @@ import { deckNoticesCopy } from "../../lib/copy/notices";
 import type { NoticeSummary } from "../../lib/notices/summary-sql";
 import { DecksMarkKey } from "./decks-mark-key";
 import { noticeSentence, noticeSpoken } from "./notice-tag";
+import { socialCopy } from "../../lib/copy/social";
 
 const key = deckNoticesCopy.mark.key;
 const draw = (notices: NoticeSummary[]) =>
@@ -61,3 +62,31 @@ describe("the mark's words (F20)", () => {
     expect(noticeSpoken({ kind: "notLegalUnread", count: 1, dataUnread: 4 })).toBe(`${spoken.notLegal(1)}, ${spoken.unread(4)}`);
   });
 });
+
+// Friend decks (README 4): the hidden glyph is explained only while a shown tile draws it, which is only with the switch on.
+describe("DecksMarkKey — hidden from friends", () => {
+  const word = socialCopy.hideDeck.key;
+  it("names the glyph while a shown tile is hidden on its own", () => {
+    const { container } = render(<ul><DecksMarkKey decks={[{ notice: null, hiddenFromFriends: true }, { notice: null }]} friends /></ul>);
+    const group = screen.getByRole("group", { name: key.regionAria });
+    expect(group.textContent).toContain(word);
+    expect(container.querySelector("[data-hidden-from-friends-glyph]")!.getAttribute("width")).toBe("16");
+  });
+
+  it("is absent when no shown tile is hidden", () => {
+    const { container } = render(<ul><DecksMarkKey decks={[{ notice: null, hiddenFromFriends: false }, { notice: null }]} friends /></ul>);
+    expect(container.querySelector("li")).toBeNull();
+  });
+
+  it("is absent with the switch off, hidden tiles or not", () => {
+    const { container } = render(<ul><DecksMarkKey decks={[{ notice: null, hiddenFromFriends: true }]} /></ul>);
+    expect(container.querySelector("li")).toBeNull();
+  });
+
+  it("comes after the notice marks", () => {
+    render(<ul><DecksMarkKey decks={[{ notice: { kind: "unread", count: 1 }, hiddenFromFriends: true }]} friends /></ul>);
+    const words = [...screen.getByRole("group").children].map((entry) => entry.lastElementChild!.textContent);
+    expect(words).toEqual([key.unread, word]);
+  });
+});
+

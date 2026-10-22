@@ -30,4 +30,14 @@ export const settingsCopy = {
     releaseAria: (name: string) => `Let ${name} go back to your spares`,
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
+  // Your decks (friend decks handoff, README 4b): what friends see on the reader's Decks tab. Placeholder words, for
+  // /copy-review.
+  decks: {
+    head: "Your decks",
+    explain: "What friends see on your Decks tab.",
+    see: { name: "Friends can see my decks", line: "Each deck’s name, commander and whole list, read-only." },
+    unfinished: { name: "Include drafts and decks I’m building", line: "Off: a deck shows once its list is full and committed." },
+    foot: "To keep one deck to yourself, tick Hidden from friends in its ⋯ menu.",
+    failed: "We couldn’t save that. Try again.", // toast, role alert
+  },
 } as const;
