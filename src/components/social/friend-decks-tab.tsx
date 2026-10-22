@@ -2,10 +2,12 @@
 // on it, the commander, the status and the count. No press and no link: the deck's list is not the viewer's to open, and
 // nothing here carries an id to open it by.
 
+import type { CSSProperties } from "react";
 import type { FriendDeck } from "../../lib/social/decks";
 import { socialCopy } from "../../lib/copy/social";
 import { statusPillStyle } from "../../lib/decks/status-style";
 import { StatusPillBadge } from "../decks/status-pill";
+import type { StatusPill } from "../../lib/decks/status";
 
 const p = socialCopy.friendPage;
 const PILL_IN_FLOW = "inline-flex h-[19px] items-center self-start rounded-[5px] px-[7px] font-mono text-[10px]";
@@ -25,7 +27,8 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
       <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-4 md:gap-[16px]">
         {decks.map((d, i) => {
           const fill = Math.min(100, Math.round((d.built / d.bodySize) * 100));
-          const color = statusPillStyle(d.status).color as string;
+          const pill = friendPillStyle(d.status);
+          const color = pill.color as string;
           return (
             <li key={i} data-testid="friend-deck" className="overflow-hidden rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)]">
               <div className="relative h-[120px]" style={{ background: "var(--surface-sunken)" }}>
@@ -41,7 +44,7 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
                   {d.commanderName}
                   {d.partnerName ? ` + ${d.partnerName}` : ""}
                 </span>
-                <StatusPillBadge status={d.status} className={PILL_IN_FLOW} />
+                <StatusPillBadge status={d.status} className={PILL_IN_FLOW} style={pill} />
                 <span className="flex items-center gap-[10px]">
                   <span className="h-[3px] flex-1 overflow-hidden rounded-[2px] bg-[color:var(--border-strong)]">
                     <i className="block h-full" style={{ width: `${fill}%`, background: color }} />
@@ -55,4 +58,17 @@ export function FriendDecksTab({ name, decks }: { name: string; decks: FriendDec
       </ul>
     </>
   );
+}
+
+/**
+ * The board's pill on a friend's deck tile (`Friends` 1e), on this surface only: no hairline edge, and Building in
+ * `--fg-body` on its own 18% plate. Every other value is the app's own (`statusPillStyle`), so To buy keeps its
+ * readable label ink; the app-wide pills are unchanged (d9, 2026-10-22).
+ */
+export function friendPillStyle(status: StatusPill): CSSProperties {
+  const base = statusPillStyle(status);
+  const building = status === "Building"
+    ? { color: "var(--fg-body)", background: "color-mix(in srgb, var(--fg-body) 18%, var(--bg))" }
+    : {};
+  return { ...base, ...building, border: "none" };
 }

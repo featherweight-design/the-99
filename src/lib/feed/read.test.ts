@@ -78,6 +78,12 @@ describe("feedQuery", () => {
     expect(q).toContain("f.created_at > coalesce(up.feed_seen_at, '-infinity'::timestamptz) as unseen");
     expect(q).not.toContain("friends_seen_at");
   });
+
+  it("marks unseen against friends_seen_at for /friends, never Home's cursor", () => {
+    const friends = flat(render(feedQuery("user_1", ["trade-match"], NOW, "friends_seen_at")).sql);
+    expect(friends).toContain("f.created_at > coalesce(up.friends_seen_at, '-infinity'::timestamptz) as unseen");
+    expect(friends).not.toContain("feed_seen_at");
+  });
 });
 
 describe("the two badges' counts", () => {

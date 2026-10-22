@@ -197,6 +197,17 @@ describe("a friend's page group", () => {
     expect(html).not.toContain("href=");
   });
 
+  // The board's pill on this surface only (d9, 2026-10-22): no hairline edge, and Building in --fg-body.
+  it("draws the board's pill: no edge, Building in --fg-body, the other statuses in the app's own ink", async () => {
+    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Building", built: 40 }, { ...DECK, name: "Big Dinos", status: "Complete" }]);
+    render(await FriendDecksPage({ params: params() }));
+    const [building, complete] = screen.getAllByTestId("friend-deck").map((t) => within(t).getByText(/^(Building|Complete)$/));
+    expect(building.style.color).toBe("var(--fg-body)");
+    expect(building.style.borderStyle).toBe("none");
+    expect(complete.style.color).toBe("var(--success)");
+    expect(complete.style.borderStyle).toBe("none");
+  });
+
   it("is not found for a friend whose decks cannot be read for the reader", async () => {
     m.loadFriendDecks.mockResolvedValue(null);
     await expect(FriendDecksPage({ params: params() })).rejects.toThrow("NOT_FOUND");

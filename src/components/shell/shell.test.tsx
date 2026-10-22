@@ -25,6 +25,11 @@ vi.mock("./nav", () => ({
   TabBar: () => null,
   MobileHeader: (p: Record<string, unknown>) => (navProps.push(p), null),
 }));
+// The Friends badge (menu and Home PR 7): its count and the after() notice, read off the calls.
+const feed = vi.hoisted(() => ({ unseenFriendsCount: vi.fn(async (..._a: unknown[]) => 3), noticeTradeMatches: vi.fn(async (..._a: unknown[]) => 0), after: vi.fn((_fn: () => unknown) => {}) }));
+vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount }));
+vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
+vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 vi.mock("./about-sheet", () => ({
   AboutSheet: ({ state }: { state: { kind: string } }) => <div data-testid="about-sheet">{state.kind}</div>,
 }));
@@ -120,6 +125,39 @@ describe("Shell and the Friends row (Social R1)", () => {
     await renderShell();
     expect(navProps).toHaveLength(2);
     for (const p of navProps) expect(p.friends).toBe(on);
+  });
+});
+
+describe("Shell and the Friends badge (menu and Home PR 7)", () => {
+  const as = (env: Record<string, string>) => new Headers({ "x-switches": switchBits(env as unknown as NodeJS.ProcessEnv) });
+
+  it("counts the unseen trade matches onto the Friends slot, and notices new ones after the response", async () => {
+    navProps.length = 0;
+    feed.unseenFriendsCount.mockClear();
+    feed.after.mockClear();
+    feed.noticeTradeMatches.mockClear();
+    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true" });
+    await renderShell();
+    expect(feed.unseenFriendsCount).toHaveBeenCalledWith("user_1", expect.anything());
+    expect(navProps.some((n) => "badges" in n)).toBe(true);
+    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({ friends: 3 });
+    expect(feed.noticeTradeMatches).not.toHaveBeenCalled();
+    await feed.after.mock.calls[0][0]();
+    expect(feed.noticeTradeMatches).toHaveBeenCalledWith("user_1", expect.anything());
+  });
+
+  it.each([
+    ["Friends is off", { COMMANDERS_PLACE_ENABLED: "true" }],
+    ["Friends has no slot in the bar", { SOCIAL_FRIENDS_ENABLED: "true" }],
+  ])("reads no count and notices nothing while %s", async (_label, env) => {
+    navProps.length = 0;
+    feed.unseenFriendsCount.mockClear();
+    feed.after.mockClear();
+    requestHeaders = as(env);
+    await renderShell();
+    expect(feed.unseenFriendsCount).not.toHaveBeenCalled();
+    expect(feed.after).not.toHaveBeenCalled();
+    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({});
   });
 });
 

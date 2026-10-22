@@ -79,6 +79,7 @@ type Receipt = { publicId: string; displayName: string };
 export function FriendsView({
   profile,
   pods,
+  waiting,
   friends,
   links,
   accepted,
@@ -92,6 +93,8 @@ export function FriendsView({
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
   pods?: ReactNode;
+  /** Waiting on you (menu and Home PR 7): the first section under the head; absent when it has no rows. */
+  waiting?: ReactNode;
   friends: Friend[];
   links: OpenInvite[];
   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
@@ -410,6 +413,7 @@ export function FriendsView({
           inviteRef={invite}
           inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
         />
+        {waiting}
         <FriendsList
           friends={listed}
           now={now}
