@@ -40,6 +40,12 @@ describe("ownedMatchesQuery", () => {
     expect(q.sql).toContain(`not exists (select 1 from "spare_keep" sk where sk.oracle_id = "cards"."oracle_id" and sk.user_id = $`);
     expect(q.params.filter((p) => p === USER)).toHaveLength(2);
   });
+
+  it("pages a stable order, the oracle id breaking ties", () => {
+    const q = ownedMatchesQuery(USER, nameSearch("sol ring")!, 2).toSQL();
+    expect(q.sql).toMatch(/"cards"\."name" asc, "cards"\."oracle_id" asc limit \$\d+ offset \$\d+$/);
+    expect(q.params.slice(-2)).toEqual([48, 96]);
+  });
 });
 
 describe("spare rules", () => {

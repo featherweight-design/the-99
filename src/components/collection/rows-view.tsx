@@ -99,31 +99,8 @@ export function RowsView({
           // The FULL printed name, both faces of a two-faced card included — the
           // visible caption below is the front face and may clip, and this is a
           // real button, so the whole string is spoken here.
-          aria-label={availabilityCopy.collection.rowAria(
-            // The finish rides the name, so it is heard straight after the card it describes.
-            printedNameOf(c) + (c.imageUri ? foilSpoken(c.foil) : ""),
-            c.typeLine,
-            c.quantity,
-            // The pips are `aria-hidden`, so without this clause a screen-reader user
-            // gets no cost at all. `spokenManaCost` speaks every symbol of the front
-            // face, never capped, and answers `no mana cost` for a land — which is the
-            // honest reading of the empty cell, where the old land branch said nothing
-            // and left silence indistinguishable from a missing label.
-            `${c.primarySetCode}, ${c.rarity}, ${spokenManaCost(c.manaCost)}`,
-            // Clause lands LAST, and only when there is one — a free card
-            // produces today's exact string, unchanged.
-            (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
-            // The facts, spoken once, in the place the reading order wants them. The
-            // glyphs beside the name are aria-hidden so this is the only voicing.
-            c.facts?.length ? cardMarkCopy.rowAria(c.facts.map(cardFactName)) : null,
-            // THE COMBO CLAUSE IS SPOKEN HERE and nowhere else: the glyph is aria-hidden and
-            // the visible sentence replaces the type line, which a screen reader would
-            // otherwise simply lose. Spoken in FULL — `you own both` rather than the phone's
-            // `both yours` — because the shortening is about pixels and nothing here has any.
-            c.comboPartner ? comboClauseSpoken(c.comboPartner.name, "ownBoth") : null,
-          // The price, last and only while sorted by it: it explains the order, and the figure
-          // drawn beside the type line is aria-hidden.
-          ) + (spokenPrice ? `, ${spokenPrice}` : "")}
+          // Every fact the cells draw silently is spoken here too: `collectionRowSpoken` below.
+          aria-label={collectionRowSpoken(c, spokenPrice)}
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
@@ -150,6 +127,40 @@ export function RowsView({
       )}
     </div>
   );
+}
+
+/**
+ * What a collection row says aloud: the cells (`CollectionRowCells`) draw cost pips, bracket marks, the rarity dot
+ * and the availability marker SILENTLY, so whichever control hosts them speaks this. `/collection` makes it the row
+ * button's name; Settings' Kept back row (a div with a ✕) makes it the ✕'s description. One definition, so the two
+ * cannot drift. `spokenPrice` is the sorted-by figure, spoken last, or null.
+ */
+export function collectionRowSpoken(c: BrowseListCard, spokenPrice: string | null = null): string {
+  return availabilityCopy.collection.rowAria(
+    // The finish rides the name, so it is heard straight after the card it describes.
+    printedNameOf(c) + (c.imageUri ? foilSpoken(c.foil) : ""),
+    c.typeLine,
+    c.quantity,
+    // The pips are `aria-hidden`, so without this clause a screen-reader user
+    // gets no cost at all. `spokenManaCost` speaks every symbol of the front
+    // face, never capped, and answers `no mana cost` for a land — which is the
+    // honest reading of the empty cell, where the old land branch said nothing
+    // and left silence indistinguishable from a missing label.
+    `${c.primarySetCode}, ${c.rarity}, ${spokenManaCost(c.manaCost)}`,
+    // Clause lands LAST, and only when there is one — a free card
+    // produces today's exact string, unchanged.
+    (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
+    // The facts, spoken once, in the place the reading order wants them. The
+    // glyphs beside the name are aria-hidden so this is the only voicing.
+    c.facts?.length ? cardMarkCopy.rowAria(c.facts.map(cardFactName)) : null,
+    // THE COMBO CLAUSE IS SPOKEN HERE and nowhere else: the glyph is aria-hidden and
+    // the visible sentence replaces the type line, which a screen reader would
+    // otherwise simply lose. Spoken in FULL — `you own both` rather than the phone's
+    // `both yours` — because the shortening is about pixels and nothing here has any.
+    c.comboPartner ? comboClauseSpoken(c.comboPartner.name, "ownBoth") : null,
+  // The price, last and only while sorted by it: it explains the order, and the figure
+  // drawn beside the type line is aria-hidden.
+  ) + (spokenPrice ? `, ${spokenPrice}` : "");
 }
 
 /**

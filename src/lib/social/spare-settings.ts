@@ -127,11 +127,21 @@ export const SPARE_SEARCH_LIMIT = 12;
 
 export type SpareSearchHit = { oracleId: string; name: string; spare: number };
 
+/** How many owned matches one page of the search reads before checking which hold a spare copy. */
+export const SPARE_SEARCH_PAGE = SPARE_SEARCH_LIMIT * 4;
 /**
- * The reader's owned cards whose name matches and that are not kept back yet, best match first. Apart so a test can
- * render its SQL; `searchSpareCards` then keeps the ones holding a spare copy.
+ * The most pages one search reads (480 owned matches). A page whose cards are all claimed by decks must not end the
+ * search, so it pages on; this bound only stops a pathological query (a two-letter prefix over a vast collection, all
+ * claimed) from reading the whole collection on every key. Past it the search answers what it found.
  */
-export function ownedMatchesQuery(userId: string, match: NonNullable<ReturnType<typeof nameSearch>>, q: Reader = db) {
+export const SPARE_SEARCH_MAX_PAGES = 10;
+
+/**
+ * One page of the reader's owned cards whose name matches and that are not kept back yet, best match first (the
+ * oracle id breaks ties, so the offset pages a stable order). Apart so a test can render its SQL; `searchSpareCards`
+ * then keeps the ones holding a spare copy.
+ */
+export function ownedMatchesQuery(userId: string, match: NonNullable<ReturnType<typeof nameSearch>>, page = 0, q: Reader = db) {
   const { flavorHits } = match;
   return q
     .select({ oracleId: cards.oracleId, name: cards.name })
@@ -143,8 +153,9 @@ export function ownedMatchesQuery(userId: string, match: NonNullable<ReturnType<
       sql`exists (select 1 from ${collectionItems} ci where ci.oracle_id = ${cards.oracleId} and ci.user_id = ${userId})`,
       sql`not exists (select 1 from ${spareKeep} sk where sk.oracle_id = ${cards.oracleId} and sk.user_id = ${userId})`,
     ))
-    .orderBy(match.rank, asc(cards.name))
-    .limit(SPARE_SEARCH_LIMIT * 4);
+    .orderBy(match.rank, asc(cards.name), asc(cards.oracleId))
+    .limit(SPARE_SEARCH_PAGE)
+    .offset(page * SPARE_SEARCH_PAGE);
 }
 
 /**
@@ -156,15 +167,19 @@ export async function searchSpareCards(userId: string, query: unknown, env: Node
   if (typeof query !== "string") return [];
   const match = nameSearch(query);
   if (!match) return [];
-  const rows = await ownedMatchesQuery(userId, match);
-  if (rows.length === 0) return [];
-  const model = await loadAvailability(userId, { oracleIds: rows.map((r) => r.oracleId), env });
   const out: SpareSearchHit[] = [];
-  for (const r of rows) {
-    const a = model.get(r.oracleId);
-    const spare = a ? spareCount(a) : 0;
-    if (spare > 0) out.push({ oracleId: r.oracleId, name: r.name, spare });
-    if (out.length === SPARE_SEARCH_LIMIT) break;
+  // Page until twelve spares are found or the matches run out: the first page can be wholly claimed by decks.
+  for (let page = 0; page < SPARE_SEARCH_MAX_PAGES; page++) {
+    const rows = await ownedMatchesQuery(userId, match, page);
+    if (rows.length === 0) break;
+    const model = await loadAvailability(userId, { oracleIds: rows.map((r) => r.oracleId), env });
+    for (const r of rows) {
+      const a = model.get(r.oracleId);
+      const spare = a ? spareCount(a) : 0;
+      if (spare > 0) out.push({ oracleId: r.oracleId, name: r.name, spare });
+      if (out.length === SPARE_SEARCH_LIMIT) return out;
+    }
+    if (rows.length < SPARE_SEARCH_PAGE) break;
   }
   return out;
 }

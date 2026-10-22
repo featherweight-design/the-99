@@ -20,6 +20,8 @@ vi.mock("../../app/settings/actions", () => ({
 }));
 
 import { SparesSection } from "./spares-section";
+import { collectionRowSpoken } from "../collection/rows-view";
+import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { settingsCopy } from "../../lib/copy/settings";
 import type { BrowseListCard } from "../../lib/collection/browse";
 
@@ -56,6 +58,39 @@ describe("the threshold stepper", () => {
     expect(screen.getByRole("group", { name: C.stepperLabel }).textContent).toContain("2");
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
   });
+
+  // Two presses before either save answers: a failure goes back to the last value STORED, never to an unsaved press.
+  const twoPresses = async (answers: ((settle: { ok: (v: unknown) => void; no: (e: unknown) => void }) => void)[], order: number[]) => {
+    m.setMin.mockClear();
+    const settles: { ok: (v: unknown) => void; no: (e: unknown) => void }[] = [];
+    m.setMin.mockImplementation(() => new Promise((ok, no) => { settles.push({ ok, no }); }));
+    render(<SparesSection spareMin={1} pods={[]} kept={[]} />);
+    const more = screen.getByRole("button", { name: C.more });
+    await act(async () => fireEvent.click(more));
+    await act(async () => fireEvent.click(more));
+    expect(m.setMin.mock.calls).toEqual([[2], [3]]);
+    for (const i of order) await act(async () => answers[i](settles[i]));
+    return screen.getByRole("group", { name: C.stepperLabel }).textContent;
+  };
+  const refused = (s: { ok: (v: unknown) => void }) => s.ok({ ok: false, reason: "invalid" });
+  const thrown = (s: { no: (e: unknown) => void }) => s.no(new Error("network"));
+  const saved = (s: { ok: (v: unknown) => void }) => s.ok({ ok: true });
+
+  it("returns to the stored value when both deferred saves are refused", async () => {
+    expect(await twoPresses([refused, refused], [0, 1])).toContain("1");
+  });
+
+  it("returns to the stored value when one save is refused and the other throws, in either order", async () => {
+    expect(await twoPresses([refused, thrown], [0, 1])).toContain("1");
+    cleanup();
+    expect(await twoPresses([thrown, refused], [1, 0])).toContain("1");
+  });
+
+  it("returns to the first press's value when it saved and the second failed", async () => {
+    expect(await twoPresses([saved, refused], [0, 1])).toContain("2");
+    cleanup();
+    expect(await twoPresses([saved, thrown], [1, 0])).toContain("2");
+  });
 });
 
 describe("who sees them", () => {
@@ -78,6 +113,16 @@ describe("kept back", () => {
     expect(screen.getByText(C.keptHead(1))).toBeTruthy();
     expect(screen.getByText("Sol Ring")).toBeTruthy();
     expect(screen.getByText("×3")).toBeTruthy();
+  });
+
+  it("speaks the facts the shared cells draw silently: cost, rarity and bracket marks", () => {
+    render(<SparesSection spareMin={1} pods={[]} kept={[card({ facts: ["gameChanger"] })]} />);
+    const x = screen.getByRole("button", { name: C.releaseAria("Sol Ring") });
+    const said = x.getAttribute("aria-describedby") && document.getElementById(x.getAttribute("aria-describedby")!)?.textContent;
+    expect(said).toBe(collectionRowSpoken(card({ facts: ["gameChanger"] })));
+    expect(said).toMatch(/uncommon/);
+    expect(said).toContain(spokenManaCost("{1}"));
+    expect(said).toMatch(/game changer/i);
   });
 
   it("releases a card at once, and brings it back when the write fails", async () => {

@@ -8,7 +8,7 @@
 // `/settings`). A write that fails puts the value back and says so in the shared social toast, as `/friends` does.
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedNameOf } from "../../lib/collection/browse";
@@ -16,7 +16,7 @@ import { settingsCopy } from "../../lib/copy/settings";
 import { SPARE_MIN_HIGH, SPARE_MIN_LOW } from "../../lib/social/spare-rules";
 import type { SpareSearchHit } from "../../lib/social/spare-settings";
 import { keepCardAction, releaseCardAction, searchSpareCardsAction, setSpareMinAction } from "../../app/settings/actions";
-import { CollectionRowCells } from "../collection/rows-view";
+import { CollectionRowCells, collectionRowSpoken } from "../collection/rows-view";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { SearchField } from "../ui/text-field";
@@ -42,26 +42,47 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
   // The stepper's value, held from the press until the redraw carries it; a fresh server value always wins.
   const [min, setMin] = useState(spareMin);
   const [servedMin, setServedMin] = useState(spareMin);
+  // The last value known to be STORED: the server's, or a save that succeeded. A failure rolls back to this, never to
+  // the value on screen before the press, which can itself be an unsaved press still in flight.
+  const confirmedMin = useRef(spareMin);
   if (servedMin !== spareMin) {
     setServedMin(spareMin);
     setMin(spareMin);
   }
-  // Only the latest press may put the value back: an older failure must not undo a newer saved choice.
+  useEffect(() => {
+    confirmedMin.current = spareMin;
+  }, [spareMin]);
+  // Only the latest press may put the value back: an older failure must not undo a newer choice still being saved.
   const minSeq = useRef(0);
+  const confirmedSeq = useRef(0);
+  const latestFailed = useRef(false);
   async function step(next: number) {
     if (next < SPARE_MIN_LOW || next > SPARE_MIN_HIGH) return;
-    const before = min;
     const seq = ++minSeq.current;
+    latestFailed.current = false;
     setMin(next);
     try {
       const r = await setSpareMinAction(next);
+      // A success newer than the last one confirmed becomes the stored value; if the latest press has already failed
+      // back to the older confirmed value, the screen follows it here.
+      if (r.ok && seq > confirmedSeq.current) {
+        confirmedSeq.current = seq;
+        confirmedMin.current = next;
+        if (latestFailed.current) setMin(next);
+      }
       if (off(r)) router.refresh();
-      else if (!r.ok && seq === minSeq.current) {
-        setMin(before);
+      else if (!r.ok) {
+        if (seq === minSeq.current) {
+          latestFailed.current = true;
+          setMin(confirmedMin.current);
+        }
         fail();
       }
     } catch {
-      if (seq === minSeq.current) setMin(before);
+      if (seq === minSeq.current) {
+        latestFailed.current = true;
+        setMin(confirmedMin.current);
+      }
       fail();
     }
   }
@@ -263,6 +284,9 @@ function KeepSearch({ onFail }: { onFail: () => void }) {
  * (26px here, per the board), at both widths.
  */
 function KeptRow({ card, onRelease }: { card: BrowseListCard; onRelease: () => void }) {
+  // The cells draw cost, rarity and bracket marks silently and leave the speaking to their host; this row is a div,
+  // so the ✕ carries the same spoken row `/collection` gives its button, as its description.
+  const describedBy = useId();
   return (
     <div
       className={`${ROW_SHELL_GRID} gap-[10px] bg-[color:var(--surface)] [--row-bg:var(--surface)] [border:1px_solid_var(--border)] py-[10px] pl-[12px] pr-0 [grid-template-columns:38px_1fr_76px_auto_26px] md:gap-[16px] md:py-[12px] md:pl-[18px] md:[grid-template-columns:52px_1fr_90px_150px_92px_26px]`}
@@ -271,11 +295,13 @@ function KeptRow({ card, onRelease }: { card: BrowseListCard; onRelease: () => v
       <button
         type="button"
         aria-label={c.releaseAria(printedNameOf(card))}
+        aria-describedby={describedBy}
         onClick={onRelease}
         className={`${TOUCH_HIT} flex h-full cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)]`}
       >
         ✕
       </button>
+      <span id={describedBy} className="sr-only">{collectionRowSpoken(card)}</span>
     </div>
   );
 }
