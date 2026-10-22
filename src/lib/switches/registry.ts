@@ -71,6 +71,7 @@ export const SWITCHES = [
   { name: "SOCIAL_GAMES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_INVITES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
+  { name: "SPARE_REQUESTS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },

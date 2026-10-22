@@ -31,7 +31,7 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "../tuning/flag";
@@ -91,6 +91,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SOCIAL_GAMES_ENABLED: socialGamesEnabled,
   SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
+  SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,
