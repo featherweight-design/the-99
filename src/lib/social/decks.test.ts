@@ -12,11 +12,15 @@ const m = vi.hoisted(() => ({
   loadFriendDeckPrefs: vi.fn(),
   owned: vi.fn(),
   deckFlag: vi.fn(),
+  printingRows: vi.fn(),
+  readReaderDecks: vi.fn(),
 }));
+vi.mock("../precons/list-read", () => ({ readReaderDecks: m.readReaderDecks }));
 vi.mock("../../db", () => ({
   db: {
     selectDistinct: () => ({ from: () => ({ where: () => m.owned() }) }),
-    select: () => ({ from: () => ({ where: () => m.deckFlag() }) }),
+    // The visibility re-read selects the flag; the printing lookup selects a Scryfall id.
+    select: (shape: Record<string, unknown>) => ({ from: () => ({ where: () => ("scryfallId" in shape ? m.printingRows() : m.deckFlag()) }) }),
   },
 }));
 vi.mock("./deck-visibility", async (orig) => ({
@@ -149,7 +153,9 @@ describe("loadFriendDeck", () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: DECK, statusPill: "Complete" }]);
     m.getDeckDetail.mockReset().mockResolvedValue(DETAIL);
     m.owned.mockReset().mockResolvedValue([{ oracleId: "b" }, { oracleId: "c0" }]);
+    m.readReaderDecks.mockReset().mockResolvedValue([]);
     m.deckFlag.mockReset().mockResolvedValue([{ hiddenFromFriends: false }]);
+    m.printingRows.mockReset().mockResolvedValue([]);
   });
 
   it("returns nothing when the owner hides the deck, or turns decks off, while it is read", async () => {
@@ -169,9 +175,54 @@ describe("loadFriendDeck", () => {
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.built).toBe(98);
   });
 
+  it("carries the owner's printing's Scryfall id and back face, for card details to view exactly it", async () => {
+    m.printingRows.mockResolvedValue([
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-sol", backImageUri: null },
+      { oracleId: "a", setCode: "cmm", collectorNumber: "999", scryfallId: "sf-other", backImageUri: "https://back/x.jpg" },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.cards[0]).toEqual(expect.objectContaining({ printedScryfallId: "sf-sol", printedBackImageUri: null }));
+    expect(page.cards[1]).not.toHaveProperty("printedScryfallId");
+  });
+
+  it("reads the printings before the final checks: a friendship ended during that read returns nothing", async () => {
+    m.printingRows.mockImplementation(async () => {
+      m.resolveFriend.mockResolvedValue(null);
+      return [];
+    });
+    expect(await loadFriendDeck("user_viewer", "x", DECK)).toBeNull();
+  });
+
+  it("carries no printing identity when the set and number name two printings", async () => {
+    m.printingRows.mockResolvedValue([
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-one", backImageUri: null },
+      { oracleId: "a", setCode: "cmm", collectorNumber: "1", scryfallId: "sf-two", backImageUri: "https://back/two.jpg" },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    expect(page.cards[0]).not.toHaveProperty("printedScryfallId");
+    expect(page.cards[0]).not.toHaveProperty("printedBackImageUri");
+  });
+
   it("keeps a commander's mana value", async () => {
     m.getDeckDetail.mockResolvedValue({ ...DETAIL, commander: { ...COMMANDER, cmc: 3 } });
     expect((await loadFriendDeck("user_viewer", "x", DECK))!.commanders[0].cmc).toBe(3);
+  });
+
+  it("names the VIEWER's decks that share it, by the precon page's rule, most shared first", async () => {
+    m.readReaderDecks.mockResolvedValue([
+      { id: "v1", name: "Thopter Works", commanders: ["c0"], cards: new Set(["c0", "a"]) },
+      { id: "v2", name: "Unrelated", commanders: ["zz"], cards: new Set(["zz"]) },
+      { id: "v3", name: "Zoo Artifacts", commanders: ["zz"], cards: new Set(["zz", "a", "b", "c0"]) },
+    ]);
+    const page = (await loadFriendDeck("user_viewer", "x", DECK))!;
+    // The list is c0, a and b (the commander and two non-basics): v3 shares all 3 with another commander (>= 60%), v1
+    // shares 2 with the same one (>= 40%), v2 none. Most shared first, so v3 leads although its name sorts last:
+    // the name only breaks a tie, which this case does not have.
+    expect(page.shares).toEqual([
+      { deckId: "v3", deckName: "Zoo Artifacts", shared: 3, sameCommanders: false },
+      { deckId: "v1", deckName: "Thopter Works", shared: 2, sameCommanders: true },
+    ]);
+    expect(m.readReaderDecks).toHaveBeenCalledWith("user_viewer");
   });
 
   it("reads nothing for a deck id that is not a uuid, or a public id that is not the viewer's friend", async () => {

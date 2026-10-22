@@ -115,6 +115,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // status of their decks), never this reader's; listed as the page above is.
   { path: "/friends/[publicId]/wishlist", dynamic: true },
   { path: "/friends/[publicId]/decks", dynamic: true },
+  // A friend's deck, read-only (friend decks G1), marks what THIS reader owns of it: a replace moves its dots and its
+  // own band, so it is listed for the figure, not only for the import.
+  { path: "/friends/[publicId]/decks/[deckId]", dynamic: true },
   // A Rule 0 table (plan PR 3) reads each seated deck's list and reading, never this reader's collection; its
   // loader imports the schema through `db`, so it is listed as /about is.
   { path: "/friends/table/[id]", dynamic: true },

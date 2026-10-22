@@ -25,13 +25,16 @@ import type { StatusPill } from "../decks/status";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionItems, decks } from "../../db/schema";
+import { collectionItems, decks, printings } from "../../db/schema";
 import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
 import { resolveFriend } from "./access";
 import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
 import { friendDecksEnabled } from "./flag";
 import { isUuid } from "./rules";
+import { readReaderDecks } from "../precons/list-read";
+import { isBasicType } from "../decks/basic-type";
+import { sharedWith } from "../precons/shared";
 
 export type FriendDeck = {
   /** The deck's id, for the press to its page; null with `FRIEND_DECKS_ENABLED` off for the owner, as it shipped. */
@@ -102,7 +105,12 @@ export type FriendDeckCard = Pick<
   DeckDetailCard,
   | "oracleId" | "name" | "typeLine" | "cardTypeGroup" | "role" | "cmc" | "quantity" | "manaCost" | "imageUri"
   | "printedName" | "printedSetCode" | "printedCollectorNumber" | "printedFoil" | "foil" | "layout" | "catalogLayout" | "commander"
-> & { owned: boolean };
+> & {
+  owned: boolean;
+  /** The owner's printing's own Scryfall id and back face, so card details view exactly that printing. Null without one. */
+  printedScryfallId?: string | null;
+  printedBackImageUri?: string | null;
+};
 
 export type FriendDeckPage = {
   id: string;
@@ -116,6 +124,11 @@ export type FriendDeckPage = {
   /** Cards matched to the catalog, and the body size they read against. */
   built: number;
   bodySize: number;
+  /**
+   * The VIEWER's own decks that share this one, most shared first, by the precon page's rule (`sharedWith`: the same
+   * commanders and 40% of its cards, or 60% with any): what the own band names under the figure, as a precon's does.
+   */
+  shares: { deckId: string; deckName: string; shared: number; sameCommanders: boolean }[];
 };
 
 /**
@@ -139,10 +152,15 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);
   if (!detail) return null;
   const ids = [...new Set([detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : []), ...detail.cards.map((c) => c.oracleId)])];
-  const ownedRows = await db
-    .selectDistinct({ oracleId: collectionItems.oracleId })
-    .from(collectionItems)
-    .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids)));
+  const [ownedRows, viewerDecks, printed] = await Promise.all([
+    db
+      .selectDistinct({ oracleId: collectionItems.oracleId })
+      .from(collectionItems)
+      .where(and(eq(collectionItems.userId, viewerId), inArray(collectionItems.oracleId, ids))),
+    readReaderDecks(viewerId),
+    // Before the checks below, as every read is: the owner's rules and the grant are read again after all of them.
+    printingFaces([detail.commander, ...(detail.partner ? [detail.partner] : []), ...detail.cards]),
+  ]);
   // The owner's rules are read AGAIN after the list was, as the grant is: a deck hidden, or decks turned off, while the
   // reads ran returns nothing rather than what was read past that. The flag and the prefs are fresh, and the phase is
   // the snapshot's own: a committed deck whose snapshot is short of its body size is `Building` (`status.ts`), so a cut
@@ -150,6 +168,17 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   const snapshotPill = !unfinishedPill(row.statusPill) && detail.built < deckBodySize(detail.partner !== null) ? "Building" : row.statusPill;
   if (!(await stillVisible(friendId, deckId, snapshotPill))) return null;
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
+  const commanderIds = [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])];
+  const list = {
+    cards: new Set([...commanderIds, ...detail.cards.filter((c) => !isBasicType(c.typeLine)).map((c) => c.oracleId)]),
+    commanders: commanderIds,
+  };
+  const shares = viewerDecks
+    .flatMap((d) => {
+      const match = sharedWith(list, d);
+      return match ? [{ deckId: d.id, deckName: d.name, shared: match.shared, sameCommanders: match.sameCommanders }] : [];
+    })
+    .sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const commanders = [detail.commander, ...(detail.partner ? [detail.partner] : [])].map((c) => ({
     oracleId: c.oracleId,
@@ -167,17 +196,19 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     layout: c.layout ?? null,
     commander: true as const,
     owned: owned.has(c.oracleId),
+    ...printed(c),
   }));
   return {
     id: detail.id,
     name: detail.name,
     commanders,
-    cards: detail.cards.map((c) => friendCard(c, owned)),
+    cards: detail.cards.map((c) => ({ ...friendCard(c, owned), ...printed(c) })),
     colorIdentity: deckIdentity(detail.commander.colorIdentity, detail.partner?.colorIdentity ?? null),
     // The resolved printing's crop, as the commander's own image is: the tab's list reads the catalog's.
     artCropUri: detail.commander.artCropUri,
     built: detail.built,
     bodySize: deckBodySize(detail.partner !== null),
+    shares,
   };
 }
 
@@ -213,4 +244,31 @@ async function stillVisible(ownerId: string, deckId: string, statusPill: DeckLis
     loadFriendDeckPrefs(ownerId),
   ]);
   return deck !== undefined && friendCanSeeDeck({ hiddenFromFriends: deck.hiddenFromFriends, statusPill }, prefs);
+}
+
+type Printed = { oracleId: string; printedSetCode?: string | null; printedCollectorNumber?: string | null };
+
+/**
+ * The Scryfall id and back face of each card's owner's printing, from the catalog, in one read: the deck read names a
+ * printing by set and number only, and card details need the exact printing to show its own back (a reversible card's
+ * Turn) and to select it among siblings that share a number.
+ */
+async function printingFaces(cards: readonly Printed[]) {
+  const named = cards.filter((c) => c.printedSetCode && c.printedCollectorNumber);
+  const rows = named.length === 0 ? [] : await db
+    .select({ oracleId: printings.oracleId, setCode: printings.setCode, collectorNumber: printings.collectorNumber, scryfallId: printings.scryfallId, backImageUri: printings.backImageUri })
+    .from(printings)
+    .where(and(inArray(printings.oracleId, named.map((c) => c.oracleId)), inArray(printings.setCode, [...new Set(named.map((c) => c.printedSetCode!.toLowerCase()))])));
+  const key = (o: string, s: string, n: string) => `${o}|${s.toLowerCase()}|${n}`;
+  // A set and number can name more than one printing (siblings that share a number): such a key names none here, so a
+  // card's details fall back to their own default rather than pair the owner's art with a sibling's id and back.
+  const byKey = new Map<string, (typeof rows)[number] | null>();
+  for (const r of rows) {
+    const k = key(r.oracleId, r.setCode, r.collectorNumber);
+    byKey.set(k, byKey.has(k) ? null : r);
+  }
+  return (c: Printed) => {
+    const r = c.printedSetCode && c.printedCollectorNumber ? byKey.get(key(c.oracleId, c.printedSetCode, c.printedCollectorNumber)) : undefined;
+    return r ? { printedScryfallId: r.scryfallId, printedBackImageUri: r.backImageUri } : {};
+  };
 }

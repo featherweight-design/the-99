@@ -115,6 +115,23 @@ export const socialCopy = {
     },
   },
 
+  // A friend's deck, opened read-only (friend decks handoff, board 1 and States). The own band, the shared-deck lines,
+  // the group notes and the basics line are the precon page's own words (`preconsCopy`). Placeholder words, for /copy-review.
+  friendDeck: {
+    back: (name: string) => `‹ ${name}’s decks`,
+    eyebrow: (name: string) => `${name}’s deck · read-only`,
+    cards: (count: number) => (count === 1 ? "1 card" : `${count.toLocaleString("en-US")} cards`),
+    listNote: "By type, A–Z within each group · press a card for its details, hover for its art",
+    listNoteCard: "By type, A–Z within each group · press a card for its details",
+    keyLead: "Your collection",
+    keyOwned: "you own it",
+    keyNotOwned: "you don’t",
+    keyAria: "What the dots mean",
+    emptyTitle: (name: string) => `${name} hasn’t added cards yet`,
+    // The Commander group sits directly above, so the body does not name the commander again (copy-review).
+    emptyBody: (name: string) => `The list shows here as ${name} builds it.`,
+  },
+
   // `/friends`' Waiting on you (menu and Home PR 7, board `Friends` 2a to 2c). Placeholder words, for /copy-review.
   waiting: {
     /** The mono section head, drawn uppercase by CSS; `n` is every row the section shows. */

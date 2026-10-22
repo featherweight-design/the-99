@@ -1,0 +1,30 @@
+{
+  "feature": "Friend decks (handoff design_handoff_the99_friend_decks, R2): a friend's deck read-only, friend tiles, Hidden from friends, Settings' Your decks",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED and FRIEND_DECKS_ENABLED on, and a friend of the audit account with decks: FRIEND_ID is their public id; FRIEND_DECK a deck with a list, FRIEND_DECK_REPEAT one whose name repeats its commander, FRIEND_DECK_EMPTY one with a commander and no cards, FRIEND_DECK_HIDDEN one hidden from friends. Built on a scratch branch by a throwaway seed, never committed. The owner's rules include drafts, since none of those decks commits.",
+  "rows": [
+    {
+      "id": "deck-page",
+      "label": "/friends/[publicId]/decks/[deckId]: a friend's deck, read-only (board 1)",
+      "view": "src/components/social/friend-deck-view.tsx",
+      "steps": [{ "goto": "/friends/${FRIEND_ID}/decks/${FRIEND_DECK}", "wait": "[data-testid='friend-deck-own']", "settle": 2500 }]
+    },
+    {
+      "id": "deck-page-repeat",
+      "label": "a deck named for its commander: the commander line drops",
+      "view": "src/components/social/friend-deck-view.tsx",
+      "steps": [{ "goto": "/friends/${FRIEND_ID}/decks/${FRIEND_DECK_REPEAT}", "wait": "[data-testid='friend-deck-own']", "settle": 2000 }]
+    },
+    {
+      "id": "deck-page-empty",
+      "label": "an empty deck (States): the Commander and the dashed box",
+      "view": "src/components/social/friend-deck-view.tsx",
+      "steps": [{ "goto": "/friends/${FRIEND_ID}/decks/${FRIEND_DECK_EMPTY}", "wait": "[data-testid='friend-deck-empty']", "settle": 2000 }]
+    },
+    {
+      "id": "deck-page-hidden",
+      "label": "a hidden deck's link: the app's 404 (States, gone)",
+      "view": "src/app/friends/[publicId]/decks/[deckId]/page.tsx",
+      "steps": [{ "goto": "/friends/${FRIEND_ID}/decks/${FRIEND_DECK_HIDDEN}", "wait": "h1", "settle": 1500 }]
+    }
+  ]
+}

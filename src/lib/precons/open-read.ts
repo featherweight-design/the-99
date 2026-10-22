@@ -5,6 +5,7 @@
  * the reader's decks that share its list. A Collector's Edition twin answers with the plain
  * edition it folds into, so the page can redirect to it (design call 4).
  */
+import { isBasicType } from "../decks/basic-type";
 import { and, eq, inArray } from "drizzle-orm";
 import { preconAddedOn } from "./added";
 import { db as pool } from "../../db";
@@ -103,7 +104,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   );
 
   const precon = {
-    cards: new Set(lines.filter((l) => !basicType(l.typeLine)).map((l) => l.oracleId)),
+    cards: new Set(lines.filter((l) => !isBasicType(l.typeLine)).map((l) => l.oracleId)),
     commanders: row.commanders.map((c) => c.oracleId),
   };
   const decks = await deckChoices(db, readerDecks, fileName, precon);
@@ -126,14 +127,13 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   };
 }
 
-const basicType = (typeLine: string) => /^Basic\b/.test(typeLine);
 
 type PreconLine = Awaited<ReturnType<typeof openPreconLines>>[number];
 
 /** One line as the list's summary reads it; the small render rides along for the Start dialog's thumb. */
 export function sourceCard(l: PreconLine) {
   return {
-    oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: basicType(l.typeLine),
+    oracleId: l.oracleId, name: l.name, isCommander: l.isCommander, basic: isBasicType(l.typeLine),
     colorIdentity: l.colorIdentity, imageUri: l.imageUri, imageUriSmall: l.imageUriSmall,
   };
 }
@@ -156,7 +156,7 @@ function toCards(lines: readonly PreconLine[], owned: ReadonlySet<string>): Open
     quantity: l.quantity,
     foil: l.foilQuantity,
     isCommander: l.isCommander,
-    basic: basicType(l.typeLine),
+    basic: isBasicType(l.typeLine),
     owned: owned.has(l.oracleId),
     legal: l.legal,
     printing: l.scryfallId && l.setCode && l.collectorNumber
