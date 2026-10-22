@@ -14,19 +14,22 @@ export type DeckPageSwitchState = {
   howItWorks: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: the stand-ins modal reads friends' spares (Social R2 PR 8a). */
   socialFriends: boolean;
+  /** `SPARE_REQUESTS_ENABLED` for the reader: Shopping's spares modal offers Ask and the rows draw the ask's mark (PR 3b). */
+  spareAsks: boolean;
 };
 
-const OFF: DeckPageSwitchState = { howItWorks: false, socialFriends: false };
+const OFF: DeckPageSwitchState = { howItWorks: false, socialFriends: false, spareAsks: false };
 
 const DeckPageSwitchContext = createContext<DeckPageSwitchState>(OFF);
 
 export function DeckPageSwitches({
   howItWorks,
   socialFriends = false,
+  spareAsks = false,
   children,
 }: Pick<DeckPageSwitchState, "howItWorks"> & Partial<DeckPageSwitchState> & { children: React.ReactNode }) {
   return (
-    <DeckPageSwitchContext.Provider value={{ howItWorks, socialFriends }}>{children}</DeckPageSwitchContext.Provider>
+    <DeckPageSwitchContext.Provider value={{ howItWorks, socialFriends, spareAsks }}>{children}</DeckPageSwitchContext.Provider>
   );
 }
 

@@ -73,7 +73,7 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
+import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
@@ -781,10 +781,12 @@ export default async function DeckBuilderPage({
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
+  // `spareAsks`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
   const switched = (
     <DeckPageSwitches
       howItWorks={howItWorksEnabled(env)}
       socialFriends={socialFriendsEnabled(env)}
+      spareAsks={spareRequestsEnabled(env)}
     >
       {shell}
     </DeckPageSwitches>

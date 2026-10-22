@@ -15,7 +15,7 @@ import {
 } from "./spare-requests";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
 import { resolveFriend } from "./access";
-import { openFloor, shownFloor } from "./spare-request-rules";
+import { declineFloor, openFloor, shownFloor } from "./spare-request-rules";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
@@ -254,6 +254,11 @@ describe("myAsksQuery", () => {
     expect(q).not.toMatch(/asker_user_id,|holder_user_id,|holder_user_id as/);
     expect(params).toEqual(["a", shownFloor(NOW).toISOString()]);
   });
+  it("keeps a cleared No inside its cooldown only when asked (Shopping's per-card read, never the list)", () => {
+    const { q, params } = render(myAsksQuery("a", NOW, [CARD], true));
+    expect(q).toMatch(/and \(msr\.asker_cleared_at is null or \(msr\.status = 'no' and msr\.answered_at > \$3::timestamptz\)\) and msr\.oracle_id = any\(\$4::uuid\[\]\) order by/);
+    expect(params[2]).toBe(declineFloor(NOW).toISOString());
+  });
   it("narrowed to the cards asked about, for the Shopping read", () => {
     const { q, params } = render(myAsksQuery("a", NOW, [CARD]));
     expect(q).toMatch(/and msr\.asker_cleared_at is null and msr\.oracle_id = any\(\$3::uuid\[\]\) order by/);
@@ -316,6 +321,7 @@ describe("loadAskStates (GET /api/spare-requests)", () => {
       id: "r3", oracleId: CARD, holder: { publicId: "p2", displayName: "Gus" }, state: "no", daysLeft: null,
       createdAt: "2026-10-10T12:00:00.000Z", answeredAt: "2026-10-11T12:00:00.000Z",
     }]);
+    expect(render(vi.mocked(db.execute).mock.calls.at(-1)![0] as SQL).q).toMatch(/msr\.status = 'no' and msr\.answered_at >/);
   });
 });
 

@@ -11,7 +11,7 @@ import { twMerge } from "tailwind-merge";
  *  phone width its `::after` band makes the hit area 44px. The tooltip positions against the nearest
  *  positioned ancestor, which each caller supplies. */
 export function InfoTip({
-  id, lines, label, className = "self-center", buttonClassName = "", phoneAbove = false,
+  id, lines, label, className = "self-center", buttonClassName = "", tipClassName = "", phoneAbove = false,
 }: {
   id: string; lines: readonly string[]; label: string;
   /** The root's own classes. A caller that has to place the ⓘ itself passes `contents` here and puts the
@@ -19,6 +19,9 @@ export function InfoTip({
    *  size of the ⓘ (Deck notes: it was squeezed against the screen edge on a phone). */
   className?: string;
   buttonClassName?: string;
+  /** The tooltip box's own classes, merged over the shared ones: a caller drawn to a board that sizes or places it
+   *  differently (the spares modal's `.tip`). */
+  tipClassName?: string;
   /** Open ABOVE the anchor at phone width. A caller whose anchor sits at the foot of the page (the Notes field, above
    *  the tab bar and the keyboard) passes it, or the tip draws under the bar and is cut off. */
   phoneAbove?: boolean;
@@ -94,7 +97,7 @@ export function InfoTip({
         id={id}
         role="tooltip"
         hidden={!open}
-        className={twMerge("absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden", phoneAbove && "max-md:bottom-[calc(100%+6px)] max-md:top-auto")}
+        className={twMerge("absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden", phoneAbove && "max-md:bottom-[calc(100%+6px)] max-md:top-auto", tipClassName)}
       >
         {lines.map((l) => <span key={l}>{l}</span>)}
       </span>

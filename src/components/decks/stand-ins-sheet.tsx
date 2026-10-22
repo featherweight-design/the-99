@@ -701,7 +701,7 @@ export function StandInsSheet({
         </section>
 
         {/* Friends first (O1): the copy a friend could hand over comes before any card to buy instead. */}
-        {settled && hasSpares ? <FriendSpareSection spares={spares} /> : null}
+        {settled && hasSpares ? <FriendSpareSection spares={spares} card={card} /> : null}
 
         {!settled ? (
           <div

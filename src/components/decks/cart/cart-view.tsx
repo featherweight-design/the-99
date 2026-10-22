@@ -72,6 +72,7 @@ export function CartView({
   focusDeckId = null,
   buyEnabled = false,
   socialFriends = false,
+  spareAsks = false,
 }: {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
@@ -79,6 +80,8 @@ export function CartView({
   buyEnabled?: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
   socialFriends?: boolean;
+  /** `SPARE_REQUESTS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
+  spareAsks?: boolean;
   /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. */
   initialView?: CartViewMode;
   /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
@@ -337,7 +340,7 @@ export function CartView({
   );
   // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest.
   const withSpares = socialFriends ? (
-    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false}>{page}</FriendSparesProvider>
+    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null}>{page}</FriendSparesProvider>
   ) : page;
   return buyEnabled ? (
     <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
