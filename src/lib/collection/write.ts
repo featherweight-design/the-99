@@ -38,6 +38,8 @@ import { readSyncBase } from "./sync-base";
 
 import { addedFor, dateOf, fileArrival, handArrival, restoredAdded, type Arrival } from "./added-at";
 import { sweepCollectedIn } from "../wishlist/collected";
+import { afterCommit } from "../feed/after-commit";
+import { comboDeltaIn, comboWatchIn, noticeCombos, type ComboDelta } from "../feed/combo-writer";
 /** Entries older than this are hidden from history and pruned on the player's next write. */
 import { HISTORY_RETENTION_DAYS } from "./retention";
 export { HISTORY_RETENTION_DAYS };
@@ -680,9 +682,13 @@ export async function applyCollectionChange(
   // without having taken the lock.
   const items = change.kind === "replace" || change.kind === "add" || change.kind === "sync" ? normalizeItems(change.items) : [];
   const uploadId = uploadOf(change);
+  // The combo writer's view of the write (menu and Home G1): what was held before and what the write added, told
+  // after the commit. Null while the reader's combo kind is off, and for a preview.
+  let combos: ComboDelta | null = null;
   try {
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+      const comboWatch = opts.dryRun ? null : await comboWatchIn(tx, userId);
       // A precon add keeps the tokens it read on its entry, where revert chains derive ownership from;
       // a database without 0117 has neither that column nor the ownership it feeds.
       const preconTokens = change.kind === "add" && change.preconTokens && await tokenOwnershipTablesExist(tx)
@@ -1087,6 +1093,7 @@ export async function applyCollectionChange(
       await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
       // A wishlist line the collection now reaches leaves as collected, with this write (Social R2 G5).
       await sweepCollectedIn(tx, userId);
+      combos = await comboDeltaIn(tx, userId, comboWatch);
       // Retention PRUNES rather than deletes: the entry's id is the only record that an action
       // applied, so deleting it would let a very late retry apply again.
       await tx.update(collectionHistory)
@@ -1109,6 +1116,10 @@ export async function applyCollectionChange(
         ...(syncPreview ? { sync: syncPreview.counts } : {}),
       };
     });
+    // Assigned inside the transaction's callback, which narrowing cannot see.
+    const delta = combos as ComboDelta | null;
+    if (delta) await afterCommit("combo notice", () => noticeCombos(db, userId, delta));
+    return result;
   } catch (error) {
     if (error instanceof Refused) return error.result;
     throw error;

@@ -31,7 +31,11 @@ describe("recordFeedItemQuery", () => {
 
   it("inserts only while the kind is ON in the reader's own prefs row: a kind that is off is not written", () => {
     expect(q).toMatch(/from "user_prefs" wup where wup\.user_id = \$\d+ and \(wup\.feed_kinds ->> \$\d+\) is not null/);
-    expect(params.filter((p) => p === "combo")).toHaveLength(2);
+    expect(params.filter((p) => p === "combo")).toHaveLength(3);
+  });
+
+  it("writes only an item newer than the kind's enabledAt, the bound the reader shows items by", () => {
+    expect(q).toMatch(/and \$\d+::timestamptz > \(wup\.feed_kinds ->> \$\d+\)::timestamptz/);
   });
 
   it("names no friendship when the item names no friend", () => {

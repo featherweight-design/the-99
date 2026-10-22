@@ -3589,6 +3589,14 @@ export const wishlistItems = pgTable("wishlist_items", {
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   quantity: integer("quantity").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  /**
+   * The card's cheapest price when the line was first written (menu and Home G2, the price-drop baseline): the
+   * figure every buy tag draws (`loadPrices`, `priceOf`). Null when the card had no live price then, or for a line
+   * older than the column, until the price job's next run fills it (`backfillPriceAtAdd`). A quantity change keeps it.
+   */
+  priceAtAddCents: integer("price_at_add_cents"),
+  /** When the price job last told the reader this card got cheaper (G2: at most once a week per card). */
+  priceNoticedAt: timestamp("price_noticed_at", { withTimezone: true }),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),

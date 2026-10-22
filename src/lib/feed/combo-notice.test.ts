@@ -1,0 +1,52 @@
+// The combo writer's two seams (menu and Home PR 5, review round 1): the watch follows the reader's RESOLVED switches,
+// and the three places of one write are filled by combos actually written, not by ones already told.
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const m = vi.hoisted(() => ({ record: vi.fn(), env: {} as Record<string, string> }));
+vi.mock("../social/feed-write", () => ({ recordFeedItem: m.record }));
+vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async () => m.env }));
+
+import { comboWatchIn, COMBOS_PER_WRITE, noticeCombos } from "./combo-writer";
+
+const row = (n: number, popularity: number) => ({
+  variant_id: `v${n}`, produces: ["Infinite mana"], popularity, ids: ["a", `b${n}`], names: ["A", `B${n}`],
+});
+const q = (rows: unknown[]) => ({ execute: vi.fn().mockResolvedValue({ rows }) });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.env = { HOME_FEED_ENABLED: "true" };
+});
+
+describe("comboWatchIn", () => {
+  it("watches nothing, and reads nothing, while the feed is off for this reader", async () => {
+    m.env = { HOME_FEED_ENABLED: "false" };
+    const tx = q([{ yes: 1 }]);
+    expect(await comboWatchIn(tx as never, "u1")).toBeNull();
+    expect(tx.execute).not.toHaveBeenCalled();
+  });
+
+  it("watches the held cards once the feed is on and the kind is chosen", async () => {
+    const tx = { execute: vi.fn().mockResolvedValueOnce({ rows: [{ yes: 1 }] }).mockResolvedValueOnce({ rows: [{ oracle_id: "a" }] }) };
+    expect([...(await comboWatchIn(tx as never, "u1"))!]).toEqual(["a"]);
+  });
+});
+
+describe("noticeCombos", () => {
+  const delta = { added: ["a"], held: new Set(["a", "b1", "b2", "b3", "b4"]) };
+
+  it("does not let variants already told use up the three places", async () => {
+    const rows = [row(1, 50), row(2, 40), row(3, 30), row(4, 20)];
+    m.record.mockImplementation(async (_q: unknown, item: { variantId: string }) => item.variantId === "v4");
+    const written = await noticeCombos(q(rows) as never, "u1", delta);
+    expect(written).toBe(1);
+    expect(m.record).toHaveBeenCalledTimes(4);
+  });
+
+  it("stops at three written", async () => {
+    const rows = [row(1, 50), row(2, 40), row(3, 30), row(4, 20)];
+    m.record.mockResolvedValue(true);
+    expect(await noticeCombos(q(rows) as never, "u1", delta)).toBe(COMBOS_PER_WRITE);
+    expect(m.record).toHaveBeenCalledTimes(COMBOS_PER_WRITE);
+  });
+});
