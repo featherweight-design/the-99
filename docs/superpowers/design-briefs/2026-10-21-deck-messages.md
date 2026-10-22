@@ -53,7 +53,7 @@ memories: localStorage, component state, and `user_prefs`.
 | A5 Commit as v1 | **1** | Gishath (99/99, no version, nothing unresolved) |
 | A3 proxy line | **1** | Gods (1 proxy) |
 | A18 M3 Proposed cuts moment | **up to 3** | unspent for Hugh (`moments_spent` holds suggested-changes and mana-balance, not top-off or proposed-cuts); it anchors on the over decks |
-| A2 notice tag | **0** | `noticeSummarySql` run per deck: null on all 21 |
+| A2 notice tag | **0 unread or not legal; read tags unmeasured** | `noticeSummarySql` (the tile's) is null on all 21, so no deck holds an unread notice or an illegal card. The header also draws a quiet READ tag while `dataCount > 0` (`headerNotice`, notice-tag.tsx:60-68), which that SQL does not count: those need `loadDeckNotices` |
 | A7 provenance ledger | **0** | no `deck_cards.auto` rows on staging (Wizards and Thorin keep `fill_passes` rows, but nothing auto is left) |
 | A8 top-off strip, A9 fill failed, A15 unresolved, A17 guided banner | **0** | no deck is short of its body, unfilled or unresolved, and Hugh has more than one deck |
 | A10 to A13 arrivals | not countable | URL-driven and client-dismissed |
@@ -73,7 +73,8 @@ Evidence for every row is in the appendix's **Who/when** and **Duplicates** line
   as v1, A8 the last N, A9 Try filling again, A15 Take a look, A4 Proposed cuts. Each is a decision the deck is waiting on.
 - **Status, rarely acted on:** A14's quiet strip (11 of 21 decks, says the deck matches its version; the Versions tab and the
   status pill say the same), A3 the proxy line (the rows' P tag and the key line say it too), A16 the mix strip (on every
-  deck; its cells link out only when a role is short).
+  deck; its cells link out when a role is short, and the Land cell offers Mana Balance even when its target is met,
+  role-counter-cell.tsx:67).
 - **Duplicates another surface:**
   - A6 overcommitted: the Shopping list draws the same spoken-for cards, and every affected row carries the `short` marker. Its only action is to go to Shopping.
   - A7 provenance: the toolbar's Clear all auto / Keep all and Shopping's intro line.
@@ -85,7 +86,7 @@ Evidence for every row is in the appendix's **Who/when** and **Duplicates** line
 
 ## 4. Other findings (reported, not fixed)
 
-1. The phone gets no toolbar draft note: "N of these differ from vN" is `hidden md:inline` (group-toggle.tsx:334), and while it exists the kept note is blanked at every width (:346).
+1. The phone gets neither toolbar note: the draft note "N of these differ from vN" (group-toggle.tsx:334) and the kept note (clear-auto.tsx:155-158) are both `hidden md:inline`. On desktop a draft note blanks the kept note (group-toggle.tsx:346).
 2. The mix strip's draft note and source line are desktop-only (role-counter-strip.tsx:73-92).
 3. A10 and A12 share one localStorage key (`arrivalDismissKey`), so dismissing one hides the other on that deck.
 4. Partner decks: "0/99" (the guided banner), "N of 99" (the ran-out line) and "over the ninety-nine" all say 99 where the body is 98.
@@ -153,7 +154,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Who/when:** an analyzed deck whose data changed since (Spellbook, catalog) or holding an illegal or off-color card. Next: open the sheet, re-analyze.
 - **Duplicates:** the `/decks` tile's `!` mark (`NoticeMark`, notice-tag.tsx:16, `noticeSentence` tooltip); the sheet (`NoticesBody`, builder-shell.tsx:2329); the Analysis tab's press note "see which" (`pressSee`, builder-shell.tsx:1897).
 - **Origin:** `design/design_handoff_the99_deck_notices` (HANDOFF §1 cited at spine-desktop.tsx:106); plan `docs/superpowers/plans/2026-09-24-deck-notices.md`.
-- **Count:** `noticeSummarySql()` in `src/lib/notices/summary-sql.ts` is already a per-deck SQL expression (what the tile uses): `select id, (noticeSummarySql) from decks`. Inputs: `deck_profiles` (`seen_seq`, `notices_read_seq`, `analyzed_oracle_ids`, `rules_version`), `deck_data_changes`, `deck_cards`, `cards.commander_legal`/`color_identity`, `decks.notices_legal_seen`.
+- **Count:** `noticeSummarySql()` in `src/lib/notices/summary-sql.ts` counts the UNREAD and not-legal states per deck (what the tile uses): `select id, (noticeSummarySql) from decks`. It returns null once data notices are read, while the header still draws a quiet read tag for `dataCount > 0`, so the read state needs `loadDeckNotices` + `headerNotice`. Inputs: `deck_profiles` (`seen_seq`, `notices_read_seq`, `analyzed_oracle_ids`, `rules_version`), `deck_data_changes`, `deck_cards`, `cards.commander_legal`/`color_identity`, `decks.notices_legal_seen`.
 
 ### A3. Header: the proxy line ("3 of these are proxies")
 
@@ -245,7 +246,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Actions:** Try filling again runs `fillDeck(deckId)`.
 - **Treatment:** 8/9px card, `--surface-sunken`, 1px `--border`, 3px `--warning` left rule, bare ⚠ `--warning`, text `--fg-body`, link `--accent-text`.
 - **Dismissible:** no.
-- **Co-occurrence:** with A8 (an empty deck has 99 open slots), A6 never (no cards). Exclusive with A7, A11, A14.
+- **Co-occurrence:** with A8 (an empty deck has 99 open slots), A6 never (no cards). Exclusive with A7 and A11. Not with A14: a committed deck emptied by hand and never filled shows both.
 - **Who/when:** a second-or-later deck that is empty and never filled, which includes every deck a player made by hand and has not added to yet (the comment at :1755-1772 owns this).
 - **Duplicates:** A8 offers to fill the same slots; the empty-deck state in Your deck (B6).
 - **Origin:** `design/design_handoff_the99_recommendations` (State 15).
@@ -284,7 +285,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 - **Actions:** History (owned form); ✕.
 - **Treatment:** as A10 (band, ✓ `--success`). Plain form: phone mono 10.5px, desktop 13.5px.
 - **Dismissible:** ✕, localStorage, the SAME key as A10 (`arrivalDismissKey(deckId)`).
-- **Co-occurrence:** exclusive with A13 by construction (an import that came up short gets A13 instead), unless the owned receipt exists.
+- **Co-occurrence:** exclusive with A15 by construction (an import that came up short gets the unresolved banner instead), unless the owned receipt exists, which draws with A15. A13 is driven separately by `?updated=`.
 - **Origin:** `design/design_handoff_the99_deck_import`; owned form `design/design_handoff_the99_no_collection_entry`.
 - **Count:** URL-driven. Decks that came from an import with an add: the collection history entry whose source is the deck.
 
@@ -408,7 +409,7 @@ Everything in the column is mounted ONCE and is responsive by class, except the 
 
 ## (a) Vertical stacking order when everything shows
 
-Not every element can co-exist (A5 vs A14, A7 vs A9 vs A17, A12 vs A15). The order below is DOM order, which is the same at both widths because every block is one mount with responsive classes, except inside the header.
+Not every element can co-exist (A5 vs A14, A7 vs A9 vs A17, A12 vs A15 except the owned import receipt, which draws with A15). The order below is DOM order, which is the same at both widths because every block is one mount with responsive classes, except inside the header.
 
 **390 (phone)**
 
@@ -426,7 +427,7 @@ Not every element can co-exist (A5 vs A14, A7 vs A9 vs A17, A12 vs A15). The ord
 12. Recommended mix (A16): label only (no source line, no draft note), five cells, Why these numbers? (+ M4 bubble on Land)
 13. Build your first deck (A17), phone form without the fan or 0/99
 14. Tabs (+ M2/M3/M4 fallback on Analysis)
-15. Your deck: toolbar (kept note; NO draft note at this width), key or lock line, auto error, sweep receipt, empty-list line, brass-rule caption, then groups
+15. Your deck: toolbar (NO kept note and NO draft note at this width: both are `hidden md:inline`), key or lock line, auto error, sweep receipt, empty-list line, brass-rule caption, then groups
 
 **1300 (desktop)**
 
@@ -451,7 +452,7 @@ Realistic maximal stacks: a committed deck mid-edit with spoken-for cards, a top
 ## (b) Odd things noticed (no fixes)
 
 1. **The remove-failure line renders ABOVE the header** (builder-shell.tsx:1604), far from the row the player pressed, at both widths.
-2. **The draft note is desktop-only, and it zeroes the kept note at every width** (group-toggle.tsx:334 `hidden md:inline`, :346 `keptCount={draftNote ? 0 : keptCount}`). On a phone with a draft, the toolbar slot says nothing at all.
+2. **Both toolbar notes are desktop-only** (the draft note, group-toggle.tsx:334, and the kept note, clear-auto.tsx:155-158, are `hidden md:inline`), and on desktop a draft note zeroes the kept note (:346 `keptCount={draftNote ? 0 : keptCount}`). On a phone the toolbar slot never carries either note.
 3. **The mix strip's draft note and source line are desktop-only** too (role-counter-strip.tsx:73-92); the phone never learns whether the targets are EDHREC averages or a default, except behind Why these numbers?.
 4. **Partner decks read "99" in three strings**: `GuidedBanner`'s hardcoded "0/99" (guided-banner.tsx:94), the exhausted plate "N of 99" (synergy-discovery.ts:192), and the over line "over the ninety-nine" (decks-builder.ts:454). The body size for a pair is 98.
 5. **`GuidedBanner`'s copy is hardcoded in the component** rather than in `src/lib/copy` ("Step 3 of 3", "Build your first deck", "Search cards or pick from your suggestions below."), as is `mixSourceLine` in `src/lib/decks/mix.ts:169-171`.
