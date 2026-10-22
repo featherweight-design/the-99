@@ -5,7 +5,7 @@
  *  A receipt is true of one navigation, not of the deck, so it lives in the URL
  *  rather than in a column, and only until the page has seen it: the deck page
  *  reads `imported`, `printings`, `from`, `added` and `updated` once, holds what
- *  they said for the visit and takes them off the address (`useStripReceiptParams`).
+ *  they said for the visit and takes them off the address (`useVisitReceipts`).
  *  Its ✕ hides it for the visit and nothing is stored, so the next visit has none. */
 export const IMPORTED_PARAM = "imported";
 
